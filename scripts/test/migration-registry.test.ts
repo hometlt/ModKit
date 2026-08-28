@@ -448,6 +448,16 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
     const multiverseOnly = multiverse.units.filter(
       (unit: { capabilityId: string }) => !gaIds.has(unit.capabilityId),
     )
+    expect(
+      ga.units.every(
+        (unit: { releaseTrack: string }) => unit.releaseTrack !== 'deferred-games-priority',
+      ),
+    ).toBe(true)
+    expect(
+      multiverse.units.every(
+        (unit: { releaseTrack: string }) => unit.releaseTrack !== 'deferred-games-priority',
+      ),
+    ).toBe(true)
     expect(multiverseOnly.length).toBeGreaterThan(0)
     expect(
       multiverseOnly.every(

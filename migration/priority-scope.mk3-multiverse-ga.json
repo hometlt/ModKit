@@ -8,27 +8,29 @@
   "registry": "migration/capabilities.yaml",
   "generator": "scripts/migration/emit-priority-scope.mjs",
   "counts": {
-    "total": 126,
+    "total": 125,
     "seed": 125,
-    "transitiveDependencies": 1,
+    "transitiveDependencies": 0,
     "byPlannedBlock": {
       "block-11": 15,
       "block-12": 71,
       "block-13": 1,
-      "block-15": 24,
-      "block-16": 1,
-      "block-17": 12,
-      "block-22": 2
+      "block-15": 23,
+      "block-17": 11,
+      "block-19": 1,
+      "block-22": 1,
+      "block-23": 1,
+      "block-25": 1
     },
     "byMigrationState": {
       "equivalent-better": 16,
-      "implemented": 97,
+      "implemented": 96,
       "missing": 11,
       "partial": 1,
       "relocated-multiverse": 1
     },
-    "byObligation": { "focused-required-addition": 8, "legacy-required": 118 },
-    "byEvidenceLevel": { "E0": 9, "E1": 26, "E2": 56, "E3": 13, "E4": 22 }
+    "byObligation": { "focused-required-addition": 8, "legacy-required": 117 },
+    "byEvidenceLevel": { "E0": 9, "E1": 26, "E2": 56, "E3": 13, "E4": 21 }
   },
   "deadlines": {
     "block-11": [
@@ -142,13 +144,11 @@
       "format/sc2-strings/open-inspect",
       "format/sc2-triggers/open-inspect",
       "game/starcraft-2/discover-open",
-      "vertical/starcraft-2/deterministic-playable-subset",
       "vertical/starcraft-2/native-inspect-authoring",
       "vertical/starcraft-2/native-round-trip",
       "vertical/starcraft-2/native-to-uv",
       "vertical/starcraft-2/neutral-definitions-world"
     ],
-    "block-16": ["format/big/open-inspect"],
     "block-17": [
       "format/warzone-img/open-inspect",
       "format/warzone-lev/open-inspect",
@@ -157,13 +157,15 @@
       "format/warzone-wz/open-inspect",
       "format/warzone2100-map/open-inspect",
       "game/warzone-2100/discover-open",
-      "vertical/warzone-2100/deterministic-playable-subset",
       "vertical/warzone-2100/native-inspect-authoring",
       "vertical/warzone-2100/native-round-trip",
       "vertical/warzone-2100/native-to-uv",
       "vertical/warzone-2100/neutral-definitions-world"
     ],
-    "block-22": ["uv/uvd/definitions", "uv/uvw/world-materialization"]
+    "block-19": ["vertical/starcraft-2/deterministic-playable-subset"],
+    "block-22": ["uv/uvw/world-materialization"],
+    "block-23": ["uv/uvd/definitions"],
+    "block-25": ["vertical/warzone-2100/deterministic-playable-subset"]
   },
   "units": [
     {
@@ -315,11 +317,11 @@
       "evidenceLevel": "E3",
       "allocationState": "covered",
       "portFamily": null,
-      "corpusDescriptors": ["MODKITX_SC2_ROOT", "MODKITX_CNC3_KW_ROOT"],
+      "corpusDescriptors": ["MODKITX_SC2_ROOT"],
       "dependsOn": [
-        "format/big/open-inspect",
         "format/casc/open-inspect",
-        "format/mpq/open-inspect"
+        "format/mpq/open-inspect",
+        "format/zip/open-inspect"
       ],
       "requiredBy": []
     },
@@ -595,23 +597,6 @@
       "corpusDescriptors": [],
       "dependsOn": [],
       "requiredBy": ["block9/decoded-gpu-texture-payloads"]
-    },
-    {
-      "capabilityId": "format/big/open-inspect",
-      "inclusion": "transitive-dependency",
-      "releaseTrack": "deferred-games-priority",
-      "origin": "legacy",
-      "obligation": "legacy-required",
-      "owner": "extensions/ea/sage",
-      "plannedBlock": 16,
-      "migrationState": "implemented",
-      "supportState": "supported",
-      "evidenceLevel": "E4",
-      "allocationState": "covered",
-      "portFamily": "ea/big",
-      "corpusDescriptors": ["MODKITX_CNC3_KW_ROOT"],
-      "dependsOn": [],
-      "requiredBy": ["block9/archive-entry-as-subject"]
     },
     {
       "capabilityId": "format/bmp/open-inspect",
@@ -1771,13 +1756,13 @@
       "releaseTrack": "mk3-priority",
       "origin": "legacy",
       "obligation": "legacy-required",
-      "owner": "extensions/mk2/opensource-warzone-2100",
+      "owner": "extensions/opensource/warzone-2100",
       "plannedBlock": 17,
       "migrationState": "implemented",
       "supportState": "supported",
       "evidenceLevel": "E1",
       "allocationState": "covered",
-      "portFamily": "mk2/opensource-warzone-2100",
+      "portFamily": "opensource/warzone-2100",
       "corpusDescriptors": [],
       "dependsOn": [],
       "requiredBy": []
@@ -1788,13 +1773,13 @@
       "releaseTrack": "mk3-priority",
       "origin": "legacy",
       "obligation": "legacy-required",
-      "owner": "extensions/mk2/opensource-warzone-2100",
+      "owner": "extensions/opensource/warzone-2100",
       "plannedBlock": 17,
       "migrationState": "implemented",
       "supportState": "supported",
       "evidenceLevel": "E1",
       "allocationState": "covered",
-      "portFamily": "mk2/opensource-warzone-2100",
+      "portFamily": "opensource/warzone-2100",
       "corpusDescriptors": [],
       "dependsOn": [],
       "requiredBy": []
@@ -1822,13 +1807,13 @@
       "releaseTrack": "mk3-priority",
       "origin": "legacy",
       "obligation": "legacy-required",
-      "owner": "extensions/mk2/opensource-warzone-2100",
+      "owner": "extensions/opensource/warzone-2100",
       "plannedBlock": 17,
       "migrationState": "implemented",
       "supportState": "supported",
       "evidenceLevel": "E1",
       "allocationState": "covered",
-      "portFamily": "mk2/opensource-warzone-2100",
+      "portFamily": "opensource/warzone-2100",
       "corpusDescriptors": [],
       "dependsOn": [],
       "requiredBy": []
@@ -1856,13 +1841,13 @@
       "releaseTrack": "mk3-priority",
       "origin": "legacy",
       "obligation": "legacy-required",
-      "owner": "extensions/mk2/opensource-warzone-2100",
+      "owner": "extensions/opensource/warzone-2100",
       "plannedBlock": 17,
       "migrationState": "implemented",
       "supportState": "partial",
       "evidenceLevel": "E1",
       "allocationState": "covered",
-      "portFamily": "mk2/opensource-warzone-2100",
+      "portFamily": "opensource/warzone-2100",
       "corpusDescriptors": [],
       "dependsOn": [],
       "requiredBy": []
@@ -1984,7 +1969,7 @@
       "portFamily": "common/archives",
       "corpusDescriptors": [],
       "dependsOn": [],
-      "requiredBy": ["game/warzone-2100/discover-open"]
+      "requiredBy": ["block9/archive-entry-as-subject", "game/warzone-2100/discover-open"]
     },
     {
       "capabilityId": "format/zstd/open-inspect",
@@ -2122,7 +2107,7 @@
       "origin": "legacy",
       "obligation": "legacy-required",
       "owner": "packages/sdk",
-      "plannedBlock": 22,
+      "plannedBlock": 23,
       "migrationState": "missing",
       "supportState": "unsupported",
       "evidenceLevel": "E1",
@@ -2130,11 +2115,7 @@
       "portFamily": null,
       "corpusDescriptors": [],
       "dependsOn": ["uv/foundation/spec-authority"],
-      "requiredBy": [
-        "uv/uvw/world-materialization",
-        "vertical/starcraft-2/neutral-definitions-world",
-        "vertical/warzone-2100/neutral-definitions-world"
-      ]
+      "requiredBy": ["uv/uvw/world-materialization"]
     },
     {
       "capabilityId": "uv/uvm/live-projection",
@@ -2209,10 +2190,7 @@
       "portFamily": null,
       "corpusDescriptors": ["MODKITX_SC2_ROOT"],
       "dependsOn": ["uv/projection-abi/receipts", "uv/uvd/definitions"],
-      "requiredBy": [
-        "vertical/starcraft-2/neutral-definitions-world",
-        "vertical/warzone-2100/neutral-definitions-world"
-      ]
+      "requiredBy": []
     },
     {
       "capabilityId": "vertical/starcraft-2/deterministic-playable-subset",
@@ -2221,7 +2199,7 @@
       "origin": "legacy",
       "obligation": "legacy-required",
       "owner": "extensions/blizzard/starcraft2-game",
-      "plannedBlock": 15,
+      "plannedBlock": 19,
       "migrationState": "missing",
       "supportState": "unsupported",
       "evidenceLevel": "E0",
@@ -2307,22 +2285,17 @@
       "allocationState": "absent",
       "portFamily": null,
       "corpusDescriptors": ["MODKITX_SC2_ROOT"],
-      "dependsOn": [
-        "game/starcraft-2/discover-open",
-        "uv/uvd/definitions",
-        "uv/uvw/world-materialization",
-        "vertical/starcraft-2/native-to-uv"
-      ],
+      "dependsOn": ["game/starcraft-2/discover-open", "vertical/starcraft-2/native-to-uv"],
       "requiredBy": ["vertical/starcraft-2/deterministic-playable-subset"]
     },
     {
       "capabilityId": "vertical/warzone-2100/deterministic-playable-subset",
       "inclusion": "seed",
-      "releaseTrack": "mk3-priority",
+      "releaseTrack": "multiverse-priority",
       "origin": "legacy",
       "obligation": "legacy-required",
-      "owner": "extensions/mk2/opensource-warzone-2100",
-      "plannedBlock": 17,
+      "owner": "extensions/opensource/warzone-2100",
+      "plannedBlock": 25,
       "migrationState": "missing",
       "supportState": "unsupported",
       "evidenceLevel": "E0",
@@ -2341,7 +2314,7 @@
       "releaseTrack": "mk3-priority",
       "origin": "legacy",
       "obligation": "legacy-required",
-      "owner": "extensions/mk2/opensource-warzone-2100",
+      "owner": "extensions/opensource/warzone-2100",
       "plannedBlock": 17,
       "migrationState": "missing",
       "supportState": "unsupported",
@@ -2361,7 +2334,7 @@
       "releaseTrack": "mk3-priority",
       "origin": "legacy",
       "obligation": "legacy-required",
-      "owner": "extensions/mk2/opensource-warzone-2100",
+      "owner": "extensions/opensource/warzone-2100",
       "plannedBlock": 17,
       "migrationState": "missing",
       "supportState": "unsupported",
@@ -2382,7 +2355,7 @@
       "releaseTrack": "mk3-priority",
       "origin": "legacy",
       "obligation": "legacy-required",
-      "owner": "extensions/mk2/opensource-warzone-2100",
+      "owner": "extensions/opensource/warzone-2100",
       "plannedBlock": 17,
       "migrationState": "missing",
       "supportState": "unsupported",
@@ -2403,7 +2376,7 @@
       "releaseTrack": "mk3-priority",
       "origin": "legacy",
       "obligation": "legacy-required",
-      "owner": "extensions/mk2/opensource-warzone-2100",
+      "owner": "extensions/opensource/warzone-2100",
       "plannedBlock": 17,
       "migrationState": "missing",
       "supportState": "unsupported",
@@ -2411,12 +2384,7 @@
       "allocationState": "absent",
       "portFamily": null,
       "corpusDescriptors": [],
-      "dependsOn": [
-        "game/warzone-2100/discover-open",
-        "uv/uvd/definitions",
-        "uv/uvw/world-materialization",
-        "vertical/warzone-2100/native-to-uv"
-      ],
+      "dependsOn": ["game/warzone-2100/discover-open", "vertical/warzone-2100/native-to-uv"],
       "requiredBy": ["vertical/warzone-2100/deterministic-playable-subset"]
     }
   ]

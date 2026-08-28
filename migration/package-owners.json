@@ -190,7 +190,7 @@
     },
     {
       "package": "@modkitx/maps-processing",
-      "owner": "extensions/mk2/opensource-warzone-2100",
+      "owner": "extensions/opensource/warzone-2100",
       "state": "ported",
       "note": "plus the SAGE and SC2 map codecs; map readers are per-game contributions"
     },

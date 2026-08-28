@@ -68,8 +68,8 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | releaseTrack              | Строк | obligation                  | Строк |
 | ------------------------- | ----- | --------------------------- | ----- |
 | `deferred-games-priority` | 42    | `experimental-optional`     | 2     |
-| `mk3-priority`            | 116   | `focused-required-addition` | 13    |
-| `multiverse-priority`     | 9     | `legacy-required`           | 289   |
+| `mk3-priority`            | 115   | `focused-required-addition` | 13    |
+| `multiverse-priority`     | 10    | `legacy-required`           | 289   |
 | `post-ga`                 | 141   | `post-ga-required-proof`    | 4     |
 
 ### 3.2. Три независимые оси
@@ -104,8 +104,8 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | Release              | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | -------------------- | ----- | ---- | ------------ | ---------- | -------------- |
-| `mk3-ga`             | 124   | 116  | 8            | 12         | block-15       |
-| `mk3-multiverse-ga`  | 126   | 125  | 1            | 12         | block-15       |
+| `mk3-ga`             | 120   | 115  | 5            | 9          | block-15       |
+| `mk3-multiverse-ga`  | 125   | 125  | 0            | 12         | block-15       |
 | `mk3-deferred-games` | 167   | 167  | 0            | 37         | block-15       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
@@ -115,47 +115,47 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `block-11`    | 14    | 0                 |
 | `block-12`    | 70    | 0                 |
 | `block-13`    | 1     | 0                 |
-| `block-15`    | 24    | 5                 |
-| `block-16`    | 1     | 0                 |
-| `block-17`    | 12    | 5                 |
-| `block-22`    | 2     | 2                 |
+| `block-15`    | 23    | 4                 |
+| `block-17`    | 11    | 4                 |
+| `block-19`    | 1     | 1                 |
 
 ## 5. Gap list — что осталось в `mk3-ga`
 
-Строк с нерешённым состоянием: **12** из 124. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
+Строк с нерешённым состоянием: **9** из 120. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
 
-### Блок 15 — 5 строк
+### Блок 15 — 4 строк
+
+| Возможность                                      | migrationState | evidence | Владелец                              |
+| ------------------------------------------------ | -------------- | -------- | ------------------------------------- |
+| `vertical/starcraft-2/native-inspect-authoring`  | `partial`      | E3       | `extensions/blizzard/starcraft2-game` |
+| `vertical/starcraft-2/native-round-trip`         | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
+| `vertical/starcraft-2/native-to-uv`              | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
+| `vertical/starcraft-2/neutral-definitions-world` | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
+
+### Блок 17 — 4 строк
+
+| Возможность                                       | migrationState | evidence | Владелец                             |
+| ------------------------------------------------- | -------------- | -------- | ------------------------------------ |
+| `vertical/warzone-2100/native-inspect-authoring`  | `missing`      | E0       | `extensions/opensource/warzone-2100` |
+| `vertical/warzone-2100/native-round-trip`         | `missing`      | E0       | `extensions/opensource/warzone-2100` |
+| `vertical/warzone-2100/native-to-uv`              | `missing`      | E0       | `extensions/opensource/warzone-2100` |
+| `vertical/warzone-2100/neutral-definitions-world` | `missing`      | E0       | `extensions/opensource/warzone-2100` |
+
+### Блок 19 — 1 строк
 
 | Возможность                                          | migrationState | evidence | Владелец                              |
 | ---------------------------------------------------- | -------------- | -------- | ------------------------------------- |
 | `vertical/starcraft-2/deterministic-playable-subset` | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
-| `vertical/starcraft-2/native-inspect-authoring`      | `partial`      | E3       | `extensions/blizzard/starcraft2-game` |
-| `vertical/starcraft-2/native-round-trip`             | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
-| `vertical/starcraft-2/native-to-uv`                  | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
-| `vertical/starcraft-2/neutral-definitions-world`     | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
-
-### Блок 17 — 5 строк
-
-| Возможность                                           | migrationState | evidence | Владелец                                 |
-| ----------------------------------------------------- | -------------- | -------- | ---------------------------------------- |
-| `vertical/warzone-2100/deterministic-playable-subset` | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
-| `vertical/warzone-2100/native-inspect-authoring`      | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
-| `vertical/warzone-2100/native-round-trip`             | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
-| `vertical/warzone-2100/native-to-uv`                  | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
-| `vertical/warzone-2100/neutral-definitions-world`     | `missing`      | E0       | `extensions/mk2/opensource-warzone-2100` |
-
-### Блок 22 — 2 строк
-
-| Возможность                    | migrationState | evidence | Владелец                   |
-| ------------------------------ | -------------- | -------- | -------------------------- |
-| `uv/uvd/definitions`           | `missing`      | E1       | `packages/sdk`             |
-| `uv/uvw/world-materialization` | `missing`      | E2       | `extensions/common/models` |
 
 ## 6. Дополнительные gaps следующих release
 
-### `mk3-multiverse-ga` сверх `mk3-ga` — 0 строк
+### `mk3-multiverse-ga` сверх `mk3-ga` — 3 строк
 
-Новых нерешённых строк нет.
+| Возможность                                           | migrationState | evidence | Владелец                             |
+| ----------------------------------------------------- | -------------- | -------- | ------------------------------------ |
+| `uv/uvw/world-materialization`                        | `missing`      | E2       | `extensions/common/models`           |
+| `uv/uvd/definitions`                                  | `missing`      | E1       | `packages/sdk`                       |
+| `vertical/warzone-2100/deterministic-playable-subset` | `missing`      | E0       | `extensions/opensource/warzone-2100` |
 
 ### `mk3-deferred-games` сверх `mk3-multiverse-ga` — 25 строк
 
@@ -205,7 +205,7 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | Common/Documents         | `mk3-ga`             | `available` | 7        | 0           | да                  |
 | SC2 Mod Studio           | `mk3-ga`             | `available` | 11       | 0           | нет                 |
 | C&C SAGE Studio          | `mk3-deferred-games` | `available` | 8        | 0           | нет                 |
-| Warzone 2100 Studio      | `mk3-ga`             | `planned`   | 5        | 1           | нет                 |
+| Warzone 2100 Studio      | `mk3-ga`             | `available` | 5        | 0           | нет                 |
 | BAR/Spring Studio        | `mk3-deferred-games` | `planned`   | 4        | 1           | нет                 |
 | Universal Asset Explorer | `mk3-ga`             | `available` | 16       | 0           | нет                 |
 | Headless Mod CI          | `mk3-ga`             | `available` | 11       | 0           | да                  |

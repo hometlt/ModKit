@@ -5,8 +5,8 @@
   "optionalFamilies": ["rendering-3d", "ui-monaco"],
   "counts": {
     "presets": 7,
-    "available": 5,
-    "planned": 2,
+    "available": 6,
+    "planned": 1,
     "referenceProfiles": 13,
     "byIntroducedInClosure": {
       "mk3-ga": 5,
@@ -91,7 +91,7 @@
       "id": "warzone-2100-studio",
       "displayName": "Warzone 2100 Studio",
       "introducedInClosure": "mk3-ga",
-      "status": "planned",
+      "status": "available",
       "hosts": ["electron", "vscode"],
       "minimalClosure": false,
       "extensionFamilies": [
@@ -101,24 +101,14 @@
         "opensource-warzone-2100",
         "rendering-3d"
       ],
-      "plannedFamilies": [
-        {
-          "directory": "extensions/mk2/opensource-warzone-2100",
-          "contributions": [
-            "org.modkitx/warzone-img",
-            "org.modkitx/warzone-lev",
-            "org.modkitx/warzone-wrf",
-            "org.modkitx/warzone2100-map"
-          ]
-        }
-      ],
+      "plannedFamilies": [],
       "serviceProviders": [
         "org.modkitx.opensource/warzone2100-data",
         "org.modkitx.opensource/warzone2100-installation",
         "org.modkitx.opensource/warzone2100-map-semantic",
         "org.modkitx.opensource/warzone2100-resolved-data"
       ],
-      "note": "Профиль уже использует отдельное игровое расширение для PIE, WZ, поиска установки, карт и основных данных объектов; оставшиеся форматы, данные и запись ждут следующих частей вертикали Warzone."
+      "note": "Профиль использует одно конечное игровое расширение для PIE, WZ, IMG, LEV, WRF, map, поиска установки и основных данных объектов; незакрытые агрегатные authoring, round-trip и runtime обещания остаются отдельными registry gaps."
     },
     {
       "id": "bar-spring-studio",
