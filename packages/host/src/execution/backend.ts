@@ -190,16 +190,18 @@ export async function activateExecutionBackend(
  * `allowTrustedInProcess` decision for the artifact (24 §5.1: full process authority is never
  * inferred). Composition roots register it next to their brokered backends.
  */
-export const TRUSTED_IN_PROCESS_EXECUTION_BACKEND: ExecutionBackend = Object.freeze({
-  profile: 'trusted-in-process',
-  supports: (_target: RuntimeTarget, variant: RuntimeVariantDeclaration) =>
-    variant.executionProfile === 'trusted-in-process',
-  async activate(context: ExecutionBackendActivation): Promise<ExecutionModuleLease> {
-    throwIfAborted(context.signal)
-    const module = (await import(context.entrypoint.href)) as Record<string, unknown>
-    return Object.freeze({ module, release: async () => undefined })
-  },
-} satisfies ExecutionBackend)
+export const TRUSTED_IN_PROCESS_EXECUTION_BACKEND: ExecutionBackend = /* @__PURE__ */ Object.freeze(
+  {
+    profile: 'trusted-in-process',
+    supports: (_target: RuntimeTarget, variant: RuntimeVariantDeclaration) =>
+      variant.executionProfile === 'trusted-in-process',
+    async activate(context: ExecutionBackendActivation): Promise<ExecutionModuleLease> {
+      throwIfAborted(context.signal)
+      const module = (await import(context.entrypoint.href)) as Record<string, unknown>
+      return Object.freeze({ module, release: async () => undefined })
+    },
+  } satisfies ExecutionBackend,
+)
 
 /**
  * The in-process backend of a host with statically linked extensions.
@@ -238,6 +240,5 @@ export function linkedInProcessBackend(
 }
 
 /** Compatibility composition used until an application supplies explicit worker/process realms. */
-export const DEFAULT_EXECUTION_BACKENDS: ExecutionBackendRegistry = createExecutionBackendRegistry([
-  TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
-])
+export const DEFAULT_EXECUTION_BACKENDS: ExecutionBackendRegistry =
+  /* @__PURE__ */ createExecutionBackendRegistry([TRUSTED_IN_PROCESS_EXECUTION_BACKEND])

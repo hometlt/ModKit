@@ -80,6 +80,7 @@ const PUBLISHED_ENTRIES = [
   'packages/ui/dist/shell/chrome.js',
   'packages/ui/dist/card/index.js',
   'packages/ui/dist/graph/index.js',
+  'packages/ui/dist/composition/index.js',
   'packages/ui/dist/workbench/index.js',
   'packages/ui/dist/settings/index.js',
   'packages/ui/dist/metadata/index.js',
