@@ -1,5 +1,5 @@
 import { deflateSync, inflateSync } from 'node:zlib'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { encodeFreshMpq, createProvider } from '../src/mpq/fresh-writer.js'
 import {
   MPQ_NATIVE_PRESERVING_UNSUPPORTED,
@@ -15,6 +15,11 @@ const FILE_COMPRESS = 0x00000200
 const FILE_ENCRYPTED = 0x00010000
 const BLOCK_TABLE_BYTES = 16
 const encoder = new TextEncoder()
+const TEST_PROVIDER_IDENTITY = Object.freeze({
+  providerId: 'org.modkitx.blizzard/mpq-fresh-writer',
+  providerVersion: '1.0.0-test',
+  artifactDigest: `sha256:${'0'.repeat(64)}`,
+})
 
 const cryptTable = (() => {
   const result = new Uint32Array(0x500)
@@ -148,7 +153,11 @@ function blockFor(bytes: Uint8Array, path: string): RawBlock {
   }
 }
 
-function redirectNameToBlock(bytes: Uint8Array, aliasPath: string, targetPath: string): Uint8Array {
+function addHiddenAliasHashToBlock(
+  bytes: Uint8Array,
+  aliasPath: string,
+  targetPath: string,
+): Uint8Array {
   const output = bytes.slice()
   const archive = layout(output)
   const hashView = new DataView(
@@ -164,18 +173,18 @@ function redirectNameToBlock(bytes: Uint8Array, aliasPath: string, targetPath: s
     const slot = (first + probe) % archive.hashEntries
     const offset = slot * 16
     const blockIndex = hashView.getUint32(offset + 12, true)
-    if (blockIndex === 0xffffffff) break
-    if (
-      blockIndex !== 0xfffffffe &&
-      hashView.getUint32(offset, true) === expectedA &&
-      hashView.getUint32(offset + 4, true) === expectedB
-    ) {
+    if (blockIndex === 0xffffffff || blockIndex === 0xfffffffe) {
       aliasSlot = slot
       break
     }
   }
-  if (aliasSlot === undefined) throw new Error(`no hash slot for ${aliasPath}`)
-  hashView.setUint32(aliasSlot * 16 + 12, blockFor(output, targetPath).index, true)
+  if (aliasSlot === undefined) throw new Error(`no empty hash slot for ${aliasPath}`)
+  const aliasOffset = aliasSlot * 16
+  hashView.setUint32(aliasOffset, expectedA, true)
+  hashView.setUint32(aliasOffset + 4, expectedB, true)
+  hashView.setUint16(aliasOffset + 8, 0, true)
+  hashView.setUint16(aliasOffset + 10, 0, true)
+  hashView.setUint32(aliasOffset + 12, blockFor(output, targetPath).index, true)
   output.set(
     crypt(archive.hashPlain, hash('(hash table)', HASH_TABLE), false),
     archive.headerOffset + archive.hashOffset,
@@ -381,16 +390,32 @@ describe('Block 15 native-preserving MPQ Save As', () => {
       target,
       archiveName: 'Changed.SC2Map',
     })
-    const provider = createProvider(
-      { contract: 'common.edit/writer', major: 1, offerId: 'mpq-native-preserving-v1' },
-      {
-        budgets: {
-          maxInputBytes: 1_000_000n,
-          maxScalarBytes: 1_000_000,
-          maxNodes: 10_000,
-        },
-      },
-    )
+    const selection = {
+      contract: 'common.edit/writer' as const,
+      major: 1,
+      offerId: 'mpq-native-preserving-v1',
+    }
+    const budgets = {
+      maxInputBytes: 1_000_000n,
+      maxScalarBytes: 1_000_000,
+      maxNodes: 10_000,
+    }
+    expect(() => createProvider(selection, { budgets })).toThrow(/host-attested/u)
+    expect(() =>
+      createProvider(selection, {
+        providerIdentity: { ...TEST_PROVIDER_IDENTITY, providerId: 'org.example/substitute' },
+        budgets,
+      }),
+    ).toThrow(/host-attested/u)
+    const provider = createProvider(selection, {
+      providerIdentity: TEST_PROVIDER_IDENTITY,
+      budgets,
+    })
+    expect(provider.value.identity).toEqual({
+      ...TEST_PROVIDER_IDENTITY,
+      formatId: 'mpq',
+      representationId: 'native-source',
+    })
     expect(await provider.value.validate(change)).toEqual({ valid: true, diagnostics: [] })
     const plan = await provider.value.plan(change)
     expect(plan).toMatchObject({
@@ -442,14 +467,20 @@ describe('Block 15 native-preserving MPQ Save As', () => {
         replacements: [{ path: '../escape', bytes: new Uint8Array([1]) }],
       }),
     ).rejects.toThrow(/traversal/u)
-    const aliasSource = redirectNameToBlock(
+    const hiddenAlias = 'InvisibleAlias.galaxy'
+    const aliasSource = addHiddenAliasHashToBlock(
       encodeFreshMpq([
         { path: 'MapScript.galaxy', bytes: encoder.encode('void Before() {}\r\n') },
-        { path: 'AliasScript.galaxy', bytes: encoder.encode('void Alias__() {}\r\n') },
         { path: 'Opaque.bin', bytes: new Uint8Array([1, 2, 3]) },
       ]),
-      'AliasScript.galaxy',
+      hiddenAlias,
       'MapScript.galaxy',
+    )
+    expect(blockFor(aliasSource, hiddenAlias).index).toBe(
+      blockFor(aliasSource, 'MapScript.galaxy').index,
+    )
+    expect(new TextDecoder().decode(blockFor(aliasSource, '(listfile)').raw)).not.toContain(
+      hiddenAlias,
     )
     await expect(
       encodeNativePreservingMpq({
@@ -458,7 +489,7 @@ describe('Block 15 native-preserving MPQ Save As', () => {
       }),
     ).rejects.toMatchObject({
       code: MPQ_NATIVE_PRESERVING_UNSUPPORTED,
-      message: expect.stringMatching(/multiple distinct names/u),
+      message: expect.stringMatching(/multiple live hash-table entries/u),
     })
     const cancelled = new AbortController()
     cancelled.abort()
@@ -497,6 +528,7 @@ describe('Block 15 native-preserving MPQ Save As', () => {
     const provider = createProvider(
       { contract: 'common.edit/writer', major: 1, offerId: 'mpq-native-preserving-v1' },
       {
+        providerIdentity: TEST_PROVIDER_IDENTITY,
         budgets: { maxInputBytes: 1_000_000n, maxScalarBytes: 1_000_000, maxNodes: 10_000 },
       },
     )
@@ -510,6 +542,46 @@ describe('Block 15 native-preserving MPQ Save As', () => {
     )
     queueMicrotask(() => cancelledDuringValidation.abort())
     await expect(cancelledValidationResult).rejects.toMatchObject({ name: 'AbortError' })
+
+    const subtle = globalThis.crypto.subtle
+    const originalDigest = subtle.digest.bind(subtle)
+    let abortAfterDigest: AbortController | undefined
+    const digestSpy = vi.spyOn(subtle, 'digest').mockImplementation(async (algorithm, data) => {
+      const result = await originalDigest(algorithm, data)
+      abortAfterDigest?.abort()
+      return result
+    })
+    try {
+      const contextDigestCancellation = new AbortController()
+      abortAfterDigest = contextDigestCancellation
+      const contextCancelledProvider = createProvider(
+        { contract: 'common.edit/writer', major: 1, offerId: 'mpq-native-preserving-v1' },
+        {
+          providerIdentity: TEST_PROVIDER_IDENTITY,
+          budgets: { maxInputBytes: 1_000_000n, maxScalarBytes: 1_000_000, maxNodes: 10_000 },
+          signal: contextDigestCancellation.signal,
+        },
+      )
+      await expect(contextCancelledProvider.value.validate(change)).rejects.toMatchObject({
+        name: 'AbortError',
+      })
+
+      const callDigestCancellation = new AbortController()
+      abortAfterDigest = callDigestCancellation
+      const callCancelledProvider = createProvider(
+        { contract: 'common.edit/writer', major: 1, offerId: 'mpq-native-preserving-v1' },
+        {
+          providerIdentity: TEST_PROVIDER_IDENTITY,
+          budgets: { maxInputBytes: 1_000_000n, maxScalarBytes: 1_000_000, maxNodes: 10_000 },
+          signal: new AbortController().signal,
+        },
+      )
+      await expect(
+        callCancelledProvider.value.validate(change, callDigestCancellation.signal),
+      ).rejects.toMatchObject({ name: 'AbortError' })
+    } finally {
+      digestSpy.mockRestore()
+    }
     const escapedSource = {
       ...change,
       edits: change.edits.map(edit => ({

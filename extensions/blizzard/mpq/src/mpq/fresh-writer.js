@@ -482,16 +482,6 @@ function validationOf(change, context, signal) {
   return Object.freeze({ valid: diagnostics.length === 0, diagnostics: Object.freeze(diagnostics) })
 }
 
-const identity = Object.freeze({
-  providerId: PROVIDER_ID,
-  providerVersion: '1.0.0',
-  artifactDigest: 'x3:org.modkitx.blizzard/mpq-fresh-writer@1.0.0',
-  formatId: 'mpq',
-  representationId: 'source',
-})
-
-const nativeIdentity = Object.freeze({ ...identity, representationId: 'native-source' })
-
 const fidelity = Object.freeze({
   roundTrip: 'semantic',
   preservesUnknownData: true,
@@ -505,6 +495,25 @@ const fidelity = Object.freeze({
 export const abiVersion = 1
 export const provides = Object.freeze(['common.edit/writer'])
 
+function identityOf(context, representationId) {
+  const providerIdentity = context?.providerIdentity
+  if (
+    providerIdentity === undefined ||
+    providerIdentity.providerId !== PROVIDER_ID ||
+    typeof providerIdentity.providerVersion !== 'string' ||
+    providerIdentity.providerVersion.length === 0 ||
+    typeof providerIdentity.artifactDigest !== 'string' ||
+    providerIdentity.artifactDigest.length === 0
+  ) {
+    throw new TypeError('MPQ writer requires its exact host-attested provider identity')
+  }
+  return Object.freeze({
+    ...providerIdentity,
+    formatId: 'mpq',
+    representationId,
+  })
+}
+
 export function createProvider(selection, context) {
   if (
     selection.contract !== 'common.edit/writer' ||
@@ -515,8 +524,9 @@ export function createProvider(selection, context) {
   }
   const nativePreserving = selection.offerId === NATIVE_OFFER_ID
   const selectedFidelity = nativePreserving ? nativePreservingFidelity : fidelity
+  const identity = identityOf(context, nativePreserving ? 'native-source' : 'source')
   const writer = Object.freeze({
-    identity: nativePreserving ? nativeIdentity : identity,
+    identity,
     offer: Object.freeze({
       providerId: PROVIDER_ID,
       fidelityEvidenceId: nativePreserving

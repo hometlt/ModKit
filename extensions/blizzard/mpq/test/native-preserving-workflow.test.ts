@@ -7,9 +7,11 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { uint64 } from '@modkitx-x3/core'
 import {
   artifactNamespaceSourceFromVfsMount,
+  createEvidenceRegistry,
   createHostServiceResolver,
   createSubjectEditing,
   openSubject,
+  serviceProviderFidelityEvidenceRecord,
   type ExtensionInput,
 } from '@modkitx-x3/host'
 import {
@@ -22,12 +24,7 @@ import {
   openFileArtifactSource,
   workerBackendPolicy,
 } from '@modkitx-x3/host/node'
-import {
-  createHostTopology,
-  type FidelityEvidence,
-  type PermissionGrant,
-  type Writer,
-} from '@modkitx-x3/sdk'
+import { createHostTopology, type PermissionGrant, type Writer } from '@modkitx-x3/sdk'
 import { VirtualFileSystem } from '@modkitx-x3/vfs'
 import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
 import { encodeFreshMpq, snapshotNativePreservingMpq } from '../src/mpq/fresh-writer.js'
@@ -85,6 +82,11 @@ const topology = createHostTopology({
 const explicitSc2Root = process.env.MODKITX_SC2_ROOT?.trim()
 const installedSc2Root = explicitSc2Root || 'C:\\Apps\\StarCraft II'
 const installedMapPath = join(installedSc2Root, 'Maps', 'ex', 'WTE70_Madlibrarian.SC2Map')
+const EVIDENCE_ID = 'mpq-native-preserving-writer-v1'
+const EVIDENCE_CORPUS = 'installed-starcraft-2:Maps/ex/WTE70_Madlibrarian.SC2Map'
+const EVIDENCE_DIGEST = 'sha256:f654e212dcff3ffe3e1090e383b7b25fac4def2a723b4eda408c1b5cdfb2a305'
+const EVIDENCE_OPTIONS = 'fixed-slot-native-save-as-v1'
+const EVIDENCE_INPUT_CLASS = 'mpq-v0-v1-fixed-slot-complete-source-stored-or-single-unit-zlib'
 
 afterAll(() => rmSync(scratch, { recursive: true, force: true }))
 
@@ -102,21 +104,6 @@ const subjectServices = () =>
       extensions: [await linked()],
       policy: workerBackendPolicy({ loadDeadlineMs: 15_000, defaultCallDeadlineMs: 30_000 }),
     }))())
-
-function evidence(writer: Writer, source: Uint8Array): FidelityEvidence {
-  return {
-    roundTrip: 'semantic',
-    preservesUnknownData: true,
-    evidenceId: writer.offer.fidelityEvidenceId,
-    corpusId: 'modkitX3/extensions/blizzard/mpq/test:native-preserving-workflow',
-    corpusDigest: `sha256:${createHash('sha256').update(source).digest('hex')}`,
-    conformanceProfile: 'common.edit/writer-v1' as never,
-    writer: writer.identity,
-    optionsFingerprint: 'fixed-slot-native-save-as-v1',
-    inputClass: 'pinned-native-mpq-v0-stored',
-    provenAt: '2026-08-28T00:00:00Z',
-  }
-}
 
 describe('Block 15 native MPQ durable workflow', () => {
   it('resolves, validates, confines, atomically writes, reopens, compares and undoes', async () => {
@@ -171,12 +158,41 @@ describe('Block 15 native MPQ durable workflow', () => {
         fidelityEvidenceId: 'mpq-native-preserving-writer-v1',
         representationId: 'native-source',
       })
+      expect(writer.identity).toMatchObject({
+        providerId: 'org.modkitx.blizzard/mpq-fresh-writer',
+        providerVersion: expect.any(String),
+        artifactDigest: expect.any(String),
+        formatId: 'mpq',
+        representationId: 'native-source',
+      })
+      const evidence = serviceProviderFidelityEvidenceRecord(services.inventory, {
+        writer,
+        offerId: 'mpq-native-preserving-v1',
+        acceptedOrigins: ['linked'],
+      })
+      if (evidence === undefined) throw new Error('native MPQ writer evidence did not materialize')
+      expect(evidence).toMatchObject({
+        claim: { roundTrip: 'semantic', preservesUnknownData: true },
+        evidenceId: EVIDENCE_ID,
+        corpusId: EVIDENCE_CORPUS,
+        corpusDigest: EVIDENCE_DIGEST,
+        conformanceProfile: 'common.edit/writer-v1',
+        writer: writer.identity,
+        optionsFingerprint: EVIDENCE_OPTIONS,
+        inputClass: EVIDENCE_INPUT_CLASS,
+        provenAt: '2026-08-28T00:00:00Z',
+      })
+      const evidenceRegistry = createEvidenceRegistry([evidence])
       const editing = createSubjectEditing({
         opened,
         grant: WRITE,
         backendFor: () => backend,
-        evidenceFor: () => evidence(writer, source),
+        evidenceFor: plan => evidenceRegistry.evidenceFor(plan),
         expectedWriter: writer.identity,
+        expectedEvidenceContext: {
+          optionsFingerprint: EVIDENCE_OPTIONS,
+          inputClass: EVIDENCE_INPUT_CLASS,
+        },
         writer,
       })
       const target = editing.targets[0]
@@ -203,7 +219,14 @@ describe('Block 15 native MPQ durable workflow', () => {
         receipt: {
           mutationMode: 'export-only',
           commitGuarantee: 'atomic',
-          fidelity: { roundTrip: 'semantic', preservesUnknownData: true },
+          fidelity: {
+            roundTrip: 'semantic',
+            preservesUnknownData: true,
+            evidenceId: EVIDENCE_ID,
+            writer: writer.identity,
+            optionsFingerprint: EVIDENCE_OPTIONS,
+            inputClass: EVIDENCE_INPUT_CLASS,
+          },
         },
       })
       if (committed.state !== 'committed') return
