@@ -305,7 +305,7 @@ const isDefaultRegistry = registryPath === path.join(repoRoot, 'migration/capabi
 function deriveX3Facts() {
   const files = execFileSync(
     'git',
-    ['-C', repoRoot, 'ls-files', 'extensions/*/*/contributions/*.json'],
+    ['-C', repoRoot, 'ls-files', '--recurse-submodules', 'extensions/*/*/contributions/*.json'],
     {
       maxBuffer: 1 << 30,
     },

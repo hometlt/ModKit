@@ -273,7 +273,7 @@
           ],
           "coordinate": "org.modkitx.blizzard/models",
           "root": "extensions/blizzard/models",
-          "sourceDigest": "sha256:6ce414414ec15c2bf3325e91b9bf78ed7e8d027da54195fe51c2fde4c18b7e5b"
+          "sourceDigest": "sha256:ff14807ef6da411356f3dbebe8ebf57ded50dd41476bd2ae4f62962c49766f45"
         },
         {
           "contributions": [
@@ -322,8 +322,8 @@
       "file": "artifacts/modkitx-sc2-mod-studio.tar",
       "id": "sc2-mod-studio",
       "kind": "game-extension-bundle",
-      "sha256": "sha256:af2ac827685db8b29ef9a6b30f08f3a881176aba717df2387002723b73e9276c",
-      "size": 1147904
+      "sha256": "sha256:12c96598cfd852a39ea7416a28895de27405d687ac8d8a41d4c3cdc307be6de5",
+      "size": 1150464
     },
     {
       "catalog": [
@@ -344,14 +344,14 @@
           ],
           "coordinate": "org.modkitx.opensource/warzone-2100",
           "root": "extensions/opensource/warzone-2100",
-          "sourceDigest": "sha256:9f140020389370a43d986318e9a1aae3ab52a907a9f6661bdee917189318a77b"
+          "sourceDigest": "sha256:6fef98d7769e8660893b5e44622ec5d2b4422005db8908868eb1bc2284f7f496"
         }
       ],
       "file": "artifacts/modkitx-warzone-2100-studio.tar",
       "id": "warzone-2100-studio",
       "kind": "game-extension-bundle",
-      "sha256": "sha256:742a45fff73107fe2f74fa9011ae6f0f2ad5909938e09f00475f3ef253c5162d",
-      "size": 467456
+      "sha256": "sha256:80df64102e45a99459b0666fcf4015f59f77335f84b3cb536cd94ae7718d332b",
+      "size": 492544
     }
   ],
   "composition": {
@@ -436,7 +436,7 @@
   },
   "licenseNotices": {
     "file": "LICENSE-NOTICES.txt",
-    "sha256": "sha256:562d999323248b8a40aea98a58289c89ca09a01765e5306ff7fa9e18da10619c"
+    "sha256": "sha256:dd64410239203145cf805d2925e3474190e79597dea21974b5874d44ac877732"
   },
   "release": {
     "authenticode": false,
@@ -457,7 +457,7 @@
   "sbom": {
     "file": "sbom.cdx.json",
     "format": "CycloneDX-1.5",
-    "sha256": "sha256:b9aba92dc1e8ac91c69449f2fd9d3482472c9bc5b343b432cac39b4c04be7d4a"
+    "sha256": "sha256:d3a1e965c8232aaf5b43d25690fdc7cd9c4d779f658dba9c0c1f3525d206da0a"
   },
   "schemaVersion": "release-manifest-1",
   "signing": {

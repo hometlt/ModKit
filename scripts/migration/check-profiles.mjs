@@ -52,7 +52,7 @@ const RELEASE_CLOSURES = ['mk3-ga', 'mk3-multiverse-ga', 'mk3-deferred-games']
 const contributionIds = new Set()
 for (const file of execFileSync(
   'git',
-  ['-C', repoRoot, 'ls-files', 'extensions/*/*/contributions/*.json'],
+  ['-C', repoRoot, 'ls-files', '--recurse-submodules', 'extensions/*/*/contributions/*.json'],
   {
     maxBuffer: 1 << 30,
   },

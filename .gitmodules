@@ -1,0 +1,6 @@
+[submodule "extensions/blizzard"]
+	path = extensions/blizzard
+	url = ../modkit-blizzard
+[submodule "extensions/opensource/warzone-2100"]
+	path = extensions/opensource/warzone-2100
+	url = ../modkit-warzone

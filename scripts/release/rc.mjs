@@ -723,7 +723,9 @@ export function buildLicenseDocuments({ repoRoot, artifacts, releaseVersion }) {
     .map(component => ({
       'bom-ref': component.ref,
       licenses: [
-        component.license === 'MIT' || component.license === 'GPL-2.0-or-later'
+        component.license === 'MIT' ||
+        component.license === 'GPL-2.0-only' ||
+        component.license === 'GPL-2.0-or-later'
           ? { license: { id: component.license } }
           : { license: { name: component.license } },
       ],
