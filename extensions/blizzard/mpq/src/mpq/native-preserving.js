@@ -317,29 +317,43 @@ function matchingBlockIndices(path, archive) {
   return [...found]
 }
 
-async function inflate(payload) {
+async function inflate(payload, signal) {
+  abort(signal)
   if (typeof DecompressionStream !== 'function') {
     throw unsupported('zlib decompression is unavailable in this runtime')
   }
-  const stream = new Blob([payload]).stream().pipeThrough(new DecompressionStream('deflate'))
-  return new Uint8Array(await new Response(stream).arrayBuffer())
+  const source = new Blob([payload]).stream()
+  const transform = new DecompressionStream('deflate')
+  const stream =
+    signal === undefined ? source.pipeThrough(transform) : source.pipeThrough(transform, { signal })
+  const result = new Uint8Array(await new Response(stream).arrayBuffer())
+  abort(signal)
+  return result
 }
 
-async function deflate(payload) {
+async function deflate(payload, signal) {
+  abort(signal)
   if (typeof CompressionStream !== 'function') {
     throw unsupported('zlib compression is unavailable in this runtime')
   }
-  const stream = new Blob([payload]).stream().pipeThrough(new CompressionStream('deflate'))
-  return new Uint8Array(await new Response(stream).arrayBuffer())
+  const source = new Blob([payload]).stream()
+  const transform = new CompressionStream('deflate')
+  const stream =
+    signal === undefined ? source.pipeThrough(transform) : source.pipeThrough(transform, { signal })
+  const result = new Uint8Array(await new Response(stream).arrayBuffer())
+  abort(signal)
+  return result
 }
 
-async function decodeCompressed(payload, expected, label) {
+async function decodeCompressed(payload, expected, label, signal) {
+  abort(signal)
   if (payload.byteLength === 0) throw new TypeError(`MPQ compressed ${label} is empty`)
   const method = payload[0]
   let decoded
   if (method === 0) decoded = payload.slice(1)
-  else if (method === 2) decoded = await inflate(payload.slice(1))
+  else if (method === 2) decoded = await inflate(payload.slice(1), signal)
   else throw unsupported(`MPQ compression mask 0x${method.toString(16)} for ${label}`)
+  abort(signal)
   if (decoded.byteLength !== expected) throw new TypeError(`MPQ ${label} size mismatch`)
   return Object.freeze({ bytes: decoded, method })
 }
@@ -353,7 +367,8 @@ function rawBlockBytes(archive, block) {
   )
 }
 
-function sectorLayout(archive, block, label) {
+function sectorLayout(archive, block, label, signal) {
+  abort(signal)
   if ((block.flags & FILE_SECTOR_CRC) !== 0) {
     throw unsupported(`changed sector-CRC entry «${label}» is not supported`)
   }
@@ -363,11 +378,15 @@ function sectorLayout(archive, block, label) {
   const tableBytes = positionCount * 4
   const raw = rawBlockBytes(archive, block)
   if (raw.byteLength < tableBytes) throw new TypeError(`MPQ ${label} sector table is truncated`)
-  const positions = Array.from({ length: positionCount }, (_, index) => u32(raw, index * 4))
+  const positions = Array.from({ length: positionCount }, (_, index) => {
+    abort(signal)
+    return u32(raw, index * 4)
+  })
   if (positions[0] < tableBytes || positions.at(-1) > raw.byteLength) {
     throw new TypeError(`MPQ ${label} sector table is invalid`)
   }
   for (let index = 1; index < positions.length; index += 1) {
+    abort(signal)
     if (positions[index] < positions[index - 1]) {
       throw new TypeError(`MPQ ${label} sector offsets are not monotonic`)
     }
@@ -375,14 +394,17 @@ function sectorLayout(archive, block, label) {
   return Object.freeze({ raw, sectorSize, sectorCount, positions })
 }
 
-async function readBlock(archive, block, label) {
+async function readBlock(archive, block, label, signal) {
+  abort(signal)
   if ((block.flags & FILE_ENCRYPTED) !== 0) throw unsupported(`encrypted entry «${label}»`)
   if ((block.flags & FILE_IMPLODE) !== 0) throw unsupported(`implode entry «${label}»`)
   if ((block.flags & FILE_PATCH) !== 0) throw unsupported(`patch entry «${label}»`)
   const raw = rawBlockBytes(archive, block)
   if ((block.flags & FILE_SINGLE_UNIT) !== 0) {
     if ((block.flags & FILE_COMPRESS) !== 0 && block.size > block.archivedSize) {
-      return (await decodeCompressed(raw, block.size, label)).bytes
+      const decoded = await decodeCompressed(raw, block.size, label, signal)
+      abort(signal)
+      return decoded.bytes
     }
     if (raw.byteLength < block.size) throw new TypeError(`MPQ ${label} is truncated`)
     return raw.slice(0, block.size)
@@ -391,16 +413,18 @@ async function readBlock(archive, block, label) {
     if (raw.byteLength !== block.size) throw new TypeError(`MPQ ${label} size mismatch`)
     return raw
   }
-  const layout = sectorLayout(archive, block, label)
+  const layout = sectorLayout(archive, block, label, signal)
   const output = new Uint8Array(block.size)
   let target = 0
   for (let index = 0; index < layout.sectorCount; index += 1) {
+    abort(signal)
     const expected = Math.min(layout.sectorSize, block.size - target)
     const sector = layout.raw.slice(layout.positions[index], layout.positions[index + 1])
     const decoded =
       sector.byteLength < expected
-        ? (await decodeCompressed(sector, expected, `${label}#${index}`)).bytes
+        ? (await decodeCompressed(sector, expected, `${label}#${index}`, signal)).bytes
         : sector
+    abort(signal)
     if (decoded.byteLength !== expected) throw new TypeError(`MPQ ${label} sector size mismatch`)
     output.set(decoded, target)
     target += decoded.byteLength
@@ -408,15 +432,23 @@ async function readBlock(archive, block, label) {
   return output
 }
 
-async function namesOf(archive) {
+async function namesOf(archive, signal) {
+  abort(signal)
   const names = new Map()
   const listIndices = matchingBlockIndices('(listfile)', archive)
   if (listIndices.length === 1) {
     try {
-      const listfile = await readBlock(archive, archive.blockTable[listIndices[0]], '(listfile)')
+      const listfile = await readBlock(
+        archive,
+        archive.blockTable[listIndices[0]],
+        '(listfile)',
+        signal,
+      )
+      abort(signal)
       for (const raw of new TextDecoder('utf-8', { fatal: true })
         .decode(listfile)
         .split(/\r?\n/u)) {
+        abort(signal)
         const trimmed = raw.trim()
         if (trimmed === '') continue
         const path = portablePath(trimmed)
@@ -424,6 +456,7 @@ async function namesOf(archive) {
         if (matches.length === 1) names.set(path.toLowerCase(), { path, blockIndex: matches[0] })
       }
     } catch (cause) {
+      if (cause?.name === 'AbortError') throw cause
       if (cause?.code === MPQ_NATIVE_PRESERVING_UNSUPPORTED) throw cause
       throw unsupported(
         `the MPQ listfile cannot be decoded safely: ${cause instanceof Error ? cause.message : String(cause)}`,
@@ -431,13 +464,25 @@ async function namesOf(archive) {
     }
   }
   for (const path of ['(listfile)', '(attributes)', '(signature)']) {
+    abort(signal)
     const matches = matchingBlockIndices(path, archive)
     if (matches.length === 1) names.set(path, { path, blockIndex: matches[0] })
   }
   return names
 }
 
-async function encodeByOriginalMethod(archive, block, path, replacement) {
+function distinctNamesForBlock(names, blockIndex) {
+  const result = new Map()
+  for (const named of names.values()) {
+    if (named.blockIndex !== blockIndex) continue
+    const key = named.path.replaceAll('\\', '/').toLowerCase()
+    if (!result.has(key)) result.set(key, named.path)
+  }
+  return [...result.values()].sort()
+}
+
+async function encodeByOriginalMethod(archive, block, path, replacement, signal) {
+  abort(signal)
   if ((block.flags & FILE_ENCRYPTED) !== 0) {
     throw unsupported(`changed encrypted entry «${path}» requires native key handling`)
   }
@@ -463,7 +508,8 @@ async function encodeByOriginalMethod(archive, block, path, replacement) {
       return Object.freeze({ bytes, method: 'compression-mask-0x00' })
     }
     if (method === 2) {
-      const compressed = await deflate(replacement)
+      const compressed = await deflate(replacement, signal)
+      abort(signal)
       const bytes = new Uint8Array(compressed.byteLength + 1)
       bytes[0] = 2
       bytes.set(compressed, 1)
@@ -482,10 +528,11 @@ async function encodeByOriginalMethod(archive, block, path, replacement) {
   if (replacement.byteLength !== block.size) {
     throw unsupported(`changed sector-compressed entry «${path}» must keep its uncompressed size`)
   }
-  const layout = sectorLayout(archive, block, path)
+  const layout = sectorLayout(archive, block, path, signal)
   const encodedSectors = []
   let sourceOffset = 0
   for (let index = 0; index < layout.sectorCount; index += 1) {
+    abort(signal)
     const expected = Math.min(layout.sectorSize, replacement.byteLength - sourceOffset)
     const original = layout.raw.slice(layout.positions[index], layout.positions[index + 1])
     const plain = replacement.slice(sourceOffset, sourceOffset + expected)
@@ -507,7 +554,8 @@ async function encodeByOriginalMethod(archive, block, path, replacement) {
         `changed entry «${path}» sector ${index} uses mask 0x${method.toString(16)}`,
       )
     }
-    const compressed = await deflate(plain)
+    const compressed = await deflate(plain, signal)
+    abort(signal)
     const encoded = new Uint8Array(compressed.byteLength + 1)
     encoded[0] = 2
     encoded.set(compressed, 1)
@@ -525,6 +573,7 @@ async function encodeByOriginalMethod(archive, block, path, replacement) {
   let cursor = tableBytes
   encodedView.setUint32(0, cursor, true)
   encodedSectors.forEach((sector, index) => {
+    abort(signal)
     encoded.set(sector, cursor)
     cursor += sector.byteLength
     encodedView.setUint32((index + 1) * 4, cursor, true)
@@ -540,11 +589,13 @@ function bytesEqual(left, right) {
   return true
 }
 
-async function digest(bytes) {
+async function digest(bytes, signal) {
+  abort(signal)
   if (globalThis.crypto?.subtle === undefined) {
     throw unsupported('SHA-256 is unavailable in this runtime')
   }
   const value = new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', bytes))
+  abort(signal)
   return `sha256:${[...value].map(item => item.toString(16).padStart(2, '0')).join('')}`
 }
 
@@ -593,7 +644,8 @@ export async function encodeNativePreservingMpq(options) {
     throw new TypeError('native MPQ preserving replacement requires at least one changed entry')
   }
   const source = parseArchive(sourceBytes, maxBlocks)
-  const names = await namesOf(source)
+  const names = await namesOf(source, signal)
+  abort(signal)
   const normalized = []
   const folded = new Set()
   let replacementBytes = 0
@@ -620,6 +672,12 @@ export async function encodeNativePreservingMpq(options) {
       }
       throw new TypeError(`MPQ listfile does not name changed entry «${path}»`)
     }
+    const blockNames = distinctNamesForBlock(names, named.blockIndex)
+    if (blockNames.length !== 1) {
+      throw unsupported(
+        `MPQ block ${named.blockIndex} is associated with multiple distinct names: ${blockNames.join(', ')}`,
+      )
+    }
     folded.add(key)
     normalized.push(
       Object.freeze({ path: named.path, bytes: item.bytes.slice(), blockIndex: named.blockIndex }),
@@ -638,11 +696,18 @@ export async function encodeNativePreservingMpq(options) {
       )
     }
     const block = source.blockTable[replacement.blockIndex]
-    const originalDecoded = await readBlock(source, block, replacement.path)
+    const originalDecoded = await readBlock(source, block, replacement.path, signal)
+    abort(signal)
     if (bytesEqual(originalDecoded, replacement.bytes)) {
       throw new TypeError(`changed MPQ entry «${replacement.path}» is byte-identical to its source`)
     }
-    const encoded = await encodeByOriginalMethod(source, block, replacement.path, replacement.bytes)
+    const encoded = await encodeByOriginalMethod(
+      source,
+      block,
+      replacement.path,
+      replacement.bytes,
+      signal,
+    )
     abort(signal)
     if (encoded.bytes.byteLength > block.archivedSize) {
       throw unsupported(
@@ -710,7 +775,8 @@ export async function encodeNativePreservingMpq(options) {
   }
   for (const replacement of normalized) {
     const block = reopened.blockTable[replacement.blockIndex]
-    const decoded = await readBlock(reopened, block, replacement.path)
+    const decoded = await readBlock(reopened, block, replacement.path, signal)
+    abort(signal)
     if (!bytesEqual(decoded, replacement.bytes)) {
       throw new TypeError(
         `native MPQ verification could not reopen changed entry «${replacement.path}»`,
@@ -770,9 +836,19 @@ export async function encodeNativePreservingMpq(options) {
   const namedBlocks = new Set([...names.values()].map(item => item.blockIndex))
   const activeBlocks = source.blockTable.filter(block => (block.flags & FILE_EXISTS) !== 0)
   const attributes = names.get('(attributes)')
-  const signature = names.get('(signature)')
-  const sourceArchiveDigest = await digest(sourceBytes)
-  const outputArchiveDigest = await digest(output)
+  const internalSignature = names.get('(signature)')
+  const suffixStart = source.header.offset + source.header.archiveSize
+  const externalStrongSignature =
+    sourceBytes.byteLength - suffixStart >= 260 && magic(sourceBytes, suffixStart) === 'NGIS'
+  const signatureKinds = Object.freeze([
+    ...(internalSignature === undefined ? [] : ['internal-signature-entry']),
+    ...(externalStrongSignature ? ['external-strong-ngis-256'] : []),
+  ])
+  const signaturePresent = signatureKinds.length > 0
+  const sourceArchiveDigest = await digest(sourceBytes, signal)
+  abort(signal)
+  const outputArchiveDigest = await digest(output, signal)
+  abort(signal)
   const receipt = Object.freeze({
     schemaVersion: 1,
     kind: 'mpq-native-export-receipt-v1',
@@ -831,9 +907,17 @@ export async function encodeNativePreservingMpq(options) {
       }),
     }),
     signature: Object.freeze({
-      present: signature !== undefined,
-      bytes: signature === undefined ? 'absent' : 'preserved-opaque',
-      status: signature === undefined ? 'not-present' : 'invalidated-by-modification',
+      present: signaturePresent,
+      kind:
+        signatureKinds.length === 0
+          ? 'none'
+          : signatureKinds.length === 1
+            ? signatureKinds[0]
+            : 'multiple',
+      kinds: signatureKinds,
+      externalStrongBytes: externalStrongSignature ? 260 : 0,
+      bytes: signaturePresent ? 'preserved-opaque' : 'absent',
+      status: signaturePresent ? 'invalidated-by-modification' : 'not-present',
     }),
     launchData: 'outside-writer-scope',
   })
@@ -861,6 +945,17 @@ export async function validateNativePreservingChange(change, context, signal) {
   const intent = record(change.semanticIntent)
   const receipt = record(intent?.nativeExportReceipt)
   const receiptSignature = record(receipt?.signature)
+  const receiptSignatureKinds = Array.isArray(receiptSignature?.kinds) ? receiptSignature.kinds : []
+  const receiptSignatureKindsValid =
+    receiptSignatureKinds.every(kind =>
+      ['internal-signature-entry', 'external-strong-ngis-256'].includes(kind),
+    ) && new Set(receiptSignatureKinds).size === receiptSignatureKinds.length
+  const receiptSignatureKind =
+    receiptSignatureKinds.length === 0
+      ? 'none'
+      : receiptSignatureKinds.length === 1
+        ? receiptSignatureKinds[0]
+        : 'multiple'
   const receiptAttributes = record(record(receipt?.opaque)?.attributes)
   const changedReceiptEntries = Array.isArray(receipt?.changed) ? receipt.changed : []
   const receiptChangesAreValid =
@@ -915,9 +1010,18 @@ export async function validateNativePreservingChange(change, context, signal) {
     ) ||
     !(
       (receiptSignature?.present === true &&
+        receiptSignatureKindsValid &&
+        receiptSignatureKinds.length > 0 &&
+        receiptSignature.kind === receiptSignatureKind &&
+        receiptSignature.externalStrongBytes ===
+          (receiptSignatureKinds.includes('external-strong-ngis-256') ? 260 : 0) &&
         receiptSignature.bytes === 'preserved-opaque' &&
         receiptSignature.status === 'invalidated-by-modification') ||
       (receiptSignature?.present === false &&
+        receiptSignatureKindsValid &&
+        receiptSignatureKinds.length === 0 &&
+        receiptSignature.kind === 'none' &&
+        receiptSignature.externalStrongBytes === 0 &&
         receiptSignature.bytes === 'absent' &&
         receiptSignature.status === 'not-present')
     ) ||
@@ -963,11 +1067,13 @@ export async function validateNativePreservingChange(change, context, signal) {
       throw new RangeError('native MPQ output exceeds the provider resource budget')
     }
     parseArchive(edit.payload.bytes, context.budgets.maxNodes)
-    if ((await digest(edit.payload.bytes)) !== receipt?.outputArchiveDigest) {
+    const outputDigest = await digest(edit.payload.bytes, signal)
+    abort(signal)
+    if (outputDigest !== receipt?.outputArchiveDigest) {
       throw new TypeError('native MPQ output digest does not match its preservation receipt')
     }
   } catch (cause) {
-    if (cause instanceof DOMException && cause.name === 'AbortError') throw cause
+    if (cause?.name === 'AbortError') throw cause
     diagnostics.push(
       error(
         'org.modkitx.blizzard/mpq-native-export-edit-invalid',

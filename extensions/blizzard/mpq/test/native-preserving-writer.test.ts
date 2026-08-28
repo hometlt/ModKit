@@ -148,6 +148,41 @@ function blockFor(bytes: Uint8Array, path: string): RawBlock {
   }
 }
 
+function redirectNameToBlock(bytes: Uint8Array, aliasPath: string, targetPath: string): Uint8Array {
+  const output = bytes.slice()
+  const archive = layout(output)
+  const hashView = new DataView(
+    archive.hashPlain.buffer,
+    archive.hashPlain.byteOffset,
+    archive.hashPlain.byteLength,
+  )
+  const expectedA = hash(aliasPath, HASH_NAME_A)
+  const expectedB = hash(aliasPath, HASH_NAME_B)
+  const first = hash(aliasPath, HASH_TABLE_OFFSET) % archive.hashEntries
+  let aliasSlot: number | undefined
+  for (let probe = 0; probe < archive.hashEntries; probe += 1) {
+    const slot = (first + probe) % archive.hashEntries
+    const offset = slot * 16
+    const blockIndex = hashView.getUint32(offset + 12, true)
+    if (blockIndex === 0xffffffff) break
+    if (
+      blockIndex !== 0xfffffffe &&
+      hashView.getUint32(offset, true) === expectedA &&
+      hashView.getUint32(offset + 4, true) === expectedB
+    ) {
+      aliasSlot = slot
+      break
+    }
+  }
+  if (aliasSlot === undefined) throw new Error(`no hash slot for ${aliasPath}`)
+  hashView.setUint32(aliasSlot * 16 + 12, blockFor(output, targetPath).index, true)
+  output.set(
+    crypt(archive.hashPlain, hash('(hash table)', HASH_TABLE), false),
+    archive.headerOffset + archive.hashOffset,
+  )
+  return output
+}
+
 function setBlockEncoding(
   bytes: Uint8Array,
   path: string,
@@ -259,6 +294,36 @@ describe('Block 15 native-preserving MPQ Save As', () => {
         status: 'invalidated-by-modification',
       },
       launchData: 'outside-writer-scope',
+    })
+  })
+
+  it('recognizes and preserves an external NGIS strong signature without an internal signature', async () => {
+    const archive = encodeFreshMpq([
+      { path: 'MapScript.galaxy', bytes: encoder.encode('void Before() {}\r\n') },
+      { path: 'Opaque.bin', bytes: new Uint8Array([4, 3, 2, 1]) },
+    ])
+    const source = new Uint8Array(archive.byteLength + 260)
+    source.set(archive)
+    source.set(encoder.encode('NGIS'), archive.byteLength)
+    for (let index = 0; index < 256; index += 1) {
+      source[archive.byteLength + 4 + index] = (index * 29) & 0xff
+    }
+
+    const result = await encodeNativePreservingMpq({
+      sourceBytes: source,
+      replacements: [{ path: 'MapScript.galaxy', bytes: encoder.encode('void After_() {}\r\n') }],
+    })
+
+    expect([...result.bytes.slice(archive.byteLength)]).toEqual([
+      ...source.slice(archive.byteLength),
+    ])
+    expect(result.receipt.signature).toEqual({
+      present: true,
+      kind: 'external-strong-ngis-256',
+      kinds: ['external-strong-ngis-256'],
+      externalStrongBytes: 260,
+      bytes: 'preserved-opaque',
+      status: 'invalidated-by-modification',
     })
   })
 
@@ -377,6 +442,24 @@ describe('Block 15 native-preserving MPQ Save As', () => {
         replacements: [{ path: '../escape', bytes: new Uint8Array([1]) }],
       }),
     ).rejects.toThrow(/traversal/u)
+    const aliasSource = redirectNameToBlock(
+      encodeFreshMpq([
+        { path: 'MapScript.galaxy', bytes: encoder.encode('void Before() {}\r\n') },
+        { path: 'AliasScript.galaxy', bytes: encoder.encode('void Alias__() {}\r\n') },
+        { path: 'Opaque.bin', bytes: new Uint8Array([1, 2, 3]) },
+      ]),
+      'AliasScript.galaxy',
+      'MapScript.galaxy',
+    )
+    await expect(
+      encodeNativePreservingMpq({
+        sourceBytes: aliasSource,
+        replacements: [{ path: 'MapScript.galaxy', bytes: encoder.encode('void After_() {}\r\n') }],
+      }),
+    ).rejects.toMatchObject({
+      code: MPQ_NATIVE_PRESERVING_UNSUPPORTED,
+      message: expect.stringMatching(/multiple distinct names/u),
+    })
     const cancelled = new AbortController()
     cancelled.abort()
     await expect(
@@ -386,6 +469,14 @@ describe('Block 15 native-preserving MPQ Save As', () => {
         signal: cancelled.signal,
       }),
     ).rejects.toMatchObject({ name: 'AbortError' })
+    const cancelledDuringRead = new AbortController()
+    const cancelledDuringReadResult = encodeNativePreservingMpq({
+      sourceBytes: source,
+      replacements: [{ path: 'MapScript.galaxy', bytes: encoder.encode('void After_() {}\r\n') }],
+      signal: cancelledDuringRead.signal,
+    })
+    queueMicrotask(() => cancelledDuringRead.abort())
+    await expect(cancelledDuringReadResult).rejects.toMatchObject({ name: 'AbortError' })
 
     const change = await snapshotNativePreservingMpq({
       sourceBytes: source,
@@ -412,6 +503,13 @@ describe('Block 15 native-preserving MPQ Save As', () => {
     expect((await provider.value.validate(forged)).diagnostics[0]?.code).toBe(
       'org.modkitx.blizzard/mpq-native-export-edit-invalid',
     )
+    const cancelledDuringValidation = new AbortController()
+    const cancelledValidationResult = provider.value.validate(
+      change,
+      cancelledDuringValidation.signal,
+    )
+    queueMicrotask(() => cancelledDuringValidation.abort())
+    await expect(cancelledValidationResult).rejects.toMatchObject({ name: 'AbortError' })
     const escapedSource = {
       ...change,
       edits: change.edits.map(edit => ({
