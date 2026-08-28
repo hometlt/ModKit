@@ -67,10 +67,10 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | releaseTrack              | Строк | obligation                  | Строк |
 | ------------------------- | ----- | --------------------------- | ----- |
-| `mk3-priority`            | 116   | `experimental-optional`     | 2     |
-| `multiverse-priority`     | 9     | `focused-required-addition` | 13    |
-| `post-ga`                 | 141   | `legacy-required`           | 289   |
-| `pre-multiverse-priority` | 42    | `post-ga-required-proof`    | 4     |
+| `deferred-games-priority` | 42    | `experimental-optional`     | 2     |
+| `mk3-priority`            | 116   | `focused-required-addition` | 13    |
+| `multiverse-priority`     | 9     | `legacy-required`           | 289   |
+| `post-ga`                 | 141   | `post-ga-required-proof`    | 4     |
 
 ### 3.2. Три независимые оси
 
@@ -100,11 +100,13 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 ## 4. Именованные closure
 
+Исполняемый порядок: `mk3-ga` → `mk3-multiverse-ga` → STOP. `mk3-deferred-games` неактивен до нового прямого указания владельца; это новое имя исторического `mk3-pre-multiverse`, который больше не является gate Multiverse.
+
 | Release              | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | -------------------- | ----- | ---- | ------------ | ---------- | -------------- |
 | `mk3-ga`             | 124   | 116  | 8            | 12         | block-15       |
-| `mk3-pre-multiverse` | 165   | 158  | 7            | 37         | block-15       |
-| `mk3-multiverse-ga`  | 167   | 167  | 0            | 37         | block-15       |
+| `mk3-multiverse-ga`  | 126   | 125  | 1            | 12         | block-15       |
+| `mk3-deferred-games` | 167   | 167  | 0            | 37         | block-15       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
@@ -151,7 +153,11 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 ## 6. Дополнительные gaps следующих release
 
-### `mk3-pre-multiverse` сверх `mk3-ga` — 25 строк
+### `mk3-multiverse-ga` сверх `mk3-ga` — 0 строк
+
+Новых нерешённых строк нет.
+
+### `mk3-deferred-games` сверх `mk3-multiverse-ga` — 25 строк
 
 | Возможность                                                 | migrationState | evidence | Владелец                           |
 | ----------------------------------------------------------- | -------------- | -------- | ---------------------------------- |
@@ -181,20 +187,16 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `vertical/beyond-all-reason/native-to-uv`                   | `missing`      | E0       | `extensions/mk2/opensource-spring` |
 | `vertical/beyond-all-reason/neutral-definitions-world`      | `missing`      | E0       | `extensions/mk2/opensource-spring` |
 
-### `mk3-multiverse-ga` сверх `mk3-pre-multiverse` — 0 строк
-
-Новых нерешённых строк нет.
-
 ## 7. Готовность корпусов
 
 | Корпус                             | Release track             | Вертикаль | Статус                  | Переменные                                                     | Действие владельца                                                                                                                                                                       |
 | ---------------------------------- | ------------------------- | --------- | ----------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | StarCraft II                       | `mk3-priority`            | блок 15   | `available`             | `MODKITX_SC2_ROOT`                                             | —                                                                                                                                                                                        |
-| Command & Conquer 3: Kane's Wrath  | `pre-multiverse-priority` | блок 16   | `available`             | `MODKITX_CNC3_KW_ROOT`, `MODKITX_W3X_PATH`, `MODKITX_W3D_PATH` | —                                                                                                                                                                                        |
-| Command & Conquer 3: Tiberium Wars | `pre-multiverse-priority` | блок 16   | `owner-action-required` | `MODKITX_CNC3_TW_ROOT`                                         | Установить или предоставить read-only корпус ванильного C&C3 Tiberium Wars до начала вертикали блока 16; иначе TW-строки остаются видимым owner-action, а не поздним environment skip.   |
-| Command & Conquer: Red Alert 3     | `pre-multiverse-priority` | блок 16   | `owner-action-required` | `MODKITX_RA3_ROOT`                                             | Предоставить read-only установку Red Alert 3, задать MODKITX_RA3_ROOT в локальном environment descriptor и подтвердить версию, сборку, язык, хеш и маркеры до начала вертикали блока 16. |
+| Command & Conquer 3: Kane's Wrath  | `deferred-games-priority` | блок 16   | `available`             | `MODKITX_CNC3_KW_ROOT`, `MODKITX_W3X_PATH`, `MODKITX_W3D_PATH` | —                                                                                                                                                                                        |
+| Command & Conquer 3: Tiberium Wars | `deferred-games-priority` | блок 16   | `owner-action-required` | `MODKITX_CNC3_TW_ROOT`                                         | Установить или предоставить read-only корпус ванильного C&C3 Tiberium Wars до начала вертикали блока 16; иначе TW-строки остаются видимым owner-action, а не поздним environment skip.   |
+| Command & Conquer: Red Alert 3     | `deferred-games-priority` | блок 16   | `owner-action-required` | `MODKITX_RA3_ROOT`                                             | Предоставить read-only установку Red Alert 3, задать MODKITX_RA3_ROOT в локальном environment descriptor и подтвердить версию, сборку, язык, хеш и маркеры до начала вертикали блока 16. |
 | Warzone 2100                       | `mk3-priority`            | блок 17   | `available`             | `MODKITX_WARZONE_ROOT`                                         | —                                                                                                                                                                                        |
-| Beyond All Reason                  | `pre-multiverse-priority` | блок 17   | `available`             | `MODKITX_BAR_ROOT`                                             | —                                                                                                                                                                                        |
+| Beyond All Reason                  | `deferred-games-priority` | блок 17   | `available`             | `MODKITX_BAR_ROOT`                                             | —                                                                                                                                                                                        |
 
 ## 8. Профили продукта
 
@@ -202,9 +204,9 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | ------------------------ | -------------------- | ----------- | -------- | ----------- | ------------------- |
 | Common/Documents         | `mk3-ga`             | `available` | 7        | 0           | да                  |
 | SC2 Mod Studio           | `mk3-ga`             | `available` | 11       | 0           | нет                 |
-| C&C SAGE Studio          | `mk3-pre-multiverse` | `available` | 8        | 0           | нет                 |
+| C&C SAGE Studio          | `mk3-deferred-games` | `available` | 8        | 0           | нет                 |
 | Warzone 2100 Studio      | `mk3-ga`             | `planned`   | 5        | 1           | нет                 |
-| BAR/Spring Studio        | `mk3-pre-multiverse` | `planned`   | 4        | 1           | нет                 |
+| BAR/Spring Studio        | `mk3-deferred-games` | `planned`   | 4        | 1           | нет                 |
 | Universal Asset Explorer | `mk3-ga`             | `available` | 16       | 0           | нет                 |
 | Headless Mod CI          | `mk3-ga`             | `available` | 11       | 0           | да                  |
 

@@ -35,8 +35,8 @@ const corpora = readJson('migration/corpora-readiness.json')
 const profiles = readJson('migration/product-profiles.json')
 const closures = {
   'mk3-ga': readJson('migration/priority-scope.mk3-ga.json'),
-  'mk3-pre-multiverse': readJson('migration/priority-scope.mk3-pre-multiverse.json'),
   'mk3-multiverse-ga': readJson('migration/priority-scope.mk3-multiverse-ga.json'),
+  'mk3-deferred-games': readJson('migration/priority-scope.mk3-deferred-games.json'),
 }
 
 const compareUtf8 = (left, right) => Buffer.compare(Buffer.from(left), Buffer.from(right))
@@ -209,6 +209,9 @@ push(
 )
 
 push('## 4. Именованные closure')
+push(
+  'Исполняемый порядок: `mk3-ga` → `mk3-multiverse-ga` → STOP. `mk3-deferred-games` неактивен до нового прямого указания владельца; это новое имя исторического `mk3-pre-multiverse`, который больше не является gate Multiverse.',
+)
 push(
   table(
     ['Release', 'Всего', 'Seed', 'Транзитивных', 'Нерешённых', 'Ближайший блок'],

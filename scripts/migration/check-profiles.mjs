@@ -47,7 +47,7 @@ if (profiles.schemaVersion !== 'product-profiles-1') {
   )
 }
 
-const RELEASE_CLOSURES = ['mk3-ga', 'mk3-pre-multiverse', 'mk3-multiverse-ga']
+const RELEASE_CLOSURES = ['mk3-ga', 'mk3-multiverse-ga', 'mk3-deferred-games']
 
 const contributionIds = new Set()
 for (const file of execFileSync(

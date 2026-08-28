@@ -1505,7 +1505,7 @@ capabilities:
         - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'
   - capabilityId: 'block9/w3d-animation'
     userScenario: 'Увидеть анимацию реальной модели W3D.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/models'
@@ -1566,7 +1566,7 @@ capabilities:
         - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'
   - capabilityId: 'block9/w3d-hierarchy-pivots'
     userScenario: 'Увидеть иерархию W3D с pivot-ами.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/models'
@@ -1627,7 +1627,7 @@ capabilities:
         - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'
   - capabilityId: 'block9/w3d-mesh-bone-binding'
     userScenario: 'Привязать меш W3D к кости только по явной ссылке HLOD.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/models'
@@ -1687,7 +1687,7 @@ capabilities:
         - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'
   - capabilityId: 'block9/w3d-texture-cross-archive'
     userScenario: 'Найти текстуру реальной модели C&C 3, лежащую в другом архиве.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'packages/host'
@@ -1747,7 +1747,7 @@ capabilities:
         - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'
   - capabilityId: 'block9/w3d-texture-from-archive'
     userScenario: 'Найти текстуру W3D в том же BIG.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'packages/host'
@@ -1811,7 +1811,7 @@ capabilities:
         - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'
   - capabilityId: 'block9/w3x-container-roles'
     userScenario: 'Увидеть состав W3X с ролями частей (render против collision).'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/models'
@@ -1872,7 +1872,7 @@ capabilities:
         - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'
   - capabilityId: 'block9/w3x-skeleton-bone-names'
     userScenario: 'Получить имена костей W3X из соседнего файла скелета.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'packages/host'
@@ -1933,7 +1933,7 @@ capabilities:
         - 'docs/MK3/reports/REPORT_FABLE_BLOCK9_FINAL_2026-08-25.md'
   - capabilityId: 'block9/w3x-skeleton-from-archive'
     userScenario: 'Получить тот же скелет, когда обе части лежат в архиве.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'packages/host'
@@ -2804,7 +2804,7 @@ capabilities:
       reports: []
   - capabilityId: 'format/big/open-inspect'
     userScenario: 'Открыть «EA SAGE BIG archive» в MK3 и выполнить archive.extract, archive.inspect, archive.write без потери семантики legacy-маршрута.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
@@ -3618,7 +3618,7 @@ capabilities:
       reports: []
   - capabilityId: 'format/cnc3-data/open-inspect'
     userScenario: 'Открыть «Command & Conquer 3 AssetDeclaration data» в MK3 и выполнить view.inspect без потери семантики legacy-маршрута.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
@@ -3683,7 +3683,7 @@ capabilities:
       reports: []
   - capabilityId: 'format/cnc3-localization/open-inspect'
     userScenario: 'Открыть «Command & Conquer 3 string tables» в MK3 и выполнить view.inspect без потери семантики legacy-маршрута.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
@@ -3748,7 +3748,7 @@ capabilities:
       reports: []
   - capabilityId: 'format/cnc3-map/open-inspect'
     userScenario: 'Открыть «Command & Conquer 3 map» в MK3 и выполнить view.inspect без потери семантики legacy-маршрута.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
@@ -10089,7 +10089,7 @@ capabilities:
       reports: []
   - capabilityId: 'format/sage-asset-bundle/open-inspect'
     userScenario: 'Открыть «SAGE asset bundle» в MK3 и открыть и осмотреть без потери семантики legacy-маршрута.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
@@ -10145,7 +10145,7 @@ capabilities:
       reports: []
   - capabilityId: 'format/sage-skudef/open-inspect'
     userScenario: 'Открыть «SAGE SkuDef load order» в MK3 и выполнить view.inspect без потери семантики legacy-маршрута.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
@@ -10210,7 +10210,7 @@ capabilities:
       reports: []
   - capabilityId: 'format/sage-w3x/open-inspect'
     userScenario: 'Открыть «SAGE W3X XML model» в MK3 и выполнить model.read, model.render без потери семантики legacy-маршрута.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/models'
@@ -11350,7 +11350,7 @@ capabilities:
       reports: []
   - capabilityId: 'format/spring-rapid/open-inspect'
     userScenario: 'Открыть «Spring rapid package» в MK3 и выполнить archive.extract, archive.inspect без потери семантики legacy-маршрута.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-spring'
@@ -11410,7 +11410,7 @@ capabilities:
       reports: []
   - capabilityId: 'format/spring-s3o/open-inspect'
     userScenario: 'Открыть «Spring Engine S3O model» в MK3 и открыть и осмотреть без потери семантики legacy-маршрута.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/opensource/spring'
@@ -11484,7 +11484,7 @@ capabilities:
       reports: []
   - capabilityId: 'format/spring-vfs/open-inspect'
     userScenario: 'Открыть «Spring archive VFS and load order» в MK3 и выполнить content.mount, content.resolve-dependencies, view.inspect без потери семантики legacy-маршрута.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-spring'
@@ -14495,7 +14495,7 @@ capabilities:
       reports: []
   - capabilityId: 'format/westwood-w3d/open-inspect'
     userScenario: 'Открыть «Westwood W3D binary model» в MK3 и выполнить model.read, model.render без потери семантики legacy-маршрута.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/models'
@@ -15366,7 +15366,7 @@ capabilities:
       reports: []
   - capabilityId: 'game/beyond-all-reason/discover-open'
     userScenario: 'Найти установку «Beyond All Reason», открыть её содержимое как рабочее пространство и увидеть форматы, которые игра действительно объявляет.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'unassigned'
@@ -15425,7 +15425,7 @@ capabilities:
       reports: []
   - capabilityId: 'game/cnc3-tiberium-wars/discover-open'
     userScenario: 'Найти установку «Command & Conquer 3: Tiberium Wars», открыть её содержимое как рабочее пространство и увидеть форматы, которые игра действительно объявляет.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'unassigned'
@@ -16342,7 +16342,7 @@ capabilities:
       reports: []
   - capabilityId: 'game/red-alert-3/discover-open'
     userScenario: 'Найти установку «Command & Conquer: Red Alert 3», открыть её содержимое как рабочее пространство и увидеть форматы, которые игра действительно объявляет.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'unassigned'
@@ -17580,7 +17580,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/beyond-all-reason/deterministic-playable-subset'
     userScenario: 'Для «Beyond All Reason» получить детерминированный воспроизводимый playable subset.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-spring'
@@ -17638,7 +17638,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/beyond-all-reason/native-inspect-authoring'
     userScenario: 'Для «Beyond All Reason» получить native inspect и authoring без запуска игры.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-spring'
@@ -17695,7 +17695,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/beyond-all-reason/native-round-trip'
     userScenario: 'Для «Beyond All Reason» получить native round-trip: изменить и вернуть в исходный формат.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-spring'
@@ -17754,7 +17754,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/beyond-all-reason/native-to-uv'
     userScenario: 'Для «Beyond All Reason» получить проекция native → UV без обязательной предварительной конвертации.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-spring'
@@ -17813,7 +17813,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/beyond-all-reason/neutral-definitions-world'
     userScenario: 'Для «Beyond All Reason» получить нейтральные definitions и world (UVD/UVW).'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/mk2/opensource-spring'
@@ -17873,7 +17873,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/cnc3-kanes-wrath/deterministic-playable-subset'
     userScenario: "Для «Command & Conquer 3: Kane's Wrath» получить детерминированный воспроизводимый playable subset."
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
     owner: 'extensions/ea/sage'
@@ -17930,7 +17930,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/cnc3-kanes-wrath/native-inspect-authoring'
     userScenario: "Для «Command & Conquer 3: Kane's Wrath» получить native inspect и authoring без запуска игры."
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
     owner: 'extensions/ea/sage'
@@ -17986,7 +17986,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/cnc3-kanes-wrath/native-round-trip'
     userScenario: "Для «Command & Conquer 3: Kane's Wrath» получить native round-trip: изменить и вернуть в исходный формат."
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
     owner: 'extensions/ea/sage'
@@ -18044,7 +18044,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/cnc3-kanes-wrath/native-to-uv'
     userScenario: "Для «Command & Conquer 3: Kane's Wrath» получить проекция native → UV без обязательной предварительной конвертации."
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
     owner: 'extensions/ea/sage'
@@ -18102,7 +18102,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/cnc3-kanes-wrath/neutral-definitions-world'
     userScenario: "Для «Command & Conquer 3: Kane's Wrath» получить нейтральные definitions и world (UVD/UVW)."
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
     owner: 'extensions/ea/sage'
@@ -18161,7 +18161,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/cnc3-tiberium-wars/deterministic-playable-subset'
     userScenario: 'Для «Command & Conquer 3: Tiberium Wars» получить детерминированный воспроизводимый playable subset.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
@@ -18220,7 +18220,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/cnc3-tiberium-wars/native-inspect-authoring'
     userScenario: 'Для «Command & Conquer 3: Tiberium Wars» получить native inspect и authoring без запуска игры.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
@@ -18278,7 +18278,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/cnc3-tiberium-wars/native-round-trip'
     userScenario: 'Для «Command & Conquer 3: Tiberium Wars» получить native round-trip: изменить и вернуть в исходный формат.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
@@ -18338,7 +18338,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/cnc3-tiberium-wars/native-to-uv'
     userScenario: 'Для «Command & Conquer 3: Tiberium Wars» получить проекция native → UV без обязательной предварительной конвертации.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
@@ -18398,7 +18398,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/cnc3-tiberium-wars/neutral-definitions-world'
     userScenario: 'Для «Command & Conquer 3: Tiberium Wars» получить нейтральные definitions и world (UVD/UVW).'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
@@ -18459,7 +18459,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/red-alert-3/deterministic-playable-subset'
     userScenario: 'Для «Command & Conquer: Red Alert 3» получить детерминированный воспроизводимый playable subset.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
@@ -18517,7 +18517,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/red-alert-3/native-inspect-authoring'
     userScenario: 'Для «Command & Conquer: Red Alert 3» получить native inspect и authoring без запуска игры.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
@@ -18574,7 +18574,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/red-alert-3/native-round-trip'
     userScenario: 'Для «Command & Conquer: Red Alert 3» получить native round-trip: изменить и вернуть в исходный формат.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
@@ -18633,7 +18633,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/red-alert-3/native-to-uv'
     userScenario: 'Для «Command & Conquer: Red Alert 3» получить проекция native → UV без обязательной предварительной конвертации.'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'
@@ -18692,7 +18692,7 @@ capabilities:
       reports: []
   - capabilityId: 'vertical/red-alert-3/neutral-definitions-world'
     userScenario: 'Для «Command & Conquer: Red Alert 3» получить нейтральные definitions и world (UVD/UVW).'
-    releaseTrack: 'pre-multiverse-priority'
+    releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
     owner: 'extensions/ea/sage'

@@ -180,7 +180,7 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
     const first = run()
     expect(first.stderr).toBe('')
     expect(first.status).toBe(0)
-    const names = ['mk3-ga', 'mk3-pre-multiverse', 'mk3-multiverse-ga'] as const
+    const names = ['mk3-ga', 'mk3-multiverse-ga', 'mk3-deferred-games'] as const
     const before = names.map(name =>
       readFileSync(join(outDir, `priority-scope.${name}.json`), 'utf8'),
     )
@@ -189,8 +189,14 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
     expect(documents.map(document => document.extends)).toEqual([
       null,
       'mk3-ga',
-      'mk3-pre-multiverse',
+      'mk3-multiverse-ga',
     ])
+    expect(documents.map(document => document.activation)).toEqual([
+      'active-product-ga',
+      'active-after-mk3-ga',
+      'inactive-until-owner-resume-after-multiverse-stop',
+    ])
+    expect(documents[2].renamedFrom).toBe('mk3-pre-multiverse')
     for (let index = 1; index < documents.length; index += 1) {
       const current = new Set(
         documents[index].units.map((unit: { capabilityId: string }) => unit.capabilityId),
@@ -230,7 +236,7 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
     rmSync(temp, { recursive: true, force: true })
   })
 
-  it('fails freshness when the middle closure is missing', () => {
+  it('fails freshness when the deferred closure is missing', () => {
     const outDir = mkdtempSync(join(tmpdir(), 'x3-missing-release-scope-'))
     const args = [
       priorityGate,
@@ -240,10 +246,10 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
       outDir,
     ]
     expect(spawnSync(process.execPath, args, { encoding: 'utf8' }).status).toBe(0)
-    rmSync(join(outDir, 'priority-scope.mk3-pre-multiverse.json'))
+    rmSync(join(outDir, 'priority-scope.mk3-deferred-games.json'))
     const checked = spawnSync(process.execPath, [...args, '--check'], { encoding: 'utf8' })
     expect(checked.status).toBe(1)
-    expect(checked.stderr).toContain('priority-scope.mk3-pre-multiverse.json is missing')
+    expect(checked.stderr).toContain('priority-scope.mk3-deferred-games.json is missing')
     rmSync(outDir, { recursive: true, force: true })
   })
 
@@ -339,7 +345,7 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
     expect(stdout).toContain('phase block-16 clean')
   })
 
-  it('keeps pre-multiverse corpora out of the first-GA phase gate but audits them at release', () => {
+  it('keeps deferred-game corpora out of the first-GA phase gate but audits them after owner resume', () => {
     const phase = runPriority('valid.capabilities.yaml', [
       '--phase',
       'block-17',
@@ -349,15 +355,24 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
     expect(phase.stderr).toBe('')
     expect(phase.status).toBe(0)
 
-    const release = runPriority('valid.capabilities.yaml', [
+    const multiverseRelease = runPriority('valid.capabilities.yaml', [
       '--release',
-      'mk3-pre-multiverse',
+      'mk3-multiverse-ga',
       '--corpora',
       join(fixtures, 'phase-start-ready-corpora.json'),
     ])
-    expect(release.status).toBe(1)
-    expect(release.stderr).toContain('mk3-pre-multiverse corpus')
-    expect(release.stderr).toContain('owner-action-later')
+    expect(multiverseRelease.stderr).toBe('')
+    expect(multiverseRelease.status).toBe(0)
+
+    const deferredRelease = runPriority('valid.capabilities.yaml', [
+      '--release',
+      'mk3-deferred-games',
+      '--corpora',
+      join(fixtures, 'phase-start-ready-corpora.json'),
+    ])
+    expect(deferredRelease.status).toBe(1)
+    expect(deferredRelease.stderr).toContain('mk3-deferred-games corpus')
+    expect(deferredRelease.stderr).toContain('owner-action-later')
   })
 
   it('fails closed when the phase-start readiness document cannot be read', () => {
@@ -414,14 +429,41 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
     expect(result.stdout).toContain('mk3-ga')
   })
 
-  it('keeps C&C and BAR product rows outside mk3-ga and inside pre-multiverse', () => {
+  it('keeps C&C and BAR outside mk3-ga and Multiverse, then adds them only after STOP', () => {
     const root = join(scriptsDir, '..', 'migration')
     const ga = JSON.parse(readFileSync(join(root, 'priority-scope.mk3-ga.json'), 'utf8'))
-    const pre = JSON.parse(
-      readFileSync(join(root, 'priority-scope.mk3-pre-multiverse.json'), 'utf8'),
+    const multiverse = JSON.parse(
+      readFileSync(join(root, 'priority-scope.mk3-multiverse-ga.json'), 'utf8'),
+    )
+    const deferred = JSON.parse(
+      readFileSync(join(root, 'priority-scope.mk3-deferred-games.json'), 'utf8'),
     )
     const gaIds = new Set(ga.units.map((unit: { capabilityId: string }) => unit.capabilityId))
-    const preIds = new Set(pre.units.map((unit: { capabilityId: string }) => unit.capabilityId))
+    const multiverseIds = new Set(
+      multiverse.units.map((unit: { capabilityId: string }) => unit.capabilityId),
+    )
+    const deferredIds = new Set(
+      deferred.units.map((unit: { capabilityId: string }) => unit.capabilityId),
+    )
+    const multiverseOnly = multiverse.units.filter(
+      (unit: { capabilityId: string }) => !gaIds.has(unit.capabilityId),
+    )
+    expect(multiverseOnly.length).toBeGreaterThan(0)
+    expect(
+      multiverseOnly.every(
+        (unit: { releaseTrack: string }) => unit.releaseTrack === 'multiverse-priority',
+      ),
+    ).toBe(true)
+    const deferredGameRows = deferred.units.filter(
+      (unit: { capabilityId: string; releaseTrack: string }) =>
+        unit.releaseTrack === 'deferred-games-priority' && !gaIds.has(unit.capabilityId),
+    )
+    expect(deferredGameRows.length).toBeGreaterThan(0)
+    expect(
+      deferredGameRows.every(
+        (unit: { capabilityId: string }) => !multiverseIds.has(unit.capabilityId),
+      ),
+    ).toBe(true)
     for (const id of [
       'game/cnc3-tiberium-wars/discover-open',
       'game/red-alert-3/discover-open',
@@ -430,8 +472,17 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
       'vertical/beyond-all-reason/native-inspect-authoring',
     ]) {
       expect(gaIds.has(id), id).toBe(false)
-      expect(preIds.has(id), id).toBe(true)
+      expect(multiverseIds.has(id), id).toBe(false)
+      expect(deferredIds.has(id), id).toBe(true)
     }
+    expect(multiverse.extends).toBe('mk3-ga')
+    expect(multiverse.seedTracks).toEqual(['mk3-priority', 'multiverse-priority'])
+    expect(deferred.extends).toBe('mk3-multiverse-ga')
+    expect(deferred.seedTracks).toEqual([
+      'mk3-priority',
+      'multiverse-priority',
+      'deferred-games-priority',
+    ])
   })
 })
 

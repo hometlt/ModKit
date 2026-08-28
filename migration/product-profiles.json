@@ -10,8 +10,8 @@
     "referenceProfiles": 13,
     "byIntroducedInClosure": {
       "mk3-ga": 5,
-      "mk3-pre-multiverse": 2,
-      "mk3-multiverse-ga": 0
+      "mk3-multiverse-ga": 0,
+      "mk3-deferred-games": 2
     }
   },
   "presets": [
@@ -69,7 +69,7 @@
     {
       "id": "cnc-sage-studio",
       "displayName": "C&C SAGE Studio",
-      "introducedInClosure": "mk3-pre-multiverse",
+      "introducedInClosure": "mk3-deferred-games",
       "status": "available",
       "hosts": ["electron", "vscode"],
       "minimalClosure": false,
@@ -85,7 +85,7 @@
       ],
       "plannedFamilies": [],
       "serviceProviders": [],
-      "note": "Общий BIG/SAGE closure трёх named-game профилей (TW, KW, RA3). Game-provider вкладов ещё нет — вертикаль блока 16; корпус TW и RA3 в corpora-readiness помечен owner-action-required."
+      "note": "Общий BIG/SAGE closure трёх named-game профилей (TW, KW, RA3). Game-provider вкладов ещё нет — отложенная после Multiverse STOP вертикаль блока 16; корпус TW и RA3 в corpora-readiness помечен owner-action-required."
     },
     {
       "id": "warzone-2100-studio",
@@ -123,7 +123,7 @@
     {
       "id": "bar-spring-studio",
       "displayName": "BAR/Spring Studio",
-      "introducedInClosure": "mk3-pre-multiverse",
+      "introducedInClosure": "mk3-deferred-games",
       "status": "planned",
       "hosts": ["electron", "vscode"],
       "minimalClosure": false,
@@ -135,7 +135,7 @@
         }
       ],
       "serviceProviders": [],
-      "note": "Spring/Recoil и Beyond All Reason остаются разными строками: движок не объявляется игрой. Preset станет available вертикалью блока 17."
+      "note": "Spring/Recoil и Beyond All Reason остаются разными строками: движок не объявляется игрой. Preset относится к отложенной после Multiverse STOP вертикали блока 17 и не активируется без owner resume."
     },
     {
       "id": "universal-asset-explorer",

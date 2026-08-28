@@ -115,7 +115,7 @@ const PROJECTION_KEYS = [
 const PROJECTION_OPERATION_KEYS = ['inspect', 'validate', 'read', 'materialize']
 
 const ENUMS = {
-  releaseTrack: ['mk3-priority', 'pre-multiverse-priority', 'multiverse-priority', 'post-ga'],
+  releaseTrack: ['mk3-priority', 'multiverse-priority', 'deferred-games-priority', 'post-ga'],
   origin: ['legacy', 'owner-addition'],
   obligation: [
     'legacy-required',
@@ -742,7 +742,7 @@ if (isDefaultRegistry) {
     checkEnum(label, 'status', entry.status, CORPUS_STATUSES)
     checkEnum(label, 'releaseTrack', entry.releaseTrack, [
       'mk3-priority',
-      'pre-multiverse-priority',
+      'deferred-games-priority',
     ])
     if (!Number.isInteger(entry.verticalBlock)) fail(`${label}: verticalBlock is required`)
     if (typeof entry.evidence !== 'string' || entry.evidence.length < 10) {
@@ -813,8 +813,8 @@ if (isDefaultRegistry) {
     unavailable: (corpora.corpora ?? []).filter(entry => entry.status === 'unavailable').length,
     mk3Priority: (corpora.corpora ?? []).filter(entry => entry.releaseTrack === 'mk3-priority')
       .length,
-    preMultiversePriority: (corpora.corpora ?? []).filter(
-      entry => entry.releaseTrack === 'pre-multiverse-priority',
+    deferredGamesPriority: (corpora.corpora ?? []).filter(
+      entry => entry.releaseTrack === 'deferred-games-priority',
     ).length,
   }
   for (const [key, value] of Object.entries(expected)) {

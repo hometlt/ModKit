@@ -48,7 +48,7 @@
       "id": "owner-action-later",
       "displayName": "Owner action later",
       "verticalBlock": 17,
-      "releaseTrack": "pre-multiverse-priority",
+      "releaseTrack": "deferred-games-priority",
       "status": "owner-action-required",
       "environmentVariables": ["MODKITX_FUTURE_ROOT"],
       "evidence": "Fixture: a later vertical is not due yet.",

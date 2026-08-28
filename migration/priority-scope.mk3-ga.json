@@ -3,6 +3,7 @@
   "schemaVersion": "priority-scope-1",
   "release": "mk3-ga",
   "extends": null,
+  "activation": "active-product-ga",
   "seedTracks": ["mk3-priority"],
   "registry": "migration/capabilities.yaml",
   "generator": "scripts/migration/emit-priority-scope.mjs",
@@ -596,7 +597,7 @@
     {
       "capabilityId": "format/big/open-inspect",
       "inclusion": "transitive-dependency",
-      "releaseTrack": "pre-multiverse-priority",
+      "releaseTrack": "deferred-games-priority",
       "origin": "legacy",
       "obligation": "legacy-required",
       "owner": "extensions/ea/sage",

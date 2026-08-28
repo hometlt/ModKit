@@ -8,7 +8,7 @@
     "legalAlternativeReady": 0,
     "unavailable": 0,
     "mk3Priority": 2,
-    "preMultiversePriority": 4
+    "deferredGamesPriority": 4
   },
   "corpora": [
     {
@@ -24,7 +24,7 @@
     {
       "id": "cnc3-tiberium-wars",
       "verticalBlock": 16,
-      "releaseTrack": "pre-multiverse-priority",
+      "releaseTrack": "deferred-games-priority",
       "status": "owner-action-required",
       "environmentVariables": ["MODKITX_CNC3_TW_ROOT"],
       "evidence": "Negative fixture keeps this corpus unavailable.",
@@ -34,7 +34,7 @@
     {
       "id": "cnc3-kanes-wrath",
       "verticalBlock": 16,
-      "releaseTrack": "pre-multiverse-priority",
+      "releaseTrack": "deferred-games-priority",
       "status": "owner-action-required",
       "environmentVariables": ["MODKITX_CNC3_KW_ROOT"],
       "evidence": "Negative fixture keeps this corpus unavailable.",
@@ -44,7 +44,7 @@
     {
       "id": "red-alert-3",
       "verticalBlock": 16,
-      "releaseTrack": "pre-multiverse-priority",
+      "releaseTrack": "deferred-games-priority",
       "status": "owner-action-required",
       "environmentVariables": ["MODKITX_RA3_UNKNOWN_ROOT"],
       "evidence": "The deliberately unknown variable must be rejected.",
@@ -64,7 +64,7 @@
     {
       "id": "beyond-all-reason",
       "verticalBlock": 17,
-      "releaseTrack": "pre-multiverse-priority",
+      "releaseTrack": "deferred-games-priority",
       "status": "owner-action-required",
       "environmentVariables": ["MODKITX_BAR_ROOT"],
       "evidence": "Negative fixture keeps this corpus unavailable.",

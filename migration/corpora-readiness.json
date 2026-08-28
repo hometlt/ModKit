@@ -15,7 +15,7 @@
     "legalAlternativeReady": 0,
     "unavailable": 0,
     "mk3Priority": 2,
-    "preMultiversePriority": 4
+    "deferredGamesPriority": 4
   },
   "corpora": [
     {
@@ -37,7 +37,7 @@
       "id": "cnc3-kanes-wrath",
       "displayName": "Command & Conquer 3: Kane's Wrath",
       "verticalBlock": 16,
-      "releaseTrack": "pre-multiverse-priority",
+      "releaseTrack": "deferred-games-priority",
       "status": "available",
       "environmentVariables": ["MODKITX_CNC3_KW_ROOT", "MODKITX_W3X_PATH", "MODKITX_W3D_PATH"],
       "evidence": "Локальная установка Kane's Wrath (CNC3EP1.exe) содержит Core/1.0/Libraries.big, Core/1.0/Misc.big и Lang-english/1.0/English.big; cnc3-real-corpus проходит, реальные W3X и W3D разбираются с provenance. Переменная переименована в MODKITX_CNC3_KW_ROOT: прежнее MODKITX_CNC3_ROOT называло движок, а корпус — конкретный диалект; старое имя читается как deprecated-алиас с предупреждением.",
@@ -53,7 +53,7 @@
       "id": "cnc3-tiberium-wars",
       "displayName": "Command & Conquer 3: Tiberium Wars",
       "verticalBlock": 16,
-      "releaseTrack": "pre-multiverse-priority",
+      "releaseTrack": "deferred-games-priority",
       "status": "owner-action-required",
       "environmentVariables": ["MODKITX_CNC3_TW_ROOT"],
       "evidence": "Единственная локальная установка семейства — Kane's Wrath. Общий BIG/SAGE closure на ней доказан, но диалект ванильного Tiberium Wars корпусом Kane's Wrath не доказывается: план §0.5 требует трёх независимых named-game profiles, а не одного за три.",
@@ -68,7 +68,7 @@
       "id": "red-alert-3",
       "displayName": "Command & Conquer: Red Alert 3",
       "verticalBlock": 16,
-      "releaseTrack": "pre-multiverse-priority",
+      "releaseTrack": "deferred-games-priority",
       "status": "owner-action-required",
       "environmentVariables": ["MODKITX_RA3_ROOT"],
       "evidence": "Установки Red Alert 3 на машине нет; переносимый descriptor MODKITX_RA3_ROOT уже заведён в oracle lock со статусом expected-by-specification, но локальный путь не задан и его маркеры не проверены.",
@@ -102,7 +102,7 @@
       "id": "beyond-all-reason",
       "displayName": "Beyond All Reason",
       "verticalBlock": 17,
-      "releaseTrack": "pre-multiverse-priority",
+      "releaseTrack": "deferred-games-priority",
       "status": "available",
       "environmentVariables": ["MODKITX_BAR_ROOT"],
       "evidence": "Установка предоставлена владельцем и проверена read-only: pinned rapid manifest содержит 18 413 записей и читается публичным host/VFS-провайдером manifest → MD5 pool → gzip. Реальные airbomb.s3o и units/armbots/armpw.lua доказывают соответственно отсутствие сфабрикованной direct-S3O анимации и unit → objectName/script → COB/BOS → 13 stable piece ids; named-game discovery/profile остаётся блоку 17.",
