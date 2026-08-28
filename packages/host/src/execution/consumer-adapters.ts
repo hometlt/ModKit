@@ -55,6 +55,9 @@ export function moduleAdapter(
   /** `context` crosses as data + two host capabilities (diagnostics sink, contract resolver). */
   const wireContext = (endpoint: Endpoint, context: ContributionContext) => ({
     budgets: context.budgets,
+    ...(context.providerIdentity === undefined
+      ? {}
+      : { providerIdentity: context.providerIdentity }),
     diagnostics: endpoint.expose(
       { report: (diagnostic: Diagnostic) => context.diagnostics.report(diagnostic) },
       ABI_DIAGNOSTIC_SINK,

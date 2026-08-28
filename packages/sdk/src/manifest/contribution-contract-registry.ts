@@ -652,6 +652,12 @@ export const validateServiceProviderContributionSemantics: SpecSemanticValidator
       ['spec', 'outputs'],
       'trait declaration coordinate',
     ),
+    ...duplicateFieldDiagnostics(
+      spec.fidelityEvidence?.map(evidence => `${evidence.offerId}\u0000${evidence.evidenceId}`) ??
+        [],
+      ['spec', 'fidelityEvidence'],
+      'writer fidelity evidence coordinate',
+    ),
   ]
   spec.requires?.forEach((requirement, index) => {
     diagnostics.push(...requirementRangeDiagnostics(requirement, ['spec', 'requires', index]))
@@ -691,6 +697,75 @@ export const validateServiceProviderContributionSemantics: SpecSemanticValidator
           'x3.sdk/offer-major-mismatch',
           `offer ${offer.offerId} version ${offer.version} does not match major ${offer.major}`,
           ['spec', 'provides', index, 'version'],
+        ),
+      )
+    }
+  })
+  const offersById = new Map(spec.provides.map((offer, index) => [offer.offerId, { offer, index }]))
+  spec.fidelityEvidence?.forEach((evidence, index) => {
+    const found = offersById.get(evidence.offerId)
+    if (found === undefined) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/writer-evidence-offer-unknown',
+          `writer fidelity evidence references unknown offer ${evidence.offerId}`,
+          ['spec', 'fidelityEvidence', index, 'offerId'],
+        ),
+      )
+      return
+    }
+    if (found.offer.contract !== 'common.edit/writer' || found.offer.major !== 1) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/writer-evidence-offer-contract',
+          `writer fidelity evidence offer ${evidence.offerId} is not common.edit/writer@1`,
+          ['spec', 'fidelityEvidence', index, 'offerId'],
+        ),
+      )
+      return
+    }
+    const facet = found.offer.facet
+    if (typeof facet !== 'object' || facet === null || Array.isArray(facet)) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/writer-evidence-offer-facet',
+          `writer fidelity evidence offer ${evidence.offerId} has no writer facet`,
+          ['spec', 'provides', found.index, 'facet'],
+        ),
+      )
+      return
+    }
+    const writerFacet = facet as Readonly<Record<string, JsonValue>>
+    if (writerFacet.providerId !== manifest.id) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/writer-evidence-provider-mismatch',
+          `writer offer ${evidence.offerId} providerId must equal contribution id ${manifest.id}`,
+          ['spec', 'provides', found.index, 'facet', 'providerId'],
+        ),
+      )
+    }
+    if (writerFacet.fidelityEvidenceId !== evidence.evidenceId) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/writer-evidence-id-mismatch',
+          `writer evidence ${evidence.evidenceId} does not match offer ${evidence.offerId}`,
+          ['spec', 'fidelityEvidence', index, 'evidenceId'],
+        ),
+      )
+    }
+    if (writerFacet.minimumRoundTrip !== evidence.claim.roundTrip) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/writer-evidence-claim-mismatch',
+          `writer evidence ${evidence.evidenceId} claims ${evidence.claim.roundTrip}, but offer ${evidence.offerId} declares ${String(writerFacet.minimumRoundTrip)}`,
+          ['spec', 'fidelityEvidence', index, 'claim', 'roundTrip'],
         ),
       )
     }

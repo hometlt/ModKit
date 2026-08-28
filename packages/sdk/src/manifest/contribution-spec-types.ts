@@ -233,6 +233,25 @@ export interface CodecFidelityEvidenceDeclaration {
   readonly provenAt: string
 }
 
+/**
+ * An authored citation for one concrete service offer's writer fidelity proof.
+ *
+ * `offerId` joins the citation to the exact logical `common.edit/writer@1` offer while
+ * `evidenceId` must agree with that offer's facet. Provider/version/artifact coordinates remain
+ * host-owned and are materialized from trusted inventory, just as they are for codec evidence.
+ */
+export interface ServiceProviderFidelityEvidenceDeclaration {
+  readonly offerId: string
+  readonly evidenceId: string
+  readonly claim: CodecFidelityEvidenceDeclaration['claim']
+  readonly corpusId: string
+  readonly corpusDigest: string
+  readonly conformanceProfile: string
+  readonly optionsFingerprint: string
+  readonly inputClass: string
+  readonly provenAt: string
+}
+
 interface CodecContributionSpecV1Base<
   DataSourceContract extends string = string,
   Ids extends ContributionSpecIdPlane = ValidatedContributionSpecIdPlane,
@@ -321,6 +340,7 @@ export interface ServiceProviderContributionSpecV1<
   Ids extends ContributionSpecIdPlane = ValidatedContributionSpecIdPlane,
 > {
   readonly provides: readonly ServiceContractOfferFor<Contract, Ids>[]
+  readonly fidelityEvidence?: readonly ServiceProviderFidelityEvidenceDeclaration[]
   readonly requires?: readonly Ids['requirement'][]
   readonly inputs?: readonly string[]
   readonly outputs?: readonly TraitDeclaration<Ids>[]

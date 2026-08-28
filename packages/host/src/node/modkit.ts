@@ -39,7 +39,11 @@ import { createSubjectServices } from '../subject-services.js'
 import { resolveFormatWriter } from '../format-writer.js'
 import { DEFAULT_SUBJECT_OPEN_BUDGET } from './subject-opener.js'
 import { linkedExtensionInputs, type LinkedExtension } from '../linked.js'
-import { createEvidenceRegistry, createRawWriter } from '../editing-evidence.js'
+import {
+  createEvidenceRegistry,
+  createRawWriter,
+  serviceProviderFidelityEvidenceRecord,
+} from '../editing-evidence.js'
 import { createFileEditingBackend } from './file-editing-backend.js'
 import {
   loadExtensionRoots,
@@ -295,6 +299,15 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
         for (const item of resolution.diagnostics) options.onDiagnostic?.(item)
         releaseWriter = resolution.release
         try {
+          const selectedWriter = resolution.writer ?? writer
+          const selectedEvidence =
+            resolution.writer === undefined
+              ? undefined
+              : serviceProviderFidelityEvidenceRecord(services.inventory, {
+                  writer: resolution.writer,
+                })
+          const sessionEvidence =
+            selectedEvidence === undefined ? evidence : evidence.with(selectedEvidence)
           editing = createSubjectEditing({
             opened,
             grant,
@@ -309,7 +322,7 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
              * coordinator refuses it as `fidelity-unproven`, which is the honest default.
              */
             evidenceFor: plan => {
-              const registered = evidence.evidenceFor(plan)
+              const registered = sessionEvidence.evidenceFor(plan)
               if (registered !== undefined) return registered
               if (
                 resolution.writer !== undefined &&
@@ -331,7 +344,7 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
               }
               return undefined
             },
-            writer: resolution.writer ?? writer,
+            writer: selectedWriter,
           })
         } catch (error) {
           // a subject shape editing does not support yet still opens read-only; the caller sees why

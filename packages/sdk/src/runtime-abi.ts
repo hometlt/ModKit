@@ -51,10 +51,19 @@ export interface ResourceBudget {
   readonly deadlineMs?: number
 }
 
+/** Host-attested identity of the contribution currently being activated. */
+export interface ContributionProviderIdentity {
+  readonly providerId: string
+  readonly providerVersion: string
+  readonly artifactDigest: string
+}
+
 export interface ContributionContext {
   readonly contracts: ContractResolverPort
   readonly diagnostics: DiagnosticSink
   readonly budgets: ResourceBudget
+  /** Present for service providers activated from trusted inventory; never extension-authored. */
+  readonly providerIdentity?: ContributionProviderIdentity
   readonly signal?: AbortSignal
 }
 

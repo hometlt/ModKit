@@ -645,6 +645,7 @@ export { createGrantedRoots, type GrantedRoots, type PathTools } from './roots.j
 // the renderer ids; these are the pieces its bootstrap composes
 export {
   codecFidelityEvidenceRecords,
+  serviceProviderFidelityEvidenceRecord,
   createEvidenceRegistry,
   createRawWriter,
   createSubjectEditing,

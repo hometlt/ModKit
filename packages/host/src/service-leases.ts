@@ -92,7 +92,16 @@ export async function activateServiceProvider(
   ) => Promise<Lease<unknown>> | Lease<unknown>
   let lease: Lease<unknown>
   try {
-    lease = await createProvider(options.selection, options.contextFor(activation.effectiveGrant))
+    const baseContext = options.contextFor(activation.effectiveGrant)
+    const context: ContributionContext = Object.freeze({
+      ...baseContext,
+      providerIdentity: Object.freeze({
+        providerId,
+        providerVersion: options.result.selected.offer.extensionVersion,
+        artifactDigest: ticket.artifactDigest,
+      }),
+    })
+    lease = await createProvider(options.selection, context)
   } catch (error) {
     await activation.release()
     throw error

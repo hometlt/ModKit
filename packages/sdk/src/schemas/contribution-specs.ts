@@ -347,6 +347,36 @@ const codecFidelityEvidenceSchema = {
   },
 } as const
 
+const serviceProviderFidelityEvidenceSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'offerId',
+    'evidenceId',
+    'claim',
+    'corpusId',
+    'corpusDigest',
+    'conformanceProfile',
+    'optionsFingerprint',
+    'inputClass',
+    'provenAt',
+  ],
+  properties: {
+    offerId: { type: 'string', pattern: SEGMENT_PATTERN },
+    evidenceId: nonEmptyString,
+    claim: fidelityClaimSchema,
+    corpusId: nonEmptyString,
+    corpusDigest: nonEmptyString,
+    conformanceProfile: qualifiedId,
+    optionsFingerprint: nonEmptyString,
+    inputClass: nonEmptyString,
+    provenAt: {
+      type: 'string',
+      pattern: '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$',
+    },
+  },
+} as const
+
 const codecContributionRequired = [
   'formatRefs',
   'roles',
@@ -454,6 +484,7 @@ export const serviceProviderContributionSpecV1Schema = {
   required: ['provides', 'lifecycleScope'],
   properties: {
     provides: { type: 'array', items: serviceContractOfferDeclarationSchema, minItems: 1 },
+    fidelityEvidence: { type: 'array', items: serviceProviderFidelityEvidenceSchema },
     requires: { type: 'array', items: contractRequirementSchema },
     inputs: { type: 'array', items: nonEmptyString },
     outputs: { type: 'array', items: traitDeclarationSchema },

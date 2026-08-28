@@ -10,6 +10,134 @@
       },
       "type": "array"
     },
+    "fidelityEvidence": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "claim": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "notes": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "preservesUnknownData": {
+                    "const": true
+                  },
+                  "roundTrip": {
+                    "const": "byte-identical"
+                  }
+                },
+                "required": [
+                  "roundTrip",
+                  "preservesUnknownData"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "notes": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "preservesUnknownData": {
+                    "type": "boolean"
+                  },
+                  "roundTrip": {
+                    "const": "semantic"
+                  }
+                },
+                "required": [
+                  "roundTrip",
+                  "preservesUnknownData"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "notes": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "preservesUnknownData": {
+                    "const": false
+                  },
+                  "roundTrip": {
+                    "enum": [
+                      "lossy",
+                      "none"
+                    ]
+                  }
+                },
+                "required": [
+                  "roundTrip",
+                  "preservesUnknownData"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "conformanceProfile": {
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+            "type": "string"
+          },
+          "corpusDigest": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "corpusId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "evidenceId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "inputClass": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "offerId": {
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "optionsFingerprint": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "provenAt": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "offerId",
+          "evidenceId",
+          "claim",
+          "corpusId",
+          "corpusDigest",
+          "conformanceProfile",
+          "optionsFingerprint",
+          "inputClass",
+          "provenAt"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
     "inputs": {
       "items": {
         "minLength": 1,

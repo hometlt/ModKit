@@ -129,6 +129,7 @@ async function createWindow() {
     createRawWriter,
     createEvidenceRegistry,
     codecFidelityEvidenceRecords,
+    serviceProviderFidelityEvidenceRecord,
     resolveFormatWriter,
     commandRequest,
     createSubjectCommandEndpoint,
@@ -479,31 +480,41 @@ async function createWindow() {
       id: `electron:${sessionId}`,
       classes: ['read-source', 'write-source'],
     }
-    let pixelWriter
-    if (writable && formatId === 'png') {
-      pixelWriter = await resolveFormatWriter({
+    let formatWriter
+    if (writable) {
+      formatWriter = await resolveFormatWriter({
         services: subjectServices,
         opened,
         grant: editGrant,
         budgets: budget,
-        representationId: 'rgba8',
-        mutationMode: 'mutate',
-        minimumRoundTrip: 'semantic',
+        ...(formatId === 'png'
+          ? {
+              representationId: 'rgba8',
+              mutationMode: 'mutate',
+              minimumRoundTrip: 'semantic',
+            }
+          : {}),
       })
-      for (const diagnostic of pixelWriter.diagnostics) {
+      for (const diagnostic of formatWriter.diagnostics) {
         console.log(`[writer] ${diagnostic.code}: ${diagnostic.message}`)
       }
-      if (pixelWriter.writer === undefined) {
+      if (formatId === 'png' && formatWriter.writer === undefined) {
         notEditable.push('the PNG/RGBA8 semantic writer did not resolve')
       }
     }
-    if (writable && (formatId !== 'png' || pixelWriter?.writer !== undefined)) {
+    if (writable && (formatId !== 'png' || formatWriter?.writer !== undefined)) {
       try {
-        const selectedWriter = pixelWriter?.writer ?? rawWriter
-        const evidence = codecFidelityEvidenceRecords(subjectServices.inventory, {
+        const selectedWriter = formatWriter?.writer ?? rawWriter
+        let evidence = codecFidelityEvidenceRecords(subjectServices.inventory, {
           codecId: opened.descriptor.identity?.codecId,
           formatId,
         }).reduce((registry, record) => registry.with(record), createEvidenceRegistry())
+        if (formatWriter?.writer !== undefined) {
+          const writerRecord = serviceProviderFidelityEvidenceRecord(subjectServices.inventory, {
+            writer: formatWriter.writer,
+          })
+          if (writerRecord !== undefined) evidence = evidence.with(writerRecord)
+        }
         const editing = createSubjectEditing({
           opened,
           grant: editGrant,
@@ -512,7 +523,7 @@ async function createWindow() {
             const registered = evidence.evidenceFor(plan)
             if (registered !== undefined) return registered
             if (
-              pixelWriter?.writer !== undefined &&
+              formatWriter?.writer !== undefined &&
               plan.fidelity.roundTrip === 'semantic' &&
               plan.fidelity.preservesUnknownData === false
             ) {
@@ -523,7 +534,7 @@ async function createWindow() {
                 corpusId: 'modkitX3/packages/host/test/media-edits.test.ts',
                 corpusDigest: 'none:proof-suite',
                 conformanceProfile: 'common.edit/writer-v1',
-                writer: pixelWriter.writer.identity,
+                writer: formatWriter.writer.identity,
                 optionsFingerprint: 'options:none',
                 inputClass: 'rgba8',
                 provenAt: '2026-08-19T00:00:00Z',
@@ -541,7 +552,7 @@ async function createWindow() {
         const leasedSession = editing.session
         let released = false
         const editingForSession =
-          pixelWriter?.release === undefined || leasedSession === undefined
+          formatWriter?.release === undefined || leasedSession === undefined
             ? editing
             : Object.freeze({
                 ...editing,
@@ -551,14 +562,14 @@ async function createWindow() {
                     await leasedSession.dispose()
                     if (!released) {
                       released = true
-                      await pixelWriter.release()
+                      await formatWriter.release()
                     }
                   },
                 }),
               })
         editingBySession.set(sessionId, editingForSession)
       } catch (error) {
-        await pixelWriter?.release?.()
+        await formatWriter?.release?.()
         notEditable.push(String(error.message ?? error))
       }
     }

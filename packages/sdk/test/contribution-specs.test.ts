@@ -369,6 +369,51 @@ describe('A-1 contribution spec schemas', () => {
     }
   })
 
+  it('rejects writer evidence whose claim does not match its exact offer', async () => {
+    const providerId = 'org.example/writer-proof-mismatch'
+    const result = await validateContributionManifest(
+      manifest(SERVICE_PROVIDER_CONTRIBUTION_CONTRACT, providerId, {
+        provides: [
+          {
+            offerId: 'source',
+            contract: 'common.edit/writer',
+            major: 1,
+            version: '1.0.0',
+            facet: {
+              providerId,
+              fidelityEvidenceId: 'source-proof-v1',
+              formatId: 'example',
+              representationId: 'source',
+              mutationMode: 'mutate',
+              minimumRoundTrip: 'byte-identical',
+            },
+          },
+        ],
+        fidelityEvidence: [
+          {
+            offerId: 'source',
+            evidenceId: 'source-proof-v1',
+            claim: { roundTrip: 'semantic', preservesUnknownData: true },
+            corpusId: 'org.example.corpus/source-v1',
+            corpusDigest: 'sha256:source-corpus',
+            conformanceProfile: 'org.example/source-writer-v1',
+            optionsFingerprint: 'options:default',
+            inputClass: 'source',
+            provenAt: '2026-08-28T00:00:00Z',
+          },
+        ],
+        lifecycleScope: 'session',
+      }),
+      registry,
+    )
+    expect(result.specState).toBe('invalid')
+    expect(
+      result.diagnostics.some(
+        diagnostic => diagnostic.code === 'x3.sdk/writer-evidence-claim-mismatch',
+      ),
+    ).toBe(true)
+  })
+
   it('accepts a zero deadline and rejects negative or fractional deadlines', async () => {
     const withDeadline = (deadlineMs: number) => ({
       ...codecSpec,

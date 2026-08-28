@@ -182,6 +182,7 @@ export {
 } from './service-leases.js'
 export {
   codecFidelityEvidenceRecords,
+  serviceProviderFidelityEvidenceRecord,
   createEvidenceRegistry,
   createRawWriter,
   HOST_RAW_WRITER_EVIDENCE_ID,
@@ -189,6 +190,7 @@ export {
   HOST_RAW_WRITER_IDENTITY,
   type EvidenceRegistry,
   type CodecFidelityEvidenceSelection,
+  type ServiceProviderFidelityEvidenceSelection,
   type FidelityEvidenceRecord,
   type RawWriterOptions,
 } from './editing-evidence.js'

@@ -29,9 +29,12 @@ import type { Diagnostic } from '@modkitx-x3/core'
 import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
 import type { MapPreviewResourcePlanResolver } from '@modkitx-x3/host/maps'
 import {
+  codecFidelityEvidenceRecords,
   createEvidenceRegistry,
   createHostComposition,
   createRawWriter,
+  resolveFormatWriter,
+  serviceProviderFidelityEvidenceRecord,
   createSubjectEditing,
   exposeSubjectRpc,
   type ExtensionInput,
@@ -538,7 +541,14 @@ function serveVsCode(
     while (editingBySession.size > MAXIMUM_LIVE_EDITING_ARMS) {
       const oldest = editingBySession.keys().next()
       if (oldest.done === true) break
+      const forgotten = editingBySession.get(oldest.value)
       editingBySession.delete(oldest.value)
+      void Promise.resolve(forgotten?.session?.dispose()).catch(error =>
+        options.onDiagnostic?.({
+          code: 'x3.app/vscode-editing-release-failed',
+          message: describe(error),
+        }),
+      )
     }
   }
 
@@ -660,19 +670,60 @@ function serveVsCode(
     if (answer.snapshot.state !== 'opened' || opened === undefined) return answer
 
     const sessionId = answer.snapshot.sessionId
+    const editGrant: PermissionGrant = {
+      id: `vscode:${sessionId}`,
+      classes: ['read-source', 'write-source'],
+    }
+    const writerResolution = await resolveFormatWriter({
+      services,
+      opened,
+      grant: editGrant,
+      budgets: options.budget ?? DEFAULT_OPEN_BUDGET,
+    })
+    writerResolution.diagnostics.forEach(item => options.onDiagnostic?.(item))
     try {
-      rememberEditing(
-        sessionId,
-        createSubjectEditing({
-          opened,
-          // `write-source` is what `commit` checks for; the open above ran read-only.
-          grant: { id: `vscode:${sessionId}`, classes: ['read-source', 'write-source'] },
-          backendFor: () => editingBackend,
-          evidenceFor: plan => evidence.evidenceFor(plan),
-          writer: rawWriter,
-        }),
-      )
+      const selectedWriter = writerResolution.writer ?? rawWriter
+      let sessionEvidence = evidence
+      if (opened.descriptor.interpretation === 'codec') {
+        sessionEvidence = codecFidelityEvidenceRecords(services.inventory, {
+          codecId: opened.descriptor.identity.codecId,
+          formatId: opened.descriptor.identity.formatId,
+        }).reduce((registry, record) => registry.with(record), sessionEvidence)
+      }
+      if (writerResolution.writer !== undefined) {
+        const writerRecord = serviceProviderFidelityEvidenceRecord(services.inventory, {
+          writer: writerResolution.writer,
+        })
+        if (writerRecord !== undefined) sessionEvidence = sessionEvidence.with(writerRecord)
+      }
+      const editing = createSubjectEditing({
+        opened,
+        grant: editGrant,
+        backendFor: () => editingBackend,
+        evidenceFor: plan => sessionEvidence.evidenceFor(plan),
+        writer: selectedWriter,
+      })
+      const leasedSession = editing.session
+      let released = false
+      const editingForSession =
+        writerResolution.release === undefined || leasedSession === undefined
+          ? editing
+          : Object.freeze({
+              ...editing,
+              session: Object.freeze({
+                ...leasedSession,
+                async dispose() {
+                  await leasedSession.dispose()
+                  if (!released) {
+                    released = true
+                    await writerResolution.release?.()
+                  }
+                },
+              }),
+            })
+      rememberEditing(sessionId, editingForSession)
     } catch (error) {
+      await writerResolution.release?.()
       // A subject shape editing does not support yet (a bundle, a namespace) still opens
       // read-only; the page sees `edit()` refuse and hides the editor stages.
       options.onDiagnostic?.({

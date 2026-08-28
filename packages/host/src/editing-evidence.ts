@@ -30,7 +30,9 @@
 import { diagnostic } from '@modkitx-x3/core'
 import {
   CODEC_CONTRIBUTION_CONTRACT,
+  SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
   type CodecContributionSpecV1,
+  type ServiceProviderContributionSpecV1,
   type AssetEditPlan,
   type ChangeSet,
   type FidelityClaim,
@@ -41,7 +43,7 @@ import {
   type WriterIdentity,
   type WriterOffer,
 } from '@modkitx-x3/sdk'
-import type { ExtensionOrigin, Inventory } from './inventory.js'
+import { inventoryRecordFor, type ExtensionOrigin, type Inventory } from './inventory.js'
 
 /** Identity of the host's own raw writer (plans an editor's byte/text edits with no format code). */
 export const HOST_RAW_WRITER_IDENTITY: WriterIdentity = Object.freeze({
@@ -205,6 +207,15 @@ export interface CodecFidelityEvidenceSelection {
   readonly acceptedOrigins?: readonly ExtensionOrigin[]
 }
 
+export interface ServiceProviderFidelityEvidenceSelection {
+  /** The value actually selected and leased by the service resolver. */
+  readonly writer: Writer
+  /** Optional exact logical offer coordinate; an omitted id is accepted only for one full match. */
+  readonly offerId?: string
+  /** Defaults to bundled. Installed/linked artifacts require an explicit host trust decision. */
+  readonly acceptedOrigins?: readonly ExtensionOrigin[]
+}
+
 /**
  * Materialize one opened codec's proof citations with writer coordinates from trusted inventory.
  *
@@ -266,6 +277,124 @@ export function codecFidelityEvidenceRecords(
   return Object.freeze(records)
 }
 
+function writerFacet(value: unknown): Readonly<Record<string, unknown>> | undefined {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Readonly<Record<string, unknown>>)
+    : undefined
+}
+
+function sameWriterIdentity(left: WriterIdentity, right: WriterIdentity): boolean {
+  return (
+    left.providerId === right.providerId &&
+    left.providerVersion === right.providerVersion &&
+    left.artifactDigest === right.artifactDigest &&
+    left.formatId === right.formatId &&
+    left.representationId === right.representationId
+  )
+}
+
+/**
+ * Materialize proof for the exact service writer selected by the resolver.
+ *
+ * The authored declaration supplies only proof coordinates. Provider identity, extension version
+ * and artifact digest must all join back to the activation-eligible inventory object that produced
+ * the selected writer. A copied/tampered inventory, ambiguous offer, stale digest, provider alias
+ * or evidence mismatch returns `undefined`; the coordinator then fails closed.
+ */
+export function serviceProviderFidelityEvidenceRecord(
+  inventory: Inventory,
+  selection: ServiceProviderFidelityEvidenceSelection,
+): FidelityEvidenceRecord | undefined {
+  const accepted = new Set<ExtensionOrigin>(selection.acceptedOrigins ?? ['bundled'])
+  const { identity, offer: selectedOffer } = selection.writer
+  if (
+    identity.providerId !== selectedOffer.providerId ||
+    identity.formatId !== selectedOffer.formatId ||
+    identity.representationId !== selectedOffer.representationId
+  ) {
+    return undefined
+  }
+
+  const matches: FidelityEvidenceRecord[] = []
+  for (const extension of inventory.extensions) {
+    if (
+      !accepted.has(extension.origin) ||
+      extension.manifest.version !== identity.providerVersion
+    ) {
+      continue
+    }
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest
+      const publicRecord = contribution.record
+      const privateRecord = inventoryRecordFor(contribution)
+      if (
+        !contribution.activationEligible ||
+        manifest === undefined ||
+        publicRecord === undefined ||
+        privateRecord === undefined ||
+        privateRecord.publicRecord !== publicRecord ||
+        publicRecord.artifactDigest !== identity.artifactDigest ||
+        manifest.contract.id !== SERVICE_PROVIDER_CONTRIBUTION_CONTRACT ||
+        manifest.contract.major !== 1 ||
+        manifest.id !== identity.providerId
+      ) {
+        continue
+      }
+
+      const spec = manifest.spec as unknown as ServiceProviderContributionSpecV1
+      const offers = spec.provides.filter(candidate => {
+        if (
+          candidate.contract !== 'common.edit/writer' ||
+          candidate.major !== 1 ||
+          (selection.offerId !== undefined && candidate.offerId !== selection.offerId)
+        ) {
+          return false
+        }
+        const facet = writerFacet(candidate.facet)
+        return (
+          facet?.providerId === identity.providerId &&
+          facet.fidelityEvidenceId === selectedOffer.fidelityEvidenceId &&
+          facet.formatId === identity.formatId &&
+          facet.representationId === identity.representationId &&
+          facet.mutationMode === selectedOffer.mutationMode &&
+          facet.minimumRoundTrip === selectedOffer.minimumRoundTrip
+        )
+      })
+      if (offers.length !== 1) continue
+      const logicalOffer = offers[0]
+      if (logicalOffer === undefined) continue
+      const declarations = (spec.fidelityEvidence ?? []).filter(
+        declaration =>
+          declaration.offerId === logicalOffer.offerId &&
+          declaration.evidenceId === selectedOffer.fidelityEvidenceId &&
+          declaration.claim.roundTrip === selectedOffer.minimumRoundTrip,
+      )
+      if (declarations.length !== 1) continue
+      const declaration = declarations[0]
+      if (declaration === undefined) continue
+      matches.push(
+        Object.freeze({
+          writer: Object.freeze({ ...identity }),
+          claim: Object.freeze({
+            ...declaration.claim,
+            ...(declaration.claim.notes === undefined
+              ? {}
+              : { notes: Object.freeze([...declaration.claim.notes]) }),
+          }),
+          evidenceId: declaration.evidenceId,
+          corpusId: declaration.corpusId,
+          corpusDigest: declaration.corpusDigest,
+          conformanceProfile: declaration.conformanceProfile,
+          optionsFingerprint: declaration.optionsFingerprint,
+          inputClass: declaration.inputClass,
+          provenAt: declaration.provenAt,
+        }),
+      )
+    }
+  }
+  return matches.length === 1 ? matches[0] : undefined
+}
+
 /**
  * The raw writer's evidence: structural, not a corpus run. Writing bytes the caller supplied,
  * with no re-encoding, cannot lose data no corpus would have caught — and the ids say exactly
@@ -285,7 +414,7 @@ export const HOST_RAW_WRITER_EVIDENCE_RECORD: FidelityEvidenceRecord = Object.fr
 
 export interface EvidenceRegistry {
   /** The `evidenceFor` a `CommitCoordinator`/`createSubjectEditing` takes. */
-  evidenceFor(plan: AssetEditPlan): FidelityEvidence | undefined
+  evidenceFor(plan: AssetEditPlan, expectedWriter?: WriterIdentity): FidelityEvidence | undefined
   /** Records this policy holds, newest first. */
   list(): readonly FidelityEvidenceRecord[]
   /** A registry with one more record (registries are immutable). */
@@ -320,8 +449,15 @@ export function createEvidenceRegistry(
 ): EvidenceRegistry {
   const own = Object.freeze([...records])
   const registry: EvidenceRegistry = {
-    evidenceFor(plan: AssetEditPlan): FidelityEvidence | undefined {
-      const record = own.find(item => sameClaim(item.claim, plan.fidelity))
+    evidenceFor(
+      plan: AssetEditPlan,
+      expectedWriter?: WriterIdentity,
+    ): FidelityEvidence | undefined {
+      const record = own.find(
+        item =>
+          sameClaim(item.claim, plan.fidelity) &&
+          (expectedWriter === undefined || sameWriterIdentity(item.writer, expectedWriter)),
+      )
       return record === undefined ? undefined : evidenceOf(record)
     },
     list: () => own,

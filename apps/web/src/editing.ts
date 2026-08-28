@@ -50,12 +50,14 @@ import type {
   PermissionGrant,
   SubjectEditTarget,
   ValidationResult,
+  Writer,
 } from '@modkitx-x3/sdk'
 import {
   codecFidelityEvidenceRecords,
   createEvidenceRegistry,
   createRawWriter,
   createSubjectEditing,
+  serviceProviderFidelityEvidenceRecord,
   type Inventory,
   type OpenedSubject,
   type SubjectEditing,
@@ -369,12 +371,25 @@ const firstMessage = (diagnostics: readonly Diagnostic[]): string | undefined =>
  * that actually opened the subject. Provider version and artifact digest come from inventory;
  * installed extensions cannot self-vouch because the host helper's default origin is bundled.
  */
-export function webEditEvidence(inventory: Inventory, descriptor: AnyDescriptor) {
-  if (descriptor.interpretation !== 'codec') return createEvidenceRegistry()
-  return codecFidelityEvidenceRecords(inventory, {
-    codecId: descriptor.identity.codecId,
-    formatId: descriptor.identity.formatId,
-  }).reduce((registry, record) => registry.with(record), createEvidenceRegistry())
+export function webEditEvidence(
+  inventory: Inventory,
+  descriptor: AnyDescriptor,
+  selectedWriter?: Writer,
+) {
+  let registry = createEvidenceRegistry()
+  if (descriptor.interpretation === 'codec') {
+    registry = codecFidelityEvidenceRecords(inventory, {
+      codecId: descriptor.identity.codecId,
+      formatId: descriptor.identity.formatId,
+    }).reduce((current, record) => current.with(record), registry)
+  }
+  if (selectedWriter !== undefined) {
+    const writerRecord = serviceProviderFidelityEvidenceRecord(inventory, {
+      writer: selectedWriter,
+    })
+    if (writerRecord !== undefined) registry = registry.with(writerRecord)
+  }
+  return registry
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -408,6 +423,8 @@ export interface WebSubjectEditRequest {
   readonly grant: PermissionGrant
   /** The bytes this tab loaded — the base a hex edit's runs are spliced onto. */
   readonly bytes: Uint8Array
+  /** A host-resolved format writer; omitted keeps the format-blind raw writer. */
+  readonly writer?: Writer
 }
 
 /** What one applied change did, or why it did not, in the words the surfaces show. */
@@ -653,7 +670,12 @@ export function createWebEditingArm(options: WebEditingArmOptions): WebEditingAr
     editorFor(request) {
       let editing: SubjectEditing
       try {
-        const evidence = webEditEvidence(options.inventory, request.opened.descriptor)
+        const selectedWriter = request.writer ?? writer
+        const evidence = webEditEvidence(
+          options.inventory,
+          request.opened.descriptor,
+          request.writer,
+        )
         editing = createSubjectEditing({
           opened: request.opened,
           grant: request.grant,
@@ -661,7 +683,7 @@ export function createWebEditingArm(options: WebEditingArmOptions): WebEditingAr
           // source must reach `derive` as "no backend", not as a backend that would refuse later.
           backendFor: sourceId => (options.handleFor(sourceId) === undefined ? undefined : backend),
           evidenceFor: plan => evidence.evidenceFor(plan),
-          writer,
+          writer: selectedWriter,
           /*
            * No `expectedWriter`. It pins every committed plan's evidence to *one* writer identity,
            * which was right while the raw writer was the only thing that could produce a plan here

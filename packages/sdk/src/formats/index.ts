@@ -22,6 +22,7 @@ export type {
   RepresentationDecl,
   ResourceBudgetWire,
   ServiceContractOfferDeclaration,
+  ServiceProviderFidelityEvidenceDeclaration,
   ServiceProviderContributionSpecV1,
   SourceTopology,
   TraitDeclaration,

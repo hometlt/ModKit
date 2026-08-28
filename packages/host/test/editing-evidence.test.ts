@@ -8,14 +8,23 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
 import { uint64 } from '@modkitx-x3/core'
-import { createHostTopology, type ChangeSet, type PermissionGrant } from '@modkitx-x3/sdk'
 import {
+  createHostTopology,
+  type AssetEditPlan,
+  type ChangeSet,
+  type PermissionGrant,
+  type Writer,
+} from '@modkitx-x3/sdk'
+import {
+  buildInventory,
   codecFidelityEvidenceRecords,
+  createHostContributionContractRegistry,
   createEvidenceRegistry,
   createRawWriter,
   createSubjectEditing,
   HOST_RAW_WRITER_EVIDENCE_RECORD,
   HOST_RAW_WRITER_IDENTITY,
+  serviceProviderFidelityEvidenceRecord,
   type ExtensionInput,
   type Inventory,
 } from '@modkitx-x3/host'
@@ -212,6 +221,153 @@ describe('F3 evidence registry', () => {
         acceptedOrigins: ['installed'],
       }),
     ).toHaveLength(2)
+  })
+
+  it('admits only the exact inventory-bound service writer declaration', async () => {
+    const contributionPath = 'contributions/writer.json'
+    const providerId = 'org.example/trusted-writer'
+    const artifactDigest = 'sha256:trusted-writer-artifact'
+    const declaration = {
+      offerId: 'native-source',
+      evidenceId: 'native-source-proof-v1',
+      claim: { roundTrip: 'semantic' as const, preservesUnknownData: true },
+      corpusId: 'org.example.corpus/native-source-v1',
+      corpusDigest: 'sha256:trusted-corpus',
+      conformanceProfile: 'org.example/native-source-writer-v1',
+      optionsFingerprint: 'options:default',
+      inputClass: 'native-source',
+      provenAt: '2026-08-28T00:00:00Z',
+    }
+    const serviceManifest = (withDeclaration: boolean) => ({
+      schemaVersion: 1,
+      contract: { id: 'org.modkitx/service-provider-contribution', major: 1 },
+      id: providerId,
+      displayName: 'Trusted writer',
+      runtimeVariants: [
+        {
+          variantId: 'node',
+          entrypoint: './dist/provider.js',
+          target: { environments: ['node'] },
+          executionProfile: 'trusted-in-process',
+          requestedPermissionClasses: [],
+        },
+      ],
+      spec: {
+        lifecycleScope: 'session',
+        provides: [
+          {
+            offerId: declaration.offerId,
+            contract: 'common.edit/writer',
+            major: 1,
+            version: '1.0.0',
+            facet: {
+              providerId,
+              fidelityEvidenceId: declaration.evidenceId,
+              formatId: 'archive',
+              representationId: 'native-source',
+              mutationMode: 'mutate',
+              minimumRoundTrip: 'semantic',
+            },
+          },
+        ],
+        ...(withDeclaration ? { fidelityEvidence: [declaration] } : {}),
+      },
+    })
+    const inventory = async (withDeclaration: boolean) =>
+      buildInventory(
+        [
+          {
+            source: 'trusted-writer',
+            containers: {
+              standalone: {
+                schemaVersion: 1,
+                publisher: 'org.example',
+                id: 'trusted-writer-pack',
+                version: '1.0.0',
+                license: 'MIT',
+                contributionManifests: ['./contributions/*.json'],
+              },
+            },
+            files: [contributionPath, 'dist/provider.js'],
+            documents: new Map([[contributionPath, serviceManifest(withDeclaration)]]),
+            documentDigests: new Map([[contributionPath, 'sha256:writer-manifest']]),
+            artifact: {
+              inventoryRecordId: 'artifact:trusted-writer',
+              artifactDigest,
+              artifactRoot: new URL('file:///trusted-writer/'),
+              verifyArtifactDigest: (expected: string) => expected === artifactDigest,
+            },
+            execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
+          },
+        ],
+        createHostContributionContractRegistry(),
+      )
+    const writer = (
+      overrides: Partial<Writer['identity']> = {},
+      evidenceId = declaration.evidenceId,
+    ) =>
+      ({
+        identity: {
+          providerId,
+          providerVersion: '1.0.0',
+          artifactDigest,
+          formatId: 'archive',
+          representationId: 'native-source',
+          ...overrides,
+        },
+        offer: {
+          providerId,
+          fidelityEvidenceId: evidenceId,
+          formatId: 'archive',
+          representationId: 'native-source',
+          mutationMode: 'mutate',
+          minimumRoundTrip: 'semantic',
+        },
+        validate: async () => ({ valid: true, diagnostics: [] }),
+        plan: async () => {
+          throw new Error('not used by evidence materialization')
+        },
+      }) satisfies Writer
+    const plan: AssetEditPlan = {
+      planId: 'semantic-native',
+      targets: [],
+      edits: [],
+      semantics: { mutationMode: 'mutate', minimumGuarantee: 'atomic' },
+      fidelity: declaration.claim,
+      diagnostics: [],
+    }
+
+    const trusted = await inventory(true)
+    const selected = writer()
+    const record = serviceProviderFidelityEvidenceRecord(trusted, { writer: selected })
+    expect(record?.evidenceId).toBe(declaration.evidenceId)
+    expect(record?.writer).toEqual(selected.identity)
+    expect(
+      createEvidenceRegistry(record === undefined ? [] : [record]).evidenceFor(
+        plan,
+        selected.identity,
+      )?.evidenceId,
+    ).toBe(declaration.evidenceId)
+
+    expect(
+      serviceProviderFidelityEvidenceRecord(trusted, {
+        writer: writer({ artifactDigest: 'sha256:other' }),
+      }),
+    ).toBeUndefined()
+    expect(
+      serviceProviderFidelityEvidenceRecord(trusted, {
+        writer: writer({ providerVersion: '2.0.0' }),
+      }),
+    ).toBeUndefined()
+    expect(
+      serviceProviderFidelityEvidenceRecord(trusted, {
+        writer: writer({}, 'wrong-proof'),
+      }),
+    ).toBeUndefined()
+
+    const undeclared = await inventory(false)
+    expect(serviceProviderFidelityEvidenceRecord(undeclared, { writer: selected })).toBeUndefined()
+    expect(createEvidenceRegistry([]).evidenceFor(plan, selected.identity)).toBeUndefined()
   })
 })
 
