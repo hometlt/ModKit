@@ -12,6 +12,7 @@
     "./data": "./src/data-provider.js",
     "./data-bindings": "./src/data-resource-bindings.js",
     "./maps": "./src/map-provider.js",
+    "./map-preview": "./src/map-preview-provider.js",
     "./linked": "./src/linked.js",
     "./package.json": "./package.json"
   },

@@ -14,6 +14,10 @@ read-only evidence gathered from the installed game. It does not copy legacy Mod
   `0ca80103623278996e1e8ece660c80507c090131`, GPL-2.0.
 - Windows Store package identity observed during acceptance:
   `48148WZ2100Project.Warzone2100forWindows_4.7.0.0_x64__qsk72963svc8a`.
+- The installed 4.7 `data/mp.wz` acceptance archive has SHA-256
+  `d698475eaa7b3386c2465e5850e5609b0d524157280c7d659dc5f79cde6e5688`; its bounded last-wins
+  namespace contains 619 physical and 619 effective entries, including 39 exact
+  `multiplay/maps/<id>/game.map` candidates.
 - Pinned `mp.wz/multiplay/maps/2c-highground` object-table SHA-256 values are
   `680dc6647d1602289035fd3d74e0b8ef2c42fae98a6139a05e51a8063ae90a62` for `droid.json`,
   `e2d95b97f69fdc6cd514b0e661fbb426d0f1ab59bd1ad75462cb28239ed3e090` for `struct.json`, and

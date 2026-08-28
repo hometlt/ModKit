@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx.opensource/warzone2100-map-preview-preparation",
+  "displayName": "Warzone 2100 map preview preparation",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/map-preview-provider.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "worker-portable",
+      "entrypoint": "./src/map-preview-provider.js",
+      "target": { "environments": ["node-worker", "browser-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "warzone2100-map-preview-preparation-v1",
+        "contract": "common.map/preview-preparation",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": { "subjectFormatIds": ["warzone-wz"] }
+      }
+    ],
+    "lifecycleScope": "session"
+  },
+  "limitations": [
+    "Preparation requires bounded namespace-entry facts and container extraction, but consumes only their JSON-safe descriptor state and never receives live archive, filesystem or installation capabilities.",
+    "Every multiplay/maps/<id>/game.map is a candidate; multiple candidates require an explicit opaque selectionId and are never reduced to the first entry.",
+    "The selected map root stays mounted from the opened subject, while base.wz and mp.wz require the publisher-qualified host resource resolver and its configured-path, MODKITX_WARZONE_ROOT or automatic installation policy.",
+    "The contribution prepares a workspace and resource plan only; rendering, runtime elevation, footprints, full material semantics, scripts and portable UVD remain outside this service."
+  ]
+}
