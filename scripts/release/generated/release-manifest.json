@@ -6,8 +6,8 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:e2aef1a3ac30a06f34078eb5151d3bb314d155427e88a1074b656adf23e156b2",
-      "size": 38155776
+      "sha256": "sha256:d401834fd9c69231b3acade2fd79e5569a14c9e3363aa47dfe7e85e51d791f36",
+      "size": 38252544
     },
     {
       "catalog": [
