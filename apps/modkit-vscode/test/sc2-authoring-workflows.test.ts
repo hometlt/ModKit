@@ -14,24 +14,25 @@ const appRoot = join(import.meta.dirname, '..')
 const repoRoot = join(appRoot, '..', '..')
 
 describe('focused SC2 authoring workflow replacements', () => {
-  it('maps every exact 42-fact shortlist row once in lexical order', () => {
-    const shortlist = JSON.parse(
-      readFileSync(
-        join(repoRoot, 'migration', 'generated', 'vscode-workflow-shortlist.json'),
-        'utf8',
-      ),
+  it('maps every exact 42-fact accepted decision once in lexical order', () => {
+    const ledger = JSON.parse(
+      readFileSync(join(repoRoot, 'migration', 'generated', 'vscode-workflow-ledger.json'), 'utf8'),
     ) as {
-      readonly gaps: readonly {
-        readonly gapId: string
-        readonly exactSourceUnitIds: readonly string[]
-        readonly inheritedSourceUnitIds: readonly string[]
+      readonly units: readonly {
+        readonly sourceUnitId: string
+        readonly classification: {
+          readonly decisionId: string
+          readonly disposition: string
+        }
       }[]
     }
-    const gap = shortlist.gaps.find(row => row.gapId === 'vscode-sc2-authoring-launch')
-    const expected = [
-      ...(gap?.exactSourceUnitIds ?? []),
-      ...(gap?.inheritedSourceUnitIds ?? []),
-    ].sort()
+    const accepted = ledger.units.filter(
+      row => row.classification.decisionId === 'candidate-vscode-authoring',
+    )
+    expect(accepted.every(row => row.classification.disposition === 'already-equivalent')).toBe(
+      true,
+    )
+    const expected = accepted.map(row => row.sourceUnitId).sort()
     const actual = FOCUSED_SC2_AUTHORING_REPLACEMENTS.map(row => row.legacySourceUnitId)
 
     expect(actual).toEqual(expected)
@@ -46,7 +47,7 @@ describe('focused SC2 authoring workflow replacements', () => {
       'modkit.openWith',
       'modkit.runCommand',
     ])
-    const sharedCommands = new Set(
+    const sharedCommands = new Set<string>(
       Object.values(SUBJECT_COMMAND_TARGETS).map(target => target.commandId),
     )
 

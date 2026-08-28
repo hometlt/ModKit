@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   defineMixedVisualWorkspace,
@@ -7,6 +8,7 @@ import {
   type ArtifactByteSource,
   type AssetInput,
   type CandidateWorldSceneSource,
+  type Codec,
   type ContributionContext,
   type Lease,
   type ResourceBudget,
@@ -14,12 +16,26 @@ import {
   type VisualAssetPolicy,
   type WorldSceneSource,
 } from '@modkitx-x3/sdk'
+import type {
+  ResolvedMapWorkspaceAnalysisRequest,
+  ResolvedMapWorkspaceSnapshot,
+} from '@modkitx-x3/sdk/maps'
 import { loadMixedVisualStage } from '@modkitx-x3/ui/composition'
 import { createCandidateWorldSceneLease } from '../../../packages/host/src/maps/world-source.js'
-import { createCodec as createM3Codec } from '../../../extensions/blizzard/models/src/m3/codec.js'
-import { analyzeWarzoneMapWorkspace } from '../../../extensions/opensource/warzone-2100/src/map-provider.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
+const { createCodec: createM3Codec } = (await import(
+  pathToFileURL(join(repoRoot, 'extensions', 'blizzard', 'models', 'src', 'm3', 'codec.js')).href
+)) as { createCodec(context: ContributionContext): Codec }
+const { analyzeWarzoneMapWorkspace } = (await import(
+  pathToFileURL(
+    join(repoRoot, 'extensions', 'opensource', 'warzone-2100', 'src', 'map-provider.js'),
+  ).href
+)) as {
+  analyzeWarzoneMapWorkspace(
+    request: ResolvedMapWorkspaceAnalysisRequest,
+  ): Promise<ResolvedMapWorkspaceSnapshot>
+}
 const modelFixture = join(import.meta.dirname, 'fixtures', 'models', 'triangle.m3')
 const worldRevision = revisionId('content-hash.sha256:warzone-map-mixed-visual')
 const modelRevision = revisionId('content-hash.sha256:m3-mixed-visual')
