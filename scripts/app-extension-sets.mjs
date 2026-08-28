@@ -316,6 +316,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/warzone-wz',
       'org.modkitx.opensource/warzone2100-data',
       'org.modkitx.opensource/warzone2100-installation',
+      'org.modkitx.opensource/warzone2100-map-preview-preparation',
       'org.modkitx.opensource/warzone2100-map-semantic',
       'org.modkitx.opensource/warzone2100-resolved-data',
     ]),

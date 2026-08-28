@@ -258,7 +258,7 @@ await checkApplicationSet(
   'headless',
   'mk2-extended',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 79, active: 79 } },
+  { main: { offers: 84, active: 84 } },
 )
 await checkApplicationSet(
   'pwa',
@@ -307,9 +307,9 @@ await checkApplicationSet(
   },
   {
     main: { offers: 'none', active: 'none' },
-    // The two SC2 writers and fresh-MPQ Save As writer are worker-brokered; their offers stay
-    // behind each provider contribution and do not activate in native main/extension-host realms.
-    worker: { offers: 81, active: 81 },
+    // The SC2 and Warzone writers are worker-brokered; their offers stay behind each provider
+    // contribution and do not activate in native main/extension-host realms.
+    worker: { offers: 86, active: 86 },
   },
 )
 await checkApplicationSet(
@@ -361,7 +361,7 @@ await checkApplicationSet(
     return { extensionHost: app.extensionHost, webview: app.webview }
   },
   {
-    extensionHost: { offers: 79, active: 79 },
+    extensionHost: { offers: 84, active: 84 },
     webview: { offers: 'none', active: 'none' },
   },
 )
@@ -397,7 +397,7 @@ await checkApplicationSet(
     return { main: app.main, renderer: app.renderer }
   },
   {
-    main: { offers: 79, active: 79 },
+    main: { offers: 84, active: 84 },
     renderer: { offers: 'none', active: 'none' },
   },
 )
