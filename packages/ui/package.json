@@ -20,6 +20,10 @@
       "types": "./dist/world/index.d.ts",
       "default": "./dist/world/index.js"
     },
+    "./composition": {
+      "types": "./dist/composition/index.d.ts",
+      "default": "./dist/composition/index.js"
+    },
     "./localization": {
       "types": "./dist/localization/index.d.ts",
       "default": "./dist/localization/index.js"

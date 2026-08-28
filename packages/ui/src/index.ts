@@ -1,5 +1,14 @@
 export * from './viewer/index.js'
 export * from './world/index.js'
+export {
+  drawMixedVisualWorkspace,
+  loadMixedVisualStage,
+  mixedVisualViewer,
+  transformVisualPrimitive,
+  type MixedVisualLoadScope,
+  type MixedVisualOverlaySnapshot,
+  type MixedVisualStageSnapshot,
+} from './composition/index.js'
 export { boundedTextViewer, BoundedTextModel } from './code/index.js'
 export { virtualTextViewer, VirtualTextModel } from './text-virtual/index.js'
 export { hexViewer, HexWindowModel } from './hex/index.js'
