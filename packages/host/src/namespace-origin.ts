@@ -89,6 +89,8 @@ export interface WorkspaceNamespaceLogicalRoot {
   readonly rootId: string
   /** Namespace prefix under which the root serves resource-relative ids. */
   readonly pathPrefix: string
+  /** Prefix ResourceSession callers use; absent preserves the historical resource-relative view. */
+  readonly logicalPrefix?: string
 }
 
 export interface WorkspaceNamespaceCompanionOriginOptions extends Omit<
@@ -307,9 +309,9 @@ export function createNamespaceCompanionOrigin(
  *
  * The host knows only ordered prefixes. The StarCraft II provider decides that its roots expose
  * resources below `base.sc2assets`; another game can provide different prefixes without a branch
- * here. Enumeration strips the prefix before ResourceSession sees it, so a native logical id such
- * as `Assets/Textures/Foo.dds` stays that id while provenance still comes from the exact namespace
- * entry selected by workspace precedence.
+ * here. Enumeration strips each namespace prefix and can then add the workspace's logical prefix,
+ * so standalone archives and nested maps both match the paths declared by their resolved graph;
+ * provenance still comes from the exact namespace entry selected by workspace precedence.
  */
 export function createWorkspaceNamespaceCompanionOrigin(
   options: WorkspaceNamespaceCompanionOriginOptions,
@@ -320,8 +322,13 @@ export function createWorkspaceNamespaceCompanionOrigin(
   const fold = (value: string): string =>
     caseSensitivity === 'insensitive' ? value.toLowerCase() : value
   const roots = options.logicalRoots.map(root => {
-    const pathPrefix = normalizeCompanionLogicalId(root.pathPrefix).replace(/\/$/u, '')
-    return Object.freeze({ rootId: root.rootId, pathPrefix })
+    const pathPrefix =
+      root.pathPrefix === '' ? '' : normalizeCompanionLogicalId(root.pathPrefix).replace(/\/$/u, '')
+    const logicalPrefix =
+      root.logicalPrefix === undefined || root.logicalPrefix === ''
+        ? ''
+        : normalizeCompanionLogicalId(root.logicalPrefix).replace(/\/$/u, '')
+    return Object.freeze({ rootId: root.rootId, pathPrefix, logicalPrefix })
   })
   if (roots.length === 0) throw new TypeError('workspace namespace origin requires a logical root')
   const byLogicalId = new Map<string, IndexedEntry>()
@@ -355,18 +362,30 @@ export function createWorkspaceNamespaceCompanionOrigin(
     }
   }
 
-  const actualPrefix = (root: { readonly pathPrefix: string }, logicalPrefix: string): string =>
-    logicalPrefix === '' ? `${root.pathPrefix}/` : `${root.pathPrefix}/${logicalPrefix}`
+  const joinPrefix = (prefix: string, suffix: string): string =>
+    prefix === '' ? suffix : suffix === '' ? prefix : `${prefix}/${suffix}`
+
+  const relativeRequest = (
+    root: { readonly logicalPrefix: string },
+    logicalId: string,
+  ): string | undefined => {
+    if (logicalId === '') return ''
+    if (root.logicalPrefix === '') return logicalId
+    if (fold(logicalId) === fold(root.logicalPrefix)) return ''
+    const prefix = `${root.logicalPrefix}/`
+    return fold(logicalId).startsWith(fold(prefix)) ? logicalId.slice(prefix.length) : undefined
+  }
 
   const remember = (
-    root: { readonly pathPrefix: string },
+    root: { readonly pathPrefix: string; readonly logicalPrefix: string },
     entry: NamespaceEntry,
   ): string | undefined => {
     if (entry.kind !== 'file') return undefined
-    const prefix = `${root.pathPrefix}/`
-    if (!fold(entry.path).startsWith(fold(prefix))) return undefined
-    const logicalId = entry.path.slice(prefix.length)
-    if (logicalId === '') return undefined
+    const prefix = root.pathPrefix === '' ? '' : `${root.pathPrefix}/`
+    if (prefix !== '' && !fold(entry.path).startsWith(fold(prefix))) return undefined
+    const relative = prefix === '' ? entry.path : entry.path.slice(prefix.length)
+    if (relative === '') return undefined
+    const logicalId = joinPrefix(root.logicalPrefix, relative)
     const key = fold(logicalId)
     if (!byLogicalId.has(key)) {
       byLogicalId.set(key, {
@@ -387,7 +406,9 @@ export function createWorkspaceNamespaceCompanionOrigin(
     const cached = byLogicalId.get(key)
     if (cached !== undefined) return cached
     for (const root of roots) {
-      for await (const entry of pages(actualPrefix(root, logicalId), signal)) {
+      const relative = relativeRequest(root, logicalId)
+      if (relative === undefined) continue
+      for await (const entry of pages(joinPrefix(root.pathPrefix, relative), signal)) {
         const remembered = remember(root, entry)
         if (remembered !== undefined && fold(remembered) === key) return byLogicalId.get(key)
       }
@@ -407,7 +428,9 @@ export function createWorkspaceNamespaceCompanionOrigin(
       if (scope !== 'workspace-dependency-layer') return
       const yielded = new Set<string>()
       for (const root of roots) {
-        for await (const entry of pages(actualPrefix(root, enumeration.prefix), signal)) {
+        const relative = relativeRequest(root, enumeration.prefix)
+        if (relative === undefined) continue
+        for await (const entry of pages(joinPrefix(root.pathPrefix, relative), signal)) {
           throwIfAborted(signal)
           const logicalId = remember(root, entry)
           if (logicalId === undefined || yielded.has(fold(logicalId))) continue

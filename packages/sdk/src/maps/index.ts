@@ -2,15 +2,19 @@
 
 import type { DataCatalogSnapshot, DataEntityRef, DataResolvedEntity } from '../data/index.js'
 import type { ProjectionBasis } from '../asset-capabilities/uv-projection.js'
-import type { ModWorkspaceLock } from '../mods/index.js'
+import type { ModWorkspaceGraphInput, ModWorkspaceLock } from '../mods/index.js'
 import type { ResourceProvenanceRecord } from '../resource-session.js'
 import type { ServiceProviderModule } from '../runtime-abi.js'
+import type { JsonValue } from '../asset-capabilities/types.js'
 
 /** Standard service coordinate for game-specific semantic map opening. */
 export const MAP_SEMANTIC_ANALYSIS_CONTRACT = 'common.map/semantic-analysis' as const
 
 /** Additive VFS/workspace service; semantic-analysis@1 remains frozen and authoritative. */
 export const RESOLVED_MAP_WORKSPACE_CONTRACT = 'common.map/resolved-workspace' as const
+
+/** Game-extension preparation of one ordinary codec subject for a host-owned map preview. */
+export const MAP_PREVIEW_PREPARATION_CONTRACT = 'common.map/preview-preparation' as const
 
 /**
  * Standard candidate coordinate for a bounded, game-neutral world scene.
@@ -23,6 +27,144 @@ export const WORLD_SCENE_SOURCE_CONTRACT = 'common.view/world-scene-source' as c
 
 /** Host-owned matcher profile for exact game-id routing. */
 export const MAP_SEMANTIC_MATCHER_PROFILE = 'org.modkitx/map-semantic-matcher' as const
+
+/** Host-owned exact matcher for preparation providers advertising subject format ids. */
+export const MAP_PREVIEW_PREPARATION_MATCHER_PROFILE =
+  'org.modkitx/map-preview-preparation-matcher' as const
+
+/** One bounded namespace fact; entry ids and open/extract capabilities intentionally stay hidden. */
+export interface MapPreviewPreparationNamespaceEntry {
+  readonly path: string
+  readonly kind: 'file' | 'directory'
+  /** Decimal bytes because bigint is not JSON-safe. */
+  readonly size?: string
+}
+
+export interface MapPreviewPreparationNamespaceIndex {
+  readonly state: 'unavailable' | 'complete' | 'truncated'
+  readonly entries: readonly MapPreviewPreparationNamespaceEntry[]
+}
+
+/** JSON-safe descriptor facts exposed to a preparation provider; no live session crosses the ABI. */
+export interface MapPreviewPreparationSubject {
+  readonly schemaVersion: 1
+  readonly subjectUri: string
+  readonly revision: string
+  readonly formatId: string
+  readonly traits: readonly string[]
+  readonly dataSources: readonly Readonly<{ contract: string; major: number }>[]
+  readonly operations: readonly Readonly<{ id: string; state: string }>[]
+  /** Bounded host listing used for multi-map selection/root detection without namespace authority. */
+  readonly namespace: MapPreviewPreparationNamespaceIndex
+}
+
+export interface MapPreviewPreparationDiagnostic {
+  readonly code: string
+  readonly severity: 'error' | 'warning' | 'information' | 'hint'
+  readonly message: string
+  readonly path?: readonly (string | number)[]
+  readonly data?: JsonValue
+}
+
+export interface MapPreviewSelectionCandidate {
+  readonly candidateId: string
+  readonly displayName: string
+  /** Provider-owned stable logical root, shown for disambiguation but never interpreted by common UI. */
+  readonly sourcePath?: string
+}
+
+/** One opaque, provider-declared host resource root. Common code never interprets `locator`. */
+export interface MapPreviewHostResourceRoot {
+  readonly rootId: string
+  readonly locator: JsonValue
+}
+
+/** Maps one workspace root to a confined prefix inside the opened subject namespace. */
+export interface MapPreviewSubjectNamespaceRoot {
+  readonly rootId: string
+  /** Empty explicitly means the namespace root (for example a standalone SC2 archive). */
+  readonly namespacePrefix: string
+}
+
+/**
+ * JSON-only resource strategy paired with a prepared workspace.
+ *
+ * `subject-namespace` is the complete same-container path. `host-resolved` is explicit whenever
+ * dependencies may live outside the opened subject; a trusted host adapter turns its opaque roots
+ * into one confined origin without sending live filesystem/CASC/VFS capabilities through the
+ * preparation service.
+ */
+export type MapPreviewResourcePlan =
+  | Readonly<{
+      schemaVersion: 1
+      strategy: 'subject-namespace'
+      roots: readonly MapPreviewSubjectNamespaceRoot[]
+    }>
+  | Readonly<{
+      schemaVersion: 1
+      strategy: 'host-resolved'
+      resolverId: string
+      /** Exact subject mounts the host resolver may include; empty excludes the subject namespace. */
+      subjectNamespaceRoots: readonly MapPreviewSubjectNamespaceRoot[]
+      roots: readonly MapPreviewHostResourceRoot[]
+    }>
+
+export interface MapPreviewPreparedPlan {
+  readonly schemaVersion: 1
+  /** Fully JSON-safe graph; the host validates and resolves it into a ModWorkspaceLock. */
+  readonly workspace: ModWorkspaceGraphInput
+  /** Explicit origin strategy; external installation/dependency roots are never inferred. */
+  readonly resources: MapPreviewResourcePlan
+}
+
+export interface MapPreviewPreparationRequest {
+  readonly subject: MapPreviewPreparationSubject
+  /** Opaque candidate id returned by an earlier selection-required result. */
+  readonly selectionId?: string
+  readonly maxCandidates: number
+  readonly maxRoots: number
+  readonly maxDepth: number
+  readonly signal?: AbortSignal
+}
+
+/** Every arm is wire-safe; live namespaces, ResourceSessions and AssetSessions stay in the host. */
+export type MapPreviewPreparationResult =
+  | Readonly<{
+      state: 'not-applicable'
+      diagnostics: readonly MapPreviewPreparationDiagnostic[]
+    }>
+  | Readonly<{
+      state: 'selection-required'
+      candidates: readonly MapPreviewSelectionCandidate[]
+      diagnostics: readonly MapPreviewPreparationDiagnostic[]
+    }>
+  | Readonly<{
+      state: 'unresolved'
+      diagnostics: readonly MapPreviewPreparationDiagnostic[]
+    }>
+  | Readonly<{
+      state: 'prepared'
+      plan: MapPreviewPreparedPlan
+      diagnostics: readonly MapPreviewPreparationDiagnostic[]
+    }>
+
+/** Activated extension-owned preparation provider. */
+export interface MapPreviewPreparationPort {
+  readonly contract: typeof MAP_PREVIEW_PREPARATION_CONTRACT
+  readonly preparationId: string
+  readonly subjectFormatIds: readonly string[]
+  prepare(request: MapPreviewPreparationRequest): Promise<MapPreviewPreparationResult>
+}
+
+/** JSON-safe route advertised by a preparation contribution. */
+export interface MapPreviewPreparationOfferFacet {
+  readonly subjectFormatIds: readonly string[]
+}
+
+/** JSON-safe route derived from the ordinary codec descriptor by the common host. */
+export interface MapPreviewPreparationRequestFacet {
+  readonly subjectFormatId: string
+}
 
 /** One already-extracted map-internal document. Container loading stays outside this contract. */
 export interface MapSemanticDocument {
@@ -568,6 +710,7 @@ declare module '../service-contracts.js' {
   interface ContractMap {
     'common.map/semantic-analysis': { 1: MapSemanticAnalysis }
     'common.map/resolved-workspace': { 1: ResolvedMapWorkspaceAnalysis }
+    'common.map/preview-preparation': { 1: MapPreviewPreparationPort }
   }
 
   interface ContractRequestMap {
@@ -577,6 +720,9 @@ declare module '../service-contracts.js' {
     'common.map/resolved-workspace': {
       1: { presence: 'required'; facet: MapSemanticRequestFacet }
     }
+    'common.map/preview-preparation': {
+      1: { presence: 'required'; facet: MapPreviewPreparationRequestFacet }
+    }
   }
 
   interface ContractOfferMap {
@@ -585,6 +731,9 @@ declare module '../service-contracts.js' {
     }
     'common.map/resolved-workspace': {
       1: { presence: 'required'; facet: MapSemanticOfferFacet }
+    }
+    'common.map/preview-preparation': {
+      1: { presence: 'required'; facet: MapPreviewPreparationOfferFacet }
     }
   }
 }
@@ -596,5 +745,10 @@ export type MapSemanticProviderModule = ServiceProviderModule<
 
 export type ResolvedMapWorkspaceProviderModule = ServiceProviderModule<
   typeof RESOLVED_MAP_WORKSPACE_CONTRACT,
+  1
+>
+
+export type MapPreviewPreparationProviderModule = ServiceProviderModule<
+  typeof MAP_PREVIEW_PREPARATION_CONTRACT,
   1
 >

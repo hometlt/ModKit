@@ -1,12 +1,32 @@
 /** Host definition, exact game-id matcher and activation adapter for semantic maps. */
 
-import { ModkitError, contractId, diagnostic, type Diagnostic } from '@modkitx-x3/core'
 import {
+  CONTAINER_EXTRACT_OPERATION_ID,
+  ModkitError,
+  contractId,
+  diagnostic,
+  errorCode,
+  type Diagnostic,
+} from '@modkitx-x3/core'
+import {
+  MAP_PREVIEW_PREPARATION_CONTRACT,
+  MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
   MAP_SEMANTIC_ANALYSIS_CONTRACT,
   MAP_SEMANTIC_MATCHER_PROFILE,
   RESOLVED_MAP_WORKSPACE_CONTRACT,
   WORLD_SCENE_SOURCE_CONTRACT,
   type CandidateWorldSceneSource,
+  type MapPreviewPreparationDiagnostic,
+  type MapPreviewPreparationNamespaceIndex,
+  type MapPreviewPreparationOfferFacet,
+  type MapPreviewPreparationPort,
+  type MapPreviewPreparationRequest,
+  type MapPreviewPreparationRequestFacet,
+  type MapPreviewPreparationResult,
+  type MapPreviewHostResourceRoot,
+  type MapPreviewResourcePlan,
+  type MapPreviewSelectionCandidate,
+  type MapPreviewSubjectNamespaceRoot,
   type MapSemanticDocument,
   type MapSemanticDocumentRequirement,
   type MapSemanticAnalysis,
@@ -18,6 +38,7 @@ import {
   type WorldScenePageRequest,
   type WorldSceneSource,
 } from '@modkitx-x3/sdk/maps'
+import { resolveModWorkspaceGraph } from '@modkitx-x3/sdk'
 import type {
   AnyDescriptor,
   AssetDiagnosticWire,
@@ -29,6 +50,7 @@ import type {
   KnownDataSourceId,
   Lease,
   ModWorkspaceLock,
+  NamespaceEntrySource,
   PermissionGrant,
   ResourceBudget,
   ResourceSessionPort,
@@ -41,7 +63,10 @@ import type {
   ServiceFacetMatcherProfile,
 } from '@modkitx-x3/sdk'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
+import type { CompanionOrigin } from '../input-resolution.js'
 import type { Inventory } from '../inventory.js'
+import { createWorkspaceNamespaceCompanionOrigin } from '../namespace-origin.js'
+import { createResourceSession } from '../resource-session.js'
 import { createHostServiceResolver } from '../service-leases.js'
 import { assembleSubjectDescriptor, createAssetSession } from '../session.js'
 import { createCandidateWorldSceneLease } from './world-source.js'
@@ -51,6 +76,8 @@ export const STANDARD_MAPS_OWNER = 'org.modkitx/maps'
 
 const OFFER_KEYS = new Set(['gameIds'])
 const REQUEST_KEYS = new Set(['gameId'])
+const PREVIEW_OFFER_KEYS = new Set(['subjectFormatIds'])
+const PREVIEW_REQUEST_KEYS = new Set(['subjectFormatId'])
 
 function recordOf(value: unknown): Readonly<Record<string, unknown>> | undefined {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -110,6 +137,54 @@ export const MAP_SEMANTIC_MATCHER: ServiceFacetMatcherProfile = Object.freeze({
   profile: contractId(MAP_SEMANTIC_MATCHER_PROFILE),
   major: 1,
   match: matchMapSemanticFacets,
+})
+
+function parsePreviewOffer(value: unknown): MapPreviewPreparationOfferFacet | undefined {
+  const record = recordOf(value)
+  if (record === undefined || Object.keys(record).some(key => !PREVIEW_OFFER_KEYS.has(key))) {
+    return undefined
+  }
+  const subjectFormatIds = stringList(record['subjectFormatIds'])
+  return subjectFormatIds === undefined ? undefined : { subjectFormatIds }
+}
+
+function parsePreviewRequest(value: unknown): MapPreviewPreparationRequestFacet | undefined {
+  const record = recordOf(value)
+  if (record === undefined || Object.keys(record).some(key => !PREVIEW_REQUEST_KEYS.has(key))) {
+    return undefined
+  }
+  return nonEmptyString(record['subjectFormatId'])
+    ? { subjectFormatId: record['subjectFormatId'] }
+    : undefined
+}
+
+function matchMapPreviewPreparationFacets(
+  context: ServiceFacetMatchContext,
+): ServiceFacetMatchResult {
+  const offer = parsePreviewOffer(context.offerFacet)
+  const request = parsePreviewRequest(context.requestFacet)
+  if (offer === undefined || request === undefined) {
+    return {
+      state: 'invalid',
+      diagnostics: [
+        diagnostic(
+          'error',
+          'x3.host/map-preview-preparation-facet-invalid',
+          `${context.contract}@${context.major}: map preview preparation routes must be well formed`,
+        ),
+      ],
+    }
+  }
+  return offer.subjectFormatIds.includes(request.subjectFormatId)
+    ? { state: 'match', selectionKey: `subject-format=${request.subjectFormatId}` }
+    : { state: 'no-match' }
+}
+
+/** Exact data-driven routing by the format id already selected by the ordinary codec open. */
+export const MAP_PREVIEW_PREPARATION_MATCHER: ServiceFacetMatcherProfile = Object.freeze({
+  profile: contractId(MAP_PREVIEW_PREPARATION_MATCHER_PROFILE),
+  major: 1,
+  match: matchMapPreviewPreparationFacets,
 })
 
 /** Standard bounded semantic map definition. */
@@ -182,11 +257,51 @@ export const RESOLVED_MAP_WORKSPACE_CONTRACT_DEFINITION: ServiceContractDefiniti
     }),
   }) as ServiceContractDefinitionSpecV1Wire
 
+/** JSON-only preparation surface; host capabilities never cross this service boundary. */
+export const MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wire =
+  Object.freeze({
+    schemaVersion: 1,
+    kind: 'service',
+    contract: MAP_PREVIEW_PREPARATION_CONTRACT,
+    major: 1,
+    offerFacet: Object.freeze({
+      presence: 'required',
+      schema: Object.freeze({
+        $ref: 'https://schemas.modkitx.org/x3/map-preview-preparation-offer.v1.schema.json',
+      }),
+    }),
+    requestFacet: Object.freeze({
+      presence: 'required',
+      schema: Object.freeze({
+        $ref: 'https://schemas.modkitx.org/x3/map-preview-preparation-request.v1.schema.json',
+      }),
+    }),
+    matching: Object.freeze({
+      profile: MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
+      major: 1,
+    }),
+    conformanceProfile: 'common.map/preview-preparation-v1',
+    surface: Object.freeze({
+      fields: Object.freeze(['contract', 'preparationId', 'subjectFormatIds']),
+      methods: Object.freeze({
+        prepare: Object.freeze({
+          kind: 'value',
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+          limits: Object.freeze({ maxBytes: 4_194_304, maxStringLength: 1_048_576 }),
+        }),
+      }),
+    }),
+  }) as ServiceContractDefinitionSpecV1Wire
+
 /** Register the platform definition before extension-owned definitions are inventoried. */
 export function registerStandardMapDefinitions(
   definitions: ServiceContractDefinitionRegistry,
 ): Promise<DefinitionInventoryResult> {
-  const registered = [MAP_SEMANTIC_CONTRACT_DEFINITION, RESOLVED_MAP_WORKSPACE_CONTRACT_DEFINITION]
+  const registered = [
+    MAP_SEMANTIC_CONTRACT_DEFINITION,
+    RESOLVED_MAP_WORKSPACE_CONTRACT_DEFINITION,
+    MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION,
+  ]
   return definitions.replaceOwnerInventory(
     STANDARD_MAPS_OWNER,
     registered.map(definition => ({
@@ -409,6 +524,111 @@ export async function resolveResolvedMapWorkspace(
           'information',
           'x3.host/resolved-map-workspace-unresolved',
           `no workspace map provider resolved for ${request.gameId} (${error instanceof Error ? error.message : String(error)})`,
+        ),
+      ],
+    }
+  }
+}
+
+export interface ResolveMapPreviewPreparationRequest extends MapPreviewPreparationRequestFacet {
+  readonly services: MapHostServices
+  readonly grant: PermissionGrant
+  readonly budgets: ResourceBudget
+  readonly signal?: AbortSignal
+}
+
+export type MapPreviewPreparationResolution =
+  | Readonly<{
+      state: 'resolved'
+      preparation: MapPreviewPreparationPort
+      diagnostics: readonly Diagnostic[]
+      release(): Promise<void>
+    }>
+  | Readonly<{ state: 'unresolved'; diagnostics: readonly Diagnostic[] }>
+
+function isMapPreviewPreparation(value: unknown): value is MapPreviewPreparationPort {
+  const record = recordOf(value)
+  return (
+    record?.['contract'] === MAP_PREVIEW_PREPARATION_CONTRACT &&
+    nonEmptyString(record['preparationId']) &&
+    stringList(record['subjectFormatIds']) !== undefined &&
+    typeof record['prepare'] === 'function'
+  )
+}
+
+/** Resolve preparation by descriptor format data; common host code never names a game or format. */
+export async function resolveMapPreviewPreparation(
+  request: ResolveMapPreviewPreparationRequest,
+): Promise<MapPreviewPreparationResolution> {
+  const definitions = request.services.serviceDefinitions
+  if (definitions === undefined) {
+    return {
+      state: 'unresolved',
+      diagnostics: [
+        diagnostic(
+          'information',
+          'x3.host/map-preview-preparation-unavailable',
+          'this host registered no service-contract definitions for map preview preparation',
+        ),
+      ],
+    }
+  }
+  const resolver = createHostServiceResolver({
+    inventory: request.services.inventory,
+    target: request.services.target,
+    executionBackends: request.services.executionBackends,
+    definitions,
+    grant: request.grant,
+    budgets: request.budgets,
+    ...(request.signal === undefined ? {} : { signal: request.signal }),
+  })
+  try {
+    const lease = await resolver.port.resolve({
+      contract: MAP_PREVIEW_PREPARATION_CONTRACT,
+      major: 1,
+      facet: { subjectFormatId: request.subjectFormatId },
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    })
+    if (
+      !isMapPreviewPreparation(lease.value) ||
+      !lease.value.subjectFormatIds.includes(request.subjectFormatId)
+    ) {
+      await resolver.release()
+      return {
+        state: 'unresolved',
+        diagnostics: [
+          ...resolver.diagnostics,
+          diagnostic(
+            'error',
+            'x3.host/map-preview-preparation-invalid',
+            `selected provider does not implement ${MAP_PREVIEW_PREPARATION_CONTRACT}@1`,
+          ),
+        ],
+      }
+    }
+    return Object.freeze({
+      state: 'resolved' as const,
+      preparation: lease.value,
+      diagnostics: Object.freeze([
+        ...resolver.diagnostics,
+        diagnostic(
+          'information',
+          'x3.host/map-preview-preparation-selected',
+          `selected ${lease.value.preparationId} for the subject format`,
+        ),
+      ]),
+      release: () => resolver.release(),
+    })
+  } catch (error) {
+    await resolver.release()
+    return {
+      state: 'unresolved',
+      diagnostics: [
+        ...resolver.diagnostics,
+        diagnostic(
+          'information',
+          'x3.host/map-preview-preparation-unresolved',
+          `no map preview preparation provider resolved (${error instanceof Error ? error.message : String(error)})`,
         ),
       ],
     }
@@ -973,5 +1193,825 @@ export async function openMapPreviewAssetSession(
   } catch (error) {
     await Promise.allSettled([analyzed.release(), request.resources.dispose()])
     throw error
+  }
+}
+
+export interface CoordinateMapPreviewAssetSessionRequest {
+  readonly services: MapHostServices
+  readonly grant: PermissionGrant
+  readonly budgets: ResourceBudget
+  /** Ownership stays with the caller unless this function returns `opened`. */
+  readonly original: AssetSession
+  /** Optional already-selected port, primarily for host composition and conformance tests. */
+  readonly preparation?: MapPreviewPreparationPort
+  /** Required only when the prepared JSON plan names host-resolved resource roots. */
+  readonly resourcePlanResolver?: MapPreviewResourcePlanResolver
+  readonly selectionId?: string
+  readonly maxCandidates: number
+  /** Bounds the JSON-only subject namespace facts sent to preparation providers. */
+  readonly maxSubjectEntries: number
+  readonly maxSubjectPages: number
+  readonly maxRoots: number
+  readonly maxDepth: number
+  readonly limits: ResolvedMapWorkspaceLimits
+  readonly catalog?: DataCatalogSnapshot
+  readonly signal?: AbortSignal
+}
+
+export interface ResolveMapPreviewResourcePlanRequest {
+  readonly plan: Extract<MapPreviewResourcePlan, { readonly strategy: 'host-resolved' }>
+  readonly subject: MapPreviewPreparationRequest['subject']
+  readonly workspace: ModWorkspaceLock
+  /** Host-local capability; this request never crosses the preparation service boundary. */
+  readonly original: AssetSession
+  readonly services: MapHostServices
+  readonly grant: PermissionGrant
+  readonly budgets: ResourceBudget
+  readonly signal?: AbortSignal
+}
+
+export type MapPreviewResourcePlanResolution =
+  | Readonly<{
+      state: 'resolved'
+      origin: CompanionOrigin
+      revision: RevisionId
+      diagnostics: readonly Diagnostic[]
+      /** Releases resolver-owned leases after the ResourceSession has been disposed. */
+      release(): Promise<void>
+    }>
+  | Readonly<{
+      state: 'unresolved'
+      diagnostics: readonly Diagnostic[]
+    }>
+
+/** Trusted host seam that interprets only opaque root locators declared by a preparation provider. */
+export interface MapPreviewResourcePlanResolver {
+  resolve(request: ResolveMapPreviewResourcePlanRequest): Promise<MapPreviewResourcePlanResolution>
+}
+
+export type CoordinatedMapPreviewAssetSessionResult =
+  | Readonly<{
+      state: 'not-applicable'
+      diagnostics: readonly Diagnostic[]
+    }>
+  | Readonly<{
+      state: 'selection-required'
+      candidates: readonly MapPreviewSelectionCandidate[]
+      diagnostics: readonly Diagnostic[]
+    }>
+  | Readonly<{
+      state: 'unresolved'
+      diagnostics: readonly Diagnostic[]
+    }>
+  | Readonly<{
+      state: 'opened'
+      session: AssetSession
+      descriptor: AnyDescriptor
+      snapshot: ResolvedMapWorkspaceSnapshot
+      plan: ResolvedMapWorkspacePlan
+      diagnostics: readonly Diagnostic[]
+    }>
+
+const PREVIEW_DIAGNOSTIC_SEVERITIES = new Set(['error', 'warning', 'information', 'hint'])
+
+function positiveCoordinatorLimit(value: number, label: string): number {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new TypeError(`${label} must be a positive safe integer`)
+  }
+  return value
+}
+
+function validPreparationDiagnostic(value: unknown): value is MapPreviewPreparationDiagnostic {
+  const record = recordOf(value)
+  return (
+    record !== undefined &&
+    Object.keys(record).every(key =>
+      ['code', 'severity', 'message', 'path', 'data'].includes(key),
+    ) &&
+    nonEmptyString(record['code']) &&
+    PREVIEW_DIAGNOSTIC_SEVERITIES.has(String(record['severity'])) &&
+    nonEmptyString(record['message']) &&
+    (!Object.hasOwn(record, 'path') ||
+      (Array.isArray(record['path']) &&
+        record['path'].every(item => typeof item === 'string' || Number.isSafeInteger(item)))) &&
+    (!Object.hasOwn(record, 'data') || jsonSafeValue(record['data']))
+  )
+}
+
+function jsonSafeValue(value: unknown, depth = 0): boolean {
+  if (depth > 64) return false
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return true
+  if (typeof value === 'number') return Number.isFinite(value)
+  if (Array.isArray(value)) return value.every(item => jsonSafeValue(item, depth + 1))
+  const record = recordOf(value)
+  return record !== undefined && Object.values(record).every(item => jsonSafeValue(item, depth + 1))
+}
+
+function validHostResourceRoot(value: unknown): value is MapPreviewHostResourceRoot {
+  const record = recordOf(value)
+  return (
+    record !== undefined &&
+    Object.keys(record).every(key => key === 'rootId' || key === 'locator') &&
+    nonEmptyString(record['rootId']) &&
+    Object.hasOwn(record, 'locator') &&
+    jsonSafeValue(record['locator'])
+  )
+}
+
+function validSubjectNamespaceRoot(value: unknown): value is MapPreviewSubjectNamespaceRoot {
+  const record = recordOf(value)
+  return (
+    record !== undefined &&
+    Object.keys(record).every(key => key === 'rootId' || key === 'namespacePrefix') &&
+    nonEmptyString(record['rootId']) &&
+    typeof record['namespacePrefix'] === 'string'
+  )
+}
+
+function validateResourcePlan(value: unknown, maxRoots: number): MapPreviewResourcePlan {
+  const plan = recordOf(value)
+  if (plan?.['schemaVersion'] !== 1) {
+    throw new TypeError('map preview preparation returned no versioned resource plan')
+  }
+  if (plan['strategy'] === 'subject-namespace') {
+    const roots = plan['roots']
+    if (
+      !Object.keys(plan).every(
+        key => key === 'schemaVersion' || key === 'strategy' || key === 'roots',
+      ) ||
+      !Array.isArray(roots) ||
+      roots.length === 0 ||
+      roots.length > maxRoots ||
+      !roots.every(validSubjectNamespaceRoot) ||
+      new Set(roots.map(item => String(recordOf(item)?.['rootId'] ?? ''))).size !== roots.length
+    ) {
+      throw new TypeError('map preview preparation returned invalid subject namespace roots')
+    }
+    return value as MapPreviewResourcePlan
+  }
+  if (plan['strategy'] === 'host-resolved') {
+    const roots = plan['roots']
+    const subjectRoots = plan['subjectNamespaceRoots']
+    if (
+      !Object.keys(plan).every(key =>
+        ['schemaVersion', 'strategy', 'resolverId', 'subjectNamespaceRoots', 'roots'].includes(key),
+      ) ||
+      !nonEmptyString(plan['resolverId']) ||
+      !Array.isArray(subjectRoots) ||
+      !subjectRoots.every(validSubjectNamespaceRoot) ||
+      !Array.isArray(roots) ||
+      roots.length === 0 ||
+      roots.length + subjectRoots.length > maxRoots ||
+      !roots.every(validHostResourceRoot) ||
+      new Set([...subjectRoots, ...roots].map(item => String(recordOf(item)?.['rootId'] ?? '')))
+        .size !==
+        roots.length + subjectRoots.length
+    ) {
+      throw new TypeError('map preview preparation returned invalid host resource roots')
+    }
+    return value as MapPreviewResourcePlan
+  }
+  throw new TypeError('map preview preparation returned an unknown resource strategy')
+}
+
+function validatePreparationResult(
+  value: unknown,
+  maxCandidates: number,
+  maxRoots: number,
+): MapPreviewPreparationResult {
+  const record = recordOf(value)
+  if (
+    record === undefined ||
+    !Array.isArray(record['diagnostics']) ||
+    !record['diagnostics'].every(validPreparationDiagnostic)
+  ) {
+    throw new TypeError('map preview preparation returned malformed diagnostics')
+  }
+  if (record['state'] === 'not-applicable' || record['state'] === 'unresolved') {
+    if (!Object.keys(record).every(key => key === 'state' || key === 'diagnostics')) {
+      throw new TypeError('map preview preparation result contains unknown fields')
+    }
+    return value as MapPreviewPreparationResult
+  }
+  if (record['state'] === 'selection-required') {
+    const candidates = record['candidates']
+    if (
+      !Object.keys(record).every(
+        key => key === 'state' || key === 'candidates' || key === 'diagnostics',
+      ) ||
+      !Array.isArray(candidates) ||
+      candidates.length === 0 ||
+      candidates.length > maxCandidates ||
+      !candidates.every(candidate => {
+        const item = recordOf(candidate)
+        return (
+          item !== undefined &&
+          Object.keys(item).every(
+            key => key === 'candidateId' || key === 'displayName' || key === 'sourcePath',
+          ) &&
+          nonEmptyString(item['candidateId']) &&
+          nonEmptyString(item['displayName']) &&
+          (!Object.hasOwn(item, 'sourcePath') || nonEmptyString(item['sourcePath']))
+        )
+      }) ||
+      new Set(candidates.map(candidate => String(recordOf(candidate)?.['candidateId'] ?? '')))
+        .size !== candidates.length
+    ) {
+      throw new TypeError('map preview preparation returned invalid selection candidates')
+    }
+    return value as MapPreviewPreparationResult
+  }
+  if (record['state'] === 'prepared') {
+    const plan = recordOf(record['plan'])
+    if (
+      !Object.keys(record).every(
+        key => key === 'state' || key === 'plan' || key === 'diagnostics',
+      ) ||
+      plan?.['schemaVersion'] !== 1 ||
+      recordOf(plan['workspace']) === undefined ||
+      !jsonSafeValue(plan['workspace']) ||
+      !Object.keys(plan).every(
+        key => key === 'schemaVersion' || key === 'workspace' || key === 'resources',
+      )
+    ) {
+      throw new TypeError('map preview preparation returned an invalid prepared plan')
+    }
+    validateResourcePlan(plan['resources'], maxRoots)
+    return value as MapPreviewPreparationResult
+  }
+  throw new TypeError('map preview preparation returned an unknown state')
+}
+
+function preparationDiagnostics(items: readonly MapPreviewPreparationDiagnostic[]): Diagnostic[] {
+  return items.map(item => ({
+    code: errorCode(item.code),
+    severity: item.severity,
+    message: item.message,
+    ...(item.path === undefined ? {} : { path: item.path }),
+    ...(item.data === undefined ? {} : { data: item.data }),
+  }))
+}
+
+function mapPreviewPreparationSubject(
+  descriptor: AnyDescriptor,
+  namespace: MapPreviewPreparationNamespaceIndex,
+): MapPreviewPreparationRequest['subject'] {
+  const formatId = 'identity' in descriptor ? descriptor.identity.formatId : undefined
+  if (!nonEmptyString(formatId)) {
+    throw new TypeError('the ordinary codec descriptor has no format id')
+  }
+  return Object.freeze({
+    schemaVersion: 1 as const,
+    subjectUri: descriptor.subjectUri,
+    revision: descriptor.revision,
+    formatId,
+    traits: Object.freeze(descriptor.traits.map(item => item.id)),
+    dataSources: Object.freeze(
+      descriptor.dataSources.map(item =>
+        Object.freeze({ contract: item.contract, major: item.major }),
+      ),
+    ),
+    operations: Object.freeze(
+      descriptor.operations.map(item => Object.freeze({ id: item.id, state: item.state })),
+    ),
+    namespace,
+  })
+}
+
+async function boundedPreparationNamespace(
+  original: AssetSession,
+  descriptor: AnyDescriptor,
+  maxEntries: number,
+  maxPages: number,
+  signal?: AbortSignal,
+): Promise<MapPreviewPreparationNamespaceIndex> {
+  if (
+    !descriptor.dataSources.some(
+      item => item.contract === 'common.view/namespace-entry-source' && item.major === 1,
+    )
+  ) {
+    return Object.freeze({ state: 'unavailable', entries: Object.freeze([]) })
+  }
+  const lease = await original.dataSource('common.view/namespace-entry-source', 1)
+  const release = releaseOnce(() => lease.release())
+  try {
+    const entries: { path: string; kind: 'file' | 'directory'; size?: string }[] = []
+    const seenCursors = new Set<string>()
+    let cursor: string | undefined
+    let pages = 0
+    let truncated = false
+    do {
+      signal?.throwIfAborted()
+      if (pages >= maxPages) {
+        truncated = true
+        break
+      }
+      if (cursor !== undefined) {
+        if (seenCursors.has(cursor)) {
+          throw new TypeError('subject namespace repeated a paging cursor')
+        }
+        seenCursors.add(cursor)
+      }
+      const remaining = maxEntries - entries.length
+      if (remaining <= 0) {
+        truncated = true
+        break
+      }
+      const page = await (lease.value as NamespaceEntrySource).list(
+        '',
+        cursor === undefined
+          ? { limit: Math.min(remaining, 256) }
+          : { cursor, limit: Math.min(remaining, 256) },
+        signal,
+      )
+      pages += 1
+      for (const item of page.items.slice(0, remaining)) {
+        entries.push({
+          path: item.path,
+          kind: item.kind,
+          ...(item.size === undefined ? {} : { size: item.size.toString(10) }),
+        })
+      }
+      if (page.items.length > remaining) {
+        truncated = true
+        break
+      }
+      cursor = page.nextCursor
+    } while (cursor !== undefined)
+    entries.sort((left, right) =>
+      left.path === right.path
+        ? left.kind.localeCompare(right.kind)
+        : left.path.localeCompare(right.path),
+    )
+    return Object.freeze({
+      state: truncated ? ('truncated' as const) : ('complete' as const),
+      entries: Object.freeze(entries.map(item => Object.freeze(item))),
+    })
+  } finally {
+    await release()
+  }
+}
+
+function workspaceDiagnostics(workspace: ModWorkspaceLock): Diagnostic[] {
+  return workspace.diagnostics.map(item =>
+    diagnostic(
+      item.severity,
+      'x3.host/map-preview-workspace-diagnostic',
+      `${item.code}: ${item.message}`,
+      undefined,
+      {
+        ...(item.rootId === undefined ? {} : { rootId: item.rootId }),
+        ...(item.dependencyRef === undefined ? {} : { dependencyRef: item.dependencyRef }),
+        ...(item.cycle === undefined ? {} : { cycle: item.cycle }),
+      },
+    ),
+  )
+}
+
+function sessionHoldingMapPreviewPrerequisites(
+  preview: AssetSession,
+  releasePreparedResources: () => Promise<void>,
+  original: AssetSession,
+): AssetSession {
+  let disposed = false
+  return Object.freeze({
+    revision: preview.revision,
+    state: () => preview.state(),
+    descriptor: () => preview.descriptor(),
+    dataSource: preview.dataSource.bind(preview) as AssetSession['dataSource'],
+    operations: () => preview.operations(),
+    events: (signal?: AbortSignal) => preview.events(signal),
+    async dispose(): Promise<void> {
+      if (disposed) return
+      disposed = true
+      let firstError: unknown
+      for (const release of [
+        () => preview.dispose(),
+        releasePreparedResources,
+        () => original.dispose(),
+      ]) {
+        try {
+          await release()
+        } catch (error) {
+          firstError ??= error
+        }
+      }
+      if (firstError !== undefined) throw firstError
+    },
+  })
+}
+
+function coordinatorFailure(
+  code: string,
+  message: string,
+): CoordinatedMapPreviewAssetSessionResult {
+  return {
+    state: 'unresolved',
+    diagnostics: [diagnostic('error', errorCode(code), message)],
+  }
+}
+
+function releaseOnce(release: () => Promise<void>): () => Promise<void> {
+  let released = false
+  return async () => {
+    if (released) return
+    released = true
+    await release()
+  }
+}
+
+async function resolveSubjectNamespacePreviewResources(request: {
+  readonly plan: Extract<MapPreviewResourcePlan, { readonly strategy: 'subject-namespace' }>
+  readonly descriptor: AnyDescriptor
+  readonly original: AssetSession
+  readonly workspace: ModWorkspaceLock
+  readonly activeSourcePath: string
+}): Promise<MapPreviewResourcePlanResolution> {
+  if (
+    !request.descriptor.dataSources.some(
+      item => item.contract === 'common.view/namespace-entry-source' && item.major === 1,
+    )
+  ) {
+    return {
+      state: 'unresolved',
+      diagnostics: [
+        diagnostic(
+          'error',
+          'x3.host/map-preview-namespace-unavailable',
+          'the subject-namespace resource plan requires an ordinary namespace entry source',
+        ),
+      ],
+    }
+  }
+  const extractOperation = request.descriptor.operations.find(
+    item => item.id === CONTAINER_EXTRACT_OPERATION_ID && item.state === 'available',
+  )
+  if (extractOperation === undefined) {
+    return {
+      state: 'unresolved',
+      diagnostics: [
+        diagnostic(
+          'error',
+          'x3.host/map-preview-extract-unavailable',
+          `the subject-namespace resource plan requires ${CONTAINER_EXTRACT_OPERATION_ID}`,
+        ),
+      ],
+    }
+  }
+
+  const namespaceLease = await request.original.dataSource('common.view/namespace-entry-source', 1)
+  const release = releaseOnce(() => namespaceLease.release())
+  try {
+    const operations = request.original.operations()
+    const extract = async (entryId: string, signal?: AbortSignal): Promise<Uint8Array> => {
+      signal?.throwIfAborted()
+      const result = await operations.invoke(
+        extractOperation.handlerId,
+        { entryId },
+        signal === undefined ? {} : { signal },
+      )
+      if (result.state !== 'ok' || result.output.kind !== 'bytes') {
+        throw new ModkitError({
+          code: 'x3.host/map-preview-entry-unreadable',
+          message: `the source container refused to extract entry ${entryId}`,
+          context: {
+            entryId,
+            state: result.state,
+            ...(result.state === 'rejected' ? { reason: result.reason } : {}),
+            ...(result.state === 'ok' ? { outputKind: result.output.kind } : {}),
+          },
+        })
+      }
+      return result.output.value
+    }
+    const namespacePrefixes = new Map(
+      request.plan.roots.map(root => [root.rootId, root.namespacePrefix] as const),
+    )
+    const logicalRoots = (
+      request.workspace.logicalRoots ?? [...request.workspace.loadOrder].reverse()
+    ).map(root =>
+      Object.freeze({
+        rootId: root.rootId,
+        pathPrefix: namespacePrefixes.get(root.rootId) ?? '',
+        logicalPrefix: root.sourcePath,
+      }),
+    )
+    return Object.freeze({
+      state: 'resolved' as const,
+      origin: createWorkspaceNamespaceCompanionOrigin({
+        namespace: namespaceLease.value as NamespaceEntrySource,
+        primaryLogicalId: request.activeSourcePath,
+        logicalRoots,
+        containerRevision: request.descriptor.revision,
+        extract,
+      }),
+      revision: request.descriptor.revision,
+      diagnostics: Object.freeze([
+        diagnostic(
+          'information',
+          'x3.host/map-preview-subject-resources-selected',
+          'map preview resources are confined to the opened subject namespace',
+        ),
+      ]),
+      release,
+    })
+  } catch (error) {
+    await release()
+    throw error
+  }
+}
+
+/**
+ * Convert an ordinary namespace codec session into a host-owned world preview session.
+ *
+ * Preparation is JSON-only. The host validates the returned graph, owns every namespace read and
+ * ResourceSession, and retains the original session until the derived preview is disposed.
+ */
+export async function coordinateMapPreviewAssetSession(
+  request: CoordinateMapPreviewAssetSessionRequest,
+): Promise<CoordinatedMapPreviewAssetSessionResult> {
+  const maxCandidates = positiveCoordinatorLimit(request.maxCandidates, 'maxCandidates')
+  const maxSubjectEntries = positiveCoordinatorLimit(request.maxSubjectEntries, 'maxSubjectEntries')
+  const maxSubjectPages = positiveCoordinatorLimit(request.maxSubjectPages, 'maxSubjectPages')
+  const maxRoots = positiveCoordinatorLimit(request.maxRoots, 'maxRoots')
+  const maxDepth = positiveCoordinatorLimit(request.maxDepth, 'maxDepth')
+  request.signal?.throwIfAborted()
+
+  const descriptor = await request.original.descriptor()
+  let subject: MapPreviewPreparationRequest['subject']
+  try {
+    subject = mapPreviewPreparationSubject(
+      descriptor,
+      Object.freeze({ state: 'unavailable', entries: Object.freeze([]) }),
+    )
+  } catch (error) {
+    return {
+      state: 'not-applicable',
+      diagnostics: [
+        diagnostic(
+          'information',
+          'x3.host/map-preview-subject-not-applicable',
+          error instanceof Error ? error.message : String(error),
+        ),
+      ],
+    }
+  }
+
+  let preparation = request.preparation
+  let preparationRelease: (() => Promise<void>) | undefined
+  const resolutionDiagnostics: Diagnostic[] = []
+  if (preparation === undefined) {
+    const resolution = await resolveMapPreviewPreparation({
+      services: request.services,
+      grant: request.grant,
+      budgets: request.budgets,
+      subjectFormatId: subject.formatId,
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    })
+    resolutionDiagnostics.push(...resolution.diagnostics)
+    if (resolution.state === 'unresolved') {
+      return { state: 'not-applicable', diagnostics: resolutionDiagnostics }
+    }
+    preparation = resolution.preparation
+    preparationRelease = resolution.release
+  } else if (
+    preparation.contract !== MAP_PREVIEW_PREPARATION_CONTRACT ||
+    !preparation.subjectFormatIds.includes(subject.formatId)
+  ) {
+    return coordinatorFailure(
+      'x3.host/map-preview-preparation-invalid',
+      'the supplied map preview preparation port does not accept the subject format',
+    )
+  }
+
+  let prepared: MapPreviewPreparationResult
+  try {
+    const namespace = await boundedPreparationNamespace(
+      request.original,
+      descriptor,
+      maxSubjectEntries,
+      maxSubjectPages,
+      request.signal,
+    )
+    subject = mapPreviewPreparationSubject(descriptor, namespace)
+    prepared = validatePreparationResult(
+      await preparation.prepare({
+        subject,
+        maxCandidates,
+        maxRoots,
+        maxDepth,
+        ...(request.selectionId === undefined ? {} : { selectionId: request.selectionId }),
+        ...(request.signal === undefined ? {} : { signal: request.signal }),
+      }),
+      maxCandidates,
+      maxRoots,
+    )
+  } catch (error) {
+    return coordinatorFailure(
+      'x3.host/map-preview-preparation-invalid',
+      `map preview preparation failed (${error instanceof Error ? error.message : String(error)})`,
+    )
+  } finally {
+    try {
+      await preparationRelease?.()
+    } catch {
+      // Provider teardown cannot change the named preparation outcome or leak caller ownership.
+    }
+  }
+
+  let providerDiagnostics: Diagnostic[]
+  try {
+    providerDiagnostics = preparationDiagnostics(prepared.diagnostics)
+  } catch (error) {
+    return coordinatorFailure(
+      'x3.host/map-preview-preparation-invalid',
+      `map preview preparation returned an invalid diagnostic (${error instanceof Error ? error.message : String(error)})`,
+    )
+  }
+  const preparationFindings = Object.freeze([...resolutionDiagnostics, ...providerDiagnostics])
+  if (prepared.state === 'not-applicable') {
+    return { state: 'not-applicable', diagnostics: preparationFindings }
+  }
+  if (prepared.state === 'selection-required') {
+    return {
+      state: 'selection-required',
+      candidates: Object.freeze(prepared.candidates.map(item => Object.freeze({ ...item }))),
+      diagnostics: preparationFindings,
+    }
+  }
+  if (prepared.state === 'unresolved') {
+    return { state: 'unresolved', diagnostics: preparationFindings }
+  }
+
+  const graph = prepared.plan.workspace
+  if (graph.roots.length > maxRoots || graph.maxRoots > maxRoots || graph.maxDepth > maxDepth) {
+    return coordinatorFailure(
+      'x3.host/map-preview-preparation-budget-exceeded',
+      'map preview preparation exceeded the host workspace limits',
+    )
+  }
+
+  let workspace: ModWorkspaceLock
+  try {
+    workspace = resolveModWorkspaceGraph(graph)
+  } catch (error) {
+    return coordinatorFailure(
+      'x3.host/map-preview-workspace-invalid',
+      `map preview preparation returned an invalid workspace graph (${error instanceof Error ? error.message : String(error)})`,
+    )
+  }
+  const active = workspace.loadOrder.find(item => item.rootId === workspace.activeRootId)
+  if (active === undefined) {
+    return coordinatorFailure(
+      'x3.host/map-preview-workspace-invalid',
+      'map preview workspace does not contain its active root',
+    )
+  }
+  const plannedRootIds = new Set(
+    prepared.plan.resources.strategy === 'subject-namespace'
+      ? prepared.plan.resources.roots.map(root => root.rootId)
+      : [
+          ...prepared.plan.resources.subjectNamespaceRoots.map(root => root.rootId),
+          ...prepared.plan.resources.roots.map(root => root.rootId),
+        ],
+  )
+  const workspaceRootIds = new Set(workspace.loadOrder.map(root => root.rootId))
+  if (
+    plannedRootIds.size !== workspaceRootIds.size ||
+    [...plannedRootIds].some(rootId => !workspaceRootIds.has(rootId))
+  ) {
+    return {
+      state: 'unresolved',
+      diagnostics: Object.freeze([
+        ...preparationFindings,
+        ...workspaceDiagnostics(workspace),
+        diagnostic(
+          'error',
+          'x3.host/map-preview-resource-root-mismatch',
+          'the resource plan must map every resolved workspace root exactly once',
+        ),
+      ]),
+    }
+  }
+  let resourceResolution: MapPreviewResourcePlanResolution
+  try {
+    if (prepared.plan.resources.strategy === 'subject-namespace') {
+      resourceResolution = await resolveSubjectNamespacePreviewResources({
+        plan: prepared.plan.resources,
+        descriptor,
+        original: request.original,
+        workspace,
+        activeSourcePath: active.sourcePath,
+      })
+    } else if (request.resourcePlanResolver === undefined) {
+      resourceResolution = {
+        state: 'unresolved',
+        diagnostics: [
+          diagnostic(
+            'warning',
+            'x3.host/map-preview-resource-resolver-required',
+            `resource plan ${prepared.plan.resources.resolverId} names installation/dependency roots but this host wired no resolver`,
+          ),
+        ],
+      }
+    } else {
+      resourceResolution = await request.resourcePlanResolver.resolve({
+        plan: prepared.plan.resources,
+        subject,
+        workspace,
+        original: request.original,
+        services: request.services,
+        grant: request.grant,
+        budgets: request.budgets,
+        ...(request.signal === undefined ? {} : { signal: request.signal }),
+      })
+    }
+  } catch (error) {
+    return {
+      state: 'unresolved',
+      diagnostics: Object.freeze([
+        ...preparationFindings,
+        ...workspaceDiagnostics(workspace),
+        diagnostic(
+          'error',
+          'x3.host/map-preview-resource-resolution-failed',
+          `map preview resources could not be resolved (${error instanceof Error ? error.message : String(error)})`,
+        ),
+      ]),
+    }
+  }
+  if (resourceResolution.state === 'unresolved') {
+    return {
+      state: 'unresolved',
+      diagnostics: Object.freeze([
+        ...preparationFindings,
+        ...workspaceDiagnostics(workspace),
+        ...resourceResolution.diagnostics,
+      ]),
+    }
+  }
+
+  const releasePreparedResources = releaseOnce(resourceResolution.release)
+  let resources: ResourceSessionPort | undefined
+  try {
+    resources = createResourceSession({
+      origin: resourceResolution.origin,
+      revision: resourceResolution.revision,
+    })
+    const opened = await openMapPreviewAssetSession({
+      services: request.services,
+      grant: request.grant,
+      budgets: request.budgets,
+      workspace,
+      resources,
+      subjectUri: descriptor.subjectUri,
+      ...(request.catalog === undefined ? {} : { catalog: request.catalog }),
+      limits: request.limits,
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    })
+    if (opened.state === 'unresolved') {
+      await releasePreparedResources()
+      return {
+        state: 'unresolved',
+        diagnostics: Object.freeze([
+          ...preparationFindings,
+          ...workspaceDiagnostics(workspace),
+          ...resourceResolution.diagnostics,
+          ...opened.diagnostics,
+        ]),
+      }
+    }
+    return Object.freeze({
+      ...opened,
+      session: sessionHoldingMapPreviewPrerequisites(
+        opened.session,
+        releasePreparedResources,
+        request.original,
+      ),
+      diagnostics: Object.freeze([
+        ...preparationFindings,
+        ...workspaceDiagnostics(workspace),
+        ...resourceResolution.diagnostics,
+        ...opened.diagnostics,
+      ]),
+    })
+  } catch (error) {
+    if (resources !== undefined && resources.state() !== 'disposed') {
+      await resources.dispose()
+    }
+    await releasePreparedResources()
+    return {
+      state: 'unresolved',
+      diagnostics: Object.freeze([
+        ...preparationFindings,
+        ...workspaceDiagnostics(workspace),
+        ...resourceResolution.diagnostics,
+        diagnostic(
+          'error',
+          'x3.host/map-preview-open-failed',
+          `map preview could not be opened (${error instanceof Error ? error.message : String(error)})`,
+        ),
+      ]),
+    }
   }
 }

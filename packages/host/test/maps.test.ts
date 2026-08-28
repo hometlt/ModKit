@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { beforeAll, describe, expect, it } from 'vitest'
-import { uint64 } from '@modkitx-x3/core'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { CONTAINER_EXTRACT_OPERATION_ID, uint64 } from '@modkitx-x3/core'
 import {
   createHostTopology,
   resolveModWorkspaceGraph,
@@ -10,12 +10,21 @@ import {
   type ArtifactSource,
   type DataCatalogSnapshot,
   type InputSearchScope,
+  type JsonValue,
   type Lease,
+  type OperationDecl,
+  type OperationOutput,
 } from '@modkitx-x3/sdk'
 import {
+  MAP_PREVIEW_PREPARATION_CONTRACT,
+  type MapPreviewPreparationPort,
+} from '@modkitx-x3/sdk/maps'
+import {
+  assembleSubjectDescriptor,
   createBundledServiceDefinitionRegistry,
   createExecutionBackendRegistry,
   createHostComposition,
+  createAssetSession,
   linkedExtensionInputs,
   linkedInProcessBackend,
   registerServiceDefinitionsOrThrow,
@@ -24,13 +33,16 @@ import {
 } from '@modkitx-x3/host'
 import {
   analyzeResolvedMapWorkspace,
+  coordinateMapPreviewAssetSession,
   openMapPreviewAssetSession,
   resolveMapSemanticAnalysis,
   resolveResolvedMapWorkspace,
+  type MapPreviewResourcePlanResolver,
 } from '@modkitx-x3/host/maps'
 import type { CompanionEnumerationOptions, CompanionOrigin } from '../src/input-resolution.js'
 import { createCandidateWorldSceneLease } from '../src/maps/world-source.js'
 import { createResourceSession } from '../src/resource-session.js'
+import { resolvedDescriptorWire } from './fixtures/descriptor.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { starcraft2Game } = (await import(
@@ -339,6 +351,152 @@ function workspaceFiles(root = mapRoot): ReadonlyMap<string, Uint8Array> {
   ])
 }
 
+function previewWorkspaceInput() {
+  return {
+    workspaceId: 'map-workspace',
+    gameId: GAME_ID,
+    activeRootId: 'active',
+    sources: [{ sourceId: 'workspace', kind: 'memory' as const, location: 'memory:workspace' }],
+    roots: [
+      {
+        rootId: 'active',
+        sourceId: 'workspace',
+        sourcePath: mapRoot,
+        displayName: 'Active.SC2Map',
+        kind: 'map' as const,
+        dependencies: [],
+      },
+    ],
+    maxRoots: 4,
+    maxDepth: 4,
+  }
+}
+
+async function originalMapSession(
+  files: ReadonlyMap<string, Uint8Array>,
+  publishesNamespace = true,
+) {
+  const namespaceRelease = vi.fn(async () => undefined)
+  const entryRelease = vi.fn(async () => undefined)
+  const originalRelease = vi.fn(async () => undefined)
+  const paths = [...files.keys()].sort()
+  const namespace = {
+    async list(
+      prefix: string,
+      page: { readonly cursor?: string; readonly limit: number },
+      signal?: AbortSignal,
+    ) {
+      signal?.throwIfAborted()
+      const matched = paths.filter(path => path.toLowerCase().startsWith(prefix.toLowerCase()))
+      const start = page.cursor === undefined ? 0 : Number(page.cursor)
+      const selected = matched.slice(start, start + page.limit)
+      const next = start + selected.length
+      return Object.freeze({
+        items: Object.freeze(
+          selected.map((path, index) =>
+            Object.freeze({
+              id: path,
+              path,
+              name: path.split('/').at(-1) ?? path,
+              kind: 'file' as const,
+              size: BigInt(files.get(path)?.byteLength ?? 0),
+              revision: revisionId(`provider-token:preview-entry-${String(start + index)}`),
+            }),
+          ),
+        ),
+        ...(next < matched.length ? { nextCursor: String(next) } : {}),
+      })
+    },
+    openEntry(entryId: string, signal?: AbortSignal) {
+      signal?.throwIfAborted()
+      if (!files.has(entryId)) throw new RangeError(`unknown namespace entry ${entryId}`)
+      const uri = `memory://preview/${encodeURIComponent(entryId)}`
+      return Promise.resolve({
+        value: Object.freeze({ id: uri, uri }),
+        release: entryRelease,
+      })
+    },
+  }
+  const operations = publishesNamespace
+    ? [
+        {
+          id: CONTAINER_EXTRACT_OPERATION_ID,
+          handlerId: 'extract',
+          state: 'available' as const,
+          mutatesSource: false,
+        },
+      ]
+    : []
+  const wire = resolvedDescriptorWire(operations)
+  const descriptor = await assembleSubjectDescriptor({
+    ...wire,
+    subjectUri: 'memory://maps/active.sc2map',
+    identity: { ...wire.identity, formatId: 'example/map-container' },
+    dataSources: publishesNamespace
+      ? [{ contract: 'common.view/namespace-entry-source', major: 1 }]
+      : [],
+  })
+  const declarations: OperationDecl[] = descriptor.operations.map(operation => ({
+    id: operation.id,
+    handlerId: operation.handlerId,
+    mutatesSource: false,
+    outputKinds: ['bytes'],
+  }))
+  const handlers = new Map<string, (input: JsonValue) => Promise<OperationOutput>>([
+    [
+      'extract',
+      async input => {
+        const entryId =
+          typeof input === 'object' && input !== null && !Array.isArray(input)
+            ? (input as Readonly<Record<string, JsonValue>>)['entryId']
+            : undefined
+        if (typeof entryId !== 'string') throw new TypeError('extract requires entryId')
+        const bytes = files.get(entryId)
+        if (bytes === undefined) throw new RangeError(`unknown extraction entry ${entryId}`)
+        return { kind: 'bytes', value: bytes }
+      },
+    ],
+  ])
+  const managed = createAssetSession({
+    revision: descriptor.revision,
+    descriptor,
+    operationDeclarations: declarations,
+    permissionGrant: { id: 'map-preview-original', classes: [] },
+    handlers,
+    async openDataSource(contract, major) {
+      if (publishesNamespace && contract === 'common.view/namespace-entry-source' && major === 1) {
+        return { value: namespace, release: namespaceRelease } as never
+      }
+      throw new RangeError(`original session has no ${contract}@${String(major)}`)
+    },
+    release: [originalRelease],
+  })
+  return {
+    session: managed.session,
+    namespaceRelease,
+    entryRelease,
+    originalRelease,
+  }
+}
+
+function previewPreparation(
+  prepare: MapPreviewPreparationPort['prepare'],
+): MapPreviewPreparationPort {
+  return Object.freeze({
+    contract: MAP_PREVIEW_PREPARATION_CONTRACT,
+    preparationId: 'example/map-preview-preparation',
+    subjectFormatIds: Object.freeze(['example/map-container']),
+    prepare,
+  })
+}
+
+const coordinatorLimits = {
+  ...limits,
+  maxRequirements: 8,
+  maxPageSize: 2,
+  maxDiagnostics: 32,
+} as const
+
 describe('standard map contract and semantic game provider', () => {
   it('routes Warzone game.map through ResourceSession into the same exact world candidate', async () => {
     const files = new Map([[`${warzoneMapRoot}/game.map`, warzoneGameMap()]])
@@ -495,6 +653,257 @@ describe('standard map contract and semantic game provider', () => {
 
     expect(result.state).toBe('unresolved')
     expect(resources.state()).toBe('disposed')
+  })
+
+  it('passes only a bounded namespace index to preparation and preserves selection ownership', async () => {
+    const original = await originalMapSession(workspaceFiles())
+    const prepare = vi.fn<MapPreviewPreparationPort['prepare']>(async () => ({
+      state: 'selection-required',
+      candidates: [
+        { candidateId: 'map:first', displayName: 'First map', sourcePath: 'maps/first' },
+        { candidateId: 'map:second', displayName: 'Second map', sourcePath: 'maps/second' },
+      ],
+      diagnostics: [],
+    }))
+    const result = await coordinateMapPreviewAssetSession({
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'maps-preview-selection', classes: [] },
+      budgets: activationBudget,
+      original: original.session,
+      preparation: previewPreparation(prepare),
+      selectionId: 'map:second',
+      maxCandidates: 8,
+      maxSubjectEntries: 2,
+      maxSubjectPages: 1,
+      maxRoots: 4,
+      maxDepth: 4,
+      limits: coordinatorLimits,
+    })
+
+    expect(result).toMatchObject({ state: 'selection-required', candidates: [{}, {}] })
+    expect(prepare).toHaveBeenCalledOnce()
+    const request = prepare.mock.calls[0]?.[0]
+    expect(request).toMatchObject({ selectionId: 'map:second' })
+    expect(request?.subject.namespace).toMatchObject({ state: 'truncated' })
+    expect(request?.subject.namespace.entries).toHaveLength(2)
+    expect(request?.subject.namespace.entries[0]).not.toHaveProperty('id')
+    expect(original.namespaceRelease).toHaveBeenCalledOnce()
+    expect(original.originalRelease).not.toHaveBeenCalled()
+    expect(original.session.state()).toBe('live')
+
+    await original.session.dispose()
+    expect(original.originalRelease).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    [
+      'a live candidate capability',
+      () => ({
+        state: 'selection-required',
+        candidates: [
+          {
+            candidateId: 'map:first',
+            displayName: 'First map',
+            open: () => undefined,
+          },
+        ],
+        diagnostics: [],
+      }),
+    ],
+    [
+      'non-JSON diagnostic data',
+      () => ({
+        state: 'not-applicable',
+        diagnostics: [
+          {
+            code: 'example/not-json',
+            severity: 'warning',
+            message: 'contains bigint',
+            data: 1n,
+          },
+        ],
+      }),
+    ],
+  ])('rejects %s from a preparation provider', async (_label, malformed) => {
+    const original = await originalMapSession(workspaceFiles())
+    const result = await coordinateMapPreviewAssetSession({
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'maps-preview-malformed', classes: [] },
+      budgets: activationBudget,
+      original: original.session,
+      preparation: previewPreparation(async () => malformed() as never),
+      maxCandidates: 8,
+      maxSubjectEntries: 64,
+      maxSubjectPages: 4,
+      maxRoots: 4,
+      maxDepth: 4,
+      limits: coordinatorLimits,
+    })
+
+    expect(result.state).toBe('unresolved')
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code: 'x3.host/map-preview-preparation-invalid' }),
+    )
+    expect(original.namespaceRelease).toHaveBeenCalledOnce()
+    expect(original.session.state()).toBe('live')
+    expect(original.originalRelease).not.toHaveBeenCalled()
+    await original.session.dispose()
+  })
+
+  it('remaps a standalone subject namespace and transfers its exact-once lifetime on open', async () => {
+    const archiveFiles = new Map(
+      [...workspaceFiles()].map(([path, bytes]) => [path.slice(mapRoot.length + 1), bytes]),
+    )
+    const original = await originalMapSession(archiveFiles)
+    const prepare = vi.fn<MapPreviewPreparationPort['prepare']>(async request => {
+      expect(request.subject.namespace.state).toBe('complete')
+      expect(request.subject.namespace.entries.map(item => item.path)).toContain('objects')
+      return {
+        state: 'prepared',
+        plan: {
+          schemaVersion: 1,
+          workspace: previewWorkspaceInput(),
+          resources: {
+            schemaVersion: 1,
+            strategy: 'subject-namespace',
+            roots: [{ rootId: 'active', namespacePrefix: '' }],
+          },
+        },
+        diagnostics: [],
+      }
+    })
+    const result = await coordinateMapPreviewAssetSession({
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'maps-preview-subject-namespace', classes: [] },
+      budgets: activationBudget,
+      original: original.session,
+      preparation: previewPreparation(prepare),
+      maxCandidates: 8,
+      maxSubjectEntries: 64,
+      maxSubjectPages: 4,
+      maxRoots: 4,
+      maxDepth: 4,
+      catalog,
+      limits: coordinatorLimits,
+    })
+
+    expect(
+      result.state,
+      result.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+    ).toBe('opened')
+    if (result.state !== 'opened') throw new Error('subject namespace preview did not open')
+    expect(original.session.state()).toBe('live')
+    expect(original.originalRelease).not.toHaveBeenCalled()
+
+    await Promise.all([result.session.dispose(), result.session.dispose()])
+    expect(original.session.state()).toBe('disposed')
+    expect(original.namespaceRelease).toHaveBeenCalledTimes(2)
+    expect(original.originalRelease).toHaveBeenCalledOnce()
+    expect(original.entryRelease.mock.calls.length).toBeGreaterThan(0)
+  })
+
+  it('uses an explicit host resolver for external installation roots and releases it once', async () => {
+    const original = await originalMapSession(new Map(), false)
+    const preparation = previewPreparation(async () => ({
+      state: 'prepared',
+      plan: {
+        schemaVersion: 1,
+        workspace: previewWorkspaceInput(),
+        resources: {
+          schemaVersion: 1,
+          strategy: 'host-resolved',
+          resolverId: 'example/installed-game-resources',
+          subjectNamespaceRoots: [],
+          roots: [
+            {
+              rootId: 'active',
+              locator: { kind: 'game-installation', installationId: 'stable' },
+            },
+          ],
+        },
+      },
+      diagnostics: [],
+    }))
+    const resolverRelease = vi.fn(async () => undefined)
+    const resolve = vi.fn<MapPreviewResourcePlanResolver['resolve']>(async () => ({
+      state: 'resolved',
+      origin: memoryOrigin(workspaceFiles()),
+      revision: revisionId('provider-token:installed-resources-v1'),
+      diagnostics: [],
+      release: resolverRelease,
+    }))
+    const result = await coordinateMapPreviewAssetSession({
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'maps-preview-installed', classes: [] },
+      budgets: activationBudget,
+      original: original.session,
+      preparation,
+      resourcePlanResolver: { resolve },
+      maxCandidates: 8,
+      maxSubjectEntries: 64,
+      maxSubjectPages: 4,
+      maxRoots: 4,
+      maxDepth: 4,
+      catalog,
+      limits: coordinatorLimits,
+    })
+
+    expect(
+      result.state,
+      result.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+    ).toBe('opened')
+    if (result.state !== 'opened') throw new Error('host-resolved preview did not open')
+    expect(resolve).toHaveBeenCalledOnce()
+    expect(resolve.mock.calls[0]?.[0].plan).toMatchObject({
+      resolverId: 'example/installed-game-resources',
+      roots: [{ rootId: 'active' }],
+    })
+    expect(resolverRelease).not.toHaveBeenCalled()
+    expect(original.originalRelease).not.toHaveBeenCalled()
+
+    await result.session.dispose()
+    await result.session.dispose()
+    expect(resolverRelease).toHaveBeenCalledOnce()
+    expect(original.originalRelease).toHaveBeenCalledOnce()
+  })
+
+  it('names a missing external resource resolver without consuming the original session', async () => {
+    const original = await originalMapSession(new Map(), false)
+    const result = await coordinateMapPreviewAssetSession({
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'maps-preview-missing-installed', classes: [] },
+      budgets: activationBudget,
+      original: original.session,
+      preparation: previewPreparation(async () => ({
+        state: 'prepared',
+        plan: {
+          schemaVersion: 1,
+          workspace: previewWorkspaceInput(),
+          resources: {
+            schemaVersion: 1,
+            strategy: 'host-resolved',
+            resolverId: 'example/installed-game-resources',
+            subjectNamespaceRoots: [],
+            roots: [{ rootId: 'active', locator: { installationId: 'stable' } }],
+          },
+        },
+        diagnostics: [],
+      })),
+      maxCandidates: 8,
+      maxSubjectEntries: 64,
+      maxSubjectPages: 4,
+      maxRoots: 4,
+      maxDepth: 4,
+      limits: coordinatorLimits,
+    })
+
+    expect(result.state).toBe('unresolved')
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code: 'x3.host/map-preview-resource-resolver-required' }),
+    )
+    expect(original.session.state()).toBe('live')
+    expect(original.originalRelease).not.toHaveBeenCalled()
+    await original.session.dispose()
   })
 
   it('opens terrain, regions and placed objects, then binds them to the resolved catalog', async () => {

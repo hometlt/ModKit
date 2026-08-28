@@ -44,7 +44,11 @@ import {
   registerStandardDataDefinitions,
   RESOLVED_DATA_WORKSPACE_MATCHER,
 } from './data/index.js'
-import { MAP_SEMANTIC_MATCHER, registerStandardMapDefinitions } from './maps/index.js'
+import {
+  MAP_PREVIEW_PREPARATION_MATCHER,
+  MAP_SEMANTIC_MATCHER,
+  registerStandardMapDefinitions,
+} from './maps/index.js'
 import { openSubject, type OpenSubjectResult, type SubjectInputResolver } from './subject-open.js'
 
 // ---------------------------------------------------------------------------------------------
@@ -235,6 +239,7 @@ export function createBundledServiceDefinitionRegistry(
       DATA_CATALOG_MATCHER,
       RESOLVED_DATA_WORKSPACE_MATCHER,
       MAP_SEMANTIC_MATCHER,
+      MAP_PREVIEW_PREPARATION_MATCHER,
       ...(options.matcherProfiles ?? []),
     ]),
     isNamespaceOwner: () => true,

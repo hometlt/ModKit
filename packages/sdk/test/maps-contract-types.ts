@@ -1,5 +1,7 @@
 import type { ServiceProviderContributionSpecV1 } from '@modkitx-x3/sdk/formats'
 import type {
+  MapPreviewPreparationPort,
+  MapPreviewPreparationProviderModule,
   MapSemanticAnalysis,
   MapSemanticAnalysisRequest,
   MapSemanticProviderModule,
@@ -13,6 +15,12 @@ export const mapRoute = {
   major: 1,
   facet: { gameId: 'example/game' },
 } satisfies TypedServiceContractRequest<'common.map/semantic-analysis', 1>
+
+export const mapPreviewPreparationRoute = {
+  contract: 'common.map/preview-preparation',
+  major: 1,
+  facet: { subjectFormatId: 'example/map-container' },
+} satisfies TypedServiceContractRequest<'common.map/preview-preparation', 1>
 
 export const mapContribution = {
   provides: [
@@ -45,6 +53,8 @@ export const invalidMapRequest = {
 
 export declare const analysis: MapSemanticAnalysis
 export declare const providerModule: MapSemanticProviderModule
+export declare const previewPreparation: MapPreviewPreparationPort
+export declare const previewPreparationProviderModule: MapPreviewPreparationProviderModule
 export type StandardWorldSceneLookup = DataSourceOf<'common.view/world-scene-source', 1>
 export type StandardWorldSceneProof = StandardWorldSceneLookup extends WorldSceneSource
   ? true
