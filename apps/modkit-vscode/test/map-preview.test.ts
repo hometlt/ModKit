@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { OpenedSubject } from '@modkitx-x3/host'
 
@@ -31,14 +33,18 @@ describe('VS Code map preview binding', () => {
   it('uses the common coordinator and transfers the derived session only on opened', async () => {
     const disposeOriginal = vi.fn(async () => undefined)
     const disposePreview = vi.fn(async () => undefined)
+    const resolveResourcePlan = vi.fn()
+    const resourcePlanResolver = { resolve: resolveResourcePlan } as never
     const derived = { subjectUri: 'world://map' } as never
     const result = await prepareVsCodeMapPreview({
       services: {} as never,
       opened: opened(disposeOriginal),
       grant: { id: 'vscode-map-test', classes: ['read-source'] },
       budgets: budget,
+      resourcePlanResolver,
       coordinate: async request => {
         expect(request.maxCandidates).toBe(64)
+        expect(request.resourcePlanResolver).toBe(resourcePlanResolver)
         return {
           state: 'opened',
           session: { dispose: disposePreview } as never,
@@ -57,6 +63,7 @@ describe('VS Code map preview binding', () => {
     await result.opened.session.dispose()
     expect(disposePreview).toHaveBeenCalledOnce()
     expect(disposeOriginal).not.toHaveBeenCalled()
+    expect(resolveResourcePlan).not.toHaveBeenCalled()
   })
 
   it('turns a user-selected candidate into the host second-open request', async () => {
@@ -75,5 +82,16 @@ describe('VS Code map preview binding', () => {
       path: 'C:\\workspace\\mp.wz',
       selectionId: 'map:2c-highground',
     })
+  })
+
+  it('wires one generic desktop resolver from the composed host into every served page', () => {
+    const source = readFileSync(join(import.meta.dirname, '..', 'src', 'extension.ts'), 'utf8')
+    const factoryCall = /createNodeMapPreviewResourcePlanResolver\(\{[\s\S]*?\n {2}\}\)/u.exec(
+      source,
+    )?.[0]
+    expect(factoryCall).toBeDefined()
+    expect(factoryCall).toContain('subjects: host.services')
+    expect(factoryCall).not.toContain('configuredPaths')
+    expect(source).toContain('mapPreviewResourcePlanResolver,')
   })
 })

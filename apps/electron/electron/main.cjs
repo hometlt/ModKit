@@ -123,6 +123,7 @@ async function createWindow() {
     exposeElectronSubjectRpc,
     openFileArtifactSource,
     createFilesystemInputResolver,
+    createNodeMapPreviewResourcePlanResolver,
     createFileEditingBackend,
     createSubjectEditing,
     createRawWriter,
@@ -216,13 +217,16 @@ async function createWindow() {
       console.log(`[main] disabled codecs: ${configuration.disabledContributions.join(', ')}`)
     }
     const application = services.application
+    const mapPreviewResourcePlanResolver = createNodeMapPreviewResourcePlanResolver({
+      subjects: services,
+    })
     console.log(
       `[main] composed ${application.topology.topologyId}: ` +
         `main ${application.main.profile.facilities.length} facilities, ` +
         `renderer ${application.renderer.profile.facilities.length} facilities, ` +
         `codecs run in ${application.workers.profile.realmId} (${services.executionProfiles.join('/')})`,
     )
-    return { services, configuration }
+    return { services, mapPreviewResourcePlanResolver, configuration }
   }
 
   /*
@@ -233,8 +237,11 @@ async function createWindow() {
    * reopens them afterwards, which is what disposes the sessions of the old composition — a worker
    * lease ends with the session that holds it.
    */
-  let { services: subjectServices, configuration: extensionConfiguration } =
-    await composeFromSettings()
+  let {
+    services: subjectServices,
+    mapPreviewResourcePlanResolver,
+    configuration: extensionConfiguration,
+  } = await composeFromSettings()
 
   const window = new BrowserWindow({
     width: 1180,
@@ -437,6 +444,7 @@ async function createWindow() {
       opened: result,
       grant: openGrant,
       budgets: budget,
+      resourcePlanResolver: mapPreviewResourcePlanResolver,
       ...(mapSelection === undefined ? {} : { selectionId: mapSelection.selectionId }),
       ...(signal === undefined ? {} : { signal }),
     })
@@ -1009,6 +1017,7 @@ async function createWindow() {
     const next = reloading.then(async () => {
       const composedNow = await composeFromSettings()
       subjectServices = composedNow.services
+      mapPreviewResourcePlanResolver = composedNow.mapPreviewResourcePlanResolver
       extensionConfiguration = composedNow.configuration
     })
     reloading = next.catch(() => undefined)

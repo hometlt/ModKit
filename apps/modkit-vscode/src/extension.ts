@@ -31,6 +31,7 @@ import {
   type CommandResult,
 } from '@modkitx-x3/host'
 import { createLanguageWorkspace, languageProviderRoutes } from '@modkitx-x3/host/language'
+import { createNodeMapPreviewResourcePlanResolver } from '@modkitx-x3/host/node'
 import type { ContainerRegistry } from './containers.js'
 import { CustomDocumentState } from './custom-document.js'
 import { withExtensionRoot } from './extension-roots.js'
@@ -386,6 +387,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     bootstrapUrl: pathToFileURL(join(extensionRoot, 'dist-app', 'worker-bootstrap.js')),
     onDiagnostic: diagnostic =>
       log(`[worker] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`),
+  })
+  const mapPreviewResourcePlanResolver = createNodeMapPreviewResourcePlanResolver({
+    subjects: host.services,
   })
 
   log(
@@ -913,6 +917,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       roots,
       confirmClose,
       configuration,
+      mapPreviewResourcePlanResolver,
       // The window's one registry, so a page opening a member reaches the archive the Explorer
       // already has open rather than a second copy of it.
       containers,

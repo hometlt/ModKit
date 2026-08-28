@@ -651,6 +651,9 @@ export {
   resolveFormatWriter,
 } from '@modkitx-x3/host'
 export { createFileEditingBackend } from '@modkitx-x3/host/node'
+// Installed-game map resources are resolved in main, beside the ordinary subject services that
+// open their archives. The renderer receives only the resulting world session over capability RPC.
+export { createNodeMapPreviewResourcePlanResolver } from '@modkitx-x3/host/node'
 // S14: the renderer's editor ports over the subject RPC (it holds no grant of its own)
 export {
   createRendererEditorPorts,

@@ -38,11 +38,14 @@ describe('Electron map preview binding', () => {
       displayName: `Map ${String(index)}`,
     }))
     const ordinary = opened(dispose)
+    const resolveResourcePlan = vi.fn()
+    const resourcePlanResolver = { resolve: resolveResourcePlan } as never
     const result = await prepareElectronMapPreview({
       services: {} as never,
       opened: ordinary,
       grant: { id: 'electron-map-test', classes: ['read-source'] },
       budgets: budget,
+      resourcePlanResolver,
       coordinate: async request => {
         expect(request).toMatchObject({
           maxCandidates: 64,
@@ -51,6 +54,7 @@ describe('Electron map preview binding', () => {
           maxRoots: 64,
           maxDepth: 16,
         })
+        expect(request.resourcePlanResolver).toBe(resourcePlanResolver)
         return { state: 'selection-required', candidates, diagnostics: [] }
       },
     })
@@ -60,6 +64,7 @@ describe('Electron map preview binding', () => {
     expect(result.candidates[0]).toMatchObject({ kind: 'map-preview-selection' })
     expect(result.opened.session).toBe(ordinary.session)
     expect(dispose).not.toHaveBeenCalled()
+    expect(resolveResourcePlan).not.toHaveBeenCalled()
   })
 
   it('carries a chosen candidate into the second open and releases the first session first', async () => {
@@ -90,7 +95,18 @@ describe('Electron map preview binding', () => {
   it('wires the coordinator and continuation parser into Electron main', () => {
     const source = readFileSync(join(import.meta.dirname, '..', 'electron', 'main.cjs'), 'utf8')
     expect(source).toContain('prepareElectronMapPreview({')
+    expect(source).toContain('createNodeMapPreviewResourcePlanResolver({')
+    expect(source).toContain('resourcePlanResolver: mapPreviewResourcePlanResolver')
+    expect(source).toContain(
+      'mapPreviewResourcePlanResolver = composedNow.mapPreviewResourcePlanResolver',
+    )
     expect(source).toContain('parseElectronMapPreviewSelectionRequest(requestedPath)')
     expect(source).toContain('selectionId: mapSelection.selectionId')
+    const factoryCall = /createNodeMapPreviewResourcePlanResolver\(\{[\s\S]*?\n {4}\}\)/u.exec(
+      source,
+    )?.[0]
+    expect(factoryCall).toBeDefined()
+    expect(factoryCall).toContain('subjects: services')
+    expect(factoryCall).not.toContain('configuredPaths')
   })
 })
