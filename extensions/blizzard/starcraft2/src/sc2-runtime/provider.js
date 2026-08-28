@@ -1,5 +1,10 @@
 import { createHash } from 'node:crypto'
 import { RUNTIME_PROVIDER_CONTRACT, RUNTIME_SESSION_CONTRACT } from '@modkitx-x3/sdk/runtime'
+import {
+  SC2_PLAYABLE_OFFER_ID,
+  SC2_PLAYABLE_RUNTIME_ID,
+  createPlayableSession,
+} from './playable.js'
 
 export const SC2_BOUNDED_RUNTIME_ID = 'blizzard.starcraft2.galaxy-pure-bounded-v1'
 export const SC2_BOUNDED_RUNTIME_PROFILE = 'org.modkitx.sc2/galaxy-pure-bounded-v1'
@@ -940,7 +945,7 @@ export function createProvider(selection) {
   if (
     selection.contract !== RUNTIME_PROVIDER_CONTRACT ||
     selection.major !== 1 ||
-    selection.offerId !== 'sc2-galaxy-pure-bounded-v1'
+    !['sc2-galaxy-pure-bounded-v1', SC2_PLAYABLE_OFFER_ID].includes(selection.offerId)
   )
     throw new TypeError(
       `unsupported SC2 runtime selection ${selection.contract}@${selection.major}`,
@@ -949,11 +954,17 @@ export function createProvider(selection) {
     value: Object.freeze({
       contract: RUNTIME_PROVIDER_CONTRACT,
       providerId: PROVIDER_ID,
-      runtimeIds: Object.freeze([SC2_BOUNDED_RUNTIME_ID]),
+      runtimeIds: Object.freeze([
+        selection.offerId === SC2_PLAYABLE_OFFER_ID
+          ? SC2_PLAYABLE_RUNTIME_ID
+          : SC2_BOUNDED_RUNTIME_ID,
+      ]),
       async createSession(request) {
         const budget = exactRuntimeBudget(request.budget)
         const loaded = await loadInvocation(request, budget)
-        return createSession(request, loaded, budget)
+        return selection.offerId === SC2_PLAYABLE_OFFER_ID
+          ? createPlayableSession(request, loaded, budget)
+          : createSession(request, loaded, budget)
       },
     }),
     release: async () => undefined,

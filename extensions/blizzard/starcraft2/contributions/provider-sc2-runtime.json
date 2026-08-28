@@ -5,7 +5,7 @@
     "major": 1
   },
   "id": "org.modkitx/sc2-runtime-provider",
-  "displayName": "Bounded StarCraft II Galaxy runtime",
+  "displayName": "Bounded StarCraft II Galaxy and simulation runtime",
   "status": "partial",
   "runtimeVariants": [
     {
@@ -21,7 +21,7 @@
   "limitations": [
     "The org.modkitx.sc2/galaxy-pure-bounded-v1 profile executes only zero-argument Galaxy functions composed from direct calls and literal returns.",
     "External/native calls are reported as native-unavailable; Trigger XML is retained as native authored input but semantic lowering is unavailable.",
-    "Catalog mechanics, Galaxy control flow and expressions, save/replay/network behavior, native launch/signing/playback, and the Block 19 simulator migration remain unavailable."
+    "The separate org.modkitx.sc2/playable-subset-v1 profile covers only catalog-backed Unit spawn/move/stop, fixed 16 Hz stepping and SimUnitArrived events; combat, economy, abilities, terrain, general Galaxy, replay/network behavior and native launch/signing/playback remain unavailable."
   ],
   "spec": {
     "provides": [
@@ -32,6 +32,15 @@
         "version": "1.0.0",
         "facet": {
           "runtimeIds": ["blizzard.starcraft2.galaxy-pure-bounded-v1"]
+        }
+      },
+      {
+        "offerId": "sc2-playable-subset-v1",
+        "contract": "common.runtime/provider",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "runtimeIds": ["blizzard.starcraft2.playable-subset-v1"]
         }
       }
     ],

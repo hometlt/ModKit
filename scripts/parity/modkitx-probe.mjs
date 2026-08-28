@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -514,6 +515,131 @@ async function sc2RuntimeBoundedResult() {
   }
 }
 
+function simulationProjection(simulation) {
+  const snapshot = simulation.snapshot()
+  const units = Object.values(snapshot.state.units)
+    .filter(unit => unit !== null && typeof unit === 'object' && typeof unit.id === 'string')
+    .map(unit => ({
+      id: unit.id,
+      unitType: unit.unitType,
+      owner: unit.owner,
+      alive: unit.alive,
+      x: unit.x,
+      y: unit.y,
+      life: { current: unit.life.current, max: unit.life.max },
+      speed: unit.speed,
+      food: unit.food,
+      orderQueue: unit.orderQueue.map(order => ({ kind: order.kind, x: order.x, y: order.y })),
+    }))
+    .sort((left, right) => left.id.localeCompare(right.id))
+  return {
+    tick: snapshot.tick,
+    time: snapshot.state.time,
+    randomSeed: snapshot.state.randomSeed,
+    commands: snapshot.commands.map(issued => ({
+      tick: issued.tick,
+      player: issued.player,
+      seq: issued.seq,
+      command: issued.command,
+    })),
+    units,
+  }
+}
+
+function semanticSimulationEvents(events) {
+  return events.map(event => ({ tick: event.tick, type: event.type, payload: event.payload }))
+}
+
+function projectionHash(value) {
+  return `sha256:${createHash('sha256').update(JSON.stringify(value)).digest('hex')}`
+}
+
+/**
+ * Sealed Block 19 oracle for the first playable subset. The differential is deliberately not a
+ * whole-SimEngine claim: it covers tick/time/seed, pending command envelopes, selected catalog-
+ * backed unit fields (identity, owner, alive, position, life, speed, food and move order), plus
+ * ordered SimUnitArrived tick/type/payload observations.
+ */
+async function sc2RuntimePlayableResult() {
+  if (typeof imported.createSc2RuntimeProvider !== 'function') {
+    throw new TypeError('canonical SC2 runtime provider export is missing')
+  }
+  const catalogEntries = request.catalog
+  if (catalogEntries === null || typeof catalogEntries !== 'object') {
+    throw new TypeError('SC2 playable oracle requires catalog entries')
+  }
+  const catalog = {
+    getResolved(namespace, id) {
+      return catalogEntries[`${namespace}/${id}`]
+    },
+    entityIds(namespace) {
+      const prefix = `${namespace}/`
+      return Object.keys(catalogEntries)
+        .filter(key => key.startsWith(prefix))
+        .map(key => key.slice(prefix.length))
+        .sort()
+    },
+  }
+  const provider = imported.createSc2RuntimeProvider()
+  const session = await provider.createSession({
+    simulation: { catalog },
+    engineOptions: { state: { randomSeed: request.randomSeed } },
+  })
+  for (const issued of request.commands ?? []) {
+    session.issueSimulationCommand(issued.player, issued.command, issued.atTick, issued.seq)
+  }
+  const steps = Number.isSafeInteger(request.steps) && request.steps >= 0 ? request.steps : 0
+  const checkpointStep =
+    Number.isSafeInteger(request.checkpointStep) &&
+    request.checkpointStep >= 0 &&
+    request.checkpointStep <= steps
+      ? request.checkpointStep
+      : 0
+  let checkpoint = checkpointStep === 0 ? await session.snapshot() : undefined
+  const events = []
+  for (let index = 0; index < steps; index += 1) {
+    const emitted = session.stepSimulation()
+    for (const event of emitted) {
+      events.push({ tick: session.simulation.world.tick, type: event.type, payload: event.payload })
+    }
+    if (index + 1 === checkpointStep) checkpoint = await session.snapshot()
+  }
+  const finalProjection = simulationProjection(session.simulation)
+  const finalEvents = semanticSimulationEvents(events)
+  if (checkpoint === undefined) throw new TypeError('SC2 playable oracle checkpoint is absent')
+  await session.restore(checkpoint)
+  const resumedEvents = []
+  for (let index = checkpointStep; index < steps; index += 1) {
+    const emitted = session.stepSimulation()
+    for (const event of emitted) {
+      resumedEvents.push({
+        tick: session.simulation.world.tick,
+        type: event.type,
+        payload: event.payload,
+      })
+    }
+  }
+  const resumedProjection = simulationProjection(session.simulation)
+  const expectedTail = finalEvents.filter(event => event.tick > checkpoint.clock.tick)
+  return {
+    profile: 'legacy-sc2-sim-engine-playable-subset-oracle',
+    differentialScope: [
+      'tick',
+      'time',
+      'randomSeed',
+      'pending-command-envelopes',
+      'unit.identity-owner-alive-position-life-speed-food-order',
+      'SimUnitArrived.tick-type-payload',
+    ],
+    state: finalProjection,
+    stateHash: projectionHash(finalProjection),
+    eventHash: projectionHash(finalEvents),
+    continuationStateHash: projectionHash(resumedProjection),
+    continuationEventHash: projectionHash(semanticSimulationEvents(resumedEvents)),
+    expectedContinuationEventHash: projectionHash(expectedTail),
+  }
+}
+
 const adapters = {
   model: modelResult,
   image: imageResult,
@@ -531,6 +657,7 @@ const adapters = {
   'sage-skudef': skuDefResult,
   'manifest-metadata-only': manifestMetadataOnlyResult,
   'sc2-runtime-bounded': sc2RuntimeBoundedResult,
+  'sc2-runtime-playable': sc2RuntimePlayableResult,
 }
 const adapter = adapters[request.canonicalAdapter ?? 'model']
 if (adapter === undefined)
