@@ -74,3 +74,16 @@ it is not registered as `common.view/world-scene-source@1`, is not a second eage
 publishes no writer. Block
 18 is the earliest admission boundary; if that block standardizes the common coordinate, this
 publisher must adapt/dual-publish during migration rather than silently changing this contract.
+
+The extension also contributes `common.map/preview-preparation@1` for ordinary opened `casc` and
+`sc2-map` subjects. It finds only roots for which the bounded namespace proves the Objects,
+Regions and t3HeightMap document set, returns opaque deterministic choices when more than one root
+is visible, and never chooses an observed root implicitly when the namespace is truncated. The
+prepared subject-namespace remap preserves the selected CASC logical prefix for the existing
+resolved map service. Standalone packed SC2Map preparation remains unresolved until its codec can
+extract compressed MPQ entries; DocumentInfo dependency closure, installed catalog/model/material
+resource resolution remain named follow-up work rather than inferred support. Application callers
+continue a user choice by resubmitting only the opaque id issued for the same subject revision.
+The pinned installed corpus confirms that the current 4096-entry root CASC listing ends before the
+Liberty/TArcade map, so the production host still needs a bounded prefix-discovery round; neither
+this provider nor the common coordinator raises the budget to enumerate the full installation.
