@@ -21,8 +21,8 @@ const documents = [
       id: 'ConstructionDroid',
       name: 'Construction unit',
       body: 'Body1REC',
+      construct: 'Spade1Mk1',
       propulsion: 'wheeled01',
-      weapons: ['Spade1Mk1'],
       type: 'DROID',
     },
   }),
@@ -31,8 +31,8 @@ const documents = [
       id: 'ConstructionDroid',
       name: 'Multiplayer construction unit',
       body: 'Body1REC',
+      construct: 'Spade1Mk1',
       propulsion: 'wheeled01',
-      weapons: ['Spade1Mk1'],
       type: 'DROID',
     },
   }),
@@ -57,6 +57,27 @@ const documents = [
       type: 'TREE',
     },
   }),
+  document('base', 'base/stats/body.json', {
+    Body1REC: {
+      id: 'Body1REC',
+      name: 'Viper',
+      model: 'drlbod01.pie',
+    },
+  }),
+  document('base', 'base/stats/construction.json', {
+    Spade1Mk1: {
+      id: 'Spade1Mk1',
+      name: 'Truck',
+      sensorModel: 'trlcon.pie',
+    },
+  }),
+  document('base', 'base/stats/propulsion.json', {
+    wheeled01: {
+      id: 'wheeled01',
+      name: 'Wheels',
+      model: 'prlwhl1.pie',
+    },
+  }),
 ]
 
 const request = {
@@ -75,7 +96,7 @@ const request = {
 }
 
 describe('Warzone 2100 data provider', () => {
-  it('plans the three native object-definition tables for every ordered root', async () => {
+  it('plans map definitions and the six component tables required by their binding chains', async () => {
     const plan = await planWarzoneDataWorkspace({
       workspace: {
         schemaVersion: 1,
@@ -89,27 +110,39 @@ describe('Warzone 2100 data provider', () => {
         ],
       },
       locales: ['enUS'],
-      maxRequirements: 16,
+      maxRequirements: 32,
     })
 
     expect(plan.complete).toBe(true)
-    expect(plan.requirements).toHaveLength(6)
+    expect(plan.requirements).toHaveLength(18)
     expect(plan.requirements.map(item => item.path)).toEqual([
       'base/stats/templates.json',
       'base/stats/structure.json',
       'base/stats/features.json',
+      'base/stats/body.json',
+      'base/stats/construction.json',
+      'base/stats/ecm.json',
+      'base/stats/propulsion.json',
+      'base/stats/sensor.json',
+      'base/stats/weapons.json',
       'mp/stats/templates.json',
       'mp/stats/structure.json',
       'mp/stats/features.json',
+      'mp/stats/body.json',
+      'mp/stats/construction.json',
+      'mp/stats/ecm.json',
+      'mp/stats/propulsion.json',
+      'mp/stats/sensor.json',
+      'mp/stats/weapons.json',
     ])
   })
 
   it('resolves map object definitions with deterministic later-root overrides', async () => {
     const snapshot = await analyzeWarzoneData(request)
 
-    expect(snapshot.entityCount).toBe(3)
+    expect(snapshot.entityCount).toBe(6)
     expect(snapshot.entities).toHaveLength(3)
-    expect(snapshot.entities[0]).toMatchObject({
+    expect(snapshot.entities.find(item => item.namespace === 'warzone.templates')).toMatchObject({
       namespace: 'warzone.templates',
       entityId: 'ConstructionDroid',
       fields: { name: 'Multiplayer construction unit' },
@@ -124,10 +157,10 @@ describe('Warzone 2100 data provider', () => {
       localizationDocuments: [],
       locales: ['enUS'],
       localizationKeys: [],
-      plannedDocumentCount: 6,
-      unresolvedRequirementIds: ['catalog:base:structure.json', 'catalog:mp:features.json'],
+      plannedDocumentCount: 18,
+      unresolvedRequirementIds: Array.from({ length: 11 }, (_, index) => `missing:${index}`),
     })
-    expect(snapshot.definitions).toHaveLength(3)
+    expect(snapshot.definitions).toHaveLength(6)
     expect(snapshot.entities).toHaveLength(3)
     expect(snapshot.relations.length).toBeGreaterThan(0)
     expect(snapshot.complete).toBe(true)
@@ -141,20 +174,16 @@ describe('Warzone 2100 data provider', () => {
       localizationDocuments: [],
       locales: ['enUS'],
       localizationKeys: [],
-      plannedDocumentCount: 6,
-      unresolvedRequirementIds: ['catalog:base:structure.json', 'catalog:mp:features.json'],
+      plannedDocumentCount: 18,
+      unresolvedRequirementIds: Array.from({ length: 11 }, (_, index) => `missing:${index}`),
     })
     const definitions = await lease.value.openDefinitionTable({
       snapshotId: remembered.snapshotId,
       maxPageSize: 10,
     })
-    expect(await definitions.value.shape()).toMatchObject({ rows: 3, columns: 6 })
-    const rows = await definitions.value.rows({ kind: 'range', from: 0, count: 3 })
-    expect(rows.items.map(item => item.cells[2])).toEqual([
-      'TreeSnow1',
-      'A0PowerGenerator',
-      'ConstructionDroid',
-    ])
+    expect(await definitions.value.shape()).toMatchObject({ rows: 6, columns: 6 })
+    const rows = await definitions.value.rows({ kind: 'range', from: 0, count: 6 })
+    expect(rows.items.map(item => item.cells[2])).toContain('Body1REC')
     const relations = await lease.value.openRelations({
       snapshotId: remembered.snapshotId,
       maxPageSize: 10,

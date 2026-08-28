@@ -42,7 +42,8 @@
     "lifecycleScope": "session"
   },
   "limitations": [
-    "Live schema, definition and relation views cover templates, structures and features and are not a portable UVD artifact.",
-    "Referenced component and model tables are explicit missing relation targets until their official stats loaders are admitted."
+    "Live schema, definition and relation views cover the admitted map-definition and component tables and are not a portable UVD artifact.",
+    "Component relations are resolved from official JSON tables; model ids remain explicit logical missing targets because resolved-workspace@1 cannot request a dynamic archive index after parsing stats.",
+    "The extension-owned JSON-safe binding analysis accepts an observed archive index and optional PIE text to prove model paths and texture directives without changing the SDK or host."
   ]
 }
