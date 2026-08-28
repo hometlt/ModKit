@@ -29,6 +29,7 @@ import { createBridge, type ShellEntry, type WebviewChannel } from './bridge.js'
 import { probeWebviewFacilities } from './facilities.js'
 import { createWebviewEditorPorts, type WebviewEditorPorts } from './editor-ports.js'
 import { reopenCommittedEntry } from './edit-reopen.js'
+import { continueVsCodeMapPreviewSelection } from './map-preview-selection.js'
 import { createVsCodePreviewStages, VSCODE_PREVIEW_FALLBACK } from './stages.js'
 import { preferredStage } from './view-policy.js'
 
@@ -70,6 +71,27 @@ interface VsCodeWebviewApi {
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
+
+interface MapPreviewCandidate {
+  readonly kind: 'map-preview-selection'
+  readonly candidateId: string
+  readonly displayName: string
+  readonly sourcePath?: string
+}
+
+const mapPreviewCandidates = (items: readonly unknown[]): readonly MapPreviewCandidate[] =>
+  items.flatMap(item => {
+    if (
+      typeof item !== 'object' ||
+      item === null ||
+      (item as { kind?: unknown }).kind !== 'map-preview-selection' ||
+      typeof (item as { candidateId?: unknown }).candidateId !== 'string' ||
+      typeof (item as { displayName?: unknown }).displayName !== 'string'
+    ) {
+      return []
+    }
+    return [item as MapPreviewCandidate]
+  })
 
 function baseName(path: string): string {
   const parts = path.split(/[\\/]/u).filter(Boolean)
@@ -251,7 +273,37 @@ async function mount(
     fallback: VSCODE_PREVIEW_FALLBACK,
 
     async openSession(entry) {
-      const result = await client.open(entry.id)
+      let result = await client.open(entry.id)
+      if (result.state === 'opened') {
+        const candidates = mapPreviewCandidates(result.snapshot.candidates)
+        if (candidates.length > 0) {
+          const choice = window.prompt(
+            `Choose a map for the World view by entering its id:\n\n${candidates
+              .map(
+                candidate =>
+                  `${candidate.candidateId} — ${candidate.displayName}${
+                    candidate.sourcePath === undefined ? '' : ` (${candidate.sourcePath})`
+                  }`,
+              )
+              .join('\n')}`,
+            '',
+          )
+          if (choice !== null && choice.trim().length > 0) {
+            const selected = candidates.find(candidate => candidate.candidateId === choice.trim())
+            if (selected === undefined) {
+              say(`${entry.name} · map preview selection was not one of the offered ids`)
+            } else {
+              const firstSession = result.session
+              result = await continueVsCodeMapPreviewSelection({
+                path: entry.id,
+                selectionId: selected.candidateId,
+                dispose: () => firstSession.dispose(),
+                open: request => client.open(request),
+              })
+            }
+          }
+        }
+      }
       if (result.state === 'unresolved') {
         say(
           `${entry.name} — no codec claimed it (${result.snapshot.reason}); showing the raw bytes.`,

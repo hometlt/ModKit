@@ -47,6 +47,7 @@ import { createRendererEditorPorts, type RendererEditorPorts } from './editor-po
 import { createInspectorDock, type InspectorSubject } from './inspector.js'
 import { createElectronReadOnlyStages, createElectronStages } from './stages.js'
 import { preferredStage, selfTestCodecLine, selfTestLine } from './view-policy.js'
+import { continueElectronMapPreviewSelection } from './map-preview-selection.js'
 
 /**
  * Hand Monaco its language workers. Monaco reads this the first time an editor asks for one, which
@@ -405,6 +406,27 @@ async function boot(): Promise<void> {
   const subjectUriOf = (descriptor: Record<string, unknown>): string =>
     String(descriptor['subjectUri'] ?? '')
 
+  interface MapPreviewCandidate {
+    readonly kind: 'map-preview-selection'
+    readonly candidateId: string
+    readonly displayName: string
+    readonly sourcePath?: string
+  }
+
+  const mapPreviewCandidates = (items: readonly unknown[]): readonly MapPreviewCandidate[] =>
+    items.flatMap(item => {
+      if (
+        typeof item !== 'object' ||
+        item === null ||
+        (item as { kind?: unknown }).kind !== 'map-preview-selection' ||
+        typeof (item as { candidateId?: unknown }).candidateId !== 'string' ||
+        typeof (item as { displayName?: unknown }).displayName !== 'string'
+      ) {
+        return []
+      }
+      return [item as MapPreviewCandidate]
+    })
+
   /**
    * Open the subject, then ask main whether it will write it.
    *
@@ -414,7 +436,37 @@ async function boot(): Promise<void> {
    */
   async function prepareOpen(entry: ExplorerEntry): Promise<PreparedOpen> {
     openedEntries.set(entry.id, entry)
-    const result = await subjectClient.open(entry.id)
+    let result = await subjectClient.open(entry.id)
+    if (result.state === 'opened') {
+      const candidates = mapPreviewCandidates(result.snapshot.candidates)
+      if (candidates.length > 0) {
+        const choice = window.prompt(
+          `Choose a map for the World view by entering its id:\n\n${candidates
+            .map(
+              candidate =>
+                `${candidate.candidateId} — ${candidate.displayName}${
+                  candidate.sourcePath === undefined ? '' : ` (${candidate.sourcePath})`
+                }`,
+            )
+            .join('\n')}`,
+          '',
+        )
+        if (choice !== null && choice.trim().length > 0) {
+          const selected = candidates.find(candidate => candidate.candidateId === choice.trim())
+          if (selected === undefined) {
+            setFooter(entry.id, 'Map preview selection was not one of the offered ids.', true)
+          } else {
+            const firstSession = result.session
+            result = await continueElectronMapPreviewSelection({
+              path: entry.id,
+              selectionId: selected.candidateId,
+              dispose: () => firstSession.dispose(),
+              open: request => subjectClient.open(request),
+            })
+          }
+        }
+      }
+    }
     if (result.state === 'unresolved') {
       const detail =
         result.snapshot.diagnostics[0]?.message ??

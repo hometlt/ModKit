@@ -27,6 +27,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { basename, isAbsolute, join, relative, resolve } from 'node:path'
 import type { Diagnostic } from '@modkitx-x3/core'
 import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
+import type { MapPreviewResourcePlanResolver } from '@modkitx-x3/host/maps'
 import {
   createEvidenceRegistry,
   createHostComposition,
@@ -63,6 +64,8 @@ import {
 import { containerUriText, isContainerUriText, parseContainerUriText } from './container-uri.js'
 import { createContainerRegistry, type ContainerRegistry } from './containers.js'
 import { describeInventoryContributions, type ContributionRow } from './contributions.js'
+import { prepareVsCodeMapPreview, type VsCodeMapPreviewCandidate } from './map-preview.js'
+import { parseVsCodeMapPreviewSelectionRequest } from './map-preview-selection.js'
 import {
   configuredDisabledContributions,
   configuredExtensionRoots,
@@ -347,6 +350,8 @@ export interface VsCodeServeOptions {
   /** The grant every open runs under. Defaults to `read-source` only. */
   readonly grant?: PermissionGrant
   readonly budget?: ResourceBudget
+  /** Trusted desktop resolver for opaque installation/dependency roots declared by map providers. */
+  readonly mapPreviewResourcePlanResolver?: MapPreviewResourcePlanResolver
   /** Confirm discarding unsaved work; a webview iframe cannot show a modal of its own. */
   readonly confirmClose?: (message: string, savable: boolean) => Promise<CloseAnswer>
   /** Native custom-document dirty state, emitted only for the provider's opened path. */
@@ -554,6 +559,8 @@ function serveVsCode(
   }
 
   const openSubject: SubjectOpener = async (requested, signal) => {
+    const mapSelection = parseVsCodeMapPreviewSelectionRequest(requested)
+    const subjectRequested = mapSelection?.path ?? requested
     /*
      * A container member, opened as a subject of its own.
      *
@@ -562,16 +569,16 @@ function serveVsCode(
      * code as for a file, which is the whole reason the route was put behind the same opener rather
      * than beside it.
      */
-    if (isContainerUriText(requested)) {
+    if (isContainerUriText(subjectRequested)) {
       const containers = options.containers
       if (containers === undefined) {
         throw new TypeError('this window did not compose container browsing')
       }
-      const answer = await containers.open(requested, signal)
-      publishSubjectDiagnostics(requested, answer.snapshot.diagnostics)
+      const answer = await containers.open(subjectRequested, signal)
+      publishSubjectDiagnostics(subjectRequested, answer.snapshot.diagnostics)
       if (answer.snapshot.state === 'opened') {
         options.onSubjectOpened?.({
-          path: requested,
+          path: subjectRequested,
           contributionId: answer.snapshot.selected.contributionId,
           variantId: answer.snapshot.selected.variantId,
           confidence: answer.snapshot.selected.confidence,
@@ -587,11 +594,27 @@ function serveVsCode(
      * past.
      */
     let opened: OpenedSubject | undefined
+    let mapPreviewCandidates: readonly VsCodeMapPreviewCandidate[] = []
     const capturing: SubjectServices = {
       ...services,
       open: async request => {
         const result = await services.open(request)
-        if (result.state === 'opened') opened = result
+        if (result.state === 'opened') {
+          const preview = await prepareVsCodeMapPreview({
+            services,
+            opened: result,
+            grant: request.grant,
+            budgets: request.budget,
+            ...(mapSelection === undefined ? {} : { selectionId: mapSelection.selectionId }),
+            ...(options.mapPreviewResourcePlanResolver === undefined
+              ? {}
+              : { resourcePlanResolver: options.mapPreviewResourcePlanResolver }),
+            ...(signal === undefined ? {} : { signal }),
+          })
+          opened = preview.opened
+          mapPreviewCandidates = preview.candidates
+          return preview.opened
+        }
         return result
       },
     }
@@ -601,7 +624,17 @@ function serveVsCode(
       grant: options.grant ?? DEFAULT_OPEN_GRANT,
       budget: options.budget ?? DEFAULT_OPEN_BUDGET,
     })
-    const answer = await opener(requested, signal)
+    const rawAnswer = await opener(subjectRequested, signal)
+    const answer =
+      rawAnswer.snapshot.state === 'opened' && mapPreviewCandidates.length > 0
+        ? {
+            ...rawAnswer,
+            snapshot: {
+              ...rawAnswer.snapshot,
+              candidates: [...rawAnswer.snapshot.candidates, ...mapPreviewCandidates],
+            },
+          }
+        : rawAnswer
 
     /*
      * Every finding about this subject, on whatever surface the adapter gives them — reported for
@@ -613,11 +646,11 @@ function serveVsCode(
      * open — the resolver is the only thing that knows an optional sidecar was absent — so the
      * inner result carries everything except the one diagnostic this host most needs to show.
      */
-    publishSubjectDiagnostics(resolve(requested), answer.snapshot.diagnostics)
+    publishSubjectDiagnostics(resolve(subjectRequested), answer.snapshot.diagnostics)
 
     if (answer.snapshot.state === 'opened') {
       options.onSubjectOpened?.({
-        path: resolve(requested),
+        path: resolve(subjectRequested),
         contributionId: answer.snapshot.selected.contributionId,
         variantId: answer.snapshot.selected.variantId,
         confidence: answer.snapshot.selected.confidence,
@@ -644,7 +677,7 @@ function serveVsCode(
       // read-only; the page sees `edit()` refuse and hides the editor stages.
       options.onDiagnostic?.({
         code: 'x3.app/vscode-subject-not-editable',
-        message: `${basename(requested)} opened without an editing arm: ${describe(error)}`,
+        message: `${basename(subjectRequested)} opened without an editing arm: ${describe(error)}`,
       })
     }
     return answer

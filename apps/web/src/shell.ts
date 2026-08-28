@@ -56,6 +56,7 @@ import { element, setPart, setState, setViewerText } from '@modkitx-x3/ui/viewer
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import { createWebTopology, mountWebWorkbench, probeWebFacilities } from './index.js'
 import { createWebSubjectServices, type WebSubjectServices } from './subjects.js'
+import { prepareWebMapPreview } from './map-preview.js'
 import type { WebCommandSubjectLease } from './commands.js'
 import { createIndexedDbExtensionStore, type IdbFactoryLike } from './extension-store.js'
 import { mountExtensionsUi } from './extensions-ui.js'
@@ -569,7 +570,7 @@ async function boot(): Promise<void> {
        */
       const nested = pendingNested.get(entry.id)
       if (nested !== undefined) pendingNested.delete(entry.id)
-      const result =
+      const ordinary =
         nested?.result ??
         (await services.open({
           source: bytesSource(entry.id, bytes, token),
@@ -579,9 +580,55 @@ async function boot(): Promise<void> {
           budget,
           ...(signal === undefined ? {} : { signal }),
         }))
-      if (result.state === 'unresolved') {
-        say(`${entry.name} — no codec claimed it (${result.reason}); showing the raw bytes.`)
+      if (ordinary.state === 'unresolved') {
+        say(`${entry.name} — no codec claimed it (${ordinary.reason}); showing the raw bytes.`)
         return undefined
+      }
+      let mapPreview = await prepareWebMapPreview({
+        services,
+        opened: ordinary,
+        grant,
+        budgets: budget,
+        ...(signal === undefined ? {} : { signal }),
+      })
+      if (mapPreview.state === 'selection-required') {
+        const choice = window.prompt(
+          `Choose a map for the World view by entering its id:\n\n${mapPreview.candidates
+            .map(
+              candidate =>
+                `${candidate.candidateId} — ${candidate.displayName}${
+                  candidate.sourcePath === undefined ? '' : ` (${candidate.sourcePath})`
+                }`,
+            )
+            .join('\n')}`,
+          '',
+        )
+        const selected = mapPreview.candidates.find(
+          candidate => candidate.candidateId === choice?.trim(),
+        )
+        if (selected !== undefined) {
+          mapPreview = await prepareWebMapPreview({
+            services,
+            opened: ordinary,
+            grant,
+            budgets: budget,
+            selectionId: selected.candidateId,
+            ...(signal === undefined ? {} : { signal }),
+          })
+        }
+      }
+      const result = mapPreview.opened
+      if (mapPreview.state === 'permission-required') {
+        say(
+          `${entry.name} — map preview needs installation resources the browser cannot search; ` +
+            'the ordinary archive view remains open.',
+        )
+      } else if (mapPreview.state === 'selection-required') {
+        say(
+          `${entry.name} — map preview needs a choice (${mapPreview.candidates
+            .map(candidate => candidate.displayName)
+            .join(', ')}); the ordinary archive view remains open.`,
+        )
       }
       const boundary = result.diagnostics.some(
         item => item.code === 'x3.host/worker-shared-process',

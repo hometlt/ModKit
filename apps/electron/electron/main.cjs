@@ -116,6 +116,8 @@ async function createWindow() {
     describeInventoryContributions,
     disabledContributionNotices,
     probeElectronExtensionRoot,
+    parseElectronMapPreviewSelectionRequest,
+    prepareElectronMapPreview,
     resolveElectronPresentationPlan,
     createGrantedRoots,
     exposeElectronSubjectRpc,
@@ -326,7 +328,8 @@ async function createWindow() {
    * the RPC endpoint to lease — no session table, no method dispatch, no allowlists here.
    */
   const openSubjectForRpc = async (requestedPath, signal) => {
-    const file = roots.require(requestedPath)
+    const mapSelection = parseElectronMapPreviewSelectionRequest(requestedPath)
+    const file = roots.require(mapSelection?.path ?? requestedPath)
     const source = await openFileArtifactSource(file)
     /*
      * Whether this host can replace the file decides the *open grant*, not just the arm.
@@ -371,14 +374,15 @@ async function createWindow() {
       deadlineMs: budget.deadlineMs,
       onDiagnostic: item => companionDiagnostics.push(item),
     })
+    const openGrant = {
+      id: `electron:${randomUUID()}`,
+      classes: writable ? ['read-source', 'write-source'] : ['read-source'],
+    }
     const result = await subjectServices.open({
       source,
       path: file,
       intent: 'full',
-      grant: {
-        id: `electron:${randomUUID()}`,
-        classes: writable ? ['read-source', 'write-source'] : ['read-source'],
-      },
+      grant: openGrant,
       budget,
       resolveInput,
       ...(signal === undefined ? {} : { signal }),
@@ -428,11 +432,20 @@ async function createWindow() {
       `[main] subject ${path.basename(file)} -> ${result.selected.contributionId}/` +
         `${result.selected.variantId} (${Math.round(result.selected.confidence * 100)}%)`,
     )
+    const mapPreview = await prepareElectronMapPreview({
+      services: subjectServices,
+      opened: result,
+      grant: openGrant,
+      budgets: budget,
+      ...(mapSelection === undefined ? {} : { selectionId: mapSelection.selectionId }),
+      ...(signal === undefined ? {} : { signal }),
+    })
+    const opened = mapPreview.opened
     const sessionId = randomUUID()
     let presentation
     try {
       presentation = await resolveElectronPresentationPlan(
-        result.descriptor,
+        opened.descriptor,
         PRESENTATION_CATALOG,
         {
           sessionId,
@@ -441,7 +454,7 @@ async function createWindow() {
         },
       )
     } catch (error) {
-      await result.session.dispose()
+      await opened.session.dispose()
       throw error
     }
     /*
@@ -453,7 +466,7 @@ async function createWindow() {
      * namespace — `createSubjectEditing` throws), and a file the OS will not let us replace. The
      * second was already decided above, because it also decides the open grant.
      */
-    const formatId = result.descriptor.identity?.formatId
+    const formatId = opened.descriptor.identity?.formatId
     const editGrant = {
       id: `electron:${sessionId}`,
       classes: ['read-source', 'write-source'],
@@ -462,7 +475,7 @@ async function createWindow() {
     if (writable && formatId === 'png') {
       pixelWriter = await resolveFormatWriter({
         services: subjectServices,
-        opened: result,
+        opened,
         grant: editGrant,
         budgets: budget,
         representationId: 'rgba8',
@@ -480,11 +493,11 @@ async function createWindow() {
       try {
         const selectedWriter = pixelWriter?.writer ?? rawWriter
         const evidence = codecFidelityEvidenceRecords(subjectServices.inventory, {
-          codecId: result.descriptor.identity?.codecId,
+          codecId: opened.descriptor.identity?.codecId,
           formatId,
         }).reduce((registry, record) => registry.with(record), createEvidenceRegistry())
         const editing = createSubjectEditing({
-          opened: result,
+          opened,
           grant: editGrant,
           backendFor: () => editingBackend,
           evidenceFor: plan => {
@@ -549,15 +562,15 @@ async function createWindow() {
     })
     return {
       snapshot: {
-        state: result.state,
+        state: opened.state,
         sessionId,
-        descriptor: result.descriptor,
+        descriptor: opened.descriptor,
         presentation,
-        selected: result.selected,
-        candidates: result.candidates,
-        diagnostics: [...result.diagnostics, ...editingDiagnostics],
+        selected: opened.selected,
+        candidates: [...opened.candidates, ...mapPreview.candidates],
+        diagnostics: [...opened.diagnostics, ...editingDiagnostics],
       },
-      session: result.session,
+      session: opened.session,
     }
   }
 

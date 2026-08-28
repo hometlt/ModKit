@@ -54,6 +54,20 @@ export {
   type SubjectUnresolvedSnapshot,
 } from './subject-rpc.js'
 
+export {
+  prepareElectronMapPreview,
+  type ElectronMapPreviewCandidate,
+  type PreparedElectronMapPreview,
+  type PrepareElectronMapPreviewRequest,
+} from './map-preview.js'
+
+export {
+  continueElectronMapPreviewSelection,
+  electronMapPreviewSelectionRequest,
+  parseElectronMapPreviewSelectionRequest,
+  type ElectronMapPreviewSelectionRequest,
+} from './map-preview-selection.js'
+
 export const ELECTRON_MAIN_REALM = 'org.modkitx.app.electron/main'
 export const ELECTRON_RENDERER_REALM = 'org.modkitx.app.electron/renderer'
 /**
