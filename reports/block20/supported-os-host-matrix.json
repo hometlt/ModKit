@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "scope": "focused-product-local-ga",
+  "validatedTarget": {
+    "operatingSystem": "windows",
+    "nodePlatform": "win32",
+    "architecture": "x64"
+  },
+  "applications": [
+    {
+      "id": "automation-host",
+      "support": "supported-local-ga",
+      "testedSurface": "headless Node composition, worker realm, command and subject-open contracts",
+      "evidenceLevel": "current-source-composition",
+      "verification": [
+        "pnpm exec vitest run apps/automation-host/test/automation.test.ts --maxWorkers=1",
+        "pnpm apps:check"
+      ],
+      "evidence": [
+        "apps/automation-host/test/automation.test.ts",
+        "scripts/check-app-contract-matrix.mjs"
+      ],
+      "notClaimed": [
+        "a separately packaged or installed automation-host executable",
+        "a long-running production scheduler deployment"
+      ]
+    },
+    {
+      "id": "cli",
+      "support": "supported-local-ga",
+      "testedSurface": "compiled CLI launched as a separate Node process with real files",
+      "evidenceLevel": "current-source-live-process",
+      "verification": [
+        "pnpm exec vitest run apps/modkit-cli/test/cli.test.ts --maxWorkers=1",
+        "pnpm apps:check"
+      ],
+      "evidence": ["apps/modkit-cli/test/cli.test.ts", "scripts/check-app-contract-matrix.mjs"],
+      "notClaimed": ["a system-wide installer or shell integration"]
+    },
+    {
+      "id": "electron",
+      "support": "supported-local-ga",
+      "testedSurface": "Electron composition, worker realm, main-process subject path and source wiring",
+      "evidenceLevel": "current-source-headless-composition",
+      "verification": [
+        "pnpm exec vitest run apps/electron/test/subject-open-smoke.test.ts --maxWorkers=1",
+        "pnpm apps:check"
+      ],
+      "evidence": [
+        "apps/electron/test/subject-open-smoke.test.ts",
+        "apps/electron/electron/main.cjs",
+        "scripts/check-app-contract-matrix.mjs"
+      ],
+      "notClaimed": [
+        "a launched packaged Electron GUI",
+        "a signed or installed desktop application"
+      ]
+    },
+    {
+      "id": "pwa",
+      "support": "supported-local-ga",
+      "testedSurface": "fresh product build served over HTTP, opened in a real headless Chromium browser, then safely closed and reopened with a new worker-backed subject",
+      "evidenceLevel": "current-source-live-browser",
+      "verification": [
+        "pnpm exec vitest run apps/web/test/boot.test.ts --maxWorkers=1",
+        "pnpm apps:check"
+      ],
+      "evidence": ["apps/web/test/boot.test.ts", "scripts/check-app-contract-matrix.mjs"],
+      "notClaimed": [
+        "installation through a public web origin",
+        "offline service-worker behavior in every embedded browser",
+        "forced browser-worker crash recovery"
+      ]
+    },
+    {
+      "id": "server",
+      "support": "supported-local-ga",
+      "testedSurface": "headless Node composition, health, worker realm, command and subject-open contracts",
+      "evidenceLevel": "current-source-composition",
+      "verification": [
+        "pnpm exec vitest run apps/server/test/server.test.ts apps/server/test/subject-rpc.test.ts --maxWorkers=1",
+        "pnpm apps:check"
+      ],
+      "evidence": [
+        "apps/server/test/server.test.ts",
+        "apps/server/test/subject-rpc.test.ts",
+        "scripts/check-app-contract-matrix.mjs"
+      ],
+      "notClaimed": [
+        "a separately packaged server executable or container",
+        "a production network deployment"
+      ]
+    },
+    {
+      "id": "vscode",
+      "support": "supported-local-ga",
+      "testedSurface": "real hermetic VS Code desktop process plus current-source host contract tests",
+      "evidenceLevel": "recorded-live-editor-and-current-source-contracts",
+      "verification": [
+        "pnpm --filter @modkitx-x3/modkit-vscode smoke:vscode",
+        "pnpm exec vitest run apps/modkit-vscode/test/subject-rpc.test.ts apps/modkit-vscode/test/topology.test.ts --maxWorkers=1",
+        "pnpm apps:check"
+      ],
+      "evidence": [
+        "reports/vscode-smoke/receipt.json",
+        "reports/vscode-smoke/logs/suite-results.json",
+        "apps/modkit-vscode/test/subject-rpc.test.ts",
+        "apps/modkit-vscode/test/topology.test.ts",
+        "scripts/check-app-contract-matrix.mjs"
+      ],
+      "notClaimed": [
+        "a packaged or marketplace-installed VS Code extension",
+        "a current-HEAD live-editor run until the final local GA gate reruns smoke:vscode"
+      ]
+    }
+  ],
+  "unvalidatedTargets": [
+    {
+      "operatingSystem": "linux",
+      "architecture": "x64",
+      "status": "not-run"
+    },
+    {
+      "operatingSystem": "macos",
+      "architecture": "arm64-or-x64",
+      "status": "not-run"
+    }
+  ],
+  "releaseBoundary": {
+    "kind": "local-source-ga",
+    "notClaimed": [
+      "public release readiness",
+      "signed native installers",
+      "clean-machine GUI installation",
+      "Linux or macOS support"
+    ]
+  }
+}

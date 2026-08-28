@@ -388,7 +388,7 @@ describe('the Electron composition opens a subject headlessly', () => {
     expect(inspected.output.value).toMatchObject({
       format: 'sc2-map',
       entries: 5,
-      mapDocuments: ['MapInfo', 'Objects', 'Terrain'],
+      mapDocuments: ['MapInfo', 'Objects', 'Terrain', 'mapinfo', 'objects', 'terrain'],
       localizedData: 0,
       scripts: 1,
     })

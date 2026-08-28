@@ -46,6 +46,7 @@ let dist = ''
 let server: Server
 let browser: Browser
 let origin = ''
+const servedRequests: string[] = []
 
 beforeAll(async () => {
   dist = mkdtempSync(join(tmpdir(), 'modkit-web-boot-'))
@@ -55,6 +56,7 @@ beforeAll(async () => {
   })
   server = createServer((request, response) => {
     const name = (request.url ?? '/').split('?')[0] ?? '/'
+    servedRequests.push(name)
     const target = normalize(join(dist, name === '/' ? 'index.html' : name))
     // never serve outside the built app, whatever the request line says
     if (!target.startsWith(dist + sep) && target !== dist) {
@@ -141,9 +143,7 @@ describe('PWA boot', () => {
      * The service worker cannot register in every embedded browser, and that is a property of the
      * environment rather than of this build, so its warning is not a failure here.
      */
-    expect(
-      failures.filter(line => !/ServiceWorker|service-worker|Failed to register/u.test(line)),
-    ).toEqual([])
+    expect(failures).toEqual([])
     await page.close()
   }, 120_000)
 
@@ -179,5 +179,41 @@ describe('PWA boot', () => {
     expect(state.fontStack).toContain('Modkit Cyrillic UI')
     expect(failures).toEqual([])
     await page.close()
+  }, 120_000)
+
+  it('closes a worker-backed page and opens the same subject in a fresh page', async () => {
+    const failures: string[] = []
+    const openSubjectPage = async () => {
+      const page = await browser.newPage({ colorScheme: 'dark' })
+      page.on('pageerror', error => failures.push(`pageerror: ${error.message}`))
+      page.on('console', message => {
+        if (message.type() === 'error') failures.push(`console: ${message.text()}`)
+      })
+      await page.goto(`${origin}/?open=./favicon-32.png`, { waitUntil: 'load' })
+      await page.waitForSelector('[data-mk-part="explorer.filetab"]', { timeout: 60_000 })
+      return page
+    }
+    const waitForWorkerRequestAfter = async (before: number): Promise<number> => {
+      for (let attempt = 0; attempt < 200; attempt += 1) {
+        const current = servedRequests.filter(path => path === '/worker-entry.js').length
+        if (current > before) return current
+        await new Promise(resolve => setTimeout(resolve, 50))
+      }
+      return servedRequests.filter(path => path === '/worker-entry.js').length
+    }
+
+    const beforeFirstOpen = servedRequests.filter(path => path === '/worker-entry.js').length
+    const first = await openSubjectPage()
+    const afterFirstOpen = await waitForWorkerRequestAfter(beforeFirstOpen)
+    expect(afterFirstOpen).toBeGreaterThan(beforeFirstOpen)
+    await first.close()
+
+    const second = await openSubjectPage()
+    const afterSecondOpen = await waitForWorkerRequestAfter(afterFirstOpen)
+    expect(afterSecondOpen).toBeGreaterThan(afterFirstOpen)
+    expect(
+      failures.filter(line => !/ServiceWorker|service-worker|Failed to register/u.test(line)),
+    ).toEqual([])
+    await second.close()
   }, 120_000)
 })
