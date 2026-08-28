@@ -1,0 +1,231 @@
+/**
+ * Generic VS Code workbench workflows, kept free of the `vscode` module.
+ *
+ * These are policy and state transitions which all editor adapters need: bounded container search
+ * and extraction, selected content roots, a readable diagnostic journal, and the accepted mapping
+ * from the old focused views to the current host/presentation surfaces.  `extension.ts` only turns
+ * their results into native pickers, documents and workspace writes.
+ */
+
+import type { ContainerIndex, ContainerNode } from './container-uri.js'
+
+export const VSCODE_CONTAINER_SEARCH_LIMIT = 200
+export const VSCODE_MATERIALIZATION_LIMIT_BYTES = 64 * 1024 * 1024
+
+export interface ContainerSearchHit {
+  readonly path: string
+  readonly node: ContainerNode
+}
+
+const compareText = (left: string, right: string): number =>
+  left < right ? -1 : left > right ? 1 : 0
+
+/** Case-insensitive, path-aware search with a hard result ceiling. */
+export function searchContainerIndex(
+  index: ContainerIndex,
+  query: string,
+  limit = VSCODE_CONTAINER_SEARCH_LIMIT,
+): readonly ContainerSearchHit[] {
+  const needle = query.trim().replaceAll('\\', '/').toLowerCase()
+  if (needle.length === 0) return Object.freeze([])
+  const requested = Number.isSafeInteger(limit) && limit > 0 ? limit : VSCODE_CONTAINER_SEARCH_LIMIT
+  const ceiling = Math.min(VSCODE_CONTAINER_SEARCH_LIMIT, requested)
+  const hits: ContainerSearchHit[] = []
+  for (const [path, node] of [...index.files].sort(([left], [right]) => compareText(left, right))) {
+    if (!path.toLowerCase().includes(needle)) continue
+    hits.push(Object.freeze({ path, node }))
+    if (hits.length === ceiling) break
+  }
+  return Object.freeze(hits)
+}
+
+/** Refuse a directory or an entry whose declared/read size exceeds the host materialization cap. */
+export function assertMaterializationBound(
+  entry: string,
+  node: ContainerNode,
+  observedBytes?: number,
+  maximumBytes = VSCODE_MATERIALIZATION_LIMIT_BYTES,
+): void {
+  if (!Number.isSafeInteger(maximumBytes) || maximumBytes <= 0) {
+    throw new TypeError('materialization maximumBytes must be a positive safe integer')
+  }
+  if (node.kind !== 'file')
+    throw new Error(`«${entry}» is a directory, not a materializable member`)
+  if (observedBytes === undefined && node.size === undefined) {
+    throw new Error(`«${entry}» declares no size, so bounded materialization is unavailable`)
+  }
+  const size = observedBytes ?? node.size
+  if (size !== undefined && size > maximumBytes) {
+    throw new Error(
+      `«${entry}» is ${(size / (1024 * 1024)).toFixed(1)} MiB, over the ` +
+        `${(maximumBytes / (1024 * 1024)).toFixed(0)} MiB materialization limit`,
+    )
+  }
+}
+
+export interface SelectedContentSource {
+  readonly gameId: string
+  readonly displayName: string
+  readonly installPath: string
+  readonly normalizedPath: string
+}
+
+const recordOf = (value: unknown): Readonly<Record<string, unknown>> | undefined =>
+  typeof value === 'object' && value !== null
+    ? (value as Readonly<Record<string, unknown>>)
+    : undefined
+
+const nonBlank = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.trim().length > 0 ? value : undefined
+
+/** Parse persisted source selections without trusting workspace state. */
+export function selectedContentSources(value: unknown): readonly SelectedContentSource[] {
+  if (!Array.isArray(value)) return Object.freeze([])
+  const byPath = new Map<string, SelectedContentSource>()
+  for (const item of value) {
+    const row = recordOf(item)
+    const gameId = nonBlank(row?.['gameId'])
+    const displayName = nonBlank(row?.['displayName'])
+    const installPath = nonBlank(row?.['installPath'])
+    const normalizedPath = nonBlank(row?.['normalizedPath'])
+    if (
+      gameId === undefined ||
+      displayName === undefined ||
+      installPath === undefined ||
+      normalizedPath === undefined
+    ) {
+      continue
+    }
+    byPath.set(normalizedPath, Object.freeze({ gameId, displayName, installPath, normalizedPath }))
+  }
+  return Object.freeze(
+    [...byPath.values()].sort((a, b) => compareText(a.normalizedPath, b.normalizedPath)),
+  )
+}
+
+export function withSelectedContentSource(
+  current: readonly SelectedContentSource[],
+  source: SelectedContentSource,
+): readonly SelectedContentSource[] {
+  return selectedContentSources([
+    ...current.filter(item => item.normalizedPath !== source.normalizedPath),
+    source,
+  ])
+}
+
+export function withoutSelectedContentSource(
+  current: readonly SelectedContentSource[],
+  normalizedPath: string,
+): readonly SelectedContentSource[] {
+  return Object.freeze(current.filter(item => item.normalizedPath !== normalizedPath))
+}
+
+/**
+ * Game ids are extension facts, not an application allowlist.  This reads only the standard
+ * installation-discovery offer facet, so a future game extension appears without a VS Code edit.
+ */
+export function installationGameIds(inventory: unknown): readonly string[] {
+  const ids = new Set<string>()
+  const extensions = recordOf(inventory)?.['extensions']
+  if (!Array.isArray(extensions)) return Object.freeze([])
+  for (const extension of extensions) {
+    const contributions = recordOf(extension)?.['contributions']
+    if (!Array.isArray(contributions)) continue
+    for (const contribution of contributions) {
+      const manifest = recordOf(recordOf(contribution)?.['manifest'])
+      const provides = recordOf(manifest?.['spec'])?.['provides']
+      if (!Array.isArray(provides)) continue
+      for (const offer of provides) {
+        const row = recordOf(offer)
+        if (row?.['contract'] !== 'common.game/installation-discovery' || row['major'] !== 1)
+          continue
+        const gameIds = recordOf(row['facet'])?.['gameIds']
+        if (!Array.isArray(gameIds)) continue
+        for (const gameId of gameIds) {
+          const id = nonBlank(gameId)
+          if (id !== undefined) ids.add(id)
+        }
+      }
+    }
+  }
+  return Object.freeze([...ids].sort())
+}
+
+export interface DiagnosticJournal {
+  append(line: string): void
+  lines(): readonly string[]
+  text(): string
+}
+
+/** A bounded, directly readable mirror of the Output channel. */
+export function createDiagnosticJournal(maximumLines = 2_000): DiagnosticJournal {
+  if (!Number.isSafeInteger(maximumLines) || maximumLines <= 0) {
+    throw new TypeError('diagnostic journal maximumLines must be a positive safe integer')
+  }
+  const entries: string[] = []
+  return Object.freeze({
+    append(line: string) {
+      entries.push(...line.replaceAll('\r\n', '\n').replaceAll('\r', '\n').split('\n'))
+      if (entries.length > maximumLines) entries.splice(0, entries.length - maximumLines)
+    },
+    lines: () => Object.freeze([...entries]),
+    text: () => `${entries.join('\n')}\n`,
+  })
+}
+
+export type WorkbenchReplacementSurface =
+  | 'native-explorer'
+  | 'extensions-view'
+  | 'host-view'
+  | 'presentation:tree'
+  | 'presentation:relations'
+  | 'presentation:edit'
+  | 'presentation:workbench'
+
+export interface LegacyViewReplacement {
+  readonly legacyViewId: string
+  readonly surfaces: readonly WorkbenchReplacementSurface[]
+  readonly reason: string
+}
+
+/** Machine-checkable replacement map for every focused view removed from the current manifest. */
+export const VSCODE_LEGACY_VIEW_REPLACEMENTS: readonly LegacyViewReplacement[] = Object.freeze([
+  Object.freeze({
+    legacyViewId: 'modkitArchiveTree',
+    surfaces: Object.freeze(['native-explorer'] as const),
+    reason: 'Container members are mounted by the read-only modkit-container filesystem provider.',
+  }),
+  Object.freeze({
+    legacyViewId: 'modkitGameCodecsTree',
+    surfaces: Object.freeze(['extensions-view'] as const),
+    reason: 'Loaded and refused codec contributions are shown by the generic Extensions view.',
+  }),
+  Object.freeze({
+    legacyViewId: 'modkitModTree',
+    surfaces: Object.freeze([
+      'presentation:tree',
+      'presentation:relations',
+      'presentation:edit',
+    ] as const),
+    reason: 'The active subject publishes generic tree, relation and evidence-gated edit stages.',
+  }),
+  Object.freeze({
+    legacyViewId: 'modkitView',
+    surfaces: Object.freeze(['host-view'] as const),
+    reason: 'Topology, facilities, sources and inventory health are native Host view rows.',
+  }),
+  Object.freeze({
+    legacyViewId: 'sc2layoutElementView',
+    surfaces: Object.freeze([
+      'presentation:tree',
+      'presentation:relations',
+      'presentation:edit',
+    ] as const),
+    reason: 'Navigation and refactors use generic tree, relation and evidence-gated edit stages.',
+  }),
+  Object.freeze({
+    legacyViewId: 'sc2layoutMainView',
+    surfaces: Object.freeze(['presentation:workbench'] as const),
+    reason: 'The shared subject workbench selects all applicable presentation and edit stages.',
+  }),
+])

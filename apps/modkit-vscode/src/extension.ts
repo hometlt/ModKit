@@ -13,7 +13,7 @@
  * webview is not an extension host) stays true in the running product and not only in the
  * topology.
  */
-import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
 
@@ -31,6 +31,7 @@ import {
   type CommandResult,
 } from '@modkitx-x3/host'
 import { createLanguageWorkspace, languageProviderRoutes } from '@modkitx-x3/host/language'
+import { discoverGameInstallations } from '@modkitx-x3/host/games'
 import { createNodeMapPreviewResourcePlanResolver } from '@modkitx-x3/host/node'
 import type { ContainerRegistry } from './containers.js'
 import { CustomDocumentState } from './custom-document.js'
@@ -65,6 +66,15 @@ import {
   type RuntimeDebugCommandResult,
   type RuntimeDebugController,
 } from './runtime-debug.js'
+import {
+  assertMaterializationBound,
+  createDiagnosticJournal,
+  installationGameIds,
+  selectedContentSources,
+  withSelectedContentSource,
+  withoutSelectedContentSource,
+  type SelectedContentSource,
+} from './workbench-workflows.js'
 
 const CUSTOM_EDITOR_TYPE = 'modkit.genericAssetPreview'
 
@@ -92,6 +102,16 @@ const RUNTIME_SESSION_BUDGET = Object.freeze({
   maxTicks: 1_000_000,
   maxMemoryBytes: 512 * 1024 * 1024,
 })
+
+const GAME_DISCOVERY_BUDGET = Object.freeze({
+  maxInputBytes: 1_000_000n,
+  maxDepth: 64,
+  maxNodes: 100_000,
+  maxScalarBytes: 1_000_000,
+  maxDiagnostics: 100,
+})
+
+const SELECTED_SOURCES_KEY = 'modkit.selectedContentSources'
 
 /**
  * The subject string a URI names.
@@ -254,7 +274,12 @@ class HostView implements vscode.TreeDataProvider<HostNode> {
   constructor(
     private readonly host: VsCodeSubjectHost,
     private readonly topologyId: string,
+    private readonly sources: () => readonly SelectedContentSource[],
   ) {}
+
+  refresh(): void {
+    this.changed.fire(undefined)
+  }
 
   /** Called when a page reports its facilities, so the rail stops guessing and starts knowing. */
   report(facilities: FacilityReport | undefined): void {
@@ -341,6 +366,18 @@ class HostView implements vscode.TreeDataProvider<HostNode> {
                 })),
               ],
       },
+      {
+        label: 'Sources',
+        icon: 'root-folder',
+        children:
+          this.sources().length === 0
+            ? [{ label: 'No selected game installation', detail: 'run Select Game Installation' }]
+            : this.sources().map(source => ({
+                label: source.displayName,
+                detail: source.gameId,
+                icon: 'folder-library',
+              })),
+      },
     ]
   }
 }
@@ -378,7 +415,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const activationStarted = Date.now()
   const output = vscode.window.createOutputChannel('Modkit MK3')
   context.subscriptions.push(output)
-  const log = (line: string): void => output.appendLine(line)
+  const journal = createDiagnosticJournal()
+  const log = (line: string): void => {
+    journal.append(line)
+    output.appendLine(line)
+  }
 
   const extensionRoot = context.extensionUri.fsPath
   // In a checkout the extension lives at `<repo>/apps/modkit-vscode`; in a packaged build it
@@ -444,19 +485,25 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   for (const id of host.extensions.disabledContributions) {
     log(`contribution disabled by modkit.disabledContributions: ${id}`)
   }
+  for (const diagnostic of host.services.host.inventory.diagnostics) {
+    log(`[inventory] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`)
+  }
   if (host.extensions.failures.length > 0 || host.extensions.problems.length > 0) {
     void vscode.window.showWarningMessage(
       `Modkit: ${host.extensions.failures.length + host.extensions.problems.length} extension ` +
-        'root(s) did not load. See the Modkit MK3 output channel.',
+        'root(s) did not load. Run “Modkit: Show Diagnostics” for the readable journal.',
     )
   }
 
   // ---------------------------------------------------------------- granted roots
   /** Directories the user reached outside the workspace (a single file opened by name). */
   /** The realm rail. Held rather than constructed inline, because a page's report refreshes it. */
-  const hostView = new HostView(host, host.services.host.topology.topologyId)
+  let selectedSources = selectedContentSources(
+    context.workspaceState.get<unknown>(SELECTED_SOURCES_KEY),
+  )
+  const hostView = new HostView(host, host.services.host.topology.topologyId, () => selectedSources)
 
-  const granted = new Set<string>()
+  const granted = new Set<string>(selectedSources.map(source => resolve(source.installPath)))
   const roots = (): readonly string[] => [...new Set([...workspaceFolders(), ...granted])]
 
   // ---------------------------------------------------------------- containers
@@ -505,10 +552,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     )
   }
 
+  const containerChanges = new vscode.EventEmitter<vscode.FileChangeEvent[]>()
+  context.subscriptions.push(containerChanges)
   const containerFileSystem: vscode.FileSystemProvider = {
-    // Containers are opened once and read; nothing under this scheme changes while a window lives,
-    // so an event that never fires is the honest implementation rather than a missing one.
-    onDidChangeFile: new vscode.EventEmitter<vscode.FileChangeEvent[]>().event,
+    // A refresh explicitly invalidates the held session/listing and emits one native root change.
+    onDidChangeFile: containerChanges.event,
     watch: () => new vscode.Disposable(() => undefined),
 
     async stat(uri) {
@@ -747,6 +795,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     routes: languageRoutes,
     publishDiagnostics: (uri, diagnostics) => {
       const target = vscode.Uri.parse(uri)
+      for (const item of diagnostics) {
+        log(`[language] ${uri}: ${item.severity} ${item.code}: ${item.message}`)
+      }
       languageDiagnostics.set(
         target,
         diagnostics.map(item => {
@@ -922,6 +973,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
   // ---------------------------------------------------------------- webviews
   const live = new Set<VsCodeServed>()
+  const liveSubjects = new Map<VsCodeServed, string | undefined>()
 
   const attach = (
     webview: vscode.Webview,
@@ -963,6 +1015,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       onFacilities: recordFacilities,
     })
     live.add(served)
+    liveSubjects.set(served, openPath === undefined ? undefined : subjectKey(openPath))
     // The listener is attached first: the page opens the endpoint the moment its bundle runs.
     webview.html = panelHtml({
       webview,
@@ -1203,6 +1256,69 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   }
 
   // ---------------------------------------------------------------- commands
+  const containerFrom = (argument: unknown): string | undefined => {
+    if (argument instanceof vscode.Uri) {
+      return argument.scheme === CONTAINER_SCHEME
+        ? parseContainerUriText(argument.toString())?.container
+        : argument.scheme === 'file'
+          ? argument.fsPath
+          : undefined
+    }
+    if (typeof argument === 'string') {
+      return (
+        parseContainerUriText(argument)?.container ?? (isAbsolute(argument) ? argument : undefined)
+      )
+    }
+    if (typeof argument === 'object' && argument !== null) {
+      const container = (argument as { readonly container?: unknown }).container
+      if (typeof container === 'string' && isAbsolute(container)) return container
+    }
+    const active = activeSubject
+    return active === undefined ? undefined : (parseContainerUriText(active)?.container ?? active)
+  }
+
+  const entryFrom = (argument: unknown): string | undefined => {
+    if (argument instanceof vscode.Uri) return parseContainerUriText(argument.toString())?.entry
+    if (typeof argument === 'string') return parseContainerUriText(argument)?.entry
+    if (typeof argument === 'object' && argument !== null) {
+      const entry = (argument as { readonly entry?: unknown }).entry
+      if (typeof entry === 'string' && entry.length > 0) return entry
+    }
+    return activeSubject === undefined ? undefined : parseContainerUriText(activeSubject)?.entry
+  }
+
+  const pickContainerMember = async (
+    container: string,
+    title: string,
+  ): Promise<string | undefined> => {
+    const index = await containers.index(container)
+    return vscode.window.showQuickPick([...index.files.keys()].sort(), { title })
+  }
+
+  const publishRootChange = (container: string): void => {
+    containerChanges.fire([
+      {
+        type: vscode.FileChangeType.Changed,
+        uri: vscode.Uri.from({ scheme: CONTAINER_SCHEME, path: containerUriPath(container) }),
+      },
+    ])
+  }
+
+  const publishSelectedSources = async (next: readonly SelectedContentSource[]): Promise<void> => {
+    selectedSources = next
+    await context.workspaceState.update(SELECTED_SOURCES_KEY, next)
+    hostView.refresh()
+    for (const served of live) {
+      served.publishRoots()
+      served.notice('Selected content sources changed, so the available roots were refreshed.')
+    }
+  }
+
+  const inside = (root: string, candidate: string): boolean => {
+    const child = relative(resolve(root), resolve(candidate))
+    return child === '' || (!child.startsWith('..') && !isAbsolute(child))
+  }
+
   context.subscriptions.push(
     /*
      * Focuses the native view container rather than opening a panel of its own. What this command
@@ -1291,6 +1407,242 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
     /** One generic surface; action and runtime identity are request data, never game branches. */
     vscode.commands.registerCommand('modkit.runtime.control', runRuntimeDebug),
+
+    /** Search any standard container listing without restoring a game-specific archive tree. */
+    vscode.commands.registerCommand('modkit.searchContainer', (argument: unknown) =>
+      (async () => {
+        const container = containerFrom(argument)
+        if (container === undefined) {
+          void vscode.window.showInformationMessage('Modkit: open a container before searching it.')
+          return undefined
+        }
+        const supplied =
+          typeof argument === 'object' && argument !== null
+            ? (argument as { readonly query?: unknown }).query
+            : undefined
+        const query =
+          typeof supplied === 'string'
+            ? supplied
+            : await vscode.window.showInputBox({ title: `Search ${basename(container)}` })
+        if (query === undefined || query.trim().length === 0) return undefined
+        const hits = await containers.search(container, query)
+        const picked = await vscode.window.showQuickPick(
+          hits.map(hit => ({
+            label: hit.path,
+            ...(hit.node.size === undefined
+              ? {}
+              : { description: `${String(hit.node.size)} bytes` }),
+          })),
+          { title: `Matches in ${basename(container)}` },
+        )
+        if (picked === undefined) return undefined
+        const uri = vscode.Uri.from({
+          scheme: CONTAINER_SCHEME,
+          path: containerUriPath(container, picked.label),
+        })
+        openResource(uri)
+        return uri
+      })(),
+    ),
+
+    /** Reopen one held container and tell the native Explorer its root changed. */
+    vscode.commands.registerCommand('modkit.refreshContainer', (argument: unknown) =>
+      (async () => {
+        const container = containerFrom(argument)
+        if (container === undefined) {
+          void vscode.window.showInformationMessage(
+            'Modkit: open a container before refreshing it.',
+          )
+          return false
+        }
+        await containers.refresh(container)
+        publishRootChange(container)
+        log(`container refreshed: ${basename(container)}`)
+        return true
+      })(),
+    ),
+
+    /** Extract one member to a user-selected file, enforcing the same 64 MiB in-memory ceiling. */
+    vscode.commands.registerCommand('modkit.materializeContainerEntry', (argument: unknown) =>
+      (async () => {
+        const container = containerFrom(argument)
+        if (container === undefined) {
+          void vscode.window.showInformationMessage(
+            'Modkit: open a container or one of its members before materializing.',
+          )
+          return undefined
+        }
+        const entry =
+          entryFrom(argument) ??
+          (await pickContainerMember(container, `Materialize a member of ${basename(container)}`))
+        if (entry === undefined || entry.length === 0) return undefined
+        const node = await containers.stat(container, entry)
+        assertMaterializationBound(entry, node)
+        const requestedTarget =
+          typeof argument === 'object' && argument !== null
+            ? (argument as { readonly target?: unknown }).target
+            : undefined
+        const target =
+          requestedTarget instanceof vscode.Uri
+            ? requestedTarget
+            : typeof requestedTarget === 'string' && isAbsolute(requestedTarget)
+              ? vscode.Uri.file(requestedTarget)
+              : await vscode.window.showSaveDialog({
+                  title: `Materialize ${entry}`,
+                  defaultUri: vscode.Uri.file(join(dirname(container), basename(entry))),
+                })
+        if (target === undefined) return undefined
+        const bytes = await containers.read(container, entry)
+        assertMaterializationBound(entry, node, bytes.byteLength)
+        await vscode.workspace.fs.writeFile(target, bytes)
+        log(`materialized ${basename(container)} › ${entry} (${String(bytes.byteLength)} bytes)`)
+        return target
+      })(),
+    ),
+
+    /** Select a verified installation through whatever standard providers the inventory offers. */
+    vscode.commands.registerCommand('modkit.selectGameInstallation', () =>
+      (async () => {
+        const gameIds = installationGameIds(host.services.host.inventory)
+        const candidates: SelectedContentSource[] = []
+        for (const gameId of gameIds) {
+          const discovery = await discoverGameInstallations({
+            services: host.services,
+            gameId,
+            maxCandidates: 32,
+            grant: {
+              id: 'vscode-game-installation-discovery',
+              classes:
+                process.platform === 'win32'
+                  ? ['filesystem-read', 'process-launch']
+                  : ['filesystem-read'],
+            },
+            budgets: GAME_DISCOVERY_BUDGET,
+          })
+          for (const item of discovery.diagnostics) {
+            log(`[installation] ${item.severity} ${item.code}: ${item.message}`)
+          }
+          if (discovery.state !== 'discovered') continue
+          for (const installation of discovery.result.installations) {
+            candidates.push({
+              gameId: installation.gameId,
+              displayName: installation.displayName,
+              installPath: installation.installPath,
+              normalizedPath: installation.normalizedPath,
+            })
+          }
+        }
+        if (candidates.length === 0) {
+          void vscode.window.showWarningMessage(
+            'Modkit: no verified installation was found by the installed game extensions.',
+          )
+          return undefined
+        }
+        const picked = await vscode.window.showQuickPick(
+          candidates.map(source => ({
+            label: source.displayName,
+            description: source.gameId,
+            detail: source.installPath,
+            source,
+          })),
+          { title: 'Select a game installation as a content source' },
+        )
+        if (picked === undefined) return undefined
+        granted.add(resolve(picked.source.installPath))
+        await publishSelectedSources(withSelectedContentSource(selectedSources, picked.source))
+        log(`selected content source: ${picked.source.displayName} (${picked.source.installPath})`)
+        return picked.source
+      })(),
+    ),
+
+    /** Remove one selected source and release every cached container held beneath it. */
+    vscode.commands.registerCommand('modkit.unloadSource', (argument: unknown) =>
+      (async () => {
+        const requested =
+          typeof argument === 'string'
+            ? argument
+            : typeof argument === 'object' && argument !== null
+              ? (argument as { readonly normalizedPath?: unknown }).normalizedPath
+              : undefined
+        const selected =
+          typeof requested === 'string'
+            ? selectedSources.find(source => source.normalizedPath === requested)
+            : await vscode.window
+                .showQuickPick(
+                  selectedSources.map(source => ({
+                    label: source.displayName,
+                    description: source.gameId,
+                    detail: source.installPath,
+                    source,
+                  })),
+                  { title: 'Unload a selected content source' },
+                )
+                .then(item => item?.source)
+        if (selected === undefined) return false
+        granted.delete(resolve(selected.installPath))
+        for (const container of containers.held()) {
+          if (inside(selected.installPath, container)) await containers.release(container)
+        }
+        await publishSelectedSources(
+          withoutSelectedContentSource(selectedSources, selected.normalizedPath),
+        )
+        log(`unloaded content source: ${selected.displayName}`)
+        return true
+      })(),
+    ),
+
+    /** Re-run the active subject route; relation/tree stages refresh from the new descriptor. */
+    vscode.commands.registerCommand('modkit.refreshRelations', () => {
+      if (activeSubject === undefined) return false
+      let refreshed = false
+      for (const [served, path] of liveSubjects) {
+        if (path !== activeSubject) continue
+        served.open(activeSubject)
+        served.notice('The active subject and its relation/tree stages were refreshed.')
+        refreshed = true
+      }
+      return refreshed
+    }),
+
+    /** Open the current or supplied resource through the generic workbench. */
+    vscode.commands.registerCommand('modkit.navigateResource', (argument: unknown) => {
+      const uri =
+        argument instanceof vscode.Uri
+          ? argument
+          : typeof argument === 'string'
+            ? subjectUriOf(argument)
+            : activeSubject === undefined
+              ? undefined
+              : subjectUriOf(activeSubject)
+      if (uri === undefined) return false
+      openResource(uri)
+      return true
+    }),
+
+    /** Present a journal snapshot as a normal editor document instead of an opaque channel. */
+    vscode.commands.registerCommand('modkit.showDiagnostics', () =>
+      vscode.workspace
+        .openTextDocument({ language: 'log', content: journal.text() })
+        .then(document => vscode.window.showTextDocument(document, { preview: true })),
+    ),
+
+    /** Export exactly the same bounded journal the readable diagnostics document shows. */
+    vscode.commands.registerCommand('modkit.exportDiagnostics', (argument: unknown) =>
+      (async () => {
+        const target =
+          argument instanceof vscode.Uri
+            ? argument
+            : await vscode.window.showSaveDialog({
+                title: 'Export Modkit diagnostics',
+                defaultUri: vscode.Uri.file(
+                  join(workspaceFolders()[0] ?? extensionRoot, 'modkit.log'),
+                ),
+              })
+        if (target === undefined) return undefined
+        await vscode.workspace.fs.writeFile(target, new TextEncoder().encode(journal.text()))
+        return target
+      })(),
+    ),
 
     /*
      * Put a container in the Explorer.
@@ -1540,6 +1892,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         subjectFacts.delete(subjectKey(target.path))
         document.state.detach(served)
         live.delete(served)
+        liveSubjects.delete(served)
         forgetDiagnostics(target.path)
         void served.close('the asset editor was closed')
       })

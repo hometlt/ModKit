@@ -55,6 +55,7 @@ import {
   type ContainerIndex,
   type ContainerNode,
 } from './container-uri.js'
+import { searchContainerIndex, type ContainerSearchHit } from './workbench-workflows.js'
 
 /** The subject at this path publishes no entry listing — it is not a container this host can browse. */
 export const NOT_A_CONTAINER = 'x3.app/vscode-not-a-container'
@@ -86,6 +87,16 @@ export interface ContainerRegistry {
   stat(container: string, entry: string, signal?: AbortSignal): Promise<ContainerNode>
   /** The member's bytes, through the container's own bounded extraction. */
   read(container: string, entry: string, signal?: AbortSignal): Promise<Uint8Array>
+  /** Focused, bounded search over the listing already owned by this registry. */
+  search(
+    container: string,
+    query: string,
+    signal?: AbortSignal,
+  ): Promise<readonly ContainerSearchHit[]>
+  /** Drop one held listing/session and open it again from its current source revision. */
+  refresh(container: string, signal?: AbortSignal): Promise<ContainerIndex>
+  /** Release one held container without disturbing other sources in this window. */
+  release(container: string): Promise<boolean>
   /**
    * The member as a subject: the same snapshot a file on disk produces, so the page cannot tell
    * which of the two it asked for.
@@ -199,6 +210,20 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
     }
   }
 
+  const release = async (container: string): Promise<boolean> => {
+    const key = resolve(container)
+    const pending = held.get(key)
+    if (pending === undefined) return false
+    held.delete(key)
+    try {
+      const holder = await pending
+      await holder.session.dispose()
+    } catch {
+      // A failed open was never a live session. A disposal failure must not leave a stale cache key.
+    }
+    return true
+  }
+
   const entryIdOf = (holder: HeldContainer, container: string, entry: string): string => {
     const node = statContainerEntry(holder.index, entry)
     if (node?.kind !== 'file' || node.entryId === undefined) {
@@ -273,6 +298,17 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
       }
       return invoked.output.value
     },
+
+    async search(container, query, signal) {
+      return searchContainerIndex((await holderFor(container, signal)).index, query)
+    },
+
+    async refresh(container, signal) {
+      await release(container)
+      return (await holderFor(container, signal)).index
+    },
+
+    release,
 
     /**
      * A member, opened as a subject.

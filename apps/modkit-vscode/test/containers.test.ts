@@ -236,6 +236,19 @@ describe('the Explorer can be answered from inside a container', () => {
     })
   }, 120_000)
 
+  it('searches, refreshes and releases the shared held container without a second cache', async () => {
+    const { containers, archive } = await registryFor()
+    expect((await containers.search(archive, 'MINIMAL')).map(hit => hit.path)).toEqual([
+      'art/w3d/minimal.w3d',
+    ])
+    expect(containers.held()).toEqual([archive])
+    expect((await containers.refresh(archive)).files.has('readme.txt')).toBe(true)
+    expect(containers.held()).toEqual([archive])
+    expect(await containers.release(archive)).toBe(true)
+    expect(await containers.release(archive)).toBe(false)
+    expect(containers.held()).toEqual([])
+  }, 120_000)
+
   it('names what it refuses: a missing member, a directory, a file that holds nothing', async () => {
     const { containers, archive, plain } = await registryFor()
     expect(await codeOf(() => containers.stat(archive, 'art/w3d/absent.w3d'))).toBe(

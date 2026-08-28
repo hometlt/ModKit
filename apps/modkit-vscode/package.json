@@ -37,7 +37,7 @@
     "@vscode/test-electron": "^3.1.0"
   },
   "displayName": "Modkit MK3",
-  "description": "Modkit MK3 host for StarCraft II mod assets.",
+  "description": "Modkit MK3 host for game mod assets.",
   "publisher": "modkitx",
   "engines": {
     "vscode": "^1.85.0"
@@ -61,12 +61,32 @@
         "title": "Modkit: Explain Resolution"
       },
       {
+        "command": "modkit.exportDiagnostics",
+        "title": "Modkit: Export Diagnostics…"
+      },
+      {
+        "command": "modkit.materializeContainerEntry",
+        "title": "Modkit: Materialize Container Member…"
+      },
+      {
+        "command": "modkit.navigateResource",
+        "title": "Modkit: Navigate to Resource"
+      },
+      {
         "command": "modkit.openArchiveEntry",
         "title": "Modkit: Open Container Member…"
       },
       {
         "command": "modkit.openWith",
         "title": "Modkit: Open Active File in Workbench"
+      },
+      {
+        "command": "modkit.refreshContainer",
+        "title": "Modkit: Refresh Container"
+      },
+      {
+        "command": "modkit.refreshRelations",
+        "title": "Modkit: Refresh Active Relations"
       },
       {
         "command": "modkit.runCommand",
@@ -77,8 +97,24 @@
         "title": "Modkit: Control Runtime Session…"
       },
       {
+        "command": "modkit.searchContainer",
+        "title": "Modkit: Search Container…"
+      },
+      {
+        "command": "modkit.selectGameInstallation",
+        "title": "Modkit: Select Game Installation…"
+      },
+      {
+        "command": "modkit.showDiagnostics",
+        "title": "Modkit: Show Diagnostics"
+      },
+      {
         "command": "modkit.showHostProfile",
         "title": "Modkit: Open Workbench"
+      },
+      {
+        "command": "modkit.unloadSource",
+        "title": "Modkit: Unload Content Source…"
       }
     ],
     "configuration": {
@@ -159,11 +195,20 @@
     "onCommand:modkit.addExtensionFolder",
     "onCommand:modkit.browseContainer",
     "onCommand:modkit.explainResolution",
+    "onCommand:modkit.exportDiagnostics",
+    "onCommand:modkit.materializeContainerEntry",
+    "onCommand:modkit.navigateResource",
     "onCommand:modkit.openArchiveEntry",
     "onCommand:modkit.openWith",
+    "onCommand:modkit.refreshContainer",
+    "onCommand:modkit.refreshRelations",
     "onCommand:modkit.runCommand",
     "onCommand:modkit.runtime.control",
+    "onCommand:modkit.searchContainer",
+    "onCommand:modkit.selectGameInstallation",
+    "onCommand:modkit.showDiagnostics",
     "onCommand:modkit.showHostProfile",
+    "onCommand:modkit.unloadSource",
     "onCustomEditor:modkit.genericAssetPreview",
     "onView:modkit.extensions",
     "onView:modkit.host",

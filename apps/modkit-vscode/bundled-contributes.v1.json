@@ -10,6 +10,18 @@
       "title": "Modkit: Explain Resolution"
     },
     {
+      "command": "modkit.exportDiagnostics",
+      "title": "Modkit: Export Diagnostics…"
+    },
+    {
+      "command": "modkit.materializeContainerEntry",
+      "title": "Modkit: Materialize Container Member…"
+    },
+    {
+      "command": "modkit.navigateResource",
+      "title": "Modkit: Navigate to Resource"
+    },
+    {
       "command": "modkit.openWith",
       "title": "Modkit: Open Active File in Workbench"
     },
@@ -26,12 +38,36 @@
       "title": "Modkit: Open Container Member…"
     },
     {
+      "command": "modkit.refreshContainer",
+      "title": "Modkit: Refresh Container"
+    },
+    {
+      "command": "modkit.refreshRelations",
+      "title": "Modkit: Refresh Active Relations"
+    },
+    {
       "command": "modkit.runCommand",
       "title": "Modkit: Run Command…"
     },
     {
       "command": "modkit.runtime.control",
       "title": "Modkit: Control Runtime Session…"
+    },
+    {
+      "command": "modkit.searchContainer",
+      "title": "Modkit: Search Container…"
+    },
+    {
+      "command": "modkit.selectGameInstallation",
+      "title": "Modkit: Select Game Installation…"
+    },
+    {
+      "command": "modkit.showDiagnostics",
+      "title": "Modkit: Show Diagnostics"
+    },
+    {
+      "command": "modkit.unloadSource",
+      "title": "Modkit: Unload Content Source…"
     }
   ],
   "configuration": {
