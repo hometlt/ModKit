@@ -25,13 +25,12 @@
     },
     "byMigrationState": {
       "equivalent-better": 21,
-      "implemented": 106,
-      "missing": 4,
-      "partial": 2,
+      "implemented": 109,
+      "missing": 3,
       "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 17, "legacy-required": 117 },
-    "byEvidenceLevel": { "E0": 2, "E1": 26, "E2": 64, "E3": 12, "E4": 30 }
+    "byEvidenceLevel": { "E0": 1, "E1": 26, "E2": 65, "E3": 12, "E4": 30 }
   },
   "deadlines": {
     "block-11": [
@@ -2082,8 +2081,8 @@
       "obligation": "focused-required-addition",
       "owner": "apps and migration/product-profiles.json",
       "plannedBlock": 20,
-      "migrationState": "partial",
-      "supportState": "partial",
+      "migrationState": "implemented",
+      "supportState": "supported",
       "evidenceLevel": "E2",
       "allocationState": "covered",
       "portFamily": null,
@@ -2178,10 +2177,10 @@
       "obligation": "focused-required-addition",
       "owner": "scripts/migration",
       "plannedBlock": 20,
-      "migrationState": "missing",
-      "supportState": "unsupported",
-      "evidenceLevel": "E0",
-      "allocationState": "absent",
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E2",
+      "allocationState": "covered",
       "portFamily": null,
       "corpusDescriptors": [],
       "dependsOn": [
@@ -2225,8 +2224,8 @@
       "obligation": "focused-required-addition",
       "owner": "scripts and packages/host",
       "plannedBlock": 20,
-      "migrationState": "partial",
-      "supportState": "partial",
+      "migrationState": "implemented",
+      "supportState": "supported",
       "evidenceLevel": "E2",
       "allocationState": "covered",
       "portFamily": null,

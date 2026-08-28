@@ -374,9 +374,7 @@ if (
   fail('factPolicy must define a post-release default with an owner and reason')
 }
 
-if (!Array.isArray(decisions.releaseCandidateGaps) || decisions.releaseCandidateGaps.length === 0) {
-  fail('releaseCandidateGaps must be a non-empty array')
-}
+if (!Array.isArray(decisions.releaseCandidateGaps)) fail('releaseCandidateGaps must be an array')
 const releaseCandidateGapById = new Map()
 for (const [index, gap] of decisions.releaseCandidateGaps.entries()) {
   if (typeof gap?.gapId !== 'string' || gap.gapId.length === 0) {
@@ -605,6 +603,55 @@ function readRegisteredCommands(source, file) {
     ts.ScriptKind.TS,
   )
   if (sourceFile.parseDiagnostics.length > 0) fail('VS Code extension source has syntax errors')
+  const importedStrings = new Map()
+  for (const statement of sourceFile.statements) {
+    if (
+      !ts.isImportDeclaration(statement) ||
+      !ts.isStringLiteral(statement.moduleSpecifier) ||
+      statement.importClause?.namedBindings === undefined ||
+      !ts.isNamedImports(statement.importClause.namedBindings)
+    ) {
+      continue
+    }
+    const specifier = statement.moduleSpecifier.text
+    if (!specifier.startsWith('.')) continue
+    const relativeModule = specifier.replace(/\.js$/u, '.ts')
+    const localCandidate = path.resolve(path.dirname(file), relativeModule)
+    const canonicalCandidate = path.resolve(repoRoot, 'apps/modkit-vscode/src', relativeModule)
+    const modulePath = existsSync(localCandidate)
+      ? localCandidate
+      : existsSync(canonicalCandidate)
+        ? canonicalCandidate
+        : undefined
+    if (modulePath === undefined) continue
+    const moduleSource = ts.createSourceFile(
+      modulePath,
+      readFileSync(modulePath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TS,
+    )
+    const exportedStrings = new Map()
+    for (const moduleStatement of moduleSource.statements) {
+      if (
+        !ts.isVariableStatement(moduleStatement) ||
+        (moduleStatement.declarationList.flags & ts.NodeFlags.Const) === 0 ||
+        !moduleStatement.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword)
+      ) {
+        continue
+      }
+      for (const declaration of moduleStatement.declarationList.declarations) {
+        if (ts.isIdentifier(declaration.name) && ts.isStringLiteral(declaration.initializer)) {
+          exportedStrings.set(declaration.name.text, declaration.initializer.text)
+        }
+      }
+    }
+    for (const element of statement.importClause.namedBindings.elements) {
+      const importedName = element.propertyName?.text ?? element.name.text
+      const value = exportedStrings.get(importedName)
+      if (value !== undefined) importedStrings.set(element.name.text, value)
+    }
+  }
   const commands = new Map()
   const visit = node => {
     if (
@@ -613,13 +660,19 @@ function readRegisteredCommands(source, file) {
       node.expression.name.text === 'registerCommand'
     ) {
       const argument = node.arguments[0]
-      if (argument === undefined || !ts.isStringLiteral(argument)) {
+      const literal =
+        argument !== undefined && ts.isStringLiteral(argument)
+          ? argument.text
+          : argument !== undefined && ts.isIdentifier(argument)
+            ? importedStrings.get(argument.text)
+            : undefined
+      if (literal === undefined) {
         const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile))
         fail(
           `runtime command registration must use a string literal at ${position.line + 1}:${position.character + 1}`,
         )
       }
-      const command = normalizeCommandId(argument.text, 'runtime command registration')
+      const command = normalizeCommandId(literal, 'runtime command registration')
       if (commands.has(command)) fail(`runtime command ${command} is registered more than once`)
       commands.set(command, argument.getStart(sourceFile))
     }
@@ -824,7 +877,7 @@ if (
   )
 }
 if (
-  packagingBoundary.state !== 'release-candidate' ||
+  packagingBoundary.state !== 'already-equivalent' ||
   packagingBoundary.ownerBlockerId !== null ||
   packagingBoundary.cataloguedCommonRoots !== cataloguedCommonRoots ||
   packagingBoundary.packagedCodecRoots !== packagedCodecRoots ||
@@ -835,7 +888,7 @@ if (
   packagingBoundary.reason.length < 20
 ) {
   fail(
-    'packagingBoundary must record 18 catalogued common roots, 0 packaged codec roots, the accepted B+C topology, and no proven codec-bearing VSIX',
+    'packagingBoundary must record an already-equivalent 18-root shell, 0 packaged codec roots, the accepted B+C topology, and no codec-bearing VSIX',
   )
 }
 

@@ -48,13 +48,13 @@
 
 ### 2.1. Block 14A — VS Code + CLI workflow ledger
 
-Ledger распределяет ровно **258 VS Code + 8 CLI = 266** legacy-единиц по трём честным корзинам: **19** уже заменены, **185** входят в 11 точных задач Product GA, **62** явно оставлены после релиза. Короткий список и полный backlog записаны в `migration/generated/vscode-workflow-shortlist.json` и `migration/generated/vscode-workflow-backlog.json`.
+Ledger распределяет ровно **258 VS Code + 8 CLI = 266** legacy-единиц по трём честным корзинам: **204** уже заменены, **0** входят в 0 точных задач Product GA, **62** явно оставлены после релиза. Короткий список и полный backlog записаны в `migration/generated/vscode-workflow-shortlist.json` и `migration/generated/vscode-workflow-backlog.json`.
 
 | Поверхность    | Legacy | X3 сейчас |
 | -------------- | ------ | --------- |
-| commands       | 64     | 8         |
+| commands       | 64     | 18        |
 | custom editors | 11     | 1         |
-| languages      | 8      | 0         |
+| languages      | 8      | 6         |
 | views          | 6      | 2         |
 
 Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`, `subject.open`, `subject.preview`, `subject.validate`. Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.
@@ -78,11 +78,11 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | allocation                   | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
-| `absent`                     | 82    | `equivalent-better`    | 21    | E0            | 80    |
-| `covered`                    | 218   | `implemented`          | 211   | E1            | 110   |
-| `not-applicable`             | 1     | `missing`              | 82    | E2            | 73    |
-| `superseded`                 | 13    | `partial`              | 2     | E3            | 14    |
-| `superseded-staging-present` | 3     | `relocated-multiverse` | 1     | E4            | 40    |
+| `absent`                     | 81    | `equivalent-better`    | 21    | E0            | 79    |
+| `covered`                    | 219   | `implemented`          | 214   | E1            | 110   |
+| `not-applicable`             | 1     | `missing`              | 81    | E2            | 74    |
+| `superseded`                 | 13    | `relocated-multiverse` | 1     | E3            | 14    |
+| `superseded-staging-present` | 3     |                        |       | E4            | 40    |
 
 ### 3.3. Доказанные writers
 
@@ -108,9 +108,9 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | Release              | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | -------------------- | ----- | ---- | ------------ | ---------- | -------------- |
-| `mk3-ga`             | 129   | 124  | 5            | 3          | block-20       |
-| `mk3-multiverse-ga`  | 134   | 134  | 0            | 6          | block-20       |
-| `mk3-deferred-games` | 176   | 176  | 0            | 31         | block-16       |
+| `mk3-ga`             | 129   | 124  | 5            | 0          | —              |
+| `mk3-multiverse-ga`  | 134   | 134  | 0            | 3          | block-22       |
+| `mk3-deferred-games` | 176   | 176  | 0            | 28         | block-16       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
@@ -122,19 +122,11 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `block-15`    | 23    | 0                 |
 | `block-17`    | 11    | 0                 |
 | `block-19`    | 1     | 0                 |
-| `block-20`    | 9     | 3                 |
+| `block-20`    | 9     | 0                 |
 
 ## 5. Gap list — что осталось в `mk3-ga`
 
-Строк с нерешённым состоянием: **3** из 129. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
-
-### Блок 20 — 3 строк
-
-| Возможность                           | migrationState | evidence | Владелец                                   |
-| ------------------------------------- | -------------- | -------- | ------------------------------------------ |
-| `platform/apps/priority-workflows`    | `partial`      | E2       | `apps and migration/product-profiles.json` |
-| `platform/release/migration-zero-gap` | `missing`      | E0       | `scripts/migration`                        |
-| `platform/tools/ga-priority`          | `partial`      | E2       | `scripts and packages/host`                |
+Строк с нерешённым состоянием: **0** из 129. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
 
 ## 6. Дополнительные gaps следующих release
 

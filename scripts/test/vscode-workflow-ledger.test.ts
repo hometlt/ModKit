@@ -135,13 +135,13 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       legacyVsCode: 258,
       legacyCli: 8,
       byDisposition: {
-        'already-equivalent': 19,
-        'release-candidate': 185,
+        'already-equivalent': 204,
+        'release-candidate': 0,
         'post-release': 62,
       },
       decisionRequired: 0,
-      releaseCandidateGaps: 11,
-      currentX3ObservedFacts: 16,
+      releaseCandidateGaps: 0,
+      currentX3ObservedFacts: 32,
     })
     expect(ledger.counts.byKind).toEqual({
       'cli-command': 5,
@@ -216,16 +216,16 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         ?.classification.disposition
 
     expect(disposition('legacy/vscode/command/modkit.explainResolution')).toBe('already-equivalent')
-    expect(disposition('legacy/vscode/command/modkit.showLog')).toBe('release-candidate')
+    expect(disposition('legacy/vscode/command/modkit.showLog')).toBe('already-equivalent')
     expect(disposition('legacy/vscode/custom-editor/modkit.replayPlayer')).toBe('post-release')
-    expect(disposition('legacy/vscode/command/modkit.inspectModel')).toBe('release-candidate')
+    expect(disposition('legacy/vscode/command/modkit.inspectModel')).toBe('already-equivalent')
   })
 
   it('emits a complete Product GA shortlist and explicit post-release backlog', () => {
     const shortlist = JSON.parse(readFileSync(generatedShortlist, 'utf8'))
     const backlog = JSON.parse(readFileSync(generatedBacklog, 'utf8'))
-    expect(shortlist.counts).toEqual({ gaps: 11, facts: 185 })
-    expect(shortlist.gaps).toHaveLength(11)
+    expect(shortlist.counts).toEqual({ gaps: 0, facts: 0 })
+    expect(shortlist.gaps).toEqual([])
     expect(
       shortlist.gaps.every(
         (gap: { exactSourceUnitIds: string[]; factCount: number; evidence: string[] }) =>
@@ -238,17 +238,17 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
     ).toHaveLength(62)
   })
 
-  it('records the factual 64→8, 11→1, 8→0 and 6→2 surface change', () => {
+  it('records the factual 64→18, 11→1, 8→6 and 6→2 surface change', () => {
     const ledger = JSON.parse(readFileSync(committedLedger, 'utf8'))
     expect(ledger.surfaceComparison).toEqual({
       legacyVsCode: { commands: 64, customEditors: 11, languages: 8, views: 6 },
       currentX3VsCode: {
-        commands: 8,
+        commands: 18,
         configurationProperties: 2,
         customEditors: 1,
         fileSystemSchemes: 1,
         keybindings: 0,
-        languages: 0,
+        languages: 6,
         menus: 0,
         runtimeOnlyCommands: 1,
         viewContainers: 1,
@@ -274,7 +274,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       'Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.',
     )
     expect(status).not.toContain('PWA не заявлен')
-    expect(ledger.currentX3Facts).toHaveLength(16)
+    expect(ledger.currentX3Facts).toHaveLength(32)
     expect(
       ledger.currentX3Facts.every((row: { state: string }) => row.state === 'observed-only'),
     ).toBe(true)
@@ -283,22 +283,42 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.addExtensionFolder',
         'modkit.browseContainer',
         'modkit.explainResolution',
+        'modkit.exportDiagnostics',
+        'modkit.game.launchActiveMap',
+        'modkit.materializeContainerEntry',
+        'modkit.navigateResource',
         'modkit.openArchiveEntry',
         'modkit.openWith',
+        'modkit.refreshContainer',
+        'modkit.refreshRelations',
         'modkit.runCommand',
         'modkit.runtime.control',
+        'modkit.searchContainer',
+        'modkit.selectGameInstallation',
+        'modkit.showDiagnostics',
         'modkit.showHostProfile',
+        'modkit.unloadSource',
       ],
       registeredRuntimeCommands: [
         'modkit.addExtensionFolder',
         'modkit.browseContainer',
         'modkit.explainResolution',
+        'modkit.exportDiagnostics',
+        'modkit.game.launchActiveMap',
+        'modkit.materializeContainerEntry',
+        'modkit.navigateResource',
         'modkit.openArchiveEntry',
         'modkit.openResource',
         'modkit.openWith',
+        'modkit.refreshContainer',
+        'modkit.refreshRelations',
         'modkit.runCommand',
         'modkit.runtime.control',
+        'modkit.searchContainer',
+        'modkit.selectGameInstallation',
+        'modkit.showDiagnostics',
         'modkit.showHostProfile',
+        'modkit.unloadSource',
       ],
       internalRuntimeCommands: ['modkit.openResource'],
       externalOrBuiltinCommands: [],
@@ -308,7 +328,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
     })
     expect(ledger.ownerBlockers).toEqual([])
     expect(ledger.packagingBoundary).toMatchObject({
-      state: 'release-candidate',
+      state: 'already-equivalent',
       ownerBlockerId: null,
       cataloguedCommonRoots: 18,
       packagedCodecRoots: 0,
@@ -357,9 +377,10 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
   it('refuses a release-candidate fact without a known gap', () => {
     const brokenDecisions = JSON.parse(readFileSync(decisions, 'utf8'))
     const decision = brokenDecisions.factDecisions.find(
-      (row: { disposition: string }) => row.disposition === 'release-candidate',
+      (row: { disposition: string }) => row.disposition === 'already-equivalent',
     )
-    decision.gapId = null
+    decision.disposition = 'release-candidate'
+    decision.gapId = 'missing-gap'
     const decisionsPath = tempPath('decisions.json')
     writeFileSync(decisionsPath, JSON.stringify(brokenDecisions))
     const result = run(['--decisions', decisionsPath, '--output', tempPath('ledger.json')])
@@ -484,7 +505,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain(
-      'packagingBoundary must record 18 catalogued common roots, 0 packaged codec roots',
+      'packagingBoundary must record an already-equivalent 18-root shell, 0 packaged codec roots',
     )
   })
 
@@ -573,19 +594,19 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
   it('refuses a workflow summary that disagrees with its exact fact aggregate', () => {
     const brokenDecisions = JSON.parse(readFileSync(decisions, 'utf8'))
     brokenDecisions.workflows[0].classification = {
-      disposition: 'already-equivalent',
-      migrationState: 'equivalent-better',
-      releaseTrack: 'mk3-priority',
+      disposition: 'post-release',
+      migrationState: 'deferred-post-ga',
+      releaseTrack: 'post-ga',
       owner: 'apps/modkit-vscode',
-      targetState: 'accepted',
+      targetState: 'deferred-post-ga',
       replacementWorkflowId: 'platform/apps/priority-workflows',
-      reason: 'This deliberately disagrees with exact release-candidate facts in the test input.',
+      reason: 'This deliberately disagrees with exact already-equivalent facts in the test input.',
     }
     const decisionsPath = tempPath('decisions.json')
     writeFileSync(decisionsPath, JSON.stringify(brokenDecisions))
     const result = run(['--decisions', decisionsPath, '--output', tempPath('ledger.json')])
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain('does not match fact aggregate release-candidate')
+    expect(result.stderr).toContain('does not match fact aggregate already-equivalent')
   })
 
   it('refuses to claim PWA as a caller without runtime wiring evidence', () => {

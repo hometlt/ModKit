@@ -587,7 +587,7 @@ describe('product profile gate (plan §4.2–4.3, block 10 work 8)', () => {
   })
 })
 
-describe('the generated status page names the block that still owes something', () => {
+describe('the generated status page names only a block that still owes something', () => {
   /*
    * The line this covers said «block-11» while block 11 had zero unresolved rows: its deadlines
    * were all met. `Object.keys(deadlines).sort()[0]` answers "the first key by text", which is
@@ -620,14 +620,13 @@ describe('the generated status page names the block that still owes something', 
     expect(nearestOwedBlock({}, unresolved('a'))).toBeUndefined()
   })
 
-  it('agrees with the committed page: its nearest block is the first with a non-zero gap', () => {
+  it('agrees with the clean committed page without inventing a nearest block', () => {
     const page = readFileSync(join(scriptsDir, '..', 'migration', 'generated', 'status.md'), 'utf8')
-    const named = /\|\s*`mk3-ga`\s*\|(?:[^|]*\|){4}\s*(block-\d+)\s*\|/u.exec(page)?.[1]
-    expect(named).toBeDefined()
+    const named = /\|\s*`mk3-ga`\s*\|(?:[^|]*\|){4}\s*([^|]+?)\s*\|/u.exec(page)?.[1]
+    expect(named).toBe('—')
     // the deadline table below it lists units and unresolved counts per block, in block order
     const rows = [...page.matchAll(/\|\s*`(block-\d+)`\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|/gu)]
     const firstOwing = rows.find(row => Number(row[3]) > 0)?.[1]
-    expect(firstOwing).toBeDefined()
-    expect(named).toBe(firstOwing)
+    expect(firstOwing).toBeUndefined()
   })
 })

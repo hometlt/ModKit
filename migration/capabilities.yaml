@@ -17085,8 +17085,8 @@ capabilities:
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'partial'
-    supportState: 'partial'
+    migrationState: 'implemented'
+    supportState: 'supported'
     runtimeAvailability: 'host-facility-dependent'
     evidenceLevel: 'E2'
     hostEvidence: 'node'
@@ -17111,20 +17111,30 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'product profiles, общий command matrix и app recovery доказаны, но 11 точных priority workflow gaps и priority tools ещё не закрыты'
+      - 'отдельные replay, media и другие legacy-функции вне Focused Product GA остаются в явном post-GA backlog и не заявлены как часть этой возможности'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: 'пять доступных mk3-ga presets собирают шесть приложений из общих extension families и service providers без app-specific semantic fork'
+    replacementWorkflow: 'пять mk3-ga presets собирают шесть приложений из общих extension families и service providers; VS Code добавляет общий workbench, безопасный запуск карты и live E5 preview/convert без app-specific semantic fork'
     closedBy:
       commits:
         - 'ddcfd22'
+        - '7f9b2bc'
+        - 'da1afdf'
+        - '5ed86af'
+        - '6b663bb'
+        - '8999d72'
       tests:
         - 'scripts/check-app-contract-matrix.mjs'
         - 'scripts/migration/check-profiles.mjs'
         - 'scripts/test/minimal-build.test.ts'
-      reports: []
+        - 'apps/modkit-vscode/test/priority-settings.test.ts'
+        - 'apps/modkit-vscode/test/workbench-workflows.test.ts'
+        - 'apps/modkit-vscode/test/sc2-authoring-workflows.test.ts'
+        - 'apps/modkit-vscode/test/game-launch-workflow.test.ts'
+      reports:
+        - 'reports/vscode-focused-ga-smoke/receipt.json'
   - capabilityId: 'platform/apps/recovery'
     userScenario: 'Получать понятный отказ в правах, отменять долгую работу и безопасно продолжать после перезапуска или сбоя приложения.'
     releaseTrack: 'mk3-priority'
@@ -17392,15 +17402,15 @@ capabilities:
     mk3Contributions: []
     mk3Operations: []
     allocation:
-      state: 'absent'
+      state: 'covered'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
+    migrationState: 'implemented'
+    supportState: 'supported'
     runtimeAvailability: 'node-only'
-    evidenceLevel: 'E0'
-    hostEvidence: 'none'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -17422,16 +17432,25 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'эта строка остаётся missing, пока остальные Block 20 obligations не закрыты и итоговый mk3-ga report не показывает zero unresolved rows при неизменном post-GA backlog'
+      - 'явный post-GA backlog сохранён отдельно и не считается скрытым долгом Focused Product GA'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: null
+    replacementWorkflow: 'детерминированный workflow ledger показывает 0 release-candidate gaps, priority gate показывает 0 незакрытых mk3-ga строк, а 62 post-GA legacy facts остаются без изменения в отдельном backlog'
     closedBy:
-      commits: []
-      tests: []
-      reports: []
+      commits:
+        - '906c5e1'
+        - '5ed86af'
+        - '6b663bb'
+        - '8999d72'
+      tests:
+        - 'scripts/test/vscode-workflow-ledger.test.ts'
+        - 'scripts/test/migration-registry.test.ts'
+      reports:
+        - 'migration/generated/vscode-workflow-shortlist.json'
+        - 'migration/generated/status.md'
+        - 'migration/generated/priority-scope.json'
   - capabilityId: 'platform/release/reproducible-rc'
     userScenario: 'Собрать повторяемый локальный RC с подписью, списком компонентов и уведомлениями о лицензиях и проверить его без публичного выпуска.'
     releaseTrack: 'mk3-priority'
@@ -17513,8 +17532,8 @@ capabilities:
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'partial'
-    supportState: 'partial'
+    migrationState: 'implemented'
+    supportState: 'supported'
     runtimeAvailability: 'host-facility-dependent'
     evidenceLevel: 'E2'
     hostEvidence: 'node'
@@ -17539,19 +17558,22 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'общие validate, inspect и language paths доказаны, но whole-project check, positive Galaxy CLI, texture conversion/export и bounded CASC materialization остаются точными Product GA gaps'
+      - 'legacy install и отдельный stdio LSP явно оставлены после GA, потому что Focused Product GA использует discovery/path overrides и встроенный VS Code language controller'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: 'shared subject command runtime, host language providers и extension-owned converters заменяют отдельные app-owned tools по мере закрытия точных workflow gaps'
+    replacementWorkflow: 'shared subject command runtime выполняет whole-project validation, positive Galaxy validation и PNG conversion/export, а VS Code использует общий VFS для поиска, refresh и bounded materialization'
     closedBy:
       commits:
         - 'ddcfd22'
+        - '906c5e1'
+        - '5ed86af'
       tests:
         - 'apps/modkit-cli/test/cli.test.ts'
         - 'packages/host/test/language.test.ts'
         - 'scripts/test/command-fixtures-hosts.test.ts'
+        - 'apps/modkit-vscode/test/workbench-workflows.test.ts'
       reports: []
   - capabilityId: 'proof/red-alert2-map/decode'
     userScenario: 'Открыть карту Red Alert 2 и увидеть её слои как доказательство post-GA глубины TS/RA2.'

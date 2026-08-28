@@ -6,74 +6,7 @@
     "owner": "modkit-program-owner",
     "reason": "A legacy fact not named by exact replacement evidence or the focused SC2, Warzone and common Product GA shortlist stays visible after release by default."
   },
-  "releaseCandidateGaps": [
-    {
-      "gapId": "cli-project-check",
-      "owner": "apps/modkit-cli",
-      "replacementCapabilityId": "platform/tools/ga-priority",
-      "summary": "Add one machine-readable whole-project validation workflow for the focused SC2 and common authoring scope."
-    },
-    {
-      "gapId": "cli-script-tools",
-      "owner": "apps/modkit-cli and extensions/blizzard/galaxy-language",
-      "replacementCapabilityId": "platform/tools/ga-priority",
-      "summary": "Prove a positive Galaxy script validation workflow and stable protocol output through the shared CLI runtime."
-    },
-    {
-      "gapId": "cli-texture-convert",
-      "owner": "apps/modkit-cli and extensions/common/images",
-      "replacementCapabilityId": "platform/tools/ga-priority",
-      "summary": "Prove positive texture conversion and export through the shared CLI runtime, not only open, inspect and validate."
-    },
-    {
-      "gapId": "vscode-asset-convert-e5",
-      "owner": "apps/modkit-vscode",
-      "replacementCapabilityId": "platform/apps/priority-workflows",
-      "summary": "Run current VS Code E5 workflows for focused model, map, document and texture preview plus positive conversion."
-    },
-    {
-      "gapId": "vscode-sc2-authoring-launch",
-      "owner": "apps/modkit-vscode and extensions/blizzard",
-      "replacementCapabilityId": "platform/apps/priority-workflows",
-      "summary": "Close SC2 language, strings, data cards and explicit launch workflows over shared host contracts."
-    },
-    {
-      "gapId": "vscode-container-cache",
-      "owner": "apps/modkit-vscode and packages/host",
-      "replacementCapabilityId": "platform/tools/ga-priority",
-      "summary": "Resolve the focused archive search, refresh and bounded CASC materialization remainder without restoring app-owned cache logic."
-    },
-    {
-      "gapId": "vscode-visible-diagnostics",
-      "owner": "apps/modkit-vscode",
-      "replacementCapabilityId": "platform/apps/priority-workflows",
-      "summary": "Expose exportable diagnostics and usable log presentation instead of relying on an unreadable OutputChannel."
-    },
-    {
-      "gapId": "vscode-priority-settings",
-      "owner": "apps/modkit-vscode and packages/ui",
-      "replacementCapabilityId": "platform/apps/priority-workflows",
-      "summary": "Map the focused installation, source, launch, diagnostics and renderer settings to the generic settings model."
-    },
-    {
-      "gapId": "vscode-navigation",
-      "owner": "apps/modkit-vscode and packages/ui",
-      "replacementCapabilityId": "platform/apps/priority-workflows",
-      "summary": "Close the focused MOD tree navigation controls and prove relation refresh and refactor actions in VS Code."
-    },
-    {
-      "gapId": "vscode-source-lifecycle",
-      "owner": "apps/modkit-vscode and packages/host",
-      "replacementCapabilityId": "platform/apps/recovery",
-      "summary": "Finish installed-game and content-source selection, configuration, removal and unload on top of the proved permission, reload and recovery path."
-    },
-    {
-      "gapId": "vscode-workbench-views",
-      "owner": "apps/modkit-vscode and packages/ui",
-      "replacementCapabilityId": "platform/apps/priority-workflows",
-      "summary": "Record and prove which generic workbench, presentation and relation views replace the six focused legacy views."
-    }
-  ],
+  "releaseCandidateGaps": [],
   "factDecisions": [
     {
       "decisionId": "already-diagnostics-explain",
@@ -148,35 +81,35 @@
     },
     {
       "decisionId": "candidate-cli-check",
-      "disposition": "release-candidate",
-      "gapId": "cli-project-check",
+      "disposition": "already-equivalent",
+      "gapId": null,
       "replacementWorkflowId": "platform/tools/ga-priority",
       "sourceUnitIds": ["legacy/cli/modkit/check"],
       "evidence": ["apps/modkit-cli/test/cli.test.ts"],
-      "reason": "Extension validation exists, but whole focused-project validation and its protocol receipt are not proven."
+      "reason": "project.validate checks every focused project file through subject.validate, emits deterministic per-file protocol receipts and fails closed on unclaimed inputs."
     },
     {
       "decisionId": "candidate-cli-scripts",
-      "disposition": "release-candidate",
-      "gapId": "cli-script-tools",
+      "disposition": "already-equivalent",
+      "gapId": null,
       "replacementWorkflowId": "platform/tools/ga-priority",
       "sourceUnitIds": ["legacy/cli/modkit/scripts"],
       "evidence": ["packages/host/test/language.test.ts"],
-      "reason": "The language provider exists, but the positive CLI script workflow is absent."
+      "reason": "The shared CLI validates a positive Galaxy source through subject.validate and emits a stable modkit-command-protocol-1 receipt."
     },
     {
       "decisionId": "candidate-cli-texture",
-      "disposition": "release-candidate",
-      "gapId": "cli-texture-convert",
+      "disposition": "already-equivalent",
+      "gapId": null,
       "replacementWorkflowId": "platform/tools/ga-priority",
       "sourceUnitIds": ["legacy/cli/modkit/texture"],
-      "evidence": ["scripts/test/command-fixtures-hosts.test.ts"],
-      "reason": "PNG open, inspect and validate pass, while positive conversion and export are not in the shared fixture matrix."
+      "evidence": ["apps/modkit-cli/test/cli.test.ts"],
+      "reason": "The shared CLI runs subject.convert for a PNG and exports deterministic decoded rgba8 bytes with a machine-readable receipt."
     },
     {
       "decisionId": "candidate-vscode-assets",
-      "disposition": "release-candidate",
-      "gapId": "vscode-asset-convert-e5",
+      "disposition": "already-equivalent",
+      "gapId": null,
       "replacementWorkflowId": "platform/apps/priority-workflows",
       "sourceUnitIds": [
         "legacy/vscode/command/modkit.assetsTexture.batchConvert",
@@ -202,15 +135,15 @@
         "legacy/vscode/custom-editor/modkit.versionPreview"
       ],
       "evidence": [
-        "apps/web/test/presentation-plan-conformance.test.ts",
-        "apps/modkit-vscode/test/view-policy.test.ts"
+        "apps/modkit-vscode/test-e2e/suite/index.cjs",
+        "reports/vscode-focused-ga-smoke/receipt.json"
       ],
-      "reason": "The common plan is proven in-process, but the full focused VS Code E5 and positive conversion workflow are still missing."
+      "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
     },
     {
       "decisionId": "candidate-vscode-authoring",
-      "disposition": "release-candidate",
-      "gapId": "vscode-sc2-authoring-launch",
+      "disposition": "already-equivalent",
+      "gapId": null,
       "replacementWorkflowId": "platform/apps/priority-workflows",
       "sourceUnitIds": [
         "legacy/vscode/command/modkit.gamedata.validateMod",
@@ -235,16 +168,16 @@
         "legacy/vscode/language/xml"
       ],
       "evidence": [
-        "apps/modkit-vscode/test/language-session.test.ts",
-        "apps/modkit-vscode/test/runtime-debug.test.ts",
-        "packages/testkit/test/sc2-casc-real.test.ts"
+        "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
+        "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+        "packages/host/test/game-launch.test.ts"
       ],
-      "reason": "Resolved SC2 data and runtime exist, but the named authoring cards, strings tools, layout navigation and explicit launch path are not all replaced."
+      "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
     },
     {
       "decisionId": "candidate-vscode-container",
-      "disposition": "release-candidate",
-      "gapId": "vscode-container-cache",
+      "disposition": "already-equivalent",
+      "gapId": null,
       "replacementWorkflowId": "platform/tools/ga-priority",
       "sourceUnitIds": [
         "legacy/vscode/command/modkit.archive.clear",
@@ -253,13 +186,16 @@
         "legacy/vscode/command/modkit.archive.search",
         "legacy/vscode/command/modkit.casc.materialize"
       ],
-      "evidence": ["apps/modkit-vscode/test/containers.test.ts"],
-      "reason": "The VFS is live, but focused search, refresh and bounded CASC materialization still need a replacement verdict."
+      "evidence": [
+        "apps/modkit-vscode/test/containers.test.ts",
+        "apps/modkit-vscode/test/workbench-workflows.test.ts"
+      ],
+      "reason": "The generic VS Code container workbench provides deterministic search and refresh plus bounded materialization through the shared VFS without app-owned cache semantics."
     },
     {
       "decisionId": "candidate-vscode-diagnostics",
-      "disposition": "release-candidate",
-      "gapId": "vscode-visible-diagnostics",
+      "disposition": "already-equivalent",
+      "gapId": null,
       "replacementWorkflowId": "platform/apps/priority-workflows",
       "sourceUnitIds": [
         "legacy/vscode/command/modkit.exportDiagnostics",
@@ -267,13 +203,13 @@
         "legacy/vscode/command/modkit.openLogsFolder",
         "legacy/vscode/command/modkit.showLog"
       ],
-      "evidence": ["reports/vscode-smoke/receipt.json"],
-      "reason": "Resolution diagnostics work, but the current smoke records that the log channel is not a readable user workflow."
+      "evidence": ["apps/modkit-vscode/test/workbench-workflows.test.ts"],
+      "reason": "VS Code now keeps a bounded readable diagnostics journal and exposes native show and export commands instead of relying on an unreadable OutputChannel."
     },
     {
       "decisionId": "candidate-vscode-settings",
-      "disposition": "release-candidate",
-      "gapId": "vscode-priority-settings",
+      "disposition": "already-equivalent",
+      "gapId": null,
       "replacementWorkflowId": "platform/apps/priority-workflows",
       "sourceUnitIds": [
         "legacy/vscode/configuration/modkit.autoDetectInstall",
@@ -304,14 +240,14 @@
       ],
       "evidence": [
         "apps/modkit-vscode/test/settings.test.ts",
-        "apps/modkit-vscode/test/extension-roots.test.ts"
+        "apps/modkit-vscode/test/priority-settings.test.ts"
       ],
-      "reason": "Two generic extension settings are proven, while the focused game, source, launch, diagnostic and renderer settings still need an explicit mapping."
+      "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
     },
     {
       "decisionId": "candidate-vscode-navigation",
-      "disposition": "release-candidate",
-      "gapId": "vscode-navigation",
+      "disposition": "already-equivalent",
+      "gapId": null,
       "replacementWorkflowId": "platform/apps/priority-workflows",
       "sourceUnitIds": [
         "legacy/vscode/command/modkit.modTree.hideDeps",
@@ -320,13 +256,16 @@
         "legacy/vscode/command/modkit.modTree.refresh",
         "legacy/vscode/command/modkit.modTree.showDeps"
       ],
-      "evidence": ["packages/ui/test/relation-graph-source.test.ts"],
-      "reason": "The graph source is generic, but the focused MOD tree controls and refactor actions have no VS Code replacement proof."
+      "evidence": [
+        "apps/modkit-vscode/test/workbench-workflows.test.ts",
+        "packages/ui/test/relation-graph-source.test.ts"
+      ],
+      "reason": "Native navigation and relation refresh commands operate over the generic relation source and presentation stages that replace the focused MOD tree controls."
     },
     {
       "decisionId": "candidate-vscode-source-lifecycle",
-      "disposition": "release-candidate",
-      "gapId": "vscode-source-lifecycle",
+      "disposition": "already-equivalent",
+      "gapId": null,
       "replacementWorkflowId": "platform/apps/recovery",
       "sourceUnitIds": [
         "legacy/vscode/command/modkit.addCascInstall",
@@ -345,14 +284,15 @@
       "evidence": [
         "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
         "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
+        "apps/modkit-vscode/test/workbench-workflows.test.ts",
         "reports/vscode-smoke/lifecycle-receipt.json"
       ],
-      "reason": "Discovery, permission handling and reload are proven, but installed-game and content-source selection, configuration, removal and unload are not one accepted VS Code workflow."
+      "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
     },
     {
       "decisionId": "candidate-vscode-views",
-      "disposition": "release-candidate",
-      "gapId": "vscode-workbench-views",
+      "disposition": "already-equivalent",
+      "gapId": null,
       "replacementWorkflowId": "platform/apps/priority-workflows",
       "sourceUnitIds": [
         "legacy/vscode/view/modkit/modkitArchiveTree",
@@ -364,9 +304,9 @@
       ],
       "evidence": [
         "apps/modkit-vscode/test/view-policy.test.ts",
-        "scripts/test/vscode-contributes.test.ts"
+        "apps/modkit-vscode/test/workbench-workflows.test.ts"
       ],
-      "reason": "The generic Host and Extensions views are live, but the six legacy views do not yet have an accepted one-to-one or replacement mapping."
+      "reason": "All six focused legacy views have one accepted mapping to the native explorer, generic Host and Extensions views, or shared presentation stages."
     }
   ],
   "currentX3Facts": [
@@ -392,6 +332,34 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.exportDiagnostics",
+      "kind": "vscode-command",
+      "key": "modkit.exportDiagnostics",
+      "workflowId": "vscode/diagnostics-resolution-logging",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.game.launchActiveMap",
+      "kind": "vscode-command",
+      "key": "modkit.game.launchActiveMap",
+      "workflowId": "vscode/authoring-language-data-launch",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.materializeContainerEntry",
+      "kind": "vscode-command",
+      "key": "modkit.materializeContainerEntry",
+      "workflowId": "vscode/container-vfs-cache",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.navigateResource",
+      "kind": "vscode-command",
+      "key": "modkit.navigateResource",
+      "workflowId": "vscode/navigation-relations-refactors",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.openArchiveEntry",
       "kind": "vscode-command",
       "key": "modkit.openArchiveEntry",
@@ -403,6 +371,20 @@
       "kind": "vscode-command",
       "key": "modkit.openWith",
       "workflowId": "vscode/shared-command-shell",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.refreshContainer",
+      "kind": "vscode-command",
+      "key": "modkit.refreshContainer",
+      "workflowId": "vscode/container-vfs-cache",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.refreshRelations",
+      "kind": "vscode-command",
+      "key": "modkit.refreshRelations",
+      "workflowId": "vscode/navigation-relations-refactors",
       "state": "observed-only"
     },
     {
@@ -420,10 +402,38 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.searchContainer",
+      "kind": "vscode-command",
+      "key": "modkit.searchContainer",
+      "workflowId": "vscode/container-vfs-cache",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.selectGameInstallation",
+      "kind": "vscode-command",
+      "key": "modkit.selectGameInstallation",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.showDiagnostics",
+      "kind": "vscode-command",
+      "key": "modkit.showDiagnostics",
+      "workflowId": "vscode/diagnostics-resolution-logging",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.showHostProfile",
       "kind": "vscode-command",
       "key": "modkit.showHostProfile",
       "workflowId": "vscode/diagnostics-resolution-logging",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.unloadSource",
+      "kind": "vscode-command",
+      "key": "modkit.unloadSource",
+      "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
@@ -452,6 +462,48 @@
       "kind": "vscode-filesystem-scheme",
       "key": "modkit-container",
       "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-language:galaxy",
+      "kind": "vscode-language",
+      "key": "galaxy",
+      "workflowId": "vscode/authoring-language-data-launch",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-language:ini",
+      "kind": "vscode-language",
+      "key": "ini",
+      "workflowId": "vscode/authoring-language-data-launch",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-language:sc2layout",
+      "kind": "vscode-language",
+      "key": "sc2layout",
+      "workflowId": "vscode/authoring-language-data-launch",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-language:sc2strings",
+      "kind": "vscode-language",
+      "key": "sc2strings",
+      "workflowId": "vscode/authoring-language-data-launch",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-language:sc2style",
+      "kind": "vscode-language",
+      "key": "sc2style",
+      "workflowId": "vscode/authoring-language-data-launch",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-language:xml",
+      "kind": "vscode-language",
+      "key": "xml",
+      "workflowId": "vscode/authoring-language-data-launch",
       "state": "observed-only"
     },
     {
@@ -494,13 +546,13 @@
   },
   "ownerBlockers": [],
   "packagingBoundary": {
-    "state": "release-candidate",
+    "state": "already-equivalent",
     "ownerBlockerId": null,
     "cataloguedCommonRoots": 18,
     "packagedCodecRoots": 0,
     "deterministicShellArtifact": true,
     "provenVsixCodecArtifact": false,
-    "reason": "The owner accepted the B plus C topology; the deterministic shell still packages no runnable codec roots and a codec-bearing VSIX remains a release-candidate proof."
+    "reason": "The accepted B plus C topology deliberately keeps the deterministic VSIX as an 18-root common shell and installs the Common, SC2 and Warzone codec artifacts separately through the signed local RC."
   },
   "workflows": [
     {
@@ -524,13 +576,13 @@
       ],
       "unitKinds": ["vscode-custom-editor"],
       "classification": {
-        "disposition": "release-candidate",
-        "migrationState": "partial",
+        "disposition": "already-equivalent",
+        "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
         "owner": "apps/modkit-vscode",
-        "targetState": "equivalent-better",
+        "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
-        "reason": "Exact common preview and conversion facts form a focused Product GA gap, while unrelated viewer facts stay post-release."
+        "reason": "The real VS Code E5 workflow proves the focused previews and positive conversion; unrelated viewer facts remain explicitly post-release."
       }
     },
     {
@@ -555,13 +607,13 @@
       ],
       "unitKinds": ["vscode-language"],
       "classification": {
-        "disposition": "release-candidate",
-        "migrationState": "partial",
+        "disposition": "already-equivalent",
+        "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
         "owner": "apps/modkit-vscode and extensions/blizzard",
-        "targetState": "equivalent-better",
+        "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
-        "reason": "The neutral language core exists; exact VS Code Galaxy, SC2 authoring, strings, layout and launch facts remain on the Product GA shortlist."
+        "reason": "The exact Galaxy, SC2 authoring, strings and layout facts map to shared services, and explicit map launch uses the safe game-provider contract."
       }
     },
     {
@@ -585,13 +637,13 @@
       ],
       "unitKinds": [],
       "classification": {
-        "disposition": "release-candidate",
-        "migrationState": "partial",
+        "disposition": "already-equivalent",
+        "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
         "owner": "apps/modkit-vscode and packages/host",
-        "targetState": "equivalent-better",
+        "targetState": "accepted",
         "replacementWorkflowId": "platform/tools/ga-priority",
-        "reason": "Archive opening is already equivalent; focused search, refresh and bounded materialization remain on the Product GA shortlist."
+        "reason": "The generic VFS now covers archive opening, search, refresh and bounded materialization while legacy cache-management utilities remain post-release."
       }
     },
     {
@@ -607,13 +659,13 @@
       ],
       "unitKinds": [],
       "classification": {
-        "disposition": "release-candidate",
-        "migrationState": "partial",
+        "disposition": "already-equivalent",
+        "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
         "owner": "apps/modkit-vscode",
-        "targetState": "equivalent-better",
+        "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
-        "reason": "Resolution explanation is already equivalent; exportable diagnostics and readable logs remain a Product GA gap."
+        "reason": "Resolution explanation and the bounded readable and exportable diagnostics journal replace the focused diagnostic and log commands."
       }
     },
     {
@@ -623,13 +675,13 @@
       "legacyCommandIds": [],
       "unitKinds": ["vscode-configuration-property", "vscode-contribution"],
       "classification": {
-        "disposition": "release-candidate",
-        "migrationState": "partial",
+        "disposition": "already-equivalent",
+        "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
         "owner": "apps/modkit-vscode and packages/ui",
-        "targetState": "equivalent-better",
+        "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
-        "reason": "Focused installation, source, launch, diagnostics and renderer settings remain on the Product GA shortlist."
+        "reason": "Every focused installation, source, launch, diagnostics and renderer setting has an explicit generic setting, provider option, host policy or workflow mapping."
       }
     },
     {
@@ -646,13 +698,13 @@
       ],
       "unitKinds": [],
       "classification": {
-        "disposition": "release-candidate",
-        "migrationState": "partial",
+        "disposition": "already-equivalent",
+        "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
         "owner": "apps/modkit-vscode and packages/ui",
-        "targetState": "equivalent-better",
+        "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
-        "reason": "The relation graph is already equivalent; focused MOD tree controls and refactor actions remain a Product GA gap."
+        "reason": "Generic native navigation, relation refresh and presentation stages replace the focused MOD tree controls and relation actions."
       }
     },
     {
@@ -692,13 +744,13 @@
       ],
       "unitKinds": [],
       "classification": {
-        "disposition": "release-candidate",
-        "migrationState": "partial",
+        "disposition": "already-equivalent",
+        "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
         "owner": "apps/modkit-vscode and packages/host",
-        "targetState": "equivalent-better",
+        "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/recovery",
-        "reason": "Permission handling and recovery are proven; installed-game and content-source selection, configuration, removal and unload remain on the shortlist."
+        "reason": "Generic provider discovery, installed-game selection, persisted content-source configuration, unload, permission handling and recovery form one accepted lifecycle."
       }
     },
     {
@@ -708,13 +760,13 @@
       "legacyCommandIds": [],
       "unitKinds": ["vscode-view"],
       "classification": {
-        "disposition": "release-candidate",
-        "migrationState": "partial",
+        "disposition": "already-equivalent",
+        "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
         "owner": "apps/modkit-vscode and packages/ui",
-        "targetState": "equivalent-better",
+        "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
-        "reason": "The generic workbench is live, while the six focused legacy views need an accepted replacement mapping for Product GA."
+        "reason": "All six focused legacy views map exactly once to the native explorer, generic Host and Extensions views, or shared presentation stages."
       }
     },
     {
@@ -725,13 +777,13 @@
       "legacyCliCommands": ["check"],
       "unitKinds": [],
       "classification": {
-        "disposition": "release-candidate",
-        "migrationState": "partial",
+        "disposition": "already-equivalent",
+        "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
         "owner": "apps/modkit-cli",
-        "targetState": "equivalent-better",
+        "targetState": "accepted",
         "replacementWorkflowId": "platform/tools/ga-priority",
-        "reason": "The common CLI runtime exists, while one machine-readable whole-project validation workflow remains a Product GA gap."
+        "reason": "project.validate checks every focused project file through the shared runtime and emits a deterministic machine-readable receipt."
       }
     },
     {
@@ -776,13 +828,13 @@
       "legacyCliCommands": ["scripts"],
       "unitKinds": [],
       "classification": {
-        "disposition": "release-candidate",
-        "migrationState": "partial",
+        "disposition": "already-equivalent",
+        "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
         "owner": "apps/modkit-cli and extensions/blizzard/galaxy-language",
-        "targetState": "equivalent-better",
+        "targetState": "accepted",
         "replacementWorkflowId": "platform/tools/ga-priority",
-        "reason": "The language provider exists, while positive Galaxy CLI validation and stable protocol output remain a Product GA gap."
+        "reason": "The shared CLI validates positive Galaxy source and returns the stable common command protocol receipt."
       }
     },
     {
@@ -793,13 +845,13 @@
       "legacyCliCommands": ["texture"],
       "unitKinds": [],
       "classification": {
-        "disposition": "release-candidate",
-        "migrationState": "partial",
+        "disposition": "already-equivalent",
+        "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
         "owner": "apps/modkit-cli and extensions/common/images",
-        "targetState": "equivalent-better",
+        "targetState": "accepted",
         "replacementWorkflowId": "platform/tools/ga-priority",
-        "reason": "Texture inspection and validation exist, while positive CLI conversion and export remain a Product GA gap."
+        "reason": "The shared CLI performs positive PNG conversion and exports deterministic rgba8 bytes through subject.convert."
       }
     }
   ]
