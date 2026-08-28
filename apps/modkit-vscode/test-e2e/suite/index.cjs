@@ -708,7 +708,9 @@ async function runScenarios(env) {
       'modkit.openResource',
       'modkit.explainResolution',
       'modkit.addExtensionFolder',
-      ...(process.env.MODKITX_SMOKE_PROFILE === 'focused-ga' ? ['modkit.runCommand'] : []),
+      ...(process.env.MODKITX_SMOKE_PROFILE === 'focused-ga'
+        ? ['modkit.runCommand', 'modkit.game.launchActiveMap']
+        : []),
     ]
     const missing = expected.filter(command => !registered.has(command))
     record.details.commands = { expected: expected.length, missing }

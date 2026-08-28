@@ -17,6 +17,10 @@
       "title": "Modkit: Export Diagnostics…"
     },
     {
+      "command": "modkit.game.launchActiveMap",
+      "title": "Modkit: Launch Active Map in Game…"
+    },
+    {
       "command": "modkit.materializeContainerEntry",
       "title": "Modkit: Materialize Container Member…"
     },

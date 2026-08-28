@@ -62,11 +62,11 @@ describe('focused VS Code setting replacements', () => {
     })
     expect(focusedPrioritySettingReplacement('modkit.launch.mapPath')).toMatchObject({
       kind: 'shared-workflow',
-      target: 'modkit.game.launch-active-map',
+      target: 'modkit.game.launchActiveMap',
     })
     expect(focusedPrioritySettingReplacement('modkit.log.level')).toMatchObject({
       kind: 'shared-workflow',
-      target: 'modkit.diagnostics.export',
+      target: 'modkit.exportDiagnostics',
     })
     expect(focusedPrioritySettingReplacement('modkit.modelPreview.renderer')).toMatchObject({
       kind: 'automatic-policy',

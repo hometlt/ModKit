@@ -46,7 +46,7 @@ export const FOCUSED_PRIORITY_SETTING_REPLACEMENTS: readonly PrioritySettingRepl
     replacement(
       'modkit.casc.autoLoadForProjects',
       'shared-workflow',
-      'modkit.source.select',
+      'modkit.selectGameInstallation',
       'A source is selected explicitly for a workspace instead of being mounted by an editor-specific startup branch.',
     ),
     replacement(
@@ -58,7 +58,7 @@ export const FOCUSED_PRIORITY_SETTING_REPLACEMENTS: readonly PrioritySettingRepl
     replacement(
       'modkit.dataPath',
       'shared-workflow',
-      'modkit.source.select',
+      'modkit.selectGameInstallation',
       'Data roots are normal content sources selected through the shared source lifecycle.',
     ),
     replacement(
@@ -118,7 +118,7 @@ export const FOCUSED_PRIORITY_SETTING_REPLACEMENTS: readonly PrioritySettingRepl
     replacement(
       'modkit.launch.mapPath',
       'shared-workflow',
-      'modkit.game.launch-active-map',
+      'modkit.game.launchActiveMap',
       'The active map is an explicit command subject and is never a stale global path.',
     ),
     replacement(
@@ -136,13 +136,13 @@ export const FOCUSED_PRIORITY_SETTING_REPLACEMENTS: readonly PrioritySettingRepl
     replacement(
       'modkit.log.categories',
       'shared-workflow',
-      'modkit.diagnostics.export',
+      'modkit.exportDiagnostics',
       'Structured diagnostics are filtered and exported from the workbench instead of hidden in an OutputChannel.',
     ),
     replacement(
       'modkit.log.level',
       'shared-workflow',
-      'modkit.diagnostics.export',
+      'modkit.exportDiagnostics',
       'Severity is part of the structured diagnostic record and its export workflow.',
     ),
     replacement(
@@ -160,13 +160,13 @@ export const FOCUSED_PRIORITY_SETTING_REPLACEMENTS: readonly PrioritySettingRepl
     replacement(
       'modkit.s2mod.sources',
       'shared-workflow',
-      'modkit.source.select',
+      'modkit.selectGameInstallation',
       'SC2 mod roots are selected through the same source lifecycle as other content roots.',
     ),
     replacement(
       'modkit.sources',
       'shared-workflow',
-      'modkit.source.select',
+      'modkit.selectGameInstallation',
       'Content roots are selected and removed through one source lifecycle.',
     ),
     replacement(

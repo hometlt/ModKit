@@ -39,7 +39,7 @@ describe('generated VS Code contributions', () => {
 
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
-    expect(result.stdout).toContain('21 activation events')
+    expect(result.stdout).toContain('22 activation events')
   })
 
   it('rejects a package contribution that is absent from the generated authority', () => {

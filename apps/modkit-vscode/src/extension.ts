@@ -32,7 +32,10 @@ import {
 } from '@modkitx-x3/host'
 import { createLanguageWorkspace, languageProviderRoutes } from '@modkitx-x3/host/language'
 import { discoverGameInstallations } from '@modkitx-x3/host/games'
-import { createNodeMapPreviewResourcePlanResolver } from '@modkitx-x3/host/node'
+import {
+  createNodeMapPreviewResourcePlanResolver,
+  launchNodeGameResource,
+} from '@modkitx-x3/host/node'
 import type { ContainerRegistry } from './containers.js'
 import { CustomDocumentState } from './custom-document.js'
 import { withExtensionRoot } from './extension-roots.js'
@@ -75,6 +78,7 @@ import {
   withoutSelectedContentSource,
   type SelectedContentSource,
 } from './workbench-workflows.js'
+import { runExplicitGameLaunch, VSCODE_GAME_LAUNCH_COMMAND } from './game-launch-workflow.js'
 
 const CUSTOM_EDITOR_TYPE = 'modkit.genericAssetPreview'
 
@@ -1588,6 +1592,128 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         )
         log(`unloaded content source: ${selected.displayName}`)
         return true
+      })(),
+    ),
+
+    /** Launch one active local map through a selected game provider, after modal confirmation. */
+    vscode.commands.registerCommand(VSCODE_GAME_LAUNCH_COMMAND, (argument: unknown) =>
+      (async () => {
+        const requestedPath =
+          argument instanceof vscode.Uri
+            ? argument.scheme === 'file'
+              ? argument.fsPath
+              : undefined
+            : typeof argument === 'string' && isAbsolute(argument)
+              ? argument
+              : activeSubject
+        if (requestedPath === undefined || !isAbsolute(requestedPath)) {
+          void vscode.window.showWarningMessage(
+            'Modkit: open a local map file before launching a native game.',
+          )
+          return undefined
+        }
+        if (selectedSources.length === 0) {
+          void vscode.window.showWarningMessage(
+            'Modkit: select a verified game installation before launching a map.',
+          )
+          return undefined
+        }
+        const source =
+          selectedSources.length === 1
+            ? selectedSources[0]
+            : await vscode.window
+                .showQuickPick(
+                  selectedSources.map(item => ({
+                    label: item.displayName,
+                    description: item.gameId,
+                    detail: item.installPath,
+                    source: item,
+                  })),
+                  { title: 'Choose the installed game which will open this map' },
+                )
+                .then(item => item?.source)
+        if (source === undefined) {
+          void vscode.window.showWarningMessage(
+            'Modkit: select a verified game installation before launching a map.',
+          )
+          return undefined
+        }
+
+        // Persisted workspace state is never enough to launch a process: probe the selected root
+        // again and pass only the provider-confirmed installation to the host executor.
+        const discovery = await discoverGameInstallations({
+          services: host.services,
+          gameId: source.gameId,
+          configuredPaths: [source.installPath],
+          maxCandidates: 32,
+          grant: {
+            id: `vscode-game-launch-discovery-${nonce()}`,
+            classes:
+              process.platform === 'win32'
+                ? ['filesystem-read', 'process-launch']
+                : ['filesystem-read'],
+          },
+          budgets: GAME_DISCOVERY_BUDGET,
+        })
+        for (const item of discovery.diagnostics) {
+          log(`[game-launch] ${item.severity} ${item.code}: ${item.message}`)
+        }
+        const installation =
+          discovery.state === 'discovered'
+            ? discovery.result.installations.find(
+                item => item.normalizedPath === source.normalizedPath,
+              )
+            : undefined
+        if (installation === undefined) {
+          void vscode.window.showErrorMessage(
+            'Modkit: the selected installation is no longer verified; select it again.',
+          )
+          return undefined
+        }
+
+        const workflow = await runExplicitGameLaunch(
+          {
+            grantId: `vscode-native-game-launch-${nonce()}`,
+            installation,
+            resourcePath: requestedPath,
+          },
+          {
+            confirm: async request =>
+              (await vscode.window.showWarningMessage(
+                request.title,
+                { modal: true, detail: request.detail },
+                request.action,
+              )) === request.action,
+            execute: request =>
+              launchNodeGameResource({
+                services: host.services,
+                ...request,
+                budgets: GAME_DISCOVERY_BUDGET,
+              }),
+          },
+        )
+        if (workflow.state === 'cancelled') {
+          log(`native game launch cancelled for ${basename(requestedPath)}`)
+          return workflow
+        }
+        const launched = workflow.result
+        for (const item of launched.diagnostics) {
+          log(`[game-launch] ${item.severity} ${item.code}: ${item.message}`)
+        }
+        if (launched.state !== 'launched') {
+          void vscode.window.showErrorMessage(
+            `Modkit: native game launch did not start (${launched.state}). See diagnostics.`,
+          )
+          return launched
+        }
+        try {
+          void vscode.window.showInformationMessage(
+            `Modkit: ${installation.displayName} started with ${basename(requestedPath)}.`,
+          )
+          return launched.receipt
+        } finally {
+          await launched.release()
+        }
       })(),
     ),
 
