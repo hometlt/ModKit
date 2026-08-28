@@ -70,10 +70,12 @@ const files = {
         contributionManifests: ['./contributions/*.json'],
       },
       // codec-kit is a real dependency, not optional: src/codec.js imports it. Declaring it is what
-      // makes the scaffold resolvable when it is placed in a workspace that publishes it.
+      // makes the scaffold resolvable from an independent repository. Portable semver ranges are
+      // intentional here: a generated third-party package must never depend on the platform's
+      // private `workspace:*` protocol.
       peerDependencies: {
-        '@modkitx-x3/codec-kit': 'workspace:*',
-        '@modkitx-x3/sdk': 'workspace:*',
+        '@modkitx-x3/codec-kit': '^1.0.0',
+        '@modkitx-x3/sdk': '^0.1.0',
       },
       peerDependenciesMeta: { '@modkitx-x3/sdk': { optional: true } },
     },
@@ -243,10 +245,10 @@ await session.dispose()
 
 ## Where to put it
 
-The codec imports \`@modkitx-x3/codec-kit\`, so the extension has to live somewhere that specifier
-resolves — inside the Modkit workspace, or in a project that depends on it. Scaffolding into an
-unrelated directory produces correct files that cannot load, which is a confusing first five
-minutes.
+This is an independent package: install the declared \`@modkitx-x3/codec-kit\` and
+\`@modkitx-x3/sdk\` peer ranges from the Modkit distribution used by the target application. A
+local Modkit checkout can provide packed tarballs of those same public packages for offline
+development; the extension never needs a source path or a \`workspace:*\` dependency.
 
 ## What it deliberately does not do
 
