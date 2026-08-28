@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 import type {
   CandidateWorldSceneInfo,
   CandidateWorldSceneSource,
+  WorldSceneSource,
   WorldSceneLayerItem,
   WorldScenePage,
   WorldScenePageRequest,
 } from '@modkitx-x3/sdk/maps'
-import { inspectCandidateWorld } from '@modkitx-x3/ui/world'
+import { WORLD_SCENE_SOURCE_CONTRACT } from '@modkitx-x3/sdk/maps'
+import { drawCandidateWorld, inspectCandidateWorld } from '@modkitx-x3/ui/world'
 
 const contract = 'example.publisher/world-source'
 const snapshotId = 'example-snapshot'
@@ -127,5 +129,90 @@ describe('generic publisher-candidate world harness', () => {
         signal: cancelled.signal,
       }),
     ).rejects.toThrow()
+  })
+
+  it('draws terrain and placed objects from the admitted common source without game branches', async () => {
+    const commonInfo = Object.freeze({ ...info, contract: WORLD_SCENE_SOURCE_CONTRACT })
+    const terrainLayer: WorldSceneLayerItem = Object.freeze({
+      facet: 'layers',
+      id: 'layer:terrain',
+      layerId: 'layer:terrain',
+      kind: 'terrain',
+      state: 'available',
+      itemCount: 1,
+      lods: Object.freeze(['exact']),
+    })
+    const source: WorldSceneSource = Object.freeze({
+      contract: WORLD_SCENE_SOURCE_CONTRACT,
+      major: 1,
+      snapshotId,
+      info: () => Promise.resolve(commonInfo),
+      page(request: WorldScenePageRequest): Promise<WorldScenePage> {
+        if (request.facet === 'layers') {
+          return Promise.resolve({
+            snapshotId,
+            facet: 'layers',
+            state: 'available',
+            items: [terrainLayer, layer],
+          })
+        }
+        if (request.facet === 'terrain') {
+          return Promise.resolve({
+            snapshotId,
+            facet: 'terrain',
+            state: 'available',
+            items: [
+              {
+                facet: 'terrain',
+                id: 'terrain:0',
+                layerId: terrainLayer.layerId,
+                coordinateSpaceId: 'height-grid',
+                lod: 'exact',
+                x: 0,
+                y: 0,
+                heightBase: 12,
+                heightAdjustment: 0,
+                mask: 0,
+                mapNativePosition: { x: 128, y: 256, z: 24 },
+              },
+            ],
+          })
+        }
+        return Promise.resolve({
+          snapshotId,
+          facet: 'objects',
+          state: 'available',
+          items: [
+            {
+              facet: 'objects',
+              id: 'object:1',
+              layerId: layer.layerId,
+              coordinateSpaceId: 'map-native',
+              kind: 'structure',
+              objectId: 1,
+              position: { x: 128, y: 256, z: 0 },
+            },
+          ],
+        })
+      },
+    })
+    const model = await inspectCandidateWorld(source, { maxLayers: 4, maxItemsPerLayer: 8 })
+    const calls: string[] = []
+    const context = {
+      fillStyle: '',
+      clearRect: () => calls.push('clear'),
+      fillRect: () => calls.push('terrain'),
+      beginPath: () => calls.push('begin'),
+      arc: () => calls.push('object'),
+      fill: () => calls.push('fill'),
+    }
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => context,
+    } as unknown as HTMLCanvasElement
+    drawCandidateWorld(canvas, model)
+    expect([canvas.width, canvas.height]).toEqual([720, 480])
+    expect(calls).toEqual(['clear', 'terrain', 'begin', 'object', 'fill'])
   })
 })

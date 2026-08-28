@@ -12,6 +12,15 @@ export const MAP_SEMANTIC_ANALYSIS_CONTRACT = 'common.map/semantic-analysis' as 
 /** Additive VFS/workspace service; semantic-analysis@1 remains frozen and authoritative. */
 export const RESOLVED_MAP_WORKSPACE_CONTRACT = 'common.map/resolved-workspace' as const
 
+/**
+ * Standard candidate coordinate for a bounded, game-neutral world scene.
+ *
+ * The callable SDK coordinate is additive. It does not freeze `world-interchange-v1` or promote
+ * the current UVW candidate: maturity stays explicit on `WorldSceneInfo` until the common viewer
+ * and conformance receipts close the remaining admission gates.
+ */
+export const WORLD_SCENE_SOURCE_CONTRACT = 'common.view/world-scene-source' as const
+
 /** Host-owned matcher profile for exact game-id routing. */
 export const MAP_SEMANTIC_MATCHER_PROFILE = 'org.modkitx/map-semantic-matcher' as const
 
@@ -369,8 +378,7 @@ export interface WorldSceneFacetState {
   readonly reason?: string
 }
 
-export interface CandidateWorldSceneInfo {
-  readonly contract: string
+interface WorldSceneInfoBase {
   readonly major: 1
   readonly maturity: 'publisher-candidate'
   readonly snapshotId: string
@@ -385,6 +393,16 @@ export interface CandidateWorldSceneInfo {
   readonly unknownFacets: readonly string[]
   readonly lossPolicy: 'explicit-partial'
   readonly complete: boolean
+}
+
+/** Publisher-qualified identity retained during the candidate/common dual-publish transition. */
+export interface CandidateWorldSceneInfo extends WorldSceneInfoBase {
+  readonly contract: string
+}
+
+/** Common callable identity; still a candidate and not a `world-interchange` GA declaration. */
+export interface WorldSceneInfo extends WorldSceneInfoBase {
+  readonly contract: typeof WORLD_SCENE_SOURCE_CONTRACT
 }
 
 export interface WorldSceneLayerItem {
@@ -502,6 +520,20 @@ export interface CandidateWorldSceneSource {
   readonly major: 1
   readonly snapshotId: string
   info(signal?: AbortSignal): Promise<CandidateWorldSceneInfo>
+  page(request: WorldScenePageRequest, signal?: AbortSignal): Promise<WorldScenePage>
+}
+
+/**
+ * Bounded common world source used by host-owned preview sessions.
+ *
+ * Partial and unavailable facets remain first-class states, unknown facets stay named in `info`,
+ * and unsupported queries return an explicit page result rather than an empty success.
+ */
+export interface WorldSceneSource {
+  readonly contract: typeof WORLD_SCENE_SOURCE_CONTRACT
+  readonly major: 1
+  readonly snapshotId: string
+  info(signal?: AbortSignal): Promise<WorldSceneInfo>
   page(request: WorldScenePageRequest, signal?: AbortSignal): Promise<WorldScenePage>
 }
 

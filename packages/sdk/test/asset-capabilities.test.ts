@@ -78,6 +78,8 @@ describe('descriptor-v2 wire facts', () => {
       'common.view/audio-media-source',
       'common.view/video-media-source',
       'common.view/model-scene-source',
+      // Block 18: callable common candidate; admission still waits for viewer/conformance closure.
+      'common.view/world-scene-source',
       /*
        * Block 11 slice 11C0 declared these optional model facets beside the base scene source,
        * which is itself unchanged. Slice 12-1 migrated the publishers onto them and admitted four

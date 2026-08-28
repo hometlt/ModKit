@@ -8,7 +8,6 @@ import { uint64 } from '@modkitx-x3/core'
 import {
   TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
   analyzeResolvedDataWorkspace,
-  analyzeResolvedMapWorkspace,
   buildInventory,
   createBundledServiceDefinitionRegistry,
   createExecutionBackendRegistry,
@@ -16,6 +15,7 @@ import {
   createHostContributionContractRegistry,
   linkedExtensionInputs,
   linkedInProcessBackend,
+  openMapPreviewAssetSession,
   openSubject,
   registerServiceDefinitionsOrThrow,
 } from '@modkitx-x3/host'
@@ -31,7 +31,9 @@ import {
   type Lease,
   type NamespaceEntrySource,
   type ResourceBudget,
+  WORLD_SCENE_SOURCE_CONTRACT,
 } from '@modkitx-x3/sdk'
+import { inspectCandidateWorld } from '@modkitx-x3/ui/world'
 import type {
   CompanionEnumerationOptions,
   CompanionOrigin,
@@ -456,12 +458,13 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
         origin: resourceOrigin(mapDocuments, MAP_ROOT),
         revision: revisionId(`content-hash.sha256:${MAP_DIGEST}`),
       })
-      const result = await analyzeResolvedMapWorkspace({
+      const result = await openMapPreviewAssetSession({
         services: { ...composition, serviceDefinitions: definitions },
         grant: { id: 'warzone-live-map', classes: [] },
         budgets: budget,
         workspace: workspaceLock(),
         resources,
+        subjectUri: `warzone-map:${MAP_ROOT}`,
         catalog: dataResult.snapshot,
         limits: {
           maxRequirements: 8,
@@ -479,8 +482,10 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
       expect(
         result.state,
         result.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
-      ).toBe('resolved')
-      if (result.state !== 'resolved') throw new Error('installed Warzone map did not resolve')
+      ).toBe('opened')
+      if (result.state !== 'opened') throw new Error('installed Warzone map did not resolve')
+      const worldLease = await result.session.dataSource(WORLD_SCENE_SOURCE_CONTRACT, 1)
+      const world = worldLease.value
       try {
         expect(result.snapshot.semantic.terrain).toMatchObject({
           version: 10,
@@ -524,7 +529,12 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
             canonicalTupleDigest: `sha256:${CANONICAL_DIGEST}`,
           },
         })
-        const worldInfo = await result.world.value.info()
+        const worldInfo = await world.info()
+        expect(worldInfo).toMatchObject({
+          contract: WORLD_SCENE_SOURCE_CONTRACT,
+          maturity: 'publisher-candidate',
+          mapId: MAP_ROOT,
+        })
         expect(worldInfo.facets).toContainEqual(
           expect.objectContaining({ facet: 'objects', state: 'partial', itemCount: 177 }),
         )
@@ -537,7 +547,20 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
             }),
           }),
         )
-        const first = await assessCandidateWorldUvwAdmission(result.world.value, {
+        const viewer = await inspectCandidateWorld(world, {
+          maxLayers: 8,
+          maxItemsPerLayer: 1_024,
+        })
+        expect(viewer.layers.find(item => item.layer.kind === 'terrain')?.page.items).toHaveLength(
+          1_024,
+        )
+        expect(
+          viewer.layers.find(item => item.layer.kind === 'terrain')?.page.nextCursor,
+        ).toBeDefined()
+        expect(viewer.layers.find(item => item.layer.kind === 'objects')?.page.items).toHaveLength(
+          177,
+        )
+        const first = await assessCandidateWorldUvwAdmission(world, {
           maxPageItems: 1_024,
           maxTerrainItems: 65_536,
         })
@@ -550,7 +573,7 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
           serialized: true,
           receipt: { canonicalTupleDigest: `sha256:${CANONICAL_DIGEST}` },
         })
-        const repeated = await assessCandidateWorldUvwAdmission(result.world.value, {
+        const repeated = await assessCandidateWorldUvwAdmission(world, {
           maxPageItems: 257,
           maxTerrainItems: 65_536,
         })
@@ -580,8 +603,8 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
           `[warzone-live] UVW ${first.observedTerrainItems} cells, ${first.serializedBytes} bytes, ${first.receipt.canonicalTupleDigest}`,
         )
       } finally {
-        await result.release()
-        await resources.dispose()
+        await worldLease.release()
+        await result.session.dispose()
         await dataResult.release()
         await dataResources.dispose()
       }

@@ -3,7 +3,9 @@ import type {
   MapSemanticAnalysis,
   MapSemanticAnalysisRequest,
   MapSemanticProviderModule,
+  WorldSceneSource,
 } from '@modkitx-x3/sdk/maps'
+import type { DataSourceOf } from '@modkitx-x3/sdk/data-sources'
 import type { TypedServiceContractRequest } from '@modkitx-x3/sdk/service-contracts'
 
 export const mapRoute = {
@@ -43,6 +45,10 @@ export const invalidMapRequest = {
 
 export declare const analysis: MapSemanticAnalysis
 export declare const providerModule: MapSemanticProviderModule
+export type StandardWorldSceneLookup = DataSourceOf<'common.view/world-scene-source', 1>
+export type StandardWorldSceneProof = StandardWorldSceneLookup extends WorldSceneSource
+  ? true
+  : never
 export const snapshot = analysis.open({
   workspaceId: 'workspace',
   gameId: 'example/game',

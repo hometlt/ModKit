@@ -6,6 +6,7 @@ import {
   createHostTopology,
   resolveModWorkspaceGraph,
   revisionId,
+  WORLD_SCENE_SOURCE_CONTRACT,
   type ArtifactSource,
   type DataCatalogSnapshot,
   type InputSearchScope,
@@ -23,6 +24,7 @@ import {
 } from '@modkitx-x3/host'
 import {
   analyzeResolvedMapWorkspace,
+  openMapPreviewAssetSession,
   resolveMapSemanticAnalysis,
   resolveResolvedMapWorkspace,
 } from '@modkitx-x3/host/maps'
@@ -400,6 +402,99 @@ describe('standard map contract and semantic game provider', () => {
       await result.release()
       await resources.dispose()
     }
+  })
+
+  it('owns a common world preview session without hiding partial or unknown facets', async () => {
+    const sparse = new Map(workspaceFiles())
+    sparse.delete(`${mapRoot}/t3syncpathinginfo`)
+    const releases = new Map<string, number>()
+    const resources = createResourceSession({
+      origin: memoryOrigin(sparse, { releases }),
+      revision: revisionId('provider-token:map-preview-session-v1'),
+    })
+    const opened = await openMapPreviewAssetSession({
+      subjectUri: 'memory://maps/active.sc2map',
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'maps-preview-session', classes: [] },
+      budgets: activationBudget,
+      workspace: workspaceLock(),
+      resources,
+      catalog,
+      limits: {
+        ...limits,
+        maxRequirements: 8,
+        maxTerrainSamples: 3,
+        maxPageSize: 2,
+        maxDiagnostics: 32,
+      },
+    })
+    expect(
+      opened.state,
+      opened.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+    ).toBe('opened')
+    if (opened.state !== 'opened') throw new Error('common map preview did not open')
+
+    expect(opened.session.state()).toBe('live')
+    expect(await opened.session.descriptor()).toMatchObject({
+      subjectUri: 'memory://maps/active.sc2map',
+      interpretation: 'none',
+      constraints: { readOnly: true, randomAccess: true },
+      dataSources: [{ contract: WORLD_SCENE_SOURCE_CONTRACT, major: 1 }],
+      revision: resources.revision,
+    })
+
+    const first = await opened.session.dataSource(WORLD_SCENE_SOURCE_CONTRACT, 1)
+    const info = await first.value.info()
+    expect(first.value.contract).toBe(WORLD_SCENE_SOURCE_CONTRACT)
+    expect(info).toMatchObject({
+      contract: WORLD_SCENE_SOURCE_CONTRACT,
+      maturity: 'publisher-candidate',
+      lossPolicy: 'explicit-partial',
+    })
+    expect(info.unknownFacets).toEqual(opened.snapshot.worldCandidate.unknownFacets)
+    expect(info.facets).toContainEqual(
+      expect.objectContaining({ facet: 'navigation', state: 'unavailable' }),
+    )
+    expect(info.facets).toContainEqual(
+      expect.objectContaining({ facet: 'terrain', state: 'partial' }),
+    )
+
+    await first.release()
+    await expect(first.value.info()).rejects.toThrow(/lease has been released/u)
+    const second = await opened.session.dataSource(WORLD_SCENE_SOURCE_CONTRACT, 1)
+    await expect(opened.session.dataSource('common.view/text-data-source', 1)).rejects.toThrow(
+      /does not publish/u,
+    )
+
+    await Promise.all([opened.session.dispose(), opened.session.dispose()])
+    expect(opened.session.state()).toBe('disposed')
+    expect(resources.state()).toBe('disposed')
+    await expect(second.value.info()).rejects.toThrow(/released or stale/u)
+    await second.release()
+    expect([...releases.values()].every(count => count === 1)).toBe(true)
+  })
+
+  it('disposes an owned ResourceSession when a common map preview cannot resolve', async () => {
+    const resources = createResourceSession({
+      origin: memoryOrigin(workspaceFiles()),
+      revision: revisionId('provider-token:map-preview-unresolved-v1'),
+    })
+    const unsupportedWorkspace = Object.freeze({
+      ...workspaceLock(),
+      gameId: 'example/other-game',
+    })
+    const result = await openMapPreviewAssetSession({
+      subjectUri: 'memory://maps/unsupported-map',
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'maps-preview-unresolved', classes: [] },
+      budgets: activationBudget,
+      workspace: unsupportedWorkspace,
+      resources,
+      limits: { ...limits, maxRequirements: 8, maxPageSize: 2, maxDiagnostics: 32 },
+    })
+
+    expect(result.state).toBe('unresolved')
+    expect(resources.state()).toBe('disposed')
   })
 
   it('opens terrain, regions and placed objects, then binds them to the resolved catalog', async () => {

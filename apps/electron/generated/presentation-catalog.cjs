@@ -61,6 +61,21 @@ module.exports = Object.freeze([
     ]),
   }),
   Object.freeze({
+    slotId: 'world',
+    kind: 'stage',
+    contributionId: 'org.modkitx.ui/world-stage',
+    extensionId: 'org.modkitx/ui',
+    priority: 380,
+    singletonGroup: 'center-stage',
+    bindings: Object.freeze([
+      Object.freeze({
+        bindingId: 'world-content',
+        contract: 'common.view/world-scene-source',
+        major: 1,
+      }),
+    ]),
+  }),
+  Object.freeze({
     slotId: 'model',
     kind: 'stage',
     contributionId: 'org.modkitx.ui/model-stage',

@@ -36,6 +36,7 @@ const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
 const CATALOG: readonly StageFacts[] = [
   { id: 'image', label: 'Image', contract: 'common.view/raster-image-source' },
   { id: 'vector', label: 'Vector', contract: 'common.view/vector-scene-source' },
+  { id: 'world', label: 'World', contract: 'common.view/world-scene-source' },
   { id: 'model', label: 'Model', contract: 'common.view/model-scene-source' },
   { id: 'audio', label: 'Audio', contract: 'common.view/audio-media-source' },
   { id: 'video', label: 'Video', contract: 'common.view/video-media-source' },
@@ -187,6 +188,7 @@ describe('VS Code view policy', () => {
       'tree',
       'vector',
       'video',
+      'world',
     ])
     expect(source).not.toMatch(/from '@modkitx-x3\/ui'/u)
     expect(source).toContain('module: relationGraphViewer')

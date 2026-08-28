@@ -1,10 +1,11 @@
 /** Host definition, exact game-id matcher and activation adapter for semantic maps. */
 
-import { contractId, diagnostic, type Diagnostic } from '@modkitx-x3/core'
+import { ModkitError, contractId, diagnostic, type Diagnostic } from '@modkitx-x3/core'
 import {
   MAP_SEMANTIC_ANALYSIS_CONTRACT,
   MAP_SEMANTIC_MATCHER_PROFILE,
   RESOLVED_MAP_WORKSPACE_CONTRACT,
+  WORLD_SCENE_SOURCE_CONTRACT,
   type CandidateWorldSceneSource,
   type MapSemanticDocument,
   type MapSemanticDocumentRequirement,
@@ -14,10 +15,18 @@ import {
   type ResolvedMapWorkspaceAnalysis,
   type ResolvedMapWorkspacePlan,
   type ResolvedMapWorkspaceSnapshot,
+  type WorldScenePageRequest,
+  type WorldSceneSource,
 } from '@modkitx-x3/sdk/maps'
 import type {
+  AnyDescriptor,
+  AssetDiagnosticWire,
+  AssetSession,
   DataCatalogSnapshot,
+  DataSourceMajor,
+  DataSourceOf,
   DefinitionInventoryResult,
+  KnownDataSourceId,
   Lease,
   ModWorkspaceLock,
   PermissionGrant,
@@ -34,6 +43,7 @@ import type {
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { Inventory } from '../inventory.js'
 import { createHostServiceResolver } from '../service-leases.js'
+import { assembleSubjectDescriptor, createAssetSession } from '../session.js'
 import { createCandidateWorldSceneLease } from './world-source.js'
 
 /** Owner id under which the standard semantic-map definition is registered. */
@@ -813,5 +823,155 @@ export async function analyzeResolvedMapWorkspace(
         limits.maxDiagnostics,
       ),
     }
+  }
+}
+
+export interface OpenMapPreviewAssetSessionRequest extends AnalyzeResolvedMapWorkspaceRequest {
+  /** Stable URI of the map/container subject whose workspace the host is projecting. */
+  readonly subjectUri: string
+}
+
+export type MapPreviewAssetSessionResult =
+  | Readonly<{
+      state: 'opened'
+      session: AssetSession
+      descriptor: AnyDescriptor
+      snapshot: ResolvedMapWorkspaceSnapshot
+      plan: ResolvedMapWorkspacePlan
+      diagnostics: readonly Diagnostic[]
+    }>
+  | Readonly<{
+      state: 'unresolved'
+      diagnostics: readonly Diagnostic[]
+    }>
+
+function previewDiagnostic(item: Diagnostic, index: number): AssetDiagnosticWire {
+  return Object.freeze({
+    id: `map-preview-${String(index)}`,
+    category: 'unknown',
+    code: item.code,
+    severity: item.severity,
+    message: item.message,
+    ...(item.path === undefined ? {} : { path: item.path }),
+    ...(item.range === undefined ? {} : { range: item.range }),
+  })
+}
+
+/**
+ * One consumer lease over the analysis-owned publisher candidate.
+ *
+ * The adapter changes only the callable coordinate. All partial/unavailable states, named unknown
+ * facets, paging identities and provenance are delegated unchanged. Releasing a consumer lease
+ * invalidates that consumer without releasing the analysis shared by other consumers.
+ */
+function borrowCommonWorldScene(candidate: CandidateWorldSceneSource): Lease<WorldSceneSource> {
+  let live = true
+  const assertLive = (signal?: AbortSignal): void => {
+    signal?.throwIfAborted()
+    if (!live) throw new TypeError('world scene data-source lease has been released')
+  }
+  const source: WorldSceneSource = Object.freeze({
+    contract: WORLD_SCENE_SOURCE_CONTRACT,
+    major: 1,
+    snapshotId: candidate.snapshotId,
+    async info(signal?: AbortSignal) {
+      assertLive(signal)
+      const info = await candidate.info(signal)
+      assertLive(signal)
+      return Object.freeze({ ...info, contract: WORLD_SCENE_SOURCE_CONTRACT })
+    },
+    async page(request: WorldScenePageRequest, signal?: AbortSignal) {
+      assertLive(signal)
+      const page = await candidate.page(request, signal)
+      assertLive(signal)
+      return page
+    },
+  })
+  return Object.freeze({
+    value: source,
+    release() {
+      live = false
+      return Promise.resolve()
+    },
+  })
+}
+
+/**
+ * Opens a host-owned, read-only AssetSession over the common world candidate.
+ *
+ * Ownership transfers with the call: unresolved opens dispose `resources` immediately; opened
+ * sessions retain the provider/world analysis and ResourceSession until `session.dispose()`. The
+ * common source remains publisher-candidate and makes no `world-interchange` GA claim.
+ */
+export async function openMapPreviewAssetSession(
+  request: OpenMapPreviewAssetSessionRequest,
+): Promise<MapPreviewAssetSessionResult> {
+  let analyzed: AnalyzedResolvedMapWorkspace
+  try {
+    analyzed = await analyzeResolvedMapWorkspace(request)
+  } catch (error) {
+    await request.resources.dispose()
+    throw error
+  }
+  if (analyzed.state === 'unresolved') {
+    await request.resources.dispose()
+    return analyzed
+  }
+
+  try {
+    const descriptor = await assembleSubjectDescriptor({
+      schemaVersion: 2,
+      subjectUri: request.subjectUri,
+      origin: {
+        kind: 'namespace',
+        root: { id: request.workspace.activeRootId, uri: request.subjectUri },
+        revision: request.resources.revision,
+      },
+      interpretation: 'none',
+      candidates: [],
+      traits: [],
+      operations: [],
+      constraints: {
+        readOnly: true,
+        seekable: false,
+        randomAccess: true,
+        trusted: false,
+      },
+      dataSources: [{ contract: WORLD_SCENE_SOURCE_CONTRACT, major: 1 }],
+      diagnostics: analyzed.diagnostics.map(previewDiagnostic),
+      revision: request.resources.revision,
+    })
+    const managed = createAssetSession({
+      revision: request.resources.revision,
+      descriptor,
+      operationDeclarations: [],
+      permissionGrant: request.grant,
+      handlers: new Map(),
+      async openDataSource<
+        Contract extends KnownDataSourceId,
+        Major extends DataSourceMajor<Contract>,
+      >(contract: Contract, major: Major): Promise<Lease<DataSourceOf<Contract, Major>>> {
+        if (contract !== WORLD_SCENE_SOURCE_CONTRACT || major !== 1) {
+          throw new ModkitError({
+            code: 'x3.host/map-preview-data-source-unavailable',
+            message: `map preview does not publish ${contract}@${String(major)}`,
+          })
+        }
+        return borrowCommonWorldScene(analyzed.world.value) as Lease<DataSourceOf<Contract, Major>>
+      },
+      // createAssetSession releases in reverse order: analysis first, then its ResourceSession.
+      release: [() => request.resources.dispose(), () => analyzed.release()],
+    })
+    return Object.freeze({
+      state: 'opened' as const,
+      session: managed.session,
+      descriptor,
+      snapshot: analyzed.snapshot,
+      plan: analyzed.plan,
+      diagnostics: analyzed.diagnostics,
+    })
+  } catch (error) {
+    await Promise.allSettled([analyzed.release(), request.resources.dispose()])
+    throw error
   }
 }

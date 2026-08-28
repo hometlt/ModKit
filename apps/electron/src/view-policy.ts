@@ -26,6 +26,7 @@ export const STAGE_ORDER: readonly string[] = Object.freeze([
   'image',
   'image-edit',
   'audio',
+  'world',
   'model',
   'vector',
   'archive',

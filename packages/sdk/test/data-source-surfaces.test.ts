@@ -191,7 +191,7 @@ describe('NXT-103 — data-source method surface schema', () => {
 })
 
 describe('NXT-103 — standard data-source surfaces', () => {
-  it('covers exactly the 19 standard contracts plus the auxiliary encoded-media surface', () => {
+  it('covers every standard contract plus the auxiliary encoded-media surface', () => {
     expect(Object.keys(STANDARD_DATA_SOURCE_SURFACES).sort()).toEqual(
       [...STANDARD_DATA_SOURCE_CONTRACTS].sort(),
     )
@@ -252,6 +252,10 @@ describe('NXT-103 — standard data-source surfaces', () => {
     expect(STANDARD_DATA_SOURCE_SURFACES['common.view/byte-range-source'].methods['size']).toEqual({
       kind: 'value',
     })
+    expect(STANDARD_DATA_SOURCE_SURFACES['common.view/world-scene-source'].methods).toEqual({
+      info: { kind: 'value', signal: 'last' },
+      page: { kind: 'value', signal: 'last' },
+    })
   })
 
   it('never lets a publisher-candidate contract be counted as admitted', () => {
@@ -264,16 +268,23 @@ describe('NXT-103 — standard data-source surfaces', () => {
     )
     expect(dataSourceMaturity('common.view/slide-deck-source')).toBe('publisher-candidate')
     expect(ADMITTED_DATA_SOURCE_CONTRACTS).not.toContain('common.view/slide-deck-source')
+    expect(dataSourceMaturity('common.view/world-scene-source')).toBe('publisher-candidate')
+    expect(ADMITTED_DATA_SOURCE_CONTRACTS).not.toContain('common.view/world-scene-source')
     /*
-     * ODP-only slides and M3-only sockets remain candidates. Skeleton was promoted only after M3
-     * supplied an independent Blizzard publisher beside the SAGE/Westwood W3D/W3X family.
+     * ODP-only slides, M3-only sockets and the not-yet-frozen common world surface remain
+     * candidates. Skeleton was promoted only after M3 supplied an independent Blizzard publisher
+     * beside the SAGE/Westwood W3D/W3X family.
      */
     expect(
       STANDARD_DATA_SOURCE_CONTRACTS.filter(
         contract => DATA_SOURCE_MATURITY[contract] === 'publisher-candidate',
       ),
-    ).toEqual(['common.view/model-socket-source', 'common.view/slide-deck-source'])
-    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 2)
+    ).toEqual([
+      'common.view/world-scene-source',
+      'common.view/model-socket-source',
+      'common.view/slide-deck-source',
+    ])
+    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 3)
     // the base model contract is untouched: a facet beside a contract is not a change to it
     expect(dataSourceMaturity('common.view/model-scene-source')).toBe('admitted')
     for (const contract of ADMITTED_DATA_SOURCE_CONTRACTS) {
@@ -285,6 +296,9 @@ describe('NXT-103 — standard data-source surfaces', () => {
     )
     expect(standardDataSourceSurfaceFor('common.view/model-socket-source', 1)).toBe(
       STANDARD_DATA_SOURCE_SURFACES['common.view/model-socket-source'],
+    )
+    expect(standardDataSourceSurfaceFor('common.view/world-scene-source', 1)).toBe(
+      STANDARD_DATA_SOURCE_SURFACES['common.view/world-scene-source'],
     )
     expect(dataSourceMaturity('org.example/thing-source')).toBeUndefined()
   })

@@ -76,6 +76,7 @@ describe('web preview policy', () => {
     expect(stages.map(stageIdOf)).toEqual([
       'image',
       'vector',
+      'world',
       'model',
       'audio',
       'video',

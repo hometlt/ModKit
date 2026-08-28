@@ -49,6 +49,12 @@ const previewPolicy = Object.freeze([
     module: 'audioViewer',
   },
   {
+    slotId: 'world',
+    label: 'World',
+    contributionId: 'org.modkitx.ui/world-stage',
+    module: 'worldViewer',
+  },
+  {
     slotId: 'model',
     label: 'Model',
     contributionId: 'org.modkitx.ui/model-stage',

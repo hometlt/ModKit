@@ -48,6 +48,7 @@ import type {
   ModelSkeletonSource,
   ModelSocketSource,
 } from './model-facet-sources.js'
+import type { WorldSceneSource } from '../maps/index.js'
 
 // ---------------------------------------------------------------------------------------------
 // compile-time pin: a surface must name exactly the ABI's methods
@@ -107,7 +108,7 @@ const encodedMediaSurface = {
 } as const satisfies SurfaceOf<EncodedMediaSource>
 
 // ---------------------------------------------------------------------------------------------
-// the 19 standard surfaces
+// the standard surfaces
 
 const textDataSourceSurface = {
   methods: {
@@ -199,6 +200,13 @@ const modelSceneSourceSurface = {
   },
 } as const satisfies SurfaceOf<ModelSceneSource>
 
+const worldSceneSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    page: cancellableValue,
+  },
+} as const satisfies SurfaceOf<WorldSceneSource>
+
 /**
  * The five optional model facets of slice 11C0. Candidate maturity changes nothing about the
  * wire: an `info` plus one paged reader, called exactly like every other source.
@@ -270,7 +278,7 @@ const subjectFactsSourceSurface = {
   },
 } as const satisfies SurfaceOf<SubjectFactsSource>
 
-/** Method surfaces of the 19 standard data-source contracts, all `major 1`. */
+/** Method surfaces of the standard data-source contracts, all `major 1`. */
 export const STANDARD_DATA_SOURCE_SURFACES: Readonly<
   Record<StandardDataSourceId, DataSourceSurfaceV1>
 > = deepFreeze({
@@ -285,6 +293,7 @@ export const STANDARD_DATA_SOURCE_SURFACES: Readonly<
   'common.view/audio-media-source': audioMediaSourceSurface,
   'common.view/video-media-source': videoMediaSourceSurface,
   'common.view/model-scene-source': modelSceneSourceSurface,
+  'common.view/world-scene-source': worldSceneSourceSurface,
   'common.view/model-resource-refs-source': modelResourceRefsSourceSurface,
   'common.view/model-skeleton-source': modelSkeletonSourceSurface,
   'common.view/model-animation-source': modelAnimationSourceSurface,

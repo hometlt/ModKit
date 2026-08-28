@@ -25,6 +25,7 @@ import { virtualTextViewer } from '@modkitx-x3/ui/text-virtual'
 import { treeViewer } from '@modkitx-x3/ui/tree'
 import { vectorViewer } from '@modkitx-x3/ui/vector'
 import { videoViewer } from '@modkitx-x3/ui/video'
+import { worldViewer } from '@modkitx-x3/ui/world'
 
 import { orderStages } from './view-policy.js'
 import { vscodeArchiveStage } from './archive-stage.js'
@@ -49,6 +50,12 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       label: 'Vector',
       contract: 'common.view/vector-scene-source',
       module: vectorViewer,
+    },
+    {
+      id: 'world',
+      label: 'World',
+      contract: 'common.view/world-scene-source',
+      module: worldViewer,
     },
     {
       id: 'model',

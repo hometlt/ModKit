@@ -12,6 +12,7 @@ export const STANDARD_DATA_SOURCE_CONTRACTS = Object.freeze([
   'common.view/audio-media-source',
   'common.view/video-media-source',
   'common.view/model-scene-source',
+  'common.view/world-scene-source',
   // optional model facets beside the base scene source (block 11, slice 11C0, plan item 11)
   'common.view/model-resource-refs-source',
   'common.view/model-skeleton-source',
@@ -43,7 +44,7 @@ export type DataSourceMaturity = 'admitted' | 'publisher-candidate'
 /**
  * Maturity of every standard data-source contract.
  *
- * Two candidates remain, for stated reasons rather than by default.
+ * Three candidates remain, for stated reasons rather than by default.
  *
  * `common.view/slide-deck-source`: block 11 slice 11B publishes it from ODP alone. Its admission
  * waits for a second, independent slides family (PPTX) plus a generic consumer — block 30.
@@ -51,6 +52,10 @@ export type DataSourceMaturity = 'admitted' | 'publisher-candidate'
  * `common.view/model-socket-source`: block 15D publishes it from explicit Blizzard M3 ATT_ records.
  * It stays a publisher-candidate until a second independent native family proves the same
  * identity/node/role boundary without assigning semantics from a name heuristic.
+ *
+ * `common.view/world-scene-source`: the shared callable surface is now backed by independent SC2
+ * and Warzone candidate publishers, but it remains a candidate until the common viewer and frozen
+ * `world-interchange-v1` conformance receipt exist. Standard wire availability is not GA.
  *
  * `common.view/model-skeleton-source` was admitted after the independent Blizzard M3 family began
  * decoding `MODL.bones → BONE.name → CHAR` and publishing twelve corpus-backed bindings. W3D/W3X
@@ -87,6 +92,7 @@ export const DATA_SOURCE_MATURITY: Readonly<Record<StandardDataSourceId, DataSou
     'common.view/audio-media-source': 'admitted',
     'common.view/video-media-source': 'admitted',
     'common.view/model-scene-source': 'admitted',
+    'common.view/world-scene-source': 'publisher-candidate',
     'common.view/model-resource-refs-source': 'admitted',
     'common.view/model-skeleton-source': 'admitted',
     'common.view/model-animation-source': 'admitted',

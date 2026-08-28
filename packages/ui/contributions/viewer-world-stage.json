@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/viewer-contribution", "major": 1 },
+  "id": "org.modkitx.ui/world-stage",
+  "displayName": "world stage",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./dist/world/index.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "stage",
+    "consumesDataSources": [{ "contract": "common.view/world-scene-source", "major": 1 }],
+    "priority": 380,
+    "singletonGroup": "center-stage"
+  }
+}

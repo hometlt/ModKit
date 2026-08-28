@@ -12,6 +12,7 @@ import {
   vectorViewer,
   videoViewer,
   virtualTextViewer,
+  worldViewer,
 } from '@modkitx-x3/ui'
 import { monacoEditor, monacoViewer } from '../../../extensions/common/ui-monaco/src/index.js'
 
@@ -26,6 +27,7 @@ export const PREVIEW_STAGES = Object.freeze([
   { id: 'video', label: 'Video', contract: 'common.view/video-media-source', module: videoViewer },
   { id: 'image', label: 'Image', contract: 'common.view/raster-image-source', module: imageViewer },
   { id: 'audio', label: 'Audio', contract: 'common.view/audio-media-source', module: audioViewer },
+  { id: 'world', label: 'World', contract: 'common.view/world-scene-source', module: worldViewer },
   {
     id: 'model',
     label: 'Model',
@@ -74,6 +76,7 @@ export const PREVIEW_STAGES_READONLY = Object.freeze([
   { id: 'video', label: 'Video', contract: 'common.view/video-media-source', module: videoViewer },
   { id: 'image', label: 'Image', contract: 'common.view/raster-image-source', module: imageViewer },
   { id: 'audio', label: 'Audio', contract: 'common.view/audio-media-source', module: audioViewer },
+  { id: 'world', label: 'World', contract: 'common.view/world-scene-source', module: worldViewer },
   {
     id: 'model',
     label: 'Model',

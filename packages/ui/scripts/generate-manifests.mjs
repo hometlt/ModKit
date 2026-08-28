@@ -108,6 +108,16 @@ const contributions = [
     },
   },
   {
+    id: 'world-stage',
+    entrypoint: './dist/world/index.js',
+    spec: {
+      kind: 'stage',
+      consumesDataSources: [dataSource('common.view/world-scene-source')],
+      priority: 380,
+      singletonGroup: 'center-stage',
+    },
+  },
+  {
     id: 'model-stage',
     entrypoint: './dist/model/index.js',
     spec: {

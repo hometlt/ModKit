@@ -50,6 +50,7 @@ import type {
   ModelSkeletonSource,
   ModelSocketSource,
 } from './model-facet-sources.js'
+import type { WorldSceneSource } from '../maps/index.js'
 export {
   isReservedModelFacetSource,
   RESERVED_MODEL_FACET_SOURCES,
@@ -498,6 +499,7 @@ export interface DataSourceContractMap {
   'common.view/audio-media-source': { 1: AudioMediaSource }
   'common.view/video-media-source': { 1: VideoMediaSource }
   'common.view/model-scene-source': { 1: ModelSceneSource }
+  'common.view/world-scene-source': { 1: WorldSceneSource }
   'common.view/model-resource-refs-source': { 1: ModelResourceRefsSource }
   'common.view/model-skeleton-source': { 1: ModelSkeletonSource }
   'common.view/model-animation-source': { 1: ModelAnimationSource }
