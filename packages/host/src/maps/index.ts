@@ -72,6 +72,7 @@ import { createWorkspaceNamespaceCompanionOrigin } from '../namespace-origin.js'
 import { createResourceSession } from '../resource-session.js'
 import { createHostServiceResolver } from '../service-leases.js'
 import { assembleSubjectDescriptor, createAssetSession } from '../session.js'
+import { analyzeResolvedDataWorkspace, type ResolvedDataWorkspaceLimits } from '../data/index.js'
 import { createCandidateWorldSceneLease } from './world-source.js'
 
 /** Owner id under which the standard semantic-map definition is registered. */
@@ -1217,6 +1218,14 @@ export interface CoordinateMapPreviewAssetSessionRequest {
   readonly maxRoots: number
   readonly maxDepth: number
   readonly limits: ResolvedMapWorkspaceLimits
+  /**
+   * Optional additive catalog pass over the same resolved workspace and ResourceSession.
+   * Explicit `catalog` input takes precedence, preserving the existing caller-owned path.
+   */
+  readonly catalogEnrichment?: Readonly<{
+    readonly locales: readonly string[]
+    readonly limits: ResolvedDataWorkspaceLimits
+  }>
   readonly catalog?: DataCatalogSnapshot
   readonly signal?: AbortSignal
 }
@@ -1821,6 +1830,84 @@ function releaseOnce(release: () => Promise<void>): () => Promise<void> {
   }
 }
 
+type MapPreviewCatalogEnrichment = Readonly<{
+  catalog?: DataCatalogSnapshot
+  diagnostics: readonly Diagnostic[]
+}>
+
+/**
+ * Resolve a catalog snapshot through the same live workspace resource session used by the map.
+ * Facet/provider leases end before map analysis; the immutable snapshot is the only value retained.
+ */
+async function enrichMapPreviewCatalog(
+  request: CoordinateMapPreviewAssetSessionRequest,
+  workspace: ModWorkspaceLock,
+  resources: ResourceSessionPort,
+): Promise<MapPreviewCatalogEnrichment> {
+  if (request.catalog !== undefined || request.catalogEnrichment === undefined) {
+    return Object.freeze({
+      ...(request.catalog === undefined ? {} : { catalog: request.catalog }),
+      diagnostics: Object.freeze([]),
+    })
+  }
+
+  let analyzed
+  try {
+    analyzed = await analyzeResolvedDataWorkspace({
+      services: request.services,
+      grant: request.grant,
+      budgets: request.budgets,
+      workspace,
+      resources,
+      locales: request.catalogEnrichment.locales,
+      queries: Object.freeze([]),
+      limits: request.catalogEnrichment.limits,
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    })
+  } catch (error) {
+    if (request.signal?.aborted) throw error
+    return Object.freeze({
+      diagnostics: boundedDiagnostics(
+        [
+          diagnostic(
+            'warning',
+            'x3.host/map-preview-catalog-enrichment-failed',
+            `map preview catalog enrichment failed (${error instanceof Error ? error.message : String(error)})`,
+          ),
+        ],
+        request.limits.maxDiagnostics,
+      ),
+    })
+  }
+  if (analyzed.state === 'unresolved') {
+    return Object.freeze({
+      diagnostics: boundedDiagnostics(analyzed.diagnostics, request.limits.maxDiagnostics),
+    })
+  }
+
+  try {
+    await analyzed.release()
+  } catch (error) {
+    return Object.freeze({
+      diagnostics: boundedDiagnostics(
+        [
+          ...analyzed.diagnostics,
+          diagnostic(
+            'warning',
+            'x3.host/map-preview-catalog-release-failed',
+            `map preview catalog leases could not be released cleanly (${error instanceof Error ? error.message : String(error)})`,
+          ),
+        ],
+        request.limits.maxDiagnostics,
+      ),
+    })
+  }
+  return Object.freeze({
+    catalog: analyzed.snapshot,
+    diagnostics: boundedDiagnostics(analyzed.diagnostics, request.limits.maxDiagnostics),
+  })
+}
+
 async function resolveSubjectNamespacePreviewResources(request: {
   readonly plan: Extract<MapPreviewResourcePlan, { readonly strategy: 'subject-namespace' }>
   readonly descriptor: AnyDescriptor
@@ -2208,6 +2295,7 @@ export async function coordinateMapPreviewAssetSession(
       origin: resourceResolution.origin,
       revision: resourceResolution.revision,
     })
+    const enrichment = await enrichMapPreviewCatalog(request, workspace, resources)
     const opened = await openMapPreviewAssetSession({
       services: request.services,
       grant: request.grant,
@@ -2215,7 +2303,7 @@ export async function coordinateMapPreviewAssetSession(
       workspace,
       resources,
       subjectUri: descriptor.subjectUri,
-      ...(request.catalog === undefined ? {} : { catalog: request.catalog }),
+      ...(enrichment.catalog === undefined ? {} : { catalog: enrichment.catalog }),
       limits: request.limits,
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })
@@ -2227,6 +2315,7 @@ export async function coordinateMapPreviewAssetSession(
           ...preparationFindings,
           ...workspaceDiagnostics(workspace),
           ...resourceResolution.diagnostics,
+          ...enrichment.diagnostics,
           ...opened.diagnostics,
         ]),
       }
@@ -2242,6 +2331,7 @@ export async function coordinateMapPreviewAssetSession(
         ...preparationFindings,
         ...workspaceDiagnostics(workspace),
         ...resourceResolution.diagnostics,
+        ...enrichment.diagnostics,
         ...opened.diagnostics,
       ]),
     })

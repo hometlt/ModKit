@@ -29,9 +29,12 @@ import {
   linkedExtensionInputs,
   linkedInProcessBackend,
   registerServiceDefinitionsOrThrow,
+  type ExecutionBackend,
+  type ExecutionBackendActivation,
   type HostComposition,
   type LinkedExtension,
 } from '@modkitx-x3/host'
+import { STANDARD_DATA_OWNER } from '@modkitx-x3/host/data'
 import {
   analyzeResolvedMapWorkspace,
   coordinateMapPreviewAssetSession,
@@ -91,6 +94,7 @@ const activationBudget = {
 
 let composition: HostComposition
 let definitions: ReturnType<typeof createBundledServiceDefinitionRegistry>
+let definitionsWithoutData: ReturnType<typeof createBundledServiceDefinitionRegistry>
 
 beforeAll(async () => {
   const linked = linkedExtensionInputs([starcraft2Game, warzone2100])
@@ -103,6 +107,9 @@ beforeAll(async () => {
   })
   definitions = createBundledServiceDefinitionRegistry()
   await registerServiceDefinitionsOrThrow(composition.inventory, definitions)
+  definitionsWithoutData = createBundledServiceDefinitionRegistry()
+  await registerServiceDefinitionsOrThrow(composition.inventory, definitionsWithoutData)
+  await definitionsWithoutData.replaceOwnerInventory(STANDARD_DATA_OWNER, [])
 })
 
 function heightMap(): Uint8Array {
@@ -499,6 +506,227 @@ const coordinatorLimits = {
   maxPageSize: 2,
   maxDiagnostics: 32,
 } as const
+
+const catalogEnrichment = Object.freeze({
+  locales: Object.freeze(['enUS']),
+  limits: Object.freeze({
+    maxRequirements: 16,
+    maxDocumentBytes: 1_000_000,
+    maxTextBytes: 4_000_000,
+    maxEntities: 10_000,
+    maxDepth: 32,
+    maxPageSize: 1_000,
+  }),
+})
+
+const warzoneCatalogEnrichment = Object.freeze({
+  locales: Object.freeze([]),
+  limits: Object.freeze({
+    maxRequirements: 64,
+    maxDocumentBytes: 1_000_000,
+    maxTextBytes: 4_000_000,
+    maxEntities: 10_000,
+    maxDepth: 32,
+    maxPageSize: 1_000,
+  }),
+})
+
+const warzoneCatalogFiles = Object.freeze([
+  'templates.json',
+  'structure.json',
+  'features.json',
+  'body.json',
+  'construction.json',
+  'ecm.json',
+  'propulsion.json',
+  'sensor.json',
+  'weapons.json',
+])
+
+function subjectNamespaceWorkspaceFiles(): Map<string, Uint8Array> {
+  return new Map(
+    [...workspaceFiles()].map(([path, bytes]) => [path.slice(mapRoot.length + 1), bytes]),
+  )
+}
+
+function subjectNamespacePreparation(): MapPreviewPreparationPort {
+  return previewPreparation(async () => ({
+    state: 'prepared',
+    plan: {
+      schemaVersion: 1,
+      workspace: previewWorkspaceInput(),
+      resources: {
+        schemaVersion: 1,
+        strategy: 'subject-namespace',
+        roots: [{ rootId: 'active', namespacePrefix: '' }],
+      },
+    },
+    diagnostics: [],
+  }))
+}
+
+function warzonePreviewWorkspaceInput() {
+  return {
+    workspaceId: 'warzone-map-preview-workspace',
+    gameId: WARZONE_GAME_ID,
+    activeRootId: 'map',
+    sources: [
+      { sourceId: 'base-source', kind: 'memory' as const, location: 'memory:base' },
+      { sourceId: 'mp-source', kind: 'memory' as const, location: 'memory:mp' },
+      { sourceId: 'map-source', kind: 'memory' as const, location: 'memory:map' },
+    ],
+    roots: [
+      {
+        rootId: 'base',
+        sourceId: 'base-source',
+        sourcePath: 'base',
+        displayName: 'Base',
+        kind: 'warzone-package' as const,
+        dependencies: [],
+      },
+      {
+        rootId: 'mp',
+        sourceId: 'mp-source',
+        sourcePath: 'mp',
+        displayName: 'Multiplayer',
+        kind: 'warzone-package' as const,
+        dependencies: [
+          { targetRootId: 'base', ref: 'base.wz', required: true, provenance: 'implicit' as const },
+        ],
+      },
+      {
+        rootId: 'map',
+        sourceId: 'map-source',
+        sourcePath: warzoneMapRoot,
+        displayName: 'Fixture',
+        kind: 'warzone-map' as const,
+        dependencies: [
+          { targetRootId: 'mp', ref: 'mp.wz', required: true, provenance: 'implicit' as const },
+        ],
+      },
+    ],
+    maxRoots: 4,
+    maxDepth: 4,
+  }
+}
+
+function warzonePreviewFiles(): Map<string, Uint8Array> {
+  const json = (value: unknown): Uint8Array => encoder.encode(JSON.stringify(value))
+  const files = new Map<string, Uint8Array>([
+    [`${warzoneMapRoot}/game.map`, warzoneGameMap()],
+    [
+      `${warzoneMapRoot}/droid.json`,
+      json({
+        droid_0010: {
+          id: 10,
+          position: [128, 256],
+          rotation: [0, 0, 0],
+          startpos: 1,
+          template: 'ConstructorDroid',
+        },
+      }),
+    ],
+    [
+      `${warzoneMapRoot}/struct.json`,
+      json({
+        version: 2,
+        structures: [{ name: 'A0PowerGenerator', position: [384, 512], rotation: 0, player: 0 }],
+      }),
+    ],
+    [
+      `${warzoneMapRoot}/feature.json`,
+      json({ feature_0007: { name: 'TreeSnow1', position: [640, 768], rotation: [0, 0, 0] } }),
+    ],
+  ])
+  for (const root of ['base', 'mp', warzoneMapRoot]) {
+    for (const filename of warzoneCatalogFiles) {
+      files.set(`${root}/stats/${filename}`, json({}))
+    }
+  }
+  files.set(
+    'base/stats/templates.json',
+    json({
+      ConstructorDroid: {
+        id: 'ConstructorDroid',
+        body: 'Body1REC',
+        construct: 'Spade1Mk1',
+        propulsion: 'wheeled01',
+      },
+    }),
+  )
+  files.set(
+    'base/stats/structure.json',
+    json({
+      A0PowerGenerator: {
+        id: 'A0PowerGenerator',
+        baseModel: 'blbpower.pie',
+        structureModel: ['blpower0.pie'],
+      },
+    }),
+  )
+  files.set(
+    'base/stats/features.json',
+    json({ TreeSnow1: { id: 'TreeSnow1', model: 'mistree1.pie' } }),
+  )
+  files.set('base/stats/body.json', json({ Body1REC: { id: 'Body1REC', model: 'drlbod01.pie' } }))
+  files.set(
+    'base/stats/construction.json',
+    json({ Spade1Mk1: { id: 'Spade1Mk1', sensorModel: 'trlcon.pie' } }),
+  )
+  files.set(
+    'base/stats/propulsion.json',
+    json({ wheeled01: { id: 'wheeled01', model: 'prlwhl1.pie' } }),
+  )
+  return files
+}
+
+function warzoneHostResolvedPreparation(): MapPreviewPreparationPort {
+  return previewPreparation(async () => ({
+    state: 'prepared',
+    plan: {
+      schemaVersion: 1,
+      workspace: warzonePreviewWorkspaceInput(),
+      resources: {
+        schemaVersion: 1,
+        strategy: 'host-resolved',
+        resolverId: 'example/warzone-preview-resources',
+        subjectNamespaceRoots: [],
+        roots: [
+          { rootId: 'base', locator: { kind: 'fixture' } },
+          { rootId: 'mp', locator: { kind: 'fixture' } },
+          { rootId: 'map', locator: { kind: 'fixture' } },
+        ],
+      },
+    },
+    diagnostics: [],
+  }))
+}
+
+async function compositionWithTrackedDataRelease(release: () => void): Promise<HostComposition> {
+  const linked = linkedExtensionInputs([starcraft2Game, warzone2100])
+  const backend = linkedInProcessBackend(linked.modules)
+  const trackedBackend: ExecutionBackend = Object.freeze({
+    profile: backend.profile,
+    supports: backend.supports,
+    async activate(context: ExecutionBackendActivation) {
+      const lease = await backend.activate(context)
+      const tracksDataProvider = context.entrypoint.href.includes('/src/data-provider.js')
+      return Object.freeze({
+        module: lease.module,
+        async release() {
+          await lease.release()
+          if (tracksDataProvider) release()
+        },
+      })
+    },
+  })
+  return createHostComposition({
+    topology,
+    realmId: REALM,
+    extensions: linked.inputs,
+    executionBackends: createExecutionBackendRegistry([trackedBackend]),
+  })
+}
 
 describe('standard map contract and semantic game provider', () => {
   it('routes Warzone game.map through ResourceSession into the same exact world candidate', async () => {
@@ -1073,9 +1301,7 @@ describe('standard map contract and semantic game provider', () => {
   })
 
   it('remaps a standalone subject namespace and transfers its exact-once lifetime on open', async () => {
-    const archiveFiles = new Map(
-      [...workspaceFiles()].map(([path, bytes]) => [path.slice(mapRoot.length + 1), bytes]),
-    )
+    const archiveFiles = subjectNamespaceWorkspaceFiles()
     const original = await originalMapSession(archiveFiles)
     const prepare = vi.fn<MapPreviewPreparationPort['prepare']>(async request => {
       expect(request.subject.namespace.state).toBe('complete')
@@ -1122,6 +1348,139 @@ describe('standard map contract and semantic game provider', () => {
     expect(original.namespaceRelease).toHaveBeenCalledTimes(2)
     expect(original.originalRelease).toHaveBeenCalledOnce()
     expect(original.entryRelease.mock.calls.length).toBeGreaterThan(0)
+  })
+
+  it('enriches a prepared map from the same resource session before semantic analysis', async () => {
+    const original = await originalMapSession(new Map(), false)
+    const dataRelease = vi.fn()
+    const trackedComposition = await compositionWithTrackedDataRelease(dataRelease)
+    const resolverRelease = vi.fn(async () => undefined)
+    const resolve = vi.fn<MapPreviewResourcePlanResolver['resolve']>(async () => ({
+      state: 'resolved',
+      origin: memoryOrigin(warzonePreviewFiles(), { primaryLogicalId: warzoneMapRoot }),
+      revision: revisionId('provider-token:warzone-catalog-enrichment'),
+      diagnostics: [],
+      release: resolverRelease,
+    }))
+    const result = await coordinateMapPreviewAssetSession({
+      services: { ...trackedComposition, serviceDefinitions: definitions },
+      grant: { id: 'maps-preview-catalog-enrichment', classes: [] },
+      budgets: activationBudget,
+      original: original.session,
+      preparation: warzoneHostResolvedPreparation(),
+      resourcePlanResolver: { resolve },
+      maxCandidates: 8,
+      maxSubjectEntries: 64,
+      maxSubjectPages: 4,
+      maxRoots: 4,
+      maxDepth: 4,
+      catalogEnrichment: warzoneCatalogEnrichment,
+      limits: {
+        ...coordinatorLimits,
+        maxTerrainCells: 65_536,
+        maxTerrainSamples: 65_536,
+      },
+    })
+
+    expect(
+      result.state,
+      result.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+    ).toBe('opened')
+    if (result.state !== 'opened') throw new Error('catalog-enriched preview did not open')
+    expect(result.snapshot.semantic).toMatchObject({
+      resolvedCatalogObjects: 3,
+      warzoneResourceBindings: {
+        objects: 3,
+        definitionBoundObjects: 3,
+        modelBoundObjects: 3,
+        logicalModelReferences: 6,
+        modelReferencesComplete: true,
+        materialReferencesComplete: false,
+      },
+    })
+    expect(result.snapshot.semantic.objects[0]).toMatchObject({
+      typeId: 'ConstructorDroid',
+      catalog: {
+        ref: { namespace: 'warzone.templates', entityId: 'ConstructorDroid' },
+      },
+      warzoneResources: {
+        contract: 'org.modkitx.opensource.warzone2100/object-resource-binding',
+        modelReferencesComplete: true,
+      },
+    })
+    expect(dataRelease).toHaveBeenCalledOnce()
+    expect(resolverRelease).not.toHaveBeenCalled()
+    expect(original.session.state()).toBe('live')
+
+    await result.session.dispose()
+    expect(dataRelease).toHaveBeenCalledOnce()
+    expect(resolverRelease).toHaveBeenCalledOnce()
+    expect(original.session.state()).toBe('disposed')
+  })
+
+  it('opens without a catalog when the optional data provider is absent', async () => {
+    const original = await originalMapSession(subjectNamespaceWorkspaceFiles())
+    const result = await coordinateMapPreviewAssetSession({
+      services: { ...composition, serviceDefinitions: definitionsWithoutData },
+      grant: { id: 'maps-preview-catalog-absent', classes: [] },
+      budgets: activationBudget,
+      original: original.session,
+      preparation: subjectNamespacePreparation(),
+      maxCandidates: 8,
+      maxSubjectEntries: 64,
+      maxSubjectPages: 4,
+      maxRoots: 4,
+      maxDepth: 4,
+      catalogEnrichment,
+      limits: coordinatorLimits,
+    })
+
+    expect(
+      result.state,
+      result.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+    ).toBe('opened')
+    if (result.state !== 'opened') throw new Error('catalog-optional preview did not open')
+    expect(result.snapshot.semantic.resolvedCatalogObjects).toBe(0)
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code: 'x3.host/resolved-data-workspace-unresolved' }),
+    )
+    await result.session.dispose()
+    expect(original.session.state()).toBe('disposed')
+  })
+
+  it('fails catalog enrichment closed and releases its provider before opening the map', async () => {
+    const original = await originalMapSession(subjectNamespaceWorkspaceFiles())
+    const dataRelease = vi.fn()
+    const trackedComposition = await compositionWithTrackedDataRelease(dataRelease)
+    const result = await coordinateMapPreviewAssetSession({
+      services: { ...trackedComposition, serviceDefinitions: definitions },
+      grant: { id: 'maps-preview-catalog-failure', classes: [] },
+      budgets: activationBudget,
+      original: original.session,
+      preparation: subjectNamespacePreparation(),
+      maxCandidates: 8,
+      maxSubjectEntries: 64,
+      maxSubjectPages: 4,
+      maxRoots: 4,
+      maxDepth: 4,
+      catalogEnrichment: { ...catalogEnrichment, locales: ['not-a-locale'] },
+      limits: coordinatorLimits,
+    })
+
+    expect(
+      result.state,
+      result.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+    ).toBe('opened')
+    if (result.state !== 'opened') throw new Error('catalog failure did not degrade to map-only')
+    expect(result.snapshot.semantic.resolvedCatalogObjects).toBe(0)
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code: 'x3.host/resolved-data-workspace-failed' }),
+    )
+    expect(dataRelease).toHaveBeenCalledOnce()
+
+    await result.session.dispose()
+    expect(dataRelease).toHaveBeenCalledOnce()
+    expect(original.session.state()).toBe('disposed')
   })
 
   it('uses an explicit host resolver for external installation roots and releases it once', async () => {
