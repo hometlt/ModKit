@@ -258,7 +258,7 @@ await checkApplicationSet(
   'headless',
   'mk2-extended',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 84, active: 84 } },
+  { main: { offers: 85, active: 85 } },
 )
 await checkApplicationSet(
   'pwa',
@@ -307,9 +307,8 @@ await checkApplicationSet(
   },
   {
     main: { offers: 'none', active: 'none' },
-    // The SC2 and Warzone writers are worker-brokered; their offers stay behind each provider
-    // contribution and do not activate in native main/extension-host realms.
-    worker: { offers: 86, active: 86 },
+    // The Warzone WZ writer is worker-brokered; the SC2 playable runtime remains trusted-node.
+    worker: { offers: 87, active: 87 },
   },
 )
 await checkApplicationSet(
@@ -361,7 +360,7 @@ await checkApplicationSet(
     return { extensionHost: app.extensionHost, webview: app.webview }
   },
   {
-    extensionHost: { offers: 84, active: 84 },
+    extensionHost: { offers: 85, active: 85 },
     webview: { offers: 'none', active: 'none' },
   },
 )
@@ -397,7 +396,7 @@ await checkApplicationSet(
     return { main: app.main, renderer: app.renderer }
   },
   {
-    main: { offers: 84, active: 84 },
+    main: { offers: 85, active: 85 },
     renderer: { offers: 'none', active: 'none' },
   },
 )

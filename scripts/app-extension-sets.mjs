@@ -319,6 +319,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx.opensource/warzone2100-map-preview-preparation',
       'org.modkitx.opensource/warzone2100-map-semantic',
       'org.modkitx.opensource/warzone2100-resolved-data',
+      'org.modkitx.opensource/warzone2100-wz-writer',
     ]),
   }),
 })
