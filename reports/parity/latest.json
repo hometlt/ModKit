@@ -7,21 +7,21 @@
   },
   "x3": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitX3-orchestrator-round3",
-    "sha": "de8733a1101cae3c7dd28ab8af9b7eece0366ade"
+    "sha": "341606522dffdd0516e28d0e959e0b5bace3d5f1"
   },
   "counts": {
     "total": 76,
     "real": 16,
     "synthetic": 60,
-    "compared": 76,
-    "skipped": 0,
+    "compared": 69,
+    "skipped": 7,
     "failed": 0,
-    "comparedReal": 16,
+    "comparedReal": 9,
     "comparedSynthetic": 60,
-    "richer": 46,
-    "equal": 16,
+    "richer": 41,
+    "equal": 15,
     "poorer": 13,
-    "incomparable": 1
+    "incomparable": 0
   },
   "summary": [
     {
@@ -92,9 +92,9 @@
       "format": "big-real-cnc3",
       "kind": "real",
       "contributionId": "org.modkitx.ea/big",
-      "state": "compared",
-      "classification": "паритет",
-      "verdict": "equal"
+      "state": "skipped",
+      "classification": null,
+      "verdict": null
     },
     {
       "id": "bmp-synthetic",
@@ -191,9 +191,9 @@
       "format": "emperor-xbf-real",
       "kind": "real",
       "contributionId": "org.modkitx.ea/emperor-xbf",
-      "state": "compared",
-      "classification": "X3 богаче",
-      "verdict": "richer"
+      "state": "skipped",
+      "classification": null,
+      "verdict": null
     },
     {
       "id": "exr-synthetic",
@@ -515,9 +515,9 @@
       "format": "red-alert2-vxl-real",
       "kind": "real",
       "contributionId": "org.modkitx.ea/red-alert2-vxl",
-      "state": "compared",
-      "classification": "X3 богаче",
-      "verdict": "richer"
+      "state": "skipped",
+      "classification": null,
+      "verdict": null
     },
     {
       "id": "sage-skudef-synthetic-minimal",
@@ -542,18 +542,18 @@
       "format": "sage-w3x-real",
       "kind": "real",
       "contributionId": "org.modkitx.ea/sage-w3x",
-      "state": "compared",
-      "classification": "X3 богаче",
-      "verdict": "richer"
+      "state": "skipped",
+      "classification": null,
+      "verdict": null
     },
     {
       "id": "spring-s3o-real-bar-rapid",
       "format": "spring-s3o",
       "kind": "real",
       "contributionId": "org.modkitx/spring-s3o",
-      "state": "compared",
-      "classification": "X3 богаче",
-      "verdict": "incomparable"
+      "state": "skipped",
+      "classification": null,
+      "verdict": null
     },
     {
       "id": "stl-synthetic",
@@ -668,18 +668,18 @@
       "format": "westwood-w3d-real",
       "kind": "real",
       "contributionId": "org.modkitx.ea/westwood-w3d",
-      "state": "compared",
-      "classification": "X3 богаче",
-      "verdict": "richer"
+      "state": "skipped",
+      "classification": null,
+      "verdict": null
     },
     {
       "id": "westwood-w3d-real-big-entry",
       "format": "westwood-w3d-real-big",
       "kind": "real",
       "contributionId": "org.modkitx.ea/westwood-w3d",
-      "state": "compared",
-      "classification": "X3 богаче",
-      "verdict": "richer"
+      "state": "skipped",
+      "classification": null,
+      "verdict": null
     },
     {
       "id": "wmf-synthetic",
@@ -831,14 +831,16 @@
       "reason": "The canonical PIE reader synthesizes one default material; X3 does not invent a material, while publishing richer hierarchy, texture-reference and ANIMOBJECT planes."
     }
   ],
-  "incomparable": [
-    {
-      "id": "spring-s3o-real-bar-rapid",
-      "format": "spring-s3o",
-      "reason": "no semantic plane is observed by both readers"
-    }
+  "incomparable": [],
+  "skipped": [
+    { "id": "big-real-cnc3-libraries", "reason": "MODKITX_CNC3_KW_ROOT is not set" },
+    { "id": "emperor-xbf-real-env", "reason": "MODKITX_EMPEROR_ROOT is not set" },
+    { "id": "red-alert2-vxl-real-env", "reason": "MODKITX_VXL_PATH is not set" },
+    { "id": "sage-w3x-real-env", "reason": "MODKITX_W3X_PATH is not set" },
+    { "id": "spring-s3o-real-bar-rapid", "reason": "MODKITX_BAR_ROOT is not set" },
+    { "id": "westwood-w3d-real-env", "reason": "MODKITX_W3D_PATH is not set" },
+    { "id": "westwood-w3d-real-big-entry", "reason": "MODKITX_CNC3_KW_ROOT is not set" }
   ],
-  "skipped": [],
   "results": [
     {
       "id": "aac-synthetic",
@@ -2379,251 +2381,9 @@
       "format": "big-real-cnc3",
       "kind": "real",
       "contributionId": "org.modkitx.ea/big",
-      "state": "compared",
+      "state": "skipped",
       "sample": "MODKITX_CNC3_KW_ROOT",
-      "provenance": {
-        "kind": "real",
-        "origin": "environment",
-        "environment": "MODKITX_CNC3_KW_ROOT",
-        "relativePath": "Core/1.0/Libraries.big",
-        "bytes": 48063,
-        "sha256": "d0357e1a1876fd8cec89131dcaba571a39d40f32109f91ca98d570d240ce908f"
-      },
-      "classification": "паритет",
-      "missing": [],
-      "extra": [
-        "operation:asset.validate",
-        "operation:container.extract",
-        "operation:export.raw",
-        "operation:view.inspect",
-        "source:common.view/byte-range-source"
-      ],
-      "sourceComparisons": [
-        {
-          "contract": "common.view/namespace-entry-source",
-          "classification": "паритет",
-          "missing": [],
-          "extra": []
-        },
-        {
-          "contract": "common.view/tree-data-source",
-          "classification": "паритет",
-          "missing": [],
-          "extra": []
-        }
-      ],
-      "baseline": "паритет",
-      "canonical": {
-        "formatId": "big",
-        "declaredSources": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
-        "actualSources": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
-        "sources": [
-          {
-            "contract": "common.view/namespace-entry-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
-            "measurements": {
-              "entries": 21,
-              "files": 21,
-              "directories": 0,
-              "complete": true,
-              "extractedBytes": 3345,
-              "extractedNonEmpty": true,
-              "productReopenCompleted": true
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "nodes": 22, "maxDepth": 1, "kinds": 2, "complete": true }
-          }
-        ],
-        "operations": [],
-        "geometryAccess": "unavailable",
-        "features": [
-          "source:common.view/namespace-entry-source",
-          "source:common.view/tree-data-source"
-        ]
-      },
-      "x3": {
-        "available": true,
-        "formatId": "big",
-        "declaredSources": [
-          "common.view/byte-range-source",
-          "common.view/namespace-entry-source",
-          "common.view/tree-data-source"
-        ],
-        "actualSources": [
-          "common.view/byte-range-source",
-          "common.view/namespace-entry-source",
-          "common.view/tree-data-source"
-        ],
-        "sourceFailures": [],
-        "sources": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/namespace-entry-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
-            "measurements": {
-              "complete": true,
-              "directories": 0,
-              "entries": 21,
-              "extractedBytes": 3345,
-              "extractedNonEmpty": true,
-              "files": 21,
-              "productReopenCompleted": true
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "complete": true, "kinds": 2, "maxDepth": 1, "nodes": 22 }
-          }
-        ],
-        "operations": ["asset.validate", "container.extract", "export.raw", "view.inspect"],
-        "geometryAccess": "unavailable",
-        "metadata": {
-          "version": "BIG4",
-          "archiveBytes": 48063,
-          "dataOffset": 1324,
-          "entries": 21,
-          "refPackEntries": 13
-        },
-        "features": [
-          "operation:asset.validate",
-          "operation:container.extract",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source",
-          "source:common.view/namespace-entry-source",
-          "source:common.view/tree-data-source"
-        ]
-      },
-      "verdict": "equal",
-      "planes": [
-        { "plane": "subject-recognition", "state": "compared", "verdict": "equal" },
-        { "plane": "structural-metadata", "state": "compared", "verdict": "equal" },
-        { "plane": "geometry-counts", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "hierarchy", "state": "compared", "verdict": "equal" },
-        { "plane": "materials-textures", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "animation", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "collision", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "palette-voxel-transforms", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "payload-access", "state": "compared", "verdict": "equal" },
-        {
-          "plane": "protected-tail-preservation",
-          "state": "not-observed",
-          "verdict": "not-observed"
-        },
-        {
-          "plane": "diagnostics-on-malformed-input",
-          "state": "not-observed",
-          "verdict": "not-observed"
-        }
-      ],
-      "declared": {
-        "canonical": ["common.view/namespace-entry-source", "common.view/tree-data-source"],
-        "x3": [
-          "common.view/byte-range-source",
-          "common.view/namespace-entry-source",
-          "common.view/tree-data-source"
-        ]
-      },
-      "observed": {
-        "canonical": [
-          {
-            "contract": "common.view/namespace-entry-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
-            "measurements": {
-              "entries": 21,
-              "files": 21,
-              "directories": 0,
-              "complete": true,
-              "extractedBytes": 3345,
-              "extractedNonEmpty": true,
-              "productReopenCompleted": true
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "nodes": 22, "maxDepth": 1, "kinds": 2, "complete": true }
-          }
-        ],
-        "x3": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/namespace-entry-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["extract-bytes", "list", "open-entry", "product-reopen"],
-            "measurements": {
-              "complete": true,
-              "directories": 0,
-              "entries": 21,
-              "extractedBytes": 3345,
-              "extractedNonEmpty": true,
-              "files": 21,
-              "productReopenCompleted": true
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "complete": true, "kinds": 2, "maxDepth": 1, "nodes": 22 }
-          }
-        ]
-      },
-      "comparison": {
-        "classification": "паритет",
-        "missing": [],
-        "extra": [
-          "operation:asset.validate",
-          "operation:container.extract",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source"
-        ],
-        "sources": [
-          {
-            "contract": "common.view/namespace-entry-source",
-            "classification": "паритет",
-            "missing": [],
-            "extra": []
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "classification": "паритет",
-            "missing": [],
-            "extra": []
-          }
-        ]
-      }
+      "detail": "MODKITX_CNC3_KW_ROOT is not set"
     },
     {
       "id": "bmp-synthetic",
@@ -5161,320 +4921,9 @@
       "format": "emperor-xbf-real",
       "kind": "real",
       "contributionId": "org.modkitx.ea/emperor-xbf",
-      "state": "compared",
+      "state": "skipped",
       "sample": "MODKITX_EMPEROR_ROOT",
-      "provenance": {
-        "kind": "real",
-        "origin": "environment",
-        "environment": "MODKITX_EMPEROR_ROOT",
-        "relativePath": "atreides/infantry/AT_inf_H0.xbf",
-        "bytes": 283963,
-        "sha256": "064f34f77402bbdc8145b5b26944835d59da966d17853ba1fff3275fd45bfb69"
-      },
-      "classification": "X3 богаче",
-      "missing": [],
-      "extra": [
-        "common.view/model-scene-source:measurement:textures:5>3",
-        "metadata:animations",
-        "metadata:materials",
-        "metadata:meshes",
-        "metadata:nodes",
-        "operation:asset.validate",
-        "operation:export.raw",
-        "operation:view.inspect",
-        "source:common.view/byte-range-source",
-        "source:common.view/model-animation-source",
-        "source:common.view/model-material-source",
-        "source:common.view/model-resource-refs-source",
-        "source:common.view/tree-data-source"
-      ],
-      "sourceComparisons": [
-        {
-          "contract": "common.view/model-scene-source",
-          "classification": "X3 богаче",
-          "missing": [],
-          "extra": ["measurement:textures:5>3"]
-        }
-      ],
-      "baseline": "X3 богаче",
-      "canonical": {
-        "formatId": "xbf",
-        "declaredSources": ["common.view/model-scene-source"],
-        "actualSources": ["common.view/model-scene-source"],
-        "sources": [
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "scenes": 1,
-              "nodes": 9,
-              "meshes": 4,
-              "primitives": 4,
-              "materials": 5,
-              "textures": 3,
-              "animations": 25,
-              "decodedGeometry": true,
-              "decodedVertices": 36,
-              "decodedIndices": 36
-            }
-          }
-        ],
-        "operations": [],
-        "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
-        "summary": {
-          "scenes": 1,
-          "nodes": 9,
-          "meshes": 4,
-          "primitives": 4,
-          "materials": 5,
-          "textures": 3,
-          "animations": 25
-        }
-      },
-      "x3": {
-        "available": true,
-        "formatId": "emperor-xbf",
-        "declaredSources": [
-          "common.view/byte-range-source",
-          "common.view/model-animation-source",
-          "common.view/model-material-source",
-          "common.view/model-resource-refs-source",
-          "common.view/model-scene-source",
-          "common.view/tree-data-source"
-        ],
-        "actualSources": [
-          "common.view/byte-range-source",
-          "common.view/model-animation-source",
-          "common.view/model-material-source",
-          "common.view/model-resource-refs-source",
-          "common.view/model-scene-source",
-          "common.view/tree-data-source"
-        ],
-        "sourceFailures": [],
-        "sources": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/model-animation-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-material-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-resource-refs-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "animations": 25,
-              "decodedGeometry": true,
-              "decodedIndices": 36,
-              "decodedVertices": 36,
-              "materials": 5,
-              "meshes": 4,
-              "nodes": 9,
-              "primitives": 4,
-              "scenes": 1,
-              "textures": 5
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "complete": true, "kinds": 2, "maxDepth": 4, "nodes": 10 }
-          }
-        ],
-        "operations": ["asset.validate", "export.raw", "view.inspect"],
-        "geometryAccess": "decoded",
-        "metadata": {
-          "version": 1,
-          "fxDataBytes": 5577,
-          "textureTableBytes": 51,
-          "nodes": 9,
-          "meshes": 4,
-          "materials": 5,
-          "animations": 25,
-          "geometryAccess": "decoded"
-        },
-        "features": [
-          "geometry:decoded",
-          "metadata:animations",
-          "metadata:materials",
-          "metadata:meshes",
-          "metadata:nodes",
-          "operation:asset.validate",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source",
-          "source:common.view/model-animation-source",
-          "source:common.view/model-material-source",
-          "source:common.view/model-resource-refs-source",
-          "source:common.view/model-scene-source",
-          "source:common.view/tree-data-source"
-        ]
-      },
-      "verdict": "richer",
-      "planes": [
-        { "plane": "subject-recognition", "state": "compared", "verdict": "equal" },
-        { "plane": "structural-metadata", "state": "compared", "verdict": "equal" },
-        { "plane": "geometry-counts", "state": "compared", "verdict": "equal" },
-        { "plane": "hierarchy", "state": "compared", "verdict": "equal" },
-        { "plane": "materials-textures", "state": "compared", "verdict": "richer" },
-        { "plane": "animation", "state": "compared", "verdict": "equal" },
-        { "plane": "collision", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "palette-voxel-transforms", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "payload-access", "state": "x3-only", "verdict": "richer" },
-        {
-          "plane": "protected-tail-preservation",
-          "state": "not-observed",
-          "verdict": "not-observed"
-        },
-        {
-          "plane": "diagnostics-on-malformed-input",
-          "state": "not-observed",
-          "verdict": "not-observed"
-        }
-      ],
-      "declared": {
-        "canonical": ["common.view/model-scene-source"],
-        "x3": [
-          "common.view/byte-range-source",
-          "common.view/model-animation-source",
-          "common.view/model-material-source",
-          "common.view/model-resource-refs-source",
-          "common.view/model-scene-source",
-          "common.view/tree-data-source"
-        ]
-      },
-      "observed": {
-        "canonical": [
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "scenes": 1,
-              "nodes": 9,
-              "meshes": 4,
-              "primitives": 4,
-              "materials": 5,
-              "textures": 3,
-              "animations": 25,
-              "decodedGeometry": true,
-              "decodedVertices": 36,
-              "decodedIndices": 36
-            }
-          }
-        ],
-        "x3": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/model-animation-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-material-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-resource-refs-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "animations": 25,
-              "decodedGeometry": true,
-              "decodedIndices": 36,
-              "decodedVertices": 36,
-              "materials": 5,
-              "meshes": 4,
-              "nodes": 9,
-              "primitives": 4,
-              "scenes": 1,
-              "textures": 5
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "complete": true, "kinds": 2, "maxDepth": 4, "nodes": 10 }
-          }
-        ]
-      },
-      "comparison": {
-        "classification": "X3 богаче",
-        "missing": [],
-        "extra": [
-          "common.view/model-scene-source:measurement:textures:5>3",
-          "metadata:animations",
-          "metadata:materials",
-          "metadata:meshes",
-          "metadata:nodes",
-          "operation:asset.validate",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source",
-          "source:common.view/model-animation-source",
-          "source:common.view/model-material-source",
-          "source:common.view/model-resource-refs-source",
-          "source:common.view/tree-data-source"
-        ],
-        "sources": [
-          {
-            "contract": "common.view/model-scene-source",
-            "classification": "X3 богаче",
-            "missing": [],
-            "extra": ["measurement:textures:5>3"]
-          }
-        ]
-      }
+      "detail": "MODKITX_EMPEROR_ROOT is not set"
     },
     {
       "id": "exr-synthetic",
@@ -8757,7 +8206,8 @@
           "contract": "common.view/model-scene-source",
           "classification": "X3 богаче",
           "missing": [],
-          "extra": ["measurement:nodes:1>0", "measurement:textures:18>0"]
+          "extra": ["measurement:nodes:1>0", "measurement:textures:18>0"],
+          "measurementBasis": "m3-declared-executable-v1"
         }
       ],
       "baseline": "X3 богаче",
@@ -8837,7 +8287,7 @@
             "state": "opened",
             "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
-              "animations": 1,
+              "animations": 0,
               "decodedGeometry": true,
               "decodedIndices": 3,
               "decodedVertices": 3,
@@ -8846,7 +8296,7 @@
               "nodes": 1,
               "primitives": 1,
               "scenes": 1,
-              "textures": 18
+              "textures": 0
             }
           },
           {
@@ -8868,16 +8318,29 @@
         "geometryAccess": "decoded",
         "metadata": {
           "container": "MD34",
+          "counterState": "complete",
+          "counterSemantics": "m3-declared-executable-v1",
           "indexOffset": 10944,
           "sections": 63,
           "geometryAccess": "decoded",
           "nodes": 1,
+          "meshPartitions": 1,
           "meshes": 1,
           "primitives": 1,
           "scenes": 1,
           "materials": 1,
-          "textures": 18,
-          "animations": 1,
+          "textures": 0,
+          "animations": 0,
+          "declaredSequences": 1,
+          "executableClips": 0,
+          "sequences": 0,
+          "timelineContainers": 1,
+          "supportedBoneChannels": 0,
+          "unsupportedChannels": 0,
+          "sampleFrames": 0,
+          "timelineNames": "Stand",
+          "layerRecords": 18,
+          "logicalResources": 0,
           "materialReferences": 1,
           "standardMaterials": 1,
           "exoticMaterials": 0,
@@ -8981,7 +8444,7 @@
             "state": "opened",
             "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
-              "animations": 1,
+              "animations": 0,
               "decodedGeometry": true,
               "decodedIndices": 3,
               "decodedVertices": 3,
@@ -8990,7 +8453,7 @@
               "nodes": 1,
               "primitives": 1,
               "scenes": 1,
-              "textures": 18
+              "textures": 0
             }
           },
           {
@@ -9035,7 +8498,8 @@
             "contract": "common.view/model-scene-source",
             "classification": "X3 богаче",
             "missing": [],
-            "extra": ["measurement:nodes:1>0", "measurement:textures:18>0"]
+            "extra": ["measurement:nodes:1>0", "measurement:textures:18>0"],
+            "measurementBasis": "m3-declared-executable-v1"
           }
         ]
       }
@@ -9075,6 +8539,7 @@
         "source:common.view/model-material-source",
         "source:common.view/model-resource-refs-source",
         "source:common.view/model-skeleton-source",
+        "source:common.view/model-socket-source",
         "source:common.view/tree-data-source"
       ],
       "sourceComparisons": [
@@ -9082,7 +8547,8 @@
           "contract": "common.view/model-scene-source",
           "classification": "X3 богаче",
           "missing": [],
-          "extra": ["measurement:nodes:1>0", "measurement:textures:65>0"]
+          "extra": ["measurement:nodes:1>0", "measurement:textures:65>0"],
+          "measurementBasis": "m3-declared-executable-v1"
         }
       ],
       "baseline": "X3 богаче",
@@ -9133,6 +8599,7 @@
           "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
           "common.view/model-skeleton-source",
+          "common.view/model-socket-source",
           "common.view/tree-data-source"
         ],
         "actualSources": [
@@ -9142,6 +8609,7 @@
           "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
           "common.view/model-skeleton-source",
+          "common.view/model-socket-source",
           "common.view/tree-data-source"
         ],
         "sourceFailures": [],
@@ -9180,20 +8648,27 @@
             "state": "opened",
             "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
-              "animations": 1,
+              "animations": 0,
               "decodedGeometry": true,
               "decodedIndices": 1170,
               "decodedVertices": 242,
               "materials": 5,
-              "meshes": 2,
+              "meshes": 1,
               "nodes": 1,
               "primitives": 2,
               "scenes": 1,
-              "textures": 65
+              "textures": 10
             }
           },
           {
             "contract": "common.view/model-skeleton-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-socket-source",
             "major": 1,
             "state": "opened",
             "features": ["smoke"],
@@ -9211,22 +8686,29 @@
         "geometryAccess": "decoded",
         "metadata": {
           "container": "MD34",
+          "counterState": "complete",
+          "counterSemantics": "m3-declared-executable-v1",
           "indexOffset": 57344,
           "sections": 174,
           "geometryAccess": "decoded",
           "nodes": 1,
-          "meshes": 2,
+          "meshPartitions": 2,
+          "meshes": 1,
           "primitives": 2,
           "scenes": 1,
           "materials": 5,
-          "textures": 65,
-          "animations": 1,
+          "textures": 10,
+          "animations": 0,
+          "declaredSequences": 1,
+          "executableClips": 0,
           "sequences": 1,
           "timelineContainers": 1,
           "supportedBoneChannels": 0,
           "unsupportedChannels": 6,
           "sampleFrames": 110,
           "timelineNames": "Stand_full",
+          "layerRecords": 65,
+          "logicalResources": 10,
           "materialReferences": 5,
           "standardMaterials": 5,
           "exoticMaterials": 0,
@@ -9255,6 +8737,7 @@
           "source:common.view/model-resource-refs-source",
           "source:common.view/model-scene-source",
           "source:common.view/model-skeleton-source",
+          "source:common.view/model-socket-source",
           "source:common.view/tree-data-source"
         ]
       },
@@ -9289,6 +8772,7 @@
           "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
           "common.view/model-skeleton-source",
+          "common.view/model-socket-source",
           "common.view/tree-data-source"
         ]
       },
@@ -9348,20 +8832,27 @@
             "state": "opened",
             "features": ["info", "meshes", "nodes", "primitive"],
             "measurements": {
-              "animations": 1,
+              "animations": 0,
               "decodedGeometry": true,
               "decodedIndices": 1170,
               "decodedVertices": 242,
               "materials": 5,
-              "meshes": 2,
+              "meshes": 1,
               "nodes": 1,
               "primitives": 2,
               "scenes": 1,
-              "textures": 65
+              "textures": 10
             }
           },
           {
             "contract": "common.view/model-skeleton-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-socket-source",
             "major": 1,
             "state": "opened",
             "features": ["smoke"],
@@ -9397,6 +8888,7 @@
           "source:common.view/model-material-source",
           "source:common.view/model-resource-refs-source",
           "source:common.view/model-skeleton-source",
+          "source:common.view/model-socket-source",
           "source:common.view/tree-data-source"
         ],
         "sources": [
@@ -9404,7 +8896,8 @@
             "contract": "common.view/model-scene-source",
             "classification": "X3 богаче",
             "missing": [],
-            "extra": ["measurement:nodes:1>0", "measurement:textures:65>0"]
+            "extra": ["measurement:nodes:1>0", "measurement:textures:65>0"],
+            "measurementBasis": "m3-declared-executable-v1"
           }
         ]
       }
@@ -13299,6 +12792,7 @@
       "extra": [
         "operation:asset.validate",
         "operation:edit.field",
+        "operation:export.convert",
         "operation:export.raw",
         "operation:view.inspect",
         "source:common.view/byte-range-source",
@@ -13383,7 +12877,13 @@
             "measurements": { "complete": true, "kinds": 2, "maxDepth": 1, "nodes": 4 }
           }
         ],
-        "operations": ["asset.validate", "edit.field", "export.raw", "view.inspect"],
+        "operations": [
+          "asset.validate",
+          "edit.field",
+          "export.convert",
+          "export.raw",
+          "view.inspect"
+        ],
         "geometryAccess": "unavailable",
         "metadata": {
           "width": 1,
@@ -13398,6 +12898,7 @@
         "features": [
           "operation:asset.validate",
           "operation:edit.field",
+          "operation:export.convert",
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
@@ -13491,6 +12992,7 @@
         "extra": [
           "operation:asset.validate",
           "operation:edit.field",
+          "operation:export.convert",
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
@@ -14238,271 +13740,9 @@
       "format": "red-alert2-vxl-real",
       "kind": "real",
       "contributionId": "org.modkitx.ea/red-alert2-vxl",
-      "state": "compared",
+      "state": "skipped",
       "sample": "MODKITX_VXL_PATH",
-      "provenance": {
-        "kind": "real",
-        "origin": "environment",
-        "environment": "MODKITX_VXL_PATH",
-        "relativePath": "…/red-alert2-vxl/ppm-gdi-naval-railgun-turret-ts/gnavrail.vxl",
-        "bytes": 25225,
-        "sha256": "323c27e98415dae035169e42f341463bacfedc115d7d26e1fbfd2fa1f2a584a5"
-      },
-      "classification": "X3 богаче",
-      "missing": [],
-      "extra": [
-        "common.view/model-scene-source:measurement:nodes:1>0",
-        "operation:asset.validate",
-        "operation:export.raw",
-        "operation:view.inspect",
-        "source:common.view/byte-range-source",
-        "source:common.view/model-animation-source",
-        "source:common.view/tree-data-source"
-      ],
-      "sourceComparisons": [
-        {
-          "contract": "common.view/model-scene-source",
-          "classification": "X3 богаче",
-          "missing": [],
-          "extra": ["measurement:nodes:1>0"]
-        }
-      ],
-      "baseline": "X3 богаче",
-      "canonical": {
-        "formatId": "vxl",
-        "declaredSources": ["common.view/model-scene-source"],
-        "actualSources": ["common.view/model-scene-source"],
-        "sources": [
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "scenes": 1,
-              "nodes": 0,
-              "meshes": 11,
-              "primitives": 11,
-              "materials": 11,
-              "textures": 0,
-              "animations": 0,
-              "decodedGeometry": true,
-              "decodedVertices": 4868,
-              "decodedIndices": 7302
-            }
-          }
-        ],
-        "operations": [],
-        "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
-        "summary": {
-          "scenes": 1,
-          "nodes": 0,
-          "meshes": 11,
-          "primitives": 11,
-          "materials": 11,
-          "textures": 0,
-          "animations": 0
-        }
-      },
-      "x3": {
-        "available": true,
-        "formatId": "red-alert2-vxl",
-        "declaredSources": [
-          "common.view/byte-range-source",
-          "common.view/model-animation-source",
-          "common.view/model-scene-source",
-          "common.view/tree-data-source"
-        ],
-        "actualSources": [
-          "common.view/byte-range-source",
-          "common.view/model-animation-source",
-          "common.view/model-scene-source",
-          "common.view/tree-data-source"
-        ],
-        "sourceFailures": [],
-        "sources": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/model-animation-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "animations": 0,
-              "decodedGeometry": true,
-              "decodedIndices": 7302,
-              "decodedVertices": 4868,
-              "materials": 11,
-              "meshes": 11,
-              "nodes": 1,
-              "primitives": 11,
-              "scenes": 1,
-              "textures": 0
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "complete": true, "kinds": 2, "maxDepth": 1, "nodes": 2 }
-          }
-        ],
-        "operations": ["asset.validate", "export.raw", "view.inspect"],
-        "geometryAccess": "decoded",
-        "metadata": {
-          "sections": 1,
-          "bodyBytes": 24303,
-          "palettes": 1,
-          "voxels": 5466,
-          "decodedMeshes": 11,
-          "geometryAccess": "decoded",
-          "companionState": "resolved",
-          "companionBindingId": "hva#gnavrail.hva",
-          "companionFrames": 1,
-          "companionBoundSections": 1,
-          "companionKind": "rest-pose"
-        },
-        "features": [
-          "geometry:decoded",
-          "operation:asset.validate",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source",
-          "source:common.view/model-animation-source",
-          "source:common.view/model-scene-source",
-          "source:common.view/tree-data-source"
-        ]
-      },
-      "verdict": "richer",
-      "planes": [
-        { "plane": "subject-recognition", "state": "compared", "verdict": "equal" },
-        { "plane": "structural-metadata", "state": "compared", "verdict": "equal" },
-        { "plane": "geometry-counts", "state": "compared", "verdict": "equal" },
-        { "plane": "hierarchy", "state": "compared", "verdict": "richer" },
-        { "plane": "materials-textures", "state": "compared", "verdict": "equal" },
-        { "plane": "animation", "state": "compared", "verdict": "equal" },
-        { "plane": "collision", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "palette-voxel-transforms", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "payload-access", "state": "x3-only", "verdict": "richer" },
-        {
-          "plane": "protected-tail-preservation",
-          "state": "not-observed",
-          "verdict": "not-observed"
-        },
-        {
-          "plane": "diagnostics-on-malformed-input",
-          "state": "not-observed",
-          "verdict": "not-observed"
-        }
-      ],
-      "declared": {
-        "canonical": ["common.view/model-scene-source"],
-        "x3": [
-          "common.view/byte-range-source",
-          "common.view/model-animation-source",
-          "common.view/model-scene-source",
-          "common.view/tree-data-source"
-        ]
-      },
-      "observed": {
-        "canonical": [
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "scenes": 1,
-              "nodes": 0,
-              "meshes": 11,
-              "primitives": 11,
-              "materials": 11,
-              "textures": 0,
-              "animations": 0,
-              "decodedGeometry": true,
-              "decodedVertices": 4868,
-              "decodedIndices": 7302
-            }
-          }
-        ],
-        "x3": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/model-animation-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "animations": 0,
-              "decodedGeometry": true,
-              "decodedIndices": 7302,
-              "decodedVertices": 4868,
-              "materials": 11,
-              "meshes": 11,
-              "nodes": 1,
-              "primitives": 11,
-              "scenes": 1,
-              "textures": 0
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "complete": true, "kinds": 2, "maxDepth": 1, "nodes": 2 }
-          }
-        ]
-      },
-      "comparison": {
-        "classification": "X3 богаче",
-        "missing": [],
-        "extra": [
-          "common.view/model-scene-source:measurement:nodes:1>0",
-          "operation:asset.validate",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source",
-          "source:common.view/model-animation-source",
-          "source:common.view/tree-data-source"
-        ],
-        "sources": [
-          {
-            "contract": "common.view/model-scene-source",
-            "classification": "X3 богаче",
-            "missing": [],
-            "extra": ["measurement:nodes:1>0"]
-          }
-        ]
-      }
+      "detail": "MODKITX_VXL_PATH is not set"
     },
     {
       "id": "sage-skudef-synthetic-minimal",
@@ -14993,474 +14233,18 @@
       "format": "sage-w3x-real",
       "kind": "real",
       "contributionId": "org.modkitx.ea/sage-w3x",
-      "state": "compared",
+      "state": "skipped",
       "sample": "MODKITX_W3X_PATH",
-      "provenance": {
-        "kind": "real",
-        "origin": "environment",
-        "environment": "MODKITX_W3X_PATH",
-        "relativePath": "…/files/Static/GUPREDTANK_SKN.TANKBODY.w3x",
-        "bytes": 410170,
-        "sha256": "f3dc04dd7a243c3b017aed9daac2d68a3a22dc891803d31a83afa007dd2ad0d4"
-      },
-      "classification": "X3 богаче",
-      "missing": [],
-      "extra": [
-        "common.view/model-scene-source:measurement:nodes:1>0",
-        "common.view/model-scene-source:measurement:textures:4>0",
-        "metadata:textures",
-        "operation:asset.validate",
-        "operation:export.raw",
-        "operation:view.inspect",
-        "source:common.view/byte-range-source",
-        "source:common.view/model-resource-refs-source",
-        "source:common.view/tree-data-source"
-      ],
-      "sourceComparisons": [
-        {
-          "contract": "common.view/model-scene-source",
-          "classification": "X3 богаче",
-          "missing": [],
-          "extra": ["measurement:nodes:1>0", "measurement:textures:4>0"]
-        }
-      ],
-      "baseline": "X3 богаче",
-      "canonical": {
-        "formatId": "w3x",
-        "declaredSources": ["common.view/model-scene-source"],
-        "actualSources": ["common.view/model-scene-source"],
-        "sources": [
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "scenes": 1,
-              "nodes": 0,
-              "meshes": 1,
-              "primitives": 1,
-              "materials": 1,
-              "textures": 0,
-              "animations": 0,
-              "decodedGeometry": true,
-              "decodedVertices": 993,
-              "decodedIndices": 2436
-            }
-          }
-        ],
-        "operations": [],
-        "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
-        "summary": {
-          "scenes": 1,
-          "nodes": 0,
-          "meshes": 1,
-          "primitives": 1,
-          "materials": 1,
-          "textures": 0,
-          "animations": 0
-        }
-      },
-      "x3": {
-        "available": true,
-        "formatId": "sage-w3x",
-        "declaredSources": [
-          "common.view/byte-range-source",
-          "common.view/model-resource-refs-source",
-          "common.view/model-scene-source",
-          "common.view/tree-data-source"
-        ],
-        "actualSources": [
-          "common.view/byte-range-source",
-          "common.view/model-resource-refs-source",
-          "common.view/model-scene-source",
-          "common.view/tree-data-source"
-        ],
-        "sourceFailures": [],
-        "sources": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/model-resource-refs-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "animations": 0,
-              "decodedGeometry": true,
-              "decodedIndices": 2436,
-              "decodedVertices": 993,
-              "materials": 1,
-              "meshes": 1,
-              "nodes": 1,
-              "primitives": 1,
-              "scenes": 1,
-              "textures": 4
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "complete": true, "kinds": 2, "maxDepth": 1, "nodes": 3 }
-          }
-        ],
-        "operations": ["asset.validate", "export.raw", "view.inspect"],
-        "geometryAccess": "decoded",
-        "metadata": {
-          "elements": 6,
-          "containers": 0,
-          "declaredMeshes": 1,
-          "declaredHierarchies": 0,
-          "declaredAnimations": 0,
-          "decodedMeshes": 1,
-          "textures": 4,
-          "includes": 0,
-          "geometryAccess": "decoded"
-        },
-        "features": [
-          "geometry:decoded",
-          "metadata:textures",
-          "operation:asset.validate",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source",
-          "source:common.view/model-resource-refs-source",
-          "source:common.view/model-scene-source",
-          "source:common.view/tree-data-source"
-        ]
-      },
-      "verdict": "richer",
-      "planes": [
-        { "plane": "subject-recognition", "state": "compared", "verdict": "equal" },
-        { "plane": "structural-metadata", "state": "compared", "verdict": "equal" },
-        { "plane": "geometry-counts", "state": "compared", "verdict": "equal" },
-        { "plane": "hierarchy", "state": "compared", "verdict": "richer" },
-        { "plane": "materials-textures", "state": "compared", "verdict": "richer" },
-        { "plane": "animation", "state": "compared", "verdict": "equal" },
-        { "plane": "collision", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "palette-voxel-transforms", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "payload-access", "state": "x3-only", "verdict": "richer" },
-        {
-          "plane": "protected-tail-preservation",
-          "state": "not-observed",
-          "verdict": "not-observed"
-        },
-        {
-          "plane": "diagnostics-on-malformed-input",
-          "state": "not-observed",
-          "verdict": "not-observed"
-        }
-      ],
-      "declared": {
-        "canonical": ["common.view/model-scene-source"],
-        "x3": [
-          "common.view/byte-range-source",
-          "common.view/model-resource-refs-source",
-          "common.view/model-scene-source",
-          "common.view/tree-data-source"
-        ]
-      },
-      "observed": {
-        "canonical": [
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "scenes": 1,
-              "nodes": 0,
-              "meshes": 1,
-              "primitives": 1,
-              "materials": 1,
-              "textures": 0,
-              "animations": 0,
-              "decodedGeometry": true,
-              "decodedVertices": 993,
-              "decodedIndices": 2436
-            }
-          }
-        ],
-        "x3": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/model-resource-refs-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "animations": 0,
-              "decodedGeometry": true,
-              "decodedIndices": 2436,
-              "decodedVertices": 993,
-              "materials": 1,
-              "meshes": 1,
-              "nodes": 1,
-              "primitives": 1,
-              "scenes": 1,
-              "textures": 4
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "complete": true, "kinds": 2, "maxDepth": 1, "nodes": 3 }
-          }
-        ]
-      },
-      "comparison": {
-        "classification": "X3 богаче",
-        "missing": [],
-        "extra": [
-          "common.view/model-scene-source:measurement:nodes:1>0",
-          "common.view/model-scene-source:measurement:textures:4>0",
-          "metadata:textures",
-          "operation:asset.validate",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source",
-          "source:common.view/model-resource-refs-source",
-          "source:common.view/tree-data-source"
-        ],
-        "sources": [
-          {
-            "contract": "common.view/model-scene-source",
-            "classification": "X3 богаче",
-            "missing": [],
-            "extra": ["measurement:nodes:1>0", "measurement:textures:4>0"]
-          }
-        ]
-      }
+      "detail": "MODKITX_W3X_PATH is not set"
     },
     {
       "id": "spring-s3o-real-bar-rapid",
       "format": "spring-s3o",
       "kind": "real",
       "contributionId": "org.modkitx/spring-s3o",
-      "state": "compared",
+      "state": "skipped",
       "sample": "MODKITX_BAR_ROOT",
-      "provenance": {
-        "kind": "real",
-        "origin": "rapid-pool-entry",
-        "environment": "MODKITX_BAR_ROOT",
-        "relativePath": "data/packages/705fa44d676b3633ea970038d8c593a8.sdp!objects3d/airbomb.s3o",
-        "bytes": 19189,
-        "sha256": "c208233aabfd58fa83237ddf69e56c0ac29fd44c1290fee11c198be1d8fe37c2"
-      },
-      "classification": "X3 богаче",
-      "missing": [],
-      "extra": [
-        "geometry:decoded",
-        "operation:asset.validate",
-        "operation:export.raw",
-        "operation:view.inspect",
-        "source:common.view/byte-range-source",
-        "source:common.view/model-resource-refs-source",
-        "source:common.view/model-scene-source",
-        "source:common.view/tree-data-source"
-      ],
-      "sourceComparisons": [],
-      "baseline": "X3 богаче",
-      "canonical": {
-        "formatId": "spring-s3o",
-        "declaredSources": [],
-        "actualSources": [],
-        "sources": [],
-        "operations": [],
-        "geometryAccess": "unavailable",
-        "features": []
-      },
-      "x3": {
-        "available": true,
-        "formatId": "spring-s3o",
-        "declaredSources": [
-          "common.view/byte-range-source",
-          "common.view/model-resource-refs-source",
-          "common.view/model-scene-source",
-          "common.view/tree-data-source"
-        ],
-        "actualSources": [
-          "common.view/byte-range-source",
-          "common.view/model-resource-refs-source",
-          "common.view/model-scene-source",
-          "common.view/tree-data-source"
-        ],
-        "sourceFailures": [],
-        "sources": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/model-resource-refs-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "animations": 0,
-              "decodedGeometry": true,
-              "decodedIndices": 792,
-              "decodedVertices": 496,
-              "materials": 0,
-              "meshes": 1,
-              "nodes": 1,
-              "primitives": 1,
-              "scenes": 1,
-              "textures": 2
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "complete": true, "kinds": 2, "maxDepth": 1, "nodes": 2 }
-          }
-        ],
-        "operations": ["asset.validate", "export.raw", "view.inspect"],
-        "geometryAccess": "decoded",
-        "metadata": {},
-        "features": [
-          "geometry:decoded",
-          "operation:asset.validate",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source",
-          "source:common.view/model-resource-refs-source",
-          "source:common.view/model-scene-source",
-          "source:common.view/tree-data-source"
-        ]
-      },
-      "verdict": "incomparable",
-      "planes": [
-        { "plane": "subject-recognition", "state": "x3-only", "verdict": "richer" },
-        { "plane": "structural-metadata", "state": "x3-only", "verdict": "richer" },
-        { "plane": "geometry-counts", "state": "x3-only", "verdict": "richer" },
-        { "plane": "hierarchy", "state": "x3-only", "verdict": "richer" },
-        { "plane": "materials-textures", "state": "x3-only", "verdict": "richer" },
-        { "plane": "animation", "state": "x3-only", "verdict": "richer" },
-        { "plane": "collision", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "palette-voxel-transforms", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "payload-access", "state": "x3-only", "verdict": "richer" },
-        {
-          "plane": "protected-tail-preservation",
-          "state": "not-observed",
-          "verdict": "not-observed"
-        },
-        {
-          "plane": "diagnostics-on-malformed-input",
-          "state": "not-observed",
-          "verdict": "not-observed"
-        }
-      ],
-      "declared": {
-        "canonical": [],
-        "x3": [
-          "common.view/byte-range-source",
-          "common.view/model-resource-refs-source",
-          "common.view/model-scene-source",
-          "common.view/tree-data-source"
-        ]
-      },
-      "observed": {
-        "canonical": [],
-        "x3": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/model-resource-refs-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "animations": 0,
-              "decodedGeometry": true,
-              "decodedIndices": 792,
-              "decodedVertices": 496,
-              "materials": 0,
-              "meshes": 1,
-              "nodes": 1,
-              "primitives": 1,
-              "scenes": 1,
-              "textures": 2
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "complete": true, "kinds": 2, "maxDepth": 1, "nodes": 2 }
-          }
-        ]
-      },
-      "comparison": {
-        "classification": "X3 богаче",
-        "missing": [],
-        "extra": [
-          "geometry:decoded",
-          "operation:asset.validate",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source",
-          "source:common.view/model-resource-refs-source",
-          "source:common.view/model-scene-source",
-          "source:common.view/tree-data-source"
-        ],
-        "sources": []
-      }
+      "detail": "MODKITX_BAR_ROOT is not set"
     },
     {
       "id": "stl-synthetic",
@@ -17017,6 +15801,7 @@
           "teamColorMaterials": 0,
           "advancedMaterialContracts": 0,
           "effects": 0,
+          "sockets": 0,
           "animatedEffectProperties": 0,
           "preservedSourceBlobs": 0
         },
@@ -18394,562 +17179,18 @@
       "format": "westwood-w3d-real",
       "kind": "real",
       "contributionId": "org.modkitx.ea/westwood-w3d",
-      "state": "compared",
+      "state": "skipped",
       "sample": "MODKITX_W3D_PATH",
-      "provenance": {
-        "kind": "real",
-        "origin": "environment",
-        "environment": "MODKITX_W3D_PATH",
-        "relativePath": "…/files/always_buildings/d_teslacoil_ch.w3d",
-        "bytes": 15737,
-        "sha256": "2b0546ea7406ae57a38e1efe7a389072746a4ed1063f6ff132e34305cb2e2613"
-      },
-      "classification": "X3 богаче",
-      "missing": [],
-      "extra": [
-        "common.view/model-scene-source:measurement:nodes:2>0",
-        "common.view/model-scene-source:measurement:textures:1>0",
-        "metadata:textures",
-        "operation:asset.validate",
-        "operation:export.raw",
-        "operation:view.inspect",
-        "source:common.view/byte-range-source",
-        "source:common.view/model-animation-source",
-        "source:common.view/model-resource-refs-source",
-        "source:common.view/model-skeleton-source",
-        "source:common.view/tree-data-source"
-      ],
-      "sourceComparisons": [
-        {
-          "contract": "common.view/model-scene-source",
-          "classification": "X3 богаче",
-          "missing": [],
-          "extra": ["measurement:nodes:2>0", "measurement:textures:1>0"]
-        }
-      ],
-      "baseline": "X3 богаче",
-      "canonical": {
-        "formatId": "w3d",
-        "declaredSources": ["common.view/model-scene-source"],
-        "actualSources": ["common.view/model-scene-source"],
-        "sources": [
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "scenes": 1,
-              "nodes": 0,
-              "meshes": 1,
-              "primitives": 1,
-              "materials": 1,
-              "textures": 0,
-              "animations": 1,
-              "decodedGeometry": true,
-              "decodedVertices": 150,
-              "decodedIndices": 864
-            }
-          }
-        ],
-        "operations": [],
-        "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
-        "summary": {
-          "scenes": 1,
-          "nodes": 0,
-          "meshes": 1,
-          "primitives": 1,
-          "materials": 1,
-          "textures": 0,
-          "animations": 1
-        }
-      },
-      "x3": {
-        "available": true,
-        "formatId": "westwood-w3d",
-        "declaredSources": [
-          "common.view/byte-range-source",
-          "common.view/model-animation-source",
-          "common.view/model-resource-refs-source",
-          "common.view/model-scene-source",
-          "common.view/model-skeleton-source",
-          "common.view/tree-data-source"
-        ],
-        "actualSources": [
-          "common.view/byte-range-source",
-          "common.view/model-animation-source",
-          "common.view/model-resource-refs-source",
-          "common.view/model-scene-source",
-          "common.view/model-skeleton-source",
-          "common.view/tree-data-source"
-        ],
-        "sourceFailures": [],
-        "sources": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/model-animation-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-resource-refs-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "animations": 1,
-              "decodedGeometry": true,
-              "decodedIndices": 864,
-              "decodedVertices": 150,
-              "materials": 1,
-              "meshes": 1,
-              "nodes": 2,
-              "primitives": 1,
-              "scenes": 1,
-              "textures": 1
-            }
-          },
-          {
-            "contract": "common.view/model-skeleton-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "complete": true, "kinds": 3, "maxDepth": 4, "nodes": 34 }
-          }
-        ],
-        "operations": ["asset.validate", "export.raw", "view.inspect"],
-        "geometryAccess": "decoded",
-        "metadata": {
-          "rootChunks": 4,
-          "chunks": 33,
-          "opaqueTailBytes": 0,
-          "chunkTypes": "HIERARCHY:1, HIERARCHY_HEADER:1, PIVOTS:1, CHUNK_0x00000103:1, ANIMATION:1, CHUNK_0x00000201:1, CHUNK_0x00000202:1, MESH:1, MESH_HEADER3:1, VERTICES:1, VERTEX_NORMALS:1, TRIANGLES:1, CHUNK_0x00000022:1, CHUNK_0x00000028:1, CHUNK_0x0000002a:1, CHUNK_0x0000002b:1, CHUNK_0x0000002c:1, CHUNK_0x0000002d:1, CHUNK_0x00000029:1, TEXTURES:1, TEXTURE:1, TEXTURE_NAME:1, MATERIAL_PASS:1, CHUNK_0x00000039:1, CHUNK_0x0000003a:1, TEXTURE_STAGE:1, TEXTURE_IDS:1, STAGE_TEXCOORDS:1, HLOD:1, CHUNK_0x00000701:1, CHUNK_0x00000702:1, CHUNK_0x00000703:1, CHUNK_0x00000704:1",
-          "decodedMeshes": 1,
-          "textures": 1,
-          "geometryAccess": "decoded"
-        },
-        "features": [
-          "geometry:decoded",
-          "metadata:textures",
-          "operation:asset.validate",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source",
-          "source:common.view/model-animation-source",
-          "source:common.view/model-resource-refs-source",
-          "source:common.view/model-scene-source",
-          "source:common.view/model-skeleton-source",
-          "source:common.view/tree-data-source"
-        ]
-      },
-      "verdict": "richer",
-      "planes": [
-        { "plane": "subject-recognition", "state": "compared", "verdict": "equal" },
-        { "plane": "structural-metadata", "state": "compared", "verdict": "equal" },
-        { "plane": "geometry-counts", "state": "compared", "verdict": "equal" },
-        { "plane": "hierarchy", "state": "compared", "verdict": "richer" },
-        { "plane": "materials-textures", "state": "compared", "verdict": "richer" },
-        { "plane": "animation", "state": "compared", "verdict": "equal" },
-        { "plane": "collision", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "palette-voxel-transforms", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "payload-access", "state": "x3-only", "verdict": "richer" },
-        {
-          "plane": "protected-tail-preservation",
-          "state": "not-observed",
-          "verdict": "not-observed"
-        },
-        {
-          "plane": "diagnostics-on-malformed-input",
-          "state": "not-observed",
-          "verdict": "not-observed"
-        }
-      ],
-      "declared": {
-        "canonical": ["common.view/model-scene-source"],
-        "x3": [
-          "common.view/byte-range-source",
-          "common.view/model-animation-source",
-          "common.view/model-resource-refs-source",
-          "common.view/model-scene-source",
-          "common.view/model-skeleton-source",
-          "common.view/tree-data-source"
-        ]
-      },
-      "observed": {
-        "canonical": [
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "scenes": 1,
-              "nodes": 0,
-              "meshes": 1,
-              "primitives": 1,
-              "materials": 1,
-              "textures": 0,
-              "animations": 1,
-              "decodedGeometry": true,
-              "decodedVertices": 150,
-              "decodedIndices": 864
-            }
-          }
-        ],
-        "x3": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/model-animation-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-resource-refs-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "animations": 1,
-              "decodedGeometry": true,
-              "decodedIndices": 864,
-              "decodedVertices": 150,
-              "materials": 1,
-              "meshes": 1,
-              "nodes": 2,
-              "primitives": 1,
-              "scenes": 1,
-              "textures": 1
-            }
-          },
-          {
-            "contract": "common.view/model-skeleton-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["smoke"],
-            "measurements": {}
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "complete": true, "kinds": 3, "maxDepth": 4, "nodes": 34 }
-          }
-        ]
-      },
-      "comparison": {
-        "classification": "X3 богаче",
-        "missing": [],
-        "extra": [
-          "common.view/model-scene-source:measurement:nodes:2>0",
-          "common.view/model-scene-source:measurement:textures:1>0",
-          "metadata:textures",
-          "operation:asset.validate",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source",
-          "source:common.view/model-animation-source",
-          "source:common.view/model-resource-refs-source",
-          "source:common.view/model-skeleton-source",
-          "source:common.view/tree-data-source"
-        ],
-        "sources": [
-          {
-            "contract": "common.view/model-scene-source",
-            "classification": "X3 богаче",
-            "missing": [],
-            "extra": ["measurement:nodes:2>0", "measurement:textures:1>0"]
-          }
-        ]
-      }
+      "detail": "MODKITX_W3D_PATH is not set"
     },
     {
       "id": "westwood-w3d-real-big-entry",
       "format": "westwood-w3d-real-big",
       "kind": "real",
       "contributionId": "org.modkitx.ea/westwood-w3d",
-      "state": "compared",
+      "state": "skipped",
       "sample": "MODKITX_CNC3_KW_ROOT",
-      "provenance": {
-        "kind": "real",
-        "origin": "container-entry",
-        "environment": "MODKITX_CNC3_KW_ROOT",
-        "relativePath": "Core/1.0/Misc.big!data/editor/molds/bowl.w3d",
-        "bytes": 30346,
-        "sha256": "ddc81235fc43d3c43c672bac2706805ad6bd86c546ca4f80bc5a81f2c0d06e34"
-      },
-      "classification": "X3 богаче",
-      "missing": [],
-      "extra": [
-        "common.view/model-scene-source:measurement:nodes:1>0",
-        "metadata:textures",
-        "operation:asset.validate",
-        "operation:export.raw",
-        "operation:view.inspect",
-        "source:common.view/byte-range-source",
-        "source:common.view/tree-data-source"
-      ],
-      "sourceComparisons": [
-        {
-          "contract": "common.view/model-scene-source",
-          "classification": "X3 богаче",
-          "missing": [],
-          "extra": ["measurement:nodes:1>0"]
-        }
-      ],
-      "baseline": "X3 богаче",
-      "canonical": {
-        "formatId": "w3d",
-        "declaredSources": ["common.view/model-scene-source"],
-        "actualSources": ["common.view/model-scene-source"],
-        "sources": [
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "scenes": 1,
-              "nodes": 0,
-              "meshes": 1,
-              "primitives": 1,
-              "materials": 1,
-              "textures": 0,
-              "animations": 0,
-              "decodedGeometry": true,
-              "decodedVertices": 341,
-              "decodedIndices": 1920
-            }
-          }
-        ],
-        "operations": [],
-        "geometryAccess": "decoded",
-        "features": ["geometry:decoded", "source:common.view/model-scene-source"],
-        "summary": {
-          "scenes": 1,
-          "nodes": 0,
-          "meshes": 1,
-          "primitives": 1,
-          "materials": 1,
-          "textures": 0,
-          "animations": 0
-        }
-      },
-      "x3": {
-        "available": true,
-        "formatId": "westwood-w3d",
-        "declaredSources": [
-          "common.view/byte-range-source",
-          "common.view/model-scene-source",
-          "common.view/tree-data-source"
-        ],
-        "actualSources": [
-          "common.view/byte-range-source",
-          "common.view/model-scene-source",
-          "common.view/tree-data-source"
-        ],
-        "sourceFailures": [],
-        "sources": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "animations": 0,
-              "decodedGeometry": true,
-              "decodedIndices": 1920,
-              "decodedVertices": 341,
-              "materials": 1,
-              "meshes": 1,
-              "nodes": 1,
-              "primitives": 1,
-              "scenes": 1,
-              "textures": 0
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "complete": true, "kinds": 3, "maxDepth": 4, "nodes": 16 }
-          }
-        ],
-        "operations": ["asset.validate", "export.raw", "view.inspect"],
-        "geometryAccess": "decoded",
-        "metadata": {
-          "rootChunks": 1,
-          "chunks": 15,
-          "opaqueTailBytes": 0,
-          "chunkTypes": "MESH:1, MESH_HEADER3:1, VERTICES:1, VERTEX_NORMALS:1, TRIANGLES:1, CHUNK_0x00000022:1, CHUNK_0x00000028:1, CHUNK_0x0000002a:1, CHUNK_0x0000002b:1, CHUNK_0x0000002c:1, CHUNK_0x0000002d:1, CHUNK_0x00000029:1, MATERIAL_PASS:1, CHUNK_0x00000039:1, CHUNK_0x0000003a:1",
-          "decodedMeshes": 1,
-          "textures": 0,
-          "geometryAccess": "decoded"
-        },
-        "features": [
-          "geometry:decoded",
-          "metadata:textures",
-          "operation:asset.validate",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source",
-          "source:common.view/model-scene-source",
-          "source:common.view/tree-data-source"
-        ]
-      },
-      "verdict": "richer",
-      "planes": [
-        { "plane": "subject-recognition", "state": "compared", "verdict": "equal" },
-        { "plane": "structural-metadata", "state": "compared", "verdict": "equal" },
-        { "plane": "geometry-counts", "state": "compared", "verdict": "equal" },
-        { "plane": "hierarchy", "state": "compared", "verdict": "richer" },
-        { "plane": "materials-textures", "state": "compared", "verdict": "equal" },
-        { "plane": "animation", "state": "compared", "verdict": "equal" },
-        { "plane": "collision", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "palette-voxel-transforms", "state": "not-observed", "verdict": "not-observed" },
-        { "plane": "payload-access", "state": "x3-only", "verdict": "richer" },
-        {
-          "plane": "protected-tail-preservation",
-          "state": "not-observed",
-          "verdict": "not-observed"
-        },
-        {
-          "plane": "diagnostics-on-malformed-input",
-          "state": "not-observed",
-          "verdict": "not-observed"
-        }
-      ],
-      "declared": {
-        "canonical": ["common.view/model-scene-source"],
-        "x3": [
-          "common.view/byte-range-source",
-          "common.view/model-scene-source",
-          "common.view/tree-data-source"
-        ]
-      },
-      "observed": {
-        "canonical": [
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "scenes": 1,
-              "nodes": 0,
-              "meshes": 1,
-              "primitives": 1,
-              "materials": 1,
-              "textures": 0,
-              "animations": 0,
-              "decodedGeometry": true,
-              "decodedVertices": 341,
-              "decodedIndices": 1920
-            }
-          }
-        ],
-        "x3": [
-          {
-            "contract": "common.view/byte-range-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["read", "size"],
-            "measurements": { "firstReadBytes": 16, "nonEmpty": true }
-          },
-          {
-            "contract": "common.view/model-scene-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["info", "meshes", "nodes", "primitive"],
-            "measurements": {
-              "animations": 0,
-              "decodedGeometry": true,
-              "decodedIndices": 1920,
-              "decodedVertices": 341,
-              "materials": 1,
-              "meshes": 1,
-              "nodes": 1,
-              "primitives": 1,
-              "scenes": 1,
-              "textures": 0
-            }
-          },
-          {
-            "contract": "common.view/tree-data-source",
-            "major": 1,
-            "state": "opened",
-            "features": ["children", "facts", "root"],
-            "measurements": { "complete": true, "kinds": 3, "maxDepth": 4, "nodes": 16 }
-          }
-        ]
-      },
-      "comparison": {
-        "classification": "X3 богаче",
-        "missing": [],
-        "extra": [
-          "common.view/model-scene-source:measurement:nodes:1>0",
-          "metadata:textures",
-          "operation:asset.validate",
-          "operation:export.raw",
-          "operation:view.inspect",
-          "source:common.view/byte-range-source",
-          "source:common.view/tree-data-source"
-        ],
-        "sources": [
-          {
-            "contract": "common.view/model-scene-source",
-            "classification": "X3 богаче",
-            "missing": [],
-            "extra": ["measurement:nodes:1>0"]
-          }
-        ]
-      }
+      "detail": "MODKITX_CNC3_KW_ROOT is not set"
     },
     {
       "id": "wmf-synthetic",

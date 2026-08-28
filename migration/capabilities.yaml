@@ -10605,7 +10605,7 @@ capabilities:
       operations:
         inspect: 'packages/testkit/test/sc2-casc-real.test.ts'
         validate: null
-        read: 'apps/modkit-vscode/test/extension-roots.test.ts'
+        read: 'apps/electron/test/subject-open-smoke.test.ts'
         materialize: null
     knownLoss:
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'

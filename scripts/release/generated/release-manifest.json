@@ -6,8 +6,8 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:ad8ad467647dd21c393f543d2f70a940f47a5342cbb27d4df2ab39ce197b0b63",
-      "size": 38146048
+      "sha256": "sha256:522aeeebc41bec83880434f0f4ec64417fac7bb3a929036045f1debe6df69036",
+      "size": 38145536
     },
     {
       "catalog": [
@@ -377,7 +377,7 @@
       },
       {
         "path": "migration/product-profiles.json",
-        "sha256": "sha256:a4192ad5771c03969ae3664e9db2bee96a674e923dc420778e95f8c16ba88b83"
+        "sha256": "sha256:cde29731388e45bca1eca7935393eb9e7b36ed0dca0939d817f28c31c2c5cc7b"
       },
       {
         "path": "scripts/app-extension-sets.mjs",
@@ -385,7 +385,7 @@
       },
       {
         "path": "scripts/bundle-hashes.json",
-        "sha256": "sha256:6872dac6de2d3b6dcbf509f69e7c31b4cd49bcf26452c5841f29389a5f4947b3"
+        "sha256": "sha256:9f9ccf176ea447441f1aad4053fff2358a062775058782b8fa746eb13a5028df"
       }
     ],
     "closure": "mk3-ga",

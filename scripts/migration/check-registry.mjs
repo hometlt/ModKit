@@ -22,6 +22,7 @@
 //
 // Usage: node scripts/migration/check-registry.mjs [--registry <path>] [--projections <path>]
 //                                                  [--inventory <path>] [--workflow-ledger <path>]
+//                                                  [--parity-report <path>]
 //                                                  [--quiet]
 
 import { execFileSync } from 'node:child_process'
@@ -50,6 +51,9 @@ const inventoryPath = path.resolve(
 const workflowLedgerPath = path.resolve(
   argValue('--workflow-ledger') ??
     path.join(repoRoot, 'migration/generated/vscode-workflow-ledger.json'),
+)
+const parityReportPath = path.resolve(
+  argValue('--parity-report') ?? path.join(repoRoot, 'reports/parity/latest.json'),
 )
 
 const problems = []
@@ -327,7 +331,7 @@ function deriveParityFacts() {
     ]),
   )
   const byShortId = new Map()
-  for (const row of readJson(path.join(repoRoot, 'reports/parity/latest.json')).results) {
+  for (const row of readJson(parityReportPath).results) {
     const short = `org.modkitx/${row.contributionId.slice(row.contributionId.lastIndexOf('/') + 1)}`
     if (!byShortId.has(short)) byShortId.set(short, [])
     byShortId.get(short).push(row)
@@ -435,14 +439,21 @@ if (isDefaultRegistry) {
     if (row.parityEvidence.rows.join(',') !== actualRowIds.join(',')) {
       fail(`${label}: parityEvidence.rows contradicts reports/parity/latest.json`)
     }
+    const observedParityRows = parityRows.filter(entry => entry.state === 'compared')
     const actualLive = [
       ...new Set(
-        parityRows
+        observedParityRows
           .flatMap(entry => entry.x3?.actualSources ?? [])
           .filter(id => DOMAIN_SOURCES.has(id)),
       ),
     ].sort(compareUtf8)
-    if (row.parityEvidence.liveSources.join(',') !== actualLive.join(',')) {
+    const declaredLive = new Set(row.parityEvidence.liveSources)
+    const unexpectedLive = actualLive.filter(id => !declaredLive.has(id))
+    const completeObservation = observedParityRows.length === parityRows.length
+    if (
+      unexpectedLive.length > 0 ||
+      (completeObservation && row.parityEvidence.liveSources.join(',') !== actualLive.join(','))
+    ) {
       fail(`${label}: parityEvidence.liveSources contradicts the observed X3 sources`)
     }
   }

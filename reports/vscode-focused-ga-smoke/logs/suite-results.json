@@ -39,13 +39,7 @@
       "details": {
         "tabOpened": true,
         "firstOpenMs": 2206,
-        "stageTabs": [
-          "Model",
-          "Tree",
-          "Metadata",
-          "Hex",
-          "Edit"
-        ],
+        "stageTabs": ["Model", "Tree", "Metadata", "Hex", "Edit"],
         "expectedStage": "Model",
         "expectedStageSelected": true,
         "webviewReadable": true,
@@ -70,13 +64,7 @@
       "details": {
         "tabOpened": true,
         "firstOpenMs": 1778,
-        "stageTabs": [
-          "Model",
-          "Tree",
-          "Metadata",
-          "Hex",
-          "Edit"
-        ],
+        "stageTabs": ["Model", "Tree", "Metadata", "Hex", "Edit"],
         "expectedStage": "Model",
         "expectedStageSelected": true,
         "webviewReadable": true,
@@ -102,13 +90,7 @@
       "details": {
         "tabOpened": true,
         "firstOpenMs": 1882,
-        "stageTabs": [
-          "Tree",
-          "Metadata",
-          "Hex",
-          "Entries",
-          "Edit"
-        ],
+        "stageTabs": ["Tree", "Metadata", "Hex", "Entries", "Edit"],
         "expectedStage": "Entries",
         "expectedStageSelected": true,
         "webviewReadable": true,
@@ -133,13 +115,7 @@
       "details": {
         "tabOpened": true,
         "firstOpenMs": 1723,
-        "stageTabs": [
-          "Tree",
-          "Metadata",
-          "Hex",
-          "Entries",
-          "Edit"
-        ],
+        "stageTabs": ["Tree", "Metadata", "Hex", "Entries", "Edit"],
         "expectedStage": "Entries",
         "expectedStageSelected": true,
         "webviewReadable": true,
@@ -164,13 +140,7 @@
       "details": {
         "tabOpened": true,
         "firstOpenMs": 2334,
-        "stageTabs": [
-          "Tree",
-          "Metadata",
-          "Hex",
-          "Text",
-          "Edit"
-        ],
+        "stageTabs": ["Tree", "Metadata", "Hex", "Text", "Edit"],
         "expectedStage": "Tree",
         "expectedStageSelected": true,
         "webviewReadable": true,
@@ -195,13 +165,7 @@
       "details": {
         "tabOpened": true,
         "firstOpenMs": 1151,
-        "stageTabs": [
-          "Tree",
-          "Metadata",
-          "Hex",
-          "Image",
-          "Edit"
-        ],
+        "stageTabs": ["Tree", "Metadata", "Hex", "Image", "Edit"],
         "expectedStage": "Image",
         "expectedStageSelected": true,
         "webviewReadable": true,
@@ -226,13 +190,7 @@
       "details": {
         "tabOpened": true,
         "firstOpenMs": 1180,
-        "stageTabs": [
-          "Tree",
-          "Metadata",
-          "Hex",
-          "Image",
-          "Edit"
-        ],
+        "stageTabs": ["Tree", "Metadata", "Hex", "Image", "Edit"],
         "expectedStage": "Image",
         "expectedStageSelected": true,
         "webviewReadable": true,
@@ -262,10 +220,7 @@
           "outputKind": "bytes",
           "byteLength": 4,
           "wroteTo": null,
-          "diagnosticCodes": [
-            "x3.host/worker-shared-process",
-            "x3.host/permission-degraded"
-          ]
+          "diagnosticCodes": ["x3.host/worker-shared-process", "x3.host/permission-degraded"]
         }
       },
       "durationMs": 509

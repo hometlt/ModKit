@@ -38,6 +38,27 @@ function runCommittedGateWithCorpora(corpora: string) {
   return { status: result.status, stdout: result.stdout, stderr: result.stderr }
 }
 
+function runCommittedGateWithParity(
+  mutate: (report: { results: Record<string, unknown>[] }) => void,
+) {
+  const root = mkdtempSync(join(tmpdir(), 'x3-registry-parity-'))
+  try {
+    const source = join(scriptsDir, '..', 'reports', 'parity', 'latest.json')
+    const report = JSON.parse(readFileSync(source, 'utf8')) as {
+      results: Record<string, unknown>[]
+    }
+    mutate(report)
+    const parity = join(root, 'latest.json')
+    writeFileSync(parity, `${JSON.stringify(report, null, 2)}\n`, 'utf8')
+    const result = spawnSync(process.execPath, [gate, '--parity-report', parity], {
+      encoding: 'utf8',
+    })
+    return { status: result.status, stdout: result.stdout, stderr: result.stderr }
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+}
+
 describe('capability registry gate (plan §3.3–3.4, block 10 works 4–6 and 10–11)', () => {
   it('accepts a registry whose rows are complete and whose inventory is fully accounted for', () => {
     const { status, stdout, stderr } = runGate('valid.capabilities.yaml')
@@ -131,6 +152,38 @@ describe('capability registry gate (plan §3.3–3.4, block 10 works 4–6 and 1
     expect(result.stderr).toBe('')
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('projection planes')
+  })
+
+  it('does not erase earlier live-source evidence when an optional parity corpus is skipped', () => {
+    const { status, stderr } = runCommittedGateWithParity(report => {
+      const row = report.results.find(entry => entry['id'] === 'emperor-xbf-real-env')
+      expect(row).toBeDefined()
+      if (row === undefined) throw new Error('missing emperor parity row')
+      row['state'] = 'skipped'
+      delete row['x3']
+    })
+    expect(stderr).toBe('')
+    expect(status).toBe(0)
+  })
+
+  it('still refuses a newly observed live source when another parity row is skipped', () => {
+    const { status, stderr } = runCommittedGateWithParity(report => {
+      const skipped = report.results.find(entry => entry['id'] === 'westwood-w3d-real-env')
+      const observed = report.results.find(
+        entry => entry['id'] === 'westwood-w3d-synthetic-minimal',
+      )
+      expect(skipped).toBeDefined()
+      expect(observed).toBeDefined()
+      if (skipped === undefined || observed === undefined) {
+        throw new Error('missing westwood parity rows')
+      }
+      skipped['state'] = 'skipped'
+      delete skipped['x3']
+      const x3 = observed['x3'] as { actualSources: string[] }
+      x3.actualSources = [...x3.actualSources, 'common.view/raster-image-source']
+    })
+    expect(status).toBe(1)
+    expect(stderr).toContain('parityEvidence.liveSources contradicts the observed X3 sources')
   })
 
   it('refuses a readiness environment variable absent from the oracle lock even before the corpus is available', () => {
