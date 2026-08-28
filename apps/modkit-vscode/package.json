@@ -73,6 +73,10 @@
         "title": "Modkit: Run Command…"
       },
       {
+        "command": "modkit.runtime.control",
+        "title": "Modkit: Control Runtime Session…"
+      },
+      {
         "command": "modkit.showHostProfile",
         "title": "Modkit: Open Workbench"
       }
@@ -158,6 +162,7 @@
     "onCommand:modkit.openArchiveEntry",
     "onCommand:modkit.openWith",
     "onCommand:modkit.runCommand",
+    "onCommand:modkit.runtime.control",
     "onCommand:modkit.showHostProfile",
     "onCustomEditor:modkit.genericAssetPreview",
     "onView:modkit.extensions",

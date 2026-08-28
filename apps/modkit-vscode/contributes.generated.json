@@ -25,6 +25,10 @@
       "title": "Modkit: Run Command…"
     },
     {
+      "command": "modkit.runtime.control",
+      "title": "Modkit: Control Runtime Session…"
+    },
+    {
       "command": "modkit.showHostProfile",
       "title": "Modkit: Open Workbench"
     }

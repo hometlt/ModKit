@@ -28,6 +28,10 @@
     {
       "command": "modkit.runCommand",
       "title": "Modkit: Run Command…"
+    },
+    {
+      "command": "modkit.runtime.control",
+      "title": "Modkit: Control Runtime Session…"
     }
   ],
   "configuration": {

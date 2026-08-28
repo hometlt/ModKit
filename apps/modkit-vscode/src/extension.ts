@@ -59,6 +59,12 @@ import {
   type EditorDocumentSymbol,
   type EditorLanguageDocument,
 } from './language-session.js'
+import {
+  createRuntimeDebugController,
+  type RuntimeDebugCommandRequest,
+  type RuntimeDebugCommandResult,
+  type RuntimeDebugController,
+} from './runtime-debug.js'
 
 const CUSTOM_EDITOR_TYPE = 'modkit.genericAssetPreview'
 
@@ -70,6 +76,21 @@ const LANGUAGE_ACTIVATION_BUDGET = Object.freeze({
   maxNodes: 250_000,
   maxScalarBytes: 16_777_216,
   maxDiagnostics: 1_000,
+})
+
+const RUNTIME_ACTIVATION_BUDGET = Object.freeze({
+  maxInputBytes: 16_777_216n,
+  maxDepth: 64,
+  maxNodes: 250_000,
+  maxScalarBytes: 16_777_216,
+  maxDiagnostics: 1_000,
+  deadlineMs: 30_000,
+})
+
+const RUNTIME_SESSION_BUDGET = Object.freeze({
+  maxWallTimeMs: 30_000,
+  maxTicks: 1_000_000,
+  maxMemoryBytes: 512 * 1024 * 1024,
 })
 
 /**
@@ -341,6 +362,8 @@ export interface ModkitExtensionApi {
   /** Roots the shipped catalog named that this build does not contain. Empty is the healthy state. */
   readonly missingCatalogRoots: readonly string[]
   readonly contributions: number
+  /** Generic leased runtime control for other editor integrations; selection stays host-owned. */
+  readonly runtime: RuntimeDebugController
   /**
    * What the most recent page reported it can honour, or `undefined` before any page has loaded.
    *
@@ -391,6 +414,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const mapPreviewResourcePlanResolver = createNodeMapPreviewResourcePlanResolver({
     subjects: host.services,
   })
+  const runtimeDebug = createRuntimeDebugController({
+    services: host.services,
+    grant: Object.freeze({ id: 'vscode-runtime', classes: Object.freeze([]) }),
+    activationBudget: RUNTIME_ACTIVATION_BUDGET,
+    sessionBudget: RUNTIME_SESSION_BUDGET,
+  })
+  context.subscriptions.push({ dispose: () => void runtimeDebug.dispose() })
 
   log(
     `composed ${host.services.host.topology.topologyId}: ` +
@@ -997,6 +1027,116 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     createVsCodeCommandOpener({ services: host.services, roots, containers }),
   )
 
+  const chooseRuntimeSession = async (): Promise<string | undefined> => {
+    if (runtimeDebug.sessionIds.length === 0) {
+      void vscode.window.showInformationMessage(
+        'Modkit: no runtime session is open in this window.',
+      )
+      return undefined
+    }
+    if (runtimeDebug.sessionIds.length === 1) return runtimeDebug.sessionIds[0]
+    return vscode.window.showQuickPick([...runtimeDebug.sessionIds], {
+      title: 'Runtime session',
+      placeHolder: 'Pick the session to control',
+    })
+  }
+
+  const runtimeRequestFromPalette = async (): Promise<RuntimeDebugCommandRequest | undefined> => {
+    const action = await vscode.window.showQuickPick(
+      [
+        { label: 'Start', description: 'start' },
+        { label: 'Continue to tick or limit', description: 'continue' },
+        { label: 'Pause', description: 'pause' },
+        { label: 'Step', description: 'step' },
+        { label: 'Inspect paused state', description: 'inspect' },
+        { label: 'Status', description: 'status' },
+        { label: 'Events', description: 'events' },
+        { label: 'Capture snapshot', description: 'snapshot' },
+        { label: 'Restore snapshot', description: 'restore' },
+        { label: 'State hash', description: 'stateHash' },
+        { label: 'Stop', description: 'stop' },
+      ] as const,
+      { title: 'Control a Modkit runtime', placeHolder: 'Pick an action' },
+    )
+    if (action === undefined) return undefined
+    if (action.description === 'start') {
+      const runtimeId = await vscode.window.showInputBox({
+        title: 'Runtime id',
+        prompt: 'A runtime id advertised through common.runtime/provider',
+        ignoreFocusOut: true,
+      })
+      if (runtimeId === undefined) return undefined
+      const sessionId = await vscode.window.showInputBox({
+        title: 'Runtime session id',
+        value: `vscode-runtime-${Date.now()}`,
+        ignoreFocusOut: true,
+      })
+      return sessionId === undefined ? undefined : { action: 'start', runtimeId, sessionId }
+    }
+    const sessionId = await chooseRuntimeSession()
+    if (sessionId === undefined) return undefined
+    if (action.description === 'step') {
+      const value = await vscode.window.showInputBox({ title: 'Ticks to step', value: '1' })
+      if (value === undefined) return undefined
+      return { action: 'step', sessionId, ticks: Number(value) }
+    }
+    if (action.description === 'continue') {
+      const value = await vscode.window.showInputBox({
+        title: 'Maximum ticks before pausing',
+        value: '100',
+      })
+      if (value === undefined) return undefined
+      const tick = await vscode.window.showInputBox({
+        title: 'Optional tick breakpoint',
+        prompt: 'Leave empty to pause only at the maximum tick count',
+      })
+      if (tick === undefined) return undefined
+      return {
+        action: 'continue',
+        sessionId,
+        maxTicks: Number(value),
+        ...(tick.trim() === '' ? {} : { breakpoints: [{ tick: Number(tick) }] }),
+      }
+    }
+    if (action.description === 'snapshot') {
+      const snapshotId = await vscode.window.showInputBox({
+        title: 'Snapshot id',
+        value: `snapshot-${Date.now()}`,
+      })
+      return snapshotId === undefined ? undefined : { action: 'snapshot', sessionId, snapshotId }
+    }
+    if (action.description === 'restore') {
+      const snapshotId = await vscode.window.showQuickPick(
+        [...runtimeDebug.snapshotIds(sessionId)],
+        {
+          title: 'Restore snapshot',
+        },
+      )
+      return snapshotId === undefined ? undefined : { action: 'restore', sessionId, snapshotId }
+    }
+    return { action: action.description, sessionId }
+  }
+
+  const runRuntimeDebug = async (
+    argument: unknown,
+  ): Promise<RuntimeDebugCommandResult | undefined> => {
+    const request =
+      typeof argument === 'object' && argument !== null && 'action' in argument
+        ? (argument as RuntimeDebugCommandRequest)
+        : await runtimeRequestFromPalette()
+    if (request === undefined) return undefined
+    const result = await runtimeDebug.dispatch(request)
+    log(`[runtime] ${JSON.stringify(result)}`)
+    if (result.state === 'unavailable') {
+      void vscode.window.showWarningMessage(`Modkit runtime: ${result.message}`)
+    } else {
+      void vscode.window.showInformationMessage(
+        `Modkit runtime ${result.sessionId}: ${result.action} completed.`,
+      )
+    }
+    return result
+  }
+
   /** Run one command with the editor's own progress and cancellation, and report it natively. */
   const runSharedCommand = async (request: {
     readonly command: string
@@ -1148,6 +1288,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         })
       })()
     }),
+
+    /** One generic surface; action and runtime identity are request data, never game branches. */
+    vscode.commands.registerCommand('modkit.runtime.control', runRuntimeDebug),
 
     /*
      * Put a container in the Explorer.
@@ -1589,6 +1732,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       host.extensions.problems.filter(problem => problem.startsWith('the shipped catalog names')),
     ),
     contributions: host.contributions.length,
+    runtime: runtimeDebug,
     facilities: () => facilityReport,
   })
 }

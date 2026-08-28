@@ -281,7 +281,7 @@ describe('the VS Code product open path with a configured extension', () => {
     expect(descriptor.identity.formatId).toBe('sc2-map')
     expect(descriptor.traits).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: 'game.map', parameters: { packed: true, documents: 3 } }),
+        expect.objectContaining({ id: 'game.map', parameters: { packed: true, documents: 6 } }),
         expect.objectContaining({ id: 'container.entries', parameters: { count: 5 } }),
         expect.objectContaining({ id: 'content.scripts', parameters: { files: 1 } }),
       ]),
