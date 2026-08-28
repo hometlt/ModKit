@@ -97,7 +97,7 @@
         "org.modkitx/tiff",
         "org.modkitx/webp"
       ],
-      "digest": "sha256:c15e57e83dade1b7bd3ab6df388e01afe4d877ad622c3c9ceeb2cc8bed85ddd8"
+      "digest": "sha256:a343cab85187b5836a3e2e680109851ebe39618ddae1a214d19b6c58d2c68ed0"
     },
     {
       "name": "models",

@@ -4499,7 +4499,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:c15e57e83dade1b7bd3ab6df388e01afe4d877ad622c3c9ceeb2cc8bed85ddd8',
+        artifactDigest: 'sha256:a343cab85187b5836a3e2e680109851ebe39618ddae1a214d19b6c58d2c68ed0',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:76c5e4320dbbc9b2e71030063212b4351eb11d409eb69e554749364c33415205',
@@ -4539,7 +4539,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-pkm.json':
             'sha256:7000d5bb4ccba64f5c9a81a2ac747bfb0214cb87c4de8a3a0277ed297a5d67f9',
           'contributions/codec-png.json':
-            'sha256:e069e36d8e4e56a01da28ce8790f64b0f1bd6a3d31b2506615d49d40828e4839',
+            'sha256:5c6d0d6eabba28417dd2ad1d61f16560e17f31943d34ecd08f70c317f4b5e6df',
           'contributions/codec-pvr.json':
             'sha256:304050d72c82999590a517cfbf6d757de7f44523c53cbd8f0d604b18add2aa78',
           'contributions/codec-tga.json':
@@ -4572,7 +4572,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/formats/jpeg/codec.js':
             'sha256:43739ed9200be7c7e11b326ac83206892cb3eb9633b3b76477099e6fed24bd06',
           'src/formats/png/codec.js':
-            'sha256:013031d12676c907b1f0cebc4570185fe00dd7d47a7f2e65471e7772c915a78a',
+            'sha256:325d56a7dde421db26926fd7fb44730fbf7d42e19442256e89f424981a23e530',
           'src/gif/codec.js':
             'sha256:3ce766b0f1c01d114928a33ba33536dc76429072de6aaefc4ba709321ae96eec',
           'src/hdr/codec.js':
@@ -4618,7 +4618,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:22041288fa8ceff125f3eaeb8f835a9a501440f9edec516a3e3804976f3959f8',
         },
         inventoryRecordId:
-          'artifact:sha256:c15e57e83dade1b7bd3ab6df388e01afe4d877ad622c3c9ceeb2cc8bed85ddd8',
+          'artifact:sha256:a343cab85187b5836a3e2e680109851ebe39618ddae1a214d19b6c58d2c68ed0',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -4732,7 +4732,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-png.json',
-          'sha256:e069e36d8e4e56a01da28ce8790f64b0f1bd6a3d31b2506615d49d40828e4839',
+          'sha256:5c6d0d6eabba28417dd2ad1d61f16560e17f31943d34ecd08f70c317f4b5e6df',
         ],
         [
           'contributions/codec-pvr.json',
@@ -7054,6 +7054,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   handlerId: 'export-raw',
                   id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'convert-rgba8',
+                  id: 'export.convert',
                   mutatesSource: false,
                   outputKinds: ['bytes'],
                   requiredPermissions: ['read-source'],
