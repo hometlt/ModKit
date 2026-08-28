@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-kit'
 
 const decodeText = (bytes, budget, label) => {

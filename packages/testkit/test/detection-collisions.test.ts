@@ -70,7 +70,6 @@ const FAMILIES = [
   ['ea', 'sage'],
   ['ea', 'models'],
   ['opensource', 'warzone-2100'],
-  ['mk2', 'opensource-warzone-2100'],
   ['mk2', 'opensource-spring'],
   ['mk2', 'uncommon-documents'],
 ] as const

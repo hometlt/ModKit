@@ -581,12 +581,6 @@ importers:
         specifier: workspace:*
         version: link:../../codec-kit/codec-kit
 
-  extensions/mk2/opensource-warzone-2100:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
-
   extensions/mk2/petroglyph-glyphx:
     dependencies:
       '@modkitx-x3/codec-kit':

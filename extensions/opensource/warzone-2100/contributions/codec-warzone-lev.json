@@ -21,6 +21,7 @@
     }
   ],
   "limitations": [
+    "This game-specific implementation remains inside the GPL-2.0-or-later Warzone extension boundary.",
     "Read only. Writing a level index back is not implemented.",
     "Cross-entry references are recorded, not resolved. `levParse` resolves a `dataset` name against the levels already loaded from every `.lev` on the search path and fails on an unknown one; a single-file reader cannot see that set, so the name is reported and the host resolves it. The same applies to `camchange`, which the engine binds to a matching `camstart` entry.",
     "`levParse_JSON` exists alongside the text parser, so a JSON form of the level index also exists in current Warzone. This codec reads the text form only.",

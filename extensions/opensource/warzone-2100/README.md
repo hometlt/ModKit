@@ -7,11 +7,12 @@ accepted only when `base.wz` exists in a supported content layout and starts wit
 signature; `mp.wz` and `sequences.wz` are optional evidence. It never enumerates `WindowsApps` or
 recursively scans a disk.
 
-This package also implements the PIE model reader, an exact `game.map` terrain provider with a
-measured map-native to UVW candidate transform, and the final `.wz` container reader. The WZ reader
-reuses the bounded common ZIP parser, extracts stored and Deflate entries, reads root
-`ruleset.json`, and exposes the last physical entry for every repeated path. WZ container writing
-and the other Warzone staging routes remain outside this package until their own migration slices.
+This package also implements the IMG sprite-list, LEV level-index, WRF resource-list, PIE model,
+single-source `game.map`/`.gam`, and final `.wz` readers. The exact map-bundle terrain provider uses
+a measured map-native to UVW candidate transform. The WZ reader reuses the bounded common ZIP
+parser, extracts stored and Deflate entries, reads root `ruleset.json`, and exposes the last
+physical entry for every repeated path. All six legacy Warzone codec contributions now live in
+this final owner; writing remains outside the declared read-only operations.
 
 The map-preview preparation provider discovers every exact `multiplay/maps/<id>/game.map` in a
 complete bounded, extractable `warzone-wz` namespace. One map prepares directly, multiple maps

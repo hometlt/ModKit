@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 import { textCodec } from '../warzone-img/codec.js'
 
 const OPENERS = new Set([

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-kit'
 
 const ID = 'org.modkitx/warzone2100-map'

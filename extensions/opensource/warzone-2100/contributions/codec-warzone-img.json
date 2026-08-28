@@ -1,39 +1,41 @@
 {
   "schemaVersion": 1,
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
-  "id": "org.modkitx/warzone-wrf",
-  "displayName": "Warzone 2100 resource list",
+  "id": "org.modkitx/warzone-img",
+  "displayName": "Warzone 2100 image list",
   "status": "supported",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
-      "entrypoint": "./src/warzone-wrf/codec.js",
+      "entrypoint": "./src/warzone-img/codec.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
       "requestedPermissionClasses": ["read-source"]
     },
     {
       "variantId": "portable",
-      "entrypoint": "./src/warzone-wrf/codec.js",
+      "entrypoint": "./src/warzone-img/codec.js",
       "target": { "environments": ["browser-worker", "node-worker"] },
       "executionProfile": "worker-brokered",
       "requestedPermissionClasses": ["read-source"]
     }
   ],
   "limitations": [
-    "Read only. Writing a resource list back is not implemented.",
-    "References are resolved to paths but not followed; whether the named file exists is the host's question.",
-    "The resource type is reported exactly as written and is not interpreted. 29 types appear across the 77 lists in `base.wz` and `mp.wz`, led by `WAV` 474, `IMD` 354, `JAVASCRIPT` 107, `FLIC` 61, `PROX` 33, `TEXPAGE` 31, `STR_RES` 29; mapping each to a loader is the host's job.",
-    "`directory` is resolved against a caller-supplied base, defaulting to empty. The engine's real base is whatever `resSetBaseDir` last set, which is VFS state this codec cannot see.",
-    "A `/:`-prefixed directory replaces the base outright, matching `resParserSetDirectory`. Such a path is not present in any shipped list, so the branch is implemented from the source rather than confirmed against a file."
+    "This game-specific implementation remains inside the GPL-2.0-or-later Warzone extension boundary.",
+    "Read only. Writing an image list back is not implemented.",
+    "`.img` is a heavily reused extension, so matching is scoped by path as well: `**/images/*.img` and `**/mods/**/*.img`. A mod that puts an image list anywhere else will not be prefiltered, which is deliberate — claiming every `.img` on disk would be worse.",
+    "Sprites are resolved but not read. `spritePath` is `<list path minus extension>/<name>`, which is how `iV_LoadImageFile` derives it; whether that PNG exists is the host's question.",
+    "The engine bin-packs the listed sprites onto texture pages at load time (`ImageMerge::arrange`). Page assignment, atlas coordinates and page count are runtime products and are not reconstructed here.",
+    "The pre-atlas eight-field record form (`page,x,y,w,h,xOffset,yOffset,\"name\"`), still shipped in `intfac_differentOil.img`, is reported as `warzone-img-legacy-atlas-record` rather than parsed. No loader in Warzone 2100 4.7.0 reads it: the engine's scanset stops at the third field, yielding a truncated name that then fails to open.",
+    "The engine sizes its image vector from the count of `\\n` bytes while its parse loop runs to end-of-buffer, so a final line without a trailing newline disagrees with that count. The mismatch is surfaced as `imageCountMismatch` rather than imitated."
   ],
   "spec": {
-    "formatRefs": [{ "formatId": "warzone-wrf", "label": "Warzone 2100 resource list" }],
+    "formatRefs": [{ "formatId": "warzone-img", "label": "Warzone 2100 image list" }],
     "roles": ["semantic"],
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": { "extensions": ["wrf"] },
+    "match": { "extensions": ["img"], "pathGlobs": ["**/images/*.img", "**/mods/**/*.img"] },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [
       {

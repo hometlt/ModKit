@@ -21,6 +21,7 @@
     }
   ],
   "limitations": [
+    "This game-specific implementation remains inside the GPL-2.0-or-later Warzone extension boundary.",
     "Terrain only. `game.map` (tiles, heights, gateways) and `ttypes.ttp` (terrain type per texture) are read; the rest of the map bundle is not.",
     "The portable MK3 reader handles `game.map` v10-v40 terrain and the fixed `<name>.gam` header; `ttypes.ttp` remains outside this contribution's current single-source routing.",
     "Object tables are not read: `droid.json`/`feature.json`/`struct.json` under `multiplay/maps/` (current) and `dinit.bjo`/`feat.bjo`/`struct.bjo` under `wrf/cam*/` (legacy binary, still what the campaign uses). Both representations ship in 4.7.0 and neither is a superset of the other.",

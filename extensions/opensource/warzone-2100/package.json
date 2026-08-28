@@ -7,7 +7,11 @@
   "description": "Warzone 2100 format contributions for MK3.",
   "exports": {
     ".": "./src/provider.js",
+    "./img": "./src/warzone-img/codec.js",
+    "./lev": "./src/warzone-lev/codec.js",
+    "./map-codec": "./src/warzone2100-map/codec.js",
     "./pie": "./src/warzone-pie/codec.js",
+    "./wrf": "./src/warzone-wrf/codec.js",
     "./wz": "./src/warzone-wz/codec.js",
     "./data": "./src/data-provider.js",
     "./data-bindings": "./src/data-resource-bindings.js",

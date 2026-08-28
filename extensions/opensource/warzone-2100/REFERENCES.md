@@ -26,3 +26,8 @@ read-only evidence gathered from the installed game. It does not copy legacy Mod
 All game-specific discovery, archive, map, model, script and runtime adapters stay in this extension
 so it can move to the future `WZ2100Project/Warzone2100` extension repository with its own license.
 The neutral Modkit core owns only public contracts, host routing and conformance fixtures.
+
+The IMG, LEV, WRF and single-source `game.map`/`.gam` readers were moved from the mechanical MK2
+staging family `extensions/mk2/opensource-warzone-2100` into this final owner without changing their
+parsers or public contribution ids. `MIGRATION-PROVENANCE.json` preserves the converter's original
+source-manifest paths, contract-gap notes and port verdicts after removal of that staging family.

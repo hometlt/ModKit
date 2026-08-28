@@ -308,6 +308,10 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     path: Object.freeze(['opensource', 'warzone-2100']),
     coordinate: 'org.modkitx.opensource/warzone-2100',
     contributions: Object.freeze([
+      'org.modkitx/warzone-img',
+      'org.modkitx/warzone-lev',
+      'org.modkitx/warzone-wrf',
+      'org.modkitx/warzone2100-map',
       'org.modkitx/warzone-pie',
       'org.modkitx/warzone-wz',
       'org.modkitx.opensource/warzone2100-data',
