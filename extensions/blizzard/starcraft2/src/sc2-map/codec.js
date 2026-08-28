@@ -2,7 +2,13 @@
 // and launch remain separate host/runtime concerns and are explicitly reported as unsupported.
 
 import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-kit'
-import { createSc2NamespaceSource, mpqMagic, parseSc2Mpq, sc2ArchiveEntryNames } from './mpq.js'
+import {
+  createSc2NamespaceSource,
+  mpqMagic,
+  parseSc2Mpq,
+  sc2ArchiveEntryNames,
+  sc2ArchiveHasEntry,
+} from './mpq.js'
 
 const ID = 'org.modkitx/sc2-map'
 const MAP_MARKERS = new Set([
@@ -22,13 +28,19 @@ function basename(path) {
   return path.replaceAll('\\', '/').split('/').at(-1)?.toLocaleLowerCase() ?? ''
 }
 
-function mapMarkers(paths) {
-  return Object.freeze(paths.filter(path => MAP_MARKERS.has(basename(path))))
+function mapMarkers(archive) {
+  const paths = sc2ArchiveEntryNames(archive)
+  return Object.freeze([
+    ...new Set([
+      ...paths.filter(path => MAP_MARKERS.has(basename(path))),
+      ...[...MAP_MARKERS].filter(path => sc2ArchiveHasEntry(archive, path)),
+    ]),
+  ])
 }
 
 function sniffMarkers(prefix) {
   try {
-    return mapMarkers(sc2ArchiveEntryNames(parseSc2Mpq(prefix, 4096)))
+    return mapMarkers(parseSc2Mpq(prefix, 4096))
   } catch {
     return Object.freeze([])
   }
@@ -53,7 +65,7 @@ const definition = Object.freeze({
   async inspect(bytes, context) {
     const archive = parseSc2Mpq(bytes, context.budget.maxNodes)
     const paths = sc2ArchiveEntryNames(archive)
-    const markers = mapMarkers(paths)
+    const markers = mapMarkers(archive)
     if (markers.length === 0) throw new TypeError('SC2Map archive has no recognized map documents')
     const lower = paths.map(path => path.toLocaleLowerCase())
     const localizedData = lower.filter(path =>

@@ -258,6 +258,10 @@ export function sc2ArchiveEntryNames(archive) {
   return Object.freeze(archive.entries.map(entry => entry.path))
 }
 
+export function sc2ArchiveHasEntry(archive, path) {
+  return findBlock(path, archive.tables) !== undefined
+}
+
 export function createSc2NamespaceSource(archive, source) {
   const entries = archive.entries
   const byId = new Map(entries.map(entry => [entry.id, entry]))
