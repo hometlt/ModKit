@@ -18,6 +18,8 @@ import {
   type CandidateWorldSceneSource,
   type MapPreviewPreparationDiagnostic,
   type MapPreviewPreparationNamespaceIndex,
+  type MapPreviewPreparationNamespaceSearchIndex,
+  type MapPreviewPreparationNamespaceSearchRequest,
   type MapPreviewPreparationOfferFacet,
   type MapPreviewPreparationPort,
   type MapPreviewPreparationRequest,
@@ -51,6 +53,7 @@ import type {
   Lease,
   ModWorkspaceLock,
   NamespaceEntrySource,
+  NamespaceEntrySearchQuery,
   PermissionGrant,
   ResourceBudget,
   ResourceSessionPort,
@@ -1273,12 +1276,26 @@ export type CoordinatedMapPreviewAssetSessionResult =
     }>
 
 const PREVIEW_DIAGNOSTIC_SEVERITIES = new Set(['error', 'warning', 'information', 'hint'])
+const MAX_PREVIEW_NAMESPACE_SEARCHES = 8
+const MAX_PREVIEW_NAMESPACE_SEARCH_BASENAMES = 16
+const MAX_PREVIEW_NAMESPACE_SEARCH_BASENAME_CHARS = 512
+const MAX_PREVIEW_NAMESPACE_SEARCH_ID_CHARS = 512
+const MAX_PREVIEW_NAMESPACE_FACT_ENTRIES = 20_000
+const MAX_PREVIEW_NAMESPACE_FACT_PAGES = 256
+const MAX_PREVIEW_NAMESPACE_PATH_CHARS = 4_096
+const MAX_PREVIEW_NAMESPACE_CURSOR_CHARS = 4_096
 
 function positiveCoordinatorLimit(value: number, label: string): number {
   if (!Number.isSafeInteger(value) || value <= 0) {
     throw new TypeError(`${label} must be a positive safe integer`)
   }
   return value
+}
+
+function boundedCoordinatorLimit(value: number, label: string, maximum: number): number {
+  const admitted = positiveCoordinatorLimit(value, label)
+  if (admitted > maximum) throw new TypeError(`${label} must be no greater than ${maximum}`)
+  return admitted
 }
 
 function validPreparationDiagnostic(value: unknown): value is MapPreviewPreparationDiagnostic {
@@ -1296,6 +1313,64 @@ function validPreparationDiagnostic(value: unknown): value is MapPreviewPreparat
         record['path'].every(item => typeof item === 'string' || Number.isSafeInteger(item)))) &&
     (!Object.hasOwn(record, 'data') || jsonSafeValue(record['data']))
   )
+}
+
+function validNamespaceSearchQuery(value: unknown): value is NamespaceEntrySearchQuery {
+  const query = recordOf(value)
+  if (
+    query === undefined ||
+    !Object.keys(query).every(
+      key => key === 'kind' || key === 'basenames' || key === 'caseSensitive',
+    ) ||
+    query['kind'] !== 'basename-any' ||
+    !Array.isArray(query['basenames']) ||
+    query['basenames'].length === 0 ||
+    query['basenames'].length > MAX_PREVIEW_NAMESPACE_SEARCH_BASENAMES ||
+    typeof query['caseSensitive'] !== 'boolean'
+  ) {
+    return false
+  }
+  const basenames = query['basenames'] as unknown[]
+  const validBasenames = basenames.every(
+    item =>
+      nonEmptyString(item) &&
+      item.length <= MAX_PREVIEW_NAMESPACE_SEARCH_BASENAME_CHARS &&
+      !item.includes('/') &&
+      !item.includes('\\') &&
+      !item.includes('\0') &&
+      item !== '.' &&
+      item !== '..',
+  )
+  if (!validBasenames) return false
+  const identityBasenames = query['caseSensitive']
+    ? (basenames as string[])
+    : (basenames as string[]).map(item => item.toLowerCase())
+  return new Set(identityBasenames).size === basenames.length
+}
+
+function validateNamespaceSearchRequests(
+  value: unknown,
+): readonly MapPreviewPreparationNamespaceSearchRequest[] {
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.length > MAX_PREVIEW_NAMESPACE_SEARCHES ||
+    !value.every(item => {
+      const search = recordOf(item)
+      return (
+        search !== undefined &&
+        Object.keys(search).every(key => key === 'searchId' || key === 'query') &&
+        nonEmptyString(search['searchId']) &&
+        search['searchId'].length <= MAX_PREVIEW_NAMESPACE_SEARCH_ID_CHARS &&
+        !search['searchId'].includes('\0') &&
+        validNamespaceSearchQuery(search['query'])
+      )
+    }) ||
+    new Set(value.map(item => String(recordOf(item)?.['searchId'] ?? ''))).size !== value.length
+  ) {
+    throw new TypeError('map preview preparation returned invalid namespace searches')
+  }
+  return value as readonly MapPreviewPreparationNamespaceSearchRequest[]
 }
 
 function jsonSafeValue(value: unknown, depth = 0): boolean {
@@ -1421,6 +1496,17 @@ function validatePreparationResult(
     }
     return value as MapPreviewPreparationResult
   }
+  if (record['state'] === 'namespace-search-required') {
+    if (
+      !Object.keys(record).every(
+        key => key === 'state' || key === 'searches' || key === 'diagnostics',
+      )
+    ) {
+      throw new TypeError('map preview preparation search result contains unknown fields')
+    }
+    validateNamespaceSearchRequests(record['searches'])
+    return value as MapPreviewPreparationResult
+  }
   if (record['state'] === 'prepared') {
     const plan = recordOf(record['plan'])
     if (
@@ -1455,6 +1541,7 @@ function preparationDiagnostics(items: readonly MapPreviewPreparationDiagnostic[
 function mapPreviewPreparationSubject(
   descriptor: AnyDescriptor,
   namespace: MapPreviewPreparationNamespaceIndex,
+  namespaceSearches: readonly MapPreviewPreparationNamespaceSearchIndex[] = Object.freeze([]),
 ): MapPreviewPreparationRequest['subject'] {
   const formatId = 'identity' in descriptor ? descriptor.identity.formatId : undefined
   if (!nonEmptyString(formatId)) {
@@ -1475,6 +1562,7 @@ function mapPreviewPreparationSubject(
       descriptor.operations.map(item => Object.freeze({ id: item.id, state: item.state })),
     ),
     namespace,
+    namespaceSearches: Object.freeze(namespaceSearches.map(item => Object.freeze(item))),
   })
 }
 
@@ -1547,6 +1635,119 @@ async function boundedPreparationNamespace(
       state: truncated ? ('truncated' as const) : ('complete' as const),
       entries: Object.freeze(entries.map(item => Object.freeze(item))),
     })
+  } finally {
+    await release()
+  }
+}
+
+async function boundedPreparationNamespaceSearches(
+  original: AssetSession,
+  descriptor: AnyDescriptor,
+  searches: readonly MapPreviewPreparationNamespaceSearchRequest[],
+  maxEntries: number,
+  maxPages: number,
+  signal?: AbortSignal,
+): Promise<readonly MapPreviewPreparationNamespaceSearchIndex[]> {
+  if (
+    !descriptor.dataSources.some(
+      item => item.contract === 'common.view/namespace-entry-source' && item.major === 1,
+    )
+  ) {
+    return Object.freeze(
+      searches.map(search =>
+        Object.freeze({
+          searchId: search.searchId,
+          state: 'unsupported' as const,
+          entries: Object.freeze([]),
+        }),
+      ),
+    )
+  }
+  const lease = await original.dataSource('common.view/namespace-entry-source', 1)
+  const release = releaseOnce(() => lease.release())
+  try {
+    const source = lease.value as NamespaceEntrySource
+    const searchNamespace = source.search?.bind(source)
+    if (searchNamespace === undefined) {
+      return Object.freeze(
+        searches.map(search =>
+          Object.freeze({
+            searchId: search.searchId,
+            state: 'unsupported' as const,
+            entries: Object.freeze([]),
+          }),
+        ),
+      )
+    }
+
+    let remainingEntries = maxEntries
+    let remainingPages = maxPages
+    const results: MapPreviewPreparationNamespaceSearchIndex[] = []
+    for (const search of searches) {
+      signal?.throwIfAborted()
+      const entries: { path: string; kind: 'file' | 'directory'; size?: string }[] = []
+      const seenCursors = new Set<string>()
+      let cursor: string | undefined
+      let truncated = remainingEntries === 0 || remainingPages === 0
+      while (!truncated) {
+        if (cursor !== undefined) {
+          if (seenCursors.has(cursor)) {
+            throw new TypeError('subject namespace search repeated a paging cursor')
+          }
+          seenCursors.add(cursor)
+        }
+        const pageLimit = Math.min(remainingEntries, 256)
+        const page = await searchNamespace(
+          search.query,
+          cursor === undefined ? { limit: pageLimit } : { cursor, limit: pageLimit },
+          signal,
+        )
+        remainingPages -= 1
+        if (
+          !Array.isArray(page.items) ||
+          page.items.length > pageLimit ||
+          (page.nextCursor !== undefined &&
+            (typeof page.nextCursor !== 'string' ||
+              page.nextCursor.length === 0 ||
+              page.nextCursor.length > MAX_PREVIEW_NAMESPACE_CURSOR_CHARS))
+        ) {
+          throw new TypeError('subject namespace search returned a malformed page')
+        }
+        const admitted = page.items
+        for (const item of admitted) {
+          if (
+            typeof item.path !== 'string' ||
+            item.path.length > MAX_PREVIEW_NAMESPACE_PATH_CHARS ||
+            (item.kind !== 'file' && item.kind !== 'directory') ||
+            (item.size !== undefined && typeof item.size !== 'bigint')
+          ) {
+            throw new TypeError('subject namespace search returned a malformed entry')
+          }
+          entries.push({
+            path: item.path,
+            kind: item.kind,
+            ...(item.size === undefined ? {} : { size: item.size.toString(10) }),
+          })
+        }
+        remainingEntries -= admitted.length
+        cursor = page.nextCursor
+        if (cursor === undefined) break
+        if (remainingEntries === 0 || remainingPages === 0) truncated = true
+      }
+      entries.sort((left, right) =>
+        left.path === right.path
+          ? left.kind.localeCompare(right.kind)
+          : left.path.localeCompare(right.path),
+      )
+      results.push(
+        Object.freeze({
+          searchId: search.searchId,
+          state: truncated ? ('truncated' as const) : ('complete' as const),
+          entries: Object.freeze(entries.map(item => Object.freeze(item))),
+        }),
+      )
+    }
+    return Object.freeze(results)
   } finally {
     await release()
   }
@@ -1731,8 +1932,16 @@ export async function coordinateMapPreviewAssetSession(
   request: CoordinateMapPreviewAssetSessionRequest,
 ): Promise<CoordinatedMapPreviewAssetSessionResult> {
   const maxCandidates = positiveCoordinatorLimit(request.maxCandidates, 'maxCandidates')
-  const maxSubjectEntries = positiveCoordinatorLimit(request.maxSubjectEntries, 'maxSubjectEntries')
-  const maxSubjectPages = positiveCoordinatorLimit(request.maxSubjectPages, 'maxSubjectPages')
+  const maxSubjectEntries = boundedCoordinatorLimit(
+    request.maxSubjectEntries,
+    'maxSubjectEntries',
+    MAX_PREVIEW_NAMESPACE_FACT_ENTRIES,
+  )
+  const maxSubjectPages = boundedCoordinatorLimit(
+    request.maxSubjectPages,
+    'maxSubjectPages',
+    MAX_PREVIEW_NAMESPACE_FACT_PAGES,
+  )
   const maxRoots = positiveCoordinatorLimit(request.maxRoots, 'maxRoots')
   const maxDepth = positiveCoordinatorLimit(request.maxDepth, 'maxDepth')
   request.signal?.throwIfAborted()
@@ -1785,6 +1994,7 @@ export async function coordinateMapPreviewAssetSession(
   }
 
   let prepared: MapPreviewPreparationResult
+  let searchRoundDiagnostics: readonly MapPreviewPreparationDiagnostic[] = Object.freeze([])
   try {
     const namespace = await boundedPreparationNamespace(
       request.original,
@@ -1806,11 +2016,48 @@ export async function coordinateMapPreviewAssetSession(
       maxCandidates,
       maxRoots,
     )
+    if (prepared.state === 'namespace-search-required') {
+      searchRoundDiagnostics = prepared.diagnostics
+      const namespaceSearches = await boundedPreparationNamespaceSearches(
+        request.original,
+        descriptor,
+        prepared.searches,
+        maxSubjectEntries,
+        maxSubjectPages,
+        request.signal,
+      )
+      subject = mapPreviewPreparationSubject(descriptor, namespace, namespaceSearches)
+      prepared = validatePreparationResult(
+        await preparation.prepare({
+          subject,
+          maxCandidates,
+          maxRoots,
+          maxDepth,
+          ...(request.selectionId === undefined ? {} : { selectionId: request.selectionId }),
+          ...(request.signal === undefined ? {} : { signal: request.signal }),
+        }),
+        maxCandidates,
+        maxRoots,
+      )
+      if (prepared.state === 'namespace-search-required') {
+        throw new TypeError(
+          'map preview preparation requested more than one namespace search round',
+        )
+      }
+    }
   } catch (error) {
-    return coordinatorFailure(
-      'x3.host/map-preview-preparation-invalid',
-      `map preview preparation failed (${error instanceof Error ? error.message : String(error)})`,
-    )
+    return {
+      state: 'unresolved',
+      diagnostics: Object.freeze([
+        ...resolutionDiagnostics,
+        ...preparationDiagnostics(searchRoundDiagnostics),
+        diagnostic(
+          'error',
+          'x3.host/map-preview-preparation-invalid',
+          `map preview preparation failed (${error instanceof Error ? error.message : String(error)})`,
+        ),
+      ]),
+    }
   } finally {
     try {
       await preparationRelease?.()
@@ -1821,7 +2068,10 @@ export async function coordinateMapPreviewAssetSession(
 
   let providerDiagnostics: Diagnostic[]
   try {
-    providerDiagnostics = preparationDiagnostics(prepared.diagnostics)
+    providerDiagnostics = preparationDiagnostics([
+      ...searchRoundDiagnostics,
+      ...prepared.diagnostics,
+    ])
   } catch (error) {
     return coordinatorFailure(
       'x3.host/map-preview-preparation-invalid',

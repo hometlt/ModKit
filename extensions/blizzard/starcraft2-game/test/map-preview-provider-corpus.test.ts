@@ -9,13 +9,15 @@ import {
   createBundledServiceDefinitionRegistry,
   createExecutionBackendRegistry,
   createHostContributionContractRegistry,
+  coordinateMapPreviewAssetSession,
   openSubject,
   registerServiceDefinitionsOrThrow,
   resolveGameInstallationDiscovery,
   resolveMapPreviewPreparation,
 } from '@modkitx-x3/host'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
-import type { NamespaceEntrySource, ResourceBudget } from '@modkitx-x3/sdk'
+import type { AssetSession, ResourceBudget } from '@modkitx-x3/sdk'
+import type { MapPreviewPreparationRequest } from '@modkitx-x3/sdk/maps'
 import { VirtualFileSystem } from '@modkitx-x3/vfs'
 import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
 
@@ -23,7 +25,6 @@ const repoRoot = join(import.meta.dirname, '..', '..', '..', '..')
 const sc2Override = process.env.MODKITX_SC2_ROOT?.trim()
 const productMaxSubjectEntries = 4_096
 const productMaxSubjectPages = 64
-const productPageSize = 256
 const pinnedMapRoot = 'campaigns/liberty.sc2campaign/base.sc2maps/maps/campaign/tarcade.sc2map'
 
 const budget: ResourceBudget = {
@@ -33,6 +34,20 @@ const budget: ResourceBudget = {
   maxScalarBytes: 134_217_728,
   maxDiagnostics: 100,
 }
+
+const previewLimits = {
+  maxDocuments: 8,
+  maxDocumentBytes: 1_048_576,
+  maxTotalBytes: 4_194_304,
+  maxObjects: 100_000,
+  maxRegions: 10_000,
+  maxTerrainCells: 100_000,
+  maxTerrainSamples: 100_000,
+  maxDepth: 64,
+  maxRequirements: 8,
+  maxPageSize: 4_096,
+  maxDiagnostics: 100,
+} as const
 
 describe.skipIf(process.platform !== 'win32')(
   'installed StarCraft II CASC map preview preparation',
@@ -82,6 +97,7 @@ describe.skipIf(process.platform !== 'win32')(
       const vfs = new VirtualFileSystem().registerProvider(createFileVfsProvider())
       let casc: Awaited<ReturnType<typeof openSubject>> | undefined
       let previewResolution: Awaited<ReturnType<typeof resolveMapPreviewPreparation>> | undefined
+      let openedPreview: AssetSession | undefined
       try {
         const discovered = await discoveryResolution.discovery.discover({
           gameId: 'org.modkitx/starcraft-2',
@@ -128,6 +144,7 @@ describe.skipIf(process.platform !== 'win32')(
         if (casc.state !== 'opened') {
           throw new Error(`CASC open failed: ${casc.reason} ${JSON.stringify(casc.diagnostics)}`)
         }
+        const cascSession = casc.session
         expect(casc.descriptor).toMatchObject({ identity: { formatId: 'casc' } })
 
         previewResolution = await resolveMapPreviewPreparation({
@@ -142,147 +159,87 @@ describe.skipIf(process.platform !== 'win32')(
           )
         }
 
-        const namespaceLease = await casc.session.dataSource(
-          'common.view/namespace-entry-source',
-          1,
-        )
-        let namespaceState: 'complete' | 'truncated' = 'complete'
-        const entries: { path: string; kind: 'file' | 'directory'; size?: string }[] = []
-        const prefixEntries: { path: string; kind: 'file' | 'directory'; size?: string }[] = []
-        try {
-          const namespace = namespaceLease.value as NamespaceEntrySource
-          let cursor: string | undefined
-          let pages = 0
-          do {
-            const remaining = productMaxSubjectEntries - entries.length
-            if (remaining === 0 || pages >= productMaxSubjectPages) {
-              namespaceState = 'truncated'
-              break
-            }
-            const page = await namespace.list('', {
-              ...(cursor === undefined ? {} : { cursor }),
-              limit: Math.min(remaining, productPageSize),
-            })
-            pages += 1
-            entries.push(
-              ...page.items.map(item => ({
-                path: item.path,
-                kind: item.kind,
-                ...(item.size === undefined ? {} : { size: item.size.toString(10) }),
-              })),
-            )
-            cursor = page.nextCursor
-          } while (cursor !== undefined)
-
-          cursor = undefined
-          pages = 0
-          do {
-            if (
-              prefixEntries.length >= productMaxSubjectEntries ||
-              pages >= productMaxSubjectPages
-            ) {
-              throw new Error('pinned SC2Map prefix exceeds the product namespace budget')
-            }
-            const page = await namespace.list(`${pinnedMapRoot}/`, {
-              ...(cursor === undefined ? {} : { cursor }),
-              limit: Math.min(productMaxSubjectEntries - prefixEntries.length, productPageSize),
-            })
-            pages += 1
-            prefixEntries.push(
-              ...page.items.map(item => ({
-                path: item.path,
-                kind: item.kind,
-                ...(item.size === undefined ? {} : { size: item.size.toString(10) }),
-              })),
-            )
-            cursor = page.nextCursor
-          } while (cursor !== undefined)
-        } finally {
-          await namespaceLease.release()
-        }
-
-        expect(entries).toHaveLength(productMaxSubjectEntries)
-        expect(namespaceState).toBe('truncated')
-        const subject = {
-          schemaVersion: 1 as const,
-          subjectUri: casc.descriptor.subjectUri,
-          revision: casc.descriptor.revision,
-          formatId: 'casc',
-          traits: casc.descriptor.traits.map(item => item.id),
-          dataSources: casc.descriptor.dataSources.map(item => ({
-            contract: item.contract,
-            major: item.major,
-          })),
-          operations: casc.descriptor.operations.map(item => ({ id: item.id, state: item.state })),
-          namespace: { state: namespaceState, entries },
-        }
-        const result = await previewResolution.preparation.prepare({
-          subject,
-          maxCandidates: 64,
-          maxRoots: 32,
-          maxDepth: 16,
+        const preparationRequests: MapPreviewPreparationRequest[] = []
+        const preparation = Object.freeze({
+          ...previewResolution.preparation,
+          async prepare(request: MapPreviewPreparationRequest) {
+            preparationRequests.push(request)
+            return previewResolution?.state === 'resolved'
+              ? previewResolution.preparation.prepare(request)
+              : Promise.reject(new Error('preparation lease was released early'))
+          },
         })
+        const coordinate = (selectionId?: string) =>
+          coordinateMapPreviewAssetSession({
+            services,
+            grant: { id: 'sc2-map-preview-corpus-coordinate', classes: [] },
+            budgets: budget,
+            original: cascSession,
+            preparation,
+            ...(selectionId === undefined ? {} : { selectionId }),
+            maxCandidates: 64,
+            maxSubjectEntries: productMaxSubjectEntries,
+            maxSubjectPages: productMaxSubjectPages,
+            maxRoots: 32,
+            maxDepth: 16,
+            limits: previewLimits,
+          })
+
+        const selection = await coordinate()
+        expect(
+          selection.state,
+          selection.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+        ).toBe('selection-required')
+        if (selection.state !== 'selection-required') {
+          throw new Error('installed CASC did not produce explicit map selection')
+        }
+        expect(preparationRequests).toHaveLength(2)
+        const rootFacts = preparationRequests[0].subject.namespace
+        expect(rootFacts).toMatchObject({ state: 'truncated' })
+        expect(rootFacts.entries).toHaveLength(productMaxSubjectEntries)
         const rootListingPinnedMarkers = new Set(
-          entries
+          rootFacts.entries
             .filter(entry => entry.path.startsWith(`${pinnedMapRoot}/`))
             .map(entry => entry.path.slice(pinnedMapRoot.length + 1).toLowerCase()),
         )
         expect(rootListingPinnedMarkers).toEqual(new Set())
-        expect(result).toMatchObject({
-          state: 'unresolved',
-          diagnostics: [{ code: expect.stringMatching(/prefix-discovery-required$/u) }],
+        const markerFacts = preparationRequests[1].subject.namespaceSearches?.[0]
+        expect(markerFacts).toMatchObject({
+          searchId: 'sc2-map-marker-documents',
+          state: expect.stringMatching(/^(?:complete|truncated)$/u),
         })
-
-        const prefixMarkers = new Set(
-          prefixEntries.map(entry => entry.path.slice(pinnedMapRoot.length + 1).toLowerCase()),
-        )
-        expect([...prefixMarkers]).toEqual(
-          expect.arrayContaining(['objects', 'regions', 't3heightmap']),
-        )
-        const prefixSubject = {
-          ...subject,
-          namespace: { state: 'truncated' as const, entries: prefixEntries },
-        }
-        const selection = await previewResolution.preparation.prepare({
-          subject: prefixSubject,
-          maxCandidates: 64,
-          maxRoots: 32,
-          maxDepth: 16,
-        })
-        expect(selection).toMatchObject({
-          state: 'selection-required',
-          candidates: [{ sourcePath: pinnedMapRoot }],
-        })
-        if (selection.state !== 'selection-required') {
-          throw new Error('bounded TArcade prefix did not produce an explicit selection')
-        }
+        if (markerFacts === undefined) throw new Error('coordinator did not return marker facts')
+        expect(markerFacts.entries.length).toBeGreaterThan(0)
+        expect(markerFacts.entries.length).toBeLessThanOrEqual(productMaxSubjectEntries)
         const pinned = selection.candidates.find(
           candidate => candidate.sourcePath === pinnedMapRoot,
         )
-        if (pinned === undefined) throw new Error('pinned TArcade root was not offered')
-        const prepared = await previewResolution.preparation.prepare({
-          subject: prefixSubject,
-          selectionId: pinned.candidateId,
-          maxCandidates: 64,
-          maxRoots: 32,
-          maxDepth: 16,
+        if (pinned === undefined) {
+          throw new Error(
+            `bounded installed selection omitted ${pinnedMapRoot}; offered ${selection.candidates.length} candidate(s)`,
+          )
+        }
+
+        const opened = await coordinate(pinned.candidateId)
+        expect(
+          opened.state,
+          opened.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+        ).toBe('opened')
+        if (opened.state !== 'opened') throw new Error('selected installed map did not open')
+        openedPreview = opened.session
+        expect(opened.snapshot).toMatchObject({
+          gameId: 'org.modkitx/starcraft-2',
+          mapId: pinnedMapRoot,
         })
-        expect(prepared).toMatchObject({
-          state: 'prepared',
-          plan: {
-            workspace: { roots: [{ sourcePath: pinnedMapRoot }] },
-            resources: {
-              strategy: 'subject-namespace',
-              roots: [{ rootId: 'map', namespacePrefix: pinnedMapRoot }],
-            },
-          },
-        })
+        expect(preparationRequests).toHaveLength(4)
+        expect(preparationRequests[3].selectionId).toBe(pinned.candidateId)
 
         console.info(
-          `[sc2-map-preview] product root listing entries=${entries.length}, result=${result.state}; bounded ${pinnedMapRoot}/ prefix entries=${prefixEntries.length}, selected=${pinned.candidateId}`,
+          `[sc2-map-preview] root entries=${rootFacts.entries.length}/${rootFacts.state}; indexed markers=${markerFacts.entries.length}/${markerFacts.state}; candidates=${selection.candidates.length}; selected=${pinned.candidateId}; world=${opened.state}`,
         )
       } finally {
-        if (casc?.state === 'opened') await casc.session.dispose()
+        if (openedPreview !== undefined) await openedPreview.dispose()
+        else if (casc?.state === 'opened') await casc.session.dispose()
         await vfs.dispose()
         if (previewResolution?.state === 'resolved') await previewResolution.release()
         await discoveryResolution.release()

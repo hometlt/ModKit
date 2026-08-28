@@ -29,6 +29,76 @@ function lowerBound(entries, path) {
   return low
 }
 
+function validPage(page) {
+  if (!Number.isSafeInteger(page.limit) || page.limit <= 0) {
+    throw cascError(
+      'x3.casc/page-limit-invalid',
+      'CASC namespace page limit must be a positive safe integer',
+      {
+        limit: page.limit,
+      },
+    )
+  }
+  if (page.limit > CASC_LIMITS.maxPageItems) {
+    throw cascError('x3.casc/page-limit-exceeded', 'CASC namespace page exceeds its budget', {
+      limit: page.limit,
+      maxPageItems: CASC_LIMITS.maxPageItems,
+    })
+  }
+}
+
+function namespaceEntry(entry, revision) {
+  return Object.freeze({
+    id: entry.path,
+    path: entry.path,
+    name: entry.path.split('/').at(-1) ?? entry.path,
+    kind: 'file',
+    size: BigInt(entry.contentSize),
+    revision,
+  })
+}
+
+function validateBasenameSearch(query) {
+  if (
+    query === null ||
+    typeof query !== 'object' ||
+    Array.isArray(query) ||
+    !Object.keys(query).every(
+      key => key === 'kind' || key === 'basenames' || key === 'caseSensitive',
+    ) ||
+    query.kind !== 'basename-any' ||
+    !Array.isArray(query.basenames) ||
+    query.basenames.length === 0 ||
+    query.basenames.length > CASC_LIMITS.maxSearchBasenames ||
+    typeof query.caseSensitive !== 'boolean' ||
+    query.basenames.some(
+      item =>
+        typeof item !== 'string' ||
+        item.length === 0 ||
+        item.length > CASC_LIMITS.maxPathBytes ||
+        item.includes('/') ||
+        item.includes('\\') ||
+        item.includes('\0') ||
+        item === '.' ||
+        item === '..',
+    )
+  ) {
+    throw cascError(
+      'x3.casc/search-query-invalid',
+      'CASC namespace search requires bounded basename-any terms',
+    )
+  }
+  const identities = query.caseSensitive
+    ? query.basenames
+    : query.basenames.map(item => item.toLowerCase())
+  if (new Set(identities).size !== identities.length) {
+    throw cascError(
+      'x3.casc/search-query-invalid',
+      'CASC namespace search basenames must be unique under the requested case rule',
+    )
+  }
+}
+
 export async function detectCascMarkers(markers) {
   const observed = new Map(markers.map(marker => [marker.path, marker.kind]))
   const matches = [...REQUIRED_MARKERS].every(
@@ -44,19 +114,7 @@ export function createCascNamespaceSource(reader, sourceRef, revision) {
   return Object.freeze({
     async list(prefix, page, signal) {
       throwIfCancelled(signal)
-      if (!Number.isSafeInteger(page.limit) || page.limit <= 0) {
-        throw cascError(
-          'x3.casc/page-limit-invalid',
-          'CASC namespace page limit must be a positive safe integer',
-          { limit: page.limit },
-        )
-      }
-      if (page.limit > CASC_LIMITS.maxPageItems) {
-        throw cascError('x3.casc/page-limit-exceeded', 'CASC namespace page exceeds its budget', {
-          limit: page.limit,
-          maxPageItems: CASC_LIMITS.maxPageItems,
-        })
-      }
+      validPage(page)
       const normalizedPrefix = normalizedPath(prefix)
       const first = lowerBound(entries, normalizedPrefix)
       const start = page.cursor === undefined ? first : Number(page.cursor)
@@ -73,16 +131,7 @@ export function createCascNamespaceSource(reader, sourceRef, revision) {
         items.length < page.limit
       ) {
         const entry = entries[index]
-        items.push(
-          Object.freeze({
-            id: entry.path,
-            path: entry.path,
-            name: entry.path.split('/').at(-1) ?? entry.path,
-            kind: 'file',
-            size: BigInt(entry.contentSize),
-            revision,
-          }),
-        )
+        items.push(namespaceEntry(entry, revision))
         index += 1
       }
       return Object.freeze({
@@ -90,6 +139,41 @@ export function createCascNamespaceSource(reader, sourceRef, revision) {
         ...(index < entries.length && entries[index].path.startsWith(normalizedPrefix)
           ? { nextCursor: String(index) }
           : {}),
+      })
+    },
+    async search(query, page, signal) {
+      throwIfCancelled(signal)
+      validPage(page)
+      validateBasenameSearch(query)
+      const terms = [...new Set(query.basenames)].map(item =>
+        query.caseSensitive ? item : item.toLowerCase(),
+      )
+      const wanted = new Set(terms)
+      const start = page.cursor === undefined ? 0 : Number(page.cursor)
+      if (!Number.isSafeInteger(start) || start < 0 || start > entries.length) {
+        throw cascError(
+          'x3.casc/search-cursor-invalid',
+          'CASC namespace search cursor is invalid',
+          {
+            cursor: page.cursor,
+          },
+        )
+      }
+      const items = []
+      let index = start
+      const matches = entry => {
+        const basename = entry.path.slice(entry.path.lastIndexOf('/') + 1)
+        return wanted.has(query.caseSensitive ? basename : basename.toLowerCase())
+      }
+      while (index < entries.length && items.length < page.limit) {
+        const entry = entries[index]
+        index += 1
+        if (matches(entry)) items.push(namespaceEntry(entry, revision))
+      }
+      while (index < entries.length && !matches(entries[index])) index += 1
+      return Object.freeze({
+        items: Object.freeze(items),
+        ...(index < entries.length ? { nextCursor: String(index) } : {}),
       })
     },
     async openEntry(entryId, signal) {

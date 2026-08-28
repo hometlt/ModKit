@@ -323,6 +323,19 @@ export interface NamespaceEntry {
   readonly revision: RevisionId
 }
 
+/**
+ * Optional, bounded namespace lookup for containers whose native index can answer more efficiently
+ * than walking every entry through the ABI.
+ *
+ * `basename-any` matches a complete final path segment. The source owns path normalisation; the
+ * caller must state whether letter case is significant so a host never guesses container rules.
+ */
+export interface NamespaceEntrySearchQuery {
+  readonly kind: 'basename-any'
+  readonly basenames: readonly string[]
+  readonly caseSensitive: boolean
+}
+
 /** Input contract of the shared `container.extract` operation. */
 export interface ContainerExtractInput {
   /** Opaque id returned by the same subject's `NamespaceEntrySource.list`. */
@@ -331,6 +344,12 @@ export interface ContainerExtractInput {
 
 export interface NamespaceEntrySource {
   list(prefix: string, page: PageRequest, signal?: AbortSignal): Promise<Page<NamespaceEntry>>
+  /** Optional indexed lookup; absence means the namespace only supports prefix listing. */
+  search?(
+    query: NamespaceEntrySearchQuery,
+    page: PageRequest,
+    signal?: AbortSignal,
+  ): Promise<Page<NamespaceEntry>>
   /** Returns a leased source reference, never eager decoded bytes. */
   openEntry(entryId: string, signal?: AbortSignal): Promise<Lease<AssetSourceRef>>
 }

@@ -154,6 +154,7 @@ const transportSourceSurface = {
 const namespaceEntrySourceSurface = {
   methods: {
     list: cancellableValue,
+    search: { kind: 'value', optional: true, ...sig },
     /** `Lease<AssetSourceRef>`: the ref crosses by copy, the lease is a release-only handle. */
     openEntry: { kind: 'leased-value', ...sig },
   },

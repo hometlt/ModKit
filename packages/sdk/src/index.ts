@@ -330,6 +330,7 @@ export {
   type ContainerExtractInput,
   type Lease,
   type NamespaceEntry,
+  type NamespaceEntrySearchQuery,
   type NamespaceEntrySource,
   type AudioMediaInfo,
   type AudioMediaSource,

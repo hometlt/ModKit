@@ -25,6 +25,7 @@ const subject = (
     namespaceState?: 'unavailable' | 'complete' | 'truncated'
     namespaceSource?: boolean
     extraction?: boolean
+    namespaceSearches?: readonly unknown[]
   }> = {},
 ) => ({
   schemaVersion: 1 as const,
@@ -41,6 +42,9 @@ const subject = (
       : [{ contract: 'common.view/namespace-entry-source', major: 1 }],
   operations: options.extraction === false ? [] : [{ id: 'container.extract', state: 'available' }],
   namespace: { state: options.namespaceState ?? ('complete' as const), entries },
+  ...(options.namespaceSearches === undefined
+    ? {}
+    : { namespaceSearches: options.namespaceSearches }),
 })
 
 const request = (
@@ -195,19 +199,45 @@ describe('StarCraft II map preview preparation', () => {
       request(mapEntries(root), { namespaceState: 'truncated' }),
     )
     expect(truncated).toMatchObject({
+      state: 'namespace-search-required',
+      searches: [
+        {
+          searchId: 'sc2-map-marker-documents',
+          query: {
+            kind: 'basename-any',
+            basenames: ['mapheightmap', 'mapobjects', 'objects', 'regions', 't3heightmap'],
+            caseSensitive: false,
+          },
+        },
+      ],
+      diagnostics: [{ code: expect.stringMatching(/indexed-marker-search-required$/u) }],
+    })
+    if (truncated.state !== 'namespace-search-required') {
+      throw new Error('truncated root did not request an indexed search')
+    }
+    expect(JSON.parse(JSON.stringify(truncated))).toEqual(truncated)
+
+    const searchedOptions = {
+      namespaceState: 'truncated' as const,
+      namespaceSearches: [
+        {
+          searchId: truncated.searches[0].searchId,
+          state: 'truncated',
+          entries: mapEntries(root),
+        },
+      ],
+    }
+    const selection = await prepareStarcraft2MapPreview(request([], searchedOptions))
+    expect(selection).toMatchObject({
       state: 'selection-required',
       candidates: [{ sourcePath: root }],
       diagnostics: [{ code: expect.stringMatching(/truncated-selection-required$/u) }],
     })
-    if (truncated.state !== 'selection-required') {
-      throw new Error('truncated root did not require selection')
+    if (selection.state !== 'selection-required') {
+      throw new Error('truncated search did not require explicit selection')
     }
     const selected = await prepareStarcraft2MapPreview(
-      request(
-        mapEntries(root),
-        { namespaceState: 'truncated' },
-        truncated.candidates[0].candidateId,
-      ),
+      request([], searchedOptions, selection.candidates[0].candidateId),
     )
     expect(selected).toMatchObject({
       state: 'prepared',
@@ -218,11 +248,33 @@ describe('StarCraft II map preview preparation', () => {
     })
 
     const noProof = await prepareStarcraft2MapPreview(
-      request([entry(`${root}/objects`)], { namespaceState: 'truncated' }),
+      request([], {
+        namespaceState: 'truncated',
+        namespaceSearches: [
+          {
+            searchId: 'sc2-map-marker-documents',
+            state: 'truncated',
+            entries: [entry(`${root}/objects`)],
+          },
+        ],
+      }),
     )
     expect(noProof).toMatchObject({
       state: 'unresolved',
       diagnostics: [{ code: expect.stringMatching(/prefix-discovery-required$/u) }],
+    })
+
+    const unsupported = await prepareStarcraft2MapPreview(
+      request([], {
+        namespaceState: 'truncated',
+        namespaceSearches: [
+          { searchId: 'sc2-map-marker-documents', state: 'unsupported', entries: [] },
+        ],
+      }),
+    )
+    expect(unsupported).toMatchObject({
+      state: 'unresolved',
+      diagnostics: [{ code: expect.stringMatching(/indexed-marker-search-unsupported$/u) }],
     })
   })
 
@@ -281,8 +333,9 @@ describe('StarCraft II map preview preparation', () => {
       maxCandidates: 1,
     })
     expect(overflow).toMatchObject({
-      state: 'unresolved',
-      diagnostics: [{ code: expect.stringMatching(/candidate-budget-exceeded$/u) }],
+      state: 'selection-required',
+      candidates: [{ sourcePath: root }],
+      diagnostics: [{ code: expect.stringMatching(/candidate-list-truncated$/u) }],
     })
 
     const unsafe = await prepareStarcraft2MapPreview(

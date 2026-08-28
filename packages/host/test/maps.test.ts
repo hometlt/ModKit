@@ -12,6 +12,7 @@ import {
   type InputSearchScope,
   type JsonValue,
   type Lease,
+  type NamespaceEntrySource,
   type OperationDecl,
   type OperationOutput,
 } from '@modkitx-x3/sdk'
@@ -375,6 +376,7 @@ function previewWorkspaceInput() {
 async function originalMapSession(
   files: ReadonlyMap<string, Uint8Array>,
   publishesNamespace = true,
+  namespaceSearch?: NonNullable<NamespaceEntrySource['search']>,
 ) {
   const namespaceRelease = vi.fn(async () => undefined)
   const entryRelease = vi.fn(async () => undefined)
@@ -407,6 +409,7 @@ async function originalMapSession(
         ...(next < matched.length ? { nextCursor: String(next) } : {}),
       })
     },
+    ...(namespaceSearch === undefined ? {} : { search: namespaceSearch }),
     openEntry(entryId: string, signal?: AbortSignal) {
       signal?.throwIfAborted()
       if (!files.has(entryId)) throw new RangeError(`unknown namespace entry ${entryId}`)
@@ -693,6 +696,325 @@ describe('standard map contract and semantic game provider', () => {
 
     await original.session.dispose()
     expect(original.originalRelease).toHaveBeenCalledOnce()
+  })
+
+  it('executes one bounded namespace search round and preserves both rounds of diagnostics', async () => {
+    const files = workspaceFiles()
+    const paths = [...files.keys()].sort()
+    const search = vi.fn<NonNullable<NamespaceEntrySource['search']>>(async (query, page) => {
+      expect(query).toEqual({
+        kind: 'basename-any',
+        basenames: ['objects', 'regions', 't3heightmap'],
+        caseSensitive: false,
+      })
+      const start = page.cursor === undefined ? 0 : Number(page.cursor)
+      const selected = paths.slice(start, start + page.limit)
+      const next = start + selected.length
+      return {
+        items: selected.map(path => ({
+          id: path,
+          path,
+          name: path.split('/').at(-1) ?? path,
+          kind: 'file' as const,
+          size: BigInt(files.get(path)?.byteLength ?? 0),
+          revision: revisionId(`provider-token:search-${encodeURIComponent(path)}`),
+        })),
+        ...(next < paths.length ? { nextCursor: String(next) } : {}),
+      }
+    })
+    const original = await originalMapSession(files, true, search)
+    const prepare = vi.fn<MapPreviewPreparationPort['prepare']>(async request => {
+      const facts = request.subject.namespaceSearches ?? []
+      if (facts.length === 0) {
+        return {
+          state: 'namespace-search-required',
+          searches: [
+            {
+              searchId: 'fixture-markers',
+              query: {
+                kind: 'basename-any',
+                basenames: ['objects', 'regions', 't3heightmap'],
+                caseSensitive: false,
+              },
+            },
+          ],
+          diagnostics: [
+            {
+              code: 'example/search-requested',
+              severity: 'information',
+              message: 'indexed marker facts are required',
+            },
+          ],
+        }
+      }
+      expect(facts).toHaveLength(1)
+      expect(facts[0]).toMatchObject({ searchId: 'fixture-markers', state: 'complete' })
+      expect(facts[0]?.entries).toHaveLength(paths.length)
+      return {
+        state: 'selection-required',
+        candidates: [{ candidateId: 'map:fixture', displayName: 'Fixture map' }],
+        diagnostics: [
+          {
+            code: 'example/search-complete',
+            severity: 'information',
+            message: 'indexed marker facts are complete',
+          },
+        ],
+      }
+    })
+    const result = await coordinateMapPreviewAssetSession({
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'maps-preview-search', classes: [] },
+      budgets: activationBudget,
+      original: original.session,
+      preparation: previewPreparation(prepare),
+      maxCandidates: 8,
+      maxSubjectEntries: 64,
+      maxSubjectPages: 4,
+      maxRoots: 4,
+      maxDepth: 4,
+      limits: coordinatorLimits,
+    })
+
+    expect(
+      result.state,
+      result.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+    ).toBe('selection-required')
+    expect(result.diagnostics.map(item => item.code)).toEqual([
+      'example/search-requested',
+      'example/search-complete',
+    ])
+    expect(prepare).toHaveBeenCalledTimes(2)
+    expect(search).toHaveBeenCalledOnce()
+    expect(original.namespaceRelease).toHaveBeenCalledTimes(2)
+    expect(original.session.state()).toBe('live')
+    await original.session.dispose()
+    expect(original.originalRelease).toHaveBeenCalledOnce()
+  })
+
+  it('reports unsupported indexed search and rejects a repeated search round without guessing', async () => {
+    const original = await originalMapSession(workspaceFiles())
+    const prepare = vi.fn<MapPreviewPreparationPort['prepare']>(async request => {
+      const facts = request.subject.namespaceSearches ?? []
+      if (facts.length > 0) {
+        expect(facts).toEqual([{ searchId: 'fixture-markers', state: 'unsupported', entries: [] }])
+      }
+      return {
+        state: 'namespace-search-required',
+        searches: [
+          {
+            searchId: 'fixture-markers',
+            query: {
+              kind: 'basename-any',
+              basenames: ['objects'],
+              caseSensitive: false,
+            },
+          },
+        ],
+        diagnostics: [],
+      }
+    })
+    const result = await coordinateMapPreviewAssetSession({
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'maps-preview-search-unsupported', classes: [] },
+      budgets: activationBudget,
+      original: original.session,
+      preparation: previewPreparation(prepare),
+      maxCandidates: 8,
+      maxSubjectEntries: 64,
+      maxSubjectPages: 4,
+      maxRoots: 4,
+      maxDepth: 4,
+      limits: coordinatorLimits,
+    })
+
+    expect(result).toMatchObject({
+      state: 'unresolved',
+      diagnostics: [{ code: 'x3.host/map-preview-preparation-invalid' }],
+    })
+    expect(prepare).toHaveBeenCalledTimes(2)
+    expect(original.namespaceRelease).toHaveBeenCalledTimes(2)
+    expect(original.session.state()).toBe('live')
+    await original.session.dispose()
+  })
+
+  it.each([
+    [
+      'duplicate ids',
+      [
+        {
+          searchId: 'same',
+          query: { kind: 'basename-any', basenames: ['objects'], caseSensitive: false },
+        },
+        {
+          searchId: 'same',
+          query: { kind: 'basename-any', basenames: ['regions'], caseSensitive: false },
+        },
+      ],
+    ],
+    [
+      'case-fold duplicate basenames',
+      [
+        {
+          searchId: 'folded',
+          query: {
+            kind: 'basename-any',
+            basenames: ['Objects', 'objects'],
+            caseSensitive: false,
+          },
+        },
+      ],
+    ],
+    [
+      'unknown query fields',
+      [
+        {
+          searchId: 'extra',
+          query: {
+            kind: 'basename-any',
+            basenames: ['objects'],
+            caseSensitive: false,
+            gameId: 'must-not-cross-common-host',
+          },
+        },
+      ],
+    ],
+    [
+      'an overlong search id',
+      [
+        {
+          searchId: 'x'.repeat(513),
+          query: { kind: 'basename-any', basenames: ['objects'], caseSensitive: false },
+        },
+      ],
+    ],
+    [
+      'too many basenames',
+      [
+        {
+          searchId: 'too-many-terms',
+          query: {
+            kind: 'basename-any',
+            basenames: Array.from({ length: 17 }, (_, index) => `marker-${String(index)}`),
+            caseSensitive: true,
+          },
+        },
+      ],
+    ],
+  ])('rejects namespace searches with %s', async (_label, searches) => {
+    const original = await originalMapSession(workspaceFiles())
+    const result = await coordinateMapPreviewAssetSession({
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'maps-preview-search-invalid', classes: [] },
+      budgets: activationBudget,
+      original: original.session,
+      preparation: previewPreparation(
+        async () =>
+          ({
+            state: 'namespace-search-required',
+            searches,
+            diagnostics: [],
+          }) as never,
+      ),
+      maxCandidates: 8,
+      maxSubjectEntries: 64,
+      maxSubjectPages: 4,
+      maxRoots: 4,
+      maxDepth: 4,
+      limits: coordinatorLimits,
+    })
+
+    expect(result).toMatchObject({
+      state: 'unresolved',
+      diagnostics: [{ code: 'x3.host/map-preview-preparation-invalid' }],
+    })
+    expect(original.namespaceRelease).toHaveBeenCalledOnce()
+    await original.session.dispose()
+  })
+
+  it('rejects namespace fact entry and page budgets above the common hard caps', async () => {
+    for (const limits of [
+      { maxSubjectEntries: 20_001, maxSubjectPages: 64 },
+      { maxSubjectEntries: 4_096, maxSubjectPages: 257 },
+    ]) {
+      const original = await originalMapSession(workspaceFiles())
+      await expect(
+        coordinateMapPreviewAssetSession({
+          services: { ...composition, serviceDefinitions: definitions },
+          grant: { id: 'maps-preview-search-budget-invalid', classes: [] },
+          budgets: activationBudget,
+          original: original.session,
+          preparation: previewPreparation(async () => ({
+            state: 'not-applicable',
+            diagnostics: [],
+          })),
+          maxCandidates: 8,
+          ...limits,
+          maxRoots: 4,
+          maxDepth: 4,
+          limits: coordinatorLimits,
+        }),
+      ).rejects.toThrow(/must be no greater than/u)
+      expect(original.namespaceRelease).not.toHaveBeenCalled()
+      await original.session.dispose()
+    }
+  })
+
+  it('releases the indexed-search lease exactly once on cursor loops and aborts', async () => {
+    for (const mode of ['cursor-loop', 'abort'] as const) {
+      const controller = new AbortController()
+      const search: NonNullable<NamespaceEntrySource['search']> = async (_query, page, signal) => {
+        if (mode === 'abort') {
+          controller.abort()
+          signal?.throwIfAborted()
+        }
+        return {
+          items: [
+            {
+              id: 'objects',
+              path: 'objects',
+              name: 'objects',
+              kind: 'file',
+              size: 1n,
+              revision: revisionId('provider-token:search-loop'),
+            },
+          ],
+          nextCursor: page.cursor ?? 'same',
+        }
+      }
+      const original = await originalMapSession(workspaceFiles(), true, search)
+      const result = await coordinateMapPreviewAssetSession({
+        services: { ...composition, serviceDefinitions: definitions },
+        grant: { id: `maps-preview-search-${mode}`, classes: [] },
+        budgets: activationBudget,
+        original: original.session,
+        preparation: previewPreparation(async () => ({
+          state: 'namespace-search-required',
+          searches: [
+            {
+              searchId: 'fixture-markers',
+              query: {
+                kind: 'basename-any',
+                basenames: ['objects'],
+                caseSensitive: false,
+              },
+            },
+          ],
+          diagnostics: [],
+        })),
+        maxCandidates: 8,
+        maxSubjectEntries: 64,
+        maxSubjectPages: 4,
+        maxRoots: 4,
+        maxDepth: 4,
+        limits: coordinatorLimits,
+        ...(mode === 'abort' ? { signal: controller.signal } : {}),
+      })
+      expect(result).toMatchObject({ state: 'unresolved' })
+      expect(original.namespaceRelease).toHaveBeenCalledTimes(2)
+      expect(original.session.state()).toBe('live')
+      await original.session.dispose()
+    }
   })
 
   it.each([

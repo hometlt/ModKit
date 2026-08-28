@@ -6,6 +6,7 @@ import type { ModWorkspaceGraphInput, ModWorkspaceLock } from '../mods/index.js'
 import type { ResourceProvenanceRecord } from '../resource-session.js'
 import type { ServiceProviderModule } from '../runtime-abi.js'
 import type { JsonValue } from '../asset-capabilities/types.js'
+import type { NamespaceEntrySearchQuery } from '../asset-capabilities/data-sources.js'
 
 /** Standard service coordinate for game-specific semantic map opening. */
 export const MAP_SEMANTIC_ANALYSIS_CONTRACT = 'common.map/semantic-analysis' as const
@@ -45,6 +46,19 @@ export interface MapPreviewPreparationNamespaceIndex {
   readonly entries: readonly MapPreviewPreparationNamespaceEntry[]
 }
 
+/** One provider-requested lookup executed by the host against an optional namespace index. */
+export interface MapPreviewPreparationNamespaceSearchRequest {
+  readonly searchId: string
+  readonly query: NamespaceEntrySearchQuery
+}
+
+/** JSON-only bounded facts returned by the host on the next preparation call. */
+export interface MapPreviewPreparationNamespaceSearchIndex {
+  readonly searchId: string
+  readonly state: 'unsupported' | 'complete' | 'truncated'
+  readonly entries: readonly MapPreviewPreparationNamespaceEntry[]
+}
+
 /** JSON-safe descriptor facts exposed to a preparation provider; no live session crosses the ABI. */
 export interface MapPreviewPreparationSubject {
   readonly schemaVersion: 1
@@ -56,6 +70,8 @@ export interface MapPreviewPreparationSubject {
   readonly operations: readonly Readonly<{ id: string; state: string }>[]
   /** Bounded host listing used for multi-map selection/root detection without namespace authority. */
   readonly namespace: MapPreviewPreparationNamespaceIndex
+  /** Results of one host-owned indexed-search round; absent on older hosts, empty initially. */
+  readonly namespaceSearches?: readonly MapPreviewPreparationNamespaceSearchIndex[]
 }
 
 export interface MapPreviewPreparationDiagnostic {
@@ -136,6 +152,11 @@ export type MapPreviewPreparationResult =
   | Readonly<{
       state: 'selection-required'
       candidates: readonly MapPreviewSelectionCandidate[]
+      diagnostics: readonly MapPreviewPreparationDiagnostic[]
+    }>
+  | Readonly<{
+      state: 'namespace-search-required'
+      searches: readonly MapPreviewPreparationNamespaceSearchRequest[]
       diagnostics: readonly MapPreviewPreparationDiagnostic[]
     }>
   | Readonly<{

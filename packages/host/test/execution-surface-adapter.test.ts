@@ -102,6 +102,7 @@ describe('standard surface registry (NXT-103 → NXT-105 adapter)', () => {
     })
     const namespace = registry.surfaceFor('common.view/namespace-entry-source', 1)
     expect(namespace?.methods['openEntry']).toMatchObject({ kind: 'leased-value' })
+    expect(namespace?.methods['search']).toMatchObject({ kind: 'value', optional: true })
     const session = registry.surfaceFor(ABI_ASSET_SESSION.contract, 1)
     expect(session?.fields).toEqual(['revision'])
     expect(session?.releaseVia).toBe('dispose')
@@ -203,6 +204,11 @@ describe('standard data-source objects round-trip through the RPC core with the 
       list: async () => ({
         items: [{ id: 'a', path: '/a', name: 'a', kind: 'file', revision: 'r1' }],
       }),
+      search: async (query: { basenames: readonly string[] }) => ({
+        items: query.basenames.includes('a')
+          ? [{ id: 'a', path: '/a', name: 'a', kind: 'file', revision: 'r1' }]
+          : [],
+      }),
       openEntry: async (id: string) => ({
         value: { kind: 'entry', id, revision: 'r1' },
         release: async () => void releasedEntries.push(id),
@@ -267,11 +273,21 @@ describe('standard data-source objects round-trip through the RPC core with the 
   it('NamespaceEntrySource.openEntry is a leased value: data by copy, release-only lease', async () => {
     const { holder: root, worker } = await open()
     const namespace = (await (root['namespace'] as () => Promise<Record<string, unknown>>)()) as {
+      search(
+        query: unknown,
+        page: unknown,
+        signal?: AbortSignal,
+      ): Promise<{ items: readonly { path: string }[] }>
       openEntry(
         id: string,
         s?: AbortSignal,
       ): Promise<{ value: { id: string }; release(): Promise<void> }>
     }
+    const found = await namespace.search(
+      { kind: 'basename-any', basenames: ['a'], caseSensitive: true },
+      { limit: 8 },
+    )
+    expect(found.items).toEqual([{ id: 'a', path: '/a', name: 'a', kind: 'file', revision: 'r1' }])
     const lease = await namespace.openEntry('a')
     expect(lease.value).toEqual({ kind: 'entry', id: 'a', revision: 'r1' })
     const before = worker.counters().localHandles

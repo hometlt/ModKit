@@ -64,6 +64,69 @@ describe('CASC namespace adapter', () => {
     })
   })
 
+  it('searches marker basenames in bounded source-index pages without retaining every match', async () => {
+    const commonEntries = Object.freeze(
+      Array.from({ length: 20_000 }, (_, index) => ({
+        path: `maps/map-${String(index).padStart(5, '0')}.sc2map/index`,
+        contentSize: index + 1,
+      })),
+    )
+    const byPath = new Map(commonEntries.map(item => [item.path, item]))
+    const namespace = createCascNamespaceSource(
+      {
+        entries: commonEntries,
+        resolveFile(path: string) {
+          return byPath.get(path)
+        },
+      },
+      sourceRef,
+      revision,
+    )
+    const first = await namespace.search(
+      { kind: 'basename-any', basenames: ['INDEX'], caseSensitive: false },
+      { limit: 2 },
+    )
+    expect(first.items.map(item => item.path)).toEqual([
+      'maps/map-00000.sc2map/index',
+      'maps/map-00001.sc2map/index',
+    ])
+    expect(first.nextCursor).toBe('2')
+    const second = await namespace.search(
+      { kind: 'basename-any', basenames: ['index'], caseSensitive: false },
+      { cursor: first.nextCursor, limit: 2 },
+    )
+    expect(second.items.map(item => item.path)).toEqual([
+      'maps/map-00002.sc2map/index',
+      'maps/map-00003.sc2map/index',
+    ])
+
+    await expect(
+      namespace.search(
+        { kind: 'basename-any', basenames: ['index', 'INDEX'], caseSensitive: false },
+        { limit: 1 },
+      ),
+    ).rejects.toMatchObject({ code: 'x3.casc/search-query-invalid' })
+    await expect(
+      namespace.search(
+        {
+          kind: 'basename-any',
+          basenames: Array.from(
+            { length: CASC_LIMITS.maxSearchBasenames + 1 },
+            (_, index) => `marker-${String(index)}`,
+          ),
+          caseSensitive: true,
+        },
+        { limit: 1 },
+      ),
+    ).rejects.toMatchObject({ code: 'x3.casc/search-query-invalid' })
+    await expect(
+      namespace.search(
+        { kind: 'basename-any', basenames: ['index'], caseSensitive: false },
+        { cursor: '20001', limit: 1 },
+      ),
+    ).rejects.toMatchObject({ code: 'x3.casc/search-cursor-invalid' })
+  })
+
   it('chunks Host reads and rejects oversized ranges before opening a file', async () => {
     const size = CASC_LIMITS.maxHostReadBytes + 1
     const reads: number[] = []

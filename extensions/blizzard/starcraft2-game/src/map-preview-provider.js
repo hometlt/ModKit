@@ -17,6 +17,10 @@ const REQUIRED_DOCUMENTS = Object.freeze({
   regions: new Set(['regions']),
   terrain: new Set(['t3heightmap', 'mapheightmap']),
 })
+const NAMESPACE_MARKER_SEARCH_ID = 'sc2-map-marker-documents'
+const NAMESPACE_MARKER_BASENAMES = Object.freeze(
+  [...new Set(Object.values(REQUIRED_DOCUMENTS).flatMap(names => [...names]))].sort(),
+)
 
 export const STARCRAFT2_MAP_PREVIEW_PREPARATION_ID = 'org.modkitx.blizzard.starcraft2.map-preview'
 
@@ -126,6 +130,76 @@ function validateNamespace(subject) {
     entries: Object.freeze(entries),
     observed: entries.length,
   })
+}
+
+function validateNamespaceSearches(subject) {
+  if (subject.namespaceSearches === undefined) return Object.freeze([])
+  if (!Array.isArray(subject.namespaceSearches) || subject.namespaceSearches.length > 8) {
+    throw new TypeError('subject.namespaceSearches must be a bounded array when supplied')
+  }
+  let observed = 0
+  const searches = subject.namespaceSearches.map((search, searchIndex) => {
+    const value = recordOf(search)
+    if (
+      value === undefined ||
+      !Object.keys(value).every(
+        key => key === 'searchId' || key === 'state' || key === 'entries',
+      ) ||
+      typeof value.searchId !== 'string' ||
+      value.searchId.length === 0 ||
+      value.searchId.length > 512 ||
+      value.searchId.includes('\0') ||
+      !['unsupported', 'complete', 'truncated'].includes(String(value.state)) ||
+      !Array.isArray(value.entries)
+    ) {
+      throw new TypeError(`subject.namespaceSearches[${searchIndex}] is malformed`)
+    }
+    const entries = value.entries.map((entry, entryIndex) => {
+      const item = recordOf(entry)
+      if (
+        item === undefined ||
+        !Object.keys(item).every(key => key === 'path' || key === 'kind' || key === 'size') ||
+        typeof item.path !== 'string' ||
+        (item.kind !== 'file' && item.kind !== 'directory') ||
+        (item.size !== undefined &&
+          (typeof item.size !== 'string' || !/^(?:0|[1-9][0-9]*)$/u.test(item.size)))
+      ) {
+        throw new TypeError(
+          `subject.namespaceSearches[${searchIndex}].entries[${entryIndex}] is malformed`,
+        )
+      }
+      observed += 1
+      if (observed > MAXIMUM_NAMESPACE_ENTRIES) {
+        throw new TypeError('subject.namespaceSearches exceed the provider entry budget')
+      }
+      return item
+    })
+    return Object.freeze({
+      searchId: value.searchId,
+      state: value.state,
+      entries: Object.freeze(entries),
+    })
+  })
+  if (new Set(searches.map(search => search.searchId)).size !== searches.length) {
+    throw new TypeError('subject.namespaceSearches contains duplicate searchId values')
+  }
+  return Object.freeze(searches)
+}
+
+function mergeNamespaceEntries(...groups) {
+  const byIdentity = new Map()
+  for (const entries of groups) {
+    for (const entry of entries) {
+      let identity
+      try {
+        identity = `${normalizeLogicalPath(entry.path, 'namespace entry path')}\0${entry.kind}`
+      } catch {
+        identity = `${entry.path}\0${entry.kind}`
+      }
+      if (!byIdentity.has(identity)) byIdentity.set(identity, entry)
+    }
+  }
+  return Object.freeze([...byIdentity.values()])
 }
 
 function hasNamespaceSource(subject) {
@@ -318,6 +392,7 @@ export async function prepareStarcraft2MapPreview(request) {
   }
 
   const namespace = validateNamespace(value.subject)
+  const namespaceSearches = validateNamespaceSearches(value.subject)
   if (namespace.state === 'over-budget') {
     return Object.freeze({
       state: 'unresolved',
@@ -344,7 +419,55 @@ export async function prepareStarcraft2MapPreview(request) {
     })
   }
 
-  const discovered = discoverCandidates(value.subject, namespace)
+  const markerSearch = namespaceSearches.find(
+    search => search.searchId === NAMESPACE_MARKER_SEARCH_ID,
+  )
+  if (value.subject.formatId === CASC_FORMAT_ID && namespace.state === 'truncated') {
+    if (markerSearch === undefined) {
+      return Object.freeze({
+        state: 'namespace-search-required',
+        searches: Object.freeze([
+          Object.freeze({
+            searchId: NAMESPACE_MARKER_SEARCH_ID,
+            query: Object.freeze({
+              kind: 'basename-any',
+              basenames: NAMESPACE_MARKER_BASENAMES,
+              caseSensitive: false,
+            }),
+          }),
+        ]),
+        diagnostics: Object.freeze([
+          diagnostic(
+            'information',
+            'org.modkitx.blizzard.starcraft2/map-preview-indexed-marker-search-required',
+            'the bounded CASC root listing is incomplete; requesting one bounded host-owned basename search for map marker documents',
+          ),
+        ]),
+      })
+    }
+    if (markerSearch.state === 'unsupported') {
+      return Object.freeze({
+        state: 'unresolved',
+        diagnostics: Object.freeze([
+          diagnostic(
+            'warning',
+            'org.modkitx.blizzard.starcraft2/map-preview-indexed-marker-search-unsupported',
+            'the CASC namespace does not provide the indexed basename search required for bounded map discovery',
+          ),
+        ]),
+      })
+    }
+  }
+
+  const discoveryNamespace =
+    value.subject.formatId === CASC_FORMAT_ID && namespace.state === 'truncated' && markerSearch
+      ? Object.freeze({
+          state: markerSearch.state,
+          entries: mergeNamespaceEntries(namespace.entries, markerSearch.entries),
+        })
+      : namespace
+
+  const discovered = discoverCandidates(value.subject, discoveryNamespace)
   if (discovered.state === 'collision') {
     return Object.freeze({
       state: 'unresolved',
@@ -368,20 +491,8 @@ export async function prepareStarcraft2MapPreview(request) {
             { refusedPaths: discovered.refusedPaths },
           ),
         ]
-  if (discovered.candidates.length > value.maxCandidates) {
-    return Object.freeze({
-      state: 'unresolved',
-      diagnostics: Object.freeze([
-        ...findings,
-        diagnostic(
-          'error',
-          'org.modkitx.blizzard.starcraft2/map-preview-candidate-budget-exceeded',
-          `found ${discovered.candidates.length} map roots but maxCandidates is ${value.maxCandidates}`,
-          { observed: discovered.candidates.length, maximum: value.maxCandidates },
-        ),
-      ]),
-    })
-  }
+  const offeredCandidates = discovered.candidates.slice(0, value.maxCandidates)
+  const candidateListTruncated = offeredCandidates.length < discovered.candidates.length
   const selected =
     value.selectionId === undefined
       ? undefined
@@ -401,38 +512,53 @@ export async function prepareStarcraft2MapPreview(request) {
   }
   if (discovered.candidates.length === 0) {
     return Object.freeze({
-      state: namespace.state === 'complete' ? 'not-applicable' : 'unresolved',
+      state: discoveryNamespace.state === 'complete' ? 'not-applicable' : 'unresolved',
       diagnostics: Object.freeze([
         ...findings,
         diagnostic(
-          namespace.state === 'complete' ? 'information' : 'warning',
-          namespace.state === 'complete'
+          discoveryNamespace.state === 'complete' ? 'information' : 'warning',
+          discoveryNamespace.state === 'complete'
             ? 'org.modkitx.blizzard.starcraft2/map-preview-map-absent'
             : 'org.modkitx.blizzard.starcraft2/map-preview-namespace-truncated-prefix-discovery-required',
-          namespace.state === 'complete'
+          discoveryNamespace.state === 'complete'
             ? 'the complete subject namespace contains no root with Objects, Regions and t3HeightMap documents'
             : 'the bounded CASC root listing ended before any complete SC2 map root was proved; the host must add a bounded prefix-discovery round before retrying preparation',
-          ...(namespace.state === 'complete' ? [] : [{ namespaceState: namespace.state }]),
+          ...(discoveryNamespace.state === 'complete'
+            ? []
+            : [{ namespaceState: discoveryNamespace.state }]),
         ),
       ]),
     })
   }
   if (
     selected === undefined &&
-    (namespace.state === 'truncated' || discovered.candidates.length > 1)
+    (discoveryNamespace.state === 'truncated' || discovered.candidates.length > 1)
   ) {
     return Object.freeze({
       state: 'selection-required',
-      candidates: selectionCandidates(discovered.candidates),
+      candidates: selectionCandidates(offeredCandidates),
       diagnostics: Object.freeze([
         ...findings,
-        ...(namespace.state === 'truncated'
+        ...(candidateListTruncated
+          ? [
+              diagnostic(
+                'warning',
+                'org.modkitx.blizzard.starcraft2/map-preview-candidate-list-truncated',
+                `found ${discovered.candidates.length} map roots; this bounded selection page exposes the first ${offeredCandidates.length} stable candidates without choosing one`,
+                {
+                  observed: discovered.candidates.length,
+                  offered: offeredCandidates.length,
+                },
+              ),
+            ]
+          : []),
+        ...(discoveryNamespace.state === 'truncated'
           ? [
               diagnostic(
                 'warning',
                 'org.modkitx.blizzard.starcraft2/map-preview-namespace-truncated-selection-required',
                 'the bounded CASC listing may omit other maps; an observed root must be selected explicitly and is never guessed, while broader choices require a bounded host prefix-discovery round',
-                { namespaceState: namespace.state },
+                { namespaceState: discoveryNamespace.state },
               ),
             ]
           : []),
@@ -465,7 +591,7 @@ export async function prepareStarcraft2MapPreview(request) {
     plan: preparedPlan(value.subject, active),
     diagnostics: Object.freeze([
       ...findings,
-      ...(namespace.state === 'truncated'
+      ...(discoveryNamespace.state === 'truncated'
         ? [
             diagnostic(
               'warning',

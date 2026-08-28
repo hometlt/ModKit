@@ -10,6 +10,7 @@ export const CASC_LIMITS = Object.freeze({
   maxSourceReadBytes: 256 * 1024 * 1024,
   maxEntries: 750_000,
   maxPageItems: 256,
+  maxSearchBasenames: 16,
   maxPathBytes: 4096,
 })
 
