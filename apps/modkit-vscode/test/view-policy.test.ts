@@ -40,7 +40,7 @@ const CATALOG: readonly StageFacts[] = [
   { id: 'model', label: 'Model', contract: 'common.view/model-scene-source' },
   { id: 'audio', label: 'Audio', contract: 'common.view/audio-media-source' },
   { id: 'video', label: 'Video', contract: 'common.view/video-media-source' },
-  { id: 'entries', label: 'Entries', contract: 'common.view/namespace-entry-source' },
+  { id: 'archive', label: 'Entries', contract: 'common.view/namespace-entry-source' },
   { id: 'table', label: 'Table', contract: 'common.view/table-data-source' },
   { id: 'tree', label: 'Tree', contract: 'common.view/tree-data-source' },
   { id: 'relations', label: 'Relations', contract: 'common.view/relation-graph-source' },
@@ -51,7 +51,7 @@ const CATALOG: readonly StageFacts[] = [
     trait: 'content.text',
   },
   {
-    id: 'text-virtual',
+    id: 'virtual-text',
     label: 'Text (streaming)',
     contract: 'common.view/text-data-source',
     trait: 'content.text',
@@ -195,6 +195,17 @@ describe('VS Code view policy', () => {
     expect(source).not.toContain('@modkitx-x3/ui/monaco')
     expect(source).not.toContain('@modkitx-x3/ui/settings')
     expect(source).not.toContain('@modkitx-x3/ui/workbench')
+    for (const id of ['relations', 'text-editor', 'edit', 'metadata', 'hex-editor']) {
+      expect(source).toMatch(
+        new RegExp(`id: '${id}',[\\s\\S]*?appLocal: true,[\\s\\S]*?\\n    \\}`, 'u'),
+      )
+    }
+    for (const id of ['archive', 'text', 'virtual-text', 'hex']) {
+      const start = source.indexOf(`id: '${id}'`)
+      const nextStage = source.indexOf('\n    {', start)
+      const block = source.slice(start, nextStage < 0 ? source.length : nextStage)
+      expect(block, `${id} remains governed by the generated plan`).not.toContain('appLocal: true')
+    }
   })
 
   it('ranks every stage the catalog declares, with no duplicates', () => {

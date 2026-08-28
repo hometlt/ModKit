@@ -471,7 +471,7 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       module: videoViewer,
     },
     {
-      id: 'entries',
+      id: 'archive',
       label: 'Entries',
       contract: 'common.view/namespace-entry-source',
       module: archiveStage(context),
@@ -486,7 +486,7 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       trait: 'content.text',
     },
     {
-      id: 'text-virtual',
+      id: 'virtual-text',
       label: 'Text (streaming)',
       contract: 'common.view/text-data-source',
       module: virtualTextViewer,
@@ -504,6 +504,7 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       label: 'Metadata',
       contract: 'common.view/byte-range-source',
       module: metadataPanel,
+      appLocal: true,
     },
     { id: 'hex', label: 'Hex', contract: 'common.view/byte-range-source', module: hexViewer },
     /*
@@ -517,6 +518,7 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       module: textEditor,
       trait: 'content.text',
       editable: true,
+      appLocal: true,
     },
     {
       id: 'hex-editor',
@@ -524,6 +526,7 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       contract: 'common.view/byte-range-source',
       module: hexEditor,
       editable: true,
+      appLocal: true,
     },
   ] satisfies readonly PreviewStage[])
 }

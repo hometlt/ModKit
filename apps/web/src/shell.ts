@@ -38,7 +38,7 @@ import {
   nestedSubjectServices,
   openNestedSubject,
   resolveFormatWriter,
-  resolveModelWorldPresentationPlan,
+  resolveCommonPresentationPlan,
   type OpenSubjectResult,
 } from '@modkitx-x3/host'
 import type {
@@ -94,7 +94,12 @@ import {
   EXTENSIONS_READ_ONLY_REASON,
   WEB_THEMES,
 } from './settings.js'
-import { createWebPreviewStages, WEB_EDITING_NOTICE, WEB_PREVIEW_FALLBACK } from './views.js'
+import {
+  createWebPreviewStages,
+  stageIdOf,
+  WEB_EDITING_NOTICE,
+  WEB_PREVIEW_FALLBACK,
+} from './views.js'
 
 /** Served resources the app offers as a starting point when no folder can be granted. */
 const SAMPLES: readonly { readonly path: string; readonly label: string }[] = Object.freeze([
@@ -657,11 +662,15 @@ async function boot(): Promise<void> {
         dispose(): Promise<void>
       }
       const key = descriptorKey(result.descriptor)
-      const presentation = await resolveModelWorldPresentationPlan(result.descriptor, {
-        sessionId: `pwa:${key}`,
-        providerId: result.selected.contributionId,
-        variantId: result.selected.variantId,
-      })
+      const presentation = await resolveCommonPresentationPlan(
+        result.descriptor,
+        {
+          sessionId: `pwa:${key}`,
+          providerId: result.selected.contributionId,
+          variantId: result.selected.variantId,
+        },
+        { availableStageIds: stages.map(stageIdOf) },
+      )
       const operations = session.operations()
       let commandAuthority: WebCommandSubjectLease | undefined
       /*

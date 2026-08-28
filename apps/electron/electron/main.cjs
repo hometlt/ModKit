@@ -16,7 +16,6 @@ const path = require('node:path')
 const { pathToFileURL } = require('node:url')
 const { readSettings, writeSettings } = require('./settings-store.cjs')
 const BUNDLED_EXTENSION_DIRECTORIES = require('../generated/bundled-catalog.cjs')
-const PRESENTATION_CATALOG = require('../generated/presentation-catalog.cjs')
 
 const RENDERER = path.join(__dirname, '..', 'dist-app', 'index.html')
 
@@ -455,12 +454,12 @@ async function createWindow() {
     try {
       presentation = await resolveElectronPresentationPlan(
         opened.descriptor,
-        PRESENTATION_CATALOG,
         {
           sessionId,
           contributionId: result.selected.contributionId,
           variantId: result.selected.variantId,
         },
+        { sourceBytes: source.size },
       )
     } catch (error) {
       await opened.session.dispose()

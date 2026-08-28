@@ -6,11 +6,10 @@
  * (`addEventListener`), which is what a Node `worker_threads` MessagePort provides natively.
  * No Electron binary is involved; the adapters, surfaces and endpoints are the production ones.
  */
-import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { MessageChannel, type MessagePort as NodeMessagePort } from 'node:worker_threads'
 import { afterEach, describe, expect, it } from 'vitest'
-import { revisionId, type ArtifactByteSource, type PresentationSlot } from '@modkitx-x3/sdk'
+import { revisionId, type ArtifactByteSource } from '@modkitx-x3/sdk'
 import {
   createEndpoint,
   createStandardSurfaceRegistry,
@@ -31,10 +30,6 @@ import {
 } from '../src/index.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
-const presentationCatalog = createRequire(import.meta.url)(
-  '../generated/presentation-catalog.cjs',
-) as readonly PresentationSlot[]
-
 function memorySource(name: string, text: string): ArtifactByteSource {
   const bytes = new TextEncoder().encode(text)
   return {
@@ -140,11 +135,15 @@ describe('Electron subject RPC — the production pair without the binary', () =
       const sessionId = 'rpc-session-1'
       const presentation = await resolveElectronPresentationPlan(
         result.descriptor,
-        presentationCatalog,
         {
           sessionId,
           contributionId: result.selected.contributionId,
           variantId: result.selected.variantId,
+        },
+        {
+          sourceBytes: BigInt(
+            new TextEncoder().encode('{"name":"Modkit","items":[1,2,3]}').byteLength,
+          ),
         },
       )
       return {

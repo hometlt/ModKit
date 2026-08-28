@@ -1,7 +1,6 @@
-import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { revisionId, type ArtifactByteSource, type PresentationSlot } from '@modkitx-x3/sdk'
+import { revisionId, type ArtifactByteSource } from '@modkitx-x3/sdk'
 import type { Diagnostic } from '@modkitx-x3/core'
 import {
   codecFidelityEvidenceRecords,
@@ -11,10 +10,6 @@ import {
 } from '../src/index.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
-const presentationCatalog = createRequire(import.meta.url)(
-  '../generated/presentation-catalog.cjs',
-) as readonly PresentationSlot[]
-
 function memorySource(text: string): ArtifactByteSource {
   const bytes = new TextEncoder().encode(text)
   return {
@@ -78,12 +73,12 @@ describe('Electron host-owned subject services', () => {
     ).toHaveLength(2)
     const presentation = await resolveElectronPresentationPlan(
       result.descriptor,
-      presentationCatalog,
       {
         sessionId: 'electron-session',
         contributionId: result.selected.contributionId,
         variantId: result.selected.variantId,
       },
+      { sourceBytes: BigInt(new TextEncoder().encode('{"ready":true}').byteLength) },
     )
     expect(presentation).toMatchObject({ activeStage: 'code', alternateStages: ['tree'] })
     const tree = await result.session.dataSource('common.view/tree-data-source', 1)

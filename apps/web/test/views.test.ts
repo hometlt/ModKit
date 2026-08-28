@@ -80,15 +80,26 @@ describe('web preview policy', () => {
       'model',
       'audio',
       'video',
-      'entries',
+      'archive',
       'table',
       'tree',
       'text',
-      'text-virtual',
+      'virtual-text',
       'metadata',
       'hex',
       ...EDITABLE_STAGE_IDS,
     ])
+  })
+
+  it('marks only the app-owned metadata and editor surfaces as plan-independent', () => {
+    expect(stages.filter(stage => stage.appLocal === true).map(stageIdOf)).toEqual([
+      'metadata',
+      'text-editor',
+      'hex-editor',
+    ])
+    expect(stages.find(stage => stageIdOf(stage) === 'archive')?.appLocal).not.toBe(true)
+    expect(stages.find(stage => stageIdOf(stage) === 'text')?.appLocal).not.toBe(true)
+    expect(stages.find(stage => stageIdOf(stage) === 'hex')?.appLocal).not.toBe(true)
   })
 
   it('drops every editable stage in a host with no editor ports, and only those', () => {
@@ -98,8 +109,8 @@ describe('web preview policy', () => {
     )
     const readOnly = applicableStages(stages, descriptor).map(stageIdOf)
     const editing = applicableStages(stages, descriptor, { editorPorts: true }).map(stageIdOf)
-    expect(readOnly).toEqual(['text', 'text-virtual', 'metadata', 'hex'])
-    expect(editing).toEqual(['text', 'text-virtual', 'metadata', 'hex', ...EDITABLE_STAGE_IDS])
+    expect(readOnly).toEqual(['text', 'virtual-text', 'metadata', 'hex'])
+    expect(editing).toEqual(['text', 'virtual-text', 'metadata', 'hex', ...EDITABLE_STAGE_IDS])
   })
 
   it('resolves image, tree, metadata and hex for a real PNG, and no text stage', async () => {
@@ -113,7 +124,7 @@ describe('web preview policy', () => {
     expect(ids).toContain('hex')
     // The PNG publishes no text data source, so no text stage may be offered for it.
     expect(ids).not.toContain('text')
-    expect(ids).not.toContain('text-virtual')
+    expect(ids).not.toContain('virtual-text')
     expect(descriptor.dataSources.map(offer => offer.contract)).toContain(
       'common.view/raster-image-source',
     )
@@ -123,7 +134,7 @@ describe('web preview policy', () => {
     const { ids } = await stageIdsFor(join(publicDir, 'samples', 'sample.csv'), 'sample.csv')
     expect(ids).toContain('table')
     expect(ids).toContain('text')
-    expect(ids).toContain('text-virtual')
+    expect(ids).toContain('virtual-text')
     expect(ids).toContain('hex')
   }, 30_000)
 
@@ -146,7 +157,7 @@ describe('web preview policy', () => {
     })
     if (result.state !== 'opened') throw new Error(`sample.zip did not open: ${result.reason}`)
     const descriptor = await result.session.descriptor()
-    expect(applicableStages(stages, descriptor).map(stageIdOf)).toContain('entries')
+    expect(applicableStages(stages, descriptor).map(stageIdOf)).toContain('archive')
 
     // the namespace lists the entries the archive really holds
     const namespace = await result.session.dataSource('common.view/namespace-entry-source', 1)
@@ -195,7 +206,7 @@ describe('web preview policy', () => {
     expect(applicableStages(stages, treeShaped).map(stageIdOf)).toEqual([
       'tree',
       'text',
-      'text-virtual',
+      'virtual-text',
       'metadata',
       'hex',
     ])
@@ -211,7 +222,7 @@ describe('web preview policy', () => {
     expect(applicableStages(stages, tableShaped).map(stageIdOf)).toEqual([
       'table',
       'text',
-      'text-virtual',
+      'virtual-text',
       'metadata',
       'hex',
     ])
@@ -235,7 +246,7 @@ describe('web preview policy', () => {
       ['container.entries'],
     )
     expect(applicableStages(stages, archive).map(stageIdOf)).toEqual([
-      'entries',
+      'archive',
       'tree',
       'metadata',
       'hex',

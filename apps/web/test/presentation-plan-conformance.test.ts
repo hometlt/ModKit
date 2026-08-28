@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   assembleSubjectDescriptor,
   presentationSemanticHash,
+  resolveCommonPresentationPlan,
   resolveModelWorldPresentationPlan,
 } from '@modkitx-x3/host'
 import {
@@ -23,12 +24,15 @@ import {
   type PresentationSlot,
   type ResolvedMapWorkspaceSnapshot,
   type ResourceBudget,
+  type TreeDataSource,
   type ViewerModule,
   type WorldScenePageRequest,
   type WorldSceneSource,
 } from '@modkitx-x3/sdk'
 import { drainModelProjection } from '@modkitx-x3/testkit'
 import { createCodecPreview } from '@modkitx-x3/ui/explorer'
+import { createWebPreviewStages, stageIdOf } from '../src/views.js'
+import { STAGE_ORDER as VSCODE_STAGE_ORDER } from '../../modkit-vscode/src/view-policy.js'
 import { createCandidateWorldSceneLease } from '../../../packages/host/src/maps/world-source.js'
 import { resolvedDescriptorWire } from '../../../packages/host/test/fixtures/descriptor.js'
 
@@ -281,6 +285,209 @@ async function worldDescriptor(
 }
 
 describe('PWA / VS Code resolved presentation conformance', () => {
+  it('keeps app-local surfaces without reviving a global stage rejected by the host plan', async () => {
+    const name = 'minimal.odt'
+    const bytes = new Uint8Array(
+      await readFile(
+        join(repositoryRoot, 'packages', 'testkit', 'test', 'fixtures', 'mk2-synthetic', name),
+      ),
+    )
+    const subject = await (
+      await codecFor(
+        join(repositoryRoot, 'extensions', 'common', 'documents', 'src', 'odt', 'codec.js'),
+      )
+    ).open(inputFor(name, bytes), 'full', budget)
+    const descriptor = await subject.descriptor()
+    if (descriptor.interpretation !== 'codec') throw new Error('ODT did not produce a descriptor')
+    const resolved = await resolveCommonPresentationPlan(
+      descriptor,
+      {
+        sessionId: 'bounded-global',
+        providerId: 'org.modkitx/odt',
+        variantId: 'portable',
+      },
+      {
+        availableStageIds: ['code', 'tree'],
+        // Monaco is catalogued for at most 8 MiB, so the host deliberately excludes it.
+        sourceBytes: 9n * 1_024n * 1_024n,
+      },
+    )
+    if (resolved === undefined) throw new Error('the bounded fixture has no presentation plan')
+    expect(resolved.plan.slots.map(slot => slot.slotId)).toEqual(['tree'])
+
+    const viewer: ViewerModule = {
+      abiVersion: 1,
+      async mount() {
+        return { update: async () => undefined, unmount: async () => undefined }
+      },
+    }
+    const preview = createCodecPreview({
+      stages: [
+        {
+          id: 'code',
+          label: 'Code',
+          contract: 'common.view/text-data-source',
+          trait: 'content.text',
+          module: viewer,
+        },
+        {
+          id: 'tree',
+          label: 'Tree',
+          contract: 'common.view/tree-data-source',
+          module: viewer,
+        },
+        {
+          id: 'metadata',
+          label: 'Metadata',
+          contract: 'common.view/byte-range-source',
+          module: viewer,
+          appLocal: true,
+        },
+        {
+          id: 'text-editor',
+          label: 'Text editor',
+          contract: 'common.view/text-data-source',
+          trait: 'content.text',
+          module: viewer,
+          editable: true,
+          appLocal: true,
+        },
+      ],
+      async openSession() {
+        return {
+          presentation: resolved.plan,
+          descriptor: async () => descriptor as unknown as Record<string, unknown>,
+          async dataSource() {
+            return { value: {} }
+          },
+          async dispose() {
+            return undefined
+          },
+        }
+      },
+      editorPorts: () => ({ edit: {}, commit: {}, payloads: {}, authorization: {} }),
+    })
+    const handle = await preview.open(
+      { replaceChildren: () => undefined } as never,
+      { id: 'large.txt', name: 'large.txt', directory: false },
+      new Uint8Array(),
+    )
+    if (handle === undefined) throw new Error('the bounded fixture did not mount')
+    expect(handle.views.map(view => view.id)).toEqual(['tree', 'metadata', 'text-editor'])
+    expect(handle.activeView).toBe('tree')
+    await handle.unmount()
+    await subject.dispose()
+  })
+
+  it('opens one common ODT document from the same host plan in PWA, VS Code and headless without invoking a writer', async () => {
+    const name = 'minimal.odt'
+    const bytes = new Uint8Array(
+      await readFile(
+        join(repositoryRoot, 'packages', 'testkit', 'test', 'fixtures', 'mk2-synthetic', name),
+      ),
+    )
+    const session = await (
+      await codecFor(
+        join(repositoryRoot, 'extensions', 'common', 'documents', 'src', 'odt', 'codec.js'),
+      )
+    ).open(inputFor(name, bytes), 'full', budget)
+    const descriptor = await session.descriptor()
+    if (descriptor.interpretation !== 'codec') throw new Error('ODT did not produce a descriptor')
+    const sourceLease = await session.dataSource('common.view/tree-data-source', 1)
+    const source = sourceLease.value as TreeDataSource
+    const pwaStageIds = createWebPreviewStages({ operationsFor: () => undefined }).map(stageIdOf)
+    const plans = await Promise.all(
+      [
+        { host: 'pwa', stageIds: pwaStageIds },
+        { host: 'vscode', stageIds: VSCODE_STAGE_ORDER },
+        { host: 'headless', stageIds: pwaStageIds },
+      ].map(async ({ host, stageIds }) => {
+        const resolved = await resolveCommonPresentationPlan(
+          descriptor,
+          {
+            sessionId: `${host}:${name}`,
+            providerId: descriptor.identity.codecId,
+            variantId: host,
+          },
+          { availableStageIds: stageIds },
+        )
+        if (resolved === undefined) throw new Error(`${host} has no ODT presentation plan`)
+        return resolved.plan
+      }),
+    )
+    const [pwaPlan, vscodePlan, headlessPlan] = plans
+    if (pwaPlan === undefined || vscodePlan === undefined || headlessPlan === undefined) {
+      throw new Error('all three ODT plans are required')
+    }
+    expect(pwaPlan).toEqual(vscodePlan)
+    expect(vscodePlan).toEqual(headlessPlan)
+    expect(pwaPlan.activeStage).toBe('tree')
+
+    const writer = vi.fn()
+    const roots: string[] = []
+    const treeViewer: ViewerModule = {
+      abiVersion: 1,
+      async mount(args) {
+        const binding = args.slot.bindings.find(item => {
+          const ref = 'dataSource' in item ? item.dataSource : item
+          return ref.contract === 'common.view/tree-data-source' && ref.major === 1
+        })
+        if (binding === undefined || 'dataSource' in binding) {
+          throw new Error('host plan did not bind the common document tree')
+        }
+        const mounted = await args.sources.get(
+          binding as KnownBindingRef<'common.view/tree-data-source', 1>,
+        )
+        if (mounted === undefined) throw new Error('document tree source is unavailable')
+        roots.push((await (mounted.value as TreeDataSource).root()).id)
+        await mounted.release()
+        return { update: async () => undefined, unmount: async () => undefined }
+      },
+    }
+    for (const { host, plan } of [
+      { host: 'pwa', plan: pwaPlan },
+      { host: 'vscode', plan: vscodePlan },
+    ] as const) {
+      const preview = createCodecPreview({
+        stages: [
+          {
+            id: 'tree',
+            label: 'Tree',
+            contract: 'common.view/tree-data-source',
+            module: treeViewer,
+          },
+        ],
+        async openSession() {
+          return {
+            presentation: plan,
+            descriptor: async () => descriptor as unknown as Record<string, unknown>,
+            async dataSource(contract, major) {
+              expect([contract, major]).toEqual(['common.view/tree-data-source', 1])
+              return { value: source }
+            },
+            async operations() {
+              return { invoke: writer } as never
+            },
+            async dispose() {
+              return undefined
+            },
+          }
+        },
+      })
+      const handle = await preview.open(
+        { replaceChildren: () => undefined } as never,
+        { id: `${host}:${name}`, name, directory: false },
+        bytes,
+      )
+      if (handle === undefined) throw new Error(`${host} did not consume the ODT plan`)
+      await handle.unmount()
+    }
+    expect(roots).toEqual(['root', 'root'])
+    expect(writer).not.toHaveBeenCalled()
+    await sourceLease.release()
+    await session.dispose()
+  }, 30_000)
+
   it.each(fixtures)(
     'keeps $ecosystem model semantics equal in PWA, VS Code and headless without a UV write',
     async fixture => {
@@ -603,7 +810,7 @@ describe('PWA / VS Code resolved presentation conformance', () => {
       'utf8',
     )
     for (const source of [pwa, vscode]) {
-      expect(source).toContain('resolveModelWorldPresentationPlan')
+      expect(source).toContain('resolveCommonPresentationPlan')
       expect(source).not.toMatch(/if\s*\([^)]*(?:starcraft|warzone|\.m3|\.pie)/iu)
     }
   })

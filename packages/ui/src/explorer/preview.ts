@@ -45,6 +45,12 @@ export interface PreviewStage {
    */
   readonly optionalContracts?: readonly string[]
   /**
+   * This surface belongs to the embedding application rather than the generated contribution
+   * catalog. A resolved host plan cannot name such a surface, so it remains available beside the
+   * planned global stages when its own trait/contract gates pass.
+   */
+  readonly appLocal?: boolean
+  /**
    * This module is an `EditorModule`, not a viewer: it also needs the four host-owned ports. The
    * host supplies them through `editorPorts`, and a stage marked editable is skipped when it does
    * not — a read-only host must not mount an editor that can never save.
@@ -173,19 +179,20 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
       const published = new Set(publishedContracts(descriptor))
 
       const candidates = resolved ? options.stages : fallbackStages(options.fallback)
+      const hasPresentationPlan = session.presentation !== undefined
       const plannedSlots = new Map(
         (session.presentation?.slots ?? []).map(slot => [slot.slotId as string, slot]),
       )
-      const planned =
-        session.presentation === undefined
-          ? candidates
-          : session.presentation.slots.flatMap(slot => {
-              if (slot.kind !== 'stage') return []
-              const stage = candidates.find(candidate => stageId(candidate) === slot.slotId)
-              return stage === undefined ? [] : [stage]
-            })
-      const usable = planned.filter(
+      /*
+       * The host plan chooses the default and supplies authoritative bindings for its slots. The
+       * picker still offers explicitly marked app-local surfaces (editors and metadata): those
+       * have no global viewer contribution and therefore cannot appear in the generated plan.
+       * Unplanned global surfaces stay excluded because the resolver may have rejected them on a
+       * resource bound that this mounting layer cannot reproduce.
+       */
+      const usable = candidates.filter(
         stage =>
+          (!hasPresentationPlan || plannedSlots.has(stageId(stage)) || stage.appLocal === true) &&
           published.has(stage.contract) &&
           (stage.trait === undefined || traits.has(stage.trait)) &&
           // An editable stage without ports could never save; offering it would be a lie.

@@ -352,7 +352,7 @@ describe('the Edit panel in a real browser', () => {
       "Replace an entry's contents",
     ])
 
-    await showView('entries')
+    await showView('archive')
     expect(await listedEntries()).not.toContain(ADDED)
 
     expect(await writes()).toHaveLength(0)
@@ -374,7 +374,7 @@ describe('the Edit panel in a real browser', () => {
     expect(written).toContain('data/values.csv')
 
     // and the reopened tab is showing the archive that exists now
-    await showView('entries')
+    await showView('archive')
     expect(await listedEntries()).toContain(ADDED)
   }, 300_000)
 
@@ -391,7 +391,7 @@ describe('the Edit panel in a real browser', () => {
     expect(written).toContain('readme.txt')
     expect(written).toContain('data/values.csv')
 
-    await showView('entries')
+    await showView('archive')
     expect(await listedEntries()).not.toContain(ADDED)
     expect(await listedEntries()).toContain('readme.txt')
   }, 300_000)
@@ -421,7 +421,7 @@ describe('the Edit panel in a real browser', () => {
     // nothing reached the handle: the refusal happened before a plan existed
     expect(await writes()).toHaveLength(2)
     // the tab was not reopened either, so the archive on screen is still the one on "disk"
-    await showView('entries')
+    await showView('archive')
     expect(await listedEntries()).toContain('readme.txt')
     await closeAllTabs()
   }, 180_000)

@@ -76,7 +76,7 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       module: videoViewer,
     },
     {
-      id: 'entries',
+      id: 'archive',
       label: 'Entries',
       contract: 'common.view/namespace-entry-source',
       module: vscodeArchiveStage,
@@ -88,6 +88,7 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       label: 'Relations',
       contract: 'common.view/relation-graph-source',
       module: relationGraphViewer,
+      appLocal: true,
     },
     {
       id: 'text',
@@ -97,7 +98,7 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       trait: 'content.text',
     },
     {
-      id: 'text-virtual',
+      id: 'virtual-text',
       label: 'Text (streaming)',
       contract: 'common.view/text-data-source',
       module: virtualTextViewer,
@@ -115,6 +116,7 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       module: textEditor,
       trait: 'content.text',
       editable: true,
+      appLocal: true,
     },
     {
       id: 'edit',
@@ -122,6 +124,7 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       contract: 'common.view/byte-range-source',
       module: createVsCodeEditPanel(context),
       editable: true,
+      appLocal: true,
     },
     /*
      * The metadata panel consumes no data source of its own — it renders the descriptor's metadata
@@ -133,6 +136,7 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       label: 'Metadata',
       contract: 'common.view/byte-range-source',
       module: metadataPanel,
+      appLocal: true,
     },
     { id: 'hex', label: 'Hex', contract: 'common.view/byte-range-source', module: hexViewer },
     {
@@ -141,6 +145,7 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       contract: 'common.view/byte-range-source',
       module: hexEditor,
       editable: true,
+      appLocal: true,
     },
   ])
 }

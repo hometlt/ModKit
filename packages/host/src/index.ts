@@ -283,18 +283,22 @@ export {
   createViewerSources,
   evaluateViewerApplicability,
   evaluateViewerContribution,
+  resolveCommonPresentationPlan,
   resolveModelWorldPresentationPlan,
   resolvePresentationPlan,
   resolveSessionPresentationPlan,
   switchPresentationStage,
   type CatalogPresentationCandidate,
+  type CommonPresentationOptions,
   type PresentationResolverOptions,
   type PresentationValidatorOptions,
   type SessionPresentationSelection,
+  type SessionPresentationCatalogEntry,
   type ViewerApplicabilityFacts,
   type ViewerApplicabilityResult,
   type ViewerContributionEligibility,
 } from './presentation.js'
+export { COMMON_PRESENTATION_CATALOG } from './presentation-catalog.generated.js'
 export {
   presentationSemanticHash,
   type PresentationSemanticHashRequest,

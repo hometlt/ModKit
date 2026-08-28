@@ -1,23 +1,16 @@
-import {
-  canonicalJsonStringify,
-  compareUtf8,
-  ModkitError,
-  uint64,
-  type Diagnostic,
-} from '@modkitx-x3/core'
+import { compareUtf8, ModkitError, uint64, type Diagnostic } from '@modkitx-x3/core'
 import {
   createHostTopology,
   type AnyDescriptor,
   type HostTopology,
   type PresentationPlan,
-  type PresentationSlot,
 } from '@modkitx-x3/sdk'
 import {
   createBundledServiceDefinitionRegistry,
   createHostComposition,
   createSubjectServices,
   registerServiceDefinitionsOrThrow,
-  resolvePresentationPlan,
+  resolveCommonPresentationPlan,
   serviceDefinitionSurfaces,
   type ExecutionBackendRegistry,
   type ExtensionInput,
@@ -27,6 +20,7 @@ import {
   type SubjectOpenRequest,
   type SubjectServices,
 } from '@modkitx-x3/host'
+import { STAGE_ORDER } from './view-policy.js'
 import {
   createNodeExecutionBackends,
   loadExtensionRoots,
@@ -348,47 +342,34 @@ export interface ElectronSubjectServices extends SubjectServices {
 /** One open request as the main process issues it (re-exported for the RPC and the tests). */
 export type ElectronSubjectOpenRequest = SubjectOpenRequest
 
-interface ElectronPresentationTicket {
-  readonly bindingId: string
-  readonly sessionId: string
-}
-
-/** Resolve the renderer's inert stage catalog against one already-opened session descriptor. */
+/** Resolve the shared manifest-generated stage catalog against one already-opened session. */
 export async function resolveElectronPresentationPlan(
   descriptor: AnyDescriptor,
-  catalog: readonly PresentationSlot[],
   selection: {
     readonly sessionId: string
     readonly contributionId: string
     readonly variantId: string
   },
+  options: { readonly sourceBytes?: bigint } = {},
 ): Promise<PresentationPlan> {
-  const digest = (plan: PresentationPlan) => `canonical:${canonicalJsonStringify(plan)}`
-  const resolved = await resolvePresentationPlan<ElectronPresentationTicket>({
+  const resolved = await resolveCommonPresentationPlan(
     descriptor,
-    candidates: catalog.map(slot => ({
-      ...slot,
-      eligible: slot.bindings.every(binding => {
-        const contract = 'dataSource' in binding ? binding.dataSource : binding
-        return descriptor.dataSources.some(
-          source => source.contract === contract.contract && source.major === contract.major,
-        )
-      }),
-    })),
-    digest,
-    ticketMatches: binding =>
-      binding.ticket.bindingId === binding.bindingId &&
-      binding.ticket.sessionId === selection.sessionId,
-    async resolveBinding(binding) {
-      return {
-        ...binding,
-        offerId: `session:${binding.bindingId}`,
-        providerId: selection.contributionId,
-        variantId: selection.variantId,
-        ticket: { bindingId: binding.bindingId, sessionId: selection.sessionId },
-      }
+    {
+      sessionId: selection.sessionId,
+      providerId: selection.contributionId,
+      variantId: selection.variantId,
     },
-  })
+    {
+      availableStageIds: STAGE_ORDER,
+      ...(options.sourceBytes === undefined ? {} : { sourceBytes: options.sourceBytes }),
+    },
+  )
+  if (resolved === undefined) {
+    throw new ModkitError({
+      code: 'x3.host/presentation-fallback-missing',
+      message: 'no registered Electron stage is eligible for the opened subject',
+    })
+  }
   return resolved.plan
 }
 

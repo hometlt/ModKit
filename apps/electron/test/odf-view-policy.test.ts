@@ -12,15 +12,16 @@
  * policy that offers the table viewer to everything; "ODS offers what CSV offers" would not.
  */
 
-import { createRequire } from 'node:module'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import type { PresentationSlot, ResourceBudget } from '@modkitx-x3/sdk'
+import type { ResourceBudget } from '@modkitx-x3/sdk'
+import { COMMON_PRESENTATION_CATALOG } from '@modkitx-x3/host'
 import {
   createElectronSubjectServices,
   openFileArtifactSource,
+  resolveElectronPresentationPlan,
   type ElectronSubjectServices,
 } from '../src/index.js'
 import {
@@ -41,8 +42,7 @@ const syntheticDir = join(
   'mk2-synthetic',
 )
 
-const require = createRequire(import.meta.url)
-const presentation = require('../generated/presentation-catalog.cjs') as readonly PresentationSlot[]
+const presentation = COMMON_PRESENTATION_CATALOG.map(entry => entry.slot)
 
 /**
  * The shipped stages, as facts.
@@ -137,6 +137,32 @@ async function svgFile(): Promise<string> {
 }
 
 describe('block 11 exit gate: the ODF quartet reaches its viewer by contract, not by format', () => {
+  it('routes a real ODT through the shared Electron PresentationPlan', async () => {
+    const path = join(syntheticDir, 'minimal.odt')
+    const bytes = await readFile(path)
+    const opened = await (
+      await subjects()
+    ).open({ source: await openFileArtifactSource(path), path, intent: 'full', grant, budget })
+    if (opened.state !== 'opened') {
+      throw new Error(`${path} did not open: ${JSON.stringify(opened.diagnostics)}`)
+    }
+
+    const plan = await resolveElectronPresentationPlan(
+      opened.descriptor,
+      {
+        sessionId: 'electron-odt-plan',
+        contributionId: opened.selected.contributionId,
+        variantId: opened.selected.variantId,
+      },
+      { sourceBytes: BigInt(bytes.byteLength) },
+    )
+
+    expect(opened.selected.contributionId).toBe('org.modkitx/odt')
+    expect(plan).toMatchObject({ activeStage: 'code', alternateStages: ['tree'] })
+    expect(plan.slots.map(slot => slot.slotId)).toEqual(['code', 'tree'])
+    await opened.session.dispose()
+  }, 120_000)
+
   it('gives ODS every stage CSV gets, led by the same one', async () => {
     const ods = await synthetic('minimal.ods')
     const csv = await synthetic('minimal.csv')

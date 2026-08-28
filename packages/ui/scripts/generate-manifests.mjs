@@ -148,6 +148,16 @@ const contributions = [
     },
   },
   {
+    id: 'archive-stage',
+    entrypoint: './dist/namespace/index.js',
+    spec: {
+      kind: 'stage',
+      consumesDataSources: [dataSource('common.view/namespace-entry-source')],
+      priority: 340,
+      singletonGroup: 'center-stage',
+    },
+  },
+  {
     id: 'unknown-binary-fallback',
     entrypoint: './dist/hex/index.js',
     spec: {

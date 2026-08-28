@@ -53,7 +53,7 @@ describe('deterministic Electron app catalog emission', () => {
     const root = fixtureRoot()
     const emitted = run(root)
     expect(emitted.status, emitted.stderr).toBe(0)
-    expect(emitted.stdout).toBe('4 Electron app catalogs emitted\n')
+    expect(emitted.stdout).toBe('4 shared app catalogs emitted\n')
 
     const generated = join(root, 'apps', 'electron', 'generated')
     const bundled = readFileSync(join(generated, 'bundled-catalog.cjs'), 'utf8')
@@ -63,26 +63,27 @@ describe('deterministic Electron app catalog emission', () => {
     expect(bundled).not.toContain('ui-monaco')
     expect(bundled).not.toContain('ui-graph-3d')
 
-    const presentation = readFileSync(join(generated, 'presentation-catalog.cjs'), 'utf8')
+    const presentation = readFileSync(
+      join(root, 'packages', 'host', 'src', 'presentation-catalog.generated.ts'),
+      'utf8',
+    )
     expect(presentation).toContain("contributionId: 'org.modkitx.ui/image-stage'")
     expect(presentation).toContain("extensionId: 'org.modkitx/ui-monaco'")
     expect(presentation).toContain('priority: 360')
 
-    for (const name of [
-      'bundled-catalog.cjs',
-      'presentation-catalog.cjs',
-      'viewer-catalog.d.ts',
-      'viewer-catalog.js',
-    ]) {
+    for (const name of ['bundled-catalog.cjs', 'viewer-catalog.d.ts', 'viewer-catalog.js']) {
       const content = readFileSync(join(generated, name), 'utf8')
       expect(content).not.toContain(repoRoot.replaceAll('\\', '/'))
       expect(content).not.toMatch(/[A-Za-z]:[\\/]/)
       expect(content).not.toContain('\r')
     }
+    expect(presentation).not.toContain(repoRoot.replaceAll('\\', '/'))
+    expect(presentation).not.toMatch(/[A-Za-z]:[\\/]/)
+    expect(presentation).not.toContain('\r')
 
     const checked = run(root, '--check')
     expect(checked.status, checked.stderr).toBe(0)
-    expect(checked.stdout).toBe('4 Electron app catalogs checked\n')
+    expect(checked.stdout).toBe('4 shared app catalogs checked\n')
   })
 
   it('fails --check on drift and reports every stale catalog in stable name order', () => {
@@ -127,7 +128,7 @@ describe('deterministic Electron app catalog emission', () => {
 
     expect(run(root).status).toBe(0)
     const presentation = readFileSync(
-      join(root, 'apps', 'electron', 'generated', 'presentation-catalog.cjs'),
+      join(root, 'packages', 'host', 'src', 'presentation-catalog.generated.ts'),
       'utf8',
     )
     expect(presentation).toContain('priority: 361')

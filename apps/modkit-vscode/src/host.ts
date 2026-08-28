@@ -33,7 +33,7 @@ import {
   createEvidenceRegistry,
   createHostComposition,
   createRawWriter,
-  resolveModelWorldPresentationPlan,
+  resolveCommonPresentationPlan,
   resolveFormatWriter,
   serviceProviderFidelityEvidenceRecord,
   createSubjectEditing,
@@ -54,6 +54,8 @@ import {
   type ExtensionRootFailure,
   type NodeSubjectServices,
 } from '@modkitx-x3/host/node'
+
+import { STAGE_ORDER } from './view-policy.js'
 
 import {
   createBridge,
@@ -588,13 +590,14 @@ function serveVsCode(
       const answer = await containers.open(subjectRequested, signal)
       publishSubjectDiagnostics(subjectRequested, answer.snapshot.diagnostics)
       if (answer.snapshot.state === 'opened') {
-        const presentation = await resolveModelWorldPresentationPlan(
+        const presentation = await resolveCommonPresentationPlan(
           answer.snapshot.descriptor as never,
           {
             sessionId: answer.snapshot.sessionId,
             providerId: answer.snapshot.selected.contributionId,
             variantId: answer.snapshot.selected.variantId,
           },
+          { availableStageIds: STAGE_ORDER },
         )
         options.onSubjectOpened?.({
           path: subjectRequested,
@@ -662,11 +665,15 @@ function serveVsCode(
         : rawAnswer
     const presentation =
       openedAnswer.snapshot.state === 'opened'
-        ? await resolveModelWorldPresentationPlan(openedAnswer.snapshot.descriptor as never, {
-            sessionId: openedAnswer.snapshot.sessionId,
-            providerId: openedAnswer.snapshot.selected.contributionId,
-            variantId: openedAnswer.snapshot.selected.variantId,
-          })
+        ? await resolveCommonPresentationPlan(
+            openedAnswer.snapshot.descriptor as never,
+            {
+              sessionId: openedAnswer.snapshot.sessionId,
+              providerId: openedAnswer.snapshot.selected.contributionId,
+              variantId: openedAnswer.snapshot.selected.variantId,
+            },
+            { availableStageIds: STAGE_ORDER },
+          )
         : undefined
     const answer =
       presentation === undefined || openedAnswer.snapshot.state !== 'opened'

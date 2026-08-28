@@ -7,17 +7,15 @@
  * in `STAGE_ORDER`, and the two catalogs must agree on the slot set. A new stage contribution that
  * nobody wired therefore fails here rather than silently never appearing.
  */
-import { createRequire } from 'node:module'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { PresentationSlot } from '@modkitx-x3/sdk'
+import { COMMON_PRESENTATION_CATALOG } from '@modkitx-x3/host'
 
 import { APP_STAGE_POLICY, STAGE_ORDER } from '../src/view-policy.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
-const require = createRequire(import.meta.url)
-const presentation = require('../generated/presentation-catalog.cjs') as readonly PresentationSlot[]
+const presentation = COMMON_PRESENTATION_CATALOG.map(entry => entry.slot)
 const viewerCatalogSource = readFileSync(
   join(repositoryRoot, 'apps', 'electron', 'generated', 'viewer-catalog.js'),
   'utf8',
@@ -64,15 +62,16 @@ describe('the Electron preview policy', () => {
   })
 
   it('carries the stages the ui package ships that had no contribution to name', () => {
-    // The two surfaces the generator cannot reach: a component with no viewer contribution, and a
-    // contribution whose kind is `tree`. Both are composed by the app instead.
+    // The archive has a shared stage contribution for host planning, but Electron still composes
+    // its richer application adapter; image editing is application-only.
     expect(APP_STAGE_POLICY.map(policy => policy.id).sort()).toEqual(['archive', 'image-edit'])
     const kinds = new Map(viewerManifests().map(manifest => [manifest.id, manifest.spec?.kind]))
     expect(kinds.get('org.modkitx.ui/namespace-tree')).toBe('tree')
+    expect(kinds.get('org.modkitx.ui/archive-stage')).toBe('stage')
   })
 
   it('binds each slot to exactly one data source, shared by both catalogs', () => {
-    for (const slot of presentation) {
+    for (const slot of presentation.filter(slot => slot.slotId !== 'archive')) {
       expect(slot.bindings).toHaveLength(1)
       const binding = slot.bindings[0]
       expect(binding).toBeDefined()

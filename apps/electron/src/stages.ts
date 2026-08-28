@@ -37,6 +37,7 @@ function appStage(id: string, module: PreviewStage['module'], editable = false):
     contract: policy.contract,
     module,
     ...(editable ? { editable: true } : {}),
+    ...(id === 'image-edit' ? { appLocal: true } : {}),
   }
 }
 

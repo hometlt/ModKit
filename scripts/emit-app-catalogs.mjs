@@ -7,11 +7,16 @@ const scriptPath = fileURLToPath(import.meta.url)
 const defaultRoot = resolve(dirname(scriptPath), '..')
 const outputNames = Object.freeze([
   'bundled-catalog.cjs',
-  'presentation-catalog.cjs',
   'viewer-catalog.d.ts',
   'viewer-catalog.js',
 ])
 const outputNameSet = new Set(outputNames)
+const sharedPresentationOutput = join(
+  'packages',
+  'host',
+  'src',
+  'presentation-catalog.generated.ts',
+)
 const absolutePathPattern = /(?:[A-Za-z]:[\\/]|(?:from\s+|require\(\s*)['"]\/)/u
 
 /**
@@ -102,6 +107,23 @@ const previewPolicy = Object.freeze([
   },
 ])
 
+/**
+ * One generated presentation catalog shared by every host.
+ *
+ * `previewPolicy` remains the Electron module-binding policy.  The archive stage is composed by
+ * each application because it needs that application's nested-open and operation ports, but its
+ * eligibility and slot identity still come from the same viewer contribution registry as every
+ * other stage.
+ */
+const presentationPolicy = Object.freeze([
+  ...previewPolicy,
+  {
+    slotId: 'archive',
+    label: 'Archive',
+    contributionId: 'org.modkitx.ui/archive-stage',
+  },
+])
+
 function json(path) {
   return JSON.parse(readFileSync(path, 'utf8'))
 }
@@ -185,38 +207,37 @@ function viewerContributions(root) {
   return contributions
 }
 
-function selectedStages(root) {
+function selectedStages(root, policy = previewPolicy) {
   const contributions = viewerContributions(root)
-  return previewPolicy.map(policy => {
-    const contribution = contributions.get(policy.contributionId)
+  return policy.map(selected => {
+    const contribution = contributions.get(selected.contributionId)
     if (contribution === undefined) {
-      throw new Error(`Electron preview contribution is missing: ${policy.contributionId}`)
+      throw new Error(`preview contribution is missing: ${selected.contributionId}`)
     }
     const { manifest } = contribution
     if (manifest.spec?.kind !== 'stage') {
-      throw new Error(`Electron preview contribution is not a stage: ${policy.contributionId}`)
+      throw new Error(`preview contribution is not a stage: ${selected.contributionId}`)
     }
     const sources = manifest.spec.consumesDataSources
     if (!Array.isArray(sources) || sources.length !== 1) {
-      throw new Error(
-        `Electron preview stage must consume exactly one source: ${policy.contributionId}`,
-      )
+      throw new Error(`preview stage must consume exactly one source: ${selected.contributionId}`)
     }
     const source = sources[0]
     if (typeof source.contract !== 'string' || source.major !== 1) {
-      throw new Error(`Electron preview stage has an unsupported source: ${policy.contributionId}`)
+      throw new Error(`preview stage has an unsupported source: ${selected.contributionId}`)
     }
     if (!Number.isSafeInteger(manifest.spec.priority)) {
-      throw new Error(`Electron preview stage has an invalid priority: ${policy.contributionId}`)
+      throw new Error(`preview stage has an invalid priority: ${selected.contributionId}`)
     }
     return {
-      ...policy,
+      ...selected,
       extensionId: contribution.extensionId,
       kind: manifest.spec.kind,
       priority: manifest.spec.priority,
       singletonGroup: manifest.spec.singletonGroup,
       contract: source.contract,
       major: source.major,
+      manifestSpec: manifest.spec,
       /*
        * Optional sources travel with the stage, and deliberately not through `consumesDataSources`:
        * that list decides eligibility, so a facet named there would cost the stage every subject
@@ -227,7 +248,7 @@ function selectedStages(root) {
       optionalContracts: (manifest.spec.optionalDataSources ?? []).map(item => {
         if (typeof item.contract !== 'string' || item.major !== 1) {
           throw new Error(
-            `Electron preview stage has an unsupported optional source: ${policy.contributionId}`,
+            `preview stage has an unsupported optional source: ${selected.contributionId}`,
           )
         }
         return item.contract
@@ -258,27 +279,48 @@ ${entries}
 `
 }
 
+function optionalBindingsOf(stage) {
+  return (stage.optionalContracts ?? []).map((contract, index) => ({
+    bindingId: `${stage.slotId}-optional-${index + 1}`,
+    contract,
+    major: 1,
+  }))
+}
+
 function renderPresentationCatalog(root) {
-  const entries = selectedStages(root)
+  const entries = selectedStages(root, presentationPolicy)
     .map(stage => {
       const singleton =
         typeof stage.singletonGroup === 'string'
           ? `\n    singletonGroup: ${quote(stage.singletonGroup)},`
           : ''
+      const optionalBindings = optionalBindingsOf(stage)
+      const optional =
+        optionalBindings.length === 0
+          ? ''
+          : `\n    optionalBindings: Object.freeze([\n${optionalBindings
+              .map(
+                binding =>
+                  `      Object.freeze({ bindingId: ${quote(binding.bindingId)}, contract: ${quote(binding.contract)}, major: ${binding.major} }),`,
+              )
+              .join('\n')}\n    ]),`
       return `  Object.freeze({
-    slotId: ${quote(stage.slotId)},
-    kind: ${quote(stage.kind)},
-    contributionId: ${quote(stage.contributionId)},
-    extensionId: ${quote(stage.extensionId)},
-    priority: ${stage.priority},${singleton}
-    bindings: Object.freeze([
-      Object.freeze({ bindingId: ${quote(`${stage.slotId}-content`)}, contract: ${quote(stage.contract)}, major: ${stage.major} }),
-    ]),
+    slot: Object.freeze({
+      slotId: ${quote(stage.slotId)},
+      kind: ${quote(stage.kind)},
+      contributionId: ${quote(stage.contributionId)},
+      extensionId: ${quote(stage.extensionId)},
+      priority: ${stage.priority},${singleton}
+      bindings: Object.freeze([
+        Object.freeze({ bindingId: ${quote(`${stage.slotId}-content`)}, contract: ${quote(stage.contract)}, major: ${stage.major} }),
+      ]),
+    }),${optional}
+    spec: Object.freeze(${JSON.stringify(stage.manifestSpec)}),
   }),`
     })
     .join('\n')
   return `/** Generated by scripts/emit-app-catalogs.mjs from UI contribution manifests. */
-module.exports = Object.freeze([
+export const COMMON_PRESENTATION_CATALOG = Object.freeze([
 ${entries}
 ])
 `
@@ -367,7 +409,7 @@ export async function buildAppCatalogs(root = defaultRoot) {
   const normalizedRoot = resolve(root)
   const unformatted = [
     ['bundled-catalog.cjs', renderBundledCatalog(normalizedRoot), 'babel'],
-    ['presentation-catalog.cjs', renderPresentationCatalog(normalizedRoot), 'babel'],
+    [sharedPresentationOutput, renderPresentationCatalog(normalizedRoot), 'typescript'],
     ['viewer-catalog.d.ts', renderViewerTypes(), 'typescript'],
     ['viewer-catalog.js', renderViewerCatalog(normalizedRoot), 'babel'],
   ]
@@ -408,8 +450,9 @@ export async function emitAppCatalogs({ root = defaultRoot, check = false } = {}
     throw new Error(`Electron app catalogs contain unexpected files: ${unexpected.join(', ')}`)
   }
   if (check) {
-    const stale = outputNames.filter(name => {
-      const path = join(output, name)
+    const stale = [...outputNames, sharedPresentationOutput].filter(name => {
+      const path =
+        name === sharedPresentationOutput ? join(resolve(root), name) : join(output, name)
       return !existsSync(path) || readFileSync(path, 'utf8') !== expected.get(name)
     })
     if (stale.length > 0) {
@@ -418,7 +461,11 @@ export async function emitAppCatalogs({ root = defaultRoot, check = false } = {}
     return { state: 'checked', count: expected.size }
   }
   mkdirSync(output, { recursive: true })
-  for (const [name, content] of expected) writeFileSync(join(output, name), content, 'utf8')
+  for (const [name, content] of expected) {
+    const path = name === sharedPresentationOutput ? join(resolve(root), name) : join(output, name)
+    mkdirSync(dirname(path), { recursive: true })
+    writeFileSync(path, content, 'utf8')
+  }
   return { state: 'emitted', count: expected.size }
 }
 
@@ -441,7 +488,7 @@ function parseArguments(argv) {
 export async function run(argv = process.argv.slice(2)) {
   const options = parseArguments(argv)
   const result = await emitAppCatalogs(options)
-  process.stdout.write(`${result.count} Electron app catalogs ${result.state}\n`)
+  process.stdout.write(`${result.count} shared app catalogs ${result.state}\n`)
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === scriptPath) {
