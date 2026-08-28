@@ -4,13 +4,16 @@ Product-owned MPQ namespace codec with bounded listing and entry extraction. The
 acceptance opens an `.s2ma` extracted from CASC, lists its archive namespace and decodes an embedded
 DDS image without modifying the installation.
 
-The separate export-only writer can Save As one complete bounded loose namespace into a fresh,
-deterministic MPQ v0. Every enumerated entry payload is stored byte-for-byte as an uncompressed,
-unencrypted single unit and the writer generates a listfile plus classic encrypted hash/block
-tables. The new archive is reopened through the product codec before acceptance and the host's
-standard editing backend can roll the destination create back. This is semantic container fidelity,
-not a claim to preserve an existing MPQ's layout, compression, encryption, patch/high-offset
-features, signature, or game-launch state. Native-MPQ input is refused before planning.
+The export-only writer can Save As one complete bounded loose namespace into a fresh, deterministic
+MPQ v0. Every enumerated entry payload is stored byte-for-byte as an uncompressed, unencrypted
+single unit and the writer generates a listfile plus classic encrypted hash/block tables. A second
+bounded path accepts an existing MPQ v0/v1 and replaces uniquely named entries in their original
+fixed slots while preserving the archive layout and every untouched byte. Stored and supported
+zlib layouts are handled; insufficient slot space and changed encrypted, implode, patch,
+sector-CRC or high-offset data fail before a destination write. Opaque attributes and signatures
+are copied but explicitly reported as invalidated when content changes, and signing and in-place
+mutation are not claimed. Both paths reopen their output through the product codec, use the host's
+atomic Save As workflow, and support undo.
 
 The snapshot helper accepts only portable ASCII relative paths (1,024 characters maximum), reserves
 its generated `(listfile)`, enforces explicit entry and byte budgets, and requires the loose source

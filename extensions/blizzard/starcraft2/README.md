@@ -10,14 +10,17 @@ writer through `common.edit/writer@1`. Unsigned banks use the same path; signed 
 read-only because changing them without a signer would invalidate their signature. A separate
 export-only provider can copy every enumerated byte of a complete loose namespace into a
 revision-pinned workspace directory. Its contract accepts a read-only CASC source mode, but the
-current installed proof names only the remote-key refusal; successful commit/reopen proof is for a
-complete loose workspace. No app/command owns the snapshot planner yet, so this is provider
-foundation, not a product export workflow. A remote-only CASC encoding key stops planning before
-any target write rather than producing a partial map. The separate MPQ extension can Save As a
-complete bounded loose `.SC2Map`, `.SC2Mod` or `.SC2Campaign` namespace as a fresh deterministic
-MPQ v0 and reopen every entry through `org.modkitx/mpq`; that is semantic container fidelity with
-byte-identical entry payloads, not a native repack. Preserving an existing packed archive remains
-unavailable until encrypted, patch, high-offset and unknown MPQ layout features can be retained.
+current installed proof names only the remote-key refusal; successful commit/reopen proof for this
+provider is for a complete loose workspace. No app/command owns that loose-namespace snapshot
+planner yet. A remote-only CASC encoding key stops planning before any target write rather than
+producing a partial map. The separate MPQ extension can either build a fresh deterministic MPQ v0
+from a complete bounded loose `.SC2Map`, `.SC2Mod` or `.SC2Campaign` namespace, or Save As a bounded
+existing MPQ v0/v1 while preserving its native layout and untouched bytes. The installed WTE70
+acceptance exercises the ordinary host editing path, atomic Save As, semantic SC2Map reopen, exact
+changed and unchanged entry checks, and undo without modifying the installation. The preserving
+path is deliberately limited to unencrypted fixed-slot replacements whose original stored or zlib
+layout can hold the result; changed encrypted, implode, patch, sector-CRC and high-offset data,
+in-place writes, signature regeneration and native game signing remain explicit refusals.
 
 The separately resolved `common.runtime/provider@1` contribution exposes exactly
 `blizzard.starcraft2.galaxy-pure-bounded-v1`. It executes zero-argument Galaxy functions whose
