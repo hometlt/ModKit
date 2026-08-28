@@ -141,10 +141,9 @@ export function applicableStages<Stage extends StageFacts>(
 /**
  * Which view to show first.
  *
- * This host resolves no presentation plan (it ships no generated presentation catalog), so the
- * answer is the first stage in policy order. The signature still takes the plan's choice, because
- * the RPC snapshot may carry one from a serving side that does resolve, and honouring it costs a
- * comparison.
+ * The extension host resolves the common model/world plan before the snapshot crosses the RPC.
+ * Other subjects still use the first stage in policy order until the wider document catalog is
+ * migrated. In either case this consumer only honours a slot that survived applicability.
  */
 export function preferredStage(
   applicable: readonly string[],

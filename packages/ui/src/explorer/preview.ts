@@ -173,6 +173,9 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
       const published = new Set(publishedContracts(descriptor))
 
       const candidates = resolved ? options.stages : fallbackStages(options.fallback)
+      const plannedSlots = new Map(
+        (session.presentation?.slots ?? []).map(slot => [slot.slotId as string, slot]),
+      )
       const planned =
         session.presentation === undefined
           ? candidates
@@ -215,21 +218,23 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
          * a real binding for this stage's contract — passing a bare name leaves `slot.bindings`
          * undefined and the mount fails inside the viewer.
          */
-        const slot = {
-          slotId: `explorer:${stageId(stage)}`,
-          kind: 'primary',
-          contributionId: 'org.modkitx.ui/explorer',
-          extensionId: 'org.modkitx.ui',
-          priority: 100,
-          bindings: [
-            { bindingId: 'content', contract: stage.contract, major: 1 },
-            // optional sources: bound when this descriptor actually publishes them, absent when it
-            // does not, so the viewer's own `bindingFor` lookup is the whole availability check
-            ...(stage.optionalContracts ?? [])
-              .filter(contract => published.has(contract) && contract !== stage.contract)
-              .map(contract => ({ bindingId: `facet:${contract}`, contract, major: 1 })),
-          ],
-        }
+        const slot =
+          plannedSlots.get(stageId(stage)) ??
+          ({
+            slotId: `explorer:${stageId(stage)}`,
+            kind: 'primary',
+            contributionId: 'org.modkitx.ui/explorer',
+            extensionId: 'org.modkitx.ui',
+            priority: 100,
+            bindings: [
+              { bindingId: 'content', contract: stage.contract, major: 1 },
+              // optional sources: bound when this descriptor actually publishes them, absent when it
+              // does not, so the viewer's own `bindingFor` lookup is the whole availability check
+              ...(stage.optionalContracts ?? [])
+                .filter(contract => published.has(contract) && contract !== stage.contract)
+                .map(contract => ({ bindingId: `facet:${contract}`, contract, major: 1 })),
+            ],
+          } as const)
 
         /*
          * An editable stage is an `EditorModule`: besides the viewer arguments it needs the four

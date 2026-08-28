@@ -33,6 +33,7 @@ import {
   createEvidenceRegistry,
   createHostComposition,
   createRawWriter,
+  resolveModelWorldPresentationPlan,
   resolveFormatWriter,
   serviceProviderFidelityEvidenceRecord,
   createSubjectEditing,
@@ -587,12 +588,26 @@ function serveVsCode(
       const answer = await containers.open(subjectRequested, signal)
       publishSubjectDiagnostics(subjectRequested, answer.snapshot.diagnostics)
       if (answer.snapshot.state === 'opened') {
+        const presentation = await resolveModelWorldPresentationPlan(
+          answer.snapshot.descriptor as never,
+          {
+            sessionId: answer.snapshot.sessionId,
+            providerId: answer.snapshot.selected.contributionId,
+            variantId: answer.snapshot.selected.variantId,
+          },
+        )
         options.onSubjectOpened?.({
           path: subjectRequested,
           contributionId: answer.snapshot.selected.contributionId,
           variantId: answer.snapshot.selected.variantId,
           confidence: answer.snapshot.selected.confidence,
         })
+        return presentation === undefined
+          ? answer
+          : {
+              ...answer,
+              snapshot: { ...answer.snapshot, presentation: presentation.plan },
+            }
       }
       return answer
     }
@@ -635,7 +650,7 @@ function serveVsCode(
       budget: options.budget ?? DEFAULT_OPEN_BUDGET,
     })
     const rawAnswer = await opener(subjectRequested, signal)
-    const answer =
+    const openedAnswer =
       rawAnswer.snapshot.state === 'opened' && mapPreviewCandidates.length > 0
         ? {
             ...rawAnswer,
@@ -645,6 +660,21 @@ function serveVsCode(
             },
           }
         : rawAnswer
+    const presentation =
+      openedAnswer.snapshot.state === 'opened'
+        ? await resolveModelWorldPresentationPlan(openedAnswer.snapshot.descriptor as never, {
+            sessionId: openedAnswer.snapshot.sessionId,
+            providerId: openedAnswer.snapshot.selected.contributionId,
+            variantId: openedAnswer.snapshot.selected.variantId,
+          })
+        : undefined
+    const answer =
+      presentation === undefined || openedAnswer.snapshot.state !== 'opened'
+        ? openedAnswer
+        : {
+            ...openedAnswer,
+            snapshot: { ...openedAnswer.snapshot, presentation: presentation.plan },
+          }
 
     /*
      * Every finding about this subject, on whatever surface the adapter gives them — reported for

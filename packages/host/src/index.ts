@@ -283,15 +283,22 @@ export {
   createViewerSources,
   evaluateViewerApplicability,
   evaluateViewerContribution,
+  resolveModelWorldPresentationPlan,
   resolvePresentationPlan,
+  resolveSessionPresentationPlan,
   switchPresentationStage,
   type CatalogPresentationCandidate,
   type PresentationResolverOptions,
   type PresentationValidatorOptions,
+  type SessionPresentationSelection,
   type ViewerApplicabilityFacts,
   type ViewerApplicabilityResult,
   type ViewerContributionEligibility,
 } from './presentation.js'
+export {
+  presentationSemanticHash,
+  type PresentationSemanticHashRequest,
+} from './presentation-semantic.js'
 export {
   createCommitCoordinator,
   createEditSession,

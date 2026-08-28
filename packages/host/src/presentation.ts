@@ -1,4 +1,5 @@
 import {
+  canonicalJsonStringify,
   ModkitError,
   compareUtf8,
   parseSemver,
@@ -6,7 +7,9 @@ import {
   satisfiesRange,
 } from '@modkitx-x3/core'
 import {
+  bindingId,
   definePresentationPlan,
+  presentationSlotId,
   type AnyDescriptor,
   type BindingRef,
   type Lease,
@@ -170,6 +173,141 @@ export interface PresentationResolverOptions<Ticket> {
 export interface PresentationValidatorOptions<Ticket> {
   readonly digest: (plan: PresentationPlan) => string
   readonly ticketMatches: (binding: ResolvedBinding<Ticket>) => boolean
+}
+
+/**
+ * Session identity carried by a resolved viewer binding.
+ *
+ * The identity is deliberately format-neutral.  An application may use it to attach the plan to
+ * the session it already opened, but it cannot use it to pick a codec or a game adapter.
+ */
+export interface SessionPresentationSelection {
+  readonly sessionId: string
+  readonly providerId: string
+  readonly variantId: string
+}
+
+interface SessionPresentationTicket {
+  readonly bindingId: string
+  readonly sessionId: string
+}
+
+const MODEL_FACET_BINDINGS = Object.freeze([
+  ['model-resources', 'common.view/model-resource-refs-source'],
+  ['model-skeleton', 'common.view/model-skeleton-source'],
+  ['model-animation', 'common.view/model-animation-source'],
+  ['model-collision', 'common.view/model-collision-source'],
+  ['model-material', 'common.view/model-material-source'],
+] as const)
+
+function publishedBinding(descriptor: AnyDescriptor, binding: BindingRef): boolean {
+  const contract = 'dataSource' in binding ? binding.dataSource : binding
+  return descriptor.dataSources.some(
+    source => source.contract === contract.contract && source.major === contract.major,
+  )
+}
+
+/**
+ * Resolve an inert viewer catalog against one already-opened session.
+ *
+ * This is the common host-owned counterpart of the app shells: candidates name only data-source
+ * contracts, while the selected codec/provider identity is copied into opaque binding tickets.
+ * There is intentionally no file-extension, codec id or game id input.
+ */
+export async function resolveSessionPresentationPlan(
+  descriptor: AnyDescriptor,
+  candidates: readonly PresentationSlot[],
+  selection: SessionPresentationSelection,
+): Promise<ResolvedPresentationPlan<SessionPresentationTicket>> {
+  const digest = (plan: PresentationPlan): string => `canonical:${canonicalJsonStringify(plan)}`
+  return resolvePresentationPlan<SessionPresentationTicket>({
+    descriptor,
+    candidates: candidates.map(candidate => ({
+      ...candidate,
+      eligible: candidate.bindings.every(binding => publishedBinding(descriptor, binding)),
+    })),
+    digest,
+    ticketMatches: binding =>
+      binding.ticket.bindingId === binding.bindingId &&
+      binding.ticket.sessionId === selection.sessionId,
+    async resolveBinding(binding) {
+      return {
+        ...binding,
+        offerId: `session:${binding.bindingId}`,
+        providerId: selection.providerId,
+        variantId: selection.variantId,
+        ticket: { bindingId: binding.bindingId, sessionId: selection.sessionId },
+      }
+    },
+  })
+}
+
+/**
+ * The admitted common model/world viewer slice used by UI hosts before the wider document catalog
+ * is migrated.  Optional model facets are included only when the descriptor publishes them, so
+ * their absence never makes the base model stage ineligible.
+ */
+export async function resolveModelWorldPresentationPlan(
+  descriptor: AnyDescriptor,
+  selection: SessionPresentationSelection,
+): Promise<ResolvedPresentationPlan<SessionPresentationTicket> | undefined> {
+  const candidates: PresentationSlot[] = []
+  if (
+    descriptor.dataSources.some(
+      source => source.contract === 'common.view/world-scene-source' && source.major === 1,
+    )
+  ) {
+    candidates.push({
+      slotId: presentationSlotId('world'),
+      kind: 'stage',
+      contributionId: 'org.modkitx.ui/world-stage',
+      extensionId: 'org.modkitx/ui',
+      priority: 380,
+      singletonGroup: 'center-stage',
+      bindings: [
+        {
+          bindingId: bindingId('world-content'),
+          contract: 'common.view/world-scene-source',
+          major: 1,
+        },
+      ],
+    })
+  }
+  if (
+    descriptor.dataSources.some(
+      source => source.contract === 'common.view/model-scene-source' && source.major === 1,
+    )
+  ) {
+    const optional = MODEL_FACET_BINDINGS.flatMap(([binding, contract]) =>
+      descriptor.dataSources.some(source => source.contract === contract && source.major === 1)
+        ? [
+            {
+              bindingId: bindingId(binding),
+              contract,
+              major: 1,
+            } as BindingRef,
+          ]
+        : [],
+    )
+    candidates.push({
+      slotId: presentationSlotId('model'),
+      kind: 'stage',
+      contributionId: 'org.modkitx.ui/model-stage',
+      extensionId: 'org.modkitx/ui',
+      priority: 350,
+      singletonGroup: 'center-stage',
+      bindings: [
+        {
+          bindingId: bindingId('model-content'),
+          contract: 'common.view/model-scene-source',
+          major: 1,
+        },
+        ...optional,
+      ],
+    })
+  }
+  if (candidates.length === 0) return undefined
+  return resolveSessionPresentationPlan(descriptor, candidates, selection)
 }
 
 function slotKey(slot: PresentationSlot): string {

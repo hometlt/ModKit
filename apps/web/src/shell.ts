@@ -38,6 +38,7 @@ import {
   nestedSubjectServices,
   openNestedSubject,
   resolveFormatWriter,
+  resolveModelWorldPresentationPlan,
   type OpenSubjectResult,
 } from '@modkitx-x3/host'
 import type {
@@ -656,6 +657,11 @@ async function boot(): Promise<void> {
         dispose(): Promise<void>
       }
       const key = descriptorKey(result.descriptor)
+      const presentation = await resolveModelWorldPresentationPlan(result.descriptor, {
+        sessionId: `pwa:${key}`,
+        providerId: result.selected.contributionId,
+        variantId: result.selected.variantId,
+      })
       const operations = session.operations()
       let commandAuthority: WebCommandSubjectLease | undefined
       /*
@@ -722,6 +728,7 @@ async function boot(): Promise<void> {
       inspecting = undefined
       inspect(entry.id)
       return {
+        ...(presentation === undefined ? {} : { presentation: presentation.plan }),
         descriptor: () => session.descriptor(),
         dataSource: (contract: string, major: number) => session.dataSource(contract, major),
         async dispose() {

@@ -129,7 +129,7 @@ export interface SubjectOpenedSnapshot {
   readonly state: 'opened'
   readonly sessionId: string
   readonly descriptor: Record<string, unknown>
-  /** A host that resolves presentation (Electron) ships the plan; others omit it. */
+  /** A host that resolves presentation ships the immutable plan; fallback-only hosts omit it. */
   readonly presentation?: PresentationPlan
   readonly selected: {
     readonly contributionId: string
