@@ -72,6 +72,7 @@ export const STARCRAFT2_DATA_SCHEMAS = Object.freeze([
       scalar('DeathType', ''),
       scalar('KillXP'),
       scalar('LifeMax'),
+      scalar('Food'),
       scalar('ShieldsMax'),
       scalar('EnergyMax'),
       scalar('Speed'),
