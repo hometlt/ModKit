@@ -6,8 +6,8 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:2aeaf356603cf19dd1c89df2a4398b307beed9541013f1d2d54e0904e4f1174c",
-      "size": 38215168
+      "sha256": "sha256:ad8ad467647dd21c393f543d2f70a940f47a5342cbb27d4df2ab39ce197b0b63",
+      "size": 38146048
     },
     {
       "catalog": [
@@ -95,7 +95,7 @@
           ],
           "coordinate": "org.modkitx/images",
           "root": "extensions/common/images",
-          "sourceDigest": "sha256:c15e57e83dade1b7bd3ab6df388e01afe4d877ad622c3c9ceeb2cc8bed85ddd8"
+          "sourceDigest": "sha256:a343cab85187b5836a3e2e680109851ebe39618ddae1a214d19b6c58d2c68ed0"
         },
         {
           "contributions": [
@@ -248,8 +248,8 @@
       "file": "artifacts/modkitx-common.tar",
       "id": "common",
       "kind": "common-extension-bundle",
-      "sha256": "sha256:6caecbf9407d2307d826c0a1867558508f9164aed0987d0e1fdc7933df349757",
-      "size": 1725440
+      "sha256": "sha256:6427a8829bb795aacfd78722aa0c2cac943aa3b8f128444d4310b7e154c5d57d",
+      "size": 1726976
     },
     {
       "catalog": [
@@ -316,14 +316,14 @@
           ],
           "coordinate": "org.modkitx.blizzard/starcraft2-game",
           "root": "extensions/blizzard/starcraft2-game",
-          "sourceDigest": "sha256:5540b4a3074ef19ba17979596db8e5113ba8c333e9a6ac43032edd10e29cb852"
+          "sourceDigest": "sha256:aa81ac7629bd4f48476d5618ed5c564328f5d3c5903ce048a2effe4393151e2a"
         }
       ],
       "file": "artifacts/modkitx-sc2-mod-studio.tar",
       "id": "sc2-mod-studio",
       "kind": "game-extension-bundle",
-      "sha256": "sha256:a022a10469b18d3347358a339386200adb433b66acc52b88e231f612e321f43f",
-      "size": 1140224
+      "sha256": "sha256:c754f8f9299e7d1ecf57d5a3038d39a44ca6de8cc4078fc9de61804f017459f8",
+      "size": 1146368
     },
     {
       "catalog": [
@@ -369,11 +369,11 @@
       },
       {
         "path": "apps/modkit-vscode/generated/bundled-catalog.json",
-        "sha256": "sha256:1b5417c37ed81e0e0c50a317acda87ad9bd516c29ff9335ce79e24080da51d87"
+        "sha256": "sha256:cd353dc4a9070e6b20a8832982b83d8220890f33ce9859bfc8bb70029d462076"
       },
       {
         "path": "apps/web/generated/extension-catalog.js",
-        "sha256": "sha256:f4b5ace8a24d7638313612ad492fafc4241d3e24d4ef26e9b57e42233d91324a"
+        "sha256": "sha256:a84d7b29b5e6948046a0b0fe52ff5ff365b5df2d3fc8aebd2ce3875a737d6253"
       },
       {
         "path": "migration/product-profiles.json",
@@ -385,7 +385,7 @@
       },
       {
         "path": "scripts/bundle-hashes.json",
-        "sha256": "sha256:0a358391d0af39bc62ba630ea8bd74fce1cfc5552db7f4b2c3d83a0ee3aa0237"
+        "sha256": "sha256:6872dac6de2d3b6dcbf509f69e7c31b4cd49bcf26452c5841f29389a5f4947b3"
       }
     ],
     "closure": "mk3-ga",
@@ -446,7 +446,7 @@
       "cleanMachineInstaller": true,
       "instructions": {
         "file": "INSTALL.md",
-        "sha256": "sha256:a82643f0469aebc6157ba71d9f67935e86d1412c71ffd91e53b2b6b2316f4e5b"
+        "sha256": "sha256:f258811d98737546e312b6036bee04594a9140bfd3e1de7bc03b9ee728308e15"
       },
       "kind": "verified-versioned-local-store",
       "remainder": null
