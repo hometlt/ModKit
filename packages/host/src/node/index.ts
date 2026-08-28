@@ -18,6 +18,18 @@ export {
   type NodeMapPreviewResourcePlanResolverOptions,
 } from './map-preview-resource-resolver.js'
 export {
+  launchNodeGameResource,
+  spawnDetachedGameProcess,
+  type LaunchNodeGameResourceRequest,
+  type NodeGameLaunchFilesystem,
+  type NodeGameLaunchPathKind,
+  type NodeGameLaunchReceipt,
+  type NodeGameLaunchResult,
+  type NodeGameProcessLease,
+  type NodeGameProcessSpawner,
+  type NodeGameProcessSpawnRequest,
+} from './game-launch.js'
+export {
   loadExtensionRoots,
   type ExtensionRootFailure,
   type ExtensionRootRequest,

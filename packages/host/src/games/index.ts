@@ -4,11 +4,16 @@ import { contractId, diagnostic, type Diagnostic } from '@modkitx-x3/core'
 import {
   GAME_INSTALLATION_DISCOVERY_CONTRACT,
   GAME_INSTALLATION_MATCHER_PROFILE,
+  GAME_LAUNCH_PLAN_CONTRACT,
+  type GameInstallation,
   type GameInstallationDiscovery,
   type GameInstallationDiscoveryResult,
   type GameInstallationOfferFacet,
   type GameInstallationOrigin,
   type GameInstallationRequestFacet,
+  type GameLaunchPlan,
+  type GameLaunchPlanner,
+  type GameLaunchResource,
 } from '@modkitx-x3/sdk/games'
 import type {
   DefinitionInventoryResult,
@@ -141,25 +146,59 @@ export const GAME_INSTALLATION_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
     }),
   }) as ServiceContractDefinitionSpecV1Wire
 
+/** Standard side-effect-free native launch-plan definition. */
+export const GAME_LAUNCH_PLAN_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wire =
+  Object.freeze({
+    schemaVersion: 1,
+    kind: 'service',
+    contract: GAME_LAUNCH_PLAN_CONTRACT,
+    major: 1,
+    offerFacet: Object.freeze({
+      presence: 'required',
+      schema: Object.freeze({
+        $ref: 'https://schemas.modkitx.org/x3/game-launch-offer.v1.schema.json',
+      }),
+    }),
+    requestFacet: Object.freeze({
+      presence: 'required',
+      schema: Object.freeze({
+        $ref: 'https://schemas.modkitx.org/x3/game-launch-request.v1.schema.json',
+      }),
+    }),
+    matching: Object.freeze({ profile: GAME_INSTALLATION_MATCHER_PROFILE, major: 1 }),
+    conformanceProfile: 'common.game/launch-plan-v1',
+    surface: Object.freeze({
+      fields: Object.freeze(['contract', 'plannerId', 'gameIds']),
+      methods: Object.freeze({
+        plan: Object.freeze({
+          kind: 'value',
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+      }),
+    }),
+  }) as ServiceContractDefinitionSpecV1Wire
+
 /** Register the platform definition before extension-owned definitions are inventoried. */
 export function registerStandardGameDefinitions(
   definitions: ServiceContractDefinitionRegistry,
 ): Promise<DefinitionInventoryResult> {
-  const definition = GAME_INSTALLATION_CONTRACT_DEFINITION
-  return definitions.replaceOwnerInventory(STANDARD_GAMES_OWNER, [
-    {
-      definition,
-      provenance: {
-        ownerExtensionId: STANDARD_GAMES_OWNER,
-        extensionVersion: '1.0.0',
-        inventoryRecordId: `host:${definition.contract}@${definition.major}`,
-        manifestDigest: `host:${definition.contract}@${definition.major}`,
-        artifactDigest: 'host:standard-game-definitions',
-        artifactRoot: 'host:',
-        manifestPath: 'host:standard-game-definitions',
-      },
-    },
-  ])
+  return definitions.replaceOwnerInventory(
+    STANDARD_GAMES_OWNER,
+    [GAME_INSTALLATION_CONTRACT_DEFINITION, GAME_LAUNCH_PLAN_CONTRACT_DEFINITION].map(
+      definition => ({
+        definition,
+        provenance: {
+          ownerExtensionId: STANDARD_GAMES_OWNER,
+          extensionVersion: '1.0.0',
+          inventoryRecordId: `host:${definition.contract}@${definition.major}`,
+          manifestDigest: `host:${definition.contract}@${definition.major}`,
+          artifactDigest: 'host:standard-game-definitions',
+          artifactRoot: 'host:',
+          manifestPath: 'host:standard-game-definitions',
+        },
+      }),
+    ),
+  )
 }
 
 export interface GamesHostServices {
@@ -412,6 +451,234 @@ export async function discoverGameInstallations(
     return Object.freeze({
       state: 'discovered',
       result,
+      diagnostics: resolution.diagnostics,
+    })
+  } finally {
+    await resolution.release()
+  }
+}
+
+export interface ResolveGameLaunchPlannerRequest extends GameInstallationRequestFacet {
+  readonly services: GamesHostServices
+  readonly grant: PermissionGrant
+  readonly budgets: ResourceBudget
+  readonly signal?: AbortSignal
+}
+
+export type GameLaunchPlannerResolution =
+  | Readonly<{
+      state: 'resolved'
+      planner: GameLaunchPlanner
+      diagnostics: readonly Diagnostic[]
+      release(): Promise<void>
+    }>
+  | Readonly<{
+      state: 'unresolved'
+      diagnostics: readonly Diagnostic[]
+    }>
+
+export interface PlanGameLaunchRequest extends ResolveGameLaunchPlannerRequest {
+  readonly installation: GameInstallation
+  readonly resource: GameLaunchResource
+}
+
+export type GameLaunchPlanning =
+  | Readonly<{
+      state: 'planned'
+      plan: GameLaunchPlan
+      diagnostics: readonly Diagnostic[]
+    }>
+  | Readonly<{
+      state: 'unresolved'
+      diagnostics: readonly Diagnostic[]
+    }>
+
+function isGameLaunchPlanner(value: unknown): value is GameLaunchPlanner {
+  const record = recordOf(value)
+  return (
+    record?.['contract'] === GAME_LAUNCH_PLAN_CONTRACT &&
+    nonEmptyString(record['plannerId']) &&
+    stringList(record['gameIds']) !== undefined &&
+    typeof record['plan'] === 'function'
+  )
+}
+
+function validRelativeProcessPath(value: unknown, allowDot: boolean): value is string {
+  if (!nonEmptyString(value) || value.includes('\0')) return false
+  const normalized = value.replace(/\\/gu, '/')
+  if (normalized.startsWith('/') || /^[a-z]:/iu.test(normalized)) return false
+  const segments = normalized.split('/')
+  if (segments.some(segment => segment === '..' || segment.length === 0)) return false
+  return allowDot || segments.some(segment => segment !== '.')
+}
+
+function validConfirmedInstallation(value: GameInstallation, gameId: string): boolean {
+  const installPath = value.installPath.trim().replace(/\\/gu, '/').replace(/\/+$/gu, '')
+  const normalizedPath = value.normalizedPath.trim().replace(/\\/gu, '/').replace(/\/+$/gu, '')
+  return (
+    validInstallation(value, gameId) &&
+    installPath === normalizedPath &&
+    value.evidence.length > 0 &&
+    value.evidence.every(item => item.found)
+  )
+}
+
+function validGameLaunchPlan(
+  value: unknown,
+  request: PlanGameLaunchRequest,
+): value is GameLaunchPlan {
+  const record = recordOf(value)
+  const resource = recordOf(record?.['resource'])
+  const argumentsValue = record?.['arguments']
+  const argumentIndex = record?.['resourceArgumentIndex']
+  return (
+    record !== undefined &&
+    record['schemaVersion'] === 1 &&
+    nonEmptyString(record['planId']) &&
+    record['gameId'] === request.gameId &&
+    record['installationRoot'] === request.installation.normalizedPath &&
+    resource?.['kind'] === request.resource.kind &&
+    resource['path'] === request.resource.path.trim() &&
+    validRelativeProcessPath(record['executableRelativePath'], false) &&
+    validRelativeProcessPath(record['workingDirectoryRelativePath'], true) &&
+    Array.isArray(argumentsValue) &&
+    argumentsValue.length > 0 &&
+    argumentsValue.length <= 64 &&
+    argumentsValue.every(
+      argument =>
+        typeof argument === 'string' && argument.length <= 32_767 && !argument.includes('\0'),
+    ) &&
+    Number.isSafeInteger(argumentIndex) &&
+    (argumentIndex as number) >= 0 &&
+    (argumentIndex as number) < argumentsValue.length &&
+    argumentsValue[argumentIndex as number] === resource['path'] &&
+    record['mode'] === 'detached' &&
+    record['stdio'] === 'ignore'
+  )
+}
+
+/** Resolve one named-game planner. The returned provider remains pure and cannot launch a process. */
+export async function resolveGameLaunchPlanner(
+  request: ResolveGameLaunchPlannerRequest,
+): Promise<GameLaunchPlannerResolution> {
+  const definitions = request.services.serviceDefinitions
+  if (definitions === undefined) {
+    return {
+      state: 'unresolved',
+      diagnostics: [
+        diagnostic(
+          'information',
+          'x3.host/game-launch-unavailable',
+          'this host registered no service-contract definitions, so game launch cannot be planned',
+        ),
+      ],
+    }
+  }
+  const resolver = createHostServiceResolver({
+    inventory: request.services.inventory,
+    target: request.services.target,
+    executionBackends: request.services.executionBackends,
+    definitions,
+    grant: request.grant,
+    budgets: request.budgets,
+    ...(request.signal === undefined ? {} : { signal: request.signal }),
+  })
+  try {
+    const lease = await resolver.port.resolve({
+      contract: GAME_LAUNCH_PLAN_CONTRACT,
+      major: 1,
+      facet: { gameId: request.gameId },
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    })
+    if (!isGameLaunchPlanner(lease.value) || !lease.value.gameIds.includes(request.gameId)) {
+      await resolver.release()
+      return {
+        state: 'unresolved',
+        diagnostics: [
+          ...resolver.diagnostics,
+          diagnostic(
+            'error',
+            'x3.host/game-launch-planner-invalid',
+            `the selected provider does not implement ${GAME_LAUNCH_PLAN_CONTRACT}@1 for ${request.gameId}`,
+          ),
+        ],
+      }
+    }
+    return Object.freeze({
+      state: 'resolved',
+      planner: lease.value,
+      diagnostics: Object.freeze([
+        ...resolver.diagnostics,
+        diagnostic(
+          'information',
+          'x3.host/game-launch-planner-selected',
+          `selected ${lease.value.plannerId} for ${request.gameId}`,
+        ),
+      ]),
+      release: () => resolver.release(),
+    })
+  } catch (error) {
+    await resolver.release()
+    if (request.signal?.aborted === true) throw error
+    return {
+      state: 'unresolved',
+      diagnostics: [
+        ...resolver.diagnostics,
+        diagnostic(
+          'information',
+          'x3.host/game-launch-planner-unresolved',
+          `no launch planner resolved for ${request.gameId} (${error instanceof Error ? error.message : String(error)})`,
+        ),
+      ],
+    }
+  }
+}
+
+/** Resolve, validate and release one pure game-owned launch plan. */
+export async function planGameLaunch(request: PlanGameLaunchRequest): Promise<GameLaunchPlanning> {
+  if (
+    !validConfirmedInstallation(request.installation, request.gameId) ||
+    request.resource.kind !== 'map' ||
+    !nonEmptyString(request.resource.path) ||
+    request.resource.path.includes('\0')
+  ) {
+    return Object.freeze({
+      state: 'unresolved' as const,
+      diagnostics: Object.freeze([
+        diagnostic(
+          'error',
+          'x3.host/game-launch-request-invalid',
+          'game launch requires one confirmed installation and one non-empty map path',
+        ),
+      ]),
+    })
+  }
+  const resource = Object.freeze({ ...request.resource, path: request.resource.path.trim() })
+  const resolution = await resolveGameLaunchPlanner(request)
+  if (resolution.state === 'unresolved') return resolution
+  try {
+    const plan = await resolution.planner.plan({
+      gameId: request.gameId,
+      installation: request.installation,
+      resource,
+      ...(request.signal === undefined ? {} : { signal: request.signal }),
+    })
+    if (!validGameLaunchPlan(plan, { ...request, resource })) {
+      return Object.freeze({
+        state: 'unresolved' as const,
+        diagnostics: Object.freeze([
+          ...resolution.diagnostics,
+          diagnostic(
+            'error',
+            'x3.host/game-launch-plan-invalid',
+            `the selected provider returned an unsafe or malformed ${GAME_LAUNCH_PLAN_CONTRACT}@1 plan`,
+          ),
+        ]),
+      })
+    }
+    return Object.freeze({
+      state: 'planned',
+      plan,
       diagnostics: resolution.diagnostics,
     })
   } finally {

@@ -6,12 +6,14 @@ import dataManifest from '../contributions/provider-data.json' with { type: 'jso
 import resolvedDataManifest from '../contributions/provider-resolved-data.json' with { type: 'json' }
 import mapManifest from '../contributions/provider-map.json' with { type: 'json' }
 import mapPreviewManifest from '../contributions/provider-map-preview.json' with { type: 'json' }
+import launchManifest from '../contributions/provider-launch.json' with { type: 'json' }
 import packageJson from '../package.json' with { type: 'json' }
 import * as provider from './provider.js'
 import * as workspaceProvider from './workspace-provider.js'
 import * as dataProvider from './data-provider.js'
 import * as mapProvider from './map-provider.js'
 import * as mapPreviewProvider from './map-preview-provider.js'
+import * as launchProvider from './launch-provider.js'
 
 export const starcraft2Game = defineLinkedExtension({
   source: 'linked:extensions/blizzard/starcraft2-game',
@@ -23,6 +25,7 @@ export const starcraft2Game = defineLinkedExtension({
     { path: 'contributions/provider-resolved-data.json', manifest: resolvedDataManifest },
     { path: 'contributions/provider-map.json', manifest: mapManifest },
     { path: 'contributions/provider-map-preview.json', manifest: mapPreviewManifest },
+    { path: 'contributions/provider-launch.json', manifest: launchManifest },
   ],
   modules: {
     './src/provider.js': provider,
@@ -30,5 +33,6 @@ export const starcraft2Game = defineLinkedExtension({
     './src/data-provider.js': dataProvider,
     './src/map-provider.js': mapProvider,
     './src/map-preview-provider.js': mapPreviewProvider,
+    './src/launch-provider.js': launchProvider,
   },
 })

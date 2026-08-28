@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx.blizzard/starcraft2-native-map-launch",
+  "displayName": "StarCraft II native map launch plan",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node-windows",
+      "entrypoint": "./src/launch-provider.js",
+      "target": {
+        "environments": ["node"],
+        "operatingSystems": ["windows"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "node-worker-windows",
+      "entrypoint": "./src/launch-provider.js",
+      "target": {
+        "environments": ["node-worker"],
+        "operatingSystems": ["windows"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "starcraft2-native-map-launch-v1",
+        "contract": "common.game/launch-plan",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "gameIds": ["org.modkitx/starcraft-2"]
+        }
+      }
+    ],
+    "lifecycleScope": "operation"
+  },
+  "limitations": [
+    "This contribution only builds an immutable launch plan; process creation and permission checks remain host-owned.",
+    "The native SC2Switcher route is available on Windows only."
+  ]
+}
