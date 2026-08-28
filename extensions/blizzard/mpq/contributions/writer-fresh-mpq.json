@@ -5,7 +5,7 @@
     "major": 1
   },
   "id": "org.modkitx.blizzard/mpq-fresh-writer",
-  "displayName": "Fresh Blizzard MPQ Save As writer",
+  "displayName": "Blizzard MPQ Save As writers",
   "runtimeVariants": [
     {
       "variantId": "portable",
@@ -30,6 +30,20 @@
           "fidelityEvidenceId": "mpq-fresh-archive-writer-v1",
           "formatId": "mpq",
           "representationId": "source",
+          "mutationMode": "export-only",
+          "minimumRoundTrip": "semantic"
+        }
+      },
+      {
+        "offerId": "mpq-native-preserving-v1",
+        "contract": "common.edit/writer",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "providerId": "org.modkitx.blizzard/mpq-fresh-writer",
+          "fidelityEvidenceId": "mpq-native-preserving-writer-v1",
+          "formatId": "mpq",
+          "representationId": "native-source",
           "mutationMode": "export-only",
           "minimumRoundTrip": "semantic"
         }

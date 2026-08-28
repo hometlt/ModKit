@@ -1,5 +1,12 @@
+import {
+  nativePreservingFidelity,
+  snapshotNativePreservingMpq,
+  validateNativePreservingChange,
+} from './native-preserving.js'
+
 const PROVIDER_ID = 'org.modkitx.blizzard/mpq-fresh-writer'
 const OFFER_ID = 'mpq-fresh-archive-v1'
+const NATIVE_OFFER_ID = 'mpq-native-preserving-v1'
 
 const HEADER_BYTES = 32
 const HASH_ENTRY_BYTES = 16
@@ -483,6 +490,8 @@ const identity = Object.freeze({
   representationId: 'source',
 })
 
+const nativeIdentity = Object.freeze({ ...identity, representationId: 'native-source' })
+
 const fidelity = Object.freeze({
   roundTrip: 'semantic',
   preservesUnknownData: true,
@@ -500,40 +509,53 @@ export function createProvider(selection, context) {
   if (
     selection.contract !== 'common.edit/writer' ||
     selection.major !== 1 ||
-    selection.offerId !== OFFER_ID
+    ![OFFER_ID, NATIVE_OFFER_ID].includes(selection.offerId)
   ) {
-    throw new TypeError(`unknown fresh MPQ writer offer ${selection.offerId}`)
+    throw new TypeError(`unknown MPQ writer offer ${selection.offerId}`)
   }
+  const nativePreserving = selection.offerId === NATIVE_OFFER_ID
+  const selectedFidelity = nativePreserving ? nativePreservingFidelity : fidelity
   const writer = Object.freeze({
-    identity,
+    identity: nativePreserving ? nativeIdentity : identity,
     offer: Object.freeze({
       providerId: PROVIDER_ID,
-      fidelityEvidenceId: 'mpq-fresh-archive-writer-v1',
+      fidelityEvidenceId: nativePreserving
+        ? 'mpq-native-preserving-writer-v1'
+        : 'mpq-fresh-archive-writer-v1',
       formatId: 'mpq',
-      representationId: 'source',
+      representationId: nativePreserving ? 'native-source' : 'source',
       mutationMode: 'export-only',
       minimumRoundTrip: 'semantic',
     }),
     async validate(change, signal) {
-      return validationOf(change, context, signal)
+      return nativePreserving
+        ? validateNativePreservingChange(change, context, signal)
+        : validationOf(change, context, signal)
     },
     async plan(change, signal) {
-      const validation = validationOf(change, context, signal)
+      const validation = nativePreserving
+        ? await validateNativePreservingChange(change, context, signal)
+        : validationOf(change, context, signal)
       if (!validation.valid) {
         throw new TypeError(validation.diagnostics.map(item => item.message).join('; '))
       }
       return Object.freeze({
-        planId: `${PROVIDER_ID}:${change.targets[0].targetId}`,
+        planId: `${PROVIDER_ID}:${selection.offerId}:${change.targets[0].targetId}`,
         targets: change.targets,
         edits: change.edits,
-        semantics: Object.freeze({ mutationMode: 'export-only', minimumGuarantee: 'recoverable' }),
-        fidelity,
+        semantics: Object.freeze({
+          mutationMode: 'export-only',
+          minimumGuarantee: nativePreserving ? 'atomic' : 'recoverable',
+        }),
+        fidelity: selectedFidelity,
         diagnostics: Object.freeze([]),
       })
     },
   })
   return Object.freeze({ value: writer, release: async () => undefined })
 }
+
+export { snapshotNativePreservingMpq }
 
 /**
  * Snapshot a bounded loose namespace and produce the standard one-file Save As ChangeSet.

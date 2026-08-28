@@ -24,7 +24,7 @@
     "The current compatibility runtime reaches the Node buffer module through the eager reader and writer, so browser environments are not declared.",
     "The source-native reader covers MPQ v0/v1 stored, zlib, and bzip2 single-unit or multi-sector payloads; v2+, high-offset tables, encrypted, implode, patch, and stored-sector CRC layouts remain explicit gates.",
     "Recovery is available through the eager reader, while the writer creates new archives and does not preserve every layout or compression feature of an input archive.",
-    "The MK3 reader covers classic MPQ v0-v3 hash/block tables and stored or zlib payloads. A separate export-only provider creates fresh MPQ v0 archives from complete bounded loose namespaces; native-preserving repack, encrypted, implode, bzip2, patch, high-offset and signed/launch paths remain pending."
+    "The MK3 reader covers classic MPQ v0-v3 hash/block tables and stored or zlib payloads. One export-only provider creates fresh MPQ v0 archives and fixed-slot native-preserving Save As replacements for v0/v1; unused changed-slot bytes are zero-filled in the new copy, opaque attributes/signatures are retained but marked invalidated, while native-preserving v2/v3, changed encrypted, implode, bzip2, patch, sector-CRC, high-offset, signing and launch paths remain explicit named remainders."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "mpq", "label": "Blizzard MPQ archive" }],
