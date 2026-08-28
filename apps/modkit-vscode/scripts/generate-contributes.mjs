@@ -5,6 +5,7 @@ import { isDeepStrictEqual } from 'node:util'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { format, resolveConfig } from 'prettier'
 
 const appRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)))
 const args = process.argv.slice(2)
@@ -49,6 +50,17 @@ const sortedKeys = value =>
 
 const commands = [...input.commands].sort((a, b) => compareUtf8(a.command, b.command))
 const customEditors = [...input.customEditors].sort((a, b) => compareUtf8(a.viewType, b.viewType))
+const languages = [...(input.languages ?? [])].sort((a, b) => compareUtf8(a.id, b.id))
+if (
+  languages.some(
+    (language, index) =>
+      typeof language.id !== 'string' ||
+      language.id.length === 0 ||
+      (index > 0 && language.id === languages[index - 1].id),
+  )
+) {
+  throw new TypeError('languages must contain unique non-empty ids')
+}
 const views = sortedGroups(input.views, 'id')
 const viewsContainers = sortedGroups(input.viewsContainers, 'id')
 // The settings schema is authored as one object; only its property order is normalised, because a
@@ -58,8 +70,11 @@ const configuration = {
   properties: sortedKeys(input.configuration.properties),
 }
 
-const document = { commands, configuration, customEditors, views, viewsContainers }
-const rendered = `${JSON.stringify(document, null, 2)}\n`
+const document = { commands, configuration, customEditors, languages, views, viewsContainers }
+const rendered = await format(`${JSON.stringify(document, null, 2)}\n`, {
+  ...(await resolveConfig(output)),
+  filepath: output,
+})
 const fileSystemSchemes = [...(input.fileSystemSchemes ?? [])].sort(compareUtf8)
 if (
   fileSystemSchemes.some(
@@ -112,6 +127,7 @@ if (check) {
   }
   console.log(
     `contributes:check: ${commands.length} commands, ${customEditors.length} generic editor, ` +
+      `${languages.length} language associations, ` +
       `${Object.values(views).flat().length} views in ` +
       `${Object.values(viewsContainers).flat().length} container, ` +
       `${Object.keys(configuration.properties).length} setting, ${activationEvents.length} activation events`,

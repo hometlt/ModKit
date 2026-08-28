@@ -169,6 +169,78 @@
         "priority": "option"
       }
     ],
+    "languages": [
+      {
+        "id": "galaxy",
+        "aliases": [
+          "SC2 Galaxy Script",
+          "galaxy"
+        ],
+        "extensions": [
+          ".galaxy"
+        ]
+      },
+      {
+        "id": "ini",
+        "aliases": [
+          "SC2 Hotkeys",
+          "ini"
+        ],
+        "extensions": [
+          ".SC2Hotkeys",
+          ".sc2hotkeys"
+        ]
+      },
+      {
+        "id": "sc2layout",
+        "aliases": [
+          "SC2 Layout",
+          "sc2layout"
+        ],
+        "extensions": [
+          ".SC2Layout",
+          ".sc2layout"
+        ]
+      },
+      {
+        "id": "sc2strings",
+        "aliases": [
+          "SC2 Localized Strings",
+          "sc2strings"
+        ],
+        "filenamePatterns": [
+          "**/LocalizedData/**/*.txt",
+          "**/localizeddata/**/*.txt"
+        ]
+      },
+      {
+        "id": "sc2style",
+        "aliases": [
+          "SC2 Style",
+          "sc2style"
+        ],
+        "extensions": [
+          ".SC2Style",
+          ".sc2style"
+        ]
+      },
+      {
+        "id": "xml",
+        "aliases": [
+          "SC2 XML",
+          "xml"
+        ],
+        "extensions": [
+          ".SC2Lighting",
+          ".sc2lighting"
+        ],
+        "filenames": [
+          "Attributes",
+          "Objects",
+          "Regions"
+        ]
+      }
+    ],
     "views": {
       "modkit": [
         {

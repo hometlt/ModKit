@@ -15,6 +15,7 @@ import {
 } from '@modkitx-x3/host/node'
 
 export * from './workbench-workflows.js'
+export * from './sc2-authoring-workflows.js'
 
 export const VSCODE_DESKTOP_EXTENSION_REALM = 'org.modkitx.app.vscode/desktop-extension'
 export const VSCODE_WEB_EXTENSION_REALM = 'org.modkitx.app.vscode/web-extension'
