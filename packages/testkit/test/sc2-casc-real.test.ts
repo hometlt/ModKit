@@ -23,13 +23,19 @@ import {
 } from '@modkitx-x3/host'
 import { openRuntimeSession } from '@modkitx-x3/host/runtime'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
-import { proves } from '@modkitx-x3/testkit'
+import {
+  drainModelProjection,
+  materializeAndCompare,
+  proves,
+  unexplainedDifferences,
+} from '@modkitx-x3/testkit'
 import {
   type ModelSceneSource,
   type MapTerrainNativeTransform,
   type MapTerrainSample,
   type NamespaceEntrySource,
   type RasterImageSource,
+  type ResolvedDataWorkspaceSnapshot,
   type ResourceBudget,
   WORLD_SCENE_SOURCE_CONTRACT,
 } from '@modkitx-x3/sdk'
@@ -119,9 +125,7 @@ const budget: ResourceBudget = {
 }
 
 describe('installed StarCraft II CASC product path', () => {
-  it('discovers the install, resolves dependencies and opens a real semantic map through CASC', async ({
-    skip,
-  }) => {
+  it('discovers the install, resolves dependencies and opens a real semantic map through CASC', async () => {
     const directories = [
       ['blizzard', 'starcraft2-game'],
       ['blizzard', 'starcraft2'],
@@ -183,8 +187,9 @@ describe('installed StarCraft II CASC product path', () => {
           `MODKITX_SC2_ROOT did not resolve to a valid SC2 installation: ${sc2Override}`,
         )
       }
-      skip()
-      return
+      throw new Error(
+        'SC2 installation discovery returned no usable installation; the GA real-corpus proof must not skip',
+      )
     }
     const buildInfoPath = join(installation.installPath, '.build.info')
     if (!existsSync(buildInfoPath)) {
@@ -242,6 +247,9 @@ describe('installed StarCraft II CASC product path', () => {
     }
     const vfs = new VirtualFileSystem().registerProvider(createFileVfsProvider())
     let casc: Awaited<ReturnType<typeof openSubject>> | undefined
+    let liveDataSnapshot: ResolvedDataWorkspaceSnapshot | undefined
+    let liveDataResourceRevision: string | undefined
+    let sc2WorldUvwArtifactDigest: string | undefined
     try {
       const mount = await vfs.openMount(installationUri)
       casc = await openSubject({
@@ -453,7 +461,7 @@ describe('installed StarCraft II CASC product path', () => {
           resources,
           locales: ['enUS'],
           queries: [
-            { namespace: 'Unit', entityId: 'Marine' },
+            ...preliminaryMap.catalogQueries,
             { namespace: 'Effect', entityId: 'Corruption' },
             { namespace: 'Effect', entityId: 'GuardianShieldSearch' },
           ],
@@ -577,6 +585,8 @@ describe('installed StarCraft II CASC product path', () => {
           console.info(
             `[sc2-live] resolved data ${JSON.stringify(corpusDescriptor)}: ${liveData.snapshot.definitions.length} definitions, ${liveData.snapshot.relations.length} typed relations, ${liveData.snapshot.localizedStrings.length} localized strings; complete=${String(liveData.snapshot.complete)}`,
           )
+          liveDataSnapshot = liveData.snapshot
+          liveDataResourceRevision = resources.revision
         } finally {
           await liveData.release()
           await resources.dispose()
@@ -692,7 +702,11 @@ describe('installed StarCraft II CASC product path', () => {
           workspace,
           resources: mapResources,
           subjectUri: `sc2-map:${mapRoot}`,
-          catalog,
+          catalog:
+            liveDataSnapshot ??
+            (() => {
+              throw new Error('real resolved data snapshot was not retained for the map join')
+            })(),
           limits: {
             ...mapLimits,
             maxRequirements: 8,
@@ -874,6 +888,31 @@ describe('installed StarCraft II CASC product path', () => {
               lods: ['exact'],
             }),
           )
+          expect(semanticMap.snapshot.gameId).toBe(liveDataSnapshot?.gameId)
+          expect(semanticMap.snapshot.workspaceId).toBe(liveDataSnapshot?.workspaceId)
+          expect(semanticMap.snapshot.gameId).toBe(workspace.gameId)
+          expect(semanticMap.snapshot.workspaceId).toBe(workspace.workspaceId)
+          expect(String(mapResources.revision)).toBe(liveDataResourceRevision)
+          expect(worldInfo.provenance).toEqual(mapResources.provenance())
+          const definitionRefs = semanticMap.snapshot.semantic.objects.flatMap(object =>
+            object.catalog === undefined ? [] : [object.catalog],
+          )
+          expect(definitionRefs.length).toBeGreaterThan(0)
+          const unresolvedDefinitionRefs = definitionRefs.filter(
+            binding => binding.entity === undefined,
+          )
+          expect(unresolvedDefinitionRefs).toEqual([])
+          expect(semanticMap.snapshot.semantic.resolvedCatalogObjects).toBe(definitionRefs.length)
+          proves({
+            capabilityId: 'vertical/starcraft-2/neutral-definitions-world',
+            operation: 'inspect',
+            note: 'retail resolved definitions and TArcade world share the same game, workspace and CASC revision; every emitted world definition reference resolves',
+          })
+          proves({
+            capabilityId: 'vertical/starcraft-2/neutral-definitions-world',
+            operation: 'read',
+            note: 'the live definition and world facets are joined without claiming a portable UVD or production UVW artifact',
+          })
           const uvwAdmission = await assessCandidateWorldUvwAdmission(world, {
             maxPageItems: 4_096,
             maxTerrainItems: 100_000,
@@ -942,6 +981,7 @@ describe('installed StarCraft II CASC product path', () => {
           }
           expect(repeatedUvw.artifactBytes).toEqual(uvwAdmission.artifactBytes)
           expect(repeatedUvw.receipt.artifactDigest).toBe(uvwAdmission.receipt.artifactDigest)
+          sc2WorldUvwArtifactDigest = uvwAdmission.receipt.artifactDigest
           const viewer = await inspectCandidateWorld(world, {
             maxLayers: 8,
             maxItemsPerLayer: 8,
@@ -1026,8 +1066,32 @@ describe('installed StarCraft II CASC product path', () => {
                 maxBytes: budget.maxScalarBytes,
               })
               expect(primitive.positions.length).toBeGreaterThan(0)
+              const projection = await drainModelProjection(model, {
+                maxBytes: budget.maxScalarBytes,
+              })
+              const verdict = await materializeAndCompare(repoRoot, projection, {
+                assetId: `sc2/${path}`,
+                sourceFormat: 'm3',
+                subjectRevision: nested.session.revision,
+                assetClass: 'unit',
+              })
+              expect(verdict.byteStable).toBe(true)
+              expect(unexplainedDifferences(verdict)).toEqual([])
+              if (!verdict.exact) {
+                expect(
+                  verdict.receipt.diff.length +
+                    verdict.receipt.lostFacetIds.length +
+                    verdict.receipt.excludedFacetIds.length,
+                ).toBeGreaterThan(0)
+              }
+              expect(sc2WorldUvwArtifactDigest).toMatch(/^sha256:[0-9a-f]{64}$/u)
+              proves({
+                capabilityId: 'vertical/starcraft-2/native-to-uv',
+                operation: 'read',
+                note: 'one retail CASC workflow proves receipt-complete M3-to-UVM and exact TArcade candidate UVW materialization; the separate companion proof closes exact M3 UVM scope without making UVW a production writer',
+              })
               console.info(
-                `[sc2-live] M3 ${path}: ${info.primitives} primitive(s), ${primitive.positions.length / 3} decoded vertices`,
+                `[sc2-live] M3 ${path}: ${info.primitives} primitive(s), ${primitive.positions.length / 3} decoded vertices, UVM ${verdict.bytes.byteLength} bytes`,
               )
             } finally {
               await lease.release()
@@ -1137,5 +1201,5 @@ describe('installed StarCraft II CASC product path', () => {
       size: before.size,
       mtimeMs: before.mtimeMs,
     })
-  }, 120_000)
+  }, 300_000)
 })

@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto'
-import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -16,11 +15,17 @@ import {
   linkedExtensionInputs,
   linkedInProcessBackend,
   openMapPreviewAssetSession,
+  openNestedSubject,
   openSubject,
   registerServiceDefinitionsOrThrow,
 } from '@modkitx-x3/host'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
-import { proves } from '@modkitx-x3/testkit'
+import {
+  drainModelProjection,
+  materializeAndCompare,
+  proves,
+  unexplainedDifferences,
+} from '@modkitx-x3/testkit'
 import {
   createHostTopology,
   resolveModWorkspaceGraph,
@@ -29,6 +34,7 @@ import {
   type ArtifactSource,
   type InputSearchScope,
   type Lease,
+  type ModelSceneSource,
   type NamespaceEntrySource,
   type ResourceBudget,
   WORLD_SCENE_SOURCE_CONTRACT,
@@ -45,6 +51,7 @@ const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const GAME_ID = 'org.modkitx/warzone-2100'
 const MAP_ROOT = 'multiplay/maps/2c-highground'
 const MAP_PATH = `${MAP_ROOT}/game.map`
+const PIE_PATH = 'components/bodies/cybd_run.pie'
 const MAP_DOCUMENT_PATHS = [
   MAP_PATH,
   `${MAP_ROOT}/droid.json`,
@@ -217,9 +224,7 @@ function workspaceLock() {
 }
 
 describe('installed Warzone 2100 map to UVW vertical', () => {
-  it.skipIf(
-    mpPath === undefined || basePath === undefined || !existsSync(mpPath) || !existsSync(basePath),
-  )(
+  it.runIf(true)(
     'extracts 2c-highground through the archive codec and materializes all 4,608 cells',
     async () => {
       if (mpPath === undefined || basePath === undefined || installation === undefined) {
@@ -241,6 +246,9 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
         })),
         createHostContributionContractRegistry(),
       )
+      const archiveExecutionBackends = createExecutionBackendRegistry([
+        TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
+      ])
       const archive = await openSubject({
         inventory: archiveInventory,
         source: bytesSource(archiveBytes, 'mp.wz'),
@@ -248,7 +256,7 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
         intent: 'full',
         target: { environment: 'node', operatingSystem, architecture: 'x64' },
         grant: { id: 'warzone-live-mp-wz', classes: ['read-source'] },
-        executionBackends: createExecutionBackendRegistry([TRUSTED_IN_PROCESS_EXECUTION_BACKEND]),
+        executionBackends: archiveExecutionBackends,
         budget: archiveBudget,
       })
       if (archive.state !== 'opened') {
@@ -308,12 +316,13 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
         intent: 'full',
         target: { environment: 'node', operatingSystem, architecture: 'x64' },
         grant: { id: 'warzone-live-base-wz', classes: ['read-source'] },
-        executionBackends: createExecutionBackendRegistry([TRUSTED_IN_PROCESS_EXECUTION_BACKEND]),
+        executionBackends: archiveExecutionBackends,
         budget: archiveBudget,
       })
       if (baseArchive.state !== 'opened') {
         throw new Error(`base.wz did not open through the archive codec: ${baseArchive.reason}`)
       }
+      let pieUvmArtifactDigest: string | undefined
       try {
         expect(baseArchive.descriptor).toMatchObject({
           identity: { codecId: 'org.modkitx/warzone-wz', formatId: 'warzone-wz' },
@@ -336,6 +345,56 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
               throw new Error(`installed ${path} extraction did not return bytes`)
             }
             dataDocuments.set(`base/${path}`, extracted.output.value)
+          }
+          const piePage = await (namespaceLease.value as NamespaceEntrySource).list(
+            'components/bodies/',
+            { limit: 1_024 },
+          )
+          const pieEntry = piePage.items.find(item => item.path === PIE_PATH)
+          if (pieEntry === undefined)
+            throw new Error(`${PIE_PATH} is absent from installed base.wz`)
+          const nestedPie = await openNestedSubject({
+            parent: baseArchive.session,
+            entryId: pieEntry.id,
+            inventory: archiveInventory,
+            executionBackends: archiveExecutionBackends,
+            target: { environment: 'node', operatingSystem, architecture: 'x64' },
+            grant: { id: 'warzone-live-pie', classes: ['read-source'] },
+            budget: archiveBudget,
+          })
+          if (nestedPie.result.state !== 'opened') {
+            throw new Error(
+              `installed PIE nested open failed: ${nestedPie.result.reason} ${JSON.stringify(nestedPie.result.diagnostics)}`,
+            )
+          }
+          try {
+            expect(nestedPie.result.selected.contributionId).toBe('org.modkitx/warzone-pie')
+            const modelLease = await nestedPie.result.session.dataSource(
+              'common.view/model-scene-source',
+              1,
+            )
+            try {
+              const model = modelLease.value as ModelSceneSource
+              const info = await model.info()
+              expect(info).toMatchObject({ nodes: 6, meshes: 6, primitives: 6 })
+              const projection = await drainModelProjection(model, {
+                maxBytes: budget.maxScalarBytes,
+              })
+              const verdict = await materializeAndCompare(repoRoot, projection, {
+                assetId: `warzone/${PIE_PATH}`,
+                sourceFormat: 'pie',
+                subjectRevision: nestedPie.result.session.revision,
+                assetClass: 'unit',
+              })
+              expect(verdict.byteStable).toBe(true)
+              expect(unexplainedDifferences(verdict)).toEqual([])
+              expect(verdict.receipt.lostFacetIds).toEqual([])
+              pieUvmArtifactDigest = verdict.artifactDigest
+            } finally {
+              await modelLease.release()
+            }
+          } finally {
+            await nestedPie.result.session.dispose()
           }
         } finally {
           await namespaceLease.release()
@@ -450,6 +509,8 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
         columns: 6,
       })
       expect((await dataResult.facets.relations.value.summary()).totalEdges).toBeGreaterThan(0)
+      const dataSnapshot = dataResult.snapshot
+      const dataResourceRevision = resources.revision
       await dataResult.release()
       const result = await openMapPreviewAssetSession({
         services: { ...composition, serviceDefinitions: definitions },
@@ -458,7 +519,7 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
         workspace,
         resources,
         subjectUri: `warzone-map:${MAP_ROOT}`,
-        catalog: dataResult.snapshot,
+        catalog: dataSnapshot,
         limits: {
           maxRequirements: 8,
           maxDocumentBytes: 1_000_000,
@@ -540,6 +601,47 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
             }),
           }),
         )
+        expect(result.snapshot.gameId).toBe(dataSnapshot.gameId)
+        expect(result.snapshot.workspaceId).toBe(dataSnapshot.workspaceId)
+        expect(result.snapshot.gameId).toBe(workspace.gameId)
+        expect(result.snapshot.workspaceId).toBe(workspace.workspaceId)
+        expect(resources.revision).toBe(dataResourceRevision)
+        expect(worldInfo.provenance.length).toBeGreaterThan(0)
+        for (const record of worldInfo.provenance) {
+          expect(resources.provenance()).toContainEqual(record)
+        }
+        const definitionRefs = result.snapshot.semantic.objects.flatMap(object =>
+          object.catalog === undefined ? [] : [object.catalog],
+        )
+        expect(definitionRefs).toHaveLength(177)
+        const unresolvedDefinitionRefs = definitionRefs.filter(
+          binding => binding.entity === undefined,
+        )
+        const objectFacet = worldInfo.facets.find(item => item.facet === 'objects')
+        expect(unresolvedDefinitionRefs).toEqual([])
+        expect(objectFacet).toMatchObject({ state: 'partial' })
+        expect(objectFacet?.reason).toMatch(/elevation|height|two-dimensional/iu)
+        const resourceFacet = worldInfo.facets.find(item => item.facet === 'resources')
+        if (resourceFacet === undefined) throw new Error('Warzone world resources facet is absent')
+        const resourcePage = await world.page({
+          facet: 'resources',
+          layerId: resourceFacet.layerId,
+          limit: 1_024,
+        })
+        expect(resourcePage.nextCursor).toBeUndefined()
+        const resourceItems = resourcePage.items.filter(item => item.facet === 'resources')
+        expect(resourceItems.every(item => item.resolved)).toBe(true)
+        expect(new Set(resourceItems.flatMap(item => item.objectIds)).size).toBe(177)
+        proves({
+          capabilityId: 'vertical/warzone-2100/neutral-definitions-world',
+          operation: 'inspect',
+          note: 'installed Warzone definitions and world share one game, workspace and content revision; all 177 object definition references resolve and 2D elevation remains explicitly partial',
+        })
+        proves({
+          capabilityId: 'vertical/warzone-2100/neutral-definitions-world',
+          operation: 'read',
+          note: 'the live definition and world facets are joined without claiming a portable UVD or production UVW artifact',
+        })
         const viewer = await inspectCandidateWorld(world, {
           maxLayers: 8,
           maxItemsPerLayer: 1_024,
@@ -577,6 +679,12 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
           )
         }
         expect(repeated.artifactBytes).toEqual(first.artifactBytes)
+        expect(pieUvmArtifactDigest).toMatch(/^sha256:[0-9a-f]{64}$/u)
+        proves({
+          capabilityId: 'vertical/warzone-2100/native-to-uv',
+          operation: 'read',
+          note: 'one installed Warzone workflow proves PIE live projection with receipt-complete UVM reopen and 2c-highground exact candidate UVW materialization without making UVW a production writer',
+        })
         proves({
           contributionId: 'org.modkitx/warzone-wz',
           operation: 'inspect',

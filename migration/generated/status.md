@@ -78,11 +78,11 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | allocation                   | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
-| `absent`                     | 89    | `equivalent-better`    | 16    | E0            | 87    |
-| `covered`                    | 202   | `implemented`          | 201   | E1            | 110   |
-| `not-applicable`             | 1     | `missing`              | 89    | E2            | 65    |
+| `absent`                     | 85    | `equivalent-better`    | 16    | E0            | 83    |
+| `covered`                    | 206   | `implemented`          | 205   | E1            | 110   |
+| `not-applicable`             | 1     | `missing`              | 85    | E2            | 65    |
 | `superseded`                 | 13    | `partial`              | 1     | E3            | 15    |
-| `superseded-staging-present` | 3     | `relocated-multiverse` | 1     | E4            | 31    |
+| `superseded-staging-present` | 3     | `relocated-multiverse` | 1     | E4            | 35    |
 
 ### 3.3. Доказанные writers
 
@@ -104,9 +104,9 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | Release              | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | -------------------- | ----- | ---- | ------------ | ---------- | -------------- |
-| `mk3-ga`             | 120   | 115  | 5            | 9          | block-15       |
-| `mk3-multiverse-ga`  | 125   | 125  | 0            | 12         | block-15       |
-| `mk3-deferred-games` | 167   | 167  | 0            | 37         | block-15       |
+| `mk3-ga`             | 120   | 115  | 5            | 5          | block-15       |
+| `mk3-multiverse-ga`  | 125   | 125  | 0            | 8          | block-15       |
+| `mk3-deferred-games` | 167   | 167  | 0            | 33         | block-15       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
@@ -115,31 +115,27 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `block-11`    | 14    | 0                 |
 | `block-12`    | 70    | 0                 |
 | `block-13`    | 1     | 0                 |
-| `block-15`    | 23    | 4                 |
-| `block-17`    | 11    | 4                 |
+| `block-15`    | 23    | 2                 |
+| `block-17`    | 11    | 2                 |
 | `block-19`    | 1     | 1                 |
 
 ## 5. Gap list — что осталось в `mk3-ga`
 
-Строк с нерешённым состоянием: **9** из 120. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
+Строк с нерешённым состоянием: **5** из 120. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
 
-### Блок 15 — 4 строк
+### Блок 15 — 2 строк
 
-| Возможность                                      | migrationState | evidence | Владелец                              |
-| ------------------------------------------------ | -------------- | -------- | ------------------------------------- |
-| `vertical/starcraft-2/native-inspect-authoring`  | `partial`      | E3       | `extensions/blizzard/starcraft2-game` |
-| `vertical/starcraft-2/native-round-trip`         | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
-| `vertical/starcraft-2/native-to-uv`              | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
-| `vertical/starcraft-2/neutral-definitions-world` | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
+| Возможность                                     | migrationState | evidence | Владелец                              |
+| ----------------------------------------------- | -------------- | -------- | ------------------------------------- |
+| `vertical/starcraft-2/native-inspect-authoring` | `partial`      | E3       | `extensions/blizzard/starcraft2-game` |
+| `vertical/starcraft-2/native-round-trip`        | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
 
-### Блок 17 — 4 строк
+### Блок 17 — 2 строк
 
-| Возможность                                       | migrationState | evidence | Владелец                             |
-| ------------------------------------------------- | -------------- | -------- | ------------------------------------ |
-| `vertical/warzone-2100/native-inspect-authoring`  | `missing`      | E0       | `extensions/opensource/warzone-2100` |
-| `vertical/warzone-2100/native-round-trip`         | `missing`      | E0       | `extensions/opensource/warzone-2100` |
-| `vertical/warzone-2100/native-to-uv`              | `missing`      | E0       | `extensions/opensource/warzone-2100` |
-| `vertical/warzone-2100/neutral-definitions-world` | `missing`      | E0       | `extensions/opensource/warzone-2100` |
+| Возможность                                      | migrationState | evidence | Владелец                             |
+| ------------------------------------------------ | -------------- | -------- | ------------------------------------ |
+| `vertical/warzone-2100/native-inspect-authoring` | `missing`      | E0       | `extensions/opensource/warzone-2100` |
+| `vertical/warzone-2100/native-round-trip`        | `missing`      | E0       | `extensions/opensource/warzone-2100` |
 
 ### Блок 19 — 1 строк
 

@@ -18953,19 +18953,22 @@ capabilities:
       - 'legacy/game-manifest/org.modkitx/starcraft-2'
     legacyEvidence:
       - 'legacy:extensions/blizzard/starcraft-2/games/starcraft-2/game.manifest.json'
-    hostFacilities: []
-    mk3Contributions: []
+    hostFacilities:
+      - 'read-source'
+    mk3Contributions:
+      - 'org.modkitx/m3'
+      - 'org.modkitx.blizzard/starcraft2-map-semantic'
     mk3Operations: []
     allocation:
-      state: 'absent'
+      state: 'covered'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E0'
-    hostEvidence: 'none'
+    migrationState: 'implemented'
+    supportState: 'partial'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -18978,25 +18981,28 @@ capabilities:
       - 'MODKITX_SC2_ROOT'
     projection:
       plane: 'world'
-      liveProjection: 'none'
+      liveProjection: 'live'
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
         inspect: null
         validate: null
-        read: null
+        read: 'packages/testkit/test/sc2-casc-real.test.ts'
         materialize: null
     knownLoss:
-      - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
+      - 'E4 ограничен доказанными model/world scope: retail artifact1.m3 публикуется как live model и имеет отдельный exact UVM reopen с полным resource closure, а retail TArcade публикуется как live world и даёт byte-stable candidate UVW по 66 049 точкам'
+      - 'candidate UVW остаётся testkit-only admission evidence без production writer operation; portable UVD/UVW и недоказанные SC2 facets из этого агрегата не выводятся'
     receipts:
-      projection: null
-      materialization: null
+      projection: 'ProjectionReceipt'
+      materialization: 'MaterializationReceipt'
       nativeExport: null
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/blizzard-m3-companion.test.ts'
+        - 'packages/testkit/test/sc2-casc-real.test.ts'
       reports: []
   - capabilityId: 'vertical/starcraft-2/neutral-definitions-world'
     userScenario: 'Для «StarCraft II» опубликовать живые candidate definitions и world через общий Projection ABI без обязательного UVD/UVW-файла.'
@@ -19012,19 +19018,22 @@ capabilities:
       - 'legacy/game-manifest/org.modkitx/starcraft-2'
     legacyEvidence:
       - 'legacy:extensions/blizzard/starcraft-2/games/starcraft-2/game.manifest.json'
-    hostFacilities: []
-    mk3Contributions: []
+    hostFacilities:
+      - 'read-source'
+    mk3Contributions:
+      - 'org.modkitx.blizzard/starcraft2-data'
+      - 'org.modkitx.blizzard/starcraft2-map-semantic'
     mk3Operations: []
     allocation:
-      state: 'absent'
+      state: 'covered'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E0'
-    hostEvidence: 'none'
+    migrationState: 'implemented'
+    supportState: 'partial'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -19037,25 +19046,27 @@ capabilities:
       - 'MODKITX_SC2_ROOT'
     projection:
       plane: 'definition'
-      liveProjection: 'none'
+      liveProjection: 'live'
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'packages/testkit/test/sc2-casc-real.test.ts'
         validate: null
-        read: null
+        read: 'packages/testkit/test/sc2-casc-real.test.ts'
         materialize: null
     knownLoss:
-      - 'агрегат живых candidate definition/world facets ещё не закрыт E4/E5; portable UVD и production UVW остаются отдельными multiverse-priority обещаниями и не выводятся из preview'
+      - 'retail resolved-data snapshot остаётся честно partial из-за отсутствующих необязательных active-root документов, но все definition refs опубликованного TArcade world разрешены из того же game/workspace/CASC revision'
+      - 'это только live candidate definitions/world; portable UVD и production UVW остаются отдельными multiverse-priority обещаниями и не выводятся из preview'
     receipts:
-      projection: null
+      projection: 'ProjectionReceipt'
       materialization: null
       nativeExport: null
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/sc2-casc-real.test.ts'
       reports: []
   - capabilityId: 'vertical/warzone-2100/deterministic-playable-subset'
     userScenario: 'Для «Warzone 2100» получить детерминированный воспроизводимый playable subset.'
@@ -19246,19 +19257,22 @@ capabilities:
       - 'legacy/game-manifest/org.modkitx/warzone-2100'
     legacyEvidence:
       - 'legacy:extensions/opensource/warzone-2100/games/warzone-2100/game.manifest.json'
-    hostFacilities: []
-    mk3Contributions: []
+    hostFacilities:
+      - 'read-source'
+    mk3Contributions:
+      - 'org.modkitx/warzone-pie'
+      - 'org.modkitx.opensource/warzone2100-map-semantic'
     mk3Operations: []
     allocation:
-      state: 'absent'
+      state: 'covered'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E0'
-    hostEvidence: 'none'
+    migrationState: 'implemented'
+    supportState: 'partial'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -19267,28 +19281,32 @@ capabilities:
       verdicts: []
       liveSources: []
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_WARZONE_ROOT'
     projection:
       plane: 'world'
-      liveProjection: 'none'
+      liveProjection: 'live'
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
         inspect: null
         validate: null
-        read: null
+        read: 'extensions/opensource/warzone-2100/test/codec.test.ts'
         materialize: null
     knownLoss:
-      - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
+      - 'E4 ограничен доказанными UV scope: installed cybd_run.pie публикуется как live model и имеет byte-stable receipt-complete UVM reopen, а installed 2c-highground публикуется как live world и даёт exact candidate UVW по 4 608 точкам'
+      - 'PIE не выдумывает legacy default material, ANIMOBJECT samples остаются receipt loss, object elevation остаётся explicitly partial, а candidate UVW не становится production writer operation'
     receipts:
-      projection: null
-      materialization: null
+      projection: 'ProjectionReceipt'
+      materialization: 'MaterializationReceipt'
       nativeExport: null
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'extensions/opensource/warzone-2100/test/corpus-preflight.test.ts'
+        - 'packages/testkit/test/warzone-real.test.ts'
       reports: []
   - capabilityId: 'vertical/warzone-2100/neutral-definitions-world'
     userScenario: 'Для «Warzone 2100» опубликовать живые candidate definitions и world через общий Projection ABI без обязательного UVD/UVW-файла.'
@@ -19304,19 +19322,22 @@ capabilities:
       - 'legacy/game-manifest/org.modkitx/warzone-2100'
     legacyEvidence:
       - 'legacy:extensions/opensource/warzone-2100/games/warzone-2100/game.manifest.json'
-    hostFacilities: []
-    mk3Contributions: []
+    hostFacilities:
+      - 'read-source'
+    mk3Contributions:
+      - 'org.modkitx.opensource/warzone2100-map-semantic'
+      - 'org.modkitx.opensource/warzone2100-resolved-data'
     mk3Operations: []
     allocation:
-      state: 'absent'
+      state: 'covered'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E0'
-    hostEvidence: 'none'
+    migrationState: 'implemented'
+    supportState: 'partial'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -19325,26 +19346,29 @@ capabilities:
       verdicts: []
       liveSources: []
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_WARZONE_ROOT'
     projection:
       plane: 'definition'
-      liveProjection: 'none'
+      liveProjection: 'live'
       portableMaterialization: 'none'
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: null
+        inspect: 'extensions/opensource/warzone-2100/test/map-provider.test.ts'
         validate: null
-        read: null
+        read: 'extensions/opensource/warzone-2100/test/map-provider.test.ts'
         materialize: null
     knownLoss:
-      - 'агрегат живых candidate definition/world facets ещё не закрыт E4/E5; portable UVD и production UVW остаются отдельными multiverse-priority обещаниями и не выводятся из preview'
+      - 'installed data/world используют один game/workspace/content revision; все 177 object definition refs разрешены, а отсутствие native elevation у двухмерных object records остаётся явно partial с reason'
+      - 'это только live candidate definitions/world; portable UVD и production UVW остаются отдельными multiverse-priority обещаниями и не выводятся из preview'
     receipts:
-      projection: null
+      projection: 'ProjectionReceipt'
       materialization: null
       nativeExport: null
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/warzone-real.test.ts'
       reports: []
