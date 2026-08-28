@@ -3,7 +3,10 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { OpenedSubject } from '@modkitx-x3/host'
 
-import { prepareVsCodeMapPreview } from '../src/map-preview.js'
+import {
+  MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
+  prepareVsCodeMapPreview,
+} from '../src/map-preview.js'
 import {
   continueVsCodeMapPreviewSelection,
   parseVsCodeMapPreviewSelectionRequest,
@@ -35,6 +38,7 @@ describe('VS Code map preview binding', () => {
     const disposePreview = vi.fn(async () => undefined)
     const resolveResourcePlan = vi.fn()
     const resourcePlanResolver = { resolve: resolveResourcePlan } as never
+    const explicitCatalog = { schemaVersion: 1, workspaceId: 'explicit' } as never
     const derived = { subjectUri: 'world://map' } as never
     const result = await prepareVsCodeMapPreview({
       services: {} as never,
@@ -42,8 +46,11 @@ describe('VS Code map preview binding', () => {
       grant: { id: 'vscode-map-test', classes: ['read-source'] },
       budgets: budget,
       resourcePlanResolver,
+      catalog: explicitCatalog,
       coordinate: async request => {
         expect(request.maxCandidates).toBe(64)
+        expect(request.catalogEnrichment).toBe(MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY)
+        expect(request.catalog).toBe(explicitCatalog)
         expect(request.resourcePlanResolver).toBe(resourcePlanResolver)
         return {
           state: 'opened',

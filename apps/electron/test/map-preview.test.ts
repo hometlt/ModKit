@@ -3,7 +3,10 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { OpenedSubject } from '@modkitx-x3/host'
 
-import { prepareElectronMapPreview } from '../src/map-preview.js'
+import {
+  MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
+  prepareElectronMapPreview,
+} from '../src/map-preview.js'
 import {
   continueElectronMapPreviewSelection,
   electronMapPreviewSelectionRequest,
@@ -38,6 +41,7 @@ describe('Electron map preview binding', () => {
       displayName: `Map ${String(index)}`,
     }))
     const ordinary = opened(dispose)
+    const explicitCatalog = { schemaVersion: 1, workspaceId: 'explicit' } as never
     const resolveResourcePlan = vi.fn()
     const resourcePlanResolver = { resolve: resolveResourcePlan } as never
     const result = await prepareElectronMapPreview({
@@ -46,6 +50,7 @@ describe('Electron map preview binding', () => {
       grant: { id: 'electron-map-test', classes: ['read-source'] },
       budgets: budget,
       resourcePlanResolver,
+      catalog: explicitCatalog,
       coordinate: async request => {
         expect(request).toMatchObject({
           maxCandidates: 64,
@@ -54,6 +59,8 @@ describe('Electron map preview binding', () => {
           maxRoots: 64,
           maxDepth: 16,
         })
+        expect(request.catalogEnrichment).toBe(MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY)
+        expect(request.catalog).toBe(explicitCatalog)
         expect(request.resourcePlanResolver).toBe(resourcePlanResolver)
         return { state: 'selection-required', candidates, diagnostics: [] }
       },

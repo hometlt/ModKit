@@ -11,6 +11,20 @@ import {
   type MapPreviewResourcePlanResolver,
 } from '@modkitx-x3/host/maps'
 
+export const MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY: NonNullable<
+  CoordinateMapPreviewAssetSessionRequest['catalogEnrichment']
+> = Object.freeze({
+  locales: Object.freeze(['enUS']),
+  limits: Object.freeze({
+    maxRequirements: 64,
+    maxDocumentBytes: 4_194_304,
+    maxTextBytes: 16_777_216,
+    maxEntities: 100_000,
+    maxDepth: 64,
+    maxPageSize: 1_000,
+  }),
+})
+
 const COORDINATOR_LIMITS = Object.freeze({
   // Pinned mp.wz publishes 39 map candidates; 64 is the bounded product ceiling above that corpus.
   maxCandidates: 64,
@@ -18,6 +32,7 @@ const COORDINATOR_LIMITS = Object.freeze({
   maxSubjectPages: 64,
   maxRoots: 64,
   maxDepth: 16,
+  catalogEnrichment: MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
   limits: Object.freeze({
     maxRequirements: 8,
     maxDocumentBytes: 1_000_000,
@@ -46,6 +61,7 @@ export interface PrepareVsCodeMapPreviewRequest {
   readonly grant: PermissionGrant
   readonly budgets: ResourceBudget
   readonly resourcePlanResolver?: MapPreviewResourcePlanResolver
+  readonly catalog?: CoordinateMapPreviewAssetSessionRequest['catalog']
   readonly selectionId?: string
   readonly signal?: AbortSignal
   /** Test seam: product callers always use the common host coordinator. */
@@ -81,6 +97,7 @@ export async function prepareVsCodeMapPreview(
         : { resourcePlanResolver: request.resourcePlanResolver }),
       ...(request.selectionId === undefined ? {} : { selectionId: request.selectionId }),
       ...COORDINATOR_LIMITS,
+      ...(request.catalog === undefined ? {} : { catalog: request.catalog }),
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })
   } catch (error) {
