@@ -38,7 +38,7 @@
   "limitations": [
     "Preparation requires bounded namespace-entry facts and container extraction, but consumes only their JSON-safe descriptor state and never receives live archive, filesystem or installation capabilities.",
     "Every multiplay/maps/<id>/game.map is a candidate; multiple candidates require an explicit opaque selectionId and are never reduced to the first entry.",
-    "The selected map root stays mounted from the opened subject, while base.wz and mp.wz require the publisher-qualified host resource resolver and its configured-path, MODKITX_WARZONE_ROOT or automatic installation policy.",
+    "The selected map root stays mounted from the opened subject, while base.wz and mp.wz use the generic desktop game-installation archive resolver with configured-path, MODKITX_WARZONE_ROOT or automatic discovery.",
     "The contribution prepares a workspace and resource plan only; rendering, runtime elevation, footprints, full material semantics, scripts and portable UVD remain outside this service."
   ]
 }

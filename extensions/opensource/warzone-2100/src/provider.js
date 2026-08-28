@@ -394,6 +394,7 @@ export async function discoverWarzone2100Installations(request) {
   }
   return Object.freeze({
     gameId: GAME_ID,
+    complete: !collected.truncated,
     probes: Object.freeze(probes),
     installations: Object.freeze(installations),
     diagnostics: Object.freeze(diagnostics),

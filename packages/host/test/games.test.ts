@@ -142,6 +142,7 @@ describe('standard game-installation contract and StarCraft II provider', () => 
       discovery.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
     ).toBe('discovered')
     if (discovery.state !== 'discovered') throw new Error('installation discovery did not run')
+    expect(discovery.result.complete).toBe(false)
     expect(discovery.result.installations).toHaveLength(1)
     expect(discovery.result.installations[0]?.normalizedPath).toBe(root.replace(/\\/gu, '/'))
     expect('release' in discovery).toBe(false)
@@ -159,6 +160,7 @@ describe('standard game-installation contract and StarCraft II provider', () => 
         configuredPaths: [root],
         maxCandidates: 16,
       })
+      expect(result.complete).toBe(true)
       const installation = result.installations.find(
         item => item.normalizedPath === root.replace(/\\/gu, '/'),
       )
@@ -197,6 +199,7 @@ describe('standard game-installation contract and StarCraft II provider', () => 
         configuredPaths,
         maxCandidates: 2,
       })
+      expect(result.complete).toBe(false)
       expect(result.probes.map(item => item.normalizedPath)).toEqual(
         [manualRoot, environmentRoot].map(path => path.replace(/\\/gu, '/')),
       )
@@ -225,6 +228,7 @@ describe('standard game-installation contract and StarCraft II provider', () => 
         configuredPaths: [manualRoot],
         maxCandidates: 2,
       })
+      expect(result.complete).toBe(false)
       const invalidNormalized = invalidEnvironmentRoot.replace(/\\/gu, '/')
       const manualNormalized = manualRoot.replace(/\\/gu, '/')
       expect(result.probes.map(item => [item.normalizedPath, item.confirmed])).toEqual([

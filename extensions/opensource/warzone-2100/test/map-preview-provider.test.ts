@@ -155,23 +155,16 @@ describe('Warzone 2100 map preview preparation', () => {
           rootId: 'mp',
           locator: {
             schemaVersion: 1,
-            kind: 'warzone-installation-archive',
+            kind: 'game-installation-archive',
             gameId: 'org.modkitx/warzone-2100',
-            archiveName: 'mp.wz',
+            archiveRelativePaths: ['data/mp.wz', 'mp.wz'],
             openedSubjectPolicy: 'prefer-matching-opened-subject',
-            contentScopes: ['stats', 'pie-models', 'textures'],
-            installationDiscovery: {
-              discoveryId: 'org.modkitx.opensource.warzone2100',
-              configuredPaths: 'host-settings',
-              environmentVariable: 'MODKITX_WARZONE_ROOT',
-              automaticDiscovery: true,
-            },
           },
         },
         {
           rootId: 'base',
           locator: expect.objectContaining({
-            archiveName: 'base.wz',
+            archiveRelativePaths: ['data/base.wz', 'base.wz'],
             openedSubjectPolicy: 'installation-only',
           }),
         },

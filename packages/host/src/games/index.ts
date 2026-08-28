@@ -216,6 +216,91 @@ function isGameInstallationDiscovery(value: unknown): value is GameInstallationD
   )
 }
 
+function validEvidence(value: unknown): boolean {
+  const record = recordOf(value)
+  return (
+    record !== undefined &&
+    nonEmptyString(record['kind']) &&
+    nonEmptyString(record['path']) &&
+    typeof record['found'] === 'boolean' &&
+    (record['detail'] === undefined || typeof record['detail'] === 'string')
+  )
+}
+
+function validProbe(value: unknown): boolean {
+  const record = recordOf(value)
+  const candidate = recordOf(record?.['candidate'])
+  return (
+    record !== undefined &&
+    candidate !== undefined &&
+    typeof candidate['origin'] === 'string' &&
+    ORIGINS.has(candidate['origin'] as GameInstallationOrigin) &&
+    nonEmptyString(candidate['displayName']) &&
+    nonEmptyString(candidate['path']) &&
+    typeof record['confirmed'] === 'boolean' &&
+    nonEmptyString(record['normalizedPath']) &&
+    Array.isArray(record['evidence']) &&
+    record['evidence'].every(validEvidence)
+  )
+}
+
+function validInstallation(value: unknown, gameId: string): boolean {
+  const record = recordOf(value)
+  return (
+    record !== undefined &&
+    record['gameId'] === gameId &&
+    nonEmptyString(record['displayName']) &&
+    nonEmptyString(record['installPath']) &&
+    nonEmptyString(record['normalizedPath']) &&
+    originList(record['origins']) !== undefined &&
+    Array.isArray(record['evidence']) &&
+    record['evidence'].every(validEvidence)
+  )
+}
+
+function validDiscoveryDiagnostic(value: unknown): boolean {
+  const record = recordOf(value)
+  return (
+    record !== undefined &&
+    ['error', 'warning', 'information'].includes(String(record['severity'])) &&
+    nonEmptyString(record['code']) &&
+    nonEmptyString(record['message'])
+  )
+}
+
+function isGameInstallationDiscoveryResult(
+  value: unknown,
+  gameId: string,
+): value is GameInstallationDiscoveryResult {
+  const record = recordOf(value)
+  const probes = record?.['probes']
+  const installations = record?.['installations']
+  return (
+    record !== undefined &&
+    record['gameId'] === gameId &&
+    typeof record['complete'] === 'boolean' &&
+    Array.isArray(probes) &&
+    probes.every(validProbe) &&
+    Array.isArray(installations) &&
+    installations.every(item => validInstallation(item, gameId)) &&
+    new Set(installations.map(item => String(recordOf(item)?.['normalizedPath'] ?? ''))).size ===
+      installations.length &&
+    installations.every(item => {
+      const installation = recordOf(item)
+      return probes.some(probe => {
+        const candidate = recordOf(recordOf(probe)?.['candidate'])
+        return (
+          recordOf(probe)?.['confirmed'] === true &&
+          recordOf(probe)?.['normalizedPath'] === installation?.['normalizedPath'] &&
+          candidate?.['path'] === installation?.['installPath']
+        )
+      })
+    }) &&
+    Array.isArray(record['diagnostics']) &&
+    record['diagnostics'].every(validDiscoveryDiagnostic)
+  )
+}
+
 /** Resolve and activate installation discovery for one named game. */
 export async function resolveGameInstallationDiscovery(
   request: ResolveGameInstallationRequest,
@@ -311,6 +396,19 @@ export async function discoverGameInstallations(
       maxCandidates: request.maxCandidates,
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })
+    if (!isGameInstallationDiscoveryResult(result, request.gameId)) {
+      return Object.freeze({
+        state: 'unresolved' as const,
+        diagnostics: Object.freeze([
+          ...resolution.diagnostics,
+          diagnostic(
+            'error',
+            'x3.host/game-installation-result-invalid',
+            `installation discovery returned an invalid or unversioned completeness result for ${request.gameId}`,
+          ),
+        ]),
+      })
+    }
     return Object.freeze({
       state: 'discovered',
       result,

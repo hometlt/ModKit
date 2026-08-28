@@ -146,6 +146,7 @@ describe('Warzone 2100 installation provider', () => {
       configuredPaths: [root],
       maxCandidates: 1,
     })
+    expect(result.complete).toBe(false)
     expect(result.installations).toHaveLength(1)
     expect(result.installations[0]?.normalizedPath).toBe(normalizeWarzoneInstallationPath(root))
     expect(result.installations[0]?.origins).toEqual(['configured-path'])
@@ -166,6 +167,7 @@ describe('Warzone 2100 installation provider', () => {
       configuredPaths: [valid, invalid],
       maxCandidates: 2,
     })
+    expect(result.complete).toBe(false)
     expect(result.probes.map(probe => probe.confirmed)).toEqual([true, false])
     expect(result.installations.map(value => value.normalizedPath)).toEqual([
       normalizeWarzoneInstallationPath(valid),

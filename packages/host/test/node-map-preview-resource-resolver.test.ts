@@ -1,0 +1,525 @@
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkitx-x3/core'
+import {
+  resolveModWorkspaceGraph,
+  revisionId,
+  type JsonValue,
+  type OperationDecl,
+  type OperationOutput,
+} from '@modkitx-x3/sdk'
+import type { GameInstallationDiscoveryResult } from '@modkitx-x3/sdk/games'
+import type { MapPreviewResourcePlan } from '@modkitx-x3/sdk/maps'
+import { assembleSubjectDescriptor, createAssetSession } from '../src/index.js'
+import type { ResolveMapPreviewResourcePlanRequest } from '../src/maps/index.js'
+import {
+  createNodeMapPreviewResourcePlanResolver,
+  NODE_GAME_INSTALLATION_ARCHIVE_MAP_PREVIEW_RESOLVER_ID,
+} from '../src/node/map-preview-resource-resolver.js'
+import type { SubjectServices } from '../src/subject-services.js'
+import { resolvedDescriptorWire } from './fixtures/descriptor.js'
+
+const mocks = vi.hoisted(() => ({ discover: vi.fn() }))
+vi.mock('../src/games/index.js', () => ({ discoverGameInstallations: mocks.discover }))
+
+const GAME_ID = 'example/game'
+const temporaryRoots: string[] = []
+
+afterEach(async () => {
+  mocks.discover.mockReset()
+  await Promise.all(
+    temporaryRoots.splice(0).map(path => rm(path, { recursive: true, force: true })),
+  )
+})
+
+async function installationRoot(): Promise<string> {
+  const root = await mkdtemp(join(tmpdir(), 'modkitx-preview-resolver-'))
+  temporaryRoots.push(root)
+  await mkdir(join(root, 'data'), { recursive: true })
+  return root
+}
+
+function discovery(
+  root: string,
+  options: { readonly complete?: boolean; readonly secondRoot?: string } = {},
+): GameInstallationDiscoveryResult {
+  const installs = [root, ...(options.secondRoot === undefined ? [] : [options.secondRoot])]
+  return Object.freeze({
+    gameId: GAME_ID,
+    complete: options.complete ?? true,
+    probes: Object.freeze(
+      installs.map(path =>
+        Object.freeze({
+          candidate: Object.freeze({
+            origin: 'configured-path' as const,
+            displayName: 'Fixture game',
+            path,
+          }),
+          normalizedPath: path.replace(/\\/gu, '/'),
+          confirmed: true,
+          evidence: Object.freeze([Object.freeze({ kind: 'fixture-marker', path, found: true })]),
+        }),
+      ),
+    ),
+    installations: Object.freeze(
+      installs.map(path =>
+        Object.freeze({
+          gameId: GAME_ID,
+          displayName: 'Fixture game',
+          installPath: path,
+          normalizedPath: path.replace(/\\/gu, '/'),
+          origins: Object.freeze(['configured-path'] as const),
+          evidence: Object.freeze([Object.freeze({ kind: 'fixture-marker', path, found: true })]),
+        }),
+      ),
+    ),
+    diagnostics: Object.freeze([]),
+  })
+}
+
+async function namespaceSession(subjectUri: string, files: ReadonlyMap<string, Uint8Array>) {
+  const namespaceRelease = vi.fn(async () => undefined)
+  const entryRelease = vi.fn(async () => undefined)
+  const sessionRelease = vi.fn(async () => undefined)
+  const paths = [...files.keys()].sort()
+  const namespace = Object.freeze({
+    async list(
+      prefix: string,
+      page: { readonly cursor?: string; readonly limit: number },
+      signal?: AbortSignal,
+    ) {
+      signal?.throwIfAborted()
+      const matching = paths.filter(path => path.toLowerCase().startsWith(prefix.toLowerCase()))
+      const start = page.cursor === undefined ? 0 : Number(page.cursor)
+      const selected = matching.slice(start, start + page.limit)
+      const next = start + selected.length
+      return Object.freeze({
+        items: Object.freeze(
+          selected.map(path =>
+            Object.freeze({
+              id: path,
+              path,
+              name: path.split('/').at(-1) ?? path,
+              kind: 'file' as const,
+              size: BigInt(files.get(path)?.byteLength ?? 0),
+              revision: revisionId(`provider-token:${encodeURIComponent(`${subjectUri}:${path}`)}`),
+            }),
+          ),
+        ),
+        ...(next < matching.length ? { nextCursor: String(next) } : {}),
+      })
+    },
+    openEntry(entryId: string, signal?: AbortSignal) {
+      signal?.throwIfAborted()
+      if (!files.has(entryId)) throw new RangeError(`unknown entry ${entryId}`)
+      const uri = `${subjectUri}#${encodeURIComponent(entryId)}`
+      return Promise.resolve({ value: Object.freeze({ id: uri, uri }), release: entryRelease })
+    },
+  })
+  const wire = resolvedDescriptorWire([
+    {
+      id: CONTAINER_EXTRACT_OPERATION_ID,
+      handlerId: 'extract',
+      state: 'available',
+      mutatesSource: false,
+    },
+  ])
+  const descriptor = await assembleSubjectDescriptor({
+    ...wire,
+    subjectUri,
+    revision: revisionId(`provider-token:${encodeURIComponent(subjectUri)}`),
+    identity: { ...wire.identity, formatId: 'fixture/archive' },
+    dataSources: [{ contract: 'common.view/namespace-entry-source', major: 1 }],
+  })
+  const declarations: OperationDecl[] = descriptor.operations.map(operation => ({
+    id: operation.id,
+    handlerId: operation.handlerId,
+    mutatesSource: false,
+    outputKinds: ['bytes'],
+  }))
+  const handlers = new Map<string, (input: JsonValue) => Promise<OperationOutput>>([
+    [
+      'extract',
+      async input => {
+        const entryId =
+          typeof input === 'object' && input !== null && !Array.isArray(input)
+            ? (input as Readonly<Record<string, JsonValue>>)['entryId']
+            : undefined
+        if (typeof entryId !== 'string') throw new TypeError('entryId is required')
+        const bytes = files.get(entryId)
+        if (bytes === undefined) throw new RangeError(`unknown entry ${entryId}`)
+        return { kind: 'bytes', value: bytes }
+      },
+    ],
+  ])
+  const managed = createAssetSession({
+    revision: descriptor.revision,
+    descriptor,
+    operationDeclarations: declarations,
+    permissionGrant: { id: 'fixture-session', classes: [] },
+    handlers,
+    async openDataSource(contract, major) {
+      if (contract === 'common.view/namespace-entry-source' && major === 1) {
+        return { value: namespace, release: namespaceRelease } as never
+      }
+      throw new RangeError(`no ${contract}@${String(major)}`)
+    },
+    release: [sessionRelease],
+  })
+  return { session: managed.session, namespaceRelease, entryRelease, sessionRelease }
+}
+
+function workspace() {
+  return resolveModWorkspaceGraph({
+    workspaceId: 'fixture-preview',
+    gameId: GAME_ID,
+    activeRootId: 'map',
+    sources: [
+      { sourceId: 'base-source', kind: 'archive', location: 'fixture:base' },
+      { sourceId: 'mp-source', kind: 'archive', location: 'fixture:mp' },
+      { sourceId: 'map-source', kind: 'archive', location: 'fixture:map' },
+    ],
+    roots: [
+      {
+        rootId: 'base',
+        sourceId: 'base-source',
+        sourcePath: 'base',
+        displayName: 'Base',
+        kind: 'package',
+        dependencies: [],
+      },
+      {
+        rootId: 'mp',
+        sourceId: 'mp-source',
+        sourcePath: 'mp',
+        displayName: 'MP',
+        kind: 'package',
+        dependencies: [
+          { targetRootId: 'base', ref: 'base', required: true, provenance: 'implicit' },
+        ],
+      },
+      {
+        rootId: 'map',
+        sourceId: 'map-source',
+        sourcePath: 'multiplay/maps/demo',
+        displayName: 'Demo',
+        kind: 'map',
+        dependencies: [{ targetRootId: 'mp', ref: 'mp', required: true, provenance: 'implicit' }],
+      },
+    ],
+    maxRoots: 3,
+    maxDepth: 2,
+  })
+}
+
+function locator(
+  paths: readonly string[],
+  openedSubjectPolicy: 'installation-only' | 'prefer-matching-opened-subject',
+) {
+  return {
+    schemaVersion: 1,
+    kind: 'game-installation-archive',
+    gameId: GAME_ID,
+    archiveRelativePaths: paths,
+    openedSubjectPolicy,
+  } as const
+}
+
+function plan(
+  roots: readonly Readonly<{ rootId: string; locator: JsonValue }>[] = [
+    { rootId: 'mp', locator: locator(['data/mp.wz', 'mp.wz'], 'prefer-matching-opened-subject') },
+    { rootId: 'base', locator: locator(['data/base.wz', 'base.wz'], 'installation-only') },
+  ],
+  resolverId = NODE_GAME_INSTALLATION_ARCHIVE_MAP_PREVIEW_RESOLVER_ID,
+): Extract<MapPreviewResourcePlan, { readonly strategy: 'host-resolved' }> {
+  return {
+    schemaVersion: 1,
+    strategy: 'host-resolved',
+    resolverId,
+    subjectNamespaceRoots: [{ rootId: 'map', namespacePrefix: 'multiplay/maps/demo' }],
+    roots,
+  }
+}
+
+async function requestFixture(
+  archivePlan: Extract<MapPreviewResourcePlan, { readonly strategy: 'host-resolved' }>,
+  originalPath: string,
+  original: Awaited<ReturnType<typeof namespaceSession>>['session'],
+): Promise<ResolveMapPreviewResourcePlanRequest> {
+  return {
+    plan: archivePlan,
+    subject: {
+      schemaVersion: 1,
+      subjectUri: pathToFileURL(originalPath).href,
+      revision: String(original.revision),
+      formatId: 'fixture/archive',
+      traits: [],
+      dataSources: [{ contract: 'common.view/namespace-entry-source', major: 1 }],
+      operations: [{ id: CONTAINER_EXTRACT_OPERATION_ID, state: 'available' }],
+      namespace: { state: 'complete', entries: [] },
+    },
+    workspace: workspace(),
+    original,
+    services: {} as ResolveMapPreviewResourcePlanRequest['services'],
+    grant: { id: 'fixture-resolver', classes: ['read-source'] },
+    budgets: {
+      maxInputBytes: 64n * 1024n * 1024n,
+      maxDepth: 64,
+      maxNodes: 100_000,
+      maxScalarBytes: 16 * 1024 * 1024,
+      maxDiagnostics: 100,
+    },
+  }
+}
+
+describe('Node game-installation map-preview resource resolver', () => {
+  it('combines the opened map archive with exact installed archives and releases every lease once', async () => {
+    const root = await installationRoot()
+    const mpPath = join(root, 'data', 'mp.wz')
+    const basePath = join(root, 'data', 'base.wz')
+    await Promise.all([writeFile(mpPath, 'mp'), writeFile(basePath, 'base')])
+    mocks.discover.mockResolvedValue({
+      state: 'discovered',
+      result: discovery(root),
+      diagnostics: [],
+    })
+
+    const original = await namespaceSession(
+      pathToFileURL(mpPath).href,
+      new Map([['multiplay/maps/demo/game.map', new Uint8Array([1, 2, 3])]]),
+    )
+    const base = await namespaceSession(
+      pathToFileURL(basePath).href,
+      new Map([['stats/templates.json', new Uint8Array([4, 5])]]),
+    )
+    const open = vi.fn(async (request: Parameters<SubjectServices['open']>[0]) => {
+      void request
+      return { state: 'opened', session: base.session, diagnostics: [] }
+    })
+    const resolver = createNodeMapPreviewResourcePlanResolver({
+      subjects: { open } as unknown as Pick<SubjectServices, 'open'>,
+      configuredPaths: { [GAME_ID]: [root] },
+    })
+    const result = await resolver.resolve(await requestFixture(plan(), mpPath, original.session))
+
+    expect(result.state).toBe('resolved')
+    if (result.state !== 'resolved') throw new Error('fixture resource plan did not resolve')
+    expect(open).toHaveBeenCalledOnce()
+    expect(open.mock.calls[0]?.[0]).toMatchObject({ path: basePath, intent: 'inspect' })
+    expect(mocks.discover.mock.calls[0]?.[0]).toMatchObject({
+      gameId: GAME_ID,
+      configuredPaths: [root],
+    })
+    const logicalIds: string[] = []
+    for await (const entry of result.origin.enumerate('workspace-dependency-layer', {
+      prefix: '',
+    })) {
+      logicalIds.push(entry.logicalId)
+    }
+    expect(logicalIds).toEqual([
+      'multiplay/maps/demo/game.map',
+      'mp/multiplay/maps/demo/game.map',
+      'base/stats/templates.json',
+    ])
+    const source = await result.origin.open('base/stats/templates.json')
+    if (source.value.kind !== 'bytes') throw new Error('template fixture did not open as bytes')
+    expect(await source.value.read(0n, 16)).toEqual(new Uint8Array([4, 5]))
+    await source.release()
+
+    await result.release()
+    await result.release()
+    expect(original.namespaceRelease).toHaveBeenCalledOnce()
+    expect(original.sessionRelease).not.toHaveBeenCalled()
+    expect(base.namespaceRelease).toHaveBeenCalledOnce()
+    expect(base.sessionRelease).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    {
+      name: 'unknown resolver id',
+      resourcePlan: plan(undefined, 'example/unknown-resolver'),
+      code: 'x3.host/map-preview-resource-resolver-unknown',
+    },
+    {
+      name: 'path traversal',
+      resourcePlan: plan([
+        { rootId: 'mp', locator: locator(['../mp.wz'], 'installation-only') },
+        { rootId: 'base', locator: locator(['data/base.wz'], 'installation-only') },
+      ]),
+      code: 'x3.host/map-preview-resource-locator-invalid',
+    },
+    {
+      name: 'an absolute provider path',
+      resourcePlan: plan([
+        { rootId: 'mp', locator: locator(['/outside/mp.wz'], 'installation-only') },
+        { rootId: 'base', locator: locator(['data/base.wz'], 'installation-only') },
+      ]),
+      code: 'x3.host/map-preview-resource-locator-invalid',
+    },
+    {
+      name: 'an unknown locator kind',
+      resourcePlan: plan([
+        {
+          rootId: 'mp',
+          locator: { ...locator(['data/mp.wz'], 'installation-only'), kind: 'game-path' },
+        },
+        { rootId: 'base', locator: locator(['data/base.wz'], 'installation-only') },
+      ]),
+      code: 'x3.host/map-preview-resource-locator-invalid',
+    },
+    {
+      name: 'an unknown locator field',
+      resourcePlan: plan([
+        {
+          rootId: 'mp',
+          locator: { ...locator(['data/mp.wz'], 'installation-only'), absolutePath: 'C:/outside' },
+        },
+        { rootId: 'base', locator: locator(['data/base.wz'], 'installation-only') },
+      ]),
+      code: 'x3.host/map-preview-resource-locator-invalid',
+    },
+    {
+      name: 'duplicate archive alternatives',
+      resourcePlan: plan([
+        { rootId: 'mp', locator: locator(['data/mp.wz', 'data/mp.wz'], 'installation-only') },
+        { rootId: 'base', locator: locator(['data/base.wz'], 'installation-only') },
+      ]),
+      code: 'x3.host/map-preview-resource-locator-invalid',
+    },
+  ])('refuses $name before discovery or archive opening', async ({ resourcePlan, code }) => {
+    const root = await installationRoot()
+    const originalPath = join(root, 'subject.wz')
+    await writeFile(originalPath, 'subject')
+    const original = await namespaceSession(pathToFileURL(originalPath).href, new Map())
+    const open = vi.fn()
+    const resolver = createNodeMapPreviewResourcePlanResolver({
+      subjects: { open } as unknown as Pick<SubjectServices, 'open'>,
+    })
+    const result = await resolver.resolve(
+      await requestFixture(resourcePlan, originalPath, original.session),
+    )
+    expect(result).toMatchObject({ state: 'unresolved', diagnostics: [{ code }] })
+    expect(mocks.discover).not.toHaveBeenCalled()
+    expect(open).not.toHaveBeenCalled()
+  })
+
+  it('refuses incomplete or ambiguous installation discovery', async () => {
+    const root = await installationRoot()
+    const second = await installationRoot()
+    const originalPath = join(root, 'subject.wz')
+    await writeFile(originalPath, 'subject')
+    const original = await namespaceSession(pathToFileURL(originalPath).href, new Map())
+    const resolver = createNodeMapPreviewResourcePlanResolver({
+      subjects: { open: vi.fn() } as unknown as Pick<SubjectServices, 'open'>,
+    })
+
+    mocks.discover.mockResolvedValueOnce({
+      state: 'discovered',
+      result: discovery(root, { complete: false }),
+      diagnostics: [],
+    })
+    const incomplete = await resolver.resolve(
+      await requestFixture(plan(), originalPath, original.session),
+    )
+    expect(incomplete).toMatchObject({
+      state: 'unresolved',
+      diagnostics: expect.arrayContaining([
+        expect.objectContaining({ code: 'x3.host/map-preview-installation-discovery-truncated' }),
+      ]),
+    })
+
+    mocks.discover.mockResolvedValueOnce({
+      state: 'discovered',
+      result: discovery(root, { secondRoot: second }),
+      diagnostics: [],
+    })
+    const ambiguous = await resolver.resolve(
+      await requestFixture(plan(), originalPath, original.session),
+    )
+    expect(ambiguous).toMatchObject({
+      state: 'unresolved',
+      diagnostics: expect.arrayContaining([
+        expect.objectContaining({ code: 'x3.host/map-preview-installation-ambiguous' }),
+      ]),
+    })
+  })
+
+  it('refuses two existing exact archive alternatives', async () => {
+    const root = await installationRoot()
+    const directMp = join(root, 'mp.wz')
+    const nestedMp = join(root, 'data', 'mp.wz')
+    const basePath = join(root, 'data', 'base.wz')
+    const originalPath = join(root, 'subject.wz')
+    await Promise.all([
+      writeFile(directMp, 'direct'),
+      writeFile(nestedMp, 'nested'),
+      writeFile(basePath, 'base'),
+      writeFile(originalPath, 'subject'),
+    ])
+    mocks.discover.mockResolvedValue({
+      state: 'discovered',
+      result: discovery(root),
+      diagnostics: [],
+    })
+    const original = await namespaceSession(pathToFileURL(originalPath).href, new Map())
+    const open = vi.fn()
+    const resolver = createNodeMapPreviewResourcePlanResolver({
+      subjects: { open } as unknown as Pick<SubjectServices, 'open'>,
+    })
+    const result = await resolver.resolve(
+      await requestFixture(plan(), originalPath, original.session),
+    )
+    expect(result).toMatchObject({
+      state: 'unresolved',
+      diagnostics: expect.arrayContaining([
+        expect.objectContaining({ code: 'x3.host/map-preview-installation-archive-ambiguous' }),
+      ]),
+    })
+    expect(open).not.toHaveBeenCalled()
+    expect(original.namespaceRelease).toHaveBeenCalledOnce()
+  })
+
+  it('releases the first opened archive when a later ordinary open fails', async () => {
+    const root = await installationRoot()
+    const mpPath = join(root, 'data', 'mp.wz')
+    const basePath = join(root, 'data', 'base.wz')
+    const originalPath = join(root, 'subject.wz')
+    await Promise.all([
+      writeFile(mpPath, 'mp'),
+      writeFile(basePath, 'base'),
+      writeFile(originalPath, 'subject'),
+    ])
+    mocks.discover.mockResolvedValue({
+      state: 'discovered',
+      result: discovery(root),
+      diagnostics: [],
+    })
+    const original = await namespaceSession(pathToFileURL(originalPath).href, new Map())
+    const mp = await namespaceSession(
+      pathToFileURL(mpPath).href,
+      new Map([['one', new Uint8Array([1])]]),
+    )
+    const open = vi
+      .fn()
+      .mockResolvedValueOnce({ state: 'opened', session: mp.session, diagnostics: [] })
+      .mockResolvedValueOnce({ state: 'unresolved', diagnostics: [] })
+    const resolver = createNodeMapPreviewResourcePlanResolver({
+      subjects: { open } as unknown as Pick<SubjectServices, 'open'>,
+    })
+    const installationOnlyPlan = plan([
+      { rootId: 'mp', locator: locator(['data/mp.wz'], 'installation-only') },
+      { rootId: 'base', locator: locator(['data/base.wz'], 'installation-only') },
+    ])
+    const result = await resolver.resolve(
+      await requestFixture(installationOnlyPlan, originalPath, original.session),
+    )
+    expect(result).toMatchObject({ state: 'unresolved' })
+    expect(open).toHaveBeenCalledTimes(2)
+    expect(original.namespaceRelease).toHaveBeenCalledOnce()
+    expect(mp.namespaceRelease).toHaveBeenCalledOnce()
+    expect(mp.sessionRelease).toHaveBeenCalledOnce()
+  })
+})

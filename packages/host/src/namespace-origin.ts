@@ -104,6 +104,22 @@ export interface WorkspaceNamespaceCompanionOriginOptions extends Omit<
   readonly maxPages?: number
 }
 
+/** One exact workspace root backed by one already-open container namespace. */
+export interface CompositeWorkspaceNamespaceRoot extends WorkspaceNamespaceLogicalRoot {
+  readonly namespace: NamespaceEntrySource
+  readonly containerRevision: RevisionId
+  readonly extract: (entryId: string, signal?: AbortSignal) => Promise<Uint8Array>
+}
+
+export interface CompositeWorkspaceNamespaceCompanionOriginOptions {
+  readonly primaryLogicalId: string
+  /** Active root first, then dependency layers; the first matching resource wins. */
+  readonly roots: readonly CompositeWorkspaceNamespaceRoot[]
+  readonly caseSensitivity?: CompanionCaseSensitivity
+  readonly pageLimit?: number
+  readonly maxPages?: number
+}
+
 /** One caller-owned subtree to inspect inside a game-provider-resolved logical root. */
 export interface WorkspaceNamespaceCandidateSearch {
   readonly rootId: string
@@ -316,24 +332,67 @@ export function createNamespaceCompanionOrigin(
 export function createWorkspaceNamespaceCompanionOrigin(
   options: WorkspaceNamespaceCompanionOriginOptions,
 ): CompanionOrigin {
+  return createCompositeWorkspaceNamespaceCompanionOrigin({
+    primaryLogicalId: options.primaryLogicalId,
+    roots: options.logicalRoots.map(root => ({
+      ...root,
+      namespace: options.namespace,
+      containerRevision: options.containerRevision,
+      extract: options.extract,
+    })),
+    ...(options.caseSensitivity === undefined ? {} : { caseSensitivity: options.caseSensitivity }),
+    ...(options.pageLimit === undefined ? {} : { pageLimit: options.pageLimit }),
+    ...(options.maxPages === undefined ? {} : { maxPages: options.maxPages }),
+  })
+}
+
+/**
+ * Project a dependency-composed workspace whose roots come from multiple opened containers.
+ *
+ * The caller owns every namespace lease and container session. This origin only retains their
+ * capabilities until its enclosing ResourceSession is disposed, so release order stays with the
+ * host adapter that acquired them.
+ */
+export function createCompositeWorkspaceNamespaceCompanionOrigin(
+  options: CompositeWorkspaceNamespaceCompanionOriginOptions,
+): CompanionOrigin {
   const pageLimit = options.pageLimit ?? 256
   const maxPages = options.maxPages ?? 4096
   const caseSensitivity = options.caseSensitivity ?? 'insensitive'
   const fold = (value: string): string =>
     caseSensitivity === 'insensitive' ? value.toLowerCase() : value
-  const roots = options.logicalRoots.map(root => {
+  const roots = options.roots.map(root => {
     const pathPrefix =
       root.pathPrefix === '' ? '' : normalizeCompanionLogicalId(root.pathPrefix).replace(/\/$/u, '')
     const logicalPrefix =
       root.logicalPrefix === undefined || root.logicalPrefix === ''
         ? ''
         : normalizeCompanionLogicalId(root.logicalPrefix).replace(/\/$/u, '')
-    return Object.freeze({ rootId: root.rootId, pathPrefix, logicalPrefix })
+    return Object.freeze({
+      rootId: root.rootId,
+      pathPrefix,
+      logicalPrefix,
+      namespace: root.namespace,
+      containerRevision: root.containerRevision,
+      extract: root.extract,
+    })
   })
   if (roots.length === 0) throw new TypeError('workspace namespace origin requires a logical root')
-  const byLogicalId = new Map<string, IndexedEntry>()
+  if (new Set(roots.map(root => root.rootId)).size !== roots.length) {
+    throw new TypeError('workspace namespace origin root ids must differ')
+  }
+  type BoundIndexedEntry = IndexedEntry & {
+    readonly namespace: NamespaceEntrySource
+    readonly containerRevision: RevisionId
+    readonly extract: (entryId: string, signal?: AbortSignal) => Promise<Uint8Array>
+  }
+  const byLogicalId = new Map<string, BoundIndexedEntry>()
 
-  const pages = async function* (prefix: string, signal?: AbortSignal) {
+  const pages = async function* (
+    root: (typeof roots)[number],
+    prefix: string,
+    signal?: AbortSignal,
+  ) {
     const spellings = [...new Set(prefix === '' ? [''] : [prefix, fold(prefix)])]
     for (const spelling of spellings) {
       let cursor: string | undefined
@@ -350,7 +409,7 @@ export function createWorkspaceNamespaceCompanionOrigin(
           }
           seenCursors.add(cursor)
         }
-        const page = await options.namespace.list(
+        const page = await root.namespace.list(
           spelling,
           cursor === undefined ? { limit: pageLimit } : { cursor, limit: pageLimit },
           signal,
@@ -376,10 +435,7 @@ export function createWorkspaceNamespaceCompanionOrigin(
     return fold(logicalId).startsWith(fold(prefix)) ? logicalId.slice(prefix.length) : undefined
   }
 
-  const remember = (
-    root: { readonly pathPrefix: string; readonly logicalPrefix: string },
-    entry: NamespaceEntry,
-  ): string | undefined => {
+  const remember = (root: (typeof roots)[number], entry: NamespaceEntry): string | undefined => {
     if (entry.kind !== 'file') return undefined
     const prefix = root.pathPrefix === '' ? '' : `${root.pathPrefix}/`
     if (prefix !== '' && !fold(entry.path).startsWith(fold(prefix))) return undefined
@@ -393,6 +449,9 @@ export function createWorkspaceNamespaceCompanionOrigin(
         path: entry.path,
         ...(entry.size === undefined ? {} : { size: entry.size }),
         revision: entry.revision,
+        namespace: root.namespace,
+        containerRevision: root.containerRevision,
+        extract: root.extract,
       })
     }
     return logicalId
@@ -401,14 +460,14 @@ export function createWorkspaceNamespaceCompanionOrigin(
   const find = async (
     logicalId: string,
     signal?: AbortSignal,
-  ): Promise<IndexedEntry | undefined> => {
+  ): Promise<BoundIndexedEntry | undefined> => {
     const key = fold(logicalId)
     const cached = byLogicalId.get(key)
     if (cached !== undefined) return cached
     for (const root of roots) {
       const relative = relativeRequest(root, logicalId)
       if (relative === undefined) continue
-      for await (const entry of pages(joinPrefix(root.pathPrefix, relative), signal)) {
+      for await (const entry of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
         const remembered = remember(root, entry)
         if (remembered !== undefined && fold(remembered) === key) return byLogicalId.get(key)
       }
@@ -430,7 +489,7 @@ export function createWorkspaceNamespaceCompanionOrigin(
       for (const root of roots) {
         const relative = relativeRequest(root, enumeration.prefix)
         if (relative === undefined) continue
-        for await (const entry of pages(joinPrefix(root.pathPrefix, relative), signal)) {
+        for await (const entry of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
           throwIfAborted(signal)
           const logicalId = remember(root, entry)
           if (logicalId === undefined || yielded.has(fold(logicalId))) continue
@@ -452,10 +511,10 @@ export function createWorkspaceNamespaceCompanionOrigin(
           context: { logicalId },
         })
       }
-      const refLease = await options.namespace.openEntry(entry.entryId, signal)
+      const refLease = await entry.namespace.openEntry(entry.entryId, signal)
       let bytes: Uint8Array
       try {
-        bytes = await options.extract(entry.entryId, signal)
+        bytes = await entry.extract(entry.entryId, signal)
       } catch (error) {
         await refLease.release()
         throw error
@@ -463,7 +522,7 @@ export function createWorkspaceNamespaceCompanionOrigin(
       return Object.freeze({
         value: containerEntrySource(
           refLease.value,
-          containerEntryRevision(options.containerRevision, entry.entryId, bytes.byteLength),
+          containerEntryRevision(entry.containerRevision, entry.entryId, bytes.byteLength),
           bytes,
         ),
         release: () => refLease.release(),

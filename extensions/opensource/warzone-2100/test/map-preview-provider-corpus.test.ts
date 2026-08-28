@@ -86,8 +86,8 @@ describe.skipIf(!configured)('Warzone 2100 installed mp.wz map preview preparati
             { rootId: 'map', namespacePrefix: 'multiplay/maps/2c-highground' },
           ],
           roots: [
-            { rootId: 'mp', locator: { archiveName: 'mp.wz' } },
-            { rootId: 'base', locator: { archiveName: 'base.wz' } },
+            { rootId: 'mp', locator: { archiveRelativePaths: ['data/mp.wz', 'mp.wz'] } },
+            { rootId: 'base', locator: { archiveRelativePaths: ['data/base.wz', 'base.wz'] } },
           ],
         },
       },

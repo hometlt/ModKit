@@ -12,14 +12,7 @@ const REQUIRED_DEPTH = 2
 
 export const WARZONE_MAP_PREVIEW_PREPARATION_ID = 'org.modkitx.opensource.warzone2100.map-preview'
 export const WARZONE_MAP_PREVIEW_RESOLVER_ID =
-  'org.modkitx.opensource.warzone2100/map-preview-resources'
-
-const INSTALLATION_DISCOVERY_POLICY = Object.freeze({
-  discoveryId: 'org.modkitx.opensource.warzone2100',
-  configuredPaths: 'host-settings',
-  environmentVariable: 'MODKITX_WARZONE_ROOT',
-  automaticDiscovery: true,
-})
+  'org.modkitx.node/game-installation-archive-map-preview'
 
 function recordOf(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? value : undefined
@@ -197,12 +190,10 @@ function discoverCandidates(subject, namespace) {
 function archiveLocator(archiveName, openedSubjectPolicy) {
   return Object.freeze({
     schemaVersion: 1,
-    kind: 'warzone-installation-archive',
+    kind: 'game-installation-archive',
     gameId: GAME_ID,
-    archiveName,
+    archiveRelativePaths: Object.freeze([`data/${archiveName}`, archiveName]),
     openedSubjectPolicy,
-    contentScopes: Object.freeze(['stats', 'pie-models', 'textures']),
-    installationDiscovery: INSTALLATION_DISCOVERY_POLICY,
   })
 }
 

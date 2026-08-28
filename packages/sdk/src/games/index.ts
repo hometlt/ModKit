@@ -71,6 +71,8 @@ export interface GameInstallationDiscoveryRequest {
 
 export interface GameInstallationDiscoveryResult {
   readonly gameId: string
+  /** False when a candidate boundary was reached before the provider proved enumeration complete. */
+  readonly complete: boolean
   readonly probes: readonly GameInstallationProbe[]
   readonly installations: readonly GameInstallation[]
   readonly diagnostics: readonly GameInstallationDiagnostic[]

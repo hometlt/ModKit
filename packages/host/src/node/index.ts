@@ -13,6 +13,11 @@ export {
   type NodeSubjectServicesOptions,
 } from './subject-services.js'
 export {
+  createNodeMapPreviewResourcePlanResolver,
+  NODE_GAME_INSTALLATION_ARCHIVE_MAP_PREVIEW_RESOLVER_ID,
+  type NodeMapPreviewResourcePlanResolverOptions,
+} from './map-preview-resource-resolver.js'
+export {
   loadExtensionRoots,
   type ExtensionRootFailure,
   type ExtensionRootRequest,
