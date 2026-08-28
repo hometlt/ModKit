@@ -61,16 +61,16 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 ## 3. Слой 2 — semantic capability registry
 
-Строк-возможностей: **317**. Owner additions заморожены 2026-08-28.
+Строк-возможностей: **321**. Owner additions заморожены 2026-08-28.
 
 ### 3.1. Release track и обязательность
 
 | releaseTrack              | Строк | obligation                  | Строк |
 | ------------------------- | ----- | --------------------------- | ----- |
 | `deferred-games-priority` | 42    | `experimental-optional`     | 2     |
-| `mk3-priority`            | 124   | `focused-required-addition` | 22    |
+| `mk3-priority`            | 125   | `focused-required-addition` | 23    |
 | `multiverse-priority`     | 10    | `legacy-required`           | 289   |
-| `post-ga`                 | 141   | `post-ga-required-proof`    | 4     |
+| `post-ga`                 | 144   | `post-ga-required-proof`    | 7     |
 
 ### 3.2. Три независимые оси
 
@@ -78,9 +78,9 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | allocation                   | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
-| `absent`                     | 81    | `equivalent-better`    | 21    | E0            | 79    |
-| `covered`                    | 219   | `implemented`          | 214   | E1            | 110   |
-| `not-applicable`             | 1     | `missing`              | 81    | E2            | 74    |
+| `absent`                     | 84    | `equivalent-better`    | 21    | E0            | 82    |
+| `covered`                    | 220   | `implemented`          | 215   | E1            | 110   |
+| `not-applicable`             | 1     | `missing`              | 84    | E2            | 75    |
 | `superseded`                 | 13    | `relocated-multiverse` | 1     | E3            | 14    |
 | `superseded-staging-present` | 3     |                        |       | E4            | 40    |
 
@@ -99,6 +99,7 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `uv/uvt/texture-profile`                         | `write-reopen-compared`                | `packages/testkit/test/uvt-materializer.test.ts`<br>`packages/testkit/test/uvt-writer.test.ts`<br>`scripts/test/specs-pin.test.ts`                                                                         |
 | `vertical/starcraft-2/native-inspect-authoring`  | `write-reopen-compared`                | `extensions/blizzard/mpq/test/native-preserving-workflow.test.ts`<br>`packages/host/test/sc2-writers.test.ts`<br>`packages/testkit/test/sc2-casc-real.test.ts`                                             |
 | `vertical/starcraft-2/native-round-trip`         | `write-reopen-compared`                | `extensions/blizzard/mpq/test/native-preserving-workflow.test.ts`<br>`packages/host/test/sc2-writers.test.ts`                                                                                              |
+| `vertical/starcraft-2/native-signature-policy`   | `write-reopen-compared`                | `extensions/blizzard/mpq/test/native-preserving-writer.test.ts`                                                                                                                                            |
 | `vertical/warzone-2100/native-inspect-authoring` | `write-reopen-compared`                | `extensions/opensource/warzone-2100/test/wz-writer-host-corpus.test.ts`<br>`packages/testkit/test/warzone-real.test.ts`                                                                                    |
 | `vertical/warzone-2100/native-round-trip`        | `write-reopen-compared`                | `extensions/opensource/warzone-2100/test/wz-writer-host-corpus.test.ts`<br>`extensions/opensource/warzone-2100/test/wz-writer.test.ts`                                                                     |
 
@@ -108,9 +109,9 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | Release              | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | -------------------- | ----- | ---- | ------------ | ---------- | -------------- |
-| `mk3-ga`             | 129   | 124  | 5            | 0          | —              |
-| `mk3-multiverse-ga`  | 134   | 134  | 0            | 3          | block-22       |
-| `mk3-deferred-games` | 176   | 176  | 0            | 28         | block-16       |
+| `mk3-ga`             | 130   | 125  | 5            | 0          | —              |
+| `mk3-multiverse-ga`  | 135   | 135  | 0            | 3          | block-22       |
+| `mk3-deferred-games` | 177   | 177  | 0            | 28         | block-16       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
@@ -122,11 +123,11 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `block-15`    | 23    | 0                 |
 | `block-17`    | 11    | 0                 |
 | `block-19`    | 1     | 0                 |
-| `block-20`    | 9     | 0                 |
+| `block-20`    | 10    | 0                 |
 
 ## 5. Gap list — что осталось в `mk3-ga`
 
-Строк с нерешённым состоянием: **0** из 129. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
+Строк с нерешённым состоянием: **0** из 130. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
 
 ## 6. Дополнительные gaps следующих release
 

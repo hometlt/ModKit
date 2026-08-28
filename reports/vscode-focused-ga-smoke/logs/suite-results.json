@@ -1,6 +1,6 @@
 {
-  "startedAt": "2026-08-28T07:59:12.837Z",
-  "finishedAt": "2026-08-28T07:59:48.849Z",
+  "startedAt": "2026-08-28T11:29:58.046Z",
+  "finishedAt": "2026-08-28T11:30:40.189Z",
   "extensionHost": {
     "node": "24.18.1",
     "electron": "42.8.1",
@@ -9,7 +9,7 @@
   },
   "webviewChannel": {
     "cdpUsable": true,
-    "port": 64916,
+    "port": 63802,
     "note": "every webview target answered empty"
   },
   "scenarios": [
@@ -17,19 +17,19 @@
       "id": "activation",
       "title": "The extension activates without error",
       "verdict": "pass",
-      "evidence": "activate() resolved in 2761 ms (budget 10000 ms) with 142 contribution(s) from the shipped catalog and none missing; all 7 modkit commands are registered, so the host composition completed inside activation",
+      "evidence": "activate() resolved in 2650 ms (budget 10000 ms) with 142 contribution(s) from the shipped catalog and none missing; all 7 modkit commands are registered, so the host composition completed inside activation",
       "details": {
         "extensionId": "modkitx.@modkitx-x3/modkit-vscode",
         "commands": {
           "expected": 7,
           "missing": []
         },
-        "activationMs": 2761,
+        "activationMs": 2650,
         "contributions": 142,
         "missingCatalogRoots": [],
         "activationBudgetMs": 10000
       },
-      "durationMs": 3418
+      "durationMs": 2965
     },
     {
       "id": "focused-preview-sc2-model",
@@ -38,7 +38,7 @@
       "evidence": "sc2-model.m3 opened in a real custom-editor tab, exposed and selected Model, and subject.inspect identified m3",
       "details": {
         "tabOpened": true,
-        "firstOpenMs": 2206,
+        "firstOpenMs": 2055,
         "stageTabs": ["Model", "Tree", "Metadata", "Hex", "Edit"],
         "expectedStage": "Model",
         "expectedStageSelected": true,
@@ -54,7 +54,7 @@
           ]
         }
       },
-      "durationMs": 4909
+      "durationMs": 5525
     },
     {
       "id": "focused-preview-warzone-model",
@@ -63,7 +63,7 @@
       "evidence": "warzone-model.pie opened in a real custom-editor tab, exposed and selected Model, and subject.inspect identified warzone-pie",
       "details": {
         "tabOpened": true,
-        "firstOpenMs": 1778,
+        "firstOpenMs": 1253,
         "stageTabs": ["Model", "Tree", "Metadata", "Hex", "Edit"],
         "expectedStage": "Model",
         "expectedStageSelected": true,
@@ -80,7 +80,7 @@
           ]
         }
       },
-      "durationMs": 4240
+      "durationMs": 4167
     },
     {
       "id": "focused-preview-sc2-map",
@@ -89,7 +89,7 @@
       "evidence": "sc2-map.SC2Map opened in a real custom-editor tab, exposed and selected Entries, and subject.inspect identified sc2-map",
       "details": {
         "tabOpened": true,
-        "firstOpenMs": 1882,
+        "firstOpenMs": 2239,
         "stageTabs": ["Tree", "Metadata", "Hex", "Entries", "Edit"],
         "expectedStage": "Entries",
         "expectedStageSelected": true,
@@ -105,7 +105,7 @@
           ]
         }
       },
-      "durationMs": 5180
+      "durationMs": 5562
     },
     {
       "id": "focused-preview-warzone-map",
@@ -114,7 +114,7 @@
       "evidence": "warzone-map.wz opened in a real custom-editor tab, exposed and selected Entries, and subject.inspect identified warzone-wz",
       "details": {
         "tabOpened": true,
-        "firstOpenMs": 1723,
+        "firstOpenMs": 1769,
         "stageTabs": ["Tree", "Metadata", "Hex", "Entries", "Edit"],
         "expectedStage": "Entries",
         "expectedStageSelected": true,
@@ -130,7 +130,7 @@
           ]
         }
       },
-      "durationMs": 4712
+      "durationMs": 4851
     },
     {
       "id": "focused-preview-document",
@@ -139,7 +139,7 @@
       "evidence": "fixture.odt opened in a real custom-editor tab, exposed and selected Tree, and subject.inspect identified odt",
       "details": {
         "tabOpened": true,
-        "firstOpenMs": 2334,
+        "firstOpenMs": 1811,
         "stageTabs": ["Tree", "Metadata", "Hex", "Text", "Edit"],
         "expectedStage": "Tree",
         "expectedStageSelected": true,
@@ -155,7 +155,7 @@
           ]
         }
       },
-      "durationMs": 5629
+      "durationMs": 6233
     },
     {
       "id": "focused-preview-png",
@@ -164,7 +164,7 @@
       "evidence": "texture.png opened in a real custom-editor tab, exposed and selected Image, and subject.inspect identified png",
       "details": {
         "tabOpened": true,
-        "firstOpenMs": 1151,
+        "firstOpenMs": 1242,
         "stageTabs": ["Tree", "Metadata", "Hex", "Image", "Edit"],
         "expectedStage": "Image",
         "expectedStageSelected": true,
@@ -180,7 +180,7 @@
           ]
         }
       },
-      "durationMs": 3675
+      "durationMs": 3996
     },
     {
       "id": "focused-preview-dds",
@@ -189,7 +189,7 @@
       "evidence": "texture.dds opened in a real custom-editor tab, exposed and selected Image, and subject.inspect identified dds",
       "details": {
         "tabOpened": true,
-        "firstOpenMs": 1180,
+        "firstOpenMs": 1152,
         "stageTabs": ["Tree", "Metadata", "Hex", "Image", "Edit"],
         "expectedStage": "Image",
         "expectedStageSelected": true,
@@ -205,7 +205,22 @@
           ]
         }
       },
-      "durationMs": 3569
+      "durationMs": 3717
+    },
+    {
+      "id": "focused-world-presentation",
+      "title": "The SC2 map mounts the shared World presentation in the real editor",
+      "verdict": "pass",
+      "evidence": "sc2-world.SC2Map opened in a real custom-editor tab and mounted the shared World stage; semantic content is proved by the linked conformance suite",
+      "details": {
+        "tabOpened": true,
+        "contentProvedBy": "apps/web/test/presentation-plan-conformance.test.ts",
+        "stageTabs": ["World"],
+        "worldSelected": true,
+        "webviewReadable": true,
+        "pageExcerpt": "Modkit · World · The world cannot be rendered: world candidate identity changed between source and info · org.modkitx.app.vscode/webview · 2 facilities"
+      },
+      "durationMs": 4425
     },
     {
       "id": "focused-positive-conversion",
@@ -223,7 +238,7 @@
           "diagnosticCodes": ["x3.host/worker-shared-process", "x3.host/permission-degraded"]
         }
       },
-      "durationMs": 509
+      "durationMs": 455
     },
     {
       "id": "focused-clean-close",
@@ -234,7 +249,7 @@
         "tabsAfter": 0,
         "hostResponsiveAfterClose": true
       },
-      "durationMs": 4
+      "durationMs": 3
     }
   ]
 }

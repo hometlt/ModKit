@@ -1800,6 +1800,42 @@ function sc2Map() {
   ])
 }
 
+/** Minimal native HMAP v101 grid used by the live World-stage wiring fixture. */
+function sc2WorldHeightMap() {
+  const data = new Uint8Array(32 + 4 * 6)
+  data.set(ascii('HMAP'))
+  const view = new DataView(data.buffer)
+  view.setUint32(4, 101, true)
+  view.setUint32(8, 2, true)
+  view.setUint32(12, 2, true)
+  for (let index = 0; index < 4; index += 1) {
+    view.setUint16(32 + index * 6, 100 + index, true)
+    view.setUint16(34 + index * 6, 10 + index, true)
+    view.setUint16(36 + index * 6, index === 3 ? 0x9000 : 1, true)
+  }
+  return data
+}
+
+/** Packed SC2Map whose three semantic documents are sufficient to mount the shared World stage. */
+function sc2WorldMap() {
+  return sc2Mpq([
+    ['MapInfo', ascii('World-stage fixture\0')],
+    [
+      'Objects',
+      ascii(
+        '<?xml version="1.0"?><PlacedObjects Version="27"><ObjectPoint Id="1" Position="0,0,0" Scale="1,1,1" Type="Start" Name="Start"/></PlacedObjects>',
+      ),
+    ],
+    [
+      'Regions',
+      ascii(
+        '<?xml version="1.0"?><Regions><region id="1"><name value="Start"/><shape type="circle"><center value="0,0"/><radius value="1"/></shape></region></Regions>',
+      ),
+    ],
+    ['t3HeightMap', sc2WorldHeightMap()],
+  ])
+}
+
 /** Packed SC2Mod with component, catalog, localization, layout, and document metadata entries. */
 function sc2Mod() {
   return sc2Mpq([
@@ -4745,6 +4781,7 @@ const FIXTURES = {
   'Triggers.external-library': sc2TriggersExternalLibrary,
   'minimal-runtime.galaxy': sc2RuntimeProgram,
   'minimal.SC2Map': sc2Map,
+  'minimal-world.SC2Map': sc2WorldMap,
   'minimal.SC2Mod': sc2Mod,
   'minimal.SC2Campaign': sc2Campaign,
   'minimal.SC2Replay': sc2Replay,

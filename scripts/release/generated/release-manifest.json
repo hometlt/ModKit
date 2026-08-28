@@ -6,8 +6,8 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:522aeeebc41bec83880434f0f4ec64417fac7bb3a929036045f1debe6df69036",
-      "size": 38145536
+      "sha256": "sha256:e2aef1a3ac30a06f34078eb5151d3bb314d155427e88a1074b656adf23e156b2",
+      "size": 38155776
     },
     {
       "catalog": [
@@ -282,7 +282,7 @@
           ],
           "coordinate": "org.modkitx.blizzard/mpq",
           "root": "extensions/blizzard/mpq",
-          "sourceDigest": "sha256:cebeeaf02215319bc657d53af4ed2504906ff035a6c31c47e3bfcdcdfcc22177"
+          "sourceDigest": "sha256:36eb34cb70c13b6fc957f99910dd64401fde066eb39e88296758b2b9fe36f478"
         },
         {
           "contributions": [
@@ -304,7 +304,7 @@
           ],
           "coordinate": "org.modkitx.blizzard/starcraft2",
           "root": "extensions/blizzard/starcraft2",
-          "sourceDigest": "sha256:8ce048635c35e96ddc09364ab304d10520daac313f8b2a19df82bfc6a3662720"
+          "sourceDigest": "sha256:67c51f18e78097ff6c5213cd72effde4381b31ab7e572c4d846e4f8e8a1cef76"
         },
         {
           "contributions": [
@@ -316,14 +316,14 @@
           ],
           "coordinate": "org.modkitx.blizzard/starcraft2-game",
           "root": "extensions/blizzard/starcraft2-game",
-          "sourceDigest": "sha256:aa81ac7629bd4f48476d5618ed5c564328f5d3c5903ce048a2effe4393151e2a"
+          "sourceDigest": "sha256:d72542e7f9ca28402470688321e385d9d79b495c4d8b461dadf3d99f6226dae2"
         }
       ],
       "file": "artifacts/modkitx-sc2-mod-studio.tar",
       "id": "sc2-mod-studio",
       "kind": "game-extension-bundle",
-      "sha256": "sha256:c754f8f9299e7d1ecf57d5a3038d39a44ca6de8cc4078fc9de61804f017459f8",
-      "size": 1146368
+      "sha256": "sha256:af2ac827685db8b29ef9a6b30f08f3a881176aba717df2387002723b73e9276c",
+      "size": 1147904
     },
     {
       "catalog": [
@@ -385,7 +385,7 @@
       },
       {
         "path": "scripts/bundle-hashes.json",
-        "sha256": "sha256:9f9ccf176ea447441f1aad4053fff2358a062775058782b8fa746eb13a5028df"
+        "sha256": "sha256:41db6806f5373c2c9abe1a785451abe60ff2b69b16d448eda22b64346a13a02d"
       }
     ],
     "closure": "mk3-ga",

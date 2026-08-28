@@ -230,6 +230,7 @@ export function parseSc2Mpq(bytes, maxNodes) {
         id: path,
         path,
         name: path.split('/').at(-1) ?? path,
+        blockIndex: block.index,
         size: block.size,
         archivedSize: block.archivedSize,
         flags: block.flags,
@@ -244,6 +245,7 @@ export function parseSc2Mpq(bytes, maxNodes) {
         id: path,
         path,
         name: path,
+        blockIndex: block.index,
         size: block.size,
         archivedSize: block.archivedSize,
         flags: block.flags,
@@ -260,6 +262,15 @@ export function sc2ArchiveEntryNames(archive) {
 
 export function sc2ArchiveHasEntry(archive, path) {
   return findBlock(path, archive.tables) !== undefined
+}
+
+/** Read one fully stored single-unit entry from an already parsed SC2 archive. */
+export function readSc2ArchiveEntry(bytes, archive, entryId) {
+  const entry = archive.entries.find(item => item.id === entryId)
+  if (entry === undefined) throw new TypeError('SC2Map entry id was not found')
+  const block = archive.tables.blockTable[entry.blockIndex]
+  if (block === undefined) throw new TypeError(`SC2Map entry block is missing: ${entryId}`)
+  return readStoredEntry(bytes, archive.header, block, entry.path)
 }
 
 export function createSc2NamespaceSource(archive, source) {

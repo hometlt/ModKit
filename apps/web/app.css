@@ -163,10 +163,26 @@ body {
 }
 
 .web-status {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.web-session-restart {
+  flex: none;
+  padding: 1px var(--mk-space-2);
+  border: 1px solid var(--mk-color-border);
+  border-radius: var(--mk-radius-sm);
+  background: var(--mk-color-surface);
+  color: var(--mk-color-fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.web-session-restart:hover {
+  background: var(--mk-color-hover);
 }
 
 /* ------------------------------------------------------------------ host rail */

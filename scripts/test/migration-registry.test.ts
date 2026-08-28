@@ -216,6 +216,7 @@ const BLOCK_20_PRODUCT_GA_OBLIGATIONS = [
   'platform/release/migration-zero-gap',
   'platform/release/reproducible-rc',
   'platform/tools/ga-priority',
+  'vertical/starcraft-2/native-signature-policy',
 ] as const
 
 function runPriority(registry: string, extra: readonly string[] = []) {

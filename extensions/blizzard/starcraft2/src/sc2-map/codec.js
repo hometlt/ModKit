@@ -1,11 +1,12 @@
-// Hand-ported packed SC2Map inspection. Mounted-directory semantics, rendering, editing, packing,
-// and launch remain separate host/runtime concerns and are explicitly reported as unsupported.
+// Hand-ported packed SC2Map inspection and bounded stored-entry extraction. Mounted-directory
+// semantics, editing, packing, and launch remain separate host/runtime concerns.
 
 import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-kit'
 import {
   createSc2NamespaceSource,
   mpqMagic,
   parseSc2Mpq,
+  readSc2ArchiveEntry,
   sc2ArchiveEntryNames,
   sc2ArchiveHasEntry,
 } from './mpq.js'
@@ -49,6 +50,15 @@ function sniffMarkers(prefix) {
 const definition = Object.freeze({
   id: ID,
   format: Object.freeze({ id: 'sc2-map', label: 'StarCraft II map' }),
+  operations: Object.freeze([
+    Object.freeze({
+      id: 'container.extract',
+      handlerId: 'extract-entry',
+      mutatesSource: false,
+      requiredPermissions: Object.freeze(['read-source']),
+      outputKinds: Object.freeze(['bytes']),
+    }),
+  ]),
   async detect(prefix, uri) {
     const magic = mpqMagic(prefix)
     if (magic !== 'MPQ\u001a' && magic !== 'MPQ\u001b') {
@@ -119,12 +129,23 @@ const definition = Object.freeze({
           })),
         }),
       },
+      handlers: {
+        'extract-entry': async input => {
+          if (input === null || typeof input !== 'object' || Array.isArray(input)) {
+            throw new TypeError('container.extract requires {entryId}')
+          }
+          return {
+            kind: 'bytes',
+            value: readSc2ArchiveEntry(bytes, archive, String(input.entryId ?? '')),
+          }
+        },
+      },
       unsupportedFeatures: [
         'mounted-directory-input',
         'semantic-map-document-decoding',
         'terrain-and-minimap-rendering',
         'catalog-coordinated-reference-editing',
-        'entry-extraction',
+        'compressed-or-sector-based-entry-extraction',
         'compressed-or-encrypted-listfiles',
         'high-offset-mpq-tables',
         'native-preserving-mpq-repack',

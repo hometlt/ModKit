@@ -8,8 +8,8 @@
   "registry": "migration/capabilities.yaml",
   "generator": "scripts/migration/emit-priority-scope.mjs",
   "counts": {
-    "total": 134,
-    "seed": 134,
+    "total": 135,
+    "seed": 135,
     "transitiveDependencies": 0,
     "byPlannedBlock": {
       "block-11": 15,
@@ -18,19 +18,19 @@
       "block-15": 23,
       "block-17": 11,
       "block-19": 1,
-      "block-20": 9,
+      "block-20": 10,
       "block-22": 1,
       "block-23": 1,
       "block-25": 1
     },
     "byMigrationState": {
       "equivalent-better": 21,
-      "implemented": 109,
+      "implemented": 110,
       "missing": 3,
       "relocated-multiverse": 1
     },
-    "byObligation": { "focused-required-addition": 17, "legacy-required": 117 },
-    "byEvidenceLevel": { "E0": 1, "E1": 26, "E2": 65, "E3": 12, "E4": 30 }
+    "byObligation": { "focused-required-addition": 18, "legacy-required": 117 },
+    "byEvidenceLevel": { "E0": 1, "E1": 26, "E2": 66, "E3": 12, "E4": 30 }
   },
   "deadlines": {
     "block-11": [
@@ -172,7 +172,8 @@
       "platform/presentation/common-plan",
       "platform/release/migration-zero-gap",
       "platform/release/reproducible-rc",
-      "platform/tools/ga-priority"
+      "platform/tools/ga-priority",
+      "vertical/starcraft-2/native-signature-policy"
     ],
     "block-22": ["uv/uvw/world-materialization"],
     "block-23": ["uv/uvd/definitions"],
@@ -2191,7 +2192,8 @@
         "platform/extensions/out-of-tree",
         "platform/presentation/common-plan",
         "platform/release/reproducible-rc",
-        "platform/tools/ga-priority"
+        "platform/tools/ga-priority",
+        "vertical/starcraft-2/native-signature-policy"
       ],
       "requiredBy": []
     },
@@ -2444,7 +2446,24 @@
         "uv/uvm/materializer-writer",
         "vertical/starcraft-2/native-inspect-authoring"
       ],
-      "requiredBy": []
+      "requiredBy": ["vertical/starcraft-2/native-signature-policy"]
+    },
+    {
+      "capabilityId": "vertical/starcraft-2/native-signature-policy",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "extensions/blizzard/mpq",
+      "plannedBlock": 20,
+      "migrationState": "implemented",
+      "supportState": "partial",
+      "evidenceLevel": "E2",
+      "allocationState": "covered",
+      "portFamily": "blizzard/mpq",
+      "corpusDescriptors": [],
+      "dependsOn": ["vertical/starcraft-2/native-round-trip"],
+      "requiredBy": ["platform/release/migration-zero-gap"]
     },
     {
       "capabilityId": "vertical/starcraft-2/native-to-uv",

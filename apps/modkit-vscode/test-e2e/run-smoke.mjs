@@ -187,6 +187,7 @@ const FOCUSED_FILES = Object.freeze([
   ['minimal.m3', 'sc2-model.m3'],
   ['minimal.warzone.pie', 'warzone-model.pie'],
   ['minimal.SC2Map', 'sc2-map.SC2Map'],
+  ['minimal-world.SC2Map', 'sc2-world.SC2Map'],
   ['minimal.warzone.wz', 'warzone-map.wz'],
   ['minimal.png', 'texture.png'],
   ['minimal.dds', 'texture.dds'],

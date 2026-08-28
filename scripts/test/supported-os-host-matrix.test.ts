@@ -28,6 +28,7 @@ interface HostMatrix {
   }[]
   readonly releaseBoundary: {
     readonly kind: string
+    readonly namedBacklog: readonly string[]
     readonly notClaimed: readonly string[]
   }
 }
@@ -68,6 +69,11 @@ describe('Block 20 supported OS and host matrix', () => {
         'Linux or macOS support',
       ]),
     )
+    expect(matrix.releaseBoundary.namedBacklog).toEqual([
+      'platform/release/authenticode-signing',
+      'platform/release/packaged-installers',
+      'platform/release/public-pwa-deployment',
+    ])
   })
 
   it('names exactly the six GA applications and gives every claim an executable check', () => {

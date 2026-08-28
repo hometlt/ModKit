@@ -15,6 +15,11 @@ are copied but explicitly reported as invalidated when content changes, and sign
 mutation are not claimed. Both paths reopen their output through the product codec, use the host's
 atomic Save As workflow, and support undo.
 
+The named Blizzard signature policy is deliberately narrow: internal and external signature bytes
+are preserved as opaque data byte-for-byte, while every modified archive receipt reports
+`invalidated-by-modification`. Modkit never creates, repairs, or recomputes a Blizzard signature;
+only an official Blizzard tool may produce a signature the product may describe as valid.
+
 The snapshot helper accepts only portable ASCII relative paths (1,024 characters maximum), reserves
 its generated `(listfile)`, enforces explicit entry and byte budgets, and requires the loose source
 to expose a pinned revision plus `currentRevision`. The revision is checked before listing, after

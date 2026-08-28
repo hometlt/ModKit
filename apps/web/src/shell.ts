@@ -89,6 +89,11 @@ import {
 import { createEditPanel } from './edit-panel.js'
 import { createInspector, type Inspector, type InspectorTarget } from './inspector.js'
 import {
+  createWebSessionRecovery,
+  type WebSessionDiagnostic,
+  type WebSessionRecovery,
+} from './session-recovery.js'
+import {
   applyAppearance,
   createWebSettingsStore,
   EXTENSIONS_READ_ONLY_REASON,
@@ -232,6 +237,8 @@ async function boot(): Promise<void> {
   if (booting !== null) setViewerText(booting, t('app.starting'))
   const capability = describeFileCapability(window)
   const bootDiagnostics: string[] = []
+  const bootSessionDiagnostics: WebSessionDiagnostic[] = []
+  const recoveryHost: { current?: WebSessionRecovery } = {}
 
   /*
    * The user's own extension folders, read and re-hashed before the host is composed — their
@@ -298,6 +305,8 @@ async function boot(): Promise<void> {
     },
     onDiagnostic: diagnostic => {
       bootDiagnostics.push(`${diagnostic.code}: ${diagnostic.message}`)
+      bootSessionDiagnostics.push({ code: diagnostic.code, message: diagnostic.message })
+      recoveryHost.current?.report(diagnostic)
       console.info(`[worker] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`)
     },
   })
@@ -320,7 +329,15 @@ async function boot(): Promise<void> {
 
   const statusLine = document.createElement('output')
   statusLine.className = 'web-status'
-  workbench.root.querySelector('[data-mk-part="workbench.statusbar"]')?.append(statusLine)
+  const restartSession = document.createElement('button')
+  restartSession.className = 'web-session-restart'
+  restartSession.type = 'button'
+  restartSession.hidden = true
+  restartSession.textContent = t('action.restartSession')
+  restartSession.title = t('action.restartSessionTitle')
+  workbench.root
+    .querySelector('[data-mk-part="workbench.statusbar"]')
+    ?.append(statusLine, restartSession)
   const say = (message: string): void => setViewerText(statusLine, message, 400)
 
   // ---------------------------------------------------------------- sessions the shell holds
@@ -844,6 +861,22 @@ async function boot(): Promise<void> {
     },
   })
   markDirty = (entryId, dirty) => editors.markDirty(entryId, dirty)
+
+  const recovery = createWebSessionRecovery({
+    hasUnsaved: () => editors.hasUnsaved(),
+    confirmDiscard: () => window.confirm(t('confirm.discardAndRestart')),
+    restart: async () => {
+      await services.dispose()
+      window.location.reload()
+    },
+    onState: state => {
+      restartSession.hidden = state !== 'worker-unavailable'
+      if (state === 'worker-unavailable') say(t('status.workerUnavailable'))
+    },
+  })
+  recoveryHost.current = recovery
+  for (const diagnostic of bootSessionDiagnostics) recovery.report(diagnostic)
+  restartSession.addEventListener('click', () => void recovery.restart())
 
   /*
    * The hex editor reports unsaved work through `edit.propose` on every changed byte, so the arm

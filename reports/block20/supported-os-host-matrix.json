@@ -59,7 +59,7 @@
     {
       "id": "pwa",
       "support": "supported-local-ga",
-      "testedSurface": "fresh product build served over HTTP, opened in a real headless Chromium browser, then safely closed and reopened with a new worker-backed subject",
+      "testedSurface": "fresh product build served over HTTP, opened in a real headless Chromium browser, safely closed and reopened, with a manual whole-session restart offered after a forced worker crash",
       "evidenceLevel": "current-source-live-browser",
       "verification": [
         "pnpm exec vitest run apps/web/test/boot.test.ts --maxWorkers=1",
@@ -69,7 +69,7 @@
       "notClaimed": [
         "installation through a public web origin",
         "offline service-worker behavior in every embedded browser",
-        "forced browser-worker crash recovery"
+        "automatic browser-worker crash recovery"
       ]
     },
     {
@@ -128,6 +128,11 @@
   ],
   "releaseBoundary": {
     "kind": "local-source-ga",
+    "namedBacklog": [
+      "platform/release/authenticode-signing",
+      "platform/release/packaged-installers",
+      "platform/release/public-pwa-deployment"
+    ],
     "notClaimed": [
       "public release readiness",
       "signed native installers",

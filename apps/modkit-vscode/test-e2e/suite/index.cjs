@@ -618,6 +618,47 @@ async function runFocusedGaScenarios() {
   }
 
   await scenario(
+    'focused-world-presentation',
+    'The SC2 map mounts the shared World presentation in the real editor',
+    async record => {
+      const target = path.join(staged, 'sc2-world.SC2Map')
+      const tab = await openThroughCustomEditor(target)
+      record.details.tabOpened = tab !== undefined
+      record.details.contentProvedBy = 'apps/web/test/presentation-plan-conformance.test.ts'
+      if (tab === undefined) {
+        record.evidence = 'no Modkit custom-editor tab appeared for sc2-world.SC2Map within 20s'
+        return false
+      }
+      await waitFor(async () => (await readStageTabs()).includes('World'), {
+        timeoutMs: 45_000,
+        stepMs: 500,
+      })
+      const stages = await readStageTabs()
+      record.details.stageTabs = stages
+      if (!stages.includes('World')) {
+        record.evidence = `sc2-world.SC2Map opened, but World was absent from ${JSON.stringify(stages)}`
+        return false
+      }
+      const clicked = await clickStage('World')
+      const visible = await readWebviewText()
+      record.details.worldSelected = clicked
+      record.details.webviewReadable = visible.trim() !== ''
+      record.details.pageExcerpt = excerpt(visible, 900)
+      if (!clicked || visible.trim() === '') {
+        record.evidence =
+          'World was offered for sc2-world.SC2Map, but the rendered page could not be observed ' +
+          `after selection (${cdp.note})`
+        return false
+      }
+      record.evidence =
+        'sc2-world.SC2Map opened in a real custom-editor tab and mounted the shared World stage; ' +
+        'semantic content is proved by the linked conformance suite'
+      return true
+    },
+  )
+  await closeAllEditors()
+
+  await scenario(
     'focused-positive-conversion',
     'PNG conversion runs through the real editor command surface',
     async record => {
@@ -754,7 +795,11 @@ async function runScenarios(env) {
   if (extension === undefined || !extension.isActive) {
     const unreachable =
       process.env.MODKITX_SMOKE_PROFILE === 'focused-ga'
-        ? [...FOCUSED_PREVIEWS.map(row => row.id), 'focused-positive-conversion']
+        ? [
+            ...FOCUSED_PREVIEWS.map(row => row.id),
+            'focused-world-presentation',
+            'focused-positive-conversion',
+          ]
         : ['w3d-single', 'vxl-companion', 'big-nested', 'diagnostics-no-companion']
     for (const id of unreachable) {
       results.push({

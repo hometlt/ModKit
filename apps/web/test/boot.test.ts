@@ -216,4 +216,32 @@ describe('PWA boot', () => {
     ).toEqual([])
     await second.close()
   }, 120_000)
+
+  it('offers a manual whole-session restart after a worker crash and does not restart by itself', async () => {
+    const page = await browser.newPage({ colorScheme: 'dark' })
+    let navigations = 0
+    page.on('framenavigated', frame => {
+      if (frame === page.mainFrame()) navigations += 1
+    })
+    await page.route('**/worker-entry.js', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/javascript',
+        body: "throw new Error('forced worker crash for recovery smoke')",
+      })
+    })
+
+    await page.goto(`${origin}/?open=./favicon-32.png&lang=en`, { waitUntil: 'load' })
+    const restart = page.getByRole('button', { name: 'Restart session' })
+    await restart.waitFor({ state: 'visible', timeout: 60_000 })
+    const beforeClick = navigations
+    await page.waitForTimeout(500)
+    expect(navigations).toBe(beforeClick)
+
+    await page.unroute('**/worker-entry.js')
+    await Promise.all([page.waitForNavigation({ waitUntil: 'load' }), restart.click()])
+    await page.waitForSelector('[data-mk-part="workbench"]', { timeout: 60_000 })
+    expect(navigations).toBeGreaterThan(beforeClick)
+    await page.close()
+  }, 120_000)
 })

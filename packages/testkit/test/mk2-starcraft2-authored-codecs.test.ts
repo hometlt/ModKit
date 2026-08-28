@@ -382,6 +382,14 @@ describe('ported StarCraft II authored and structural codecs', () => {
       const namespace = lease.value as NamespaceEntrySource
       const page = await namespace.list('', { limit: 20 })
       expect(page.items.map(item => item.path)).toEqual(value.names)
+      if (value.id === 'sc2-map') {
+        const extracted = await session.operations().invoke('extract-entry', { entryId: 'Objects' })
+        expect(extracted).toMatchObject({ state: 'ok', output: { kind: 'bytes' } })
+        if (extracted.state !== 'ok' || extracted.output.kind !== 'bytes') {
+          throw new Error('SC2Map stored entry was not extracted')
+        }
+        expect(new TextDecoder().decode(extracted.output.value)).toBe('<PlacedObjects/>')
+      }
       await lease.release()
       await session.dispose()
     }

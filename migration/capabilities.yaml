@@ -2,7 +2,7 @@ schemaVersion: 'capability-registry-1'
 $comment: 'Semantic capability registry (слой 2, PLAN_MODKIT_MK3_FINAL_RU.md §3.3, блок 10 работы 4–6 и 11). Строка — пользовательская возможность, не поверхность кода; несколько технических строк могут реализовывать одну возможность. Гибрид: скелет выведен из migration/generated/source-inventory.json, scripts/mk2-port-ratchet.json, scripts/parity/common-coverage.json, reports/parity/latest.json и extensions/*/*/MIGRATION-NOTES*.json; семантические поля — данные. scripts/migration/check-registry.mjs заново выводит каждый машинный факт и сверяет, поэтому рукописное значение не может разойтись с деревом. Канонический порядок ключей и сортировка строк по capabilityId обязательны.'
 ownerAdditionsFrozen: true
 ownerAdditionsFrozenOn: '2026-08-28'
-ownerAdditionsFrozenNote: "Обязательный набор owner additions заморожен реестром блока 10 и уточнён решением владельца для первого Product GA: ODG, Kane's Wrath, семь MK3-native text-data форматов и machine-readable closure приложений и RC блока 20. Новая экспериментальная идея получает experimental-optional и не расширяет Legacy Migration Complete; смена obligation требует решения владельца и обновления scope lock."
+ownerAdditionsFrozenNote: "Обязательный набор owner additions заморожен реестром блока 10 и уточнён решениями владельца для первого Product GA: ODG, Kane's Wrath, семь MK3-native text-data форматов, machine-readable closure приложений и RC блока 20, а также явная политика подписи MPQ из GA acceptance Fable. Новая экспериментальная идея получает experimental-optional и не расширяет Legacy Migration Complete; смена obligation требует решения владельца и обновления scope lock."
 evidenceLegend:
   E0: 'Строка обнаружена; исполняемого MK3-контракта ещё нет (planned owner может быть уже назван).'
   E1: 'Contract/manifest существует и валидируется.'
@@ -16,18 +16,22 @@ scopeLock:
     - "Kane's Wrath"
     - 'MK3-native text-data (TSV/INI/JSON/JSONC/TOML/XML/YAML)'
     - 'Block 20 application and RC closure'
+    - 'Blizzard MPQ native signature policy'
   post-ga-required-proof:
     - 'SC1 CHK'
     - 'SC1 GRP'
     - 'RA2 map'
     - 'RA2/TS SHP'
+    - 'Authenticode signing'
+    - 'packaged installers'
+    - 'public PWA deployment'
   legacy-required:
     - 'legacy VXL parity (HVA/PAL/VPL depth)'
   experimental-optional:
     - 'volume-grid-3d'
     - 'free-space-3d'
 counts:
-  capabilities: 317
+  capabilities: 321
   unmappedRules: 13
   unmappedUnits: 608
   mappedUnits: 512
@@ -17161,7 +17165,7 @@ capabilities:
     supportState: 'supported'
     runtimeAvailability: 'host-facility-dependent'
     evidenceLevel: 'E2'
-    hostEvidence: 'node'
+    hostEvidence: 'node-and-browser-worker'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -17183,12 +17187,12 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'браузер без Node backend честно возвращает typed unavailable для crash recovery вместо ложного успеха'
+      - 'PWA после x3.host/worker-crashed показывает только ручной перезапуск всего сеанса; автоматическое восстановление worker state не заявлено'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: 'единая permission, cancellation, restart и crash матрица проходит через host-owned command/session lifecycle во всех шести приложениях'
+    replacementWorkflow: 'единая permission, cancellation, restart и crash матрица проходит через host-owned command/session lifecycle; PWA после реального worker crash ждёт явного нажатия пользователя, проверяет несохранённые вкладки, закрывает services и перезагружает всю композицию'
     closedBy:
       commits:
         - '7b3581b'
@@ -17198,7 +17202,10 @@ capabilities:
         - 'packages/host/test/command-runtime.test.ts'
         - 'apps/modkit-cli/test/cli.test.ts'
         - 'scripts/test/app-recovery-conformance.test.ts'
-      reports: []
+        - 'apps/web/test/session-recovery.test.ts'
+        - 'apps/web/test/boot.test.ts'
+      reports:
+        - 'reports/block20/supported-os-host-matrix.json'
   - capabilityId: 'platform/extensions/lifecycle'
     userScenario: 'Устанавливать, обновлять, удалять и откатывать локальные расширения с изоляцией повреждённых версий.'
     releaseTrack: 'mk3-priority'
@@ -17380,6 +17387,61 @@ capabilities:
         - 'apps/web/test/presentation-plan-conformance.test.ts'
         - 'apps/electron/test/odf-view-policy.test.ts'
       reports: []
+  - capabilityId: 'platform/release/authenticode-signing'
+    userScenario: 'Проверять подлинность опубликованных Windows-приложений Modkit по подписи Authenticode от владельца проекта.'
+    releaseTrack: 'post-ga'
+    origin: 'owner-addition'
+    obligation: 'post-ga-required-proof'
+    owner: 'scripts/release'
+    plannedBlock: 30
+    dependsOn:
+      - 'platform/release/reproducible-rc'
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities: []
+    mk3Contributions: []
+    mk3Operations: []
+    allocation:
+      state: 'absent'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'missing'
+    supportState: 'unsupported'
+    runtimeAvailability: 'none'
+    evidenceLevel: 'E0'
+    hostEvidence: 'none'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors: []
+    projection:
+      plane: 'code'
+      liveProjection: 'not-applicable'
+      portableMaterialization: 'not-applicable'
+      opaquePreservation: 'not-applicable'
+      nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'локальный RC имеет detached Ed25519, но Windows-бинарники ещё не подписаны доверенным сертификатом Authenticode'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: null
+    closedBy:
+      commits: []
+      tests: []
+      reports: []
   - capabilityId: 'platform/release/migration-zero-gap'
     userScenario: 'Получать отчёт выпуска, который не скрывает ни одну незавершённую задачу первого Product GA и отдельно сохраняет будущий backlog.'
     releaseTrack: 'mk3-priority'
@@ -17396,6 +17458,7 @@ capabilities:
       - 'platform/presentation/common-plan'
       - 'platform/release/reproducible-rc'
       - 'platform/tools/ga-priority'
+      - 'vertical/starcraft-2/native-signature-policy'
     sourceUnitIds: []
     legacyEvidence: []
     hostFacilities: []
@@ -17451,6 +17514,116 @@ capabilities:
         - 'migration/generated/vscode-workflow-shortlist.json'
         - 'migration/generated/status.md'
         - 'migration/generated/priority-scope.json'
+  - capabilityId: 'platform/release/packaged-installers'
+    userScenario: 'Установить готовые приложения Modkit обычным установщиком без исходного кода и команд разработчика.'
+    releaseTrack: 'post-ga'
+    origin: 'owner-addition'
+    obligation: 'post-ga-required-proof'
+    owner: 'scripts/release and desktop apps'
+    plannedBlock: 30
+    dependsOn:
+      - 'platform/release/reproducible-rc'
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities: []
+    mk3Contributions: []
+    mk3Operations: []
+    allocation:
+      state: 'absent'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'missing'
+    supportState: 'unsupported'
+    runtimeAvailability: 'none'
+    evidenceLevel: 'E0'
+    hostEvidence: 'none'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors: []
+    projection:
+      plane: 'code'
+      liveProjection: 'not-applicable'
+      portableMaterialization: 'not-applicable'
+      opaquePreservation: 'not-applicable'
+      nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'Focused Product GA проверяет локальные сборки и временную установку RC, но не выпускает системные установщики'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: null
+    closedBy:
+      commits: []
+      tests: []
+      reports: []
+  - capabilityId: 'platform/release/public-pwa-deployment'
+    userScenario: 'Открыть опубликованную PWA Modkit по постоянному защищённому адресу и получать проверенные обновления.'
+    releaseTrack: 'post-ga'
+    origin: 'owner-addition'
+    obligation: 'post-ga-required-proof'
+    owner: 'apps/web and release infrastructure'
+    plannedBlock: 30
+    dependsOn:
+      - 'platform/release/reproducible-rc'
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities: []
+    mk3Contributions: []
+    mk3Operations: []
+    allocation:
+      state: 'absent'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'missing'
+    supportState: 'unsupported'
+    runtimeAvailability: 'none'
+    evidenceLevel: 'E0'
+    hostEvidence: 'none'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors: []
+    projection:
+      plane: 'ui'
+      liveProjection: 'none'
+      portableMaterialization: 'none'
+      opaquePreservation: 'none'
+      nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'PWA проверена локально в Chromium, но публичный HTTPS origin, доставка обновлений и production hosting ещё не заявлены'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: null
+    closedBy:
+      commits: []
+      tests: []
+      reports: []
   - capabilityId: 'platform/release/reproducible-rc'
     userScenario: 'Собрать повторяемый локальный RC с подписью, списком компонентов и уведомлениями о лицензиях и проверить его без публичного выпуска.'
     releaseTrack: 'mk3-priority'
@@ -19542,7 +19715,7 @@ capabilities:
     knownLoss:
       - 'доказанный native scope — export-only Save As полного MPQ v0/v1 с неизменными таблицами и слотами и заменой только существующей stored либо single-unit zlib записи; pinned WTE70 повторно открывается semantic SC2Map и MPQ путями, сравнивается и откатывается'
       - 'неизменённые payloads, prefix/suffix, flags, methods, hash/block order и unnamed data сохраняются byte-identical; slack изменённой записи обнуляется, а opaque attributes/signatures сохраняются, но честно помечаются invalidated'
-      - 'encrypted, patch, sectorized, imploded, multi-compression, MPQ v2/v3, add/delete/rename entries, signature recompute, in-place write и произвольный SC2 map authoring не поддерживаются'
+      - 'encrypted, patch, sectorized, imploded, multi-compression, MPQ v2/v3, add/delete/rename entries, signature recompute, in-place write и произвольный SC2 map authoring не поддерживаются; действительную подпись создаёт только официальный инструмент Blizzard'
     receipts:
       projection: null
       materialization: null
@@ -19559,6 +19732,68 @@ capabilities:
         - 'packages/host/test/sc2-writers.test.ts'
       reports:
         - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-15-starcraft-ii-authoring-vertical'
+  - capabilityId: 'vertical/starcraft-2/native-signature-policy'
+    userScenario: 'Изменять MPQ StarCraft II без ложного заявления, что сохранённая подпись Blizzard остаётся действительной.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'extensions/blizzard/mpq'
+    plannedBlock: 20
+    dependsOn:
+      - 'vertical/starcraft-2/native-round-trip'
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities:
+      - 'read-source'
+      - 'write-source'
+    mk3Contributions:
+      - 'org.modkitx/mpq'
+      - 'org.modkitx.blizzard/mpq-fresh-writer'
+    mk3Operations: []
+    allocation:
+      state: 'covered'
+      x3ContributionId: 'org.modkitx.blizzard/mpq-fresh-writer'
+      portFamily: 'blizzard/mpq'
+      portVerdict: null
+    migrationState: 'implemented'
+    supportState: 'partial'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node-and-browser-worker'
+    writerEvidence: 'write-reopen-compared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors: []
+    projection:
+      plane: 'container'
+      liveProjection: 'none'
+      portableMaterialization: 'none'
+      opaquePreservation: 'proven'
+      nativeExport: 'proven'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'Modkit сохраняет внутреннюю и внешнюю подпись как opaque bytes без изменений, но после изменения архива всегда помечает её invalidated-by-modification'
+      - 'Modkit не создаёт и не пересчитывает подпись Blizzard; действительную подпись можно получить только официальным инструментом Blizzard'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'native-preserving Save As возвращает типизированную квитанцию signature.present, signature.bytes=preserved-opaque и signature.status=invalidated-by-modification'
+    closedBy:
+      commits:
+        - '008cd1f'
+      tests:
+        - 'extensions/blizzard/mpq/test/native-preserving-writer.test.ts'
+      reports: []
   - capabilityId: 'vertical/starcraft-2/native-to-uv'
     userScenario: 'Для «StarCraft II» получить проекция native → UV без обязательной предварительной конвертации.'
     releaseTrack: 'mk3-priority'

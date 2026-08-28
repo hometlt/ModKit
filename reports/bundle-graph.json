@@ -4,7 +4,7 @@
   "entryCount": 69,
   "totals": {
     "modules": 583,
-    "bytes": 6670634
+    "bytes": 6674060
   },
   "entries": [
     {
@@ -447,7 +447,7 @@
       "entry": "packages/ui/dist/index.js",
       "surface": "ui",
       "modules": 43,
-      "bytes": 274570,
+      "bytes": 276283,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -459,7 +459,7 @@
       "entry": "packages/ui/dist/localization/index.js",
       "surface": "ui/localization",
       "modules": 1,
-      "bytes": 7706,
+      "bytes": 9419,
       "reachesUnits": [],
       "externalUnits": []
     },

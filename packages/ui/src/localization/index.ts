@@ -11,6 +11,8 @@ const EN_MESSAGES = Object.freeze({
   'action.enableEditing': 'Enable editing',
   'action.enableEditingTitle':
     'Ask this browser for permission to write the file or folder you picked',
+  'action.restartSession': 'Restart session',
+  'action.restartSessionTitle': 'Reload Modkit after the codec worker stopped',
   'settings.bundled': 'Bundled extensions',
   'settings.bundledExcluded': 'Bundled but not served here',
   'settings.bundledDescription':
@@ -33,7 +35,10 @@ const EN_MESSAGES = Object.freeze({
   'activity.infoTitle': 'Show or hide diagnostics and operations',
   'activity.settings': 'Settings',
   'status.noFileEditable': 'No file is open yet, so nothing is editable.',
+  'status.workerUnavailable': 'Codec worker stopped · restart the session to continue',
   'status.ready': 'Ready · {extensions} extensions · {notices} boot notice(s)',
+  'confirm.discardAndRestart':
+    'Some tabs have unsaved changes. Restart the session and discard them?',
   'error.openFile': 'Could not open the file: {reason}',
   'error.drop': 'Drop failed: {reason}',
   'error.fetch': '{path} could not be fetched from this origin.',
@@ -52,6 +57,8 @@ const RU_MESSAGES: UiMessageCatalog = Object.freeze({
   'action.splitEditorTitle': 'Открыть следующий файл рядом с текущим',
   'action.enableEditing': 'Разрешить редактирование',
   'action.enableEditingTitle': 'Запросить у браузера право записи в выбранный файл или папку',
+  'action.restartSession': 'Перезапустить сеанс',
+  'action.restartSessionTitle': 'Перезагрузить Modkit после остановки рабочего процесса кодеков',
   'settings.bundled': 'Встроенные расширения',
   'settings.bundledExcluded': 'Встроены, но здесь не опубликованы',
   'settings.bundledDescription':
@@ -74,7 +81,11 @@ const RU_MESSAGES: UiMessageCatalog = Object.freeze({
   'activity.infoTitle': 'Показать или скрыть диагностику и операции',
   'activity.settings': 'Настройки',
   'status.noFileEditable': 'Файл ещё не открыт — редактировать пока нечего.',
+  'status.workerUnavailable':
+    'Рабочий процесс кодеков остановлен · перезапустите сеанс, чтобы продолжить',
   'status.ready': 'Готово · расширений: {extensions} · сообщений запуска: {notices}',
+  'confirm.discardAndRestart':
+    'В открытых вкладках есть несохранённые изменения. Перезапустить сеанс и удалить их?',
   'error.openFile': 'Не удалось открыть файл: {reason}',
   'error.drop': 'Не удалось принять файл: {reason}',
   'error.fetch': 'Не удалось загрузить {path} с этого origin.',
