@@ -78,25 +78,29 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | allocation                   | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
-| `absent`                     | 85    | `equivalent-better`    | 16    | E0            | 83    |
-| `covered`                    | 206   | `implemented`          | 205   | E1            | 110   |
-| `not-applicable`             | 1     | `missing`              | 85    | E2            | 65    |
-| `superseded`                 | 13    | `partial`              | 1     | E3            | 15    |
-| `superseded-staging-present` | 3     | `relocated-multiverse` | 1     | E4            | 35    |
+| `absent`                     | 82    | `equivalent-better`    | 20    | E0            | 80    |
+| `covered`                    | 209   | `implemented`          | 205   | E1            | 110   |
+| `not-applicable`             | 1     | `missing`              | 82    | E2            | 65    |
+| `superseded`                 | 13    | `relocated-multiverse` | 1     | E3            | 14    |
+| `superseded-staging-present` | 3     |                        |       | E4            | 39    |
 
 ### 3.3. Доказанные writers
 
-| Возможность                    | writerEvidence                         | Тест                                                                                                                                                                                                       |
-| ------------------------------ | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `addition/text-ini/open-edit`  | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts`                                                                                                                                                                  |
-| `addition/text-json/open-edit` | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts`<br>`packages/testkit/test/text-data.test.ts`                                                                                                                     |
-| `format/csv/open-inspect`      | `write-reopen-compared`                | `packages/testkit/test/text-data.test.ts`<br>`packages/host/test/text-writers.test.ts`<br>`packages/testkit/test/detection-collisions.test.ts`                                                             |
-| `format/jpg/open-inspect`      | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                                                                                                                                   |
-| `format/mp3/open-inspect`      | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                                                                                                                                   |
-| `format/png/open-inspect`      | `write-reopen-compared`                | `packages/host/test/media-edits.test.ts`                                                                                                                                                                   |
-| `format/txt/open-inspect`      | `write-reopen-compared`                | `packages/testkit/test/common-plain-text.test.ts`<br>`packages/host/test/text-writers.test.ts`                                                                                                             |
-| `uv/uvm/materializer-writer`   | `write-reopen-compared`                | `packages/testkit/test/uvm-materializer.test.ts`<br>`packages/testkit/test/uvt-writer.test.ts`<br>`scripts/test/uv-materializer-boundary.test.ts`<br>`packages/testkit/test/blizzard-m3-companion.test.ts` |
-| `uv/uvt/texture-profile`       | `write-reopen-compared`                | `packages/testkit/test/uvt-materializer.test.ts`<br>`packages/testkit/test/uvt-writer.test.ts`<br>`scripts/test/specs-pin.test.ts`                                                                         |
+| Возможность                                      | writerEvidence                         | Тест                                                                                                                                                                                                       |
+| ------------------------------------------------ | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `addition/text-ini/open-edit`                    | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts`                                                                                                                                                                  |
+| `addition/text-json/open-edit`                   | `write-reopen-compared`                | `packages/host/test/text-writers.test.ts`<br>`packages/testkit/test/text-data.test.ts`                                                                                                                     |
+| `format/csv/open-inspect`                        | `write-reopen-compared`                | `packages/testkit/test/text-data.test.ts`<br>`packages/host/test/text-writers.test.ts`<br>`packages/testkit/test/detection-collisions.test.ts`                                                             |
+| `format/jpg/open-inspect`                        | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                                                                                                                                   |
+| `format/mp3/open-inspect`                        | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                                                                                                                                   |
+| `format/png/open-inspect`                        | `write-reopen-compared`                | `packages/host/test/media-edits.test.ts`                                                                                                                                                                   |
+| `format/txt/open-inspect`                        | `write-reopen-compared`                | `packages/testkit/test/common-plain-text.test.ts`<br>`packages/host/test/text-writers.test.ts`                                                                                                             |
+| `uv/uvm/materializer-writer`                     | `write-reopen-compared`                | `packages/testkit/test/uvm-materializer.test.ts`<br>`packages/testkit/test/uvt-writer.test.ts`<br>`scripts/test/uv-materializer-boundary.test.ts`<br>`packages/testkit/test/blizzard-m3-companion.test.ts` |
+| `uv/uvt/texture-profile`                         | `write-reopen-compared`                | `packages/testkit/test/uvt-materializer.test.ts`<br>`packages/testkit/test/uvt-writer.test.ts`<br>`scripts/test/specs-pin.test.ts`                                                                         |
+| `vertical/starcraft-2/native-inspect-authoring`  | `write-reopen-compared`                | `extensions/blizzard/mpq/test/native-preserving-workflow.test.ts`<br>`packages/host/test/sc2-writers.test.ts`<br>`packages/testkit/test/sc2-casc-real.test.ts`                                             |
+| `vertical/starcraft-2/native-round-trip`         | `write-reopen-compared`                | `extensions/blizzard/mpq/test/native-preserving-workflow.test.ts`<br>`packages/host/test/sc2-writers.test.ts`                                                                                              |
+| `vertical/warzone-2100/native-inspect-authoring` | `write-reopen-compared`                | `extensions/opensource/warzone-2100/test/wz-writer-host-corpus.test.ts`<br>`packages/testkit/test/warzone-real.test.ts`                                                                                    |
+| `vertical/warzone-2100/native-round-trip`        | `write-reopen-compared`                | `extensions/opensource/warzone-2100/test/wz-writer-host-corpus.test.ts`<br>`extensions/opensource/warzone-2100/test/wz-writer.test.ts`                                                                     |
 
 ## 4. Именованные closure
 
@@ -104,9 +108,9 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | Release              | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | -------------------- | ----- | ---- | ------------ | ---------- | -------------- |
-| `mk3-ga`             | 120   | 115  | 5            | 5          | block-15       |
-| `mk3-multiverse-ga`  | 125   | 125  | 0            | 8          | block-15       |
-| `mk3-deferred-games` | 167   | 167  | 0            | 33         | block-15       |
+| `mk3-ga`             | 120   | 115  | 5            | 1          | block-19       |
+| `mk3-multiverse-ga`  | 125   | 125  | 0            | 4          | block-19       |
+| `mk3-deferred-games` | 167   | 167  | 0            | 29         | block-16       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
@@ -115,27 +119,13 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `block-11`    | 14    | 0                 |
 | `block-12`    | 70    | 0                 |
 | `block-13`    | 1     | 0                 |
-| `block-15`    | 23    | 2                 |
-| `block-17`    | 11    | 2                 |
+| `block-15`    | 23    | 0                 |
+| `block-17`    | 11    | 0                 |
 | `block-19`    | 1     | 1                 |
 
 ## 5. Gap list — что осталось в `mk3-ga`
 
-Строк с нерешённым состоянием: **5** из 120. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
-
-### Блок 15 — 2 строк
-
-| Возможность                                     | migrationState | evidence | Владелец                              |
-| ----------------------------------------------- | -------------- | -------- | ------------------------------------- |
-| `vertical/starcraft-2/native-inspect-authoring` | `partial`      | E3       | `extensions/blizzard/starcraft2-game` |
-| `vertical/starcraft-2/native-round-trip`        | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
-
-### Блок 17 — 2 строк
-
-| Возможность                                      | migrationState | evidence | Владелец                             |
-| ------------------------------------------------ | -------------- | -------- | ------------------------------------ |
-| `vertical/warzone-2100/native-inspect-authoring` | `missing`      | E0       | `extensions/opensource/warzone-2100` |
-| `vertical/warzone-2100/native-round-trip`        | `missing`      | E0       | `extensions/opensource/warzone-2100` |
+Строк с нерешённым состоянием: **1** из 120. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
 
 ### Блок 19 — 1 строк
 

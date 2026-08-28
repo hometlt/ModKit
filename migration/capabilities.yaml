@@ -18828,24 +18828,33 @@ capabilities:
       - 'legacy/game-manifest/org.modkitx/starcraft-2'
     legacyEvidence:
       - 'legacy:extensions/blizzard/starcraft-2/games/starcraft-2/game.manifest.json'
-    hostFacilities: []
+    hostFacilities:
+      - 'read-source'
+      - 'write-source'
     mk3Contributions:
       - 'org.modkitx.blizzard/starcraft2-installation'
       - 'org.modkitx.blizzard/starcraft2-workspace'
       - 'org.modkitx.blizzard/starcraft2-data'
       - 'org.modkitx.blizzard/starcraft2-map-semantic'
-    mk3Operations: []
+      - 'org.modkitx/sc2-map'
+      - 'org.modkitx.blizzard/sc2-authored-text-writers'
+      - 'org.modkitx.blizzard/sc2-workspace-copy-writer'
+      - 'org.modkitx.blizzard/mpq-fresh-writer'
+    mk3Operations:
+      - 'asset.validate'
+      - 'export.raw'
+      - 'view.inspect'
     allocation:
       state: 'covered'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'partial'
+    migrationState: 'equivalent-better'
     supportState: 'partial'
     runtimeAvailability: 'node-only'
-    evidenceLevel: 'E3'
+    evidenceLevel: 'E4'
     hostEvidence: 'node'
-    writerEvidence: 'not-declared'
+    writerEvidence: 'write-reopen-compared'
     parityEvidence:
       coverageStatus: null
       rows: []
@@ -18859,7 +18868,7 @@ capabilities:
       plane: 'world'
       liveProjection: 'live'
       portableMaterialization: 'none'
-      opaquePreservation: 'none'
+      opaquePreservation: 'proven'
       nativeExport: 'none'
       operations:
         inspect: null
@@ -18867,17 +18876,25 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'CASC/M3/map/data читаются; полный authoring workflow вертикали ещё не закрыт'
+      - 'опечатанный legacy game manifest имел status partial и объявлял только game.discover-install/game.inspect; MK3 сохраняет этот scope и добавляет bounded authoring через общую host editing chain'
+      - 'реальный retail CASC остаётся read-only authority: неполный локальный namespace fail-closed, а полный loose workspace копируется byte-identical в отдельное назначение'
+      - 'native packed-map authoring ограничен fixed-slot MPQ v0/v1 complete-source Save As с заменой существующей stored либо single-unit zlib записи; остальные MPQ dialects и signing перечислены в native-round-trip remainder'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 discovery/CASC semantic inspect плюс common.edit/writer для authored text, complete loose workspace и bounded native MPQ Save As; запись всегда идёт в host-owned transaction, а retail source не изменяется'
     closedBy:
-      commits: []
+      commits:
+        - '7e899a2'
+        - 'df85e48'
+        - '008cd1f'
       tests:
-        - 'packages/testkit/test/sc2-real-corpus.test.ts'
-      reports: []
+        - 'extensions/blizzard/mpq/test/native-preserving-workflow.test.ts'
+        - 'packages/host/test/sc2-writers.test.ts'
+        - 'packages/testkit/test/sc2-casc-real.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-15-starcraft-ii-authoring-vertical'
   - capabilityId: 'vertical/starcraft-2/native-round-trip'
     userScenario: 'Для «StarCraft II» получить native round-trip: изменить и вернуть в исходный формат.'
     releaseTrack: 'mk3-priority'
@@ -18893,20 +18910,27 @@ capabilities:
       - 'legacy/game-manifest/org.modkitx/starcraft-2'
     legacyEvidence:
       - 'legacy:extensions/blizzard/starcraft-2/games/starcraft-2/game.manifest.json'
-    hostFacilities: []
-    mk3Contributions: []
+    hostFacilities:
+      - 'read-source'
+      - 'write-source'
+    mk3Contributions:
+      - 'org.modkitx/mpq'
+      - 'org.modkitx/sc2-map'
+      - 'org.modkitx.blizzard/mpq-fresh-writer'
+      - 'org.modkitx.blizzard/sc2-authored-text-writers'
+      - 'org.modkitx.blizzard/sc2-workspace-copy-writer'
     mk3Operations: []
     allocation:
-      state: 'absent'
+      state: 'covered'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E0'
-    hostEvidence: 'none'
-    writerEvidence: 'not-declared'
+    migrationState: 'equivalent-better'
+    supportState: 'partial'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node'
+    writerEvidence: 'write-reopen-compared'
     parityEvidence:
       coverageStatus: null
       rows: []
@@ -18920,24 +18944,33 @@ capabilities:
       plane: 'world'
       liveProjection: 'none'
       portableMaterialization: 'none'
-      opaquePreservation: 'none'
-      nativeExport: 'planned'
+      opaquePreservation: 'proven'
+      nativeExport: 'none'
       operations:
         inspect: null
         validate: null
         read: null
         materialize: null
     knownLoss:
-      - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
+      - 'доказанный native scope — export-only Save As полного MPQ v0/v1 с неизменными таблицами и слотами и заменой только существующей stored либо single-unit zlib записи; pinned WTE70 повторно открывается semantic SC2Map и MPQ путями, сравнивается и откатывается'
+      - 'неизменённые payloads, prefix/suffix, flags, methods, hash/block order и unnamed data сохраняются byte-identical; slack изменённой записи обнуляется, а opaque attributes/signatures сохраняются, но честно помечаются invalidated'
+      - 'encrypted, patch, sectorized, imploded, multi-compression, MPQ v2/v3, add/delete/rename entries, signature recompute, in-place write и произвольный SC2 map authoring не поддерживаются'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: null
+    replacementWorkflow: 'org.modkitx.blizzard/mpq-fresh-writer fixed-slot native-source Save As через common.edit/writer и atomic host transaction; authored text и complete loose Map/Mod/Campaign snapshots имеют отдельные writer offers'
     closedBy:
-      commits: []
-      tests: []
-      reports: []
+      commits:
+        - 'a9eaa65'
+        - '4f9b16d'
+        - 'df85e48'
+        - '008cd1f'
+      tests:
+        - 'extensions/blizzard/mpq/test/native-preserving-workflow.test.ts'
+        - 'packages/host/test/sc2-writers.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-15-starcraft-ii-authoring-vertical'
   - capabilityId: 'vertical/starcraft-2/native-to-uv'
     userScenario: 'Для «StarCraft II» получить проекция native → UV без обязательной предварительной конвертации.'
     releaseTrack: 'mk3-priority'
@@ -19139,20 +19172,32 @@ capabilities:
       - 'legacy/game-manifest/org.modkitx/warzone-2100'
     legacyEvidence:
       - 'legacy:extensions/opensource/warzone-2100/games/warzone-2100/game.manifest.json'
-    hostFacilities: []
-    mk3Contributions: []
-    mk3Operations: []
+    hostFacilities:
+      - 'read-source'
+      - 'write-source'
+    mk3Contributions:
+      - 'org.modkitx/warzone-wz'
+      - 'org.modkitx/warzone-pie'
+      - 'org.modkitx/warzone2100-map'
+      - 'org.modkitx.opensource/warzone2100-installation'
+      - 'org.modkitx.opensource/warzone2100-map-semantic'
+      - 'org.modkitx.opensource/warzone2100-data'
+      - 'org.modkitx.opensource/warzone2100-wz-writer'
+    mk3Operations:
+      - 'asset.validate'
+      - 'export.raw'
+      - 'view.inspect'
     allocation:
-      state: 'absent'
+      state: 'covered'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E0'
-    hostEvidence: 'none'
-    writerEvidence: 'not-declared'
+    migrationState: 'equivalent-better'
+    supportState: 'partial'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node'
+    writerEvidence: 'write-reopen-compared'
     parityEvidence:
       coverageStatus: null
       rows: []
@@ -19160,12 +19205,13 @@ capabilities:
       verdicts: []
       liveSources: []
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_WARZONE_ROOT'
     projection:
       plane: 'world'
-      liveProjection: 'none'
+      liveProjection: 'live'
       portableMaterialization: 'none'
-      opaquePreservation: 'none'
+      opaquePreservation: 'proven'
       nativeExport: 'none'
       operations:
         inspect: null
@@ -19173,16 +19219,24 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
+      - 'опечатанный legacy game manifest имел status partial и объявлял только game.discover-install; MK3 дополнительно открывает installed WZ/PIE/map/data через общие codec, VFS и host workflows'
+      - 'authoring ограничен typed tile texture/height и existing gateway edits одного существующего game.map внутри complete classic canonical .wz с export-only Save As'
+      - 'другие map companions, scripts, произвольные ZIP entries, multi-package overlay и in-place write остаются named remainder и не выводятся из inspect/preview'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 Warzone discovery/mount/inspect плюс org.modkitx.opensource/warzone2100-wz-writer через common.edit/writer и atomic host Save As; installed source остаётся read-only'
     closedBy:
-      commits: []
-      tests: []
-      reports: []
+      commits:
+        - 'd3580ea'
+        - '964099d'
+        - '37a341f'
+      tests:
+        - 'extensions/opensource/warzone-2100/test/wz-writer-host-corpus.test.ts'
+        - 'packages/testkit/test/warzone-real.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-17-warzone-2100-до-product-ga-и-отложенные-springrecoilbeyond-all-reason-после-stop'
   - capabilityId: 'vertical/warzone-2100/native-round-trip'
     userScenario: 'Для «Warzone 2100» получить native round-trip: изменить и вернуть в исходный формат.'
     releaseTrack: 'mk3-priority'
@@ -19198,20 +19252,25 @@ capabilities:
       - 'legacy/game-manifest/org.modkitx/warzone-2100'
     legacyEvidence:
       - 'legacy:extensions/opensource/warzone-2100/games/warzone-2100/game.manifest.json'
-    hostFacilities: []
-    mk3Contributions: []
+    hostFacilities:
+      - 'read-source'
+      - 'write-source'
+    mk3Contributions:
+      - 'org.modkitx/warzone-wz'
+      - 'org.modkitx/warzone2100-map'
+      - 'org.modkitx.opensource/warzone2100-wz-writer'
     mk3Operations: []
     allocation:
-      state: 'absent'
+      state: 'covered'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E0'
-    hostEvidence: 'none'
-    writerEvidence: 'not-declared'
+    migrationState: 'equivalent-better'
+    supportState: 'partial'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node'
+    writerEvidence: 'write-reopen-compared'
     parityEvidence:
       coverageStatus: null
       rows: []
@@ -19219,29 +19278,37 @@ capabilities:
       verdicts: []
       liveSources: []
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_WARZONE_ROOT'
     projection:
       plane: 'world'
       liveProjection: 'none'
       portableMaterialization: 'none'
-      opaquePreservation: 'none'
-      nativeExport: 'planned'
+      opaquePreservation: 'proven'
+      nativeExport: 'none'
       operations:
         inspect: null
         validate: null
         read: null
         materialize: null
     knownLoss:
-      - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
+      - 'доказанный native scope — complete classic canonical .wz, exact existing game.map path и typed tile texture/height либо existing gateway coordinate updates; no-op Save As byte-identical, changed archive reopen/compare/undo проходит на installed mp.wz'
+      - '619 untouched canonical ZIP entry blocks и archive comment сохраняются; whole-archive и nested game.map SHA-256 привязаны отдельно, а installed source остаётся byte-identical'
+      - 'duplicate/case-fold alias, last-wins shadow, encryption, ZIP64, unsupported compression, add/delete/rename, другие map companions, multi-package overlay и in-place write fail-closed'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: null
+    replacementWorkflow: 'org.modkitx.opensource/warzone2100-wz-writer применяет typed game.map writer, затем common ZIP preserving edit и сохраняет отдельный atomic .wz через host transaction'
     closedBy:
-      commits: []
-      tests: []
-      reports: []
+      commits:
+        - '964099d'
+        - '37a341f'
+      tests:
+        - 'extensions/opensource/warzone-2100/test/wz-writer-host-corpus.test.ts'
+        - 'extensions/opensource/warzone-2100/test/wz-writer.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-17-warzone-2100-до-product-ga-и-отложенные-springrecoilbeyond-all-reason-после-stop'
   - capabilityId: 'vertical/warzone-2100/native-to-uv'
     userScenario: 'Для «Warzone 2100» получить проекция native → UV без обязательной предварительной конвертации.'
     releaseTrack: 'mk3-priority'
