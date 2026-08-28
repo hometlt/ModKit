@@ -209,7 +209,7 @@ describe('modkit open (S7): the product open path of the CLI', () => {
     expect(report.descriptor.identity.formatId).toBe('sc2-map')
     expect(report.descriptor.traits).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: 'game.map', parameters: { packed: true, documents: 3 } }),
+        expect.objectContaining({ id: 'game.map', parameters: { packed: true, documents: 6 } }),
         expect.objectContaining({ id: 'container.entries', parameters: { count: 5 } }),
         expect.objectContaining({ id: 'content.scripts', parameters: { files: 1 } }),
       ]),

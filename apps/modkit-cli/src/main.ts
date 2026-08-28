@@ -336,7 +336,16 @@ async function main(argv: readonly string[]): Promise<number> {
       process.stderr.write(USAGE)
       return 2
     }
-    return runCommand(parsed)
+    const controller = new AbortController()
+    const abort = (): void => controller.abort()
+    process.once('SIGINT', abort)
+    process.once('SIGTERM', abort)
+    try {
+      return await runCommand(parsed, { signal: controller.signal })
+    } finally {
+      process.removeListener('SIGINT', abort)
+      process.removeListener('SIGTERM', abort)
+    }
   }
   if (command !== 'validate' || target === undefined || target.startsWith('--')) {
     process.stderr.write(USAGE)

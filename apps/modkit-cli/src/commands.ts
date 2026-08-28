@@ -47,6 +47,14 @@ export interface RunArguments {
   readonly format: RunOutputFormat
 }
 
+/** Process-owned lifecycle and output ports for one `modkit run` invocation. */
+export interface RunCommandOptions {
+  /** The CLI entrypoint binds this to SIGINT/SIGTERM; embedders may own another cancellation source. */
+  readonly signal?: AbortSignal
+  readonly writeStdout?: (text: string) => void
+  readonly writeStderr?: (text: string) => void
+}
+
 /** argv → arguments, or `undefined` for anything the usage line does not describe. */
 export function parseRunArguments(
   command: string | undefined,
@@ -142,7 +150,12 @@ export const renderCommandReceipt = (receipt: CommandReceipt): string => jsonTex
 /** Exit code from a result: 0 only when the command did what it was asked. */
 export const exitCodeFor = (result: CommandResult): number => (result.state === 'ok' ? 0 : 1)
 
-export async function runCommand(arguments_: RunArguments): Promise<number> {
+export async function runCommand(
+  arguments_: RunArguments,
+  options: RunCommandOptions = {},
+): Promise<number> {
+  const writeStdout = options.writeStdout ?? (text => void process.stdout.write(text))
+  const writeStderr = options.writeStderr ?? (text => void process.stderr.write(text))
   const runtime = createSubjectCommandRuntime()
   if (runtime.get(arguments_.command) === undefined) {
     if (arguments_.format === 'protocol-json') {
@@ -155,10 +168,10 @@ export async function runCommand(arguments_: RunArguments): Promise<number> {
           },
         },
       )
-      process.stdout.write(renderCommandReceipt(receipt))
+      writeStdout(renderCommandReceipt(receipt))
       return exitCodeFor(receipt.result)
     }
-    process.stderr.write(
+    writeStderr(
       `modkit run: unknown command «${arguments_.command}»; this build has ` +
         `${runtime.descriptors.map(item => item.id).join(', ')}\n`,
     )
@@ -202,18 +215,19 @@ export async function runCommand(arguments_: RunArguments): Promise<number> {
             }),
         // Progress goes to stderr so `--format json` on stdout stays a single parseable document.
         ...(arguments_.format === 'text'
-          ? { progress: step => void process.stderr.write(`… ${step.message}\n`) }
+          ? { progress: step => writeStderr(`… ${step.message}\n`) }
           : {}),
+        ...(options.signal === undefined ? {} : { signal: options.signal }),
       },
     )
-    process.stdout.write(
+    writeStdout(
       arguments_.format === 'protocol-json'
         ? renderCommandReceipt(receipt)
         : renderCommandResult(receipt.result, arguments_.format === 'json'),
     )
     return exitCodeFor(receipt.result)
   } catch (error) {
-    process.stderr.write(`modkit run: ${(error as Error).message}\n`)
+    writeStderr(`modkit run: ${(error as Error).message}\n`)
     return 2
   }
 }
