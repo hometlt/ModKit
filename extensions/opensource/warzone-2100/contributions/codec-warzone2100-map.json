@@ -25,7 +25,8 @@
     "Terrain only. `game.map` (tiles, heights, gateways) and `ttypes.ttp` (terrain type per texture) are read; the rest of the map bundle is not.",
     "The portable MK3 reader handles `game.map` v10-v40 terrain and the fixed `<name>.gam` header; `ttypes.ttp` remains outside this contribution's current single-source routing.",
     "Object tables are not read: `droid.json`/`feature.json`/`struct.json` under `multiplay/maps/` (current) and `dinit.bjo`/`feat.bjo`/`struct.bjo` under `wrf/cam*/` (legacy binary, still what the campaign uses). Both representations ship in 4.7.0 and neither is a superset of the other.",
-    "Read only. Writing is not implemented.",
+    "The separate preserving writer changes tile texture/height values and existing gateway coordinates only; resizing, version conversion, gateway insertion/deletion, `.gam`, `ttypes.ttp`, object tables and whole `.wz` package writing remain unsupported.",
+    "An unchanged complete `game.map` snapshot is byte-identical; supported edits preserve the fourth signature byte, all untouched records and any opaque trailing payload.",
     "`game.map` validates only the first three bytes of its signature — `loadMapData_Internal` never compares the trailing space — so a file beginning `map` followed by any byte is accepted, as it is by the engine. `ttypes.ttp` checks all four.",
     "A `ttypes.ttp` declaring at least MAX_TILE_TEXTURES entries is clamped to 254 rather than rejected, reproducing the engine comment \"Workaround for fugly map editor bug\". The declared count is reported alongside so the discrepancy is visible.",
     "A terrain value equal to TER_MAX passes validation, because the engine tests `> TER_MAX`. TER_MAX is a sentinel, so this is arguably an engine bug; rejecting it here would refuse files the game loads."

@@ -10,6 +10,7 @@
     "./img": "./src/warzone-img/codec.js",
     "./lev": "./src/warzone-lev/codec.js",
     "./map-codec": "./src/warzone2100-map/codec.js",
+    "./map-writer": "./src/warzone2100-map/writer.js",
     "./pie": "./src/warzone-pie/codec.js",
     "./wrf": "./src/warzone-wrf/codec.js",
     "./wz": "./src/warzone-wz/codec.js",

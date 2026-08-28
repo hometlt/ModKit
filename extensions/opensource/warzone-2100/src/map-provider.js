@@ -3,6 +3,7 @@ import {
   RESOLVED_MAP_WORKSPACE_CONTRACT,
 } from '@modkitx-x3/sdk/maps'
 import { bindWarzoneCatalogObjectResources } from './data-resource-bindings.js'
+import { createProvider as createGameMapWriterProvider } from './warzone2100-map/writer.js'
 
 const ANALYZER_ID = 'org.modkitx.opensource.warzone2100.maps'
 const GAME_ID = 'org.modkitx/warzone-2100'
@@ -827,9 +828,13 @@ export const abiVersion = 1
 export const provides = Object.freeze([
   MAP_SEMANTIC_ANALYSIS_CONTRACT,
   RESOLVED_MAP_WORKSPACE_CONTRACT,
+  'common.edit/writer',
 ])
 
-export function createProvider(selection) {
+export function createProvider(selection, context) {
+  if (selection.contract === 'common.edit/writer') {
+    return createGameMapWriterProvider(selection, context)
+  }
   if (
     (selection.contract !== MAP_SEMANTIC_ANALYSIS_CONTRACT &&
       selection.contract !== RESOLVED_MAP_WORKSPACE_CONTRACT) ||

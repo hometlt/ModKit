@@ -12,7 +12,18 @@ single-source `game.map`/`.gam`, and final `.wz` readers. The exact map-bundle t
 a measured map-native to UVW candidate transform. The WZ reader reuses the bounded common ZIP
 parser, extracts stored and Deflate entries, reads root `ruleset.json`, and exposes the last
 physical entry for every repeated path. All six legacy Warzone codec contributions now live in
-this final owner; writing remains outside the declared read-only operations.
+this final owner.
+
+The portable `game.map` writer accepts a complete inline source snapshot plus an explicit typed
+intent. The intent SHA-256 and the target's `content` revision must both identify those complete
+bytes, so another map cannot be substituted under a reused target revision. It can change tile
+texture/height values and the coordinates of already existing gateways.
+It always creates fresh bytes, reopens them and compares every tile and gateway before returning a
+host-owned atomic replacement plan. A no-op is byte-identical; the fourth signature byte, map
+version and dimensions, record counts, untouched records and opaque trailing payload are preserved.
+The provider itself requests no filesystem permission and never writes in place: the host remains
+responsible for `write-source` authorization and commit. Map resize, version conversion, gateway
+insert/delete, `.gam`, `ttypes.ttp`, object tables and whole `.wz` package writes are named remainder.
 
 The map-preview preparation provider discovers every exact `multiplay/maps/<id>/game.map` in a
 complete bounded, extractable `warzone-wz` namespace. One map prepares directly, multiple maps

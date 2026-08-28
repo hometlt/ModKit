@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-kit'
+import { parseWarzoneGameMap } from './format.js'
 
 const ID = 'org.modkitx/warzone2100-map'
 const viewOf = bytes => new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
@@ -15,38 +16,17 @@ const isGam = bytes =>
 function parse(bytes, budget) {
   const view = viewOf(bytes)
   if (isMap(bytes)) {
-    const version = view.getUint32(4, true)
-    const width = view.getUint32(8, true)
-    const height = view.getUint32(12, true)
-    if (version <= 9 || version > 40 || width <= 1 || height <= 1 || width * height > 65_536)
-      throw new TypeError('invalid Warzone game.map dimensions or version')
-    const tileBytes = version < 40 ? 3 : 4
-    const count = width * height
-    if (count > budget.maxNodes || 16 + count * tileBytes + 8 > bytes.byteLength)
-      throw new RangeError('Warzone game.map tiles exceed input or budget')
-    let minimumHeight = Number.POSITIVE_INFINITY
-    let maximumHeight = 0
-    let offset = 16
-    for (let index = 0; index < count; index += 1) {
-      offset += 2
-      const heightValue = version < 40 ? view.getUint8(offset++) * 2 : view.getUint16(offset, true)
-      if (version >= 40) offset += 2
-      minimumHeight = Math.min(minimumHeight, heightValue)
-      maximumHeight = Math.max(maximumHeight, heightValue)
-    }
-    const gatewayVersion = view.getUint32(offset, true)
-    const gateways = view.getUint32(offset + 4, true)
-    if (gatewayVersion !== 1 || offset + 8 + gateways * 4 > bytes.byteLength)
-      throw new TypeError('invalid Warzone gateway table')
+    const map = parseWarzoneGameMap(bytes, budget)
     return {
       kind: 'terrain',
-      version,
-      width,
-      height,
-      tiles: count,
-      gateways,
-      minimumHeight,
-      maximumHeight,
+      version: map.version,
+      width: map.width,
+      height: map.height,
+      tiles: map.tileCount,
+      gateways: map.gatewayCount,
+      minimumHeight: map.minimumHeight,
+      maximumHeight: map.maximumHeight,
+      trailingBytes: map.trailingBytes,
     }
   }
   if (isGam(bytes)) {
@@ -94,7 +74,17 @@ const definition = Object.freeze({
         }),
       },
       maxDecodedBytes: bytes.byteLength,
-      unsupportedFeatures: ['object-tables', 'map-writing', 'terrain-preview'],
+      unsupportedFeatures: [
+        'object-tables',
+        'map-resize',
+        'map-version-conversion',
+        'gateway-insert-delete',
+        'gam-writing',
+        'terrain-type-writing',
+        'object-table-writing',
+        'warzone-package-writing',
+        'terrain-preview',
+      ],
     }
   },
 })
