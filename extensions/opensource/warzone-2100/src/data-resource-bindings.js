@@ -2,6 +2,8 @@ import { analyzeWarzoneResolvedData } from './data-provider.js'
 
 const GAME_ID = 'org.modkitx/warzone-2100'
 const ANALYZER_ID = 'org.modkitx.opensource.warzone2100.data-resource-bindings'
+export const WARZONE_PORTABLE_OBJECT_RESOURCE_CONTRACT =
+  'org.modkitx.opensource.warzone2100/object-resource-binding'
 const MAXIMUM_OBJECT_DOCUMENTS = 16
 const MAXIMUM_OBJECT_TEXT_BYTES = 16_777_216
 const MAXIMUM_OBJECTS = 10_000
@@ -384,35 +386,373 @@ function entityKey(namespace, entityId) {
   return `${namespace}\0${entityId}`
 }
 
-function modelBindingsForEntity(entity, resources, modelDocuments, maximum, diagnostics) {
+function sameJsonValue(left, right) {
+  if (Object.is(left, right)) return true
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return (
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((item, index) => sameJsonValue(item, right[index]))
+    )
+  }
+  const leftRecord = recordOf(left)
+  const rightRecord = recordOf(right)
+  if (leftRecord === undefined || rightRecord === undefined) return false
+  const leftKeys = Object.keys(leftRecord).sort()
+  const rightKeys = Object.keys(rightRecord).sort()
+  return (
+    leftKeys.length === rightKeys.length &&
+    leftKeys.every(
+      (key, index) => key === rightKeys[index] && sameJsonValue(leftRecord[key], rightRecord[key]),
+    )
+  )
+}
+
+function logicalModelBindingsForEntity(entity) {
   const fields = MODEL_FIELDS[entity.namespace] ?? []
-  const bindings = []
-  for (const fieldId of fields) {
-    for (const [ordinal, logicalId] of scalarStrings(entity.fields[fieldId]).entries()) {
-      if (!logicalId.toLowerCase().endsWith('.pie')) continue
-      const state = bindingState(logicalId, resources)
-      if (state.state !== 'resolved') {
-        diagnostics.add(`model-${state.state}\0${logicalId.toLowerCase()}`, {
-          severity: state.state === 'missing' ? 'warning' : 'information',
-          code: `org.modkitx.opensource.warzone2100/model-${state.state}`,
-          message: `${entity.namespace}/${entity.entityId}.${fieldId} names ${logicalId}, which is ${state.state} in the supplied resource index`,
-          namespace: entity.namespace,
-          entityId: entity.entityId,
-          fieldId,
-        })
+  return fields.flatMap(fieldId =>
+    scalarStrings(entity.fields[fieldId]).flatMap((logicalId, ordinal) =>
+      logicalId.toLowerCase().endsWith('.pie')
+        ? [
+            Object.freeze({
+              kind: 'pie-model',
+              role: `${fieldId}[${ordinal}]`,
+              logicalId,
+              owner: Object.freeze({
+                namespace: entity.namespace,
+                entityId: entity.entityId,
+                fieldId,
+              }),
+            }),
+          ]
+        : [],
+    ),
+  )
+}
+
+function selectedBodyPropulsionLogicalBindings(entity, propulsionId) {
+  if (entity.namespace !== 'warzone.bodies' || typeof propulsionId !== 'string') return []
+  const extra = recordOf(entity.fields.propulsionExtraModels)
+  const selected = recordOf(extra?.[propulsionId])
+  if (selected === undefined) return []
+  return Object.entries(selected).flatMap(([role, logicalId]) =>
+    typeof logicalId === 'string' && logicalId.toLowerCase().endsWith('.pie')
+      ? [
+          Object.freeze({
+            kind: 'pie-model',
+            role: `propulsionExtraModels.${propulsionId}.${role}`,
+            logicalId,
+            owner: Object.freeze({
+              namespace: entity.namespace,
+              entityId: entity.entityId,
+              fieldId: 'propulsionExtraModels',
+            }),
+          }),
+        ]
+      : [],
+  )
+}
+
+function portableMaterialBinding(model) {
+  return Object.freeze({
+    state: 'pie-document-unavailable',
+    source: Object.freeze({ kind: 'pie-model', logicalId: model.logicalId }),
+    textures: Object.freeze([]),
+    reason:
+      'DataCatalogSnapshot carries stats fields but no observed archive index or PIE document text',
+  })
+}
+
+/**
+ * Derive only catalog-proved, portable logical model references for placed objects.
+ * Archive paths and PIE texture directives are deliberately unavailable on this input boundary.
+ */
+export function bindWarzoneCatalogObjectResources(catalog, objects) {
+  const value = recordOf(catalog)
+  if (
+    value?.schemaVersion !== 1 ||
+    value.gameId !== GAME_ID ||
+    !Array.isArray(value.entities) ||
+    (value.definitions !== undefined && !Array.isArray(value.definitions)) ||
+    !Array.isArray(objects)
+  ) {
+    throw new TypeError('Warzone catalog object binding requires a matching DataCatalogSnapshot')
+  }
+
+  const entities = new Map()
+  const collisions = new Set()
+  for (const [source, candidates] of [
+    ['definitions', value.definitions ?? []],
+    ['entities', value.entities],
+  ]) {
+    for (const [index, candidate] of candidates.entries()) {
+      const entity = recordOf(candidate)
+      if (
+        entity === undefined ||
+        typeof entity.namespace !== 'string' ||
+        typeof entity.entityId !== 'string' ||
+        recordOf(entity.fields) === undefined
+      ) {
+        throw new TypeError(`catalog.${source}[${index}] is not a resolved data entity`)
       }
-      bindings.push(
+      const key = entityKey(entity.namespace, entity.entityId)
+      const previous = entities.get(key)
+      if (previous === undefined && !collisions.has(key)) {
+        entities.set(key, entity)
+      } else if (previous !== undefined && !sameJsonValue(previous, entity)) {
+        entities.delete(key)
+        collisions.add(key)
+      }
+    }
+  }
+
+  const diagnostics = []
+  const bindings = []
+  let componentBindings = 0
+  let logicalModelReferences = 0
+  for (const [index, input] of objects.entries()) {
+    const object = recordOf(input)
+    const ref = recordOf(object?.ref)
+    if (
+      object === undefined ||
+      !Number.isSafeInteger(object.objectId) ||
+      ref === undefined ||
+      typeof ref.namespace !== 'string' ||
+      typeof ref.entityId !== 'string'
+    ) {
+      throw new TypeError(`objects[${index}] must contain a safe objectId and catalog ref`)
+    }
+    const key = entityKey(ref.namespace, ref.entityId)
+    if (collisions.has(key)) {
+      diagnostics.push(
         Object.freeze({
-          kind: 'pie-model',
-          role: `${fieldId}[${ordinal}]`,
-          logicalId,
-          owner: Object.freeze({ namespace: entity.namespace, entityId: entity.entityId, fieldId }),
-          ...state,
-          material: materialBinding(state, modelDocuments, resources, maximum, diagnostics),
+          severity: 'error',
+          code: 'org.modkitx.opensource.warzone2100/map-catalog-entity-collision',
+          message: `${ref.namespace}/${ref.entityId} conflicts between catalog definitions and queried entities`,
+          catalogRef: Object.freeze({ ...ref }),
         }),
       )
-      if (bindings.length > maximum) throw new RangeError(`model bindings exceed ${maximum}`)
+      bindings.push(
+        Object.freeze({
+          objectId: object.objectId,
+          ref: Object.freeze({ ...ref }),
+          state: 'definition-collision',
+          resources: Object.freeze({
+            schemaVersion: 1,
+            contract: WARZONE_PORTABLE_OBJECT_RESOURCE_CONTRACT,
+            state: 'definition-collision',
+            components: Object.freeze([]),
+            models: Object.freeze([]),
+            modelReferencesComplete: false,
+            materialReferencesComplete: false,
+            complete: false,
+          }),
+          components: Object.freeze([]),
+          models: Object.freeze([]),
+          modelReferencesComplete: false,
+          materialReferencesComplete: false,
+          complete: false,
+        }),
+      )
+      continue
     }
+    const definition = entities.get(key)
+    if (definition === undefined) {
+      diagnostics.push(
+        Object.freeze({
+          severity: 'error',
+          code: 'org.modkitx.opensource.warzone2100/map-catalog-entity-unresolved',
+          message: `placed object references unavailable catalog entity ${ref.namespace}/${ref.entityId}`,
+          catalogRef: Object.freeze({ ...ref }),
+        }),
+      )
+      bindings.push(
+        Object.freeze({
+          objectId: object.objectId,
+          ref: Object.freeze({ ...ref }),
+          state: 'definition-missing',
+          resources: Object.freeze({
+            schemaVersion: 1,
+            contract: WARZONE_PORTABLE_OBJECT_RESOURCE_CONTRACT,
+            state: 'definition-missing',
+            components: Object.freeze([]),
+            models: Object.freeze([]),
+            modelReferencesComplete: false,
+            materialReferencesComplete: false,
+            complete: false,
+          }),
+          components: Object.freeze([]),
+          models: Object.freeze([]),
+          modelReferencesComplete: false,
+          materialReferencesComplete: false,
+          complete: false,
+        }),
+      )
+      continue
+    }
+
+    const components = []
+    const owners = [definition]
+    const definitionComplete = definition.complete === true
+    if (!definitionComplete) {
+      diagnostics.push(
+        Object.freeze({
+          severity: 'warning',
+          code: 'org.modkitx.opensource.warzone2100/map-object-definition-partial',
+          message: `${definition.namespace}/${definition.entityId} is a partial resolved definition; its logical model references cannot be complete`,
+          catalogRef: Object.freeze({ ...ref }),
+        }),
+      )
+    }
+    for (const componentField of COMPONENT_FIELDS[definition.namespace] ?? []) {
+      for (const componentId of scalarStrings(definition.fields[componentField.field])) {
+        if (componentId.length === 0) continue
+        const componentRef = Object.freeze({
+          namespace: componentField.namespace,
+          entityId: componentId,
+        })
+        const componentKey = entityKey(componentRef.namespace, componentRef.entityId)
+        const collision = collisions.has(componentKey)
+        const component = collision ? undefined : entities.get(componentKey)
+        const componentState = collision
+          ? 'collision'
+          : component === undefined
+            ? 'missing'
+            : component.complete === true
+              ? 'resolved'
+              : 'partial'
+        components.push(
+          Object.freeze({
+            role: componentField.field,
+            ...componentRef,
+            state: componentState,
+          }),
+        )
+        if (componentState !== 'resolved') {
+          diagnostics.push(
+            Object.freeze({
+              severity: 'warning',
+              code:
+                componentState === 'collision'
+                  ? 'org.modkitx.opensource.warzone2100/map-object-component-collision'
+                  : componentState === 'missing'
+                    ? 'org.modkitx.opensource.warzone2100/map-object-component-missing'
+                    : 'org.modkitx.opensource.warzone2100/map-object-component-partial',
+              message: `${definition.namespace}/${definition.entityId}.${componentField.field} names ${componentState} ${componentRef.namespace}/${componentRef.entityId}`,
+              catalogRef: componentRef,
+            }),
+          )
+        } else {
+          owners.push(component)
+        }
+      }
+    }
+    const models = owners.flatMap(owner => [
+      ...logicalModelBindingsForEntity(owner),
+      ...selectedBodyPropulsionLogicalBindings(owner, definition.fields.propulsion),
+    ])
+    const portableModels = Object.freeze(
+      models.map(model =>
+        Object.freeze({
+          ...model,
+          state: 'logical-only',
+          material: portableMaterialBinding(model),
+        }),
+      ),
+    )
+    const componentsComplete =
+      definitionComplete && components.every(component => component.state === 'resolved')
+    const modelReferencesComplete = componentsComplete && portableModels.length > 0
+    if (portableModels.length === 0) {
+      diagnostics.push(
+        Object.freeze({
+          severity: 'warning',
+          code: 'org.modkitx.opensource.warzone2100/map-object-model-logical-ref-unavailable',
+          message: `${definition.namespace}/${definition.entityId} yields no catalog-proved PIE model reference`,
+          catalogRef: Object.freeze({ ...ref }),
+        }),
+      )
+    }
+    componentBindings += components.length
+    logicalModelReferences += portableModels.length
+    bindings.push(
+      Object.freeze({
+        objectId: object.objectId,
+        ref: Object.freeze({ ...ref }),
+        entity: definition,
+        resources: Object.freeze({
+          schemaVersion: 1,
+          contract: WARZONE_PORTABLE_OBJECT_RESOURCE_CONTRACT,
+          state: modelReferencesComplete ? 'logical-models' : 'partial',
+          components: Object.freeze(components),
+          models: portableModels,
+          modelReferencesComplete,
+          materialReferencesComplete: false,
+          complete: false,
+        }),
+        state: modelReferencesComplete ? 'logical-models' : 'partial',
+        components: Object.freeze(components),
+        models: portableModels,
+        modelReferencesComplete,
+        materialReferencesComplete: false,
+        complete: false,
+      }),
+    )
+  }
+  if (logicalModelReferences > 0) {
+    diagnostics.push(
+      Object.freeze({
+        severity: 'information',
+        code: 'org.modkitx.opensource.warzone2100/map-material-references-unavailable',
+        message:
+          'catalog-proved PIE model ids are portable, but archive paths and PIE texture directives require a bounded namespace/document planning pass',
+      }),
+    )
+  }
+  const modelBoundObjects = bindings.filter(binding => binding.modelReferencesComplete).length
+  const summary = Object.freeze({
+    schemaVersion: 1,
+    contract: WARZONE_PORTABLE_OBJECT_RESOURCE_CONTRACT,
+    objects: bindings.length,
+    definitionBoundObjects: bindings.filter(binding => binding.entity !== undefined).length,
+    modelBoundObjects,
+    componentBindings,
+    logicalModelReferences,
+    materialTextureReferences: 0,
+    modelReferencesComplete: bindings.length > 0 && modelBoundObjects === bindings.length,
+    materialReferencesComplete: false,
+    complete: false,
+  })
+  return Object.freeze({
+    bindings: Object.freeze(bindings),
+    diagnostics: Object.freeze(diagnostics),
+    summary,
+  })
+}
+
+function modelBindingsForEntity(entity, resources, modelDocuments, maximum, diagnostics) {
+  const bindings = []
+  for (const logical of logicalModelBindingsForEntity(entity)) {
+    const state = bindingState(logical.logicalId, resources)
+    if (state.state !== 'resolved') {
+      diagnostics.add(`model-${state.state}\0${logical.logicalId.toLowerCase()}`, {
+        severity: state.state === 'missing' ? 'warning' : 'information',
+        code: `org.modkitx.opensource.warzone2100/model-${state.state}`,
+        message: `${entity.namespace}/${entity.entityId}.${logical.owner.fieldId} names ${logical.logicalId}, which is ${state.state} in the supplied resource index`,
+        namespace: entity.namespace,
+        entityId: entity.entityId,
+        fieldId: logical.owner.fieldId,
+      })
+    }
+    bindings.push(
+      Object.freeze({
+        ...logical,
+        ...state,
+        material: materialBinding(state, modelDocuments, resources, maximum, diagnostics),
+      }),
+    )
+    if (bindings.length > maximum) throw new RangeError(`model bindings exceed ${maximum}`)
   }
   return bindings
 }
@@ -425,24 +765,12 @@ function selectedBodyPropulsionBindings(
   maximum,
   diagnostics,
 ) {
-  if (entity.namespace !== 'warzone.bodies' || typeof propulsionId !== 'string') return []
-  const extra = recordOf(entity.fields.propulsionExtraModels)
-  const selected = recordOf(extra?.[propulsionId])
-  if (selected === undefined) return []
   const bindings = []
-  for (const [role, logicalId] of Object.entries(selected)) {
-    if (typeof logicalId !== 'string' || !logicalId.toLowerCase().endsWith('.pie')) continue
-    const state = bindingState(logicalId, resources)
+  for (const logical of selectedBodyPropulsionLogicalBindings(entity, propulsionId)) {
+    const state = bindingState(logical.logicalId, resources)
     bindings.push(
       Object.freeze({
-        kind: 'pie-model',
-        role: `propulsionExtraModels.${propulsionId}.${role}`,
-        logicalId,
-        owner: Object.freeze({
-          namespace: entity.namespace,
-          entityId: entity.entityId,
-          fieldId: 'propulsionExtraModels',
-        }),
+        ...logical,
         ...state,
         material: materialBinding(state, modelDocuments, resources, maximum, diagnostics),
       }),

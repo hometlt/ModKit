@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { proves } from '@modkitx-x3/testkit'
+import { createCandidateWorldSceneLease } from '../../../../packages/host/src/maps/world-source.js'
+import { analyzeWarzoneResolvedData } from '../src/data-provider.js'
+import { WARZONE_PORTABLE_OBJECT_RESOURCE_CONTRACT } from '../src/data-resource-bindings.js'
 import {
   analyzeWarzoneMapWorkspace,
   openWarzoneMap,
@@ -52,6 +55,100 @@ function request(bytes = gameMap()) {
 }
 
 const jsonBytes = (value: unknown): Uint8Array => new TextEncoder().encode(JSON.stringify(value))
+
+const catalogDocument = (path: string, value: unknown) => ({
+  rootId: 'base',
+  path: `base/stats/${path}`,
+  text: JSON.stringify(value),
+})
+
+async function catalogWithDefinitionsOnly() {
+  const documents = [
+    catalogDocument('templates.json', {
+      ConstructorDroid: {
+        id: 'ConstructorDroid',
+        body: 'Body1REC',
+        construct: 'Spade1Mk1',
+        propulsion: 'wheeled01',
+      },
+    }),
+    catalogDocument('structure.json', {
+      A0PowerGenerator: {
+        id: 'A0PowerGenerator',
+        baseModel: 'blbpower.pie',
+        structureModel: ['blpower0.pie'],
+      },
+    }),
+    catalogDocument('features.json', {
+      TreeSnow1: { id: 'TreeSnow1', model: 'mistree1.pie' },
+    }),
+    catalogDocument('body.json', {
+      Body1REC: { id: 'Body1REC', model: 'drlbod01.pie' },
+    }),
+    catalogDocument('construction.json', {
+      Spade1Mk1: { id: 'Spade1Mk1', sensorModel: 'trlcon.pie' },
+    }),
+    catalogDocument('propulsion.json', {
+      wheeled01: { id: 'wheeled01', model: 'prlwhl1.pie' },
+    }),
+  ]
+  return analyzeWarzoneResolvedData({
+    workspaceId: 'warzone-workspace',
+    gameId: GAME_ID,
+    documents,
+    queries: [],
+    maxDocuments: documents.length,
+    maxTextBytes: 1_000_000,
+    maxEntities: 1_000,
+    maxDepth: 32,
+    localizationDocuments: [],
+    locales: [],
+    localizationKeys: [],
+    plannedDocumentCount: documents.length,
+    unresolvedRequirementIds: [],
+  })
+}
+
+const placedObjectDocuments = () => [
+  { path: 'multiplay/maps/fixture/game.map', bytes: gameMap() },
+  {
+    path: 'multiplay/maps/fixture/droid.json',
+    bytes: jsonBytes({
+      droid_0010: {
+        id: 10,
+        position: [128, 256, 999],
+        rotation: [65_535, 0, 0],
+        startpos: 1,
+        template: 'ConstructorDroid',
+      },
+    }),
+  },
+  {
+    path: 'multiplay/maps/fixture/struct.json',
+    bytes: jsonBytes({
+      version: 2,
+      structures: [
+        {
+          name: 'A0PowerGenerator',
+          position: [384, 512],
+          rotation: 32_768,
+          player: 'scavenger',
+          modules: 2,
+        },
+      ],
+    }),
+  },
+  {
+    path: 'multiplay/maps/fixture/feature.json',
+    bytes: jsonBytes({
+      feature_0007: {
+        name: 'TreeSnow1',
+        position: [640, 768, 123],
+        rotation: [0, 0, 0],
+      },
+    }),
+  },
+]
 
 describe('Warzone 2100 semantic map provider', () => {
   it('parses every direct height and publishes measured native and canonical transforms', async () => {
@@ -252,5 +349,148 @@ describe('Warzone 2100 semantic map provider', () => {
       operation: 'inspect',
       note: 'official version 1/2 static map objects retain exact x/y, rotation and catalog joins',
     })
+  })
+
+  it('projects definitions-only catalog model ids into semantic objects and world pages', async () => {
+    const catalog = await catalogWithDefinitionsOnly()
+    expect(catalog.entities).toEqual([])
+    expect(catalog.definitions).toHaveLength(6)
+    const snapshot = await analyzeWarzoneMapWorkspace({
+      ...request(),
+      documents: placedObjectDocuments(),
+      catalog,
+      snapshotId: 'warzone-resource-snapshot',
+      unresolvedRequirementIds: [],
+      requiredRequirementIds: ['warzone-game-map'],
+    })
+
+    expect(snapshot.semantic.resolvedCatalogObjects).toBe(3)
+    expect(snapshot.semantic.warzoneResourceBindings).toEqual({
+      schemaVersion: 1,
+      contract: WARZONE_PORTABLE_OBJECT_RESOURCE_CONTRACT,
+      objects: 3,
+      definitionBoundObjects: 3,
+      modelBoundObjects: 3,
+      componentBindings: 3,
+      logicalModelReferences: 6,
+      materialTextureReferences: 0,
+      modelReferencesComplete: true,
+      materialReferencesComplete: false,
+      complete: false,
+    })
+    expect(
+      snapshot.semantic.objects.flatMap(object => object.warzoneResources.models),
+    ).toHaveLength(6)
+    expect(
+      snapshot.semantic.objects.every(
+        object =>
+          object.warzoneResources.contract === WARZONE_PORTABLE_OBJECT_RESOURCE_CONTRACT &&
+          object.warzoneResources.models.every(
+            model =>
+              model.state === 'logical-only' &&
+              model.material.state === 'pie-document-unavailable' &&
+              model.material.textures.length === 0,
+          ),
+      ),
+    ).toBe(true)
+    expect(snapshot.semantic.diagnostics).toContainEqual(
+      expect.objectContaining({ code: expect.stringMatching(/material-references-unavailable$/u) }),
+    )
+    expect(snapshot.worldCandidate.unknownFacets).not.toContain('object-model-bindings')
+    expect(snapshot.worldCandidate.unknownFacets).toEqual(
+      expect.arrayContaining([
+        'object-model-archive-path-resolution',
+        'object-pie-texture-directives',
+        'runtime-model-selection',
+        'runtime-material-semantics',
+      ]),
+    )
+
+    const world = createCandidateWorldSceneLease(snapshot, [], 16)
+    try {
+      const info = await world.value.info()
+      const objectsFacet = info.facets.find(facet => facet.facet === 'objects')
+      if (objectsFacet === undefined) throw new Error('world objects facet is missing')
+      const page = await world.value.page({
+        facet: 'objects',
+        layerId: objectsFacet.layerId,
+        limit: 16,
+      })
+      expect(page.items).toHaveLength(3)
+      expect(page.items[0]).toMatchObject({
+        facet: 'objects',
+        warzoneResources: {
+          contract: WARZONE_PORTABLE_OBJECT_RESOURCE_CONTRACT,
+          modelReferencesComplete: true,
+          materialReferencesComplete: false,
+        },
+      })
+    } finally {
+      await world.release()
+    }
+    expect(JSON.stringify(snapshot)).not.toMatch(/file:\/\/|"[A-Za-z]:[\\/]/u)
+  })
+
+  it('fails closed when definitions and queried entities conflict for one identity', async () => {
+    const catalog = await catalogWithDefinitionsOnly()
+    const feature = catalog.definitions?.find(
+      entity => entity.namespace === 'warzone.features' && entity.entityId === 'TreeSnow1',
+    )
+    if (feature === undefined) throw new Error('fixture feature definition is missing')
+    const conflictingCatalog = {
+      ...catalog,
+      entities: [{ ...feature, fields: { ...feature.fields, model: 'conflict.pie' } }],
+    }
+    const semantic = await openWarzoneMap({
+      ...request(),
+      documents: [placedObjectDocuments()[0], placedObjectDocuments()[3]],
+      catalog: conflictingCatalog,
+    })
+
+    expect(semantic.resolvedCatalogObjects).toBe(0)
+    expect(semantic.complete).toBe(false)
+    expect(semantic.objects[0]).toMatchObject({
+      catalog: { ref: { namespace: 'warzone.features', entityId: 'TreeSnow1' } },
+      warzoneResources: { state: 'definition-collision', complete: false },
+    })
+    expect(semantic.diagnostics).toContainEqual(
+      expect.objectContaining({ code: expect.stringMatching(/catalog-entity-collision$/u) }),
+    )
+  })
+
+  it('keeps logical refs but refuses completeness for a partial resolved definition', async () => {
+    const catalog = await catalogWithDefinitionsOnly()
+    const partialCatalog = {
+      ...catalog,
+      definitions: catalog.definitions?.map(entity =>
+        entity.namespace === 'warzone.features' && entity.entityId === 'TreeSnow1'
+          ? { ...entity, complete: false }
+          : entity,
+      ),
+    }
+    const semantic = await openWarzoneMap({
+      ...request(),
+      documents: [placedObjectDocuments()[0], placedObjectDocuments()[3]],
+      catalog: partialCatalog,
+    })
+
+    expect(semantic.resolvedCatalogObjects).toBe(1)
+    expect(semantic.objects[0]).toMatchObject({
+      warzoneResources: {
+        state: 'partial',
+        modelReferencesComplete: false,
+        materialReferencesComplete: false,
+      },
+    })
+    expect(semantic.warzoneResourceBindings).toMatchObject({
+      definitionBoundObjects: 1,
+      modelBoundObjects: 0,
+      logicalModelReferences: 1,
+      modelReferencesComplete: false,
+      complete: false,
+    })
+    expect(semantic.diagnostics).toContainEqual(
+      expect.objectContaining({ code: expect.stringMatching(/map-object-definition-partial$/u) }),
+    )
   })
 })

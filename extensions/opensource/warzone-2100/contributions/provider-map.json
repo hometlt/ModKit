@@ -44,7 +44,8 @@
   },
   "limitations": [
     "The bounded slice reads exact game.map terrain tiles and gateways plus version 1/2 droid.json, struct.json and feature.json object placement.",
-    "Official wzmaplib ignores the authored third position component for these objects; Modkit preserves exact x/y and uint16-turn rotation while naming elevation, footprints and model bindings unavailable.",
+    "Official wzmaplib ignores the authored third position component for these objects; Modkit preserves exact x/y and uint16-turn rotation while naming elevation and footprints unavailable.",
+    "When a resolved data catalog is supplied, placed objects expose portable catalog-proved logical PIE model references; archive-path resolution, PIE texture directives, runtime model selection and runtime material semantics remain named unavailable facets.",
     "Scroll limits, scenario scripts, terrain materials, water and navigation remain named unavailable facets.",
     "Container extraction, rendering, launch, writing and packing remain outside this provider.",
     "The world scene surface is publisher-qualified candidate org.modkitx.opensource.warzone2100/world-scene-source@1, not an admitted common.view contract."

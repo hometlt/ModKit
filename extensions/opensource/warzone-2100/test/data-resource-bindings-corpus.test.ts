@@ -7,7 +7,10 @@ import {
   extractZipArchiveEntry,
   parseZipArchive,
 } from 'modkit-extension-x3-archives/formats/zip/codec'
+import { createCandidateWorldSceneLease } from '../../../../packages/host/src/maps/world-source.js'
+import { analyzeWarzoneResolvedData } from '../src/data-provider.js'
 import { analyzeWarzoneMapObjectResourceBindings } from '../src/data-resource-bindings.js'
+import { analyzeWarzoneMapWorkspace } from '../src/map-provider.js'
 import { applyWarzoneLastWins } from '../src/warzone-wz/codec.js'
 
 const GAME_ID = 'org.modkitx/warzone-2100'
@@ -15,6 +18,7 @@ const corpusRoot = process.env['MODKITX_WARZONE_ROOT']
 const configured = typeof corpusRoot === 'string' && corpusRoot.length > 0
 const dataRoot = configured ? join(corpusRoot, 'data') : ''
 const decoder = new TextDecoder('utf-8', { fatal: true })
+const encoder = new TextEncoder()
 
 const statFiles = [
   'templates.json',
@@ -88,11 +92,91 @@ describe.skipIf(!configured)('Warzone 2100 pinned 2c-highground resource binding
       'e2d95b97f69fdc6cd514b0e661fbb426d0f1ab59bd1ad75462cb28239ed3e090',
       '94be6c97eb5ffbe5c570e298d2a43c5c5e2930c5fb4a197bd2ce9322fd89225e',
     ])
+
+    const workspaceId = 'warzone-2c-highground-bindings'
+    const catalog = await analyzeWarzoneResolvedData({
+      workspaceId,
+      gameId: GAME_ID,
+      documents,
+      queries: [],
+      maxDocuments: documents.length,
+      maxTextBytes: 16_777_216,
+      maxEntities: 100_000,
+      maxDepth: 64,
+      localizationDocuments: [],
+      locales: [],
+      localizationKeys: [],
+      plannedDocumentCount: documents.length,
+      unresolvedRequirementIds: [],
+    })
+    expect(catalog.entities).toEqual([])
+
+    const gameMapEntry = archives[1].files.get('multiplay/maps/2c-highground/game.map')
+    if (gameMapEntry === undefined) throw new Error('2c-highground/game.map is missing from mp.wz')
+    const mapSnapshot = await analyzeWarzoneMapWorkspace({
+      workspaceId,
+      gameId: GAME_ID,
+      mapId: 'multiplay/maps/2c-highground',
+      documents: [
+        {
+          path: 'multiplay/maps/2c-highground/game.map',
+          bytes: await extractZipArchiveEntry(archives[1].bytes, gameMapEntry),
+        },
+        ...objectDocuments.map(document => ({
+          path: document.path,
+          bytes: encoder.encode(document.text),
+        })),
+      ],
+      catalog,
+      snapshotId: 'warzone-2c-highground-resource-snapshot',
+      unresolvedRequirementIds: [],
+      requiredRequirementIds: ['warzone-game-map'],
+      maxDocuments: 4,
+      maxDocumentBytes: 16_777_216,
+      maxTotalBytes: 33_554_432,
+      maxObjects: 1_000,
+      maxRegions: 1_000,
+      maxTerrainCells: 65_536,
+      maxTerrainSamples: 65_536,
+      maxDepth: 64,
+      maxDiagnostics: 2_048,
+    })
+    expect(mapSnapshot.semantic.objects).toHaveLength(177)
+    expect(mapSnapshot.semantic.resolvedCatalogObjects).toBe(177)
+    expect(mapSnapshot.semantic.warzoneResourceBindings).toMatchObject({
+      objects: 177,
+      definitionBoundObjects: 177,
+      modelBoundObjects: 177,
+      logicalModelReferences: 637,
+      materialTextureReferences: 0,
+      modelReferencesComplete: true,
+      materialReferencesComplete: false,
+      complete: false,
+    })
+    expect(
+      mapSnapshot.semantic.objects.flatMap(object => object.warzoneResources.models),
+    ).toHaveLength(637)
+    const world = createCandidateWorldSceneLease(mapSnapshot, [], 256)
+    try {
+      const info = await world.value.info()
+      const objectsFacet = info.facets.find(facet => facet.facet === 'objects')
+      if (objectsFacet === undefined) throw new Error('world objects facet is missing')
+      const page = await world.value.page({
+        facet: 'objects',
+        layerId: objectsFacet.layerId,
+        limit: 256,
+      })
+      expect(page.items).toHaveLength(177)
+      expect(page.items.flatMap(item => item.warzoneResources.models)).toHaveLength(637)
+    } finally {
+      await world.release()
+    }
+
     const resourceEntries = archives.flatMap(archive =>
       [...archive.files.values()].map(entry => ({ rootId: archive.rootId, path: entry.name })),
     )
     const baseRequest = {
-      workspaceId: 'warzone-2c-highground-bindings',
+      workspaceId,
       gameId: GAME_ID,
       documents,
       objectDocuments,
@@ -160,6 +244,16 @@ describe.skipIf(!configured)('Warzone 2100 pinned 2c-highground resource binding
     expect(analysis.textureDirectiveComplete).toBe(true)
     expect(analysis.materialComplete).toBe(false)
     expect(JSON.stringify(analysis)).not.toMatch(/file:\/\/|"[A-Za-z]:[\\/]/u)
-    console.info(`[warzone-bindings] ${JSON.stringify(analysis.counts)}`)
+    console.info(
+      `[warzone-bindings] ${JSON.stringify({
+        placedObjects: mapSnapshot.semantic.objects.length,
+        catalogLogicalModelReferences:
+          mapSnapshot.semantic.warzoneResourceBindings.logicalModelReferences,
+        catalogMaterialTextureReferences:
+          mapSnapshot.semantic.warzoneResourceBindings.materialTextureReferences,
+        observedPhysicalModelPaths: analysis.counts.resolvedModelBindings,
+        observedTexturePaths: analysis.counts.resolvedTextureBindings,
+      })}`,
+    )
   }, 120_000)
 })

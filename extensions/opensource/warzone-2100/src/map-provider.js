@@ -2,6 +2,7 @@ import {
   MAP_SEMANTIC_ANALYSIS_CONTRACT,
   RESOLVED_MAP_WORKSPACE_CONTRACT,
 } from '@modkitx-x3/sdk/maps'
+import { bindWarzoneCatalogObjectResources } from './data-resource-bindings.js'
 
 const ANALYZER_ID = 'org.modkitx.opensource.warzone2100.maps'
 const GAME_ID = 'org.modkitx/warzone-2100'
@@ -93,6 +94,19 @@ function validateRequest(request) {
   }
   if (totalBytes > maxTotalBytes) {
     throw new TypeError(`document bytes exceeds maxTotalBytes (${totalBytes} > ${maxTotalBytes})`)
+  }
+  const catalog = value.catalog
+  if (catalog !== undefined) {
+    const snapshot = recordOf(catalog)
+    if (
+      snapshot?.schemaVersion !== 1 ||
+      snapshot.workspaceId !== value.workspaceId ||
+      snapshot.gameId !== value.gameId ||
+      !Array.isArray(snapshot.entities) ||
+      (snapshot.definitions !== undefined && !Array.isArray(snapshot.definitions))
+    ) {
+      throw new TypeError('catalog must be a matching semantic data snapshot')
+    }
   }
   return value
 }
@@ -473,24 +487,34 @@ function bindObjectCatalog(objects, catalog, diagnostics) {
     queryKeys.add(key)
     queries.push(ref)
   }
-  const entities = new Map(
-    (catalog?.entities ?? []).map(entity => [
-      catalogEntityKey(entity.namespace, entity.entityId),
-      entity,
-    ]),
-  )
-  const missing = new Map()
+  const portable =
+    catalog === undefined
+      ? undefined
+      : bindWarzoneCatalogObjectResources(
+          catalog,
+          objects.map(object =>
+            Object.freeze({
+              objectId: object.objectId,
+              ref: Object.freeze({
+                namespace: object.catalogNamespace,
+                entityId: object.typeId,
+              }),
+            }),
+          ),
+        )
+  const bindings = new Map((portable?.bindings ?? []).map(binding => [binding.objectId, binding]))
   let resolvedCatalogObjects = 0
   const bound = objects.map(object => {
     const ref = Object.freeze({ namespace: object.catalogNamespace, entityId: object.typeId })
-    const entity = entities.get(catalogEntityKey(ref.namespace, ref.entityId))
-    if (entity === undefined) missing.set(catalogEntityKey(ref.namespace, ref.entityId), ref)
-    else resolvedCatalogObjects += 1
+    const binding = bindings.get(object.objectId)
+    const entity = binding?.entity
+    if (entity !== undefined) resolvedCatalogObjects += 1
     const placed = { ...object }
     delete placed.catalogNamespace
     return Object.freeze({
       ...placed,
       catalog: Object.freeze({ ref, ...(entity === undefined ? {} : { entity }) }),
+      ...(binding === undefined ? {} : { warzoneResources: binding.resources }),
     })
   })
   if (queries.length > 0 && catalog === undefined) {
@@ -501,22 +525,14 @@ function bindObjectCatalog(objects, catalog, diagnostics) {
         `reopen with the ${queries.length} catalogQueries to bind placed objects to game definitions`,
       ),
     )
-  } else {
-    for (const ref of missing.values()) {
-      diagnostics.push(
-        Object.freeze({
-          severity: 'error',
-          code: 'org.modkitx.opensource.warzone2100/map-catalog-entity-unresolved',
-          message: `placed object references unavailable catalog entity ${ref.namespace}/${ref.entityId}`,
-          catalogRef: ref,
-        }),
-      )
-    }
+  } else if (portable !== undefined) {
+    diagnostics.push(...portable.diagnostics)
   }
   return Object.freeze({
     objects: Object.freeze(bound),
     catalogQueries: Object.freeze(queries),
     resolvedCatalogObjects,
+    ...(portable === undefined ? {} : { resourceBindings: portable.summary }),
   })
 }
 
@@ -676,6 +692,9 @@ export async function openWarzoneMap(request) {
     objects: catalog.objects,
     catalogQueries: catalog.catalogQueries,
     resolvedCatalogObjects: catalog.resolvedCatalogObjects,
+    ...(catalog.resourceBindings === undefined
+      ? {}
+      : { warzoneResourceBindings: catalog.resourceBindings }),
     diagnostics: Object.freeze(diagnostics),
     complete: terrain !== undefined && diagnostics.every(item => item.severity !== 'error'),
   })
@@ -778,7 +797,14 @@ export async function analyzeWarzoneMapWorkspace(request) {
       ]),
       unknownFacets: Object.freeze([
         'object-elevation-and-footprints',
-        'object-model-bindings',
+        ...(semantic.warzoneResourceBindings?.modelReferencesComplete === true
+          ? [
+              'object-model-archive-path-resolution',
+              'object-pie-texture-directives',
+              'runtime-model-selection',
+              'runtime-material-semantics',
+            ]
+          : ['object-model-bindings']),
         'terrain-material-layers',
         'water',
         'navigation',
