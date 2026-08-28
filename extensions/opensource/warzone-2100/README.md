@@ -23,7 +23,21 @@ host-owned atomic replacement plan. A no-op is byte-identical; the fourth signat
 version and dimensions, record counts, untouched records and opaque trailing payload are preserved.
 The provider itself requests no filesystem permission and never writes in place: the host remains
 responsible for `write-source` authorization and commit. Map resize, version conversion, gateway
-insert/delete, `.gam`, `ttypes.ttp`, object tables and whole `.wz` package writes are named remainder.
+insert/delete, `.gam`, `ttypes.ttp` and object tables are named remainder for that writer.
+
+The separate `.wz` Save As writer accepts one complete SHA-256-bound classic canonical ZIP
+snapshot, an exact existing `game.map` path, typed tile/existing-gateway updates and a separately
+revision-pinned destination namespace. It is `export-only`: its plan creates a new `.wz` file and
+never targets the installed archive. The common ZIP writer replaces only that entry, copies all
+untouched canonical entry blocks, preserves the archive comment, and returns fresh bytes; the WZ
+wrapper then reopens the archive and compares entry identity, untouched metadata and the nested
+map result. A no-op is required to be byte-identical. Exact duplicates, case-fold aliases,
+last-wins shadows, encryption, ZIP64, unsupported compression, unsafe paths, incomplete snapshots
+and exhausted budgets fail closed. The pinned installed `data/mp.wz` proof records the archive
+digest and the selected `2c-highground/game.map` digest independently, performs an atomic temp-file
+Save As through the host, reopens it, undoes it, and verifies the installed source did not change.
+Adding, deleting or renaming arbitrary entries, changing other map companions, and general `.wz`
+authoring remain unavailable.
 
 The map-preview preparation provider discovers every exact `multiplay/maps/<id>/game.map` in a
 complete bounded, extractable `warzone-wz` namespace. One map prepares directly, multiple maps

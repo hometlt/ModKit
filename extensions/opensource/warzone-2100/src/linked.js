@@ -11,6 +11,7 @@ import installationManifest from '../contributions/provider-installation.json' w
 import mapManifest from '../contributions/provider-map.json' with { type: 'json' }
 import mapPreviewManifest from '../contributions/provider-map-preview.json' with { type: 'json' }
 import resolvedDataManifest from '../contributions/provider-resolved-data.json' with { type: 'json' }
+import wzWriterManifest from '../contributions/provider-wz-writer.json' with { type: 'json' }
 import packageJson from '../package.json' with { type: 'json' }
 import * as img from './warzone-img/codec.js'
 import * as lev from './warzone-lev/codec.js'
@@ -22,6 +23,7 @@ import * as dataProvider from './data-provider.js'
 import * as installationProvider from './provider.js'
 import * as mapProvider from './map-provider.js'
 import * as mapPreviewProvider from './map-preview-provider.js'
+import * as wzWriter from './warzone-wz/writer.js'
 
 export const warzone2100 = defineLinkedExtension({
   source: 'linked:extensions/opensource/warzone-2100',
@@ -38,6 +40,7 @@ export const warzone2100 = defineLinkedExtension({
     { path: 'contributions/provider-map.json', manifest: mapManifest },
     { path: 'contributions/provider-map-preview.json', manifest: mapPreviewManifest },
     { path: 'contributions/provider-resolved-data.json', manifest: resolvedDataManifest },
+    { path: 'contributions/provider-wz-writer.json', manifest: wzWriterManifest },
   ],
   modules: {
     './src/warzone-img/codec.js': img,
@@ -50,5 +53,6 @@ export const warzone2100 = defineLinkedExtension({
     './src/provider.js': installationProvider,
     './src/map-provider.js': mapProvider,
     './src/map-preview-provider.js': mapPreviewProvider,
+    './src/warzone-wz/writer.js': wzWriter,
   },
 })

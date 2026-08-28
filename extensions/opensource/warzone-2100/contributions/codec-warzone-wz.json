@@ -25,7 +25,7 @@
     "Within one archive, repeated normalized paths expose the last physical entry; shadowed entries stay counted in diagnostics but are not exposed as effective files.",
     "Load-order precedence across multiple .wz packages remains a named VFS-overlay remainder.",
     "Classification reads the package's effective root ruleset.json before path and filename fallbacks.",
-    "Writing and ZIP64 remain named unavailable operations."
+    "The separate preserving Save As writer can replace one existing game.map in a canonical classic ZIP-backed .wz; general package writing and ZIP64 remain unavailable."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "warzone-wz", "label": "Warzone 2100 package" }],

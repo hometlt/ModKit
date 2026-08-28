@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx.opensource/warzone2100-wz-writer",
+  "displayName": "Warzone 2100 preserving WZ Save As writer",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/warzone-wz/writer.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "worker-portable",
+      "entrypoint": "./src/warzone-wz/writer.js",
+      "target": { "environments": ["node-worker", "browser-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "warzone2100-wz-game-map-source",
+        "contract": "common.edit/writer",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "providerId": "org.modkitx.opensource/warzone2100-wz-writer",
+          "fidelityEvidenceId": "warzone2100-wz-game-map-preserving-writer-v1",
+          "formatId": "warzone-wz",
+          "representationId": "source",
+          "mutationMode": "export-only",
+          "minimumRoundTrip": "semantic"
+        }
+      }
+    ],
+    "fidelityEvidence": [
+      {
+        "offerId": "warzone2100-wz-game-map-source",
+        "evidenceId": "warzone2100-wz-game-map-preserving-writer-v1",
+        "claim": {
+          "roundTrip": "semantic",
+          "preservesUnknownData": true,
+          "notes": [
+            "Pinned installed data/mp.wz is sha256:d698475eaa7b3386c2465e5850e5609b0d524157280c7d659dc5f79cde6e5688.",
+            "Its selected multiplay/maps/2c-highground/game.map source is independently pinned as sha256:c03e17c13a837339a1b8066047385758539cdc14ef903d806fcf871d30409111.",
+            "An unchanged complete canonical data/mp.wz Save As is byte-identical; typed tile and existing-gateway edits replace only that existing game.map payload.",
+            "All untouched canonical ZIP entry blocks and the archive comment are preserved by the common ZIP writer."
+          ]
+        },
+        "corpusId": "installed-warzone-2100:data/mp.wz",
+        "corpusDigest": "sha256:d698475eaa7b3386c2465e5850e5609b0d524157280c7d659dc5f79cde6e5688",
+        "conformanceProfile": "common.edit/writer-v1",
+        "optionsFingerprint": "options:replace-existing-2c-highground-game-map-v1",
+        "inputClass": "warzone-wz-classic-canonical-complete",
+        "provenAt": "2026-08-28T00:00:00Z"
+      }
+    ],
+    "lifecycleScope": "session"
+  },
+  "limitations": [
+    "Export-only Save As accepts one complete SHA-256-bound classic canonical .wz snapshot, one exact existing game.map path and a separately revision-pinned destination namespace.",
+    "The nested typed edit surface is limited to tile texture/height and existing gateway coordinate updates.",
+    "Duplicate or case-fold-ambiguous paths, shadowed last-wins entries, encryption, ZIP64, unsafe or non-canonical ZIP layouts fail closed.",
+    "The common ZIP writer stores the changed game.map entry and preserves all untouched canonical entry blocks without recompression.",
+    "Adding, deleting or renaming entries, changing other map companions, signatures, multi-package VFS overlays and in-place writes remain unavailable."
+  ]
+}

@@ -14,6 +14,7 @@
     "./pie": "./src/warzone-pie/codec.js",
     "./wrf": "./src/warzone-wrf/codec.js",
     "./wz": "./src/warzone-wz/codec.js",
+    "./wz-writer": "./src/warzone-wz/writer.js",
     "./data": "./src/data-provider.js",
     "./data-bindings": "./src/data-resource-bindings.js",
     "./maps": "./src/map-provider.js",
