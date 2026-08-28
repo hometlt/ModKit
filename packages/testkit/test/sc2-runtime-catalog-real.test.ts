@@ -20,6 +20,7 @@ import {
 } from '@modkitx-x3/host'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 import { openRuntimeSession } from '@modkitx-x3/host/runtime'
+import { proves } from '@modkitx-x3/testkit'
 import type {
   ArtifactByteSource,
   ArtifactSource,
@@ -491,6 +492,7 @@ describe('installed SC2 catalog to playable runtime bridge', () => {
             ],
           })
           const marineReceipt = bridged.receipt.units[0]
+          if (marineReceipt === undefined) throw new Error('Marine runtime receipt is missing')
           for (const field of marineReceipt.usedFields) {
             expect(field.sources).toContainEqual(
               expect.objectContaining({
@@ -547,6 +549,12 @@ describe('installed SC2 catalog to playable runtime bridge', () => {
           const first = await runPinnedScenario(services, bridged.bytes, 'first')
           const second = await runPinnedScenario(services, bridged.bytes, 'second')
           expect(second).toEqual(first)
+          proves({
+            capabilityId: 'vertical/starcraft-2/deterministic-playable-subset',
+            operation: 'inspect',
+            test: 'packages/testkit/test/sc2-runtime-catalog-real.test.ts',
+            note: 'installed dependency-merged Marine catalog data drives the bounded spawn/move/fixed-step/arrival runtime with exact snapshot continuation',
+          })
         } finally {
           await liveData.release()
           await resources.dispose()

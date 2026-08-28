@@ -4,12 +4,12 @@
   "generator": "scripts/migration/emit-vscode-workflow-ledger.mjs",
   "inputs": {
     "sourceInventorySha256": "efc7c81a2686d55e40734ac4cf1b3bc0bf0de5a9d33b0609291ec1c6480a11cd",
-    "decisionsSha256": "04736de8a175c55e16082956412abe38c3925d7187be1e80894606081c8e7304",
-    "vscodeManifestSha256": "42b16e6bd1e62a4b7c551a7671b87cff009a3208a364c598df8441db8390f8ab",
-    "vscodeExtensionSourceSha256": "082d05b30776d131d4687698bb6155275d9423582776b422965950eea80a0e83",
+    "decisionsSha256": "147efeb9fac85b626579628f02b218fa0b411f89fce84eaa6548b3230a47ca25",
+    "vscodeManifestSha256": "447632c56764d55f1822a42ce1ded5f53b1501a9fdbff8d773b8c26c2c7a9c94",
+    "vscodeExtensionSourceSha256": "9937a7c5b1695e0111e8a83c4a51cc6805b2410f1e0095b3cb0fa36cafd4be3d",
     "vscodeCatalogSha256": "c4e110f97ecf0454849f537a55cae43edaea034dab959a38edada50222bce855",
     "vscodePublicationInventorySha256": "15a59d6ff3932cf1d43eb7ae05b8117c4a4ed60828d11acaefabdd2fc09ff901",
-    "sharedCommandTargetsSha256": "2b77bc431e360f277e1e70b797a34d35d4c077ec8d7367ea1c99b1f6185b0dfe"
+    "sharedCommandTargetsSha256": "90b0fa05560139670ebb3050207428349f118f8b4cc8cbde956ebaf30b27d09a"
   },
   "counts": {
     "total": 266,
@@ -28,12 +28,12 @@
     },
     "workflows": 14,
     "decisionRequired": 266,
-    "currentX3ObservedFacts": 15
+    "currentX3ObservedFacts": 16
   },
   "surfaceComparison": {
     "legacyVsCode": { "commands": 64, "customEditors": 11, "languages": 8, "views": 6 },
     "currentX3VsCode": {
-      "commands": 7,
+      "commands": 8,
       "configurationProperties": 2,
       "customEditors": 1,
       "fileSystemSchemes": 1,
@@ -55,6 +55,10 @@
     { "commandId": "modkit.openArchiveEntry", "workflowId": "vscode/container-vfs-cache" },
     { "commandId": "modkit.openWith", "workflowId": "vscode/shared-command-shell" },
     { "commandId": "modkit.runCommand", "workflowId": "vscode/shared-command-shell" },
+    {
+      "commandId": "modkit.runtime.control",
+      "workflowId": "vscode/authoring-language-data-launch"
+    },
     { "commandId": "modkit.showHostProfile", "workflowId": "vscode/diagnostics-resolution-logging" }
   ],
   "currentX3Facts": [
@@ -113,11 +117,20 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.runtime.control",
+      "sourceFactSha256": "7c9c2f56010aefbfd58887c70af83bcc0bac0698c52d61817d93a5235cbeafd3",
+      "kind": "vscode-command",
+      "key": "modkit.runtime.control",
+      "source": "contributes.commands[6]",
+      "workflowId": "vscode/authoring-language-data-launch",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.showHostProfile",
-      "sourceFactSha256": "66d9c96cae53dc553c7ff986ba950bfc7f41b2ad0bd1999930745cab9d10b518",
+      "sourceFactSha256": "b8fae10ebf90cf0e1d429bba5a639ab55af16bdeee132737df8ef6425fe442ae",
       "kind": "vscode-command",
       "key": "modkit.showHostProfile",
-      "source": "contributes.commands[6]",
+      "source": "contributes.commands[7]",
       "workflowId": "vscode/diagnostics-resolution-logging",
       "state": "observed-only"
     },
@@ -150,10 +163,10 @@
     },
     {
       "factId": "x3:vscode-filesystem-scheme:modkit-container",
-      "sourceFactSha256": "7c23587cd37832679faf25dd8c70a9851451457d2131e1fec0f7e8a2fe38d856",
+      "sourceFactSha256": "3ddac86d038b53584f71a572b8ab706e476162badb42b39538e113d614109c69",
       "kind": "vscode-filesystem-scheme",
       "key": "modkit-container",
-      "source": "activationEvents[10]",
+      "source": "activationEvents[11]",
       "workflowId": "vscode/manifest-settings",
       "state": "observed-only"
     },
@@ -202,6 +215,7 @@
       "modkit.openArchiveEntry",
       "modkit.openWith",
       "modkit.runCommand",
+      "modkit.runtime.control",
       "modkit.showHostProfile"
     ],
     "registeredRuntimeCommands": [
@@ -212,6 +226,7 @@
       "modkit.openResource",
       "modkit.openWith",
       "modkit.runCommand",
+      "modkit.runtime.control",
       "modkit.showHostProfile"
     ],
     "internalRuntimeCommands": ["modkit.openResource"],
@@ -286,7 +301,7 @@
       "mutatesSource": false,
       "operationIds": ["export.convert", "export.raw"],
       "dataSourceContracts": [],
-      "hostCallers": ["automation", "cli", "electron", "pwa", "vscode"]
+      "hostCallers": ["automation", "cli", "electron", "pwa", "server", "vscode"]
     },
     {
       "commandId": "subject.extract",
@@ -294,7 +309,7 @@
       "mutatesSource": false,
       "operationIds": ["container.extract"],
       "dataSourceContracts": ["common.view/namespace-entry-source"],
-      "hostCallers": ["automation", "cli", "electron", "pwa", "vscode"]
+      "hostCallers": ["automation", "cli", "electron", "pwa", "server", "vscode"]
     },
     {
       "commandId": "subject.inspect",
@@ -302,7 +317,7 @@
       "mutatesSource": false,
       "operationIds": [],
       "dataSourceContracts": [],
-      "hostCallers": ["automation", "cli", "electron", "pwa", "vscode"]
+      "hostCallers": ["automation", "cli", "electron", "pwa", "server", "vscode"]
     },
     {
       "commandId": "subject.open",
@@ -310,7 +325,7 @@
       "mutatesSource": false,
       "operationIds": [],
       "dataSourceContracts": [],
-      "hostCallers": ["automation", "cli", "electron", "pwa", "vscode"]
+      "hostCallers": ["automation", "cli", "electron", "pwa", "server", "vscode"]
     },
     {
       "commandId": "subject.preview",
@@ -318,7 +333,7 @@
       "mutatesSource": false,
       "operationIds": ["view.thumbnail", "view.render"],
       "dataSourceContracts": [],
-      "hostCallers": ["automation", "cli", "electron", "pwa", "vscode"]
+      "hostCallers": ["automation", "cli", "electron", "pwa", "server", "vscode"]
     },
     {
       "commandId": "subject.validate",
@@ -326,7 +341,7 @@
       "mutatesSource": false,
       "operationIds": ["asset.validate"],
       "dataSourceContracts": [],
-      "hostCallers": ["automation", "cli", "electron", "pwa", "vscode"]
+      "hostCallers": ["automation", "cli", "electron", "pwa", "server", "vscode"]
     }
   ],
   "workflows": [
@@ -456,7 +471,7 @@
         "vscode-language": 8,
         "vscode-menu-item": 16
       },
-      "currentX3CommandIds": []
+      "currentX3CommandIds": ["modkit.runtime.control"]
     },
     {
       "workflowId": "vscode/container-vfs-cache",

@@ -10604,7 +10604,7 @@ capabilities:
       operations:
         inspect: 'packages/testkit/test/sc2-casc-real.test.ts'
         validate: null
-        read: 'apps/electron/test/subject-open-smoke.test.ts'
+        read: 'apps/modkit-vscode/test/extension-roots.test.ts'
         materialize: null
     knownLoss:
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
@@ -18770,19 +18770,24 @@ capabilities:
       - 'legacy/game-manifest/org.modkitx/starcraft-2'
     legacyEvidence:
       - 'legacy:extensions/blizzard/starcraft-2/games/starcraft-2/game.manifest.json'
-    hostFacilities: []
-    mk3Contributions: []
+    hostFacilities:
+      - 'read-source'
+    mk3Contributions:
+      - 'org.modkitx/sc2-runtime-provider'
+      - 'org.modkitx.blizzard/starcraft2-installation'
+      - 'org.modkitx.blizzard/starcraft2-workspace'
+      - 'org.modkitx.blizzard/starcraft2-data'
     mk3Operations: []
     allocation:
-      state: 'absent'
+      state: 'covered'
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'missing'
-    supportState: 'unsupported'
-    runtimeAvailability: 'none'
-    evidenceLevel: 'E0'
-    hostEvidence: 'none'
+    migrationState: 'equivalent-better'
+    supportState: 'partial'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -18805,16 +18810,25 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'уровень не начат; более высокий уровень не выводится из нижнего и не переносится с другой версии игры'
+      - 'доказанный real-corpus scope ограничен одним dependency-merged retail CUnit Marine: LifeMax, Speed и Food разрешены с provenance из Liberty UnitData и преобразованы в canonical runtime definition'
+      - 'playable subset поддерживает deterministic spawn/move/stop, fixed 16 Hz stepping и SimUnitArrived; snapshot/restore, continuation event stream и state hash повторяются exact и совпадают с sealed legacy SimEngine на объявленной проекции'
+      - 'combat, economy, abilities, terrain, general Galaxy/native calls, replay, network, browser-safe runtime и полная эмуляция SC2 остаются named remainder; общий VS Code controller только управляет RuntimeSessionV2 и не расширяет SC2 semantics'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: null
+    replacementWorkflow: 'org.modkitx/sc2-runtime-provider выбирается host-owned common.runtime/provider и открывает RuntimeSessionV2; общий VS Code runtime controller использует тот же runtimeId без SC2 branch'
     closedBy:
-      commits: []
-      tests: []
-      reports: []
+      commits:
+        - 'dd25fe3'
+        - 'b72b7f8'
+        - 'a1247f4'
+      tests:
+        - 'apps/modkit-vscode/test/runtime-debug.test.ts'
+        - 'packages/testkit/test/sc2-runtime-catalog-real.test.ts'
+        - 'packages/testkit/test/sc2-runtime-playable.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-19-sc2-runtime-и-симуляция-в-ide'
   - capabilityId: 'vertical/starcraft-2/native-inspect-authoring'
     userScenario: 'Для «StarCraft II» получить native inspect и authoring без запуска игры.'
     releaseTrack: 'mk3-priority'

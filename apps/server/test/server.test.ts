@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { commandRequest, COMMAND_PROTOCOL_SCHEMA_VERSION } from '@modkitx-x3/host'
 import { openFileArtifactSource } from '@modkitx-x3/host/node'
 
 import {
@@ -20,6 +21,40 @@ describe('server composition root', () => {
     expect(health.extensionCount).toBe(0)
     expect(health.realmId).toBe(SERVER_REALM)
     expect(health.topologyId).toBe('org.modkitx.app/server')
+    expect(app.commandContracts.schemaVersion).toBe(COMMAND_PROTOCOL_SCHEMA_VERSION)
+    expect(app.commandContracts.commands).toHaveLength(6)
+    expect(typeof app.runCommand).toBe('function')
+  })
+
+  it('is a real shared-command caller with the same typed refusal as the other apps', async () => {
+    const app = await createServerApp()
+    const receipt = await app.runCommand(
+      commandRequest('org.example/not-installed', { subject: 'unused.bin' }),
+      { roots: [] },
+    )
+    expect(receipt).toMatchObject({
+      schemaVersion: COMMAND_PROTOCOL_SCHEMA_VERSION,
+      result: {
+        state: 'failed',
+        command: 'org.example/not-installed',
+        code: 'x3.command/unknown',
+        diagnostics: [],
+      },
+    })
+  })
+
+  it('runs a known command through the server bounded path opener', async () => {
+    const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
+    const app = await createServerApp()
+    const receipt = await app.runCommand(
+      commandRequest('subject.open', {
+        subject: join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png'),
+      }),
+      { roots: [join(repositoryRoot, 'extensions')] },
+    )
+    expect(receipt.result).toMatchObject({ state: 'failed', code: 'x3.command/failed' })
+    if (receipt.result.state !== 'failed') throw new Error('expected a bounded-root refusal')
+    expect(receipt.result.message).toMatch(/outside the granted roots/u)
   })
 
   it('publishes a Node host realm and its worker realm, linked to each other and to nothing else', async () => {

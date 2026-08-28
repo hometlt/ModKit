@@ -3,7 +3,16 @@ import { createHostTopology, type HostTopology } from '@modkitx-x3/sdk'
 import type { Diagnostic } from '@modkitx-x3/core'
 import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
 import {
+  commandSubjectsFrom,
+  createSubjectCommandRuntime,
+  describeSubjectCommandContracts,
+  executeCommandRequest,
   exposeSubjectRpc,
+  type CommandContractDocument,
+  type CommandOutputSink,
+  type CommandProgress,
+  type CommandReceipt,
+  type CommandRequest,
   type ExecutionBackendRegistry,
   type ExtensionInput,
   type HostComposition,
@@ -124,6 +133,10 @@ export interface ServerApp {
   readonly subjects: SubjectServices
   /** Configured directories that could not be loaded; other roots remain available. */
   readonly extensionRootFailures: readonly ExtensionRootFailure[]
+  /** Stable JSON contract exposed to server clients; derived from the shared live runtime. */
+  readonly commandContracts: CommandContractDocument
+  /** Execute one structured request through the shared runtime and the server's subject realm. */
+  runCommand(request: CommandRequest, options: ServerCommandOptions): Promise<CommandReceipt>
   /**
    * The product RPC path (S9): serve `x3.app/subject-services@1` (`open` → snapshot,
    * `attach` → the live session under `x3.abi/asset-session@1`) over a port, with file access
@@ -131,6 +144,15 @@ export interface ServerApp {
    */
   exposeSubjectRpc(options: ServerSubjectRpcOptions): SubjectRpcExposure
   health(): ServerHealthSnapshot
+}
+
+export interface ServerCommandOptions {
+  /** Absolute directories the client request is allowed to name. */
+  readonly roots: readonly string[]
+  readonly grant?: PermissionGrant
+  readonly writeOutput?: CommandOutputSink
+  readonly progress?: (progress: CommandProgress) => void
+  readonly signal?: AbortSignal
 }
 
 export interface ServerAppOptions {
@@ -160,12 +182,33 @@ export async function createServerApp(
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
   const { host: composition, workers, executionBackends } = subjects
+  const commandRuntime = createSubjectCommandRuntime()
+  const commandContracts = describeSubjectCommandContracts()
   return Object.freeze({
     composition,
     workers,
     executionBackends,
     subjects,
     extensionRootFailures: loadedRoots.failures,
+    commandContracts,
+    runCommand: (request: CommandRequest, commandOptions: ServerCommandOptions) =>
+      executeCommandRequest(commandRuntime, request, {
+        openSubject: commandSubjectsFrom(
+          createPathSubjectOpener({
+            subjects,
+            roots: commandOptions.roots,
+            grant: commandOptions.grant ?? {
+              id: 'server-command',
+              classes: ['read-source'],
+            },
+          }),
+        ),
+        ...(commandOptions.writeOutput === undefined
+          ? {}
+          : { writeOutput: commandOptions.writeOutput }),
+        ...(commandOptions.progress === undefined ? {} : { progress: commandOptions.progress }),
+        ...(commandOptions.signal === undefined ? {} : { signal: commandOptions.signal }),
+      }),
     exposeSubjectRpc: (rpc: ServerSubjectRpcOptions) =>
       exposeSubjectRpc({
         port: rpc.port,

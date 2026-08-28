@@ -52,12 +52,12 @@ Ledger распределяет ровно **258 VS Code + 8 CLI = 266** legacy-
 
 | Поверхность    | Legacy | X3 сейчас |
 | -------------- | ------ | --------- |
-| commands       | 64     | 7         |
+| commands       | 64     | 8         |
 | custom editors | 11     | 1         |
 | languages      | 8      | 0         |
 | views          | 6      | 2         |
 
-Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`, `subject.open`, `subject.preview`, `subject.validate`. Доказанные callers: Automation, CLI, Electron, PWA, VS Code.
+Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`, `subject.open`, `subject.preview`, `subject.validate`. Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.
 
 ## 3. Слой 2 — semantic capability registry
 
@@ -78,11 +78,11 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | allocation                   | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
-| `absent`                     | 82    | `equivalent-better`    | 20    | E0            | 80    |
-| `covered`                    | 209   | `implemented`          | 205   | E1            | 110   |
-| `not-applicable`             | 1     | `missing`              | 82    | E2            | 65    |
+| `absent`                     | 81    | `equivalent-better`    | 21    | E0            | 79    |
+| `covered`                    | 210   | `implemented`          | 205   | E1            | 110   |
+| `not-applicable`             | 1     | `missing`              | 81    | E2            | 65    |
 | `superseded`                 | 13    | `relocated-multiverse` | 1     | E3            | 14    |
-| `superseded-staging-present` | 3     |                        |       | E4            | 39    |
+| `superseded-staging-present` | 3     |                        |       | E4            | 40    |
 
 ### 3.3. Доказанные writers
 
@@ -108,9 +108,9 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | Release              | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | -------------------- | ----- | ---- | ------------ | ---------- | -------------- |
-| `mk3-ga`             | 120   | 115  | 5            | 1          | block-19       |
-| `mk3-multiverse-ga`  | 125   | 125  | 0            | 4          | block-19       |
-| `mk3-deferred-games` | 167   | 167  | 0            | 29         | block-16       |
+| `mk3-ga`             | 120   | 115  | 5            | 0          | —              |
+| `mk3-multiverse-ga`  | 125   | 125  | 0            | 3          | block-22       |
+| `mk3-deferred-games` | 167   | 167  | 0            | 28         | block-16       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
@@ -121,17 +121,11 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `block-13`    | 1     | 0                 |
 | `block-15`    | 23    | 0                 |
 | `block-17`    | 11    | 0                 |
-| `block-19`    | 1     | 1                 |
+| `block-19`    | 1     | 0                 |
 
 ## 5. Gap list — что осталось в `mk3-ga`
 
-Строк с нерешённым состоянием: **1** из 120. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
-
-### Блок 19 — 1 строк
-
-| Возможность                                          | migrationState | evidence | Владелец                              |
-| ---------------------------------------------------- | -------------- | -------- | ------------------------------------- |
-| `vertical/starcraft-2/deterministic-playable-subset` | `missing`      | E0       | `extensions/blizzard/starcraft2-game` |
+Строк с нерешённым состоянием: **0** из 120. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
 
 ## 6. Дополнительные gaps следующих release
 

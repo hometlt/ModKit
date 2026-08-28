@@ -23,13 +23,13 @@
       "block-25": 1
     },
     "byMigrationState": {
-      "equivalent-better": 20,
+      "equivalent-better": 21,
       "implemented": 100,
-      "missing": 4,
+      "missing": 3,
       "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 8, "legacy-required": 117 },
-    "byEvidenceLevel": { "E0": 2, "E1": 26, "E2": 56, "E3": 12, "E4": 29 }
+    "byEvidenceLevel": { "E0": 1, "E1": 26, "E2": 56, "E3": 12, "E4": 30 }
   },
   "deadlines": {
     "block-11": [
@@ -2199,10 +2199,10 @@
       "obligation": "legacy-required",
       "owner": "extensions/blizzard/starcraft2-game",
       "plannedBlock": 19,
-      "migrationState": "missing",
-      "supportState": "unsupported",
-      "evidenceLevel": "E0",
-      "allocationState": "absent",
+      "migrationState": "equivalent-better",
+      "supportState": "partial",
+      "evidenceLevel": "E4",
+      "allocationState": "covered",
       "portFamily": null,
       "corpusDescriptors": ["MODKITX_SC2_ROOT"],
       "dependsOn": [

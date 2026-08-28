@@ -829,7 +829,7 @@ for (const target of targets) {
     fail(`${target.commandId}: hostCallers must name proved callers`)
   }
   for (const caller of target.hostCallers) {
-    if (!['automation', 'cli', 'electron', 'pwa', 'vscode'].includes(caller)) {
+    if (!['automation', 'cli', 'electron', 'pwa', 'server', 'vscode'].includes(caller)) {
       fail(`${target.commandId}: unknown or unproved host caller ${caller}`)
     }
   }

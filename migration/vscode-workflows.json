@@ -45,6 +45,13 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.runtime.control",
+      "kind": "vscode-command",
+      "key": "modkit.runtime.control",
+      "workflowId": "vscode/authoring-language-data-launch",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.showHostProfile",
       "kind": "vscode-command",
       "key": "modkit.showHostProfile",

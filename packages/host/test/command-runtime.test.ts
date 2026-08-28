@@ -69,7 +69,14 @@ describe('the command runtime answers rather than throws', () => {
       preview: { operationIds: ['view.thumbnail', 'view.render'] },
     })
     for (const target of Object.values(SUBJECT_COMMAND_TARGETS)) {
-      expect(target.hostCallers).toEqual(['automation', 'cli', 'electron', 'pwa', 'vscode'])
+      expect(target.hostCallers).toEqual([
+        'automation',
+        'cli',
+        'electron',
+        'pwa',
+        'server',
+        'vscode',
+      ])
       const descriptor = createSubjectCommandRuntime().descriptors.find(
         item => item.id === target.commandId,
       )

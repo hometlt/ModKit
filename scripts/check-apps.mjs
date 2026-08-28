@@ -12,16 +12,19 @@ import {
   extensionDirectory,
   extensionSet,
 } from './app-extension-sets.mjs'
+import { checkAppContractMatrix } from './check-app-contract-matrix.mjs'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 
-const [{ createServerApp }, { createAutomationHost }, electron, vscode, web] = await Promise.all([
-  import('../apps/server/dist/index.js'),
-  import('../apps/automation-host/dist/index.js'),
-  import('../apps/electron/dist/index.js'),
-  import('../apps/modkit-vscode/dist/index.js'),
-  import('../apps/web/dist/index.js'),
-])
+const [{ createServerApp }, { createAutomationHost }, electron, vscode, web, cli] =
+  await Promise.all([
+    import('../apps/server/dist/index.js'),
+    import('../apps/automation-host/dist/index.js'),
+    import('../apps/electron/dist/index.js'),
+    import('../apps/modkit-vscode/dist/index.js'),
+    import('../apps/web/dist/index.js'),
+    import('../apps/modkit-cli/dist/profile.js'),
+  ])
 const [{ loadExtensionDirectory }, { inventoryHasErrors, offersFromInventory, resolveProvider }] =
   await Promise.all([
     import('../packages/host/dist/node/index.js'),
@@ -243,6 +246,12 @@ await checkApplicationSet(
   { main: { offers: 16, active: 16 } },
 )
 await checkApplicationSet(
+  'cli',
+  'mk2-extended',
+  async extensions => ({ main: await cli.createModkitCliComposition(extensions) }),
+  { main: { offers: 85, active: 85 } },
+)
+await checkApplicationSet(
   'headless',
   'full-codecs',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
@@ -439,7 +448,9 @@ execFileSync(process.execPath, ['apps/modkit-vscode/scripts/generate-contributes
   stdio: 'inherit',
 })
 
+await checkAppContractMatrix()
+
 console.table(matrixRows)
 console.log(
-  `apps:check: ${matrixRows.length} extension-set/realm cases conform across headless, PWA, Electron and VS Code adapters`,
+  `apps:check: ${matrixRows.length} extension-set/realm cases conform across CLI, headless, PWA, Electron and VS Code adapters`,
 )
