@@ -37,6 +37,7 @@ import {
   createModkitCliTopology,
 } from './profile.js'
 import { parseRunArguments, runCommand } from './commands.js'
+import { parseProjectValidationArguments, validateProject } from './project-validation.js'
 
 export {
   createModkitCliComposition,
@@ -45,7 +46,7 @@ export {
 } from './profile.js'
 
 const USAGE =
-  'usage: modkit validate <dir> [--json] | modkit explain <fixture.json> [--json] | modkit host-profile [--json] | modkit create codec <dir> --id <qualified-id> | modkit open <file> --ext <dir> [--ext <dir>...] [--intent inspect|full] [--trust] [--json] | modkit commands [--json|--protocol-json] | modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] [--target <id>] [--out <file>] [--trust] [--format text|json|protocol-json]\n'
+  'usage: modkit validate <dir> [--json] | modkit explain <fixture.json> [--json] | modkit host-profile [--json] | modkit create codec <dir> --id <qualified-id> | modkit open <file> --ext <dir> [--ext <dir>...] [--intent inspect|full] [--trust] [--json] | modkit commands [--json|--protocol-json] | modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] [--target <id>] [--out <file>] [--trust] [--format text|json|protocol-json] | modkit project.validate <dir> --ext <dir> [--ext <dir>...] [--trust] [--format text|json|protocol-json]\n'
 
 type CliOpenIntent = Exclude<OpenIntent, 'probe'>
 const OPEN_INTENTS: readonly CliOpenIntent[] = ['inspect', 'full']
@@ -342,6 +343,23 @@ async function main(argv: readonly string[]): Promise<number> {
     process.once('SIGTERM', abort)
     try {
       return await runCommand(parsed, { signal: controller.signal })
+    } finally {
+      process.removeListener('SIGINT', abort)
+      process.removeListener('SIGTERM', abort)
+    }
+  }
+  if (command === 'project.validate') {
+    const parsed = parseProjectValidationArguments(target, rest)
+    if (parsed === undefined) {
+      process.stderr.write(USAGE)
+      return 2
+    }
+    const controller = new AbortController()
+    const abort = (): void => controller.abort()
+    process.once('SIGINT', abort)
+    process.once('SIGTERM', abort)
+    try {
+      return await validateProject(parsed, { signal: controller.signal })
     } finally {
       process.removeListener('SIGINT', abort)
       process.removeListener('SIGTERM', abort)

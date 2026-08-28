@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
@@ -269,4 +269,190 @@ describe('modkit open (S7): the product open path of the CLI', () => {
     expect(run(['open', png, '--ext', images, '--intent', 'thumbnail']).status).toBe(2)
     expect(run(['open', join(appDir, 'does-not-exist.png'), '--ext', images]).status).toBe(2)
   }, 60_000)
+})
+
+describe('focused Product GA tools use shared host contracts', () => {
+  const repositoryRoot = join(appDir, '..', '..')
+  const images = join(repositoryRoot, 'extensions', 'common', 'images')
+  const starcraft2 = join(repositoryRoot, 'extensions', 'blizzard', 'starcraft2')
+  const png = join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png')
+  const galaxy = join(
+    repositoryRoot,
+    'packages',
+    'testkit',
+    'test',
+    'fixtures',
+    'mk2-synthetic',
+    'minimal.galaxy',
+  )
+
+  it('validates a real Galaxy script through the stable shared-command protocol', () => {
+    const result = run([
+      'run',
+      'subject.validate',
+      galaxy,
+      '--ext',
+      starcraft2,
+      '--format',
+      'protocol-json',
+    ])
+    expect(result.status).toBe(0)
+    const receipt = JSON.parse(result.stdout) as {
+      schemaVersion: string
+      request: { schemaVersion: string; command: string; input: { subject: string } }
+      result: {
+        state: string
+        command: string
+        data: { outputKind: string; report: unknown }
+        diagnostics: { code: string }[]
+      }
+    }
+    expect(receipt.schemaVersion).toBe('modkit-command-protocol-1')
+    expect(receipt.request).toMatchObject({
+      schemaVersion: 'modkit-command-protocol-1',
+      command: 'subject.validate',
+      input: { subject: galaxy },
+    })
+    expect(receipt.result).toMatchObject({
+      state: 'ok',
+      command: 'subject.validate',
+      data: { outputKind: 'none', report: null },
+    })
+    expect(receipt.result.diagnostics.map(item => item.code)).toContain(
+      'x3.host/worker-shared-process',
+    )
+    proves({
+      capabilityId: 'platform/tools/ga-priority',
+      operation: 'read',
+      note: 'the CLI validates positive Galaxy source through subject.validate and emits the stable command receipt',
+    })
+  }, 60_000)
+
+  it('converts PNG pixels to an exported rgba8 artifact through subject.convert', () => {
+    const output = join(mkdtempSync(join(tmpdir(), 'x3-cli-png-convert-')), 'favicon.rgba')
+    const result = run([
+      'run',
+      'subject.convert',
+      png,
+      '--ext',
+      images,
+      '--target',
+      'rgba8',
+      '--out',
+      output,
+      '--format',
+      'protocol-json',
+    ])
+    expect(result.status).toBe(0)
+    const receipt = JSON.parse(result.stdout) as {
+      schemaVersion: string
+      request: { command: string; input: { target: string } }
+      result: {
+        state: string
+        data: { outputKind: string; byteLength: number; wroteTo: string }
+      }
+    }
+    expect(receipt).toMatchObject({
+      schemaVersion: 'modkit-command-protocol-1',
+      request: { command: 'subject.convert', input: { target: 'rgba8' } },
+      result: {
+        state: 'ok',
+        data: { outputKind: 'bytes', byteLength: 32 * 32 * 4, wroteTo: output },
+      },
+    })
+    const converted = readFileSync(output)
+    expect(converted).toHaveLength(32 * 32 * 4)
+    expect(converted.subarray(0, 8)).not.toEqual(readFileSync(png).subarray(0, 8))
+    proves({
+      capabilityId: 'platform/tools/ga-priority',
+      operation: 'materialize',
+      note: 'the shared subject.convert operation exports deterministic decoded rgba8 bytes from a PNG',
+    })
+  }, 60_000)
+
+  it('validates a focused SC2/common project as deterministic per-file command receipts', () => {
+    const project = mkdtempSync(join(tmpdir(), 'x3-cli-project-'))
+    const scripts = join(project, 'scripts')
+    const textures = join(project, 'textures')
+    mkdirSync(scripts)
+    mkdirSync(textures)
+    writeFileSync(join(scripts, 'main.galaxy'), readFileSync(galaxy))
+    writeFileSync(join(textures, 'icon.png'), readFileSync(png))
+
+    const result = run([
+      'project.validate',
+      project,
+      '--ext',
+      starcraft2,
+      '--ext',
+      images,
+      '--format',
+      'protocol-json',
+    ])
+    expect(result.status).toBe(0)
+    const receipt = JSON.parse(result.stdout) as {
+      schemaVersion: string
+      request: { command: string; project: string }
+      result: {
+        state: string
+        summary: { discovered: number; validated: number; unclaimed: number; failed: number }
+        files: {
+          path: string
+          state: string
+          receipt: {
+            schemaVersion: string
+            request: { command: string }
+            result: { state: string }
+          }
+        }[]
+      }
+    }
+    expect(receipt).toMatchObject({
+      schemaVersion: 'modkit-project-validation-1',
+      request: { command: 'project.validate', project },
+      result: {
+        state: 'ok',
+        summary: { discovered: 2, validated: 2, unclaimed: 0, failed: 0 },
+      },
+    })
+    expect(receipt.result.files.map(item => [item.path, item.state])).toEqual([
+      ['scripts/main.galaxy', 'validated'],
+      ['textures/icon.png', 'validated'],
+    ])
+    expect(receipt.result.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          receipt: expect.objectContaining({
+            schemaVersion: 'modkit-command-protocol-1',
+            request: expect.objectContaining({ command: 'subject.validate' }),
+            result: expect.objectContaining({ state: 'ok' }),
+          }),
+        }),
+      ]),
+    )
+
+    writeFileSync(join(project, 'unsupported.bin'), 'not a supported project asset')
+    const incomplete = run([
+      'project.validate',
+      project,
+      '--ext',
+      starcraft2,
+      '--ext',
+      images,
+      '--format',
+      'protocol-json',
+    ])
+    expect(incomplete.status).toBe(1)
+    expect(JSON.parse(incomplete.stdout)).toMatchObject({
+      result: {
+        state: 'failed',
+        summary: { discovered: 3, validated: 2, unclaimed: 1, failed: 0 },
+      },
+    })
+    proves({
+      capabilityId: 'platform/tools/ga-priority',
+      operation: 'read',
+      note: 'project.validate checks every scoped file through the shared subject.validate runtime and fails closed on unclaimed inputs',
+    })
+  }, 120_000)
 })

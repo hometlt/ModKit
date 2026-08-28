@@ -272,6 +272,29 @@ const EDIT_FIELD_OPERATION = Object.freeze({
   outputKinds: Object.freeze(['edit-plan']),
 })
 
+/**
+ * A real, deterministic conversion owned by the PNG codec rather than by a CLI/UI adapter.
+ * `subject.convert --target rgba8` routes here in every host and returns tightly packed pixels in
+ * top-left row order. Other target formats need their own writer/provider and are refused by name.
+ */
+const CONVERT_RGBA8_OPERATION = Object.freeze({
+  id: 'export.convert',
+  handlerId: 'convert-rgba8',
+  mutatesSource: false,
+  requiredPermissions: Object.freeze(['read-source']),
+  outputKinds: Object.freeze(['bytes']),
+})
+
+function convertRgba8Handler(bytes, png) {
+  return async (value, options) => {
+    if (value?.target !== 'rgba8') throw new TypeError('PNG conversion target must be rgba8')
+    if (png.bitDepth !== 8 || ![0, 2, 4, 6].includes(png.colorType) || png.interlace !== 0) {
+      throw new TypeError('PNG rgba8 conversion requires non-interlaced 8-bit direct pixels')
+    }
+    return { kind: 'bytes', value: await decodeRgba8(bytes, png, options?.signal) }
+  }
+}
+
 const latin1 = new TextEncoder()
 function latin1Bytes(text) {
   // tEXt is Latin-1: refuse code points the chunk cannot carry instead of mangling them
@@ -343,7 +366,7 @@ function setTextHandler(bytes, png, input) {
 
 const definition = Object.freeze({
   id: 'org.modkitx/image-png',
-  operations: Object.freeze([EDIT_FIELD_OPERATION]),
+  operations: Object.freeze([CONVERT_RGBA8_OPERATION, EDIT_FIELD_OPERATION]),
   format: Object.freeze({ id: 'png', label: 'PNG image', mediaType: 'image/png' }),
   async detect(bytes) {
     const match = matchesSignature(bytes)
@@ -452,7 +475,10 @@ const definition = Object.freeze({
         'common.view/tree-data-source': tree,
         'common.view/raster-image-source': raster,
       },
-      handlers: { 'set-text': setTextHandler(bytes, png, context.input) },
+      handlers: {
+        'convert-rgba8': convertRgba8Handler(bytes, png),
+        'set-text': setTextHandler(bytes, png, context.input),
+      },
       maxDecodedBytes: BigInt(png.width) * BigInt(png.height) * 4n,
       unsupportedFeatures: [...(decodedAccess ? [] : ['decoded-region-provider']), 'pixel-editing'],
     }
