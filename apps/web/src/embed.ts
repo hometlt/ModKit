@@ -86,8 +86,9 @@ import {
   type ArtifactByteSource,
   type OperationSession,
   type PermissionGrant,
+  type ResourceBudget,
 } from '@modkitx-x3/sdk'
-import type { OpenedSubject, SubjectEditorPorts } from '@modkitx-x3/host'
+import { resolveFormatWriter, type OpenedSubject, type SubjectEditorPorts } from '@modkitx-x3/host'
 import type {
   BrowserBlobConstructorLike,
   BrowserMessageChannelConstructorLike,
@@ -675,6 +676,7 @@ let openCount = 0
 interface EmbedPreviewSession extends PreviewSession {
   readonly opened: OpenedSubject
   readonly grant: PermissionGrant
+  readonly budget: ResourceBudget
 }
 
 async function openEmbedSession(
@@ -693,19 +695,20 @@ async function openEmbedSession(
     id: `modkit-embed-${openCount}`,
     classes: options.writable ? ['read-source', 'write-source'] : ['read-source'],
   }
+  const budget: ResourceBudget = {
+    maxInputBytes: BigInt(EMBED_MAXIMUM_BYTES),
+    maxDepth: 256,
+    maxNodes: 1_000_000,
+    maxScalarBytes: 64 * 1024 * 1024,
+    maxDiagnostics: 10_000,
+    deadlineMs: 30_000,
+  }
   const result = await host.services.open({
     source: bytesSource(entry.name, bytes, options.token, options.sourceUri),
     path: entry.name,
     intent: 'full',
     grant,
-    budget: {
-      maxInputBytes: BigInt(EMBED_MAXIMUM_BYTES),
-      maxDepth: 256,
-      maxNodes: 1_000_000,
-      maxScalarBytes: 64 * 1024 * 1024,
-      maxDiagnostics: 10_000,
-      deadlineMs: 30_000,
-    },
+    budget,
     ...(signal === undefined ? {} : { signal }),
   })
   if (result.state === 'unresolved') return undefined
@@ -726,6 +729,7 @@ async function openEmbedSession(
   return {
     opened: result,
     grant,
+    budget,
     descriptor: () => session.descriptor(),
     dataSource: (contract: string, major: number) => session.dataSource(contract, major),
     async operations() {
@@ -1154,13 +1158,33 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
               signal,
             )
             if (session !== undefined && writable) {
+              const writerResolution = await resolveFormatWriter({
+                services: host.services.main,
+                opened: session.opened,
+                grant: session.grant,
+                budgets: session.budget,
+              })
               editorPorts = this.#editing?.editorFor({
                 entryId: entry.id,
                 name: entry.name,
                 opened: session.opened,
                 grant: session.grant,
                 bytes,
+                ...(writerResolution.writer === undefined
+                  ? {}
+                  : { writer: writerResolution.writer }),
               })?.ports
+              if (editorPorts === undefined) await writerResolution.release?.()
+              else if (writerResolution.release !== undefined) {
+                const dispose = session.dispose.bind(session)
+                return {
+                  ...session,
+                  async dispose() {
+                    await writerResolution.release?.()
+                    await dispose()
+                  },
+                }
+              }
             }
             return session
           },

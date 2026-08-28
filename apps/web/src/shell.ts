@@ -34,7 +34,12 @@ import {
   type OperationSession,
   type PermissionGrant,
 } from '@modkitx-x3/sdk'
-import { nestedSubjectServices, openNestedSubject, type OpenSubjectResult } from '@modkitx-x3/host'
+import {
+  nestedSubjectServices,
+  openNestedSubject,
+  resolveFormatWriter,
+  type OpenSubjectResult,
+} from '@modkitx-x3/host'
 import type {
   BrowserBlobConstructorLike,
   BrowserMessageChannelConstructorLike,
@@ -682,15 +687,29 @@ async function boot(): Promise<void> {
        * a single commit coordinator. A subject this page will not write gets none, and with it no
        * editable stage and no Edit panel — the same fact, said once.
        */
+      let releaseWriter: (() => Promise<void>) | undefined
       if (writable) {
+        const writerResolution = await resolveFormatWriter({
+          services: services.main,
+          opened: result,
+          grant,
+          budgets: budget,
+        })
+        writerResolution.diagnostics.forEach(item => say(`${entry.name} — ${item.message}`))
+        releaseWriter = writerResolution.release
         const editor = editing.editorFor({
           entryId: entry.id,
           name: entry.name,
           opened: result,
           grant,
           bytes,
+          ...(writerResolution.writer === undefined ? {} : { writer: writerResolution.writer }),
         })
         if (editor !== undefined) subjectEditors.set(entry.id, editor)
+        else {
+          await releaseWriter?.()
+          releaseWriter = undefined
+        }
       }
       const decision = editability.get(entry.id)
       inspected.set(entry.id, {
@@ -715,6 +734,7 @@ async function boot(): Promise<void> {
           writableHandles.delete(sourceUriFor(entry.id))
           commandAuthority?.revoke()
           if (inspecting === entry.id) inspect(undefined)
+          await releaseWriter?.()
           await session.dispose()
         },
       }
