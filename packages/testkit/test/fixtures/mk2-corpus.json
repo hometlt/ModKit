@@ -1733,7 +1733,7 @@
       "note": "Spring modinfo.lua table with identity, section, dependencies, and replacement aliases"
     },
     {
-      "extension": "mk2/opensource-warzone-2100",
+      "extension": "opensource/warzone-2100",
       "contributionId": "org.modkitx/warzone-img",
       "corpus": "synthetic",
       "sample": "minimal.warzone.img",
@@ -1742,7 +1742,7 @@
       "note": "Warzone image list with resolved sprite paths"
     },
     {
-      "extension": "mk2/opensource-warzone-2100",
+      "extension": "opensource/warzone-2100",
       "contributionId": "org.modkitx/warzone-lev",
       "corpus": "synthetic",
       "sample": "minimal.warzone.lev",
@@ -1760,7 +1760,7 @@
       "note": "Final-owner Warzone PIE 3 model geometry and hierarchy"
     },
     {
-      "extension": "mk2/opensource-warzone-2100",
+      "extension": "opensource/warzone-2100",
       "contributionId": "org.modkitx/warzone-wrf",
       "corpus": "synthetic",
       "sample": "minimal.warzone.wrf",
@@ -1778,7 +1778,7 @@
       "note": "ZIP-backed Warzone package with one stored entry"
     },
     {
-      "extension": "mk2/opensource-warzone-2100",
+      "extension": "opensource/warzone-2100",
       "contributionId": "org.modkitx/warzone2100-map",
       "corpus": "synthetic",
       "sample": "minimal.warzone.map",
