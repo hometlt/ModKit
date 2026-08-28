@@ -83,18 +83,15 @@ const RELOCATED_FAMILIES = new Set([
   'ea-sage',
   'ea-models',
   'ea-tiberian-sun',
+  'opensource-warzone-2100',
 ])
 
 // A single codec can finish the staging migration without its whole family: block 11 slice 11A
 // moved plain text into extensions/common/plain-text while the rest of `uncommon-documents` stayed,
-// slice 11B did the same for the OpenDocument trio into extensions/common/documents, and block 12
-// moved Warzone PIE into its final game-family owner without pretending that the MK3-authored S3O
-// reader was a relocated port.
+// slice 11B did the same for the OpenDocument trio into extensions/common/documents.
 // The converter keeps reading the canonical source, but stops emitting a staging duplicate for the
 // coordinates listed here. Entries are `<staging directory>/<codec local id>`.
 const RELOCATED_CODECS = new Set([
-  'opensource-warzone-2100/warzone-pie',
-  'opensource-warzone-2100/warzone-wz',
   'uncommon-documents/odp',
   'uncommon-documents/ods',
   'uncommon-documents/odt',
