@@ -1,8 +1,8 @@
 schemaVersion: 'capability-registry-1'
 $comment: 'Semantic capability registry (слой 2, PLAN_MODKIT_MK3_FINAL_RU.md §3.3, блок 10 работы 4–6 и 11). Строка — пользовательская возможность, не поверхность кода; несколько технических строк могут реализовывать одну возможность. Гибрид: скелет выведен из migration/generated/source-inventory.json, scripts/mk2-port-ratchet.json, scripts/parity/common-coverage.json, reports/parity/latest.json и extensions/*/*/MIGRATION-NOTES*.json; семантические поля — данные. scripts/migration/check-registry.mjs заново выводит каждый машинный факт и сверяет, поэтому рукописное значение не может разойтись с деревом. Канонический порядок ключей и сортировка строк по capabilityId обязательны.'
 ownerAdditionsFrozen: true
-ownerAdditionsFrozenOn: '2026-08-25'
-ownerAdditionsFrozenNote: "Обязательный набор owner additions заморожен реестром блока 10: ODG, Kane's Wrath и семь MK3-native text-data форматов. Новая экспериментальная идея получает experimental-optional и не расширяет Legacy Migration Complete; смена obligation требует решения владельца и обновления scope lock."
+ownerAdditionsFrozenOn: '2026-08-28'
+ownerAdditionsFrozenNote: "Обязательный набор owner additions заморожен реестром блока 10 и уточнён решением владельца для первого Product GA: ODG, Kane's Wrath, семь MK3-native text-data форматов и machine-readable closure приложений и RC блока 20. Новая экспериментальная идея получает experimental-optional и не расширяет Legacy Migration Complete; смена obligation требует решения владельца и обновления scope lock."
 evidenceLegend:
   E0: 'Строка обнаружена; исполняемого MK3-контракта ещё нет (planned owner может быть уже назван).'
   E1: 'Contract/manifest существует и валидируется.'
@@ -15,6 +15,7 @@ scopeLock:
     - 'ODG'
     - "Kane's Wrath"
     - 'MK3-native text-data (TSV/INI/JSON/JSONC/TOML/XML/YAML)'
+    - 'Block 20 application and RC closure'
   post-ga-required-proof:
     - 'SC1 CHK'
     - 'SC1 GRP'
@@ -26,7 +27,7 @@ scopeLock:
     - 'volume-grid-3d'
     - 'free-space-3d'
 counts:
-  capabilities: 308
+  capabilities: 317
   unmappedRules: 13
   unmappedUnits: 608
   mappedUnits: 512
@@ -17000,6 +17001,557 @@ capabilities:
     closedBy:
       commits: []
       tests: []
+      reports: []
+  - capabilityId: 'platform/apps/command-runtime-session-conformance'
+    userScenario: 'Запускать одинаковые команды и управлять одинаковой runtime-сессией из всех шести приложений без разных правил поведения.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'apps and packages/host'
+    plannedBlock: 20
+    dependsOn: []
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities:
+      - 'read-source'
+    mk3Contributions: []
+    mk3Operations: []
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors: []
+    projection:
+      plane: 'ui'
+      liveProjection: 'not-applicable'
+      portableMaterialization: 'not-applicable'
+      opaquePreservation: 'not-applicable'
+      nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'командный каталог и typed refusal доказаны для CLI, automation-host, server, Electron, PWA и VS Code; reference runtime выполняется в пяти Node hosts, а PWA честно возвращает typed unavailable без browser worker'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'общий host command runtime и RuntimeSessionV2 используются всеми приложениями через одинаковые контракты'
+    closedBy:
+      commits:
+        - 'ddcfd22'
+      tests:
+        - 'scripts/check-app-contract-matrix.mjs'
+      reports: []
+  - capabilityId: 'platform/apps/priority-workflows'
+    userScenario: 'Выполнять ежедневные приоритетные задачи через подходящий профиль CLI, Electron, PWA, server, automation-host или VS Code.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'apps and migration/product-profiles.json'
+    plannedBlock: 20
+    dependsOn:
+      - 'platform/apps/command-runtime-session-conformance'
+      - 'platform/presentation/common-plan'
+      - 'platform/tools/ga-priority'
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities:
+      - 'read-source'
+      - 'write-source'
+    mk3Contributions: []
+    mk3Operations:
+      - 'asset.validate'
+      - 'export.raw'
+      - 'view.inspect'
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'partial'
+    supportState: 'partial'
+    runtimeAvailability: 'host-facility-dependent'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors: []
+    projection:
+      plane: 'ui'
+      liveProjection: 'not-applicable'
+      portableMaterialization: 'not-applicable'
+      opaquePreservation: 'not-applicable'
+      nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'product profiles, общий command matrix и app recovery доказаны, но 11 точных priority workflow gaps и priority tools ещё не закрыты'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'пять доступных mk3-ga presets собирают шесть приложений из общих extension families и service providers без app-specific semantic fork'
+    closedBy:
+      commits:
+        - 'ddcfd22'
+      tests:
+        - 'scripts/check-app-contract-matrix.mjs'
+        - 'scripts/migration/check-profiles.mjs'
+        - 'scripts/test/minimal-build.test.ts'
+      reports: []
+  - capabilityId: 'platform/apps/recovery'
+    userScenario: 'Получать понятный отказ в правах, отменять долгую работу и безопасно продолжать после перезапуска или сбоя приложения.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'apps and packages/host'
+    plannedBlock: 20
+    dependsOn:
+      - 'platform/apps/command-runtime-session-conformance'
+      - 'platform/extensions/lifecycle'
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities:
+      - 'read-source'
+      - 'write-source'
+    mk3Contributions: []
+    mk3Operations: []
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'host-facility-dependent'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors: []
+    projection:
+      plane: 'ui'
+      liveProjection: 'not-applicable'
+      portableMaterialization: 'not-applicable'
+      opaquePreservation: 'not-applicable'
+      nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'браузер без Node backend честно возвращает typed unavailable для crash recovery вместо ложного успеха'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'единая permission, cancellation, restart и crash матрица проходит через host-owned command/session lifecycle во всех шести приложениях'
+    closedBy:
+      commits:
+        - '7b3581b'
+        - 'c9bdf28'
+      tests:
+        - 'packages/host/test/extension-artifact-store.test.ts'
+        - 'packages/host/test/command-runtime.test.ts'
+        - 'apps/modkit-cli/test/cli.test.ts'
+        - 'scripts/test/app-recovery-conformance.test.ts'
+      reports: []
+  - capabilityId: 'platform/extensions/lifecycle'
+    userScenario: 'Устанавливать, обновлять, удалять и откатывать локальные расширения с изоляцией повреждённых версий.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'packages/host/node'
+    plannedBlock: 20
+    dependsOn: []
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities:
+      - 'read-source'
+      - 'write-source'
+    mk3Contributions: []
+    mk3Operations: []
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors: []
+    projection:
+      plane: 'container'
+      liveProjection: 'not-applicable'
+      portableMaterialization: 'not-applicable'
+      opaquePreservation: 'not-applicable'
+      nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'локальный offline catalog принимает только точные id, version и sha256; публичный marketplace и Authenticode не входят в локальный Product GA'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'immutable artifact directories, atomic active pointer, history, quarantine и recovery заменяют ручное копирование extension roots'
+    closedBy:
+      commits:
+        - '7b3581b'
+      tests:
+        - 'packages/host/test/extension-artifact-store.test.ts'
+      reports: []
+  - capabilityId: 'platform/extensions/out-of-tree'
+    userScenario: 'Создать расширение вне основного репозитория, собрать его против публичного ABI и установить в Electron, PWA и VS Code.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'scripts/scaffold-extension.mjs and UI hosts'
+    plannedBlock: 20
+    dependsOn:
+      - 'platform/extensions/lifecycle'
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities:
+      - 'read-source'
+      - 'write-source'
+    mk3Contributions: []
+    mk3Operations: []
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors: []
+    projection:
+      plane: 'container'
+      liveProjection: 'not-applicable'
+      portableMaterialization: 'not-applicable'
+      opaquePreservation: 'not-applicable'
+      nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'локальный artifact устанавливается в Electron, PWA и VS Code из отдельного временного репозитория; публичный marketplace, удалённый catalog и публикация пакета остаются отдельными будущими действиями'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'scaffold создаёт extension против публичного ABI, release bundle имеет ноль внешних imports, digest-проверенный artifact ставится общим lifecycle и открывается тремя UI hosts без изменения platform/app source'
+    closedBy:
+      commits:
+        - '50ae9d0'
+      tests:
+        - 'scripts/test/out-of-tree-extension.test.ts'
+        - 'scripts/test/scaffold.test.ts'
+      reports: []
+  - capabilityId: 'platform/presentation/common-plan'
+    userScenario: 'Открывать модели, карты и документы через один план просмотра с одинаковым смысловым результатом во всех подходящих приложениях.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'packages/host and packages/ui'
+    plannedBlock: 20
+    dependsOn: []
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities:
+      - 'read-source'
+    mk3Contributions: []
+    mk3Operations:
+      - 'view.inspect'
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures:
+      - 'extensions/blizzard/models/test/fixtures/artifact1.m3'
+      - 'extensions/opensource/warzone-2100/test/fixtures/simple.pie'
+      - 'extensions/common/documents/test/fixtures/minimal.odt'
+    corpusDescriptors: []
+    projection:
+      plane: 'ui'
+      liveProjection: 'live'
+      portableMaterialization: 'none'
+      opaquePreservation: 'none'
+      nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'model, world и document plans доказаны через общие host contracts и writer spy; запуск отдельных packaged GUI процессов остаётся частью RC smoke, а не semantic authority'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'host разрешает PresentationPlan из зарегистрированных stage facts, а UI только монтирует выбранные slots без веток по игре, формату или codec id'
+    closedBy:
+      commits:
+        - '1265d28'
+        - '2594015'
+      tests:
+        - 'apps/web/test/presentation-plan-conformance.test.ts'
+        - 'apps/electron/test/odf-view-policy.test.ts'
+      reports: []
+  - capabilityId: 'platform/release/migration-zero-gap'
+    userScenario: 'Получать отчёт выпуска, который не скрывает ни одну незавершённую задачу первого Product GA и отдельно сохраняет будущий backlog.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'scripts/migration'
+    plannedBlock: 20
+    dependsOn:
+      - 'platform/apps/command-runtime-session-conformance'
+      - 'platform/apps/priority-workflows'
+      - 'platform/apps/recovery'
+      - 'platform/extensions/lifecycle'
+      - 'platform/extensions/out-of-tree'
+      - 'platform/presentation/common-plan'
+      - 'platform/release/reproducible-rc'
+      - 'platform/tools/ga-priority'
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities: []
+    mk3Contributions: []
+    mk3Operations: []
+    allocation:
+      state: 'absent'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'missing'
+    supportState: 'unsupported'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E0'
+    hostEvidence: 'none'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors: []
+    projection:
+      plane: 'code'
+      liveProjection: 'not-applicable'
+      portableMaterialization: 'not-applicable'
+      opaquePreservation: 'not-applicable'
+      nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'эта строка остаётся missing, пока остальные Block 20 obligations не закрыты и итоговый mk3-ga report не показывает zero unresolved rows при неизменном post-GA backlog'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: null
+    closedBy:
+      commits: []
+      tests: []
+      reports: []
+  - capabilityId: 'platform/release/reproducible-rc'
+    userScenario: 'Собрать повторяемый локальный RC с подписью, списком компонентов и уведомлениями о лицензиях и проверить его без публичного выпуска.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'scripts/release'
+    plannedBlock: 20
+    dependsOn:
+      - 'platform/apps/recovery'
+      - 'platform/extensions/out-of-tree'
+      - 'platform/tools/ga-priority'
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities:
+      - 'read-source'
+      - 'write-source'
+    mk3Contributions: []
+    mk3Operations: []
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors: []
+    projection:
+      plane: 'container'
+      liveProjection: 'not-applicable'
+      portableMaterialization: 'not-applicable'
+      opaquePreservation: 'not-applicable'
+      nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'локальный RC использует detached Ed25519 с переданным внешним private key; Authenticode, публичная публикация и обязательная семидневная выдержка не входят в этот gate'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'release:rc, release:verify и release:install собирают, проверяют и ставят четыре подписанных Ed25519 артефакта в чистое временное хранилище; release:rollback возвращает immutable предыдущую версию'
+    closedBy:
+      commits:
+        - 'b30675b'
+      tests:
+        - 'scripts/test/release-rc.test.ts'
+      reports: []
+  - capabilityId: 'platform/tools/ga-priority'
+    userScenario: 'Запускать нужные для первого Product GA конвертеры, генераторы, проверки и внешние инструменты через общие контракты.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'scripts and packages/host'
+    plannedBlock: 20
+    dependsOn: []
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities:
+      - 'read-source'
+      - 'write-source'
+    mk3Contributions: []
+    mk3Operations: []
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'partial'
+    supportState: 'partial'
+    runtimeAvailability: 'host-facility-dependent'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors: []
+    projection:
+      plane: 'code'
+      liveProjection: 'not-applicable'
+      portableMaterialization: 'not-applicable'
+      opaquePreservation: 'not-applicable'
+      nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'общие validate, inspect и language paths доказаны, но whole-project check, positive Galaxy CLI, texture conversion/export и bounded CASC materialization остаются точными Product GA gaps'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'shared subject command runtime, host language providers и extension-owned converters заменяют отдельные app-owned tools по мере закрытия точных workflow gaps'
+    closedBy:
+      commits:
+        - 'ddcfd22'
+      tests:
+        - 'apps/modkit-cli/test/cli.test.ts'
+        - 'packages/host/test/language.test.ts'
+        - 'scripts/test/command-fixtures-hosts.test.ts'
       reports: []
   - capabilityId: 'proof/red-alert2-map/decode'
     userScenario: 'Открыть карту Red Alert 2 и увидеть её слои как доказательство post-GA глубины TS/RA2.'

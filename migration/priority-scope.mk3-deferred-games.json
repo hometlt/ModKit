@@ -9,8 +9,8 @@
   "registry": "migration/capabilities.yaml",
   "generator": "scripts/migration/emit-priority-scope.mjs",
   "counts": {
-    "total": 167,
-    "seed": 167,
+    "total": 176,
+    "seed": 176,
     "transitiveDependencies": 0,
     "byPlannedBlock": {
       "block-11": 15,
@@ -20,18 +20,20 @@
       "block-16": 33,
       "block-17": 20,
       "block-19": 1,
+      "block-20": 9,
       "block-22": 1,
       "block-23": 1,
       "block-25": 1
     },
     "byMigrationState": {
       "equivalent-better": 21,
-      "implemented": 117,
-      "missing": 28,
+      "implemented": 123,
+      "missing": 29,
+      "partial": 2,
       "relocated-multiverse": 1
     },
-    "byObligation": { "focused-required-addition": 13, "legacy-required": 154 },
-    "byEvidenceLevel": { "E0": 26, "E1": 28, "E2": 63, "E3": 12, "E4": 38 }
+    "byObligation": { "focused-required-addition": 22, "legacy-required": 154 },
+    "byEvidenceLevel": { "E0": 27, "E1": 28, "E2": 71, "E3": 12, "E4": 38 }
   },
   "deadlines": {
     "block-11": [
@@ -208,6 +210,17 @@
       "vertical/warzone-2100/neutral-definitions-world"
     ],
     "block-19": ["vertical/starcraft-2/deterministic-playable-subset"],
+    "block-20": [
+      "platform/apps/command-runtime-session-conformance",
+      "platform/apps/priority-workflows",
+      "platform/apps/recovery",
+      "platform/extensions/lifecycle",
+      "platform/extensions/out-of-tree",
+      "platform/presentation/common-plan",
+      "platform/release/migration-zero-gap",
+      "platform/release/reproducible-rc",
+      "platform/tools/ga-priority"
+    ],
     "block-22": ["uv/uvw/world-materialization"],
     "block-23": ["uv/uvd/definitions"],
     "block-25": ["vertical/warzone-2100/deterministic-playable-subset"]
@@ -2505,6 +2518,191 @@
         "vertical/warzone-2100/native-round-trip",
         "vertical/warzone-2100/native-to-uv",
         "vertical/warzone-2100/neutral-definitions-world"
+      ]
+    },
+    {
+      "capabilityId": "platform/apps/command-runtime-session-conformance",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "apps and packages/host",
+      "plannedBlock": 20,
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E2",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": [],
+      "dependsOn": [],
+      "requiredBy": [
+        "platform/apps/priority-workflows",
+        "platform/apps/recovery",
+        "platform/release/migration-zero-gap"
+      ]
+    },
+    {
+      "capabilityId": "platform/apps/priority-workflows",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "apps and migration/product-profiles.json",
+      "plannedBlock": 20,
+      "migrationState": "partial",
+      "supportState": "partial",
+      "evidenceLevel": "E2",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": [],
+      "dependsOn": [
+        "platform/apps/command-runtime-session-conformance",
+        "platform/presentation/common-plan",
+        "platform/tools/ga-priority"
+      ],
+      "requiredBy": ["platform/release/migration-zero-gap"]
+    },
+    {
+      "capabilityId": "platform/apps/recovery",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "apps and packages/host",
+      "plannedBlock": 20,
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E2",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": [],
+      "dependsOn": [
+        "platform/apps/command-runtime-session-conformance",
+        "platform/extensions/lifecycle"
+      ],
+      "requiredBy": ["platform/release/migration-zero-gap", "platform/release/reproducible-rc"]
+    },
+    {
+      "capabilityId": "platform/extensions/lifecycle",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "packages/host/node",
+      "plannedBlock": 20,
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E2",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": [],
+      "dependsOn": [],
+      "requiredBy": [
+        "platform/apps/recovery",
+        "platform/extensions/out-of-tree",
+        "platform/release/migration-zero-gap"
+      ]
+    },
+    {
+      "capabilityId": "platform/extensions/out-of-tree",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "scripts/scaffold-extension.mjs and UI hosts",
+      "plannedBlock": 20,
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E2",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": [],
+      "dependsOn": ["platform/extensions/lifecycle"],
+      "requiredBy": ["platform/release/migration-zero-gap", "platform/release/reproducible-rc"]
+    },
+    {
+      "capabilityId": "platform/presentation/common-plan",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "packages/host and packages/ui",
+      "plannedBlock": 20,
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E2",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": [],
+      "dependsOn": [],
+      "requiredBy": ["platform/apps/priority-workflows", "platform/release/migration-zero-gap"]
+    },
+    {
+      "capabilityId": "platform/release/migration-zero-gap",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "scripts/migration",
+      "plannedBlock": 20,
+      "migrationState": "missing",
+      "supportState": "unsupported",
+      "evidenceLevel": "E0",
+      "allocationState": "absent",
+      "portFamily": null,
+      "corpusDescriptors": [],
+      "dependsOn": [
+        "platform/apps/command-runtime-session-conformance",
+        "platform/apps/priority-workflows",
+        "platform/apps/recovery",
+        "platform/extensions/lifecycle",
+        "platform/extensions/out-of-tree",
+        "platform/presentation/common-plan",
+        "platform/release/reproducible-rc",
+        "platform/tools/ga-priority"
+      ],
+      "requiredBy": []
+    },
+    {
+      "capabilityId": "platform/release/reproducible-rc",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "scripts/release",
+      "plannedBlock": 20,
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E2",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": [],
+      "dependsOn": [
+        "platform/apps/recovery",
+        "platform/extensions/out-of-tree",
+        "platform/tools/ga-priority"
+      ],
+      "requiredBy": ["platform/release/migration-zero-gap"]
+    },
+    {
+      "capabilityId": "platform/tools/ga-priority",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "scripts and packages/host",
+      "plannedBlock": 20,
+      "migrationState": "partial",
+      "supportState": "partial",
+      "evidenceLevel": "E2",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": [],
+      "dependsOn": [],
+      "requiredBy": [
+        "platform/apps/priority-workflows",
+        "platform/release/migration-zero-gap",
+        "platform/release/reproducible-rc"
       ]
     },
     {

@@ -221,11 +221,27 @@ if (useWorkflowLedger) {
     process.exit(1)
   }
   workflowLedger = readJson(workflowLedgerPath)
-  if (workflowLedger.schemaVersion !== 'vscode-workflow-ledger-1') {
+  if (workflowLedger.schemaVersion !== 'vscode-workflow-ledger-2') {
     fail(`workflow ledger: unsupported schema ${String(workflowLedger.schemaVersion)}`)
   }
   if (workflowLedger.counts?.total !== 266 || workflowLedger.units?.length !== 266) {
     fail('workflow ledger: expected exact 258 VS Code + 8 CLI coverage')
+  }
+  const workflowDispositionCounts = workflowLedger.counts?.byDisposition ?? {}
+  if (
+    workflowLedger.counts?.decisionRequired !== 0 ||
+    ['already-equivalent', 'release-candidate', 'post-release'].some(
+      disposition => !Number.isInteger(workflowDispositionCounts[disposition]),
+    ) ||
+    Object.values(workflowDispositionCounts).reduce((sum, count) => sum + count, 0) !== 266 ||
+    workflowLedger.units.some(
+      unit =>
+        !['already-equivalent', 'release-candidate', 'post-release'].includes(
+          unit.classification?.disposition,
+        ),
+    )
+  ) {
+    fail('workflow ledger: every fact must remain in exactly one Block 20 disposition')
   }
 }
 

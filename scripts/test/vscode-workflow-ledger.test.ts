@@ -15,6 +15,13 @@ const publicationInventory = join(repoRoot, 'apps', 'modkit-vscode', 'publicatio
 const targets = join(repoRoot, 'packages', 'host', 'src', 'commands', 'subject-command-targets.ts')
 const pwaCommands = join(repoRoot, 'apps', 'web', 'src', 'commands.ts')
 const committedLedger = join(repoRoot, 'migration', 'generated', 'vscode-workflow-ledger.json')
+const generatedShortlist = join(
+  repoRoot,
+  'migration',
+  'generated',
+  'vscode-workflow-shortlist.json',
+)
+const generatedBacklog = join(repoRoot, 'migration', 'generated', 'vscode-workflow-backlog.json')
 const generatedStatus = join(repoRoot, 'migration', 'generated', 'status.md')
 
 function run(args: readonly string[]) {
@@ -115,20 +122,26 @@ const wrongKindRelationCases = [
   },
 ] as const
 
-describe('block 14A VS Code + CLI workflow ledger', () => {
-  it('covers exactly 258 VS Code and 8 CLI facts and derives relational units', () => {
+describe('Block 20 VS Code + CLI workflow ledger', () => {
+  it('covers all 266 facts in three explicit baskets and derives relational units', () => {
     const result = run(['--check'])
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
-    expect(result.stdout).toContain('258 VS Code + 8 CLI')
+    expect(result.stdout).toContain('266 facts in three baskets')
 
     const ledger = JSON.parse(readFileSync(committedLedger, 'utf8'))
     expect(ledger.counts).toMatchObject({
       total: 266,
       legacyVsCode: 258,
       legacyCli: 8,
-      decisionRequired: 266,
-      currentX3ObservedFacts: 15,
+      byDisposition: {
+        'already-equivalent': 19,
+        'release-candidate': 185,
+        'post-release': 62,
+      },
+      decisionRequired: 0,
+      releaseCandidateGaps: 11,
+      currentX3ObservedFacts: 16,
     })
     expect(ledger.counts.byKind).toEqual({
       'cli-command': 5,
@@ -163,43 +176,74 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
           classification: {
             disposition: string
             migrationState: string
-            owner: string
             releaseTrack: string
-            replacementWorkflowId: null
             targetState: string
           }
         }) =>
           ['block-14b', 'block-14c', 'block-14d'].includes(row.plannedSlice) &&
-          row.classification.disposition === 'decision-required' &&
-          row.classification.migrationState === 'unknown' &&
-          row.classification.owner === 'modkit-program-owner' &&
-          row.classification.releaseTrack === 'decision-required' &&
-          row.classification.replacementWorkflowId === null &&
-          row.classification.targetState === 'decision-required',
+          ['already-equivalent', 'release-candidate', 'post-release'].includes(
+            row.classification.disposition,
+          ) &&
+          row.classification.migrationState !== 'unknown' &&
+          row.classification.releaseTrack !== 'decision-required' &&
+          row.classification.targetState !== 'decision-required',
       ),
     ).toBe(true)
     expect(
-      ledger.units.every(
-        (row: {
-          classification: {
-            migrationState: string
-            releaseTrack: string
-            replacementWorkflowId: null
-          }
-        }) =>
-          row.classification.migrationState === 'unknown' &&
-          row.classification.releaseTrack === 'decision-required' &&
-          row.classification.replacementWorkflowId === null,
+      Object.values(ledger.counts.byDisposition).reduce(
+        (sum: number, count) => sum + Number(count),
+        0,
       ),
-    ).toBe(true)
+    ).toBe(266)
+
+    const workflowDisposition = Object.fromEntries(
+      ledger.workflows.map(
+        (row: { workflowId: string; classification: { disposition: string } }) => [
+          row.workflowId,
+          row.classification.disposition,
+        ],
+      ),
+    )
+    expect(workflowDisposition['vscode/shared-command-shell']).toBe('already-equivalent')
+    expect(workflowDisposition['cli/install']).toBe('post-release')
+    expect(workflowDisposition['cli/lsp']).toBe('post-release')
   })
 
-  it('records the factual 64→7, 11→1, 8→0 and 6→2 surface change', () => {
+  it('classifies mixed workflows fact by fact instead of promoting the whole group', () => {
+    const ledger = JSON.parse(readFileSync(committedLedger, 'utf8'))
+    const disposition = (sourceUnitId: string): string =>
+      ledger.units.find((row: { sourceUnitId: string }) => row.sourceUnitId === sourceUnitId)
+        ?.classification.disposition
+
+    expect(disposition('legacy/vscode/command/modkit.explainResolution')).toBe('already-equivalent')
+    expect(disposition('legacy/vscode/command/modkit.showLog')).toBe('release-candidate')
+    expect(disposition('legacy/vscode/custom-editor/modkit.replayPlayer')).toBe('post-release')
+    expect(disposition('legacy/vscode/command/modkit.inspectModel')).toBe('release-candidate')
+  })
+
+  it('emits a complete Product GA shortlist and explicit post-release backlog', () => {
+    const shortlist = JSON.parse(readFileSync(generatedShortlist, 'utf8'))
+    const backlog = JSON.parse(readFileSync(generatedBacklog, 'utf8'))
+    expect(shortlist.counts).toEqual({ gaps: 11, facts: 185 })
+    expect(shortlist.gaps).toHaveLength(11)
+    expect(
+      shortlist.gaps.every(
+        (gap: { exactSourceUnitIds: string[]; factCount: number; evidence: string[] }) =>
+          gap.exactSourceUnitIds.length > 0 && gap.factCount > 0 && gap.evidence.length > 0,
+      ),
+    ).toBe(true)
+    expect(backlog.counts).toEqual({ workflows: 6, facts: 62 })
+    expect(
+      backlog.workflows.flatMap((row: { sourceUnitIds: string[] }) => row.sourceUnitIds),
+    ).toHaveLength(62)
+  })
+
+  it('records the factual 64→8, 11→1, 8→0 and 6→2 surface change', () => {
     const ledger = JSON.parse(readFileSync(committedLedger, 'utf8'))
     expect(ledger.surfaceComparison).toEqual({
       legacyVsCode: { commands: 64, customEditors: 11, languages: 8, views: 6 },
       currentX3VsCode: {
-        commands: 7,
+        commands: 8,
         configurationProperties: 2,
         customEditors: 1,
         fileSystemSchemes: 1,
@@ -226,9 +270,11 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
       ),
     ).toBe(true)
     const status = readFileSync(generatedStatus, 'utf8')
-    expect(status).toContain('Доказанные callers: Automation, CLI, Electron, PWA, VS Code.')
+    expect(status).toContain(
+      'Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.',
+    )
     expect(status).not.toContain('PWA не заявлен')
-    expect(ledger.currentX3Facts).toHaveLength(15)
+    expect(ledger.currentX3Facts).toHaveLength(16)
     expect(
       ledger.currentX3Facts.every((row: { state: string }) => row.state === 'observed-only'),
     ).toBe(true)
@@ -240,6 +286,7 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
         'modkit.openArchiveEntry',
         'modkit.openWith',
         'modkit.runCommand',
+        'modkit.runtime.control',
         'modkit.showHostProfile',
       ],
       registeredRuntimeCommands: [
@@ -250,6 +297,7 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
         'modkit.openResource',
         'modkit.openWith',
         'modkit.runCommand',
+        'modkit.runtime.control',
         'modkit.showHostProfile',
       ],
       internalRuntimeCommands: ['modkit.openResource'],
@@ -258,13 +306,10 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
       currentX3Menus: 0,
       currentX3Keybindings: 0,
     })
-    expect(ledger.ownerBlockers.map((row: { blockerId: string }) => row.blockerId)).toEqual([
-      'owner/block-14-legacy-workflow-classification',
-      'owner/block-14d-release-inclusion',
-      'owner/block-14d-vscode-packaging-b-plus-c',
-    ])
+    expect(ledger.ownerBlockers).toEqual([])
     expect(ledger.packagingBoundary).toMatchObject({
-      state: 'owner-blocked',
+      state: 'release-candidate',
+      ownerBlockerId: null,
       cataloguedCommonRoots: 18,
       packagedCodecRoots: 0,
       deterministicShellArtifact: true,
@@ -274,14 +319,52 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
     })
   })
 
-  it('refuses to promote an unknown workflow to mk3-priority', () => {
+  it('refuses already-equivalent facts without exact evidence', () => {
     const brokenDecisions = JSON.parse(readFileSync(decisions, 'utf8'))
-    brokenDecisions.workflows[0].classification.releaseTrack = 'mk3-priority'
+    const decision = brokenDecisions.factDecisions.find(
+      (row: { disposition: string }) => row.disposition === 'already-equivalent',
+    )
+    decision.evidence = []
     const decisionsPath = tempPath('decisions.json')
     writeFileSync(decisionsPath, JSON.stringify(brokenDecisions))
     const result = run(['--decisions', decisionsPath, '--output', tempPath('ledger.json')])
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain('mk3-priority cannot remain unknown')
+    expect(result.stderr).toContain('exact evidence is required')
+  })
+
+  it('refuses duplicate fact decisions for one source unit', () => {
+    const brokenDecisions = JSON.parse(readFileSync(decisions, 'utf8'))
+    brokenDecisions.factDecisions[1].sourceUnitIds.push(
+      brokenDecisions.factDecisions[0].sourceUnitIds[0],
+    )
+    const decisionsPath = tempPath('decisions.json')
+    writeFileSync(decisionsPath, JSON.stringify(brokenDecisions))
+    const result = run(['--decisions', decisionsPath, '--output', tempPath('ledger.json')])
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('fact decision appears in both')
+  })
+
+  it('refuses a fact decision for an unknown source unit', () => {
+    const brokenDecisions = JSON.parse(readFileSync(decisions, 'utf8'))
+    brokenDecisions.factDecisions[0].sourceUnitIds[0] = 'legacy/vscode/command/modkit.missing'
+    const decisionsPath = tempPath('decisions.json')
+    writeFileSync(decisionsPath, JSON.stringify(brokenDecisions))
+    const result = run(['--decisions', decisionsPath, '--output', tempPath('ledger.json')])
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('unknown source unit legacy/vscode/command/modkit.missing')
+  })
+
+  it('refuses a release-candidate fact without a known gap', () => {
+    const brokenDecisions = JSON.parse(readFileSync(decisions, 'utf8'))
+    const decision = brokenDecisions.factDecisions.find(
+      (row: { disposition: string }) => row.disposition === 'release-candidate',
+    )
+    decision.gapId = null
+    const decisionsPath = tempPath('decisions.json')
+    writeFileSync(decisionsPath, JSON.stringify(brokenDecisions))
+    const result = run(['--decisions', decisionsPath, '--output', tempPath('ledger.json')])
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('release-candidate requires a known gapId')
   })
 
   it('refuses an unclassified inventory fact', () => {
@@ -487,16 +570,22 @@ describe('block 14A VS Code + CLI workflow ledger', () => {
     expect(result.stderr).toContain('dangling command modkit.danglingAlt')
   })
 
-  it('keeps vscode-workflow-decisions-1 pending-only', () => {
+  it('refuses a workflow summary that disagrees with its exact fact aggregate', () => {
     const brokenDecisions = JSON.parse(readFileSync(decisions, 'utf8'))
-    brokenDecisions.workflows[0].classification.migrationState = 'implemented'
+    brokenDecisions.workflows[0].classification = {
+      disposition: 'already-equivalent',
+      migrationState: 'equivalent-better',
+      releaseTrack: 'mk3-priority',
+      owner: 'apps/modkit-vscode',
+      targetState: 'accepted',
+      replacementWorkflowId: 'platform/apps/priority-workflows',
+      reason: 'This deliberately disagrees with exact release-candidate facts in the test input.',
+    }
     const decisionsPath = tempPath('decisions.json')
     writeFileSync(decisionsPath, JSON.stringify(brokenDecisions))
     const result = run(['--decisions', decisionsPath, '--output', tempPath('ledger.json')])
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain(
-      'vscode-workflow-decisions-1 is pending-only; migrationState must be "unknown"',
-    )
+    expect(result.stderr).toContain('does not match fact aggregate release-candidate')
   })
 
   it('refuses to claim PWA as a caller without runtime wiring evidence', () => {

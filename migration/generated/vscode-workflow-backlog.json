@@ -1,0 +1,117 @@
+{
+  "$comment": "Generated post-release backlog. Default-classified facts stay explicit here so Product GA cannot silently treat them as equivalent.",
+  "schemaVersion": "vscode-workflow-backlog-1",
+  "generator": "scripts/migration/emit-vscode-workflow-ledger.mjs",
+  "inputs": {
+    "sourceInventorySha256": "efc7c81a2686d55e40734ac4cf1b3bc0bf0de5a9d33b0609291ec1c6480a11cd",
+    "decisionsSha256": "8ac78e1c45aff79c0e6f2da9d672ecb2f075c316dc872f5c7acd10f25e355b2f",
+    "vscodeManifestSha256": "447632c56764d55f1822a42ce1ded5f53b1501a9fdbff8d773b8c26c2c7a9c94",
+    "vscodeExtensionSourceSha256": "9937a7c5b1695e0111e8a83c4a51cc6805b2410f1e0095b3cb0fa36cafd4be3d",
+    "vscodeCatalogSha256": "1b5417c37ed81e0e0c50a317acda87ad9bd516c29ff9335ce79e24080da51d87",
+    "vscodePublicationInventorySha256": "15a59d6ff3932cf1d43eb7ae05b8117c4a4ed60828d11acaefabdd2fc09ff901",
+    "sharedCommandTargetsSha256": "90b0fa05560139670ebb3050207428349f118f8b4cc8cbde956ebaf30b27d09a"
+  },
+  "counts": { "workflows": 6, "facts": 62 },
+  "workflows": [
+    {
+      "workflowId": "cli/install",
+      "title": "Provision registered game data",
+      "factCount": 1,
+      "sourceUnitIds": ["legacy/cli/modkit/install"]
+    },
+    {
+      "workflowId": "cli/lsp",
+      "title": "Neutral language server transport",
+      "factCount": 1,
+      "sourceUnitIds": ["legacy/cli/modkit/lsp"]
+    },
+    {
+      "workflowId": "vscode/asset-inspect-preview-convert",
+      "title": "Asset inspection, preview and conversion",
+      "factCount": 5,
+      "sourceUnitIds": [
+        "legacy/vscode/command/modkit.unreal.openAudio",
+        "legacy/vscode/command/modkit.unreal.openVideo",
+        "legacy/vscode/custom-editor/modkit.replayPlayer",
+        "legacy/vscode/menu/explorer/context/modkit.unreal.openAudio",
+        "legacy/vscode/menu/explorer/context/modkit.unreal.openVideo"
+      ]
+    },
+    {
+      "workflowId": "vscode/authoring-language-data-launch",
+      "title": "SC2 authoring, language data and launch",
+      "factCount": 3,
+      "sourceUnitIds": [
+        "legacy/vscode/contribution/grammars/texturereductionvalues",
+        "legacy/vscode/language/lua",
+        "legacy/vscode/language/texturereductionvalues"
+      ]
+    },
+    {
+      "workflowId": "vscode/container-vfs-cache",
+      "title": "Container, VFS and cache workflows",
+      "factCount": 4,
+      "sourceUnitIds": [
+        "legacy/vscode/command/modkit.casc.benchmark",
+        "legacy/vscode/command/modkit.casc.clearCache",
+        "legacy/vscode/command/modkit.casc.openCacheFolder",
+        "legacy/vscode/command/modkit.casc.openSettings"
+      ]
+    },
+    {
+      "workflowId": "vscode/manifest-settings",
+      "title": "Settings and manifest contributions",
+      "factCount": 48,
+      "sourceUnitIds": [
+        "legacy/vscode/configuration/modkit.casc.cacheMode",
+        "legacy/vscode/configuration/modkit.casc.cachePath",
+        "legacy/vscode/configuration/modkit.casc.cdnFallback",
+        "legacy/vscode/configuration/modkit.casc.extractedPath",
+        "legacy/vscode/configuration/modkit.casc.extractionBackend",
+        "legacy/vscode/configuration/modkit.cascAsFallbackBase",
+        "legacy/vscode/configuration/modkit.completion.stategroupDefaultState",
+        "legacy/vscode/configuration/modkit.completion.tabStop",
+        "legacy/vscode/configuration/modkit.docsUrl",
+        "legacy/vscode/configuration/modkit.modules.archiveView",
+        "legacy/vscode/configuration/modkit.modules.codeLens",
+        "legacy/vscode/configuration/modkit.modules.completion",
+        "legacy/vscode/configuration/modkit.modules.dds",
+        "legacy/vscode/configuration/modkit.modules.diagnostics",
+        "legacy/vscode/configuration/modkit.modules.galaxy",
+        "legacy/vscode/configuration/modkit.modules.hover",
+        "legacy/vscode/configuration/modkit.modules.layouts",
+        "legacy/vscode/configuration/modkit.modules.mapView",
+        "legacy/vscode/configuration/modkit.modules.modelInspect",
+        "legacy/vscode/configuration/modkit.modules.mpq",
+        "legacy/vscode/configuration/modkit.modules.navigation",
+        "legacy/vscode/configuration/modkit.modules.strings",
+        "legacy/vscode/configuration/modkit.modules.zip",
+        "legacy/vscode/configuration/modkit.replay3d.depsDir",
+        "legacy/vscode/configuration/modkit.replay3d.installDir",
+        "legacy/vscode/configuration/modkit.replay3d.mapsDirs",
+        "legacy/vscode/configuration/modkit.stormgate.aesKey",
+        "legacy/vscode/configuration/modkit.stormgate.oodleDllPath",
+        "legacy/vscode/configuration/modkit.stormgate.usmapPath",
+        "legacy/vscode/configuration/modkit.strings.highlightErrors",
+        "legacy/vscode/configuration/modkit.trace.server",
+        "legacy/vscode/configuration/modkit.trace.service",
+        "legacy/vscode/configuration/modkit.translate.addTranslatorComment",
+        "legacy/vscode/configuration/modkit.translate.aiApiKey",
+        "legacy/vscode/configuration/modkit.translate.aiContext",
+        "legacy/vscode/configuration/modkit.translate.aiContextFile",
+        "legacy/vscode/configuration/modkit.translate.aiEndpoint",
+        "legacy/vscode/configuration/modkit.translate.aiModel",
+        "legacy/vscode/configuration/modkit.translate.aiPrompt",
+        "legacy/vscode/configuration/modkit.translate.googleApiKey",
+        "legacy/vscode/configuration/modkit.translate.provider",
+        "legacy/vscode/configuration/modkit.wiki.cdnRoot",
+        "legacy/vscode/contribution/colors/modkit.customCatalogForeground",
+        "legacy/vscode/contribution/configurationDefaults/editor.tokenColorCustomizations",
+        "legacy/vscode/contribution/debuggers/modkit-sc2",
+        "legacy/vscode/contribution/iconThemes/modkit-file-icons",
+        "legacy/vscode/contribution/jsonValidation/0",
+        "legacy/vscode/contribution/viewsContainers/activitybar"
+      ]
+    }
+  ]
+}

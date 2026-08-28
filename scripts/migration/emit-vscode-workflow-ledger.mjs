@@ -57,6 +57,12 @@ const pwaCommandProofPaths = Object.freeze({
 const outputPath = path.resolve(
   argValue('--output') ?? path.join(repoRoot, 'migration/generated/vscode-workflow-ledger.json'),
 )
+const shortlistPath = path.resolve(
+  argValue('--shortlist') ?? path.join(path.dirname(outputPath), 'vscode-workflow-shortlist.json'),
+)
+const backlogPath = path.resolve(
+  argValue('--backlog') ?? path.join(path.dirname(outputPath), 'vscode-workflow-backlog.json'),
+)
 
 const compareUtf8 = (left, right) => Buffer.compare(Buffer.from(left), Buffer.from(right))
 const sorted = values => [...values].sort(compareUtf8)
@@ -144,22 +150,39 @@ if (vscodeCount !== 258 || cliCount !== 8 || scopedUnits.length !== 266) {
   fail(`coverage must be exactly VS Code 258 + CLI 8 = 266; found ${vscodeCount} + ${cliCount}`)
 }
 
-if (decisions.schemaVersion !== 'vscode-workflow-decisions-1') {
+if (decisions.schemaVersion !== 'vscode-workflow-decisions-2') {
   fail(`unsupported decisions schema ${String(decisions.schemaVersion)}`)
 }
 if (!Array.isArray(decisions.workflows) || decisions.workflows.length === 0) {
   fail('decisions.workflows must be a non-empty array')
 }
 
-const PENDING_CLASSIFICATION = Object.freeze({
-  disposition: 'decision-required',
-  migrationState: 'unknown',
-  releaseTrack: 'decision-required',
-  owner: 'modkit-program-owner',
-  targetState: 'decision-required',
-  replacementWorkflowId: null,
+const DISPOSITION_CLASSIFICATIONS = Object.freeze({
+  'already-equivalent': Object.freeze({
+    migrationState: 'equivalent-better',
+    releaseTrack: 'mk3-priority',
+    targetState: 'accepted',
+  }),
+  'release-candidate': Object.freeze({
+    migrationState: 'partial',
+    releaseTrack: 'mk3-priority',
+    targetState: 'equivalent-better',
+  }),
+  'post-release': Object.freeze({
+    migrationState: 'deferred-post-ga',
+    releaseTrack: 'post-ga',
+    targetState: 'deferred-post-ga',
+  }),
 })
-const CLASSIFICATION_KEYS = sorted([...Object.keys(PENDING_CLASSIFICATION), 'reason'])
+const CLASSIFICATION_KEYS = sorted([
+  'disposition',
+  'migrationState',
+  'owner',
+  'reason',
+  'releaseTrack',
+  'replacementWorkflowId',
+  'targetState',
+])
 const PLANNED_SLICES = new Set(['block-14b', 'block-14c', 'block-14d'])
 const workflowById = new Map()
 const commandWorkflow = new Map()
@@ -187,18 +210,25 @@ for (const workflow of decisions.workflows) {
   if (typeof classification.reason !== 'string' || classification.reason.length < 20) {
     fail(`${id}: classification reason is required`)
   }
-  if (
-    classification.releaseTrack === 'mk3-priority' &&
-    classification.migrationState === 'unknown'
-  ) {
-    fail(`${id}: mk3-priority cannot remain unknown; the owner must resolve it before promotion`)
+  const expectedClassification = DISPOSITION_CLASSIFICATIONS[classification.disposition]
+  if (expectedClassification === undefined) {
+    fail(`${id}: unsupported disposition ${String(classification.disposition)}`)
   }
-  for (const [field, expected] of Object.entries(PENDING_CLASSIFICATION)) {
+  for (const [field, expected] of Object.entries(expectedClassification)) {
     if (classification[field] !== expected) {
       fail(
-        `${id}: vscode-workflow-decisions-1 is pending-only; ${field} must be ${JSON.stringify(expected)}, found ${JSON.stringify(classification[field])}`,
+        `${id}: ${classification.disposition} requires ${field} ${JSON.stringify(expected)}, found ${JSON.stringify(classification[field])}`,
       )
     }
+  }
+  if (typeof classification.owner !== 'string' || classification.owner.length === 0) {
+    fail(`${id}: classification owner is required`)
+  }
+  if (
+    typeof classification.replacementWorkflowId !== 'string' ||
+    classification.replacementWorkflowId.length === 0
+  ) {
+    fail(`${id}: classification replacementWorkflowId is required`)
   }
 
   for (const command of workflow.legacyCommandIds ?? [])
@@ -332,6 +362,138 @@ if (unclassified.length > 0) {
 }
 if (allocationBySourceId.size !== 266)
   fail(`expected 266 allocated units, found ${allocationBySourceId.size}`)
+
+const factPolicy = decisions.factPolicy ?? {}
+if (
+  factPolicy.defaultDisposition !== 'post-release' ||
+  typeof factPolicy.owner !== 'string' ||
+  factPolicy.owner.length === 0 ||
+  typeof factPolicy.reason !== 'string' ||
+  factPolicy.reason.length < 20
+) {
+  fail('factPolicy must define a post-release default with an owner and reason')
+}
+
+if (!Array.isArray(decisions.releaseCandidateGaps) || decisions.releaseCandidateGaps.length === 0) {
+  fail('releaseCandidateGaps must be a non-empty array')
+}
+const releaseCandidateGapById = new Map()
+for (const [index, gap] of decisions.releaseCandidateGaps.entries()) {
+  if (typeof gap?.gapId !== 'string' || gap.gapId.length === 0) {
+    fail(`releaseCandidateGaps[${index}] needs a gapId`)
+  }
+  if (releaseCandidateGapById.has(gap.gapId)) fail(`duplicate release candidate gap ${gap.gapId}`)
+  if (
+    typeof gap.owner !== 'string' ||
+    gap.owner.length === 0 ||
+    typeof gap.replacementCapabilityId !== 'string' ||
+    !gap.replacementCapabilityId.includes('/') ||
+    typeof gap.summary !== 'string' ||
+    gap.summary.length < 20
+  ) {
+    fail(`${gap.gapId}: release candidate gap needs owner, capability and summary`)
+  }
+  releaseCandidateGapById.set(gap.gapId, gap)
+}
+
+if (!Array.isArray(decisions.factDecisions) || decisions.factDecisions.length === 0) {
+  fail('factDecisions must be a non-empty array')
+}
+const factDecisionBySourceId = new Map()
+const factDecisionIds = new Set()
+for (const [index, decision] of decisions.factDecisions.entries()) {
+  const at = `factDecisions[${index}]`
+  if (typeof decision?.decisionId !== 'string' || decision.decisionId.length === 0) {
+    fail(`${at} needs a decisionId`)
+  }
+  if (factDecisionIds.has(decision.decisionId)) {
+    fail(`duplicate fact decision ${decision.decisionId}`)
+  }
+  factDecisionIds.add(decision.decisionId)
+  const expected = DISPOSITION_CLASSIFICATIONS[decision.disposition]
+  if (expected === undefined) {
+    fail(`${decision.decisionId}: unsupported disposition ${String(decision.disposition)}`)
+  }
+  if (
+    typeof decision.replacementWorkflowId !== 'string' ||
+    decision.replacementWorkflowId.length === 0 ||
+    typeof decision.reason !== 'string' ||
+    decision.reason.length < 20
+  ) {
+    fail(`${decision.decisionId}: replacement workflow and reason are required`)
+  }
+  if (!Array.isArray(decision.evidence) || decision.evidence.length === 0) {
+    fail(`${decision.decisionId}: exact evidence is required`)
+  }
+  for (const evidencePath of decision.evidence) {
+    if (typeof evidencePath !== 'string' || !existsSync(path.resolve(repoRoot, evidencePath))) {
+      fail(`${decision.decisionId}: evidence path does not exist: ${String(evidencePath)}`)
+    }
+  }
+  if (decision.disposition === 'release-candidate') {
+    const gap = releaseCandidateGapById.get(decision.gapId)
+    if (gap === undefined) {
+      fail(`${decision.decisionId}: release-candidate requires a known gapId`)
+    }
+    if (gap.replacementCapabilityId !== decision.replacementWorkflowId) {
+      fail(`${decision.decisionId}: gap and fact replacement capability must match`)
+    }
+  } else if (decision.gapId !== null) {
+    fail(`${decision.decisionId}: ${decision.disposition} requires a null gapId`)
+  }
+  if (!Array.isArray(decision.sourceUnitIds) || decision.sourceUnitIds.length === 0) {
+    fail(`${decision.decisionId}: sourceUnitIds must be non-empty`)
+  }
+  for (const sourceUnitId of decision.sourceUnitIds) {
+    if (!allocationBySourceId.has(sourceUnitId)) {
+      fail(`${decision.decisionId}: unknown source unit ${String(sourceUnitId)}`)
+    }
+    if (factDecisionBySourceId.has(sourceUnitId)) {
+      fail(
+        `${sourceUnitId}: fact decision appears in both ${factDecisionBySourceId.get(sourceUnitId).decisionId} and ${decision.decisionId}`,
+      )
+    }
+    factDecisionBySourceId.set(sourceUnitId, decision)
+  }
+}
+for (const gapId of releaseCandidateGapById.keys()) {
+  if (![...factDecisionBySourceId.values()].some(decision => decision.gapId === gapId)) {
+    fail(`${gapId}: release candidate gap has no exact facts`)
+  }
+}
+
+const classifySourceUnit = (sourceUnitId, seen = new Set()) => {
+  if (seen.has(sourceUnitId)) fail(`${sourceUnitId}: cyclic fact classification derivation`)
+  seen.add(sourceUnitId)
+  const explicit = factDecisionBySourceId.get(sourceUnitId)
+  if (explicit !== undefined) {
+    return {
+      decisionId: explicit.decisionId,
+      disposition: explicit.disposition,
+      ...DISPOSITION_CLASSIFICATIONS[explicit.disposition],
+      owner:
+        explicit.disposition === 'release-candidate'
+          ? releaseCandidateGapById.get(explicit.gapId).owner
+          : factPolicy.owner,
+      replacementWorkflowId: explicit.replacementWorkflowId,
+      gapId: explicit.gapId,
+      evidence: [...explicit.evidence],
+      reason: explicit.reason,
+    }
+  }
+  const parentSourceUnitId = allocationBySourceId.get(sourceUnitId)?.derivation?.viaSourceUnitId
+  if (parentSourceUnitId !== undefined) return classifySourceUnit(parentSourceUnitId, seen)
+  return {
+    decisionId: 'default-post-release',
+    disposition: 'post-release',
+    ...DISPOSITION_CLASSIFICATIONS['post-release'],
+    owner: factPolicy.owner,
+    replacementWorkflowId: null,
+    gapId: null,
+    evidence: [],
+    reason: factPolicy.reason,
+  }
+}
 
 const contributes = manifest.contributes ?? {}
 const normalizeCommandId = (value, at) => {
@@ -596,11 +758,6 @@ const currentCounts = {
   views: Object.values(contributes.views ?? {}).flat().length,
 }
 
-const EXPECTED_OWNER_BLOCKERS = [
-  'owner/block-14-legacy-workflow-classification',
-  'owner/block-14d-release-inclusion',
-  'owner/block-14d-vscode-packaging-b-plus-c',
-]
 if (!Array.isArray(decisions.ownerBlockers)) fail('ownerBlockers must be an array')
 const ownerBlockerById = new Map()
 for (const blocker of decisions.ownerBlockers) {
@@ -630,8 +787,8 @@ for (const blocker of decisions.ownerBlockers) {
   }
   ownerBlockerById.set(blocker.blockerId, blocker)
 }
-if (sorted(ownerBlockerById.keys()).join('|') !== EXPECTED_OWNER_BLOCKERS.join('|')) {
-  fail(`owner blockers must be exactly ${EXPECTED_OWNER_BLOCKERS.join(', ')}`)
+if (ownerBlockerById.size !== 0) {
+  fail('ownerBlockers must be empty after the Block 20 three-basket decision')
 }
 
 const packagingBoundary = decisions.packagingBoundary ?? {}
@@ -667,8 +824,8 @@ if (
   )
 }
 if (
-  packagingBoundary.state !== 'owner-blocked' ||
-  packagingBoundary.ownerBlockerId !== 'owner/block-14d-vscode-packaging-b-plus-c' ||
+  packagingBoundary.state !== 'release-candidate' ||
+  packagingBoundary.ownerBlockerId !== null ||
   packagingBoundary.cataloguedCommonRoots !== cataloguedCommonRoots ||
   packagingBoundary.packagedCodecRoots !== packagedCodecRoots ||
   packagedCodecRoots !== 0 ||
@@ -678,7 +835,7 @@ if (
   packagingBoundary.reason.length < 20
 ) {
   fail(
-    'packagingBoundary must record 18 catalogued common roots, 0 packaged codec roots, an owner-blocked B+C decision, and no proven codec-bearing VSIX',
+    'packagingBoundary must record 18 catalogued common roots, 0 packaged codec roots, the accepted B+C topology, and no proven codec-bearing VSIX',
   )
 }
 
@@ -854,7 +1011,7 @@ const unitRows = sorted([...allocationBySourceId.keys()]).map(sourceUnitId => {
     workflowId,
     derivation,
     plannedSlice: workflow.plannedSlice,
-    classification: workflow.classification,
+    classification: classifySourceUnit(sourceUnitId),
   }
 })
 const currentFactRows = sorted([...currentManifestFacts.keys()]).map(factId => {
@@ -880,6 +1037,19 @@ const currentFactRows = sorted([...currentManifestFacts.keys()]).map(factId => {
 const workflowRows = sorted([...workflowById.keys()]).map(workflowId => {
   const workflow = workflowById.get(workflowId)
   const members = unitRows.filter(row => row.workflowId === workflowId)
+  const aggregateDisposition =
+    members.length === 0
+      ? workflow.classification.disposition
+      : members.some(row => row.classification.disposition === 'release-candidate')
+        ? 'release-candidate'
+        : members.some(row => row.classification.disposition === 'already-equivalent')
+          ? 'already-equivalent'
+          : 'post-release'
+  if (workflow.classification.disposition !== aggregateDisposition) {
+    fail(
+      `${workflowId}: workflow disposition ${workflow.classification.disposition} does not match fact aggregate ${aggregateDisposition}`,
+    )
+  }
   return {
     workflowId,
     title: workflow.title,
@@ -897,28 +1067,36 @@ const workflowRows = sorted([...workflowById.keys()]).map(workflowId => {
   }
 })
 
+const inputs = {
+  sourceInventorySha256: inputHash(inventoryPath),
+  decisionsSha256: inputHash(decisionsPath),
+  vscodeManifestSha256: inputHash(manifestPath),
+  vscodeExtensionSourceSha256: inputHash(extensionSourcePath),
+  vscodeCatalogSha256: inputHash(vscodeCatalogPath),
+  vscodePublicationInventorySha256: inputHash(publicationInventoryPath),
+  sharedCommandTargetsSha256: inputHash(targetsPath),
+}
+const dispositionCounts = Object.fromEntries(
+  Object.keys(DISPOSITION_CLASSIFICATIONS).map(disposition => [
+    disposition,
+    unitRows.filter(row => row.classification.disposition === disposition).length,
+  ]),
+)
 const document = {
   $comment:
-    'Generated by scripts/migration/emit-vscode-workflow-ledger.mjs. Legacy source facts come only from source-inventory.json and remain owner-pending; current X3 facts are an observed-only join and do not classify or replace legacy units.',
-  schemaVersion: 'vscode-workflow-ledger-1',
+    'Generated by scripts/migration/emit-vscode-workflow-ledger.mjs. Every legacy fact is classified as already-equivalent, release-candidate or post-release; current X3 facts remain an independent observed-only join.',
+  schemaVersion: 'vscode-workflow-ledger-2',
   generator: 'scripts/migration/emit-vscode-workflow-ledger.mjs',
-  inputs: {
-    sourceInventorySha256: inputHash(inventoryPath),
-    decisionsSha256: inputHash(decisionsPath),
-    vscodeManifestSha256: inputHash(manifestPath),
-    vscodeExtensionSourceSha256: inputHash(extensionSourcePath),
-    vscodeCatalogSha256: inputHash(vscodeCatalogPath),
-    vscodePublicationInventorySha256: inputHash(publicationInventoryPath),
-    sharedCommandTargetsSha256: inputHash(targetsPath),
-  },
+  inputs,
   counts: {
     total: unitRows.length,
     legacyVsCode: vscodeCount,
     legacyCli: cliCount,
     byKind: actualByKind,
     workflows: workflowRows.length,
-    decisionRequired: unitRows.filter(row => row.classification.disposition === 'decision-required')
-      .length,
+    byDisposition: dispositionCounts,
+    decisionRequired: 0,
+    releaseCandidateGaps: releaseCandidateGapById.size,
     currentX3ObservedFacts: currentFactRows.length,
   },
   surfaceComparison: {
@@ -959,23 +1137,102 @@ const document = {
   units: unitRows,
 }
 
-const prettierOptions = await resolveConfig(outputPath)
-const rendered = await format(JSON.stringify(document), { ...prettierOptions, parser: 'json' })
+const shortlist = {
+  $comment:
+    'Generated Product GA shortlist. Each row is one concrete gap backed by exact release-candidate facts; closing a row requires replacement evidence before those facts can become already-equivalent.',
+  schemaVersion: 'vscode-workflow-shortlist-1',
+  generator: 'scripts/migration/emit-vscode-workflow-ledger.mjs',
+  inputs,
+  counts: {
+    gaps: releaseCandidateGapById.size,
+    facts: dispositionCounts['release-candidate'],
+  },
+  gaps: sorted(releaseCandidateGapById.keys()).map(gapId => {
+    const gap = releaseCandidateGapById.get(gapId)
+    const members = unitRows.filter(row => row.classification.gapId === gapId)
+    const decisionIds = sorted(new Set(members.map(row => row.classification.decisionId)))
+    const exactSourceUnitIds = sorted(
+      [...factDecisionBySourceId.entries()]
+        .filter(([, decision]) => decision.gapId === gapId)
+        .map(([sourceUnitId]) => sourceUnitId),
+    )
+    return {
+      gapId,
+      owner: gap.owner,
+      replacementCapabilityId: gap.replacementCapabilityId,
+      summary: gap.summary,
+      workflowIds: sorted(new Set(members.map(row => row.workflowId))),
+      decisionIds,
+      exactSourceUnitIds,
+      inheritedSourceUnitIds: sorted(
+        members
+          .map(row => row.sourceUnitId)
+          .filter(sourceUnitId => !exactSourceUnitIds.includes(sourceUnitId)),
+      ),
+      factCount: members.length,
+      evidence: sorted(new Set(members.flatMap(row => row.classification.evidence))),
+    }
+  }),
+}
+
+const backlogWorkflowIds = sorted(
+  new Set(
+    unitRows
+      .filter(row => row.classification.disposition === 'post-release')
+      .map(row => row.workflowId),
+  ),
+)
+const backlog = {
+  $comment:
+    'Generated post-release backlog. Default-classified facts stay explicit here so Product GA cannot silently treat them as equivalent.',
+  schemaVersion: 'vscode-workflow-backlog-1',
+  generator: 'scripts/migration/emit-vscode-workflow-ledger.mjs',
+  inputs,
+  counts: {
+    workflows: backlogWorkflowIds.length,
+    facts: dispositionCounts['post-release'],
+  },
+  workflows: backlogWorkflowIds.map(workflowId => {
+    const workflow = workflowById.get(workflowId)
+    const members = unitRows.filter(
+      row => row.workflowId === workflowId && row.classification.disposition === 'post-release',
+    )
+    return {
+      workflowId,
+      title: workflow.title,
+      factCount: members.length,
+      sourceUnitIds: members.map(row => row.sourceUnitId),
+    }
+  }),
+}
+
+const renderJson = async (value, file) => {
+  const prettierOptions = await resolveConfig(file)
+  return format(JSON.stringify(value), { ...prettierOptions, parser: 'json' })
+}
+const outputs = [
+  [outputPath, await renderJson(document, outputPath)],
+  [shortlistPath, await renderJson(shortlist, shortlistPath)],
+  [backlogPath, await renderJson(backlog, backlogPath)],
+]
 if (check) {
-  if (!existsSync(outputPath))
-    fail(`missing ${path.relative(repoRoot, outputPath)}; run pnpm migration:emit`)
-  if (readFileSync(outputPath, 'utf8') !== rendered) {
-    fail(`${path.relative(repoRoot, outputPath)} is stale; run pnpm migration:emit`)
+  for (const [file, rendered] of outputs) {
+    if (!existsSync(file)) fail(`missing ${path.relative(repoRoot, file)}; run pnpm migration:emit`)
+    if (readFileSync(file, 'utf8') !== rendered) {
+      fail(`${path.relative(repoRoot, file)} is stale; run pnpm migration:emit`)
+    }
   }
   if (!quiet)
     console.log(
-      `migration:check workflow ledger: 258 VS Code + 8 CLI units and ${currentFactRows.length} observed X3 facts up to date`,
+      `migration:check workflow ledger: 266 facts in three baskets, ${releaseCandidateGapById.size} Product GA gaps and ${currentFactRows.length} observed X3 facts up to date`,
     )
 } else {
-  await mkdir(path.dirname(outputPath), { recursive: true })
-  writeFileSync(outputPath, rendered)
+  for (const [file, rendered] of outputs) {
+    await mkdir(path.dirname(file), { recursive: true })
+    writeFileSync(file, rendered)
+  }
   if (!quiet)
     console.log(
-      `migration:emit workflow ledger: wrote 258 VS Code + 8 CLI units and ${currentFactRows.length} observed X3 facts`,
+      `migration:emit workflow ledger: wrote 266 facts in three baskets, ${releaseCandidateGapById.size} Product GA gaps and ${currentFactRows.length} observed X3 facts`,
     )
 }

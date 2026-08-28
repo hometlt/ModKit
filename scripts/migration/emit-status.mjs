@@ -102,7 +102,7 @@ push(
 
 push('### 2.1. Block 14A — VS Code + CLI workflow ledger')
 push(
-  `Ledger распределяет ровно **${workflowLedger.counts.legacyVsCode} VS Code + ${workflowLedger.counts.legacyCli} CLI = ${workflowLedger.counts.total}** legacy-единиц. Из них **${workflowLedger.counts.decisionRequired}** остаются \`decision-required / unknown\`: это явный pending owner, а не доказательство готовности блока 14.`,
+  `Ledger распределяет ровно **${workflowLedger.counts.legacyVsCode} VS Code + ${workflowLedger.counts.legacyCli} CLI = ${workflowLedger.counts.total}** legacy-единиц по трём честным корзинам: **${workflowLedger.counts.byDisposition['already-equivalent']}** уже заменены, **${workflowLedger.counts.byDisposition['release-candidate']}** входят в ${workflowLedger.counts.releaseCandidateGaps} точных задач Product GA, **${workflowLedger.counts.byDisposition['post-release']}** явно оставлены после релиза. Короткий список и полный backlog записаны в \`migration/generated/vscode-workflow-shortlist.json\` и \`migration/generated/vscode-workflow-backlog.json\`.`,
 )
 push(
   table(
