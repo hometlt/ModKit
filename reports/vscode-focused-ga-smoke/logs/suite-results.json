@@ -1,0 +1,285 @@
+{
+  "startedAt": "2026-08-28T07:59:12.837Z",
+  "finishedAt": "2026-08-28T07:59:48.849Z",
+  "extensionHost": {
+    "node": "24.18.1",
+    "electron": "42.8.1",
+    "chrome": "148.0.7778.280",
+    "vscode": "1.135.0"
+  },
+  "webviewChannel": {
+    "cdpUsable": true,
+    "port": 64916,
+    "note": "every webview target answered empty"
+  },
+  "scenarios": [
+    {
+      "id": "activation",
+      "title": "The extension activates without error",
+      "verdict": "pass",
+      "evidence": "activate() resolved in 2761 ms (budget 10000 ms) with 142 contribution(s) from the shipped catalog and none missing; all 7 modkit commands are registered, so the host composition completed inside activation",
+      "details": {
+        "extensionId": "modkitx.@modkitx-x3/modkit-vscode",
+        "commands": {
+          "expected": 7,
+          "missing": []
+        },
+        "activationMs": 2761,
+        "contributions": 142,
+        "missingCatalogRoots": [],
+        "activationBudgetMs": 10000
+      },
+      "durationMs": 3418
+    },
+    {
+      "id": "focused-preview-sc2-model",
+      "title": "The SC2 model reaches the real Model viewer",
+      "verdict": "pass",
+      "evidence": "sc2-model.m3 opened in a real custom-editor tab, exposed and selected Model, and subject.inspect identified m3",
+      "details": {
+        "tabOpened": true,
+        "firstOpenMs": 2206,
+        "stageTabs": [
+          "Model",
+          "Tree",
+          "Metadata",
+          "Hex",
+          "Edit"
+        ],
+        "expectedStage": "Model",
+        "expectedStageSelected": true,
+        "webviewReadable": true,
+        "pageExcerpt": "Modkit · Model · Tree · Edit · Metadata · Hex · Hex (editor) · 2 nodes · 0 meshes · 0 primitives · 0 materials · 0 animations · Scene metadata is available. A buffer resolver/renderer provider is required for geometry. · org.modkitx.app.vscode/webview · 2 facilities",
+        "inspect": {
+          "state": "ok",
+          "formatId": "m3",
+          "dataSources": [
+            "common.view/byte-range-source@1",
+            "common.view/tree-data-source@1",
+            "common.view/model-scene-source@1"
+          ]
+        }
+      },
+      "durationMs": 4909
+    },
+    {
+      "id": "focused-preview-warzone-model",
+      "title": "The Warzone model reaches the real Model viewer",
+      "verdict": "pass",
+      "evidence": "warzone-model.pie opened in a real custom-editor tab, exposed and selected Model, and subject.inspect identified warzone-pie",
+      "details": {
+        "tabOpened": true,
+        "firstOpenMs": 1778,
+        "stageTabs": [
+          "Model",
+          "Tree",
+          "Metadata",
+          "Hex",
+          "Edit"
+        ],
+        "expectedStage": "Model",
+        "expectedStageSelected": true,
+        "webviewReadable": true,
+        "pageExcerpt": "Modkit · Model · Tree · Edit · Metadata · Hex · Hex (editor) · 1 nodes · 1 meshes · 1 primitives · 0 materials · 0 animations · Reset · − · + · X · Y · Z · org.modkitx.app.vscode/webview · 2 facilities",
+        "inspect": {
+          "state": "ok",
+          "formatId": "warzone-pie",
+          "dataSources": [
+            "common.view/byte-range-source@1",
+            "common.view/model-scene-source@1",
+            "common.view/tree-data-source@1",
+            "common.view/model-resource-refs-source@1"
+          ]
+        }
+      },
+      "durationMs": 4240
+    },
+    {
+      "id": "focused-preview-sc2-map",
+      "title": "The SC2 map reaches the real archive preview",
+      "verdict": "pass",
+      "evidence": "sc2-map.SC2Map opened in a real custom-editor tab, exposed and selected Entries, and subject.inspect identified sc2-map",
+      "details": {
+        "tabOpened": true,
+        "firstOpenMs": 1882,
+        "stageTabs": [
+          "Tree",
+          "Metadata",
+          "Hex",
+          "Entries",
+          "Edit"
+        ],
+        "expectedStage": "Entries",
+        "expectedStageSelected": true,
+        "webviewReadable": true,
+        "pageExcerpt": "Modkit · Entries · Tree · Edit · Metadata · Hex · Hex (editor) · (listfile) · 41 B · MapInfo · 16 B · MapScript.galaxy · 18 B · Objects · 16 B · Terrain · 4 B · Pick an entry in the tree to inspect it. · org.modkitx.app.vscode/webview · 2 facilities",
+        "inspect": {
+          "state": "ok",
+          "formatId": "sc2-map",
+          "dataSources": [
+            "common.view/byte-range-source@1",
+            "common.view/namespace-entry-source@1",
+            "common.view/tree-data-source@1"
+          ]
+        }
+      },
+      "durationMs": 5180
+    },
+    {
+      "id": "focused-preview-warzone-map",
+      "title": "The Warzone map reaches the real archive preview",
+      "verdict": "pass",
+      "evidence": "warzone-map.wz opened in a real custom-editor tab, exposed and selected Entries, and subject.inspect identified warzone-wz",
+      "details": {
+        "tabOpened": true,
+        "firstOpenMs": 1723,
+        "stageTabs": [
+          "Tree",
+          "Metadata",
+          "Hex",
+          "Entries",
+          "Edit"
+        ],
+        "expectedStage": "Entries",
+        "expectedStageSelected": true,
+        "webviewReadable": true,
+        "pageExcerpt": "Modkit · Entries · Tree · Edit · Metadata · Hex · Hex (editor) · hello.txt · 6 B · stored 6 B · crc-32 363a3020 · Pick an entry in the tree to inspect it. · org.modkitx.app.vscode/webview · 2 facilities",
+        "inspect": {
+          "state": "ok",
+          "formatId": "warzone-wz",
+          "dataSources": [
+            "common.view/byte-range-source@1",
+            "common.view/tree-data-source@1",
+            "common.view/namespace-entry-source@1"
+          ]
+        }
+      },
+      "durationMs": 4712
+    },
+    {
+      "id": "focused-preview-document",
+      "title": "The Common document reaches the real tree preview",
+      "verdict": "pass",
+      "evidence": "fixture.odt opened in a real custom-editor tab, exposed and selected Tree, and subject.inspect identified odt",
+      "details": {
+        "tabOpened": true,
+        "firstOpenMs": 2334,
+        "stageTabs": [
+          "Tree",
+          "Metadata",
+          "Hex",
+          "Text",
+          "Edit"
+        ],
+        "expectedStage": "Tree",
+        "expectedStageSelected": true,
+        "webviewReadable": true,
+        "pageExcerpt": "Modkit · Tree · Text · Text (streaming) · Text (editor) · Edit · Metadata · Hex · Hex (editor) · OpenDocument text · org.modkitx.app.vscode/webview · 2 facilities",
+        "inspect": {
+          "state": "ok",
+          "formatId": "odt",
+          "dataSources": [
+            "common.view/byte-range-source@1",
+            "common.view/tree-data-source@1",
+            "common.view/text-data-source@1"
+          ]
+        }
+      },
+      "durationMs": 5629
+    },
+    {
+      "id": "focused-preview-png",
+      "title": "PNG reaches the real Image viewer",
+      "verdict": "pass",
+      "evidence": "texture.png opened in a real custom-editor tab, exposed and selected Image, and subject.inspect identified png",
+      "details": {
+        "tabOpened": true,
+        "firstOpenMs": 1151,
+        "stageTabs": [
+          "Tree",
+          "Metadata",
+          "Hex",
+          "Image",
+          "Edit"
+        ],
+        "expectedStage": "Image",
+        "expectedStageSelected": true,
+        "webviewReadable": true,
+        "pageExcerpt": "Modkit · Image · Tree · Edit · Metadata · Hex · Hex (editor) · Fit · 1:1 · − · + · BG · RGB · R · G · B · A · 1×1 · 0.0 KiB · 100% · org.modkitx.app.vscode/webview · 2 facilities",
+        "inspect": {
+          "state": "ok",
+          "formatId": "png",
+          "dataSources": [
+            "common.view/byte-range-source@1",
+            "common.view/tree-data-source@1",
+            "common.view/raster-image-source@1"
+          ]
+        }
+      },
+      "durationMs": 3675
+    },
+    {
+      "id": "focused-preview-dds",
+      "title": "DDS reaches the real Image viewer",
+      "verdict": "pass",
+      "evidence": "texture.dds opened in a real custom-editor tab, exposed and selected Image, and subject.inspect identified dds",
+      "details": {
+        "tabOpened": true,
+        "firstOpenMs": 1180,
+        "stageTabs": [
+          "Tree",
+          "Metadata",
+          "Hex",
+          "Image",
+          "Edit"
+        ],
+        "expectedStage": "Image",
+        "expectedStageSelected": true,
+        "webviewReadable": true,
+        "pageExcerpt": "Modkit · Image · Tree · Edit · Metadata · Hex · Hex (editor) · Fit · 1:1 · − · + · BG · RGB · R · G · B · A · 4×4 · 0.1 KiB · 100% · org.modkitx.app.vscode/webview · 2 facilities",
+        "inspect": {
+          "state": "ok",
+          "formatId": "dds",
+          "dataSources": [
+            "common.view/byte-range-source@1",
+            "common.view/tree-data-source@1",
+            "common.view/raster-image-source@1"
+          ]
+        }
+      },
+      "durationMs": 3569
+    },
+    {
+      "id": "focused-positive-conversion",
+      "title": "PNG conversion runs through the real editor command surface",
+      "verdict": "pass",
+      "evidence": "modkit.runCommand returned subject.convert=ok and 4 rgba8 byte(s); the VS Code host intentionally received no output path, so wroteTo is null",
+      "details": {
+        "receipt": {
+          "command": "subject.convert",
+          "target": "rgba8",
+          "state": "ok",
+          "outputKind": "bytes",
+          "byteLength": 4,
+          "wroteTo": null,
+          "diagnosticCodes": [
+            "x3.host/worker-shared-process",
+            "x3.host/permission-degraded"
+          ]
+        }
+      },
+      "durationMs": 509
+    },
+    {
+      "id": "focused-clean-close",
+      "title": "Focused editors close and the host stays responsive",
+      "verdict": "pass",
+      "evidence": "all focused tabs closed and the extension host still answers commands",
+      "details": {
+        "tabsAfter": 0,
+        "hostResponsiveAfterClose": true
+      },
+      "durationMs": 4
+    }
+  ]
+}
