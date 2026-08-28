@@ -34,7 +34,9 @@ import { downloadAndUnzipVSCode, runTests } from '@vscode/test-electron'
 const here = dirname(fileURLToPath(import.meta.url))
 const extensionRoot = resolve(here, '..')
 const repoRoot = resolve(extensionRoot, '..', '..')
-const reportDir = join(repoRoot, 'reports', 'vscode-smoke')
+const focusedGa = process.argv.includes('--focused-ga')
+const reportName = focusedGa ? 'vscode-focused-ga-smoke' : 'vscode-smoke'
+const reportDir = join(repoRoot, 'reports', reportName)
 const logDir = join(reportDir, 'logs')
 
 /*
@@ -131,11 +133,13 @@ const compareBaseline = observed => {
 }
 
 /** Fixtures the scenarios need, by the variable that names them and the value that resolved. */
-const FIXTURES = {
-  MODKITX_W3D_PATH: process.env.MODKITX_W3D_PATH,
-  MODKITX_VXL_PATH: process.env.MODKITX_VXL_PATH,
-  MODKITX_CNC3_KW_ROOT: kingsWrathRoot,
-}
+const FIXTURES = focusedGa
+  ? {}
+  : {
+      MODKITX_W3D_PATH: process.env.MODKITX_W3D_PATH,
+      MODKITX_VXL_PATH: process.env.MODKITX_VXL_PATH,
+      MODKITX_CNC3_KW_ROOT: kingsWrathRoot,
+    }
 
 /**
  * Extension roots the smoke asks the editor to load, by the product's own `modkit.extensions`.
@@ -149,7 +153,7 @@ const FIXTURES = {
  * setting `modkit.addExtensionFolder` appends to — so this is the product's own mechanism, not a
  * back door around it.
  */
-const EA_ROOTS = [
+const LEGACY_ROOTS = [
   ...['models', 'tiberian-sun', 'big'].map(name => join(repoRoot, 'extensions', 'ea', name)),
   /*
    * The transport matrix's SC2 row. MPQ is not in the bundled `common` catalog and never was —
@@ -165,6 +169,28 @@ const EA_ROOTS = [
   join(repoRoot, 'extensions', 'opensource', 'warzone-2100'),
   join(repoRoot, 'extensions', 'opensource', 'spring'),
 ]
+
+/*
+ * The local-GA profile deliberately stops at Common + StarCraft II + Warzone 2100. Every file it
+ * opens is a repository fixture, and every non-Common codec/provider reaches the extension through
+ * the public `modkit.extensions` setting. No installed game, C&C root or BAR root is a precondition
+ * for this product wiring receipt.
+ */
+const FOCUSED_ROOTS = [
+  join(repoRoot, 'extensions', 'blizzard', 'models'),
+  join(repoRoot, 'extensions', 'blizzard', 'starcraft2'),
+  join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game'),
+  join(repoRoot, 'extensions', 'opensource', 'warzone-2100'),
+]
+const CONFIGURED_ROOTS = focusedGa ? FOCUSED_ROOTS : LEGACY_ROOTS
+const FOCUSED_FILES = Object.freeze([
+  ['minimal.m3', 'sc2-model.m3'],
+  ['minimal.warzone.pie', 'warzone-model.pie'],
+  ['minimal.SC2Map', 'sc2-map.SC2Map'],
+  ['minimal.warzone.wz', 'warzone-map.wz'],
+  ['minimal.png', 'texture.png'],
+  ['minimal.dds', 'texture.dds'],
+])
 
 // ---------------------------------------------------------------------------------------------
 // redaction
@@ -277,16 +303,19 @@ async function main() {
   const extensionsDir = join(scratch, 'extensions')
   for (const dir of [workspace, userData, extensionsDir]) mkdirSync(dir, { recursive: true })
 
-  /*
-   * Scenario 5 needs the same model without its sidecar. Copying only the `.vxl` into a directory
-   * that holds nothing else is the whole fixture: the companion is absent because it was never
-   * brought along, not because anything was deleted.
-   */
-  const vxl = process.env.MODKITX_VXL_PATH
-  const lonelyVxl = join(workspace, basename(vxl))
-  copyFileSync(vxl, lonelyVxl)
-  if (existsSync(join(workspace, `${basename(vxl, extname(vxl))}.hva`))) {
-    throw new Error('the staged copy unexpectedly has a companion beside it')
+  let lonelyVxl = ''
+  if (!focusedGa) {
+    /*
+     * Scenario 5 needs the same model without its sidecar. Copying only the `.vxl` into a directory
+     * that holds nothing else is the whole fixture: the companion is absent because it was never
+     * brought along, not because anything was deleted.
+     */
+    const vxl = process.env.MODKITX_VXL_PATH
+    lonelyVxl = join(workspace, basename(vxl))
+    copyFileSync(vxl, lonelyVxl)
+    if (existsSync(join(workspace, `${basename(vxl, extname(vxl))}.hva`))) {
+      throw new Error('the staged copy unexpectedly has a companion beside it')
+    }
   }
 
   /*
@@ -312,9 +341,15 @@ async function main() {
    */
   copyFileSync(join(syntheticDir, 'minimal.odt'), join(workspace, 'fixture.odt'))
 
-  // The EA catalog, added the way the product documents: a workspace setting the host reads once
-  // at activation. Missing roots are reported rather than silently narrowing what the smoke proves.
-  const presentRoots = EA_ROOTS.filter(root => existsSync(root))
+  if (focusedGa) {
+    for (const [source, target] of FOCUSED_FILES) {
+      copyFileSync(join(syntheticDir, source), join(workspace, target))
+    }
+  }
+
+  // The selected catalog, added the way the product documents: a workspace setting the host reads
+  // once at activation. Missing roots are reported rather than silently narrowing the receipt.
+  const presentRoots = CONFIGURED_ROOTS.filter(root => existsSync(root))
   mkdirSync(join(workspace, '.vscode'), { recursive: true })
   writeFileSync(
     join(workspace, '.vscode', 'settings.json'),
@@ -372,12 +407,17 @@ async function main() {
           MODKITX_SMOKE_LONELY_VXL: lonelyVxl,
           MODKITX_SMOKE_FIXTURE_DIR: workspace,
           MODKITX_SMOKE_REPO_ROOT: repoRoot,
-          MODKITX_W3D_PATH: process.env.MODKITX_W3D_PATH,
-          MODKITX_VXL_PATH: process.env.MODKITX_VXL_PATH,
-          MODKITX_CNC3_ROOT: kingsWrathRoot,
-          MODKITX_SC2_ROOT: process.env.MODKITX_SC2_ROOT,
-          MODKITX_WARZONE_ROOT: process.env.MODKITX_WARZONE_ROOT,
-          MODKITX_BAR_ROOT: process.env.MODKITX_BAR_ROOT,
+          MODKITX_SMOKE_PROFILE: focusedGa ? 'focused-ga' : 'legacy',
+          ...(focusedGa
+            ? {}
+            : {
+                MODKITX_W3D_PATH: process.env.MODKITX_W3D_PATH,
+                MODKITX_VXL_PATH: process.env.MODKITX_VXL_PATH,
+                MODKITX_CNC3_ROOT: kingsWrathRoot,
+                MODKITX_SC2_ROOT: process.env.MODKITX_SC2_ROOT,
+                MODKITX_WARZONE_ROOT: process.env.MODKITX_WARZONE_ROOT,
+                MODKITX_BAR_ROOT: process.env.MODKITX_BAR_ROOT,
+              }),
           /*
            * Only the last run walks the transport matrix. The repeats exist to sample activation
            * and first open; opening five real corpus containers five times would multiply the run
@@ -411,7 +451,9 @@ async function main() {
     suite = attempt.suite ?? suite
     const scenarios = attempt.suite?.scenarios ?? []
     const activation = scenarios.find(entry => entry.id === 'activation')?.details?.activationMs
-    const firstOpen = scenarios.find(entry => entry.id === 'w3d-single')?.details?.firstOpenMs
+    const firstOpen = scenarios.find(entry =>
+      focusedGa ? entry.id === 'focused-preview-sc2-model' : entry.id === 'w3d-single',
+    )?.details?.firstOpenMs
     samples.push({
       run: index + 1,
       ...(typeof activation === 'number' ? { activationMs: activation } : {}),
@@ -444,10 +486,19 @@ async function main() {
   )
 
   const receipt = {
-    kind: 'x3.vscode-smoke-receipt',
+    kind: focusedGa ? 'x3.vscode-focused-ga-smoke-receipt' : 'x3.vscode-smoke-receipt',
     version: 1,
     rung: 'E5',
-    block: 'block-9',
+    block: focusedGa ? 'block-20' : 'block-9',
+    ...(focusedGa
+      ? {
+          scope: {
+            included: ['Common', 'StarCraft II', 'Warzone 2100'],
+            excluded: ['C&C Tiberium Wars/Kane’s Wrath/Red Alert 3', 'Spring/Recoil/BAR'],
+            corpus: 'repository-pinned fixtures; no installed game is required',
+          },
+        }
+      : {}),
     startedAt,
     finishedAt: new Date().toISOString(),
     /*
@@ -458,7 +509,7 @@ async function main() {
     performance: {
       note:
         'Cold editor launches. `activationMs` is the extension`s own figure (activate() start to ' +
-        'return); `firstOpenMs` is command to stage list for the W3D. Budget formula: ' +
+        `return); \`firstOpenMs\` is command to stage list for the ${focusedGa ? 'focused SC2 M3' : 'W3D'}. Budget formula: ` +
         'max(median + 1000 ms, median * 1.5) — see run-smoke.mjs `budgetFrom`.',
       runs: repeats,
       samples,
@@ -493,18 +544,20 @@ async function main() {
         downloadedTo: '${VSCODE_CACHE}',
       },
       extensionHost: suite?.extensionHost ?? null,
-      fixtures: Object.keys(FIXTURES).map(name => ({ variable: name, resolved: true })),
-      /*
-       * What the editor was told to load, and why it had to be told. The bundled catalog is
-       * `extensions/common`; every format this smoke opens is contributed by an `ea` root outside
-       * it, so the receipt records the configuration as part of the subject under test.
-       */
+      profile: focusedGa ? 'focused-ga' : 'legacy',
+      fixtures: focusedGa
+        ? [
+            { source: 'minimal.odt', stagedAs: 'fixture.odt', resolved: true },
+            ...FOCUSED_FILES.map(([source, stagedAs]) => ({ source, stagedAs, resolved: true })),
+          ]
+        : Object.keys(FIXTURES).map(name => ({ variable: name, resolved: true })),
+      /* What the editor was told to load beside the bundled Common catalog. */
       configuredExtensionRoots: {
         setting: 'modkit.extensions',
         scope: 'workspace .vscode/settings.json',
         bundledCatalog: 'extensions/common',
         roots: presentRoots.map(root => root.slice(repoRoot.length + 1).replace(/\\/g, '/')),
-        missing: EA_ROOTS.filter(root => !existsSync(root)).map(root =>
+        missing: CONFIGURED_ROOTS.filter(root => !existsSync(root)).map(root =>
           root.slice(repoRoot.length + 1).replace(/\\/g, '/'),
         ),
       },
@@ -534,82 +587,78 @@ async function main() {
       durationMs: entry.durationMs,
       details: entry.details,
     })),
-    diagnosticCodeUnderTest: 'x3.host/companion-unavailable',
-    /*
-     * Context for the nested-subject scenario, read from the sources rather than observed in the
-     * running editor — and named as such, because it is the weaker kind of claim. The route exists
-     * and one product uses it; this one does not.
-     */
-    /*
-     * Why the diagnostics scenario can fail with the diagnostic itself working perfectly: source
-     * inspection of where a subject diagnostic goes once the webview receives it.
-     */
-    diagnosticsChannel: (() => {
-      let source = ''
-      try {
-        source = readFileSync(join(repoRoot, 'apps/modkit-vscode/src/webview.ts'), 'utf8')
-      } catch {
-        source = ''
-      }
-      const handler = /onDiagnostic:\s*diagnostic\s*=>\s*\{([^}]*)\}/.exec(source)?.[1] ?? ''
-      return {
-        claimKind: 'source inspection, not runtime observation',
-        site: 'apps/modkit-vscode/src/webview.ts — connectSubjectRpc({ onDiagnostic })',
-        emitsToExtensionHost: /bridge\.emit/.test(handler),
-        writesVisibleStatusLine: /\bsay\(/.test(handler),
-        note:
-          'the handler calls bridge.emit only, so a subject diagnostic reaches the extension ' +
-          'host’s output channel and is never drawn on the page’s status bar — invisible to the ' +
-          'user, and unreadable to any observer, because an OutputChannel has no read API',
-      }
-    })(),
-    nestedSubjectRoute: (() => {
-      const read = file => {
-        try {
-          return readFileSync(join(repoRoot, file), 'utf8')
-        } catch {
-          return ''
-        }
-      }
-      return {
-        claimKind: 'source inspection, not runtime observation',
-        exportedByHost: /openNestedSubject/.test(read('packages/host/src/index.ts')),
-        usedByElectron: /openNestedSubject/.test(
-          read('apps/electron/test/subject-open-smoke.test.ts'),
-        ),
-        usedByVsCodeArchiveStage: /openNestedSubject/.test(
-          read('apps/modkit-vscode/src/archive-stage.ts'),
-        ),
-        note:
-          'the VS Code archive stage reads an entry’s bytes into a hex pane; it never opens the ' +
-          'entry as a subject, so no descriptor, no stages and no nested diagnostics exist for it',
-      }
-    })(),
-    absolutePathCheck: (() => {
-      const scenario = scenarios.find(entry => entry.id === 'diagnostics-no-companion')
-      const leaks = scenario?.details?.absolutePathLeaks
-      if (!Array.isArray(leaks)) {
-        return {
-          performed: false,
-          clean: false,
-          note: 'the diagnostics scenario never got far enough to check',
-        }
-      }
-      return {
-        performed: true,
-        clean: leaks.length === 0,
-        scope:
-          'the diagnostic lines themselves, not the whole page — the breadcrumb legitimately ' +
-          'shows the opened file’s location, while a diagnostic is what travels into logs',
-        patterns: ['drive letter', 'UNC path', 'file:// URL', 'home directory'],
-        linesChecked: redactDeep(
-          scenarios.find(entry => entry.id === 'diagnostics-no-companion')?.details
-            ?.diagnosticLinesChecked ?? [],
-          redact,
-        ),
-        leaks: redactDeep(leaks, redact),
-      }
-    })(),
+    ...(focusedGa
+      ? {}
+      : {
+          diagnosticCodeUnderTest: 'x3.host/companion-unavailable',
+          /* These source-inspection notes belong only to the legacy diagnostic scenario. */
+          diagnosticsChannel: (() => {
+            let source = ''
+            try {
+              source = readFileSync(join(repoRoot, 'apps/modkit-vscode/src/webview.ts'), 'utf8')
+            } catch {
+              source = ''
+            }
+            const handler = /onDiagnostic:\s*diagnostic\s*=>\s*\{([^}]*)\}/.exec(source)?.[1] ?? ''
+            return {
+              claimKind: 'source inspection, not runtime observation',
+              site: 'apps/modkit-vscode/src/webview.ts — connectSubjectRpc({ onDiagnostic })',
+              emitsToExtensionHost: /bridge\.emit/.test(handler),
+              writesVisibleStatusLine: /\bsay\(/.test(handler),
+              note:
+                'the handler calls bridge.emit only, so a subject diagnostic reaches the extension ' +
+                'host’s output channel and is never drawn on the page’s status bar — invisible to the ' +
+                'user, and unreadable to any observer, because an OutputChannel has no read API',
+            }
+          })(),
+          nestedSubjectRoute: (() => {
+            const read = file => {
+              try {
+                return readFileSync(join(repoRoot, file), 'utf8')
+              } catch {
+                return ''
+              }
+            }
+            return {
+              claimKind: 'source inspection, not runtime observation',
+              exportedByHost: /openNestedSubject/.test(read('packages/host/src/index.ts')),
+              usedByElectron: /openNestedSubject/.test(
+                read('apps/electron/test/subject-open-smoke.test.ts'),
+              ),
+              usedByVsCodeArchiveStage: /openNestedSubject/.test(
+                read('apps/modkit-vscode/src/archive-stage.ts'),
+              ),
+              note:
+                'the VS Code archive stage reads an entry’s bytes into a hex pane; it never opens the ' +
+                'entry as a subject, so no descriptor, no stages and no nested diagnostics exist for it',
+            }
+          })(),
+          absolutePathCheck: (() => {
+            const scenario = scenarios.find(entry => entry.id === 'diagnostics-no-companion')
+            const leaks = scenario?.details?.absolutePathLeaks
+            if (!Array.isArray(leaks)) {
+              return {
+                performed: false,
+                clean: false,
+                note: 'the diagnostics scenario never got far enough to check',
+              }
+            }
+            return {
+              performed: true,
+              clean: leaks.length === 0,
+              scope:
+                'the diagnostic lines themselves, not the whole page — the breadcrumb legitimately ' +
+                'shows the opened file’s location, while a diagnostic is what travels into logs',
+              patterns: ['drive letter', 'UNC path', 'file:// URL', 'home directory'],
+              linesChecked: redactDeep(
+                scenarios.find(entry => entry.id === 'diagnostics-no-companion')?.details
+                  ?.diagnosticLinesChecked ?? [],
+                redact,
+              ),
+              leaks: redactDeep(leaks, redact),
+            }
+          })(),
+        }),
     runner: {
       exitCode: runnerCode,
       ...(runnerError === undefined ? {} : { error: redact(runnerError) }),
@@ -621,7 +670,7 @@ async function main() {
       failed: failed.length,
       allPassed: scenarios.length > 0 && failed.length === 0,
     },
-    logs: ['reports/vscode-smoke/logs/suite-results.json'],
+    logs: [`reports/${reportName}/logs/suite-results.json`],
   }
 
   writeFileSync(join(reportDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
@@ -638,7 +687,7 @@ async function main() {
 
   console.log(
     `smoke: ${receipt.summary.passed}/${receipt.summary.total} passed — receipt written to ` +
-      'reports/vscode-smoke/receipt.json',
+      `reports/${reportName}/receipt.json`,
   )
   for (const entry of receipt.scenarios) console.log(`  ${entry.verdict}  ${entry.id}`)
   process.exit(receipt.summary.allPassed ? 0 : 1)

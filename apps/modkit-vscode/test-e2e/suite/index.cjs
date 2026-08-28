@@ -303,6 +303,7 @@ async function readWebviewText() {
  * that actually matters: which viewers did this subject get?
  */
 const STAGE_LABELS = [
+  'World',
   'Model',
   'Tree',
   'Metadata',
@@ -498,6 +499,183 @@ async function scenario(id, title, body) {
   console.log(`[smoke] ${record.verdict.toUpperCase()} ${id} — ${record.evidence}`)
 }
 
+/*
+ * The focused-product E5 rows ask only whether the real editor is wired to the already-tested
+ * Common, SC2 and Warzone codecs and viewers. Codec semantics stay in their owning suites: here a
+ * row opens through the public custom editor, observes the applicable viewer on the rendered page,
+ * and confirms the selected format through the shared command surface.
+ */
+const FOCUSED_PREVIEWS = Object.freeze([
+  {
+    id: 'focused-preview-sc2-model',
+    title: 'The SC2 model reaches the real Model viewer',
+    file: 'sc2-model.m3',
+    stage: 'Model',
+    formatId: 'm3',
+  },
+  {
+    id: 'focused-preview-warzone-model',
+    title: 'The Warzone model reaches the real Model viewer',
+    file: 'warzone-model.pie',
+    stage: 'Model',
+    formatId: 'warzone-pie',
+  },
+  {
+    id: 'focused-preview-sc2-map',
+    title: 'The SC2 map reaches the real archive preview',
+    file: 'sc2-map.SC2Map',
+    stage: 'Entries',
+    formatId: 'sc2-map',
+  },
+  {
+    id: 'focused-preview-warzone-map',
+    title: 'The Warzone map reaches the real archive preview',
+    file: 'warzone-map.wz',
+    stage: 'Entries',
+    formatId: 'warzone-wz',
+  },
+  {
+    id: 'focused-preview-document',
+    title: 'The Common document reaches the real tree preview',
+    file: 'fixture.odt',
+    stage: 'Tree',
+    formatId: 'odt',
+  },
+  {
+    id: 'focused-preview-png',
+    title: 'PNG reaches the real Image viewer',
+    file: 'texture.png',
+    stage: 'Image',
+    formatId: 'png',
+  },
+  {
+    id: 'focused-preview-dds',
+    title: 'DDS reaches the real Image viewer',
+    file: 'texture.dds',
+    stage: 'Image',
+    formatId: 'dds',
+  },
+])
+
+async function runFocusedGaScenarios() {
+  const staged = requireEnv('MODKITX_SMOKE_FIXTURE_DIR')
+  for (const row of FOCUSED_PREVIEWS) {
+    await scenario(row.id, row.title, async record => {
+      const target = path.join(staged, row.file)
+      const started = Date.now()
+      const tab = await openThroughCustomEditor(target)
+      record.details.tabOpened = tab !== undefined
+      if (tab === undefined) {
+        record.evidence = `no Modkit custom-editor tab appeared for ${row.file} within 20s`
+        return false
+      }
+      await waitFor(async () => (await readStageTabs()).includes(row.stage), {
+        timeoutMs: 45_000,
+        stepMs: 500,
+      })
+      const stages = await readStageTabs()
+      record.details.firstOpenMs = Date.now() - started
+      record.details.stageTabs = stages
+      record.details.expectedStage = row.stage
+      if (!stages.includes(row.stage)) {
+        record.evidence = `${row.file} opened, but ${row.stage} was absent from ${JSON.stringify(stages)}`
+        return false
+      }
+      const clicked = await clickStage(row.stage)
+      const visible = await readWebviewText()
+      record.details.expectedStageSelected = clicked
+      record.details.webviewReadable = visible.trim() !== ''
+      record.details.pageExcerpt = excerpt(visible, 900)
+      if (!clicked || visible.trim() === '') {
+        record.evidence =
+          `${row.stage} was offered for ${row.file}, but the rendered page could not be observed ` +
+          `after selection (${cdp.note})`
+        return false
+      }
+
+      const inspected = await vscode.commands.executeCommand('modkit.runCommand', {
+        command: 'subject.inspect',
+        subject: target,
+      })
+      const formatId = inspected?.data?.identity?.formatId ?? null
+      record.details.inspect = {
+        state: inspected?.state ?? 'no-answer',
+        formatId,
+        dataSources: inspected?.data?.dataSources ?? [],
+      }
+      if (inspected?.state !== 'ok' || formatId !== row.formatId) {
+        record.evidence =
+          `${row.stage} rendered, but subject.inspect expected ${row.formatId} and returned ` +
+          `${formatId ?? inspected?.state ?? 'no answer'}`
+        return false
+      }
+      record.evidence =
+        `${row.file} opened in a real custom-editor tab, exposed and selected ${row.stage}, and ` +
+        `subject.inspect identified ${row.formatId}`
+      return true
+    })
+    await closeAllEditors()
+  }
+
+  await scenario(
+    'focused-positive-conversion',
+    'PNG conversion runs through the real editor command surface',
+    async record => {
+      const target = path.join(staged, 'texture.png')
+      const result = await vscode.commands.executeCommand('modkit.runCommand', {
+        command: 'subject.convert',
+        subject: target,
+        target: 'rgba8',
+      })
+      record.details.receipt = {
+        command: result?.command ?? null,
+        target: 'rgba8',
+        state: result?.state ?? 'no-answer',
+        outputKind: result?.data?.outputKind ?? null,
+        byteLength: result?.data?.byteLength ?? null,
+        wroteTo: result?.data?.wroteTo ?? null,
+        diagnosticCodes: Array.isArray(result?.diagnostics)
+          ? result.diagnostics.map(item => item.code)
+          : [],
+      }
+      if (
+        result?.state !== 'ok' ||
+        result?.command !== 'subject.convert' ||
+        result?.data?.outputKind !== 'bytes' ||
+        !Number.isInteger(result?.data?.byteLength) ||
+        result.data.byteLength <= 0
+      ) {
+        record.evidence =
+          'subject.convert did not return a positive bytes receipt for target rgba8 through ' +
+          'modkit.runCommand'
+        return false
+      }
+      record.evidence =
+        `modkit.runCommand returned subject.convert=ok and ${result.data.byteLength} rgba8 byte(s); ` +
+        'the VS Code host intentionally received no output path, so wroteTo is null'
+      return true
+    },
+  )
+
+  await scenario(
+    'focused-clean-close',
+    'Focused editors close and the host stays responsive',
+    async record => {
+      await closeAllEditors()
+      const after = modkitTabs().length
+      record.details.tabsAfter = after
+      if (after !== 0) {
+        record.evidence = `${after} focused Modkit tab(s) survived closeAllEditors`
+        return false
+      }
+      await vscode.commands.executeCommand('modkit.explainResolution')
+      record.details.hostResponsiveAfterClose = true
+      record.evidence = 'all focused tabs closed and the extension host still answers commands'
+      return true
+    },
+  )
+}
+
 async function runScenarios(env) {
   let extension
 
@@ -530,6 +708,7 @@ async function runScenarios(env) {
       'modkit.openResource',
       'modkit.explainResolution',
       'modkit.addExtensionFolder',
+      ...(process.env.MODKITX_SMOKE_PROFILE === 'focused-ga' ? ['modkit.runCommand'] : []),
     ]
     const missing = expected.filter(command => !registered.has(command))
     record.details.commands = { expected: expected.length, missing }
@@ -571,7 +750,11 @@ async function runScenarios(env) {
   })
 
   if (extension === undefined || !extension.isActive) {
-    for (const id of ['w3d-single', 'vxl-companion', 'big-nested', 'diagnostics-no-companion']) {
+    const unreachable =
+      process.env.MODKITX_SMOKE_PROFILE === 'focused-ga'
+        ? [...FOCUSED_PREVIEWS.map(row => row.id), 'focused-positive-conversion']
+        : ['w3d-single', 'vxl-companion', 'big-nested', 'diagnostics-no-companion']
+    for (const id of unreachable) {
       results.push({
         id,
         title: 'not attempted',
@@ -581,6 +764,11 @@ async function runScenarios(env) {
         durationMs: 0,
       })
     }
+    return
+  }
+
+  if (process.env.MODKITX_SMOKE_PROFILE === 'focused-ga') {
+    await runFocusedGaScenarios()
     return
   }
 
