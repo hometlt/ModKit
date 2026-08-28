@@ -25,6 +25,16 @@ export {
   type LoadExtensionRootsOptions,
 } from './extension-roots.js'
 export {
+  createLocalExtensionArtifactStore,
+  type ExtensionArtifactRecovery,
+  type ExtensionQuarantineReason,
+  type InstalledExtensionArtifact,
+  type LocalExtensionArtifactStore,
+  type LocalExtensionArtifactStoreOptions,
+  type LocalExtensionCatalogEntry,
+  type QuarantinedExtensionArtifact,
+} from './extension-artifact-store.js'
+export {
   createFilesystemInputResolver,
   createPathSubjectOpener,
   DEFAULT_SUBJECT_OPEN_BUDGET,
