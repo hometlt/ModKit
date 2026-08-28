@@ -1,0 +1,1662 @@
+{
+  "bomFormat": "CycloneDX",
+  "components": [
+    {
+      "bom-ref": "pkg:npm/%40modkitx-x3/automation-host@0.1.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "NOASSERTION"
+          }
+        }
+      ],
+      "name": "@modkitx-x3/automation-host",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/automation-host/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkitx-x3/automation-host@0.1.0",
+      "type": "application",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "@modkitx-x3/codec-kit",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common,platform,sc2-mod-studio,warzone-2100-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/codec-kit/codec-kit/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkitx-x3/core@0.1.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "UNLICENSED"
+          }
+        }
+      ],
+      "name": "@modkitx-x3/core",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common,platform,sc2-mod-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "packages/core/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkitx-x3/core@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkitx-x3/electron-app@0.1.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "NOASSERTION"
+          }
+        }
+      ],
+      "name": "@modkitx-x3/electron-app",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/electron/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkitx-x3/electron-app@0.1.0",
+      "type": "application",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkitx-x3/host@0.1.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "UNLICENSED"
+          }
+        }
+      ],
+      "name": "@modkitx-x3/host",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common,platform,sc2-mod-studio,warzone-2100-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "packages/host/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkitx-x3/host@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkitx-x3/modkit-cli@0.1.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "UNLICENSED"
+          }
+        }
+      ],
+      "name": "@modkitx-x3/modkit-cli",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/modkit-cli/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkitx-x3/modkit-cli@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkitx-x3/modkit-vscode@0.1.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "NOASSERTION"
+          }
+        }
+      ],
+      "name": "@modkitx-x3/modkit-vscode",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/modkit-vscode/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkitx-x3/modkit-vscode@0.1.0",
+      "type": "application",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkitx-x3/sdk@0.1.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "UNLICENSED"
+          }
+        }
+      ],
+      "name": "@modkitx-x3/sdk",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common,platform,sc2-mod-studio,warzone-2100-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "packages/sdk/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkitx-x3/sdk@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkitx-x3/server@0.1.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "NOASSERTION"
+          }
+        }
+      ],
+      "name": "@modkitx-x3/server",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/server/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkitx-x3/server@0.1.0",
+      "type": "application",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkitx-x3/ui@0.1.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "UNLICENSED"
+          }
+        }
+      ],
+      "name": "@modkitx-x3/ui",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "packages/ui/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkitx-x3/ui@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkitx-x3/vfs@0.1.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "UNLICENSED"
+          }
+        }
+      ],
+      "name": "@modkitx-x3/vfs",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "packages/vfs/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkitx-x3/vfs@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkitx-x3/web-app@0.1.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "NOASSERTION"
+          }
+        }
+      ],
+      "name": "@modkitx-x3/web-app",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/web/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkitx-x3/web-app@0.1.0",
+      "type": "application",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkitx-x3/workspace-root@0.0.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "NOASSERTION"
+          }
+        }
+      ],
+      "name": "@modkitx-x3/workspace-root",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkitx-x3/workspace-root@0.0.0",
+      "type": "application",
+      "version": "0.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40rgrove/parse-xml@4.2.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "ISC"
+          }
+        }
+      ],
+      "name": "@rgrove/parse-xml",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common,sc2-mod-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:@rgrove/parse-xml"
+        }
+      ],
+      "purl": "pkg:npm/%40rgrove/parse-xml@4.2.3",
+      "type": "library",
+      "version": "4.2.3"
+    },
+    {
+      "bom-ref": "pkg:npm/%40types/trusted-types@2.0.7",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "@types/trusted-types",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:@types/trusted-types"
+        }
+      ],
+      "purl": "pkg:npm/%40types/trusted-types@2.0.7",
+      "type": "library",
+      "version": "2.0.7"
+    },
+    {
+      "bom-ref": "pkg:npm/%40xmldom/xmldom@0.9.12",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "@xmldom/xmldom",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "sc2-mod-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:@xmldom/xmldom"
+        }
+      ],
+      "purl": "pkg:npm/%40xmldom/xmldom@0.9.12",
+      "type": "library",
+      "version": "0.9.12"
+    },
+    {
+      "bom-ref": "pkg:npm/ajv@8.20.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "ajv",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:ajv"
+        }
+      ],
+      "purl": "pkg:npm/ajv@8.20.0",
+      "type": "library",
+      "version": "8.20.0"
+    },
+    {
+      "bom-ref": "pkg:npm/dompurify@3.4.8",
+      "licenses": [
+        {
+          "license": {
+            "name": "(MPL-2.0 OR Apache-2.0)"
+          }
+        }
+      ],
+      "name": "dompurify",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:dompurify"
+        }
+      ],
+      "purl": "pkg:npm/dompurify@3.4.8",
+      "type": "library",
+      "version": "3.4.8"
+    },
+    {
+      "bom-ref": "pkg:npm/fast-deep-equal@3.1.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "fast-deep-equal",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:fast-deep-equal"
+        }
+      ],
+      "purl": "pkg:npm/fast-deep-equal@3.1.3",
+      "type": "library",
+      "version": "3.1.3"
+    },
+    {
+      "bom-ref": "pkg:npm/fast-uri@3.1.5",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "fast-uri",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:fast-uri"
+        }
+      ],
+      "purl": "pkg:npm/fast-uri@3.1.5",
+      "type": "library",
+      "version": "3.1.5"
+    },
+    {
+      "bom-ref": "pkg:npm/fflate@0.8.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "fflate",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "sc2-mod-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:fflate"
+        }
+      ],
+      "purl": "pkg:npm/fflate@0.8.3",
+      "type": "library",
+      "version": "0.8.3"
+    },
+    {
+      "bom-ref": "pkg:npm/json-schema-traverse@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "json-schema-traverse",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:json-schema-traverse"
+        }
+      ],
+      "purl": "pkg:npm/json-schema-traverse@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/jsonc-parser@3.3.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "jsonc-parser",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:jsonc-parser"
+        }
+      ],
+      "purl": "pkg:npm/jsonc-parser@3.3.1",
+      "type": "library",
+      "version": "3.3.1"
+    },
+    {
+      "bom-ref": "pkg:npm/marked@14.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "marked",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:marked"
+        }
+      ],
+      "purl": "pkg:npm/marked@14.0.0",
+      "type": "library",
+      "version": "14.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-archives@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-archives",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common,platform,warzone-2100-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/web/dist-app/extensions/archives/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-archives@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-audio@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-audio",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common,platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/web/dist-app/extensions/audio/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-audio@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-blizzard-casc@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-blizzard-casc",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "sc2-mod-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/blizzard/casc/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-blizzard-casc@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-blizzard-models@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-blizzard-models",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "sc2-mod-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/blizzard/models/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-blizzard-models@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-blizzard-mpq@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-blizzard-mpq",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "sc2-mod-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/blizzard/mpq/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-blizzard-mpq@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-blizzard-starcraft2@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-blizzard-starcraft2",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "sc2-mod-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/blizzard/starcraft2/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-blizzard-starcraft2@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-containers@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-containers",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/common/containers/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-containers@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-documents@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-documents",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common,platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/web/dist-app/extensions/documents/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-documents@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-galaxy-language@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-galaxy-language",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "sc2-mod-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/blizzard/galaxy-language/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-galaxy-language@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-images@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-images",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common,platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/web/dist-app/extensions/images/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-images@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-models@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-models",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common,platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/web/dist-app/extensions/models/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-models@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-opensource-warzone-2100@0.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-or-later"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-opensource-warzone-2100",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "warzone-2100-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/opensource/warzone-2100/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-opensource-warzone-2100@0.1.0",
+      "type": "application",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-plain-text@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-plain-text",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/common/plain-text/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-plain-text@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-rendering-3d@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-rendering-3d",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/common/rendering-3d/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-rendering-3d@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-starcraft2-game@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-starcraft2-game",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "sc2-mod-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/blizzard/starcraft2-game/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-starcraft2-game@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-text-delimited@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-text-delimited",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common,platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/web/dist-app/extensions/text-delimited/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-text-delimited@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-text-ini@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-text-ini",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common,platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/web/dist-app/extensions/text-ini/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-text-ini@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-text-json@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-text-json",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/common/text-json/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-text-json@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-text-toml@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-text-toml",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/common/text-toml/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-text-toml@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-text-xml@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-text-xml",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/common/text-xml/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-text-xml@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-text-yaml@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-text-yaml",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/common/text-yaml/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-text-yaml@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-ui-monaco@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-ui-monaco",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/common/ui-monaco/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-ui-monaco@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-uv-materializer@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-uv-materializer",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "extensions/common/uv-materializer/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-uv-materializer@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-vector@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-vector",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common,platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/web/dist-app/extensions/vector/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-vector@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-video@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-video",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common,platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/web/dist-app/extensions/video/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-video@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/monaco-editor@0.56.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "monaco-editor",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:monaco-editor"
+        }
+      ],
+      "purl": "pkg:npm/monaco-editor@0.56.0",
+      "type": "library",
+      "version": "0.56.0"
+    },
+    {
+      "bom-ref": "pkg:npm/require-from-string@2.0.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "require-from-string",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:require-from-string"
+        }
+      ],
+      "purl": "pkg:npm/require-from-string@2.0.2",
+      "type": "library",
+      "version": "2.0.2"
+    },
+    {
+      "bom-ref": "pkg:npm/smol-toml@1.8.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "smol-toml",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:smol-toml"
+        }
+      ],
+      "purl": "pkg:npm/smol-toml@1.8.0",
+      "type": "library",
+      "version": "1.8.0"
+    },
+    {
+      "bom-ref": "pkg:npm/yaml@2.9.0",
+      "licenses": [
+        {
+          "license": {
+            "name": "ISC"
+          }
+        }
+      ],
+      "name": "yaml",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:yaml"
+        }
+      ],
+      "purl": "pkg:npm/yaml@2.9.0",
+      "type": "library",
+      "version": "2.9.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/%40modkitx-x3/automation-host@0.1.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/%40modkitx-x3/codec-kit@1.0.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/%40modkitx-x3/core@0.1.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
+        "pkg:npm/%40modkitx-x3/ui@0.1.0"
+      ],
+      "ref": "pkg:npm/%40modkitx-x3/electron-app@0.1.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
+        "pkg:npm/%40modkitx-x3/vfs@0.1.0"
+      ],
+      "ref": "pkg:npm/%40modkitx-x3/host@0.1.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/%40modkitx-x3/modkit-cli@0.1.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
+        "pkg:npm/%40modkitx-x3/ui@0.1.0"
+      ],
+      "ref": "pkg:npm/%40modkitx-x3/modkit-vscode@0.1.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/ajv@8.20.0"
+      ],
+      "ref": "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/%40modkitx-x3/server@0.1.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/%40modkitx-x3/ui@0.1.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/core@0.1.0"
+      ],
+      "ref": "pkg:npm/%40modkitx-x3/vfs@0.1.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
+        "pkg:npm/%40modkitx-x3/ui@0.1.0"
+      ],
+      "ref": "pkg:npm/%40modkitx-x3/web-app@0.1.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/%40modkitx-x3/workspace-root@0.0.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/%40rgrove/parse-xml@4.2.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/%40types/trusted-types@2.0.7"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/%40xmldom/xmldom@0.9.12"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/fast-deep-equal@3.1.3",
+        "pkg:npm/fast-uri@3.1.5",
+        "pkg:npm/json-schema-traverse@1.0.0",
+        "pkg:npm/require-from-string@2.0.2"
+      ],
+      "ref": "pkg:npm/ajv@8.20.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40types/trusted-types@2.0.7"
+      ],
+      "ref": "pkg:npm/dompurify@3.4.8"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/fast-deep-equal@3.1.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/fast-uri@3.1.5"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/fflate@0.8.3"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/json-schema-traverse@1.0.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/jsonc-parser@3.3.1"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/marked@14.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-archives@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-audio@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/fflate@0.8.3"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-blizzard-casc@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40xmldom/xmldom@0.9.12"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-blizzard-models@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-blizzard-mpq@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-blizzard-starcraft2@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-containers@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-documents@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-galaxy-language@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-images@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-models@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
+        "pkg:npm/modkit-extension-x3-archives@1.0.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-opensource-warzone-2100@0.1.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-plain-text@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-rendering-3d@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
+        "pkg:npm/%40rgrove/parse-xml@4.2.3"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-starcraft2-game@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-text-delimited@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-text-ini@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
+        "pkg:npm/jsonc-parser@3.3.1"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-text-json@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
+        "pkg:npm/smol-toml@1.8.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-text-toml@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
+        "pkg:npm/%40rgrove/parse-xml@4.2.3"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-text-xml@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
+        "pkg:npm/yaml@2.9.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-text-yaml@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/monaco-editor@0.56.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-ui-monaco@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-uv-materializer@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-vector@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-video@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/dompurify@3.4.8",
+        "pkg:npm/marked@14.0.0"
+      ],
+      "ref": "pkg:npm/monaco-editor@0.56.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/require-from-string@2.0.2"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/smol-toml@1.8.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/yaml@2.9.0"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "urn:modkitx:modkitx-mk3-focused-local-rc:0.1.0",
+      "name": "modkitx-mk3-focused-local-rc",
+      "type": "application",
+      "version": "0.1.0"
+    },
+    "tools": [
+      {
+        "name": "scripts/release/rc.mjs",
+        "vendor": "ModkitX"
+      }
+    ]
+  },
+  "specVersion": "1.5",
+  "version": 1
+}

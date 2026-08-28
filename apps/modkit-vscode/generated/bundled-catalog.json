@@ -27,7 +27,7 @@
         "org.modkitx/xz",
         "org.modkitx/zstd"
       ],
-      "digest": "sha256:ba9f5523ac2ec9f84abdcd486f29dfc93a4fbfa191f707c39f1fc7075f8c7c66"
+      "digest": "sha256:143769e1dd4405e5201fd2e519f7d5aae5e21efb4293d3fa788c130134cdaf5f"
     },
     {
       "name": "audio",
@@ -42,7 +42,7 @@
         "org.modkitx/m4a",
         "org.modkitx/wav"
       ],
-      "digest": "sha256:ae00fa9d5e94bca08daf75d8af727f3a1b4c8d1c20de7a1048a26b4d5ea7bb7d"
+      "digest": "sha256:b10cd5dfa723bf901ccc5be74a388d7b2f43e6dbdbf3dbe517cdbae7c9527db5"
     },
     {
       "name": "containers",
@@ -50,7 +50,7 @@
       "declared": true,
       "coordinate": "org.modkitx/containers",
       "contributions": ["org.modkitx/ps1-cue-bin"],
-      "digest": "sha256:e98e196168fb2da5b040f5856e8c7bf376b663f411cf28a2092c350bd0d05568"
+      "digest": "sha256:c93e9a475c8f95b1724f5fca948da1f410b431d14636aec91ec45a903e082683"
     },
     {
       "name": "documents",
@@ -65,7 +65,7 @@
         "org.modkitx/ods",
         "org.modkitx/odt"
       ],
-      "digest": "sha256:561c83cbb9f47be1d41aff9f90f3978ae0ba065908203bea9766aa0806f6818f"
+      "digest": "sha256:9cec2312db6904fbe6f5f0009e818db44d9868c4a8f8781ca61cc4c3be9b5303"
     },
     {
       "name": "images",
@@ -97,7 +97,7 @@
         "org.modkitx/tiff",
         "org.modkitx/webp"
       ],
-      "digest": "sha256:dfb3ef0d97feaf89bfab3e99e0c8b467542b464a764f59254fe952af358908e5"
+      "digest": "sha256:c15e57e83dade1b7bd3ab6df388e01afe4d877ad622c3c9ceeb2cc8bed85ddd8"
     },
     {
       "name": "models",
@@ -112,7 +112,7 @@
         "org.modkitx/ply",
         "org.modkitx/stl"
       ],
-      "digest": "sha256:f03b48ceb046047b02680399b665cb00e5a59a760bc280718ad3987e958a42aa"
+      "digest": "sha256:147d474f3120917ec2154881d12af81b7f0302777af8ec21c2cc149d3ac486f7"
     },
     {
       "name": "plain-text",
@@ -120,7 +120,7 @@
       "declared": true,
       "coordinate": "org.modkitx/plain-text",
       "contributions": ["org.modkitx/plain-text-writer", "org.modkitx/txt"],
-      "digest": "sha256:4d4918f35ed66ccd9845d450f2a02e6d543f7d1573148e2754ca585113351b03"
+      "digest": "sha256:807ba8ca5de278d8f12c520bc46cfcd57ba98a89a73be838964f97871b24c272"
     },
     {
       "name": "rendering-3d",
@@ -128,7 +128,7 @@
       "declared": true,
       "coordinate": "org.modkitx/rendering-3d",
       "contributions": ["org.modkitx/browser-webgl-renderer", "org.modkitx/headless-renderer"],
-      "digest": "sha256:bd1359b9af45cd143dac0d6d802989439a11c06e8374ecefb9edddc9bbf48442"
+      "digest": "sha256:2d84a65e1f592133f70a6034ef92b8f03db940ecaa1c2625b49e4a9dd39cec93"
     },
     {
       "name": "text-delimited",
@@ -144,7 +144,7 @@
         "org.modkitx/tsv-syntax-contract",
         "org.modkitx/tsv-syntax-default"
       ],
-      "digest": "sha256:a6d4ed428cd115d1491bae8c410650df8af46bae68ac1b1793d99130ccb81e08"
+      "digest": "sha256:f4a5f31469d2fec57d9f5d7cb38ecb60c2b8892517e5a385179d408ea99255ee"
     },
     {
       "name": "text-ini",
@@ -157,7 +157,7 @@
         "org.modkitx/text-ini",
         "org.modkitx/text-ini-writer"
       ],
-      "digest": "sha256:e7374045ebae1a739c75252ac25c03474ca099723d3f09bd1c0ebe741ba1dbdb"
+      "digest": "sha256:26361aa2a389951e818001e9afd9c13a02f2e5f740cb5dc0cd9038bd01ab8ab9"
     },
     {
       "name": "text-json",
@@ -173,7 +173,7 @@
         "org.modkitx/text-json-writer",
         "org.modkitx/text-jsonc"
       ],
-      "digest": "sha256:3cb36732f5cdd5ad79e270dd77b486bf7cbf2f3f5e08bfcbf9ad5490dc0e71b5"
+      "digest": "sha256:fad29b816143e013ee88edf6b837d1653e29e72f959f6e5a180b56c4eee01cae"
     },
     {
       "name": "text-toml",
@@ -186,7 +186,7 @@
         "org.modkitx/toml-syntax-contract",
         "org.modkitx/toml-syntax-default"
       ],
-      "digest": "sha256:547f78a54124970c5e4d66a2b3412fcde46a083798e71fa84be69bea1fbbbc96"
+      "digest": "sha256:496bc18160112680664ff640366d79097e376e5ec4f0992e3a7d5bff4afc57f5"
     },
     {
       "name": "text-xml",
@@ -199,7 +199,7 @@
         "org.modkitx/xml-syntax-contract",
         "org.modkitx/xml-syntax-default"
       ],
-      "digest": "sha256:c4d03f69a3f6c1f30c71eada99278d40ee6817c822cdc079b783283f636fdaef"
+      "digest": "sha256:f8dd4c45c06607342e3ecc75d327ecc8992760967d08e8fb43d575da95f55018"
     },
     {
       "name": "text-yaml",
@@ -212,7 +212,7 @@
         "org.modkitx/yaml-syntax-contract",
         "org.modkitx/yaml-syntax-default"
       ],
-      "digest": "sha256:b105ddcf2d1a58779a3815a21b7e91706504f8256b1e0f0ad6b7e72368ec3563"
+      "digest": "sha256:5b7c5257d47df46bd52b36a8e6698abce385f943f2554be6f4f08507d7f93e5d"
     },
     {
       "name": "ui-monaco",
@@ -220,7 +220,7 @@
       "declared": true,
       "coordinate": "org.modkitx/ui-monaco",
       "contributions": ["org.modkitx.ui-monaco/code-stage"],
-      "digest": "sha256:2ff7ec9a64d68daafa57ffb87e9f365531f30b41a7bec7e8f5f63664f280800b"
+      "digest": "sha256:21510b4beb7a48cfccac6c7d8ef99568365e353fdbd594e776b4b2a9dab66ce2"
     },
     {
       "name": "uv-materializer",
@@ -235,7 +235,7 @@
         "org.modkitx/uvt-materializer",
         "org.modkitx/uvt-writer"
       ],
-      "digest": "sha256:96cfb5bdc1a978d4d0bae7152c3d9c8a7b7538c312b3744f0d44fc530185f8d7"
+      "digest": "sha256:a4eca57da89ab3bd96256d6939bc7a1e0572243e0d550905f2f8f537c800c1b2"
     },
     {
       "name": "vector",
@@ -243,7 +243,7 @@
       "declared": true,
       "coordinate": "org.modkitx/vector",
       "contributions": ["org.modkitx/emf", "org.modkitx/vector-svg", "org.modkitx/wmf"],
-      "digest": "sha256:383f8a39e85b3b45df2f9d572f0912560b411421619019f4346748aa343c34ce"
+      "digest": "sha256:ee6f528df432fdce40f4e0eb0dc781cc26f1ccf7d0110aaf7244e1d799bba865"
     },
     {
       "name": "video",
@@ -258,7 +258,7 @@
         "org.modkitx/video-webm",
         "org.modkitx/wmv"
       ],
-      "digest": "sha256:669eb3cde836c8e535142919883c8a2cd347adcde53f31485798eaa75a1690bf"
+      "digest": "sha256:de7c8b4a93ff80eaa9c73e6932863461120037efc8954dcb652782092d7fce31"
     }
   ]
 }

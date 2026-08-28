@@ -18,6 +18,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
+import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 import { proves } from '@modkitx-x3/testkit'
 import {
   configuredExtensionRoots,
@@ -389,15 +390,28 @@ describe('the generated catalog decides what this build ships', () => {
     expect(resolution.base).toBeUndefined()
   })
 
-  it('ships exactly what activation would have discovered — the emitted catalog is not narrower', () => {
+  it('ships exactly what activation discovers with the host loader artifact identity', async () => {
     const emitted = JSON.parse(
       readFileSync(join(import.meta.dirname, '..', 'generated', 'bundled-catalog.json'), 'utf8'),
-    ) as { readonly roots: readonly { name: string; declared: boolean }[] }
+    ) as {
+      readonly roots: readonly {
+        name: string
+        directory: string
+        declared: boolean
+        digest: string
+      }[]
+    }
     const common = join(import.meta.dirname, '..', '..', '..', 'extensions', 'common')
     const onDisk = readdirSync(common)
       .filter(name => looksLikeExtensionDirectory(join(common, name), nodeProbe))
       .sort()
     expect(emitted.roots.map(root => root.name)).toEqual(onDisk)
+    for (const root of emitted.roots) {
+      const loaded = await loadExtensionDirectory(
+        join(import.meta.dirname, '..', '..', '..', 'extensions', root.directory),
+      )
+      expect(root.digest, root.name).toBe(loaded.artifact.artifactDigest)
+    }
     /*
      * Every shipped root is now known to the conformance matrix. `uv-materializer` was the one that
      * was not — slice 13C found it and carried it as `declared: false`, and the owner's answer was

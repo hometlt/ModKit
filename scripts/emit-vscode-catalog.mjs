@@ -43,13 +43,13 @@
  *   node scripts/emit-vscode-catalog.mjs --check   # compare, exit 1 on drift
  */
 
-import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { format, resolveConfig } from 'prettier'
 import { READY_APP_EXTENSIONS } from './app-extension-sets.mjs'
+import { extensionArtifactDigest } from './lib/extension-artifact-digest.mjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const outputDir = join(repoRoot, 'apps', 'modkit-vscode', 'generated')
@@ -77,37 +77,13 @@ function looksLikeExtensionDirectory(path) {
   }
 }
 
-/** Every file under a directory, repository-relative and sorted, so a digest is order-free. */
-function filesUnder(root) {
-  const found = []
-  const walk = current => {
-    for (const name of readdirSync(current).sort()) {
-      if (name === 'node_modules' || name === 'dist') continue
-      const path = join(current, name)
-      if (statSync(path).isDirectory()) walk(path)
-      else found.push(path)
-    }
-  }
-  walk(root)
-  return found
-}
-
 /**
- * One hash per extension root: every file's repository-relative path and its bytes.
+ * One canonical host artifact identity per extension root.
  *
- * Paths are folded in with the content because a rename is a change — a digest over contents alone
- * would call `codec-png.json` moved to `codec-pngx.json` the same catalog.
+ * The release descriptor, the generated catalog and `loadExtensionDirectory` must name the same
+ * bytes with the same digest. The shared build helper duplicates the tiny host framing because this
+ * check runs before a clean checkout has emitted `packages/host/dist`.
  */
-function digestOf(root) {
-  const hash = createHash('sha256')
-  for (const file of filesUnder(root)) {
-    hash.update(relative(repoRoot, file).replaceAll('\\', '/'))
-    hash.update('\0')
-    hash.update(readFileSync(file))
-    hash.update('\0')
-  }
-  return `sha256:${hash.digest('hex')}`
-}
 
 const catalogRoot = join(repoRoot, 'extensions', ...CATALOG_DIRECTORY)
 const roots = readdirSync(catalogRoot)
@@ -130,7 +106,7 @@ const roots = readdirSync(catalogRoot)
       declared,
       ...(declared ? { coordinate: entry.coordinate } : {}),
       ...(declared ? { contributions: [...entry.contributions].sort() } : {}),
-      digest: digestOf(absolute),
+      digest: extensionArtifactDigest(absolute),
     }
   })
 

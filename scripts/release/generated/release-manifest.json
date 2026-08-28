@@ -1,0 +1,469 @@
+{
+  "$comment": "Generated internal release descriptor. It records an existing product-profile/catalog composition; it is not an SDK, extension-manifest, or installer ABI.",
+  "artifacts": [
+    {
+      "catalog": [],
+      "file": "artifacts/modkitx-platform.tar",
+      "id": "platform",
+      "kind": "application-and-package-bundle",
+      "sha256": "sha256:2aeaf356603cf19dd1c89df2a4398b307beed9541013f1d2d54e0904e4f1174c",
+      "size": 38215168
+    },
+    {
+      "catalog": [
+        {
+          "contributions": [
+            "org.modkitx/7z",
+            "org.modkitx/archive-zip",
+            "org.modkitx/brotli",
+            "org.modkitx/bzip2",
+            "org.modkitx/cab",
+            "org.modkitx/dmg",
+            "org.modkitx/gzip",
+            "org.modkitx/iso",
+            "org.modkitx/lzma",
+            "org.modkitx/pe",
+            "org.modkitx/ps1-xa",
+            "org.modkitx/rar",
+            "org.modkitx/tar",
+            "org.modkitx/xz",
+            "org.modkitx/zstd"
+          ],
+          "coordinate": "org.modkitx/archives",
+          "root": "extensions/common/archives",
+          "sourceDigest": "sha256:143769e1dd4405e5201fd2e519f7d5aae5e21efb4293d3fa788c130134cdaf5f"
+        },
+        {
+          "contributions": [
+            "org.modkitx/aac",
+            "org.modkitx/audio-mp3",
+            "org.modkitx/audio-ogg",
+            "org.modkitx/flac",
+            "org.modkitx/m4a",
+            "org.modkitx/wav"
+          ],
+          "coordinate": "org.modkitx/audio",
+          "root": "extensions/common/audio",
+          "sourceDigest": "sha256:b10cd5dfa723bf901ccc5be74a388d7b2f43e6dbdbf3dbe517cdbae7c9527db5"
+        },
+        {
+          "contributions": [
+            "org.modkitx/ps1-cue-bin"
+          ],
+          "coordinate": "org.modkitx/containers",
+          "root": "extensions/common/containers",
+          "sourceDigest": "sha256:c93e9a475c8f95b1724f5fca948da1f410b431d14636aec91ec45a903e082683"
+        },
+        {
+          "contributions": [
+            "org.modkitx/document-markdown",
+            "org.modkitx/document-rtf",
+            "org.modkitx/odg",
+            "org.modkitx/odp",
+            "org.modkitx/ods",
+            "org.modkitx/odt"
+          ],
+          "coordinate": "org.modkitx/documents",
+          "root": "extensions/common/documents",
+          "sourceDigest": "sha256:9cec2312db6904fbe6f5f0009e818db44d9868c4a8f8781ca61cc4c3be9b5303"
+        },
+        {
+          "contributions": [
+            "org.modkitx/ani",
+            "org.modkitx/astc",
+            "org.modkitx/avif",
+            "org.modkitx/basis",
+            "org.modkitx/bmp",
+            "org.modkitx/cur",
+            "org.modkitx/dds",
+            "org.modkitx/exr",
+            "org.modkitx/gif",
+            "org.modkitx/hdr",
+            "org.modkitx/ico",
+            "org.modkitx/image-jpeg",
+            "org.modkitx/image-png",
+            "org.modkitx/ktx",
+            "org.modkitx/ktx2",
+            "org.modkitx/pal",
+            "org.modkitx/pcx",
+            "org.modkitx/pkm",
+            "org.modkitx/png-encoder-writer",
+            "org.modkitx/pvr",
+            "org.modkitx/tga",
+            "org.modkitx/tiff",
+            "org.modkitx/webp"
+          ],
+          "coordinate": "org.modkitx/images",
+          "root": "extensions/common/images",
+          "sourceDigest": "sha256:c15e57e83dade1b7bd3ab6df388e01afe4d877ad622c3c9ceeb2cc8bed85ddd8"
+        },
+        {
+          "contributions": [
+            "org.modkitx/dae",
+            "org.modkitx/model-gltf",
+            "org.modkitx/model-obj",
+            "org.modkitx/model-uvm",
+            "org.modkitx/ply",
+            "org.modkitx/stl"
+          ],
+          "coordinate": "org.modkitx/models",
+          "root": "extensions/common/models",
+          "sourceDigest": "sha256:147d474f3120917ec2154881d12af81b7f0302777af8ec21c2cc149d3ac486f7"
+        },
+        {
+          "contributions": [
+            "org.modkitx/plain-text-writer",
+            "org.modkitx/txt"
+          ],
+          "coordinate": "org.modkitx/plain-text",
+          "root": "extensions/common/plain-text",
+          "sourceDigest": "sha256:807ba8ca5de278d8f12c520bc46cfcd57ba98a89a73be838964f97871b24c272"
+        },
+        {
+          "contributions": [
+            "org.modkitx/browser-webgl-renderer",
+            "org.modkitx/headless-renderer"
+          ],
+          "coordinate": "org.modkitx/rendering-3d",
+          "root": "extensions/common/rendering-3d",
+          "sourceDigest": "sha256:2d84a65e1f592133f70a6034ef92b8f03db940ecaa1c2625b49e4a9dd39cec93"
+        },
+        {
+          "contributions": [
+            "org.modkitx/csv-syntax-contract",
+            "org.modkitx/csv-syntax-default",
+            "org.modkitx/text-csv",
+            "org.modkitx/text-delimited-writer",
+            "org.modkitx/text-tsv",
+            "org.modkitx/tsv-syntax-contract",
+            "org.modkitx/tsv-syntax-default"
+          ],
+          "coordinate": "org.modkitx/text-delimited",
+          "root": "extensions/common/text-delimited",
+          "sourceDigest": "sha256:f4a5f31469d2fec57d9f5d7cb38ecb60c2b8892517e5a385179d408ea99255ee"
+        },
+        {
+          "contributions": [
+            "org.modkitx/ini-syntax-contract",
+            "org.modkitx/ini-syntax-default",
+            "org.modkitx/text-ini",
+            "org.modkitx/text-ini-writer"
+          ],
+          "coordinate": "org.modkitx/text-ini",
+          "root": "extensions/common/text-ini",
+          "sourceDigest": "sha256:26361aa2a389951e818001e9afd9c13a02f2e5f740cb5dc0cd9038bd01ab8ab9"
+        },
+        {
+          "contributions": [
+            "org.modkitx/json-syntax-contract",
+            "org.modkitx/json-syntax-default",
+            "org.modkitx/jsonc-syntax-contract",
+            "org.modkitx/jsonc-syntax-default",
+            "org.modkitx/text-json",
+            "org.modkitx/text-json-writer",
+            "org.modkitx/text-jsonc"
+          ],
+          "coordinate": "org.modkitx/text-json",
+          "root": "extensions/common/text-json",
+          "sourceDigest": "sha256:fad29b816143e013ee88edf6b837d1653e29e72f959f6e5a180b56c4eee01cae"
+        },
+        {
+          "contributions": [
+            "org.modkitx/text-toml",
+            "org.modkitx/text-toml-writer",
+            "org.modkitx/toml-syntax-contract",
+            "org.modkitx/toml-syntax-default"
+          ],
+          "coordinate": "org.modkitx/text-toml",
+          "root": "extensions/common/text-toml",
+          "sourceDigest": "sha256:496bc18160112680664ff640366d79097e376e5ec4f0992e3a7d5bff4afc57f5"
+        },
+        {
+          "contributions": [
+            "org.modkitx/text-xml",
+            "org.modkitx/text-xml-writer",
+            "org.modkitx/xml-syntax-contract",
+            "org.modkitx/xml-syntax-default"
+          ],
+          "coordinate": "org.modkitx/text-xml",
+          "root": "extensions/common/text-xml",
+          "sourceDigest": "sha256:f8dd4c45c06607342e3ecc75d327ecc8992760967d08e8fb43d575da95f55018"
+        },
+        {
+          "contributions": [
+            "org.modkitx/text-yaml",
+            "org.modkitx/text-yaml-writer",
+            "org.modkitx/yaml-syntax-contract",
+            "org.modkitx/yaml-syntax-default"
+          ],
+          "coordinate": "org.modkitx/text-yaml",
+          "root": "extensions/common/text-yaml",
+          "sourceDigest": "sha256:5b7c5257d47df46bd52b36a8e6698abce385f943f2554be6f4f08507d7f93e5d"
+        },
+        {
+          "contributions": [
+            "org.modkitx.ui-monaco/code-stage"
+          ],
+          "coordinate": "org.modkitx/ui-monaco",
+          "root": "extensions/common/ui-monaco",
+          "sourceDigest": "sha256:21510b4beb7a48cfccac6c7d8ef99568365e353fdbd594e776b4b2a9dab66ce2"
+        },
+        {
+          "contributions": [
+            "org.modkitx/uv-model-materializer-contract",
+            "org.modkitx/uv-texture-materializer-contract",
+            "org.modkitx/uvm-materializer",
+            "org.modkitx/uvm-writer",
+            "org.modkitx/uvt-materializer",
+            "org.modkitx/uvt-writer"
+          ],
+          "coordinate": "org.modkitx/uv-materializer",
+          "root": "extensions/common/uv-materializer",
+          "sourceDigest": "sha256:a4eca57da89ab3bd96256d6939bc7a1e0572243e0d550905f2f8f537c800c1b2"
+        },
+        {
+          "contributions": [
+            "org.modkitx/emf",
+            "org.modkitx/vector-svg",
+            "org.modkitx/wmf"
+          ],
+          "coordinate": "org.modkitx/vector",
+          "root": "extensions/common/vector",
+          "sourceDigest": "sha256:ee6f528df432fdce40f4e0eb0dc781cc26f1ccf7d0110aaf7244e1d799bba865"
+        },
+        {
+          "contributions": [
+            "org.modkitx/avi",
+            "org.modkitx/mpeg",
+            "org.modkitx/ogv",
+            "org.modkitx/video-mp4",
+            "org.modkitx/video-webm",
+            "org.modkitx/wmv"
+          ],
+          "coordinate": "org.modkitx/video",
+          "root": "extensions/common/video",
+          "sourceDigest": "sha256:de7c8b4a93ff80eaa9c73e6932863461120037efc8954dcb652782092d7fce31"
+        }
+      ],
+      "file": "artifacts/modkitx-common.tar",
+      "id": "common",
+      "kind": "common-extension-bundle",
+      "sha256": "sha256:6caecbf9407d2307d826c0a1867558508f9164aed0987d0e1fdc7933df349757",
+      "size": 1725440
+    },
+    {
+      "catalog": [
+        {
+          "contributions": [
+            "org.modkitx/casc"
+          ],
+          "coordinate": "org.modkitx.blizzard/casc",
+          "root": "extensions/blizzard/casc",
+          "sourceDigest": "sha256:196c56ed3438c9c47f8af4db4bd7e3f1558a5a982fcbb7c84eba1c050577e7fb"
+        },
+        {
+          "contributions": [],
+          "coordinate": "org.modkitx.blizzard/galaxy-language",
+          "root": "extensions/blizzard/galaxy-language",
+          "sourceDigest": "sha256:2b74a916236e486e0849f0598e5be90ff2a88526b96014b457345f1a251f709f"
+        },
+        {
+          "contributions": [
+            "org.modkitx/m3"
+          ],
+          "coordinate": "org.modkitx.blizzard/models",
+          "root": "extensions/blizzard/models",
+          "sourceDigest": "sha256:6ce414414ec15c2bf3325e91b9bf78ed7e8d027da54195fe51c2fde4c18b7e5b"
+        },
+        {
+          "contributions": [
+            "org.modkitx.blizzard/mpq-fresh-writer",
+            "org.modkitx/mpq"
+          ],
+          "coordinate": "org.modkitx.blizzard/mpq",
+          "root": "extensions/blizzard/mpq",
+          "sourceDigest": "sha256:cebeeaf02215319bc657d53af4ed2504906ff035a6c31c47e3bfcdcdfcc22177"
+        },
+        {
+          "contributions": [
+            "org.modkitx.blizzard/sc2-authored-text-writers",
+            "org.modkitx.blizzard/sc2-workspace-copy-writer",
+            "org.modkitx/galaxy",
+            "org.modkitx/sc2-bank",
+            "org.modkitx/sc2-campaign",
+            "org.modkitx/sc2-data",
+            "org.modkitx/sc2-document-metadata",
+            "org.modkitx/sc2-layout",
+            "org.modkitx/sc2-map",
+            "org.modkitx/sc2-mod",
+            "org.modkitx/sc2-replay",
+            "org.modkitx/sc2-runtime",
+            "org.modkitx/sc2-runtime-provider",
+            "org.modkitx/sc2-strings",
+            "org.modkitx/sc2-triggers"
+          ],
+          "coordinate": "org.modkitx.blizzard/starcraft2",
+          "root": "extensions/blizzard/starcraft2",
+          "sourceDigest": "sha256:8ce048635c35e96ddc09364ab304d10520daac313f8b2a19df82bfc6a3662720"
+        },
+        {
+          "contributions": [
+            "org.modkitx.blizzard/starcraft2-data",
+            "org.modkitx.blizzard/starcraft2-installation",
+            "org.modkitx.blizzard/starcraft2-map-semantic",
+            "org.modkitx.blizzard/starcraft2-resolved-data",
+            "org.modkitx.blizzard/starcraft2-workspace"
+          ],
+          "coordinate": "org.modkitx.blizzard/starcraft2-game",
+          "root": "extensions/blizzard/starcraft2-game",
+          "sourceDigest": "sha256:5540b4a3074ef19ba17979596db8e5113ba8c333e9a6ac43032edd10e29cb852"
+        }
+      ],
+      "file": "artifacts/modkitx-sc2-mod-studio.tar",
+      "id": "sc2-mod-studio",
+      "kind": "game-extension-bundle",
+      "sha256": "sha256:a022a10469b18d3347358a339386200adb433b66acc52b88e231f612e321f43f",
+      "size": 1140224
+    },
+    {
+      "catalog": [
+        {
+          "contributions": [
+            "org.modkitx.opensource/warzone2100-data",
+            "org.modkitx.opensource/warzone2100-installation",
+            "org.modkitx.opensource/warzone2100-map-preview-preparation",
+            "org.modkitx.opensource/warzone2100-map-semantic",
+            "org.modkitx.opensource/warzone2100-resolved-data",
+            "org.modkitx.opensource/warzone2100-wz-writer",
+            "org.modkitx/warzone-img",
+            "org.modkitx/warzone-lev",
+            "org.modkitx/warzone-pie",
+            "org.modkitx/warzone-wrf",
+            "org.modkitx/warzone-wz",
+            "org.modkitx/warzone2100-map"
+          ],
+          "coordinate": "org.modkitx.opensource/warzone-2100",
+          "root": "extensions/opensource/warzone-2100",
+          "sourceDigest": "sha256:9f140020389370a43d986318e9a1aae3ab52a907a9f6661bdee917189318a77b"
+        }
+      ],
+      "file": "artifacts/modkitx-warzone-2100-studio.tar",
+      "id": "warzone-2100-studio",
+      "kind": "game-extension-bundle",
+      "sha256": "sha256:742a45fff73107fe2f74fa9011ae6f0f2ad5909938e09f00475f3ef253c5162d",
+      "size": 467456
+    }
+  ],
+  "composition": {
+    "activeProfiles": [
+      "common-documents",
+      "headless-mod-ci",
+      "sc2-mod-studio",
+      "universal-asset-explorer",
+      "warzone-2100-studio"
+    ],
+    "catalogSources": [
+      {
+        "path": "apps/electron/generated/bundled-catalog.cjs",
+        "sha256": "sha256:b19154cb59ad53aec8941a8b77cb8165f824c8150fdd96fd2c038ebebf631a39"
+      },
+      {
+        "path": "apps/modkit-vscode/generated/bundled-catalog.json",
+        "sha256": "sha256:1b5417c37ed81e0e0c50a317acda87ad9bd516c29ff9335ce79e24080da51d87"
+      },
+      {
+        "path": "apps/web/generated/extension-catalog.js",
+        "sha256": "sha256:f4b5ace8a24d7638313612ad492fafc4241d3e24d4ef26e9b57e42233d91324a"
+      },
+      {
+        "path": "migration/product-profiles.json",
+        "sha256": "sha256:a4192ad5771c03969ae3664e9db2bee96a674e923dc420778e95f8c16ba88b83"
+      },
+      {
+        "path": "scripts/app-extension-sets.mjs",
+        "sha256": "sha256:fa2c114cf27a1605160ffae64ba0f70d0ad87919f75b0e6c1949f26f1b42fae7"
+      },
+      {
+        "path": "scripts/bundle-hashes.json",
+        "sha256": "sha256:0a358391d0af39bc62ba630ea8bd74fce1cfc5552db7f4b2c3d83a0ee3aa0237"
+      }
+    ],
+    "closure": "mk3-ga",
+    "commonExtensionRoots": [
+      "extensions/common/archives",
+      "extensions/common/audio",
+      "extensions/common/containers",
+      "extensions/common/documents",
+      "extensions/common/images",
+      "extensions/common/models",
+      "extensions/common/plain-text",
+      "extensions/common/rendering-3d",
+      "extensions/common/text-delimited",
+      "extensions/common/text-ini",
+      "extensions/common/text-json",
+      "extensions/common/text-toml",
+      "extensions/common/text-xml",
+      "extensions/common/text-yaml",
+      "extensions/common/ui-monaco",
+      "extensions/common/uv-materializer",
+      "extensions/common/vector",
+      "extensions/common/video"
+    ],
+    "deferredProfiles": [
+      "bar-spring-studio",
+      "cnc-sage-studio"
+    ],
+    "gameExtensionFamilies": [
+      {
+        "id": "sc2-mod-studio",
+        "roots": [
+          "extensions/blizzard/casc",
+          "extensions/blizzard/galaxy-language",
+          "extensions/blizzard/models",
+          "extensions/blizzard/mpq",
+          "extensions/blizzard/starcraft2",
+          "extensions/blizzard/starcraft2-game"
+        ]
+      },
+      {
+        "id": "warzone-2100-studio",
+        "roots": [
+          "extensions/opensource/warzone-2100"
+        ]
+      }
+    ],
+    "source": "migration/product-profiles.json"
+  },
+  "licenseNotices": {
+    "file": "LICENSE-NOTICES.txt",
+    "sha256": "sha256:562d999323248b8a40aea98a58289c89ca09a01765e5306ff7fa9e18da10619c"
+  },
+  "release": {
+    "authenticode": false,
+    "channel": "local-rc",
+    "id": "modkitx-mk3-focused-local-rc",
+    "installation": {
+      "cleanMachineInstaller": true,
+      "instructions": {
+        "file": "INSTALL.md",
+        "sha256": "sha256:a82643f0469aebc6157ba71d9f67935e86d1412c71ffd91e53b2b6b2316f4e5b"
+      },
+      "kind": "verified-versioned-local-store",
+      "remainder": null
+    },
+    "publicRelease": false,
+    "version": "0.1.0"
+  },
+  "sbom": {
+    "file": "sbom.cdx.json",
+    "format": "CycloneDX-1.5",
+    "sha256": "sha256:b9aba92dc1e8ac91c69449f2fd9d3482472c9bc5b343b432cac39b4c04be7d4a"
+  },
+  "schemaVersion": "release-manifest-1",
+  "signing": {
+    "algorithm": "Ed25519",
+    "detachedFile": "release-signature.json",
+    "keySource": "explicit-local-path-outside-repository",
+    "scope": "release-manifest.json only; no Authenticode and no public release publishing"
+  }
+}
