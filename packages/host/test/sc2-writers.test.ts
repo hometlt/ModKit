@@ -39,8 +39,8 @@ import { VirtualFileSystem } from '@modkitx-x3/vfs'
 import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const extensionRoot = join(repoRoot, 'extensions', 'blizzard', 'starcraft2')
-const mpqExtensionRoot = join(repoRoot, 'extensions', 'blizzard', 'mpq')
+const extensionRoot = join(repoRoot, '..', 'modkit-blizzard', 'starcraft2')
+const mpqExtensionRoot = join(repoRoot, '..', 'modkit-blizzard', 'mpq')
 const workspaceWriterUrl = pathToFileURL(
   join(extensionRoot, 'src', 'editing', 'workspace-copy-writer.js'),
 ).href

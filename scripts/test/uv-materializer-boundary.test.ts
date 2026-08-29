@@ -18,12 +18,13 @@ import { build } from 'esbuild'
 import { describe, expect, it } from 'vitest'
 import { buildInventory, createHostContributionContractRegistry } from '@modkitx-x3/host'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
+import { externalRepositoryRoot } from '../lib/external-extension-roots.mjs'
 
 const repoRoot = resolve(import.meta.dirname, '..', '..')
 
 /** Every entrypoint that reads a native model and publishes a live projection. */
 const MODEL_CODECS = [
-  'extensions/blizzard/models/src/m3/codec.js',
+  join(externalRepositoryRoot(repoRoot, 'blizzard'), 'models', 'src', 'm3', 'codec.js'),
   'extensions/common/models/src/formats/gltf/codec.js',
   'extensions/common/models/src/formats/obj/codec.js',
   'extensions/common/models/src/formats/uvm/codec.js',

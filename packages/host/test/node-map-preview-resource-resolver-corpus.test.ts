@@ -45,8 +45,7 @@ describe.skipIf(!configured)('installed Warzone map-preview resource resolution'
       pathToFileURL(join(repoRoot, 'extensions', 'common', 'archives', 'src', 'linked.js')).href
     )) as { readonly archives: LinkedExtension }
     const { warzone2100 } = (await import(
-      pathToFileURL(join(repoRoot, 'extensions', 'opensource', 'warzone-2100', 'src', 'linked.js'))
-        .href
+      pathToFileURL(join(repoRoot, '..', 'modkit-warzone', 'src', 'linked.js')).href
     )) as { readonly warzone2100: LinkedExtension }
     const linked = linkedExtensionInputs([archives, warzone2100])
     const executionBackends = createExecutionBackendRegistry([

@@ -35,14 +35,17 @@ import { createWebPreviewStages, stageIdOf } from '../src/views.js'
 import { STAGE_ORDER as VSCODE_STAGE_ORDER } from '../../modkit-vscode/src/view-policy.js'
 import { createCandidateWorldSceneLease } from '../../../packages/host/src/maps/world-source.js'
 import { resolvedDescriptorWire } from '../../../packages/host/test/fixtures/descriptor.js'
+import { externalRepositoryRoot } from '../../../scripts/lib/external-extension-roots.mjs'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
+const blizzardRoot = externalRepositoryRoot(repositoryRoot, 'blizzard')
+const warzoneRoot = externalRepositoryRoot(repositoryRoot, 'warzone')
 const fixtures = [
   {
     ecosystem: 'StarCraft II',
     name: 'triangle.m3',
     path: join(repositoryRoot, 'packages', 'testkit', 'test', 'fixtures', 'models', 'triangle.m3'),
-    codec: join(repositoryRoot, 'extensions', 'blizzard', 'models', 'src', 'm3', 'codec.js'),
+    codec: join(repositoryRoot, '..', 'modkit-blizzard', 'models', 'src', 'm3', 'codec.js'),
   },
   {
     ecosystem: 'Warzone 2100',
@@ -56,15 +59,7 @@ const fixtures = [
       'mk2-synthetic',
       'minimal.warzone.pie',
     ),
-    codec: join(
-      repositoryRoot,
-      'extensions',
-      'opensource',
-      'warzone-2100',
-      'src',
-      'warzone-pie',
-      'codec.js',
-    ),
+    codec: join(warzoneRoot, 'src', 'warzone-pie', 'codec.js'),
   },
 ] as const
 
@@ -624,14 +619,7 @@ describe('PWA / VS Code resolved presentation conformance', () => {
         return {
           bytes: encoder.encode('synthetic SC2Map workspace'),
           snapshot: await analyzeWorld(
-            join(
-              repositoryRoot,
-              'extensions',
-              'blizzard',
-              'starcraft2-game',
-              'src',
-              'map-provider.js',
-            ),
+            join(blizzardRoot, 'starcraft2-game', 'src', 'map-provider.js'),
             'analyzeStarcraft2MapWorkspace',
             sc2WorldRequest(),
           ),
@@ -661,14 +649,7 @@ describe('PWA / VS Code resolved presentation conformance', () => {
         return {
           bytes,
           snapshot: await analyzeWorld(
-            join(
-              repositoryRoot,
-              'extensions',
-              'opensource',
-              'warzone-2100',
-              'src',
-              'map-provider.js',
-            ),
+            join(warzoneRoot, 'src', 'map-provider.js'),
             'analyzeWarzoneMapWorkspace',
             warzoneWorldRequest(bytes),
           ),

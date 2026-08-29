@@ -23,6 +23,7 @@
 import { copyFile, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { productExtensionDirectory } from '../../../scripts/lib/external-extension-roots.mjs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   buildInventory,
@@ -93,7 +94,7 @@ let directory: string
 beforeAll(async () => {
   const inputs = await Promise.all(
     FAMILIES.map(async parts => ({
-      ...(await loadExtensionDirectory(join(repoRoot, 'extensions', ...parts))),
+      ...(await loadExtensionDirectory(productExtensionDirectory(repoRoot, parts))),
       execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
     })),
   )

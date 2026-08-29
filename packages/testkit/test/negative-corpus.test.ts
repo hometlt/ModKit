@@ -13,6 +13,7 @@
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { productExtensionDirectory } from '../../../scripts/lib/external-extension-roots.mjs'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   buildInventory,
@@ -58,7 +59,7 @@ async function inventory(parts: readonly (readonly string[])[]): Promise<Invento
   if (cached !== undefined) return cached
   const inputs = await Promise.all(
     parts.map(async item => ({
-      ...(await loadExtensionDirectory(join(repoRoot, 'extensions', ...item))),
+      ...(await loadExtensionDirectory(productExtensionDirectory(repoRoot, item))),
       execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
     })),
   )

@@ -9,10 +9,27 @@ import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { externalRepositoryRoot } from '../lib/external-extension-roots.mjs'
 import ts from 'typescript'
 import { format, resolveConfig } from 'prettier'
 
 const repoRoot = path.resolve(fileURLToPath(new URL('../..', import.meta.url)))
+const evidenceFile = value => {
+  const portable = value.replaceAll('\\', '/')
+  if (portable.startsWith('extensions/blizzard/')) {
+    return path.join(
+      externalRepositoryRoot(repoRoot, 'blizzard'),
+      portable.slice('extensions/blizzard/'.length),
+    )
+  }
+  if (portable.startsWith('extensions/opensource/warzone-2100/')) {
+    return path.join(
+      externalRepositoryRoot(repoRoot, 'warzone'),
+      portable.slice('extensions/opensource/warzone-2100/'.length),
+    )
+  }
+  return path.resolve(repoRoot, value)
+}
 const args = process.argv.slice(2)
 const argValue = flag => {
   const index = args.indexOf(flag)
@@ -424,7 +441,7 @@ for (const [index, decision] of decisions.factDecisions.entries()) {
     fail(`${decision.decisionId}: exact evidence is required`)
   }
   for (const evidencePath of decision.evidence) {
-    if (typeof evidencePath !== 'string' || !existsSync(path.resolve(repoRoot, evidencePath))) {
+    if (typeof evidencePath !== 'string' || !existsSync(evidenceFile(evidencePath))) {
       fail(`${decision.decisionId}: evidence path does not exist: ${String(evidencePath)}`)
     }
   }

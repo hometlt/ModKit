@@ -16,6 +16,10 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import {
+  externalRepositoryRoot,
+  productExtensionDirectory,
+} from '../../../scripts/lib/external-extension-roots.mjs'
 import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
@@ -124,7 +128,7 @@ async function inventory(parts: readonly (readonly string[])[]): Promise<Invento
   if (cached !== undefined) return cached
   const inputs = await Promise.all(
     parts.map(async item => ({
-      ...(await loadExtensionDirectory(join(repoRoot, 'extensions', ...item))),
+      ...(await loadExtensionDirectory(productExtensionDirectory(repoRoot, item))),
       execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
     })),
   )
@@ -180,7 +184,7 @@ async function resourceFacts(session: {
 
 async function planFor(bytes: Uint8Array) {
   const module = (await import(
-    pathToFileURL(join(repoRoot, 'extensions', 'blizzard', 'models', 'src', 'm3', 'codec.js')).href
+    pathToFileURL(join(repoRoot, '..', 'modkit-blizzard', 'models', 'src', 'm3', 'codec.js')).href
   )) as { createCodec(context: unknown): import('@modkitx-x3/sdk').Codec }
   const uri = 'memory://m3/plan.m3'
   const codec = module.createCodec({
@@ -494,9 +498,7 @@ describe('the installed StarCraft II M3', () => {
         const { composeStarcraft2Workspace, starcraft2WorkspaceResourceRoots } = (await import(
           pathToFileURL(
             join(
-              repoRoot,
-              'extensions',
-              'blizzard',
+              externalRepositoryRoot(repoRoot, 'blizzard'),
               'starcraft2-game',
               'src',
               'workspace-provider.js',

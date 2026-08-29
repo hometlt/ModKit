@@ -15,6 +15,7 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { externalRepositoryRoot } from '../../../scripts/lib/external-extension-roots.mjs'
 import { describe, expect, it } from 'vitest'
 import {
   revisionId,
@@ -98,7 +99,7 @@ function inputFor(name: string, bytes: Uint8Array): AssetInput {
 }
 
 const CODECS = {
-  m3: 'extensions/blizzard/models/src/m3/codec.js',
+  m3: join(externalRepositoryRoot(repoRoot, 'blizzard'), 'models', 'src', 'm3', 'codec.js'),
   w3d: 'extensions/ea/models/src/westwood-w3d/codec.js',
   w3x: 'extensions/ea/models/src/sage-w3x/codec.js',
   vxl: 'extensions/ea/tiberian-sun/src/red-alert2-vxl/codec.js',
@@ -110,7 +111,8 @@ async function openCodec(
   format: keyof typeof CODECS,
   bytes: Uint8Array,
 ): Promise<{ session: AssetSession; contracts: readonly string[]; descriptor: DescriptorShape }> {
-  const module = (await import(pathToFileURL(join(repoRoot, CODECS[format])).href)) as {
+  const codecPath = format === 'm3' ? CODECS[format] : join(repoRoot, CODECS[format])
+  const module = (await import(pathToFileURL(codecPath).href)) as {
     createCodec(context: ContributionContext): Codec
   }
   const session = await module.createCodec(context).open(inputFor(format, bytes), 'inspect', budget)

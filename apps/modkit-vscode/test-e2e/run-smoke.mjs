@@ -160,13 +160,13 @@ const LEGACY_ROOTS = [
    * the block-13 matrix needs it, so the smoke adds it the same way it adds the EA roots: through
    * the product's own `modkit.extensions` setting, not a back door.
    */
-  join(repoRoot, 'extensions', 'blizzard', 'mpq'),
+  join(repoRoot, '..', 'modkit-blizzard', 'mpq'),
   /*
    * Warzone PIE and Spring S3O, landed by the round-2 integration. The matrix uses the first to go
    * a level deeper into a `.wz` than the generic ZIP route could; the second is carried so the row
    * that cannot reach an S3O today is refused by a *composed* codec rather than by its absence.
    */
-  join(repoRoot, 'extensions', 'opensource', 'warzone-2100'),
+  join(repoRoot, '..', 'modkit-warzone'),
   join(repoRoot, 'extensions', 'opensource', 'spring'),
 ]
 
@@ -177,10 +177,10 @@ const LEGACY_ROOTS = [
  * for this product wiring receipt.
  */
 const FOCUSED_ROOTS = [
-  join(repoRoot, 'extensions', 'blizzard', 'models'),
-  join(repoRoot, 'extensions', 'blizzard', 'starcraft2'),
-  join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game'),
-  join(repoRoot, 'extensions', 'opensource', 'warzone-2100'),
+  join(repoRoot, '..', 'modkit-blizzard', 'models'),
+  join(repoRoot, '..', 'modkit-blizzard', 'starcraft2'),
+  join(repoRoot, '..', 'modkit-blizzard', 'starcraft2-game'),
+  join(repoRoot, '..', 'modkit-warzone'),
 ]
 const CONFIGURED_ROOTS = focusedGa ? FOCUSED_ROOTS : LEGACY_ROOTS
 const FOCUSED_FILES = Object.freeze([

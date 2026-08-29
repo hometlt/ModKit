@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { productExtensionDirectory } from '../../../scripts/lib/external-extension-roots.mjs'
 import { pathToFileURL } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
@@ -41,7 +42,7 @@ import { createNamespaceCompanionOrigin } from '../../host/src/namespace-origin.
 import { createResourceSession } from '../../host/src/resource-session.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const extensionRoot = join(repoRoot, 'extensions', 'blizzard', 'starcraft2')
+const extensionRoot = join(repoRoot, '..', 'modkit-blizzard', 'starcraft2')
 const mapRoot = 'campaigns/liberty.sc2campaign/base.sc2maps/maps/campaign/tarcade.sc2map'
 const runtimeId = 'blizzard.starcraft2.playable-subset-v1'
 const decoder = new TextDecoder()
@@ -77,7 +78,7 @@ async function createServices() {
     ['blizzard', 'casc'],
   ]
   const inputs = await Promise.all(
-    directories.map(parts => loadExtensionDirectory(join(repoRoot, 'extensions', ...parts))),
+    directories.map(parts => loadExtensionDirectory(productExtensionDirectory(repoRoot, parts))),
   )
   const inventory = await buildInventory(
     inputs.map(input => ({

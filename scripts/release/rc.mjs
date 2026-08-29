@@ -14,8 +14,13 @@ import {
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { tmpdir } from 'node:os'
 
-import { READY_APP_EXTENSIONS, extensionDirectory } from '../app-extension-sets.mjs'
+import {
+  READY_APP_EXTENSIONS,
+  extensionDirectory,
+  extensionLocation,
+} from '../app-extension-sets.mjs'
 import { extensionArtifactDigest } from '../lib/extension-artifact-digest.mjs'
+import { externalRepositoryDescriptor } from '../lib/external-extension-roots.mjs'
 
 const RELEASE_ID = 'modkitx-mk3-focused-local-rc'
 const REQUIRED_PROFILE_IDS = Object.freeze([
@@ -304,11 +309,23 @@ function resolveProfileRoots(repoRoot, profile, packageIndex, owners) {
     if (READY_APP_EXTENSIONS[family] === undefined) {
       throw new Error(`release profile ${profile.id} names unknown extension family ${family}`)
     }
-    roots.add(`extensions/${extensionDirectory(family).join('/')}`)
+    const location = extensionLocation(family)
+    if (location.kind === 'internal') {
+      roots.add(`extensions/${extensionDirectory(family).join('/')}`)
+    }
   }
+  const externalPublishers = new Set(
+    (profile.extensionFamilies ?? [])
+      .map(family => extensionLocation(family))
+      .filter(location => location.kind === 'external')
+      .map(location => externalRepositoryDescriptor(location.repository).publisher),
+  )
   for (const contributionId of profile.serviceProviders ?? []) {
     const owner = owners.get(contributionId)
     if (owner === undefined) {
+      if ([...externalPublishers].some(publisher => contributionId.startsWith(`${publisher}/`))) {
+        continue
+      }
       throw new Error(`release profile ${profile.id} has no owner for ${contributionId}`)
     }
     roots.add(owner)
@@ -319,6 +336,25 @@ function resolveProfileRoots(repoRoot, profile, packageIndex, owners) {
       throw new Error(`release extension is not indexed: ${root}`)
   }
   return [...roots].sort()
+}
+
+function externalProfileExtensions(profile) {
+  return (profile.extensionFamilies ?? [])
+    .map(family => ({ family, location: extensionLocation(family) }))
+    .filter(item => item.location.kind === 'external')
+    .map(({ family, location }) => {
+      const repository = externalRepositoryDescriptor(location.repository)
+      const extension = READY_APP_EXTENSIONS[family]
+      return {
+        coordinate: extension.coordinate,
+        environment: repository.environment,
+        family,
+        path: location.path.join('/'),
+        repository: location.repository,
+        sibling: repository.sibling,
+      }
+    })
+    .sort((left, right) => left.family.localeCompare(right.family, 'en'))
 }
 
 function releaseComposition(repoRoot) {
@@ -358,7 +394,7 @@ function releaseComposition(repoRoot) {
     const roots = resolveProfileRoots(repoRoot, profile, packageIndex, owners).filter(
       root => !commonRootSet.has(root),
     )
-    return { id, roots }
+    return { id, roots, externalExtensions: externalProfileExtensions(profile) }
   })
   const selectedRoots = [...commonRoots, ...gameProfiles.flatMap(profile => profile.roots)]
   for (const root of selectedRoots) {
@@ -467,12 +503,6 @@ function addWorkspaceRuntimePackages(repoRoot, entries, composition) {
       })
     }
   }
-}
-
-function gameArtifact(repoRoot, profile) {
-  const entries = new Map()
-  for (const root of profile.roots) mergeEntries(entries, extensionFiles(repoRoot, root))
-  return entries
 }
 
 function platformArtifact(repoRoot, composition) {
@@ -847,13 +877,6 @@ function artifactDefinitions(repoRoot, composition) {
       extensionCatalogEntry(repoRoot, root, existingCatalog),
     ),
   }
-  const games = composition.gameProfiles.map(profile => ({
-    id: profile.id,
-    file: `artifacts/modkitx-${profile.id}.tar`,
-    kind: 'game-extension-bundle',
-    entries: gameArtifact(repoRoot, profile),
-    catalog: profile.roots.map(root => extensionCatalogEntry(repoRoot, root, existingCatalog)),
-  }))
   return [
     {
       id: 'platform',
@@ -863,7 +886,6 @@ function artifactDefinitions(repoRoot, composition) {
       catalog: [],
     },
     common,
-    ...games,
   ]
 }
 

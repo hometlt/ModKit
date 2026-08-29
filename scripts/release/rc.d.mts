@@ -19,6 +19,20 @@ export interface RcArtifactDescriptor {
 export interface RcBuildResult {
   readonly manifest: {
     readonly artifacts: readonly RcArtifactDescriptor[]
+    readonly composition: {
+      readonly gameExtensionFamilies: readonly {
+        readonly id: string
+        readonly roots: readonly string[]
+        readonly externalExtensions: readonly {
+          readonly coordinate: string
+          readonly environment: string
+          readonly family: string
+          readonly path: readonly string[]
+          readonly repository: string
+          readonly sibling: string
+        }[]
+      }[]
+    }
   }
   readonly signature?: unknown
   readonly files: readonly string[]

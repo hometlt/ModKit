@@ -110,7 +110,7 @@ function inputFor(source: ArtifactByteSource): AssetInput {
 
 async function codecFor(format: Format): Promise<Codec> {
   const extensionRoot =
-    format === 'm3' ? join(repoRoot, 'extensions', 'blizzard', 'models') : modelRoot
+    format === 'm3' ? join(repoRoot, '..', 'modkit-blizzard', 'models') : modelRoot
   const sourceRoot = ['obj', 'gltf', 'uvm'].includes(format) ? join('src', 'formats') : 'src'
   const module = (await import(
     pathToFileURL(join(extensionRoot, sourceRoot, format, 'codec.js')).href

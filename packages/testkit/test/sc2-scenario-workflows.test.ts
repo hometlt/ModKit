@@ -17,7 +17,7 @@ import { proves } from '@modkitx-x3/testkit'
 
 const TEST_PATH = 'packages/testkit/test/sc2-scenario-workflows.test.ts'
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const extensionRoot = join(repoRoot, 'extensions', 'blizzard', 'starcraft2')
+const extensionRoot = join(repoRoot, '..', 'modkit-blizzard', 'starcraft2')
 const fixtures = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 const target = {
   environment: 'node',

@@ -32,11 +32,10 @@ import {
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { galaxyLanguage } = (await import(
-  pathToFileURL(join(repoRoot, 'extensions', 'blizzard', 'galaxy-language', 'src', 'linked.js'))
-    .href
+  pathToFileURL(join(repoRoot, '..', 'modkit-blizzard', 'galaxy-language', 'src', 'linked.js')).href
 )) as { readonly galaxyLanguage: LinkedExtension }
 const { analyzeGalaxy } = (await import(
-  pathToFileURL(join(repoRoot, 'extensions', 'blizzard', 'galaxy-language', 'src', 'provider.js'))
+  pathToFileURL(join(repoRoot, '..', 'modkit-blizzard', 'galaxy-language', 'src', 'provider.js'))
     .href
 )) as {
   readonly analyzeGalaxy: (request: {

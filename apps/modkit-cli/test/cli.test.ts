@@ -140,7 +140,7 @@ describe('modkit open (S7): the product open path of the CLI', () => {
   const repositoryRoot = join(appDir, '..', '..')
   const images = join(repositoryRoot, 'extensions', 'common', 'images')
   const png = join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png')
-  const starcraft2 = join(repositoryRoot, 'extensions', 'blizzard', 'starcraft2')
+  const starcraft2 = join(repositoryRoot, '..', 'modkit-blizzard', 'starcraft2')
   const sc2Map = join(
     repositoryRoot,
     'packages',
@@ -274,7 +274,7 @@ describe('modkit open (S7): the product open path of the CLI', () => {
 describe('focused Product GA tools use shared host contracts', () => {
   const repositoryRoot = join(appDir, '..', '..')
   const images = join(repositoryRoot, 'extensions', 'common', 'images')
-  const starcraft2 = join(repositoryRoot, 'extensions', 'blizzard', 'starcraft2')
+  const starcraft2 = join(repositoryRoot, '..', 'modkit-blizzard', 'starcraft2')
   const png = join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png')
   const galaxy = join(
     repositoryRoot,

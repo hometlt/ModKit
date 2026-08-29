@@ -30,7 +30,7 @@ import type { CompanionOrigin, CompanionOriginEntry } from '../../host/src/input
 import { createResourceSession } from '../../host/src/resource-session.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const extensionRoot = join(repoRoot, 'extensions', 'blizzard', 'starcraft2')
+const extensionRoot = join(repoRoot, '..', 'modkit-blizzard', 'starcraft2')
 const runtimeId = 'blizzard.starcraft2.playable-subset-v1'
 const activationBudget = {
   maxInputBytes: 1_000_000n,

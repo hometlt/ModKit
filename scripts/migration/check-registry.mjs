@@ -31,6 +31,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { parseCanonicalYaml } from './lib/canonical-yaml.mjs'
+import { externalRepositoryRoot } from '../lib/external-extension-roots.mjs'
 
 const repoRoot = path.resolve(fileURLToPath(new URL('../..', import.meta.url)))
 const args = process.argv.slice(2)
@@ -59,6 +60,22 @@ const parityReportPath = path.resolve(
 const problems = []
 const fail = message => problems.push(message)
 const readJson = file => JSON.parse(readFileSync(file, 'utf8'))
+const resolvedProductPath = value => {
+  const portable = value.replaceAll('\\', '/')
+  if (portable.startsWith('extensions/blizzard/')) {
+    return path.join(
+      externalRepositoryRoot(repoRoot, 'blizzard'),
+      portable.slice('extensions/blizzard/'.length),
+    )
+  }
+  if (portable.startsWith('extensions/opensource/warzone-2100/')) {
+    return path.join(
+      externalRepositoryRoot(repoRoot, 'warzone'),
+      portable.slice('extensions/opensource/warzone-2100/'.length),
+    )
+  }
+  return path.join(repoRoot, value)
+}
 
 // --- canonical shape -----------------------------------------------------------------------------
 
@@ -303,9 +320,9 @@ const unmappedRules = registry.unmapped ?? []
 const isDefaultRegistry = registryPath === path.join(repoRoot, 'migration/capabilities.yaml')
 
 function deriveX3Facts() {
-  const files = execFileSync(
+  const internal = execFileSync(
     'git',
-    ['-C', repoRoot, 'ls-files', '--recurse-submodules', 'extensions/*/*/contributions/*.json'],
+    ['-C', repoRoot, 'ls-files', 'extensions/*/*/contributions/*.json'],
     {
       maxBuffer: 1 << 30,
     },
@@ -314,11 +331,26 @@ function deriveX3Facts() {
     .trim()
     .split('\n')
     .filter(Boolean)
+  const external = [
+    ['blizzard', externalRepositoryRoot(repoRoot, 'blizzard')],
+    ['warzone', externalRepositoryRoot(repoRoot, 'warzone')],
+  ].flatMap(([repository, root]) =>
+    execFileSync('git', ['-C', root, 'ls-files', 'contributions/*.json', '*/contributions/*.json'])
+      .toString('utf8')
+      .trim()
+      .split('\n')
+      .filter(Boolean)
+      .map(file => ({ file: `external:${repository}/${file}`, absolute: path.join(root, file) })),
+  )
+  const files = [
+    ...internal.map(file => ({ file, absolute: path.join(repoRoot, file) })),
+    ...external,
+  ]
   const byId = new Map()
   for (const file of files) {
-    const json = readJson(path.join(repoRoot, file))
+    const json = readJson(file.absolute)
     if (json.contract?.id !== 'org.modkitx/codec-contribution') continue
-    byId.set(json.id, { file, json })
+    byId.set(json.id, { file: file.file, json })
   }
   return byId
 }
@@ -544,7 +576,7 @@ for (const row of capabilities) {
         `${label}: projection.operations.${operation} names «${proof}», but the declaration comes from «${declared}»`,
       )
     }
-    if (!existsSync(path.join(repoRoot, proof))) {
+    if (!existsSync(resolvedProductPath(proof))) {
       fail(`${label}: projection.operations.${operation} names «${proof}», which does not exist`)
     }
   }

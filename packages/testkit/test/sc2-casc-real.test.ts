@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { productExtensionDirectory } from '../../../scripts/lib/external-extension-roots.mjs'
 import { pathToFileURL } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
@@ -135,7 +136,7 @@ describe('installed StarCraft II CASC product path', () => {
       ['common', 'images'],
     ]
     const inputs = await Promise.all(
-      directories.map(parts => loadExtensionDirectory(join(repoRoot, 'extensions', ...parts))),
+      directories.map(parts => loadExtensionDirectory(productExtensionDirectory(repoRoot, parts))),
     )
     const inventory = await buildInventory(
       inputs.map(input => ({

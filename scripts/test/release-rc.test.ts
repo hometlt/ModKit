@@ -15,6 +15,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 
 import { READY_APP_EXTENSIONS } from '../app-extension-sets.mjs'
+import { externalRepositoryRoot } from '../lib/external-extension-roots.mjs'
 import {
   buildRc,
   canonicalExtensionDigest,
@@ -221,11 +222,15 @@ describe('focused local RC artifacts', () => {
     const firstBuild = buildRc({ repoRoot: root, outDir: first })
     buildRc({ repoRoot: root, outDir: second })
 
-    const sc2 = firstBuild.manifest.artifacts.find(artifact => artifact.id === 'sc2-mod-studio')
-    expect(sc2?.catalog).toEqual([
+    const sc2 = firstBuild.manifest.composition.gameExtensionFamilies.find(
+      profile => profile.id === 'sc2-mod-studio',
+    )
+    expect(sc2?.externalExtensions).toEqual([
       expect.objectContaining({
-        root: 'extensions/blizzard/starcraft2',
-        sourceDigest: canonicalExtensionDigest(root, 'extensions/blizzard/starcraft2'),
+        environment: 'MODKIT_BLIZZARD_ROOT',
+        family: 'blizzard-starcraft2',
+        repository: 'blizzard',
+        sibling: 'modkit-blizzard',
       }),
     ])
 
@@ -244,7 +249,7 @@ describe('focused local RC artifacts', () => {
     buildRc({ repoRoot: root, outDir: signed, signingKeyPath: privatePath })
     expect(verifyRc({ outDir: signed, publicKeyPath: publicPath })).toEqual({
       state: 'verified-signed',
-      artifactCount: 4,
+      artifactCount: 2,
     })
     const signatureText = readFileSync(join(signed, 'release-signature.json'), 'utf8')
     expect(signatureText).not.toContain(
@@ -288,9 +293,10 @@ describe('focused local RC artifacts', () => {
   })
 
   it('matches the public host digest and rejects a stale generated catalog', async () => {
-    const sc2Root = join(repoRoot, 'extensions', 'blizzard', 'starcraft2')
+    const blizzardRoot = externalRepositoryRoot(repoRoot, 'blizzard')
+    const sc2Root = join(blizzardRoot, 'starcraft2')
     const loaded = await loadExtensionDirectory(sc2Root)
-    expect(canonicalExtensionDigest(repoRoot, 'extensions/blizzard/starcraft2')).toBe(
+    expect(canonicalExtensionDigest(blizzardRoot, 'starcraft2')).toBe(
       loaded.artifact.artifactDigest,
     )
 
@@ -332,7 +338,7 @@ describe('focused local RC artifacts', () => {
     const { parent, root } = fixture()
     const generatedDir = join(parent, 'generated')
     expect(emitRcMetadata({ repoRoot: root, generatedDir })).toEqual({ state: 'emitted', count: 3 })
-    expect(checkRc({ repoRoot: root, generatedDir })).toEqual({ state: 'checked', fileCount: 8 })
+    expect(checkRc({ repoRoot: root, generatedDir })).toEqual({ state: 'checked', fileCount: 6 })
     writeFileSync(join(generatedDir, 'release-manifest.json'), '{}\n')
     expect(() => checkRc({ repoRoot: root, generatedDir })).toThrow(
       /generated release ratchet is stale: release-manifest.json/u,
@@ -355,21 +361,28 @@ describe('focused local RC artifacts', () => {
       root: first.root,
     })
     expect(existsSync(join(first.root, 'release', 'INSTALL.md'))).toBe(true)
-    const installedSc2 = await loadExtensionDirectory(
-      join(first.root, 'extensions', 'blizzard', 'starcraft2'),
+    expect(existsSync(join(first.root, 'extensions', 'blizzard'))).toBe(false)
+    const firstManifest = JSON.parse(
+      readFileSync(join(first.root, 'release', 'release-manifest.json'), 'utf8'),
     )
-    const installedMetadata = installedSc2.containers.packageJson as {
-      readonly modkit?: { readonly publisher?: string; readonly id?: string }
-    }
-    expect(installedMetadata.modkit).toMatchObject({
-      publisher: 'org.modkitx.blizzard',
-      id: 'starcraft2',
-    })
+    expect(firstManifest.composition.gameExtensionFamilies).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'sc2-mod-studio',
+          externalExtensions: expect.arrayContaining([
+            expect.objectContaining({ sibling: 'modkit-blizzard' }),
+          ]),
+        }),
+      ]),
+    )
 
-    text(
-      join(root, 'extensions', 'blizzard', 'starcraft2', 'src', 'linked.js'),
-      "export const extensionId = 'org.modkitx.blizzard/starcraft2-v2'\n",
-    )
+    const cliPath = join(root, 'apps', 'modkit-cli', 'dist', 'main.js')
+    text(cliPath, 'export const main = "v2"\n')
+    json(join(root, 'scripts', 'bundle-hashes.json'), {
+      'apps/modkit-cli/dist/main.js': createHash('sha256')
+        .update(readFileSync(cliPath))
+        .digest('hex'),
+    })
     const secondRc = join(parent, 'rc-2')
     buildRc({ repoRoot: root, outDir: secondRc, signingKeyPath: privatePath })
     const second = installRc({ outDir: secondRc, storeRoot, publicKeyPath: publicPath })

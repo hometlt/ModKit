@@ -13,10 +13,21 @@ import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
-import { decodeM3Animations } from '../../extensions/blizzard/models/src/m3/animation.node.js'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { externalRepositoryRoot } from '../lib/external-extension-roots.mjs'
 
 const repoRoot = path.resolve(fileURLToPath(new URL('../..', import.meta.url)))
+const { decodeM3Animations } = await import(
+  pathToFileURL(
+    path.join(
+      externalRepositoryRoot(repoRoot, 'blizzard'),
+      'models',
+      'src',
+      'm3',
+      'animation.node.js',
+    ),
+  ).href
+)
 const quiet = process.argv.includes('--quiet')
 const lockPath = path.join(repoRoot, 'migration', 'oracle', 'legacy-oracle.lock.json')
 const localDescriptorPath = path.join(

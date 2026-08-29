@@ -25,12 +25,10 @@ import { createCandidateWorldSceneLease } from '../../../packages/host/src/maps/
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { createCodec: createM3Codec } = (await import(
-  pathToFileURL(join(repoRoot, 'extensions', 'blizzard', 'models', 'src', 'm3', 'codec.js')).href
+  pathToFileURL(join(repoRoot, '..', 'modkit-blizzard', 'models', 'src', 'm3', 'codec.js')).href
 )) as { createCodec(context: ContributionContext): Codec }
 const { analyzeWarzoneMapWorkspace } = (await import(
-  pathToFileURL(
-    join(repoRoot, 'extensions', 'opensource', 'warzone-2100', 'src', 'map-provider.js'),
-  ).href
+  pathToFileURL(join(repoRoot, '..', 'modkit-warzone', 'src', 'map-provider.js')).href
 )) as {
   analyzeWarzoneMapWorkspace(
     request: ResolvedMapWorkspaceAnalysisRequest,

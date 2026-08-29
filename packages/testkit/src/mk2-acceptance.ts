@@ -499,6 +499,26 @@ export interface Mk2AcceptanceOptions {
   readonly workerBrokered?: boolean
 }
 
+function convertedExtensionDirectory(repoRoot: string, extension: string): string {
+  const parts = extension.split('/')
+  if (parts[0] === 'blizzard') {
+    const configured = process.env['MODKIT_BLIZZARD_ROOT']?.trim()
+    return join(
+      configured === undefined || configured === ''
+        ? join(repoRoot, '..', 'modkit-blizzard')
+        : configured,
+      ...parts.slice(1),
+    )
+  }
+  if (parts[0] === 'opensource' && parts[1] === 'warzone-2100') {
+    const configured = process.env['MODKIT_WARZONE_ROOT']?.trim()
+    return configured === undefined || configured === ''
+      ? join(repoRoot, '..', 'modkit-warzone')
+      : configured
+  }
+  return join(repoRoot, 'extensions', ...parts)
+}
+
 /**
  * Runs one corpus case end to end. Every failure mode is reported, never thrown, so one broken
  * port cannot hide the state of the others in the summary table.
@@ -517,7 +537,7 @@ export async function runMk2AcceptanceCase(
   if ((await stat(samplePath).catch(() => undefined))?.isFile() !== true) {
     return { entry, corpus, state: 'skipped', detail: `corpus sample is missing: ${entry.sample}` }
   }
-  const directory = join(options.repoRoot, 'extensions', ...entry.extension.split('/'))
+  const directory = convertedExtensionDirectory(options.repoRoot, entry.extension)
   if (!directoryExists(directory)) {
     return {
       entry,

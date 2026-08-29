@@ -23,6 +23,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { READY_APP_EXTENSIONS } from '../app-extension-sets.mjs'
+import { externalRepositoryRoot } from '../lib/external-extension-roots.mjs'
 
 const repoRoot = path.resolve(fileURLToPath(new URL('../..', import.meta.url)))
 const args = process.argv.slice(2)
@@ -49,18 +50,34 @@ if (profiles.schemaVersion !== 'product-profiles-1') {
 const RELEASE_CLOSURES = ['mk3-ga', 'mk3-multiverse-ga', 'mk3-deferred-games']
 
 const contributionIds = new Set()
+const collectContributions = extensionRoot => {
+  const contributionsRoot = path.join(extensionRoot, 'contributions')
+  if (!existsSync(contributionsRoot)) return
+  for (const contribution of readdirSync(contributionsRoot, { withFileTypes: true })) {
+    if (!contribution.isFile() || !contribution.name.endsWith('.json')) continue
+    contributionIds.add(readJson(path.join(contributionsRoot, contribution.name)).id)
+  }
+}
 const extensionsRoot = path.join(repoRoot, 'extensions')
 for (const publisher of readdirSync(extensionsRoot, { withFileTypes: true })) {
   if (!publisher.isDirectory()) continue
   const publisherRoot = path.join(extensionsRoot, publisher.name)
   for (const extension of readdirSync(publisherRoot, { withFileTypes: true })) {
     if (!extension.isDirectory()) continue
-    const contributionsRoot = path.join(publisherRoot, extension.name, 'contributions')
-    if (!existsSync(contributionsRoot)) continue
-    for (const contribution of readdirSync(contributionsRoot, { withFileTypes: true })) {
-      if (!contribution.isFile() || !contribution.name.endsWith('.json')) continue
-      contributionIds.add(readJson(path.join(contributionsRoot, contribution.name)).id)
-    }
+    collectContributions(path.join(publisherRoot, extension.name))
+  }
+}
+for (const repository of [
+  ...new Set(
+    Object.values(READY_APP_EXTENSIONS)
+      .map(extension => extension.repository)
+      .filter(value => value !== undefined),
+  ),
+]) {
+  const repositoryRoot = externalRepositoryRoot(repoRoot, repository)
+  collectContributions(repositoryRoot)
+  for (const entry of readdirSync(repositoryRoot, { withFileTypes: true })) {
+    if (entry.isDirectory()) collectContributions(path.join(repositoryRoot, entry.name))
   }
 }
 

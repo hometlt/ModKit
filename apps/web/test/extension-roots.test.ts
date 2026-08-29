@@ -412,7 +412,7 @@ describe('user extension folders — the whole path', () => {
   }, 30_000)
 
   it('opens the pinned SC2Map from a selected content folder through a user extension folder', async () => {
-    const starcraft2Root = join(repositoryRoot, 'extensions', 'blizzard', 'starcraft2')
+    const starcraft2Root = join(repositoryRoot, '..', 'modkit-blizzard', 'starcraft2')
     const loaded = await load([
       request('root-starcraft2', directoryHandle('starcraft2', treeFromDisk(starcraft2Root))),
     ])
@@ -480,7 +480,7 @@ describe('user extension folders — the whole path', () => {
   }, 30_000)
 
   it('selects the semantic SC2Campaign codec from selected content and extension folders', async () => {
-    const starcraft2Root = join(repositoryRoot, 'extensions', 'blizzard', 'starcraft2')
+    const starcraft2Root = join(repositoryRoot, '..', 'modkit-blizzard', 'starcraft2')
     const loaded = await load([
       request('root-starcraft2', directoryHandle('starcraft2', treeFromDisk(starcraft2Root))),
     ])

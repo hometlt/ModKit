@@ -20,6 +20,7 @@
 
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { productExtensionDirectory } from '../../../scripts/lib/external-extension-roots.mjs'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CANCELLED_CODE, isModkitError } from '@modkitx-x3/core'
 import {
@@ -643,7 +644,7 @@ describe('the same route on a real shipped archive', () => {
           ['ea', 'big'],
           ['ea', 'models'],
         ].map(async parts => ({
-          ...(await loadExtensionDirectory(join(repoRoot, 'extensions', ...parts))),
+          ...(await loadExtensionDirectory(productExtensionDirectory(repoRoot, parts))),
           execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
         })),
       )

@@ -50,11 +50,10 @@ import { resolvedDescriptorWire } from './fixtures/descriptor.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { starcraft2Game } = (await import(
-  pathToFileURL(join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game', 'src', 'linked.js'))
-    .href
+  pathToFileURL(join(repoRoot, '..', 'modkit-blizzard', 'starcraft2-game', 'src', 'linked.js')).href
 )) as { readonly starcraft2Game: LinkedExtension }
 const { warzone2100 } = (await import(
-  pathToFileURL(join(repoRoot, 'extensions', 'opensource', 'warzone-2100', 'src', 'linked.js')).href
+  pathToFileURL(join(repoRoot, '..', 'modkit-warzone', 'src', 'linked.js')).href
 )) as { readonly warzone2100: LinkedExtension }
 
 const GAME_ID = 'org.modkitx/starcraft-2'

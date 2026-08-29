@@ -43,22 +43,16 @@ import {
 } from '@modkitx-x3/sdk'
 import { VirtualFileSystem } from '@modkitx-x3/vfs'
 import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
+import { externalRepositoryRoot } from '../../../scripts/lib/external-extension-roots.mjs'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
+const blizzardRoot = externalRepositoryRoot(repoRoot, 'blizzard')
 const explicitSc2Root = process.env.MODKITX_SC2_ROOT?.trim()
 const sc2Root = explicitSc2Root || 'C:\\Apps\\StarCraft II'
 const buildInfoPath = join(sc2Root, '.build.info')
 const mapRoot = 'campaigns/liberty.sc2campaign/base.sc2maps/maps/campaign/tarcade.sc2map'
 const writerModuleUrl = pathToFileURL(
-  join(
-    repoRoot,
-    'extensions',
-    'blizzard',
-    'starcraft2',
-    'src',
-    'editing',
-    'workspace-copy-writer.js',
-  ),
+  join(blizzardRoot, 'starcraft2', 'src', 'editing', 'workspace-copy-writer.js'),
 ).href
 
 const HOST = 'org.example.app/sc2-writer-real-host'
@@ -154,8 +148,8 @@ describe('Block 15E installed SC2 CASC workspace-copy foundation', () => {
         topology,
         realms: { host: HOST, workers: WORKERS },
         extensions: await Promise.all([
-          bundled(join(repoRoot, 'extensions', 'blizzard', 'casc')),
-          linked(join(repoRoot, 'extensions', 'blizzard', 'starcraft2')),
+          bundled(join(repoRoot, '..', 'modkit-blizzard', 'casc')),
+          linked(join(repoRoot, '..', 'modkit-blizzard', 'starcraft2')),
         ]),
         policy: workerBackendPolicy({
           loadDeadlineMs: 30_000,

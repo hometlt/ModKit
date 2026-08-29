@@ -14,7 +14,7 @@ import { resolveModWorkspaceComposition } from '@modkitx-x3/host/mods'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const starcraft2ExtensionRoot = join(repoRoot, 'extensions', 'blizzard', 'starcraft2-game')
+const starcraft2ExtensionRoot = join(repoRoot, '..', 'modkit-blizzard', 'starcraft2-game')
 
 const GAME_ID = 'org.modkitx/starcraft-2'
 const REALM = 'org.modkitx.test/mods-host'

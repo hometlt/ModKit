@@ -253,7 +253,7 @@ describe('the VS Code product open path with a configured extension', () => {
     const sc2Map = join(fixtureRoot, 'minimal.SC2Map')
     const host = await createVsCodeSubjectHost({
       catalogCandidates: [],
-      configuredExtensions: [join(repositoryRoot, 'extensions', 'blizzard', 'starcraft2')],
+      configuredExtensions: [join(repositoryRoot, '..', 'modkit-blizzard', 'starcraft2')],
     })
     expect(host.extensions.failures).toEqual([])
     expect(host.extensions.installed).toEqual(['org.modkitx.blizzard/starcraft2'])
@@ -312,7 +312,7 @@ describe('the VS Code product open path with a configured extension', () => {
     const sc2Campaign = join(fixtureRoot, 'minimal.SC2Campaign')
     const host = await createVsCodeSubjectHost({
       catalogCandidates: [],
-      configuredExtensions: [join(repositoryRoot, 'extensions', 'blizzard', 'starcraft2')],
+      configuredExtensions: [join(repositoryRoot, '..', 'modkit-blizzard', 'starcraft2')],
     })
     const open = createVsCodeCommandOpener({
       services: host.services,

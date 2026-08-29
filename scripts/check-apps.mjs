@@ -9,12 +9,20 @@ import {
   READY_APP_EXTENSIONS,
   expectedContributionIds,
   expectedExtensionCoordinates,
-  extensionDirectory,
+  extensionLocation,
   extensionSet,
 } from './app-extension-sets.mjs'
 import { checkAppContractMatrix } from './check-app-contract-matrix.mjs'
+import { resolveExternalExtensionDirectory } from './lib/external-extension-roots.mjs'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
+
+const extensionPath = name => {
+  const location = extensionLocation(name)
+  return location.kind === 'internal'
+    ? join(root, 'extensions', ...location.path)
+    : resolveExternalExtensionDirectory(root, location)
+}
 
 const [{ createServerApp }, { createAutomationHost }, electron, vscode, web, cli] =
   await Promise.all([
@@ -141,7 +149,7 @@ const inputByDirectory = new Map(
   await Promise.all(
     Object.keys(READY_APP_EXTENSIONS).map(async directory => [
       directory,
-      await loadExtensionDirectory(join(root, 'extensions', ...extensionDirectory(directory))),
+      await loadExtensionDirectory(extensionPath(directory)),
     ]),
   ),
 )

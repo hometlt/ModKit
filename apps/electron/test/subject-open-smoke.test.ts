@@ -50,9 +50,11 @@ import {
   openNestedSubject,
   type ElectronSubjectServices,
 } from '../src/index.js'
+import { externalRepositoryRoot } from '../../../scripts/lib/external-extension-roots.mjs'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
 const extensionsRoot = join(repositoryRoot, 'extensions')
+const blizzardRoot = externalRepositoryRoot(repositoryRoot, 'blizzard')
 const syntheticDir = join(
   repositoryRoot,
   'packages',
@@ -356,7 +358,7 @@ describe('the Electron composition opens a subject headlessly', () => {
     const fixtureRoot = syntheticDir
     const file = join(fixtureRoot, 'minimal.SC2Map')
     const subjects = await createElectronSubjectServices([], {
-      userRoots: [join(extensionsRoot, 'blizzard', 'starcraft2')],
+      userRoots: [join(blizzardRoot, 'starcraft2')],
     })
     services.push(subjects)
     expect(subjects.extensions.bundled).toEqual([])
@@ -413,7 +415,7 @@ describe('the Electron composition opens a subject headlessly', () => {
   it('selects the semantic SC2Campaign codec through the main-process file path', async () => {
     const file = join(syntheticDir, 'minimal.SC2Campaign')
     const subjects = await createElectronSubjectServices([], {
-      userRoots: [join(extensionsRoot, 'blizzard', 'starcraft2')],
+      userRoots: [join(blizzardRoot, 'starcraft2')],
     })
     services.push(subjects)
     const opened = await subjects.open({

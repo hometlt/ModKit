@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { externalRepositoryRoot } from '../../../scripts/lib/external-extension-roots.mjs'
 import type { RuntimeSessionV2, RuntimeSnapshot } from '@modkitx-x3/sdk/runtime'
 import { openFileArtifactSource } from '@modkitx-x3/host/node'
 import {
@@ -470,7 +471,7 @@ describe('runtime remains optional to codec inspection', () => {
   it('reports a named no-runtime diagnostic while a replay codec still opens normally', async () => {
     const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
     const host = await createVsCodeSubjectHost({
-      catalogCandidates: [join(repositoryRoot, 'extensions', 'blizzard')],
+      catalogCandidates: [externalRepositoryRoot(repositoryRoot, 'blizzard')],
       configuredDisabledContributions: ['org.modkitx/sc2-runtime-provider'],
     })
     const controller = createRuntimeDebugController({

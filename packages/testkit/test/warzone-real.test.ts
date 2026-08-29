@@ -70,8 +70,7 @@ const operatingSystem =
   process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'darwin' : 'linux'
 
 const { discoverWarzone2100Installations } = (await import(
-  pathToFileURL(join(repoRoot, 'extensions', 'opensource', 'warzone-2100', 'src', 'provider.js'))
-    .href
+  pathToFileURL(join(repoRoot, '..', 'modkit-warzone', 'src', 'provider.js')).href
 )) as {
   readonly discoverWarzone2100Installations: (request: {
     readonly gameId: string
@@ -237,7 +236,7 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
 
       const archiveInputs = await Promise.all([
         loadExtensionDirectory(join(repoRoot, 'extensions', 'common', 'archives')),
-        loadExtensionDirectory(join(repoRoot, 'extensions', 'opensource', 'warzone-2100')),
+        loadExtensionDirectory(join(repoRoot, '..', 'modkit-warzone')),
       ])
       const archiveInventory = await buildInventory(
         archiveInputs.map(archiveInput => ({
@@ -408,9 +407,7 @@ describe('installed Warzone 2100 map to UVW vertical', () => {
       expect(createHash('sha256').update(gameMapBytes).digest('hex')).toBe(MAP_DIGEST)
 
       const { warzone2100 } = (await import(
-        pathToFileURL(
-          join(repoRoot, 'extensions', 'opensource', 'warzone-2100', 'src', 'linked.js'),
-        ).href
+        pathToFileURL(join(repoRoot, '..', 'modkit-warzone', 'src', 'linked.js')).href
       )) as {
         readonly warzone2100: Parameters<typeof linkedExtensionInputs>[0][number]
       }

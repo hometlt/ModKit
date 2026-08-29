@@ -205,22 +205,26 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     ]),
   }),
   'blizzard-casc': Object.freeze({
-    path: Object.freeze(['blizzard', 'casc']),
+    repository: 'blizzard',
+    path: Object.freeze(['casc']),
     coordinate: 'org.modkitx.blizzard/casc',
     contributions: Object.freeze(['org.modkitx/casc']),
   }),
   'blizzard-models': Object.freeze({
-    path: Object.freeze(['blizzard', 'models']),
+    repository: 'blizzard',
+    path: Object.freeze(['models']),
     coordinate: 'org.modkitx.blizzard/models',
     contributions: Object.freeze(['org.modkitx/m3', 'org.modkitx.blizzard/m3-preserving-writer']),
   }),
   'blizzard-mpq': Object.freeze({
-    path: Object.freeze(['blizzard', 'mpq']),
+    repository: 'blizzard',
+    path: Object.freeze(['mpq']),
     coordinate: 'org.modkitx.blizzard/mpq',
     contributions: Object.freeze(['org.modkitx/mpq', 'org.modkitx.blizzard/mpq-fresh-writer']),
   }),
   'blizzard-starcraft2': Object.freeze({
-    path: Object.freeze(['blizzard', 'starcraft2']),
+    repository: 'blizzard',
+    path: Object.freeze(['starcraft2']),
     coordinate: 'org.modkitx.blizzard/starcraft2',
     contributions: Object.freeze([
       'org.modkitx/galaxy',
@@ -248,7 +252,8 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     ]),
   }),
   'blizzard-starcraft2-game': Object.freeze({
-    path: Object.freeze(['blizzard', 'starcraft2-game']),
+    repository: 'blizzard',
+    path: Object.freeze(['starcraft2-game']),
     coordinate: 'org.modkitx.blizzard/starcraft2-game',
     contributions: Object.freeze([
       'org.modkitx.blizzard/sc2-data-knowledge',
@@ -316,7 +321,8 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     contributions: Object.freeze(['org.modkitx/spring-s3o', 'org.modkitx/spring-unit-definition']),
   }),
   'opensource-warzone-2100': Object.freeze({
-    path: Object.freeze(['opensource', 'warzone-2100']),
+    repository: 'warzone',
+    path: Object.freeze([]),
     coordinate: 'org.modkitx.opensource/warzone-2100',
     contributions: Object.freeze([
       'org.modkitx/warzone-img',
@@ -406,7 +412,20 @@ export const APP_EXTENSION_SETS = Object.freeze({
 export function extensionDirectory(name) {
   const extension = READY_APP_EXTENSIONS[name]
   if (extension === undefined) throw new Error(`unknown application extension directory: ${name}`)
+  if (extension.repository !== undefined) {
+    throw new Error(`${name} belongs to external repository ${extension.repository}`)
+  }
   return extension.path ?? Object.freeze(['common', name])
+}
+
+export function extensionLocation(name) {
+  const extension = READY_APP_EXTENSIONS[name]
+  if (extension === undefined) throw new Error(`unknown application extension directory: ${name}`)
+  return Object.freeze(
+    extension.repository === undefined
+      ? { kind: 'internal', path: extension.path ?? Object.freeze(['common', name]) }
+      : { kind: 'external', repository: extension.repository, path: extension.path },
+  )
 }
 
 export function extensionSet(name) {

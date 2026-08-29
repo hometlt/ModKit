@@ -15,6 +15,7 @@
 import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { productExtensionDirectory } from '../../../scripts/lib/external-extension-roots.mjs'
 import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
@@ -227,7 +228,7 @@ async function inventoryOf(directories: readonly (readonly string[])[]): Promise
   const inputs = await Promise.all(
     directories.map(async parts => ({
       ...(await loadExtensionDirectory(
-        parts[0] === 'fixture' ? nestedExtension : join(repoRoot, 'extensions', ...parts),
+        parts[0] === 'fixture' ? nestedExtension : productExtensionDirectory(repoRoot, parts),
       )),
       execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
     })),

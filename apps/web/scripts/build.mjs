@@ -26,10 +26,12 @@ import {
 } from 'node:fs'
 import { dirname, extname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { externalRepositoryRoot } from '../../../scripts/lib/external-extension-roots.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
 const repoRoot = resolve(appRoot, '..', '..')
+const blizzardRoot = externalRepositoryRoot(repoRoot, 'blizzard')
 const outIndex = process.argv.indexOf('--out')
 const requestedOut = outIndex === -1 ? undefined : process.argv[outIndex + 1]
 if (outIndex !== -1 && (requestedOut === undefined || requestedOut.startsWith('--'))) {
@@ -133,19 +135,9 @@ await build({
     ),
     'vendor/core/index': join(repoRoot, 'packages', 'core', 'dist', 'index.js'),
     'vendor/sdk/index': join(repoRoot, 'packages', 'sdk', 'dist', 'index.js'),
-    'vendor/blizzard-mpq/fresh-writer': join(
-      repoRoot,
-      'extensions',
-      'blizzard',
-      'mpq',
-      'src',
-      'mpq',
-      'fresh-writer.js',
-    ),
+    'vendor/blizzard-mpq/fresh-writer': join(blizzardRoot, 'mpq', 'src', 'mpq', 'fresh-writer.js'),
     'vendor/blizzard-mpq/native-preserving': join(
-      repoRoot,
-      'extensions',
-      'blizzard',
+      blizzardRoot,
       'mpq',
       'src',
       'mpq',

@@ -71,9 +71,12 @@ pnpm release:rc -- --out <FRESH-RC> --signing-key <PRIVATE-KEY-OUTSIDE-REPO>
 pnpm release:verify -- --out <FRESH-RC> --public-key <PUBLIC-KEY>
 ```
 
-В RC входят платформа, общий набор расширений, `sc2-mod-studio` и `warzone-2100-studio`, а также
-SBOM, сведения о лицензиях и эта инструкция. Подпись Ed25519 защищает манифест, а манифест хранит
-SHA-256 и размер каждого артефакта.
+В RC входят платформа, общий набор расширений, профили `sc2-mod-studio` и
+`warzone-2100-studio`, а также SBOM, сведения о лицензиях и эта инструкция. Код Blizzard и
+Warzone в архив платформы не копируется: репозитории `modkit-blizzard` и `modkit-warzone` должны
+лежать рядом с `modkitX3`, либо их пути задаются через `MODKIT_BLIZZARD_ROOT` и
+`MODKIT_WARZONE_ROOT`. Подпись Ed25519 защищает манифест, а манифест хранит SHA-256 и размер
+каждого артефакта.
 
 Если исходники или эта инструкция менялись, сопровождающий сначала обновляет воспроизводимые
 release-метаданные командой `pnpm release:emit`, а затем повторяет `pnpm release:check`. Закрытый

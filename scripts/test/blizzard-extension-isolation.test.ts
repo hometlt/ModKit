@@ -6,7 +6,7 @@ import { buildInventory, createHostContributionContractRegistry } from '@modkitx
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 
 const repoRoot = resolve(import.meta.dirname, '..', '..')
-const modelsRoot = join(repoRoot, 'extensions', 'blizzard', 'models')
+const modelsRoot = join(repoRoot, '..', 'modkit-blizzard', 'models')
 
 describe('Blizzard extension domain isolation', () => {
   it('a models-only consumer carries M3/M3A without replay or trigger code', async () => {
@@ -27,7 +27,7 @@ describe('Blizzard extension domain isolation', () => {
 
     const result = await build({
       absWorkingDir: repoRoot,
-      entryPoints: ['extensions/blizzard/models/src/m3/codec.js'],
+      entryPoints: [join(modelsRoot, 'src', 'm3', 'codec.js')],
       bundle: true,
       format: 'esm',
       platform: 'neutral',
@@ -37,9 +37,10 @@ describe('Blizzard extension domain isolation', () => {
       logLevel: 'silent',
     })
     const inputs = Object.keys(result.metafile?.inputs ?? {})
+    const externalPrefix = '../modkit-blizzard/models/src/m3/'
     expect(inputs.some(path => /sc2-replay|sc2-triggers/u.test(path))).toBe(false)
-    expect(inputs).toContain('extensions/blizzard/models/src/m3/codec.js')
-    expect(inputs).toContain('extensions/blizzard/models/src/m3/geometry.node.js')
-    expect(inputs.every(path => path.startsWith('extensions/blizzard/models/src/m3/'))).toBe(true)
+    expect(inputs).toContain(`${externalPrefix}codec.js`)
+    expect(inputs).toContain(`${externalPrefix}geometry.node.js`)
+    expect(inputs.every(path => path.startsWith(externalPrefix))).toBe(true)
   })
 })
