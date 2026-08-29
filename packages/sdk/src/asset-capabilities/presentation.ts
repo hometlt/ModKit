@@ -10,6 +10,7 @@ import type {
 } from './data-sources.js'
 import type { AnyDescriptor, RevisionId } from './types.js'
 import type { OperationSession } from '../runtime-abi.js'
+import type { KnowledgeCatalog } from '../knowledge/index.js'
 import { snapshotJsonWireData } from '../manifest/validate.js'
 
 declare const BINDING_ID_BRAND: unique symbol
@@ -189,6 +190,8 @@ export interface ViewerModule {
     readonly slot: PresentationSlot
     readonly sources: ViewerSources
     readonly operations: OperationSession
+    /** Optional host-owned, read-only help catalog; viewers never construct or register one. */
+    readonly knowledge?: KnowledgeCatalog
     readonly signal?: AbortSignal
   }): Promise<ViewerMount>
 }

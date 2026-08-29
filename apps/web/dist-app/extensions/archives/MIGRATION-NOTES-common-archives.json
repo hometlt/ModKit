@@ -1,0 +1,269 @@
+{
+  "$comment": "Historical migration notes for common archive formats. Fourteen codecs moved into the product archives package; ZIP is superseded by the richer native MK3 contribution. This file is inert and outside the loader manifest glob.",
+  "schemaVersion": 1,
+  "source": {
+    "repository": "modkitx",
+    "manifests": [
+      "extensions/common/archives/codecs/7z/codec.manifest.json",
+      "extensions/common/archives/codecs/brotli/codec.manifest.json",
+      "extensions/common/archives/codecs/bzip2/codec.manifest.json",
+      "extensions/common/archives/codecs/cab/codec.manifest.json",
+      "extensions/common/archives/codecs/dmg/codec.manifest.json",
+      "extensions/common/archives/codecs/gzip/codec.manifest.json",
+      "extensions/common/archives/codecs/iso/codec.manifest.json",
+      "extensions/common/archives/codecs/lzma/codec.manifest.json",
+      "extensions/common/archives/codecs/pe/codec.manifest.json",
+      "extensions/common/archives/codecs/ps1-xa/codec.manifest.json",
+      "extensions/common/archives/codecs/rar/codec.manifest.json",
+      "extensions/common/archives/codecs/tar/codec.manifest.json",
+      "extensions/common/archives/codecs/xz/codec.manifest.json",
+      "extensions/common/archives/codecs/zip/codec.manifest.json",
+      "extensions/common/archives/codecs/zstd/codec.manifest.json"
+    ]
+  },
+  "verdict": "needs-new-contract",
+  "codecs": {
+    "org.modkitx/7z": {
+      "verdict": "needs-new-contract",
+      "lostPlanes": [],
+      "contractGaps": [
+        "capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract"
+      ],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.archive/entry-namespace",
+        "variants:pair"
+      ],
+      "droppedOperations": ["archive.extract", "archive.inspect", "archive.write"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/brotli": {
+      "verdict": "needs-new-contract",
+      "lostPlanes": [],
+      "contractGaps": [
+        "capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract"
+      ],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.archive/entry-namespace",
+        "variants:pair"
+      ],
+      "droppedOperations": ["archive.extract", "archive.inspect", "archive.write"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/bzip2": {
+      "verdict": "needs-new-contract",
+      "lostPlanes": [],
+      "contractGaps": [
+        "capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract"
+      ],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.archive/entry-namespace",
+        "variants:pair"
+      ],
+      "droppedOperations": ["archive.extract", "archive.inspect", "archive.write"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/cab": {
+      "verdict": "convertible-with-rework",
+      "lostPlanes": [],
+      "contractGaps": [],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.archive/entry-namespace",
+        "variants:pair"
+      ],
+      "droppedOperations": ["archive.extract", "archive.inspect"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/dmg": {
+      "verdict": "mechanical",
+      "lostPlanes": [],
+      "contractGaps": [],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.archive/entry-namespace",
+        "variants:pair"
+      ],
+      "droppedOperations": ["archive.extract", "archive.inspect"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/gzip": {
+      "verdict": "needs-new-contract",
+      "lostPlanes": [],
+      "contractGaps": [
+        "capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract"
+      ],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.archive/entry-namespace",
+        "variants:pair"
+      ],
+      "droppedOperations": ["archive.extract", "archive.inspect", "archive.write"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/iso": {
+      "verdict": "mechanical",
+      "lostPlanes": [],
+      "contractGaps": [],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.archive/entry-namespace",
+        "variants:pair"
+      ],
+      "droppedOperations": ["archive.extract", "archive.inspect"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/lzma": {
+      "verdict": "mechanical",
+      "lostPlanes": [],
+      "contractGaps": [],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.archive/entry-namespace",
+        "variants:pair"
+      ],
+      "droppedOperations": ["archive.extract", "archive.inspect"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/pe": {
+      "verdict": "needs-new-contract",
+      "lostPlanes": [],
+      "contractGaps": [
+        "capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract"
+      ],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.archive/entry-namespace",
+        "variants:pair"
+      ],
+      "droppedOperations": ["archive.extract", "archive.inspect", "archive.write"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/ps1-xa": {
+      "verdict": "mechanical",
+      "lostPlanes": [],
+      "contractGaps": [],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "permissions:union",
+        "probe:bytes-4096",
+        "representation:common.archive/entry-namespace",
+        "variants:pair"
+      ],
+      "droppedOperations": ["archive.extract", "archive.inspect"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/rar": {
+      "verdict": "convertible-with-rework",
+      "lostPlanes": [],
+      "contractGaps": [],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.archive/entry-namespace",
+        "variants:pair"
+      ],
+      "droppedOperations": ["archive.extract", "archive.inspect"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/tar": {
+      "verdict": "needs-new-contract",
+      "lostPlanes": [],
+      "contractGaps": [
+        "capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract"
+      ],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.archive/entry-namespace",
+        "variants:pair"
+      ],
+      "droppedOperations": ["archive.extract", "archive.inspect", "archive.write"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/xz": {
+      "verdict": "needs-new-contract",
+      "lostPlanes": [],
+      "contractGaps": [
+        "capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract"
+      ],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.archive/entry-namespace",
+        "variants:pair"
+      ],
+      "droppedOperations": ["archive.extract", "archive.inspect", "archive.write"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/zip": {
+      "verdict": "needs-new-contract",
+      "lostPlanes": [],
+      "contractGaps": [
+        "capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract"
+      ],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.archive/entry-namespace",
+        "variants:pair"
+      ],
+      "droppedOperations": ["archive.extract", "archive.inspect", "archive.write"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/zstd": {
+      "verdict": "mechanical",
+      "lostPlanes": [],
+      "contractGaps": [],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.archive/entry-namespace",
+        "variants:pair"
+      ],
+      "droppedOperations": ["archive.extract", "archive.inspect"],
+      "needsSignatures": false,
+      "portState": "ported"
+    }
+  }
+}

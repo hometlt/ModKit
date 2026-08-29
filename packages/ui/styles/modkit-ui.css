@@ -2096,6 +2096,46 @@
     align-items: center;
   }
 
+  [data-mk-part='model.primitive-selector'] {
+    min-width: 10rem;
+    max-width: min(24rem, 45vw);
+  }
+
+  [data-mk-part='model.facets'] {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: var(--mk-space-2);
+    max-height: 14rem;
+    overflow: auto;
+  }
+
+  [data-mk-part='model.facet'] {
+    min-width: 0;
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-sunken);
+  }
+
+  [data-mk-part='model.facet-summary'] {
+    padding: var(--mk-space-2);
+    cursor: pointer;
+    font-weight: var(--mk-font-weight-medium);
+  }
+
+  [data-mk-part='model.facet-list'] {
+    max-height: 9rem;
+    margin: 0;
+    padding: 0 var(--mk-space-3) var(--mk-space-2) calc(var(--mk-space-3) + 1rem);
+    overflow: auto;
+  }
+
+  [data-mk-part='model.facet-item'] {
+    color: var(--mk-color-fg-muted);
+    font-family: var(--mk-font-mono);
+    font-size: var(--mk-font-size-xs);
+    overflow-wrap: anywhere;
+  }
+
   /* The stage owns the drag, so the pointer must read as a manipulator, not as text. */
   [data-mk-part='model.canvas'] {
     touch-action: none;
@@ -3694,6 +3734,18 @@
     font-variant-numeric: tabular-nums;
   }
 
+  [data-mk-part='card.knowledge'] {
+    min-height: var(--mk-size-control);
+    padding: var(--mk-space-2) var(--mk-space-3);
+    color: var(--mk-color-fg-muted);
+    border-block: 1px solid var(--mk-color-border);
+    font-size: var(--mk-font-size-xs);
+  }
+
+  [data-mk-part='card.knowledge'] a {
+    color: var(--mk-color-accent);
+  }
+
   [data-mk-part='card.links'] {
     display: flex;
     flex-wrap: wrap;
@@ -3958,6 +4010,93 @@
 }
 
 @layer mk.components {
+  /* -------------------------------------------------------- auditable calculations */
+  [data-mk-part='calculations'] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mk-space-3);
+    min-height: 0;
+    padding: var(--mk-space-4);
+    overflow: auto;
+    background: var(--mk-color-surface);
+  }
+
+  [data-mk-part='calculations.summary'] {
+    margin: 0;
+    color: var(--mk-color-fg-muted);
+    font-family: var(--mk-font-mono);
+    font-size: var(--mk-font-size-xs);
+  }
+
+  [data-mk-part='calculations.summary'][data-mk-state~='degraded'] {
+    color: var(--mk-status-warn-fg);
+  }
+
+  [data-mk-part='calculations.list'] {
+    display: grid;
+    gap: var(--mk-space-3);
+  }
+
+  [data-mk-part='calculations.item'] {
+    display: grid;
+    gap: var(--mk-space-2);
+    padding: var(--mk-space-3);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-md);
+    background: var(--mk-color-sunken);
+  }
+
+  [data-mk-part='calculations.heading'] {
+    margin: 0;
+    font-size: var(--mk-font-size-md);
+  }
+
+  [data-mk-part='calculations.result'] {
+    color: var(--mk-color-fg);
+    font-family: var(--mk-font-mono);
+    font-weight: var(--mk-font-weight-medium);
+  }
+
+  [data-mk-part='calculations.formula'] {
+    color: var(--mk-color-fg-muted);
+    font-family: var(--mk-font-mono);
+    font-size: var(--mk-font-size-xs);
+  }
+
+  [data-mk-part='calculations.inputs'] {
+    display: grid;
+    gap: var(--mk-space-1);
+    margin: 0;
+  }
+
+  [data-mk-part='calculations.input'] {
+    display: grid;
+    grid-template-columns: minmax(8rem, 0.4fr) minmax(0, 1fr);
+    gap: var(--mk-space-2);
+  }
+
+  [data-mk-part='calculations.input'] dt,
+  [data-mk-part='calculations.input'] dd {
+    margin: 0;
+  }
+
+  [data-mk-part='calculations.input'] dt {
+    color: var(--mk-color-fg-muted);
+  }
+
+  [data-mk-part='calculations.input'] dd {
+    overflow-wrap: anywhere;
+    font-family: var(--mk-font-mono);
+  }
+
+  [data-mk-part='calculations.warnings'] {
+    margin: 0;
+    padding-inline-start: var(--mk-space-5);
+    color: var(--mk-status-warn-fg);
+  }
+}
+
+@layer mk.components {
   /* ---------------------------------------------------------------- editable hex */
   [data-mk-part='hex.row'] {
     display: flex;
@@ -4041,5 +4180,38 @@
     border: 1px solid var(--mk-color-border);
     border-radius: var(--mk-radius-sm);
     background: var(--mk-color-canvas-bg);
+  }
+}
+
+@layer mk.components {
+  .modkit-template__header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mk-space-2);
+    align-items: center;
+    margin-block-end: var(--mk-space-3);
+  }
+
+  .modkit-template__items,
+  .modkit-template__diagnostics {
+    display: grid;
+    gap: var(--mk-space-1);
+    margin: 0;
+    padding-inline-start: var(--mk-space-5);
+  }
+
+  .modkit-template__item {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .modkit-template__details {
+    margin-block: var(--mk-space-3);
+  }
+
+  .modkit-template__details pre {
+    max-block-size: 28rem;
+    overflow: auto;
+    white-space: pre-wrap;
   }
 }

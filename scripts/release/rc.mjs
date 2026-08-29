@@ -599,6 +599,15 @@ function nearestPackageJson(dependency, from, repoRoot) {
   return undefined
 }
 
+function normalizeNoticeText(value) {
+  return value
+    .replace(/\r\n/gu, '\n')
+    .split('\n')
+    .map(line => line.trimEnd())
+    .join('\n')
+    .trim()
+}
+
 function licenseText(packageRoot) {
   const names = readdirSync(packageRoot).sort()
   const selected = names.find(name => /^(?:licen[cs]e|copying|notice)(?:\.|$)/iu.test(name))
@@ -607,7 +616,7 @@ function licenseText(packageRoot) {
   if (!statSync(path).isFile()) return undefined
   const bytes = readFileSync(path)
   if (bytes.length > 1024 * 1024) throw new Error(`license notice is unexpectedly large: ${path}`)
-  return bytes.toString('utf8').replace(/\r\n/gu, '\n').trim()
+  return normalizeNoticeText(bytes.toString('utf8'))
 }
 
 function componentSeeds(repoRoot, artifacts) {
@@ -793,7 +802,7 @@ export function buildLicenseDocuments({ repoRoot, artifacts, releaseVersion }) {
     )) {
       notices.push(`SHA-256: ${digest}`)
       notices.push(`Locations: ${record.locations.sort().join(', ')}`, '')
-      notices.push(record.bytes.toString('utf8').replace(/\r\n/gu, '\n').trim(), '', '---', '')
+      notices.push(normalizeNoticeText(record.bytes.toString('utf8')), '', '---', '')
     }
   }
   return {

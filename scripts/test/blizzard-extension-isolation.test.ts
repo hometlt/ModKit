@@ -22,6 +22,7 @@ describe('Blizzard extension domain isolation', () => {
     })
     expect(inventory.extensions[0]?.contributions.map(item => item.manifest?.id)).toEqual([
       'org.modkitx/m3',
+      'org.modkitx.blizzard/m3-preserving-writer',
     ])
 
     const result = await build({

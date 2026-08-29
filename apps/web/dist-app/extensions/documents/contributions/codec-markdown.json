@@ -1,34 +1,58 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "contract": {
+    "id": "org.modkitx/codec-contribution",
+    "major": 1
+  },
   "id": "org.modkitx/document-markdown",
   "displayName": "Markdown document",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
       "entrypoint": "./src/formats/markdown/codec.js",
-      "target": { "environments": ["node"] },
+      "target": {
+        "environments": ["node"]
+      },
       "executionProfile": "trusted-in-process",
       "requestedPermissionClasses": ["read-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/formats/markdown/codec.js",
-      "target": { "environments": ["browser-worker", "node-worker"] },
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
       "executionProfile": "worker-brokered",
       "requestedPermissionClasses": ["read-source"]
     }
   ],
   "spec": {
     "formatRefs": [
-      { "formatId": "markdown", "label": "Markdown document", "mediaType": "text/markdown" }
+      {
+        "formatId": "markdown",
+        "label": "Markdown document",
+        "mediaType": "text/markdown"
+      }
     ],
     "roles": ["semantic"],
     "sourceTopology": "single",
     "artifactStages": ["authored"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": { "extensions": ["md", "markdown"], "mediaTypes": ["text/markdown"] },
-    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 8192 }], "maxBytes": 8192 },
+    "match": {
+      "extensions": ["md", "markdown", "mdown", "mkd"],
+      "mediaTypes": ["text/markdown"]
+    },
+    "probe": {
+      "kind": "bytes",
+      "ranges": [
+        {
+          "from": "start",
+          "length": 8192
+        }
+      ],
+      "maxBytes": 8192
+    },
     "representations": [
       {
         "id": "document-outline",
@@ -39,9 +63,18 @@
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/tree-data-source", "major": 1 },
-      { "contract": "common.view/text-data-source", "major": 1 },
-      { "contract": "common.view/byte-range-source", "major": 1 }
+      {
+        "contract": "common.view/tree-data-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/text-data-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/byte-range-source",
+        "major": 1
+      }
     ],
     "operations": [
       {
@@ -67,12 +100,30 @@
       }
     ],
     "traitDeclarations": [
-      { "id": "document.flow", "representation": "source", "presence": "will-expose" },
-      { "id": "document.outline", "representation": "source", "presence": "will-expose" },
-      { "id": "structure.hierarchy", "representation": "source", "presence": "will-expose" },
-      { "id": "content.text", "representation": "source", "presence": "will-expose" }
+      {
+        "id": "document.flow",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "document.outline",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "structure.hierarchy",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "content.text",
+        "representation": "source",
+        "presence": "will-expose"
+      }
     ],
-    "implementationTier": { "claimed": 1 },
+    "implementationTier": {
+      "claimed": 1
+    },
     "budgets": {
       "maxInputBytes": "268435456",
       "maxDepth": 128,

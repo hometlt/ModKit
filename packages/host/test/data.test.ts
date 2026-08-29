@@ -23,6 +23,8 @@ import {
 } from '@modkitx-x3/host'
 import {
   analyzeResolvedDataWorkspace,
+  createResolvedDataSubjectSelectorLease,
+  RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION,
   resolveDataCatalogAnalysis,
   resolveResolvedDataWorkspace,
 } from '@modkitx-x3/host/data'
@@ -277,6 +279,27 @@ async function resolveCatalog() {
 }
 
 describe('standard data contract and semantic game provider', () => {
+  it('declares subject facts and calculations as optional workspace leases', () => {
+    expect(
+      RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION.surface?.methods['openSubjectFacts'],
+    ).toMatchObject({
+      kind: 'lease',
+      optional: true,
+      wrapper: 'lease',
+      result: { contract: 'common.view/subject-facts-source', major: 1 },
+      signal: { arg: 0, key: 'signal' },
+    })
+    expect(
+      RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION.surface?.methods['openSubjectCalculations'],
+    ).toMatchObject({
+      kind: 'lease',
+      optional: true,
+      wrapper: 'lease',
+      result: { contract: 'common.view/subject-calculations-source', major: 1 },
+      signal: { arg: 0, key: 'signal' },
+    })
+  })
+
   it('parses ordered XML patches and exposes inherited schema-backed entities', async () => {
     const resolution = await resolveCatalog()
     try {
@@ -311,10 +334,7 @@ describe('standard data contract and semantic game provider', () => {
         fields: {
           LifeMax: 45,
           Race: 'Terr',
-          WeaponArray: [
-            { index: '0', value: { Link: 'Rifle' } },
-            { index: '1', value: { Link: 'Grenade' } },
-          ],
+          WeaponArray: [{ Link: 'Rifle' }, { Link: 'Grenade' }],
         },
       })
       expect(snapshot.entities[0]?.sources.map(item => item.rootId)).toEqual([
@@ -393,14 +413,14 @@ describe('standard data contract and semantic game provider', () => {
     try {
       expect(
         result.plan.requirements.filter(item => item.kind === 'catalog').map(item => item.rootId),
-      ).toEqual([...Array(8).fill('core'), ...Array(8).fill('liberty'), ...Array(8).fill('active')])
+      ).toEqual([...Array(9).fill('core'), ...Array(9).fill('liberty'), ...Array(9).fill('active')])
       expect(
         result.plan.requirements
           .filter(item => item.kind === 'localization')
           .slice(0, 3)
           .map(item => item.rootId),
       ).toEqual(['active', 'liberty', 'core'])
-      expect(resources.provenance()).toHaveLength(30)
+      expect(resources.provenance()).toHaveLength(33)
 
       const marine = result.snapshot.definitions.find(
         item => item.namespace === 'Unit' && item.entityId === 'Marine',
@@ -417,6 +437,32 @@ describe('standard data contract and semantic game provider', () => {
           source: expect.objectContaining({ rootId: 'active' }),
         }),
       )
+
+      const selector = createResolvedDataSubjectSelectorLease(result, {
+        maxPageSize: 64,
+        maxEntities: 1_024,
+        maxRelations: 1_024,
+        maxCalculations: 64,
+      })
+      expect(selector).toBeDefined()
+      if (selector === undefined) throw new Error('resolved SC2 subject selector is absent')
+      const selectable = await selector.value.subjects({ limit: 64 })
+      expect(selectable.items).toContainEqual(
+        expect.objectContaining({ subjectId: 'Unit/Marine', kind: 'Unit' }),
+      )
+      expect(
+        await selector.value.subjects({ limit: 64, kind: 'Unit', text: 'marine' }),
+      ).toMatchObject({ items: [expect.objectContaining({ subjectId: 'Unit/Marine' })] })
+      expect(await selector.value.subjects({ limit: 64, kind: 'Weapon' })).toMatchObject({
+        items: expect.not.arrayContaining([expect.objectContaining({ kind: 'Unit' })]),
+      })
+      const facts = await selector.value.openFacts('Unit/Marine')
+      const calculations = await selector.value.openCalculations('Unit/Marine')
+      expect(await facts.value.summary()).toMatchObject({
+        identity: { subjectId: 'Unit/Marine' },
+      })
+      expect(await calculations.value.summary()).toMatchObject({ subjectId: 'Unit/Marine' })
+      await Promise.all([facts.release(), calculations.release(), selector.release()])
       expect(result.snapshot.relations).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -531,7 +577,7 @@ describe('standard data contract and semantic game provider', () => {
     expect(() => result.facets.definitions.value.shape()).toThrow(/lease is released/u)
   })
 
-  it('parses only the schema-confirmed concrete effect links and keeps adjacent types as named remainder', async () => {
+  it('parses the full schema-confirmed effect family and reports anonymous defaults explicitly', async () => {
     const resolution = await resolveCatalog()
     try {
       const snapshot = await resolution.analysis.analyze({
@@ -583,26 +629,25 @@ describe('standard data contract and semantic game provider', () => {
             entityId: 'Search',
             fields: {
               AreaArray: [
-                { index: '0', value: { Radius: 4, Effect: 'Damage' } },
-                { index: '1', value: { Radius: 2, Effect: 'ApplyBuff' } },
+                { Radius: 4, Effect: 'Damage' },
+                { Radius: 2, Effect: 'ApplyBuff' },
               ],
             },
           }),
+          expect.objectContaining({
+            namespace: 'Effect',
+            typeId: 'CEffectRemoveBehavior',
+            entityId: 'Unverified',
+            fields: { Behavior: 'Buff' },
+          }),
         ]),
       )
-      expect(snapshot.entities).not.toContainEqual(
-        expect.objectContaining({ entityId: 'Unverified' }),
-      )
-      expect(snapshot.complete).toBe(false)
+      expect(snapshot.complete).toBe(true)
       expect(snapshot.diagnostics).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            code: 'org.modkitx.blizzard.starcraft2/data-schema-slice-partial',
-            message: expect.stringContaining('1 unsupported and 1 anonymous'),
-          }),
-          expect.objectContaining({
-            code: 'common.data/entity-query-unresolved',
-            entityId: 'Unverified',
+            code: 'org.modkitx.blizzard.starcraft2/data-default-definitions-preserved',
+            message: expect.stringContaining('1 anonymous/default'),
           }),
         ]),
       )
@@ -611,7 +656,7 @@ describe('standard data contract and semantic game provider', () => {
     }
   })
 
-  it('fails closed for truncated plans, malformed logical roots, missing reads and stale snapshots', async () => {
+  it('fails closed for truncated plans, malformed logical roots and stale snapshots while tolerating absent optional catalog files', async () => {
     const resolution = await resolveResolvedDataWorkspace({
       services: { ...composition, serviceDefinitions: definitions },
       gameId: GAME_ID,
@@ -706,7 +751,7 @@ describe('standard data contract and semantic game provider', () => {
       locales: ['enUS'],
       queries: [{ namespace: 'Unit', entityId: 'Marine' }],
       limits: {
-        maxRequirements: 64,
+        maxRequirements: 512,
         maxDocumentBytes: 65_536,
         maxTextBytes: 1_048_576,
         maxEntities: 1_024,
@@ -714,10 +759,13 @@ describe('standard data contract and semantic game provider', () => {
         maxPageSize: 2,
       },
     })
-    expect(result.state).toBe('resolved')
+    expect(
+      result.state,
+      result.diagnostics.map(item => `${item.code}: ${item.message}`).join('\n'),
+    ).toBe('resolved')
     if (result.state === 'resolved') {
-      expect(result.snapshot.complete).toBe(false)
-      expect(result.snapshot.diagnostics).toContainEqual(
+      expect(result.snapshot.complete).toBe(true)
+      expect(result.snapshot.diagnostics).not.toContainEqual(
         expect.objectContaining({
           code: 'org.modkitx.blizzard.starcraft2/data-plan-resources-unresolved',
         }),

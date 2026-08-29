@@ -6,6 +6,7 @@
   "description": "Independent dependency-free MK3 INI codec and syntax provider.",
   "exports": {
     ".": "./src/index.js",
+    "./linked": "./src/linked.js",
     "./formats": "./src/formats/index.js",
     "./formats/ini/codec": "./src/formats/ini/codec.js",
     "./formats/ini/provider": "./src/formats/ini/provider.js",

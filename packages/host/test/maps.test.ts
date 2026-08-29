@@ -1020,6 +1020,99 @@ describe('standard map contract and semantic game provider', () => {
     expect(original.originalRelease).toHaveBeenCalledOnce()
   })
 
+  it('executes bounded recursive metadata rounds without lending namespace authority', async () => {
+    const documentPath = `${mapRoot}/documentinfo`
+    const dependencyPath = 'mods/liberty.sc2mod/documentinfo'
+    const files = new Map(workspaceFiles())
+    files.set(
+      documentPath,
+      encoder.encode(
+        '<DocInfo><Dependencies><Value>Liberty (Mod)</Value></Dependencies></DocInfo>',
+      ),
+    )
+    files.set(dependencyPath, encoder.encode('<DocInfo><Dependencies/></DocInfo>'))
+    const original = await originalMapSession(files)
+    const prepare = vi.fn<MapPreviewPreparationPort['prepare']>(async request => {
+      const reads = request.subject.documentReads ?? []
+      if (reads.length === 0) {
+        return {
+          state: 'document-read-required',
+          documents: [{ documentId: 'fixture-document-info', path: documentPath, maxBytes: 4_096 }],
+          diagnostics: [
+            {
+              code: 'example/document-requested',
+              severity: 'information',
+              message: 'DocumentInfo is required',
+            },
+          ],
+        }
+      }
+      expect(reads[0]).toEqual({
+        documentId: 'fixture-document-info',
+        path: documentPath,
+        state: 'read',
+        text: '<DocInfo><Dependencies><Value>Liberty (Mod)</Value></Dependencies></DocInfo>',
+      })
+      if (reads.length === 1) {
+        return {
+          state: 'document-read-required',
+          documents: [
+            { documentId: 'fixture-liberty-info', path: dependencyPath, maxBytes: 4_096 },
+          ],
+          diagnostics: [
+            {
+              code: 'example/dependency-document-requested',
+              severity: 'information',
+              message: 'dependency DocumentInfo is required',
+            },
+          ],
+        }
+      }
+      expect(reads[1]).toEqual({
+        documentId: 'fixture-liberty-info',
+        path: dependencyPath,
+        state: 'read',
+        text: '<DocInfo><Dependencies/></DocInfo>',
+      })
+      return {
+        state: 'selection-required',
+        candidates: [{ candidateId: 'map:fixture', displayName: 'Fixture map' }],
+        diagnostics: [
+          {
+            code: 'example/document-complete',
+            severity: 'information',
+            message: 'DocumentInfo is complete',
+          },
+        ],
+      }
+    })
+    const result = await coordinateMapPreviewAssetSession({
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'maps-preview-document-read', classes: [] },
+      budgets: activationBudget,
+      original: original.session,
+      preparation: previewPreparation(prepare),
+      maxCandidates: 8,
+      maxSubjectEntries: 64,
+      maxSubjectPages: 4,
+      maxRoots: 4,
+      maxDepth: 4,
+      limits: coordinatorLimits,
+    })
+
+    expect(result.state).toBe('selection-required')
+    expect(result.diagnostics.map(item => item.code)).toEqual([
+      'example/document-requested',
+      'example/dependency-document-requested',
+      'example/document-complete',
+    ])
+    expect(prepare).toHaveBeenCalledTimes(3)
+    expect(original.namespaceRelease).toHaveBeenCalledTimes(3)
+    expect(original.session.state()).toBe('live')
+    await original.session.dispose()
+    expect(original.originalRelease).toHaveBeenCalledOnce()
+  })
+
   it('reports unsupported indexed search and rejects a repeated search round without guessing', async () => {
     const original = await originalMapSession(workspaceFiles())
     const prepare = vi.fn<MapPreviewPreparationPort['prepare']>(async request => {
@@ -1408,7 +1501,8 @@ describe('standard map contract and semantic game provider', () => {
         modelReferencesComplete: true,
       },
     })
-    expect(dataRelease).toHaveBeenCalledOnce()
+    // Catalog cards/relations now stay leased for the lifetime of the preview session.
+    expect(dataRelease).not.toHaveBeenCalled()
     expect(resolverRelease).not.toHaveBeenCalled()
     expect(original.session.state()).toBe('live')
 

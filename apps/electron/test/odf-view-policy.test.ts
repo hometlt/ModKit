@@ -112,7 +112,9 @@ async function offeredFor(path: string): Promise<Offered> {
     throw new Error(`${path} did not open: ${JSON.stringify(opened.diagnostics)}`)
   }
   const descriptor = opened.descriptor as unknown as Record<string, unknown>
-  const stages = applicableStages(STAGES, descriptor).map(stage => stage.id ?? stage.contract)
+  const stages = applicableStages(STAGES, descriptor).map(
+    stage => stage.id ?? stage.contract ?? stage.operation ?? 'invalid-stage',
+  )
   await opened.session.dispose()
   return {
     contributionId: opened.selected.contributionId,

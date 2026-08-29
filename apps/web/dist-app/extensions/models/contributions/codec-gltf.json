@@ -20,12 +20,19 @@
     }
   ],
   "spec": {
-    "formatRefs": [{ "formatId": "gltf", "label": "glTF 2.x", "mediaType": "model/gltf+json" }],
+    "formatRefs": [
+      { "formatId": "gltf", "label": "glTF 2.x JSON", "mediaType": "model/gltf+json" },
+      { "formatId": "glb", "label": "glTF 2.x binary", "mediaType": "model/gltf-binary" }
+    ],
     "roles": ["semantic"],
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
-    "match": { "extensions": ["gltf"], "mediaTypes": ["model/gltf+json"] },
+    "match": {
+      "extensions": ["gltf", "glb"],
+      "mediaTypes": ["model/gltf+json", "model/gltf-binary"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "676c5446" }]
+    },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 8192 }], "maxBytes": 8192 },
     "representations": [
       {

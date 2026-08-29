@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/viewer-contribution", "major": 1 },
+  "id": "org.modkitx.ui/relation-graph-stage",
+  "displayName": "relation graph stage",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./dist/graph/index.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "stage",
+    "consumesDataSources": [{ "contract": "common.view/relation-graph-source", "major": 1 }],
+    "priority": 370,
+    "singletonGroup": "center-stage"
+  }
+}

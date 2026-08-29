@@ -450,9 +450,9 @@ describe('installed SC2 catalog to playable runtime bridge', () => {
           queries: [{ namespace: 'Unit', entityId: 'Marine' }],
           localizationKeys: [],
           limits: {
-            maxRequirements: 64,
-            maxDocumentBytes: 4_194_304,
-            maxTextBytes: 16_777_216,
+            maxRequirements: 512,
+            maxDocumentBytes: 16_777_216,
+            maxTextBytes: 268_435_456,
             maxEntities: 100_000,
             maxDepth: 128,
             maxPageSize: 128,
@@ -472,11 +472,18 @@ describe('installed SC2 catalog to playable runtime bridge', () => {
             unitIds: ['Marine'],
             randomSeed: 7,
           })
-          expect(liveData.snapshot.complete).toBe(false)
+          expect(
+            liveData.snapshot.complete,
+            liveData.snapshot.diagnostics
+              .filter(item => item.severity === 'error')
+              .slice(0, 32)
+              .map(item => `${item.code}: ${item.message}`)
+              .join('\n'),
+          ).toBe(true)
           expect(bridged.receipt).toMatchObject({
             gameId: 'org.modkitx/starcraft-2',
             snapshotId: liveData.snapshot.snapshotId,
-            workspaceStatus: 'partial',
+            workspaceStatus: 'complete',
             spawnSemantics: 'full-life-from-LifeMax',
             units: [
               {

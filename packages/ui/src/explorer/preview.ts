@@ -10,6 +10,7 @@
  */
 import type {
   EditorModule,
+  KnowledgeCatalog,
   OperationSession,
   PresentationPlan,
   ViewerModule,
@@ -19,12 +20,14 @@ import type { ExplorerEntry, PreviewHandle, PreviewResolver } from './index.js'
 import { builtinByteRangeSource, builtinTextSource, looksTextual } from './builtin.js'
 import { setPart } from '../viewer/index.js'
 
-/** A stage the host is willing to show, keyed by the data source it needs. */
+/** A stage the host is willing to show, keyed by a data source, an operation, or both. */
 export interface PreviewStage {
   /** Stable presentation slot id. Defaults to `contract` for legacy callers. */
   readonly id?: string
   readonly label: string
-  readonly contract: string
+  readonly contract?: string
+  /** Exact available operation required by an operation-backed stage such as `view.template`. */
+  readonly operation?: string
   /**
    * The module to mount. An `editable` stage carries an `EditorModule` (four more mount arguments
    * than a viewer) — the union is here so a host can name one in TypeScript at all. It used to be
@@ -60,6 +63,8 @@ export interface PreviewStage {
 
 export interface CodecPreviewOptions {
   readonly stages: readonly PreviewStage[]
+  /** Optional host-owned read-only help catalog shared by every mounted stage. */
+  readonly knowledge?: KnowledgeCatalog
   /**
    * Extensions exposed by an external host-owned opener. These are registration hints only; the
    * opener still detects from inventory and bytes, and may reject a matching suffix.
@@ -142,7 +147,19 @@ const publishedContracts = (descriptor: Record<string, unknown>): readonly strin
   return sources.map(item => String((item as { contract?: unknown }).contract ?? ''))
 }
 
-const stageId = (stage: PreviewStage): string => stage.id ?? stage.contract
+const publishedOperations = (descriptor: Record<string, unknown>): readonly string[] => {
+  const operations = descriptor['operations']
+  if (!Array.isArray(operations)) return []
+  return operations
+    .filter(item => (item as { state?: unknown }).state === 'available')
+    .map(item => String((item as { id?: unknown }).id ?? ''))
+}
+
+const stageId = (stage: PreviewStage): string => {
+  const id = stage.id ?? stage.contract ?? stage.operation
+  if (id === undefined) throw new TypeError('preview stage must declare id, contract or operation')
+  return id
+}
 
 export function createCodecPreview(options: CodecPreviewOptions): PreviewResolver {
   const supported = [
@@ -177,6 +194,7 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
       const ports = await options.editorPorts?.(entry, bytes)
       const traits = new Set(traitsOf(descriptor))
       const published = new Set(publishedContracts(descriptor))
+      const availableOperations = new Set(publishedOperations(descriptor))
 
       const candidates = resolved ? options.stages : fallbackStages(options.fallback)
       const hasPresentationPlan = session.presentation !== undefined
@@ -193,7 +211,9 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
       const usable = candidates.filter(
         stage =>
           (!hasPresentationPlan || plannedSlots.has(stageId(stage)) || stage.appLocal === true) &&
-          published.has(stage.contract) &&
+          (stage.contract === undefined || published.has(stage.contract)) &&
+          (stage.operation === undefined ||
+            (operations !== undefined && availableOperations.has(stage.operation))) &&
           (stage.trait === undefined || traits.has(stage.trait)) &&
           // An editable stage without ports could never save; offering it would be a lie.
           (stage.editable !== true || ports !== undefined),
@@ -234,7 +254,9 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
             extensionId: 'org.modkitx.ui',
             priority: 100,
             bindings: [
-              { bindingId: 'content', contract: stage.contract, major: 1 },
+              ...(stage.contract === undefined
+                ? []
+                : [{ bindingId: 'content', contract: stage.contract, major: 1 }]),
               // optional sources: bound when this descriptor actually publishes them, absent when it
               // does not, so the viewer's own `bindingFor` lookup is the whole availability check
               ...(stage.optionalContracts ?? [])
@@ -283,6 +305,7 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
             },
           } as never,
           operations: operations as never,
+          ...(options.knowledge === undefined ? {} : { knowledge: options.knowledge }),
           ...(signal === undefined ? {} : { signal }),
         } as never)
         active = mounted

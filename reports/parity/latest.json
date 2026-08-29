@@ -1,13 +1,13 @@
 {
   "schemaVersion": 3,
-  "corpus": "C:\\FILES\\SC2Files\\coding\\modkitX3-orchestrator-round3\\scripts\\parity\\corpus.json",
+  "corpus": "C:\\FILES\\SC2Files\\coding\\modkitX3\\scripts\\parity\\corpus.json",
   "canonical": {
     "root": "C:\\FILES\\SC2Files\\coding\\modkitx",
     "sha": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d"
   },
   "x3": {
-    "root": "C:\\FILES\\SC2Files\\coding\\modkitX3-orchestrator-round3",
-    "sha": "341606522dffdd0516e28d0e959e0b5bace3d5f1"
+    "root": "C:\\FILES\\SC2Files\\coding\\modkitX3",
+    "sha": "8283ecc5303dab7c617c1458b73700bad7e24e98"
   },
   "counts": {
     "total": 76,
@@ -18,9 +18,9 @@
     "failed": 0,
     "comparedReal": 9,
     "comparedSynthetic": 60,
-    "richer": 41,
+    "richer": 42,
     "equal": 15,
-    "poorer": 13,
+    "poorer": 12,
     "incomparable": 0
   },
   "summary": [
@@ -624,8 +624,8 @@
       "kind": "real",
       "contributionId": "org.modkitx/warzone-pie",
       "state": "compared",
-      "classification": "X3 беднее",
-      "verdict": "poorer"
+      "classification": "X3 богаче",
+      "verdict": "richer"
     },
     {
       "id": "wav-synthetic",
@@ -821,14 +821,6 @@
       "classification": "X3 беднее",
       "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
       "reason": "The canonical model stack substitutes one synthesised default material when the file declares none (ensureDefaultMaterial / defaultMaterial() / materialNames.push(\"Default\")); the fixture declares zero, so the X3 count is the source fact and the difference is not a missing X3 capability."
-    },
-    {
-      "id": "warzone-pie-real-base-wz",
-      "format": "warzone-pie",
-      "kind": "real",
-      "classification": "X3 беднее",
-      "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
-      "reason": "The canonical PIE reader synthesizes one default material; X3 does not invent a material, while publishing richer hierarchy, texture-reference and ANIMOBJECT planes."
     }
   ],
   "incomparable": [],
@@ -8349,7 +8341,7 @@
           "primitiveBindings": 1,
           "rejectedReferences": 0,
           "unresolvedLayerResources": 0,
-          "layerFacetState": "lost/model-material-source@1-has-no-layers"
+          "layerFacetState": "normalized/model-material-source@1"
         },
         "features": [
           "geometry:decoded",
@@ -8717,7 +8709,7 @@
           "primitiveBindings": 2,
           "rejectedReferences": 0,
           "unresolvedLayerResources": 0,
-          "layerFacetState": "lost/model-material-source@1-has-no-layers"
+          "layerFacetState": "normalized/model-material-source@1"
         },
         "features": [
           "geometry:decoded",
@@ -15940,29 +15932,32 @@
         "bytes": 22053,
         "sha256": "0674a8044d71f12c8f9362eae9efea946f5b0ba04b065d9d8b861eae669fef23"
       },
-      "classification": "X3 беднее",
-      "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
+      "classification": "X3 богаче",
+      "missing": [],
       "extra": [
         "common.view/model-scene-source:measurement:animations:6>1",
         "common.view/model-scene-source:measurement:nodes:6>0",
-        "common.view/model-scene-source:measurement:textures:1>0",
+        "common.view/model-scene-source:measurement:textures:2>0",
         "operation:asset.validate",
         "operation:export.raw",
         "operation:view.inspect",
         "source:common.view/byte-range-source",
         "source:common.view/model-animation-source",
+        "source:common.view/model-material-source",
         "source:common.view/model-resource-refs-source",
+        "source:common.view/model-skeleton-source",
+        "source:common.view/text-data-source",
         "source:common.view/tree-data-source"
       ],
       "sourceComparisons": [
         {
           "contract": "common.view/model-scene-source",
-          "classification": "X3 беднее",
-          "missing": ["measurement:materials:0<1"],
+          "classification": "X3 богаче",
+          "missing": [],
           "extra": [
             "measurement:animations:6>1",
             "measurement:nodes:6>0",
-            "measurement:textures:1>0"
+            "measurement:textures:2>0"
           ]
         }
       ],
@@ -16011,15 +16006,21 @@
         "declaredSources": [
           "common.view/byte-range-source",
           "common.view/model-animation-source",
+          "common.view/model-material-source",
           "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
+          "common.view/model-skeleton-source",
+          "common.view/text-data-source",
           "common.view/tree-data-source"
         ],
         "actualSources": [
           "common.view/byte-range-source",
           "common.view/model-animation-source",
+          "common.view/model-material-source",
           "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
+          "common.view/model-skeleton-source",
+          "common.view/text-data-source",
           "common.view/tree-data-source"
         ],
         "sourceFailures": [],
@@ -16033,6 +16034,13 @@
           },
           {
             "contract": "common.view/model-animation-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/model-material-source",
             "major": 1,
             "state": "opened",
             "features": ["smoke"],
@@ -16055,12 +16063,32 @@
               "decodedGeometry": true,
               "decodedIndices": 102,
               "decodedVertices": 102,
-              "materials": 0,
+              "materials": 1,
               "meshes": 6,
               "nodes": 6,
               "primitives": 6,
               "scenes": 1,
-              "textures": 1
+              "textures": 2
+            }
+          },
+          {
+            "contract": "common.view/model-skeleton-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 525,
+              "linesKnown": true,
+              "sliceLines": 17,
+              "sliceNonEmpty": true
             }
           },
           {
@@ -16081,18 +16109,21 @@
           "operation:view.inspect",
           "source:common.view/byte-range-source",
           "source:common.view/model-animation-source",
+          "source:common.view/model-material-source",
           "source:common.view/model-resource-refs-source",
           "source:common.view/model-scene-source",
+          "source:common.view/model-skeleton-source",
+          "source:common.view/text-data-source",
           "source:common.view/tree-data-source"
         ]
       },
-      "verdict": "poorer",
+      "verdict": "richer",
       "planes": [
         { "plane": "subject-recognition", "state": "compared", "verdict": "equal" },
         { "plane": "structural-metadata", "state": "compared", "verdict": "equal" },
         { "plane": "geometry-counts", "state": "compared", "verdict": "equal" },
         { "plane": "hierarchy", "state": "compared", "verdict": "richer" },
-        { "plane": "materials-textures", "state": "compared", "verdict": "poorer" },
+        { "plane": "materials-textures", "state": "compared", "verdict": "richer" },
         { "plane": "animation", "state": "compared", "verdict": "richer" },
         { "plane": "collision", "state": "not-observed", "verdict": "not-observed" },
         { "plane": "palette-voxel-transforms", "state": "not-observed", "verdict": "not-observed" },
@@ -16113,8 +16144,11 @@
         "x3": [
           "common.view/byte-range-source",
           "common.view/model-animation-source",
+          "common.view/model-material-source",
           "common.view/model-resource-refs-source",
           "common.view/model-scene-source",
+          "common.view/model-skeleton-source",
+          "common.view/text-data-source",
           "common.view/tree-data-source"
         ]
       },
@@ -16155,6 +16189,13 @@
             "measurements": {}
           },
           {
+            "contract": "common.view/model-material-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
             "contract": "common.view/model-resource-refs-source",
             "major": 1,
             "state": "opened",
@@ -16171,12 +16212,32 @@
               "decodedGeometry": true,
               "decodedIndices": 102,
               "decodedVertices": 102,
-              "materials": 0,
+              "materials": 1,
               "meshes": 6,
               "nodes": 6,
               "primitives": 6,
               "scenes": 1,
-              "textures": 1
+              "textures": 2
+            }
+          },
+          {
+            "contract": "common.view/model-skeleton-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["smoke"],
+            "measurements": {}
+          },
+          {
+            "contract": "common.view/text-data-source",
+            "major": 1,
+            "state": "opened",
+            "features": ["info", "slice"],
+            "measurements": {
+              "encoding": "utf-8",
+              "lines": 525,
+              "linesKnown": true,
+              "sliceLines": 17,
+              "sliceNonEmpty": true
             }
           },
           {
@@ -16189,29 +16250,32 @@
         ]
       },
       "comparison": {
-        "classification": "X3 беднее",
-        "missing": ["common.view/model-scene-source:measurement:materials:0<1"],
+        "classification": "X3 богаче",
+        "missing": [],
         "extra": [
           "common.view/model-scene-source:measurement:animations:6>1",
           "common.view/model-scene-source:measurement:nodes:6>0",
-          "common.view/model-scene-source:measurement:textures:1>0",
+          "common.view/model-scene-source:measurement:textures:2>0",
           "operation:asset.validate",
           "operation:export.raw",
           "operation:view.inspect",
           "source:common.view/byte-range-source",
           "source:common.view/model-animation-source",
+          "source:common.view/model-material-source",
           "source:common.view/model-resource-refs-source",
+          "source:common.view/model-skeleton-source",
+          "source:common.view/text-data-source",
           "source:common.view/tree-data-source"
         ],
         "sources": [
           {
             "contract": "common.view/model-scene-source",
-            "classification": "X3 беднее",
-            "missing": ["measurement:materials:0<1"],
+            "classification": "X3 богаче",
+            "missing": [],
             "extra": [
               "measurement:animations:6>1",
               "measurement:nodes:6>0",
-              "measurement:textures:1>0"
+              "measurement:textures:2>0"
             ]
           }
         ]

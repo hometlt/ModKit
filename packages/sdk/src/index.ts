@@ -25,6 +25,7 @@ export {
   dataSourceContributionSpecV1Schema,
   dataSourceRefWireSchema,
   editorContributionSpecV1Schema,
+  knowledgePackSpecV1Schema,
   jsonSchemaRefSchema,
   resourceBudgetWireSchema,
   serviceProviderContributionSpecV1Schema,
@@ -84,7 +85,10 @@ export {
   TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
   TRAIT_DEFINITION_FACT,
   VIEWER_CONTRIBUTION_CONTRACT,
+  KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
+  KNOWLEDGE_PACK_FACT,
   validateEditorContributionSemantics,
+  validateKnowledgePackSemantics,
   createContributionContractRegistry,
   type ContributionContractRegistration,
   type ContributionContractRegistry,
@@ -160,6 +164,7 @@ export type {
 } from './service-contracts.js'
 export { foreignServiceContractId } from './service-contracts.js'
 export * from './language/index.js'
+export * from './knowledge/index.js'
 export * from './runtime/index.js'
 export * from './renderer/index.js'
 export * from './games/index.js'
@@ -371,6 +376,20 @@ export {
   type SubjectFactsIdentity,
   type SubjectFactsSource,
   type SubjectFactsSummary,
+  type SubjectCalculation,
+  type SubjectCalculationFormula,
+  type SubjectCalculationInput,
+  type SubjectCalculationInputState,
+  type SubjectCalculationStatus,
+  type SubjectCalculationWarning,
+  type SubjectCalculationsCompleteness,
+  type SubjectCalculationsSource,
+  type SubjectCalculationsSummary,
+  type SelectableSubject,
+  type SubjectSelectorCompleteness,
+  type SubjectSelectorQuery,
+  type SubjectSelectorSource,
+  type SubjectSelectorSummary,
   type SubjectPreviewResource,
   type VectorSceneDocument,
   type VectorSceneInfo,
@@ -402,7 +421,9 @@ export {
   type ModelAnimationClip,
   type ModelAnimationInfo,
   type ModelAnimationKind,
+  type ModelAnimationSample,
   type ModelAnimationSource,
+  type ModelAnimationTimeBounds,
   type ModelBoneBinding,
   type ModelBoneProvenance,
   type ModelCollisionInfo,
@@ -410,6 +431,7 @@ export {
   type ModelCollisionSource,
   type ModelCollisionVolume,
   type ModelMaterialInfo,
+  type ModelMaterialLayerRef,
   type ModelMaterialRef,
   type ModelMaterialSource,
   type ModelResourceProvenance,
@@ -687,3 +709,13 @@ export {
   type V1ProjectionUnavailableDiagnostic,
   type V1ViewerContributionDescriptor,
 } from './asset-capabilities/v1-projection.js'
+export {
+  GAME_TEMPLATE_PREVIEW_OPERATION_ID,
+  GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION,
+  isGameTemplatePreviewResult,
+  type GameTemplatePreviewDiagnostic,
+  type GameTemplatePreviewFidelity,
+  type GameTemplatePreviewInput,
+  type GameTemplatePreviewResult,
+  type GameTemplateViewport,
+} from './templates/index.js'

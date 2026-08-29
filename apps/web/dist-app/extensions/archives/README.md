@@ -48,3 +48,8 @@ descriptor carries the reason as a diagnostic:
 Results that would themselves need ZIP64 (more than 65535 entries, or more than 4 GiB of output)
 are refused too, as is anything beyond the open budget's `maxInputBytes` / `maxNodes`, and a
 payload beyond `maxScalarBytes`.
+
+Fourteen additional product codecs now live in this package: 7z, Brotli, BZip2, CAB, DMG, GZip,
+ISO, LZMA, PE, PlayStation XA, RAR, TAR, XZ and Zstandard. The older ZIP staging route was retired
+in favour of the richer native ZIP contribution already here. Historical decisions remain in
+inert `MIGRATION-NOTES-common-archives.json`.

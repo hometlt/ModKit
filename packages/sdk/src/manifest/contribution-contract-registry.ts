@@ -18,6 +18,7 @@ import {
 import {
   codecContributionSpecV1Schema,
   editorContributionSpecV1Schema,
+  knowledgePackSpecV1Schema,
   serviceProviderContributionSpecV1Schema,
   contractDefinitionSpecV1Schema,
   traitDefinitionSpecV1Schema,
@@ -50,6 +51,7 @@ import type {
   TraitDefinitionSpecV1Wire,
 } from '../definitions.js'
 import type { EditorContributionSpecV1Wire } from '../editing.js'
+import { knowledgeTargetKey, type KnowledgePackSpecV1Wire } from '../knowledge/index.js'
 import type { ContractRequirementWire } from '../resolution/types.js'
 import { snapshotJsonWireObject } from './validate.js'
 
@@ -69,6 +71,9 @@ export const TRAIT_DEFINITION_CONTRIBUTION_CONTRACT: ContractId = contractId(
 export const CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT: ContractId = contractId(
   'org.modkitx/contract-definition',
 )
+export const KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT: ContractId = contractId(
+  'org.modkitx/knowledge-pack',
+)
 
 export const TRAIT_DEFINITION_FACT: ContractId = contractId(
   'org.modkitx.inventory/trait-definition',
@@ -79,6 +84,7 @@ export const CONTRACT_DEFINITION_FACT: ContractId = contractId(
 export const EDITOR_CONTRIBUTION_FACT: ContractId = contractId(
   'org.modkitx.inventory/editor-contribution',
 )
+export const KNOWLEDGE_PACK_FACT: ContractId = contractId('org.modkitx.inventory/knowledge-pack')
 
 export type ContributionModuleAbiDeclaration = SpecModuleAbiDeclaration
 
@@ -785,6 +791,90 @@ export const validateServiceProviderContributionSemantics: SpecSemanticValidator
   return diagnostics
 }
 
+/** Cross-entry identities a JSON Schema cannot compare. */
+export const validateKnowledgePackSemantics: SpecSemanticValidator = manifest => {
+  const spec = manifest.spec as unknown as KnowledgePackSpecV1Wire
+  const diagnostics = duplicateFieldDiagnostics(
+    spec.entries.map(entry => `${entry.id}\u0000${entry.locale.toLowerCase()}`),
+    ['spec', 'entries'],
+    'knowledge entry and locale',
+  )
+  const targetLocales = new Set<string>()
+  const targetByLogicalId = new Map<string, string>()
+  const localesByLogicalId = new Map<
+    string,
+    { readonly firstIndex: number; readonly values: Set<string> }
+  >()
+  spec.entries.forEach((entry, index) => {
+    const targetKey = knowledgeTargetKey(entry.target)
+    const coordinate = `${targetKey}\u0000${entry.locale.toLowerCase()}`
+    if (targetLocales.has(coordinate)) {
+      diagnostics.push(
+        diagnostic(
+          'warning',
+          'x3.sdk/knowledge-target-locale-overlap',
+          `more than one knowledge entry describes the same target and locale`,
+          ['spec', 'entries', index, 'target'],
+        ),
+      )
+    }
+    targetLocales.add(coordinate)
+    const previousTarget = targetByLogicalId.get(entry.id)
+    if (previousTarget !== undefined && previousTarget !== targetKey) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/knowledge-logical-id-target-mismatch',
+          'translations sharing a logical knowledge entry id must describe the same target',
+          ['spec', 'entries', index, 'target'],
+        ),
+      )
+    } else {
+      targetByLogicalId.set(entry.id, targetKey)
+    }
+    const logicalLocales = localesByLogicalId.get(entry.id) ?? {
+      firstIndex: index,
+      values: new Set<string>(),
+    }
+    logicalLocales.values.add(entry.locale.toLowerCase())
+    localesByLogicalId.set(entry.id, logicalLocales)
+    const exactSchemaRevision =
+      entry.target.kind === 'field' ? entry.target.schema.revision : undefined
+    const hasExactSchemaSource = entry.sources.some(
+      source =>
+        source.kind === 'schema' &&
+        source.schema !== undefined &&
+        (entry.target.kind !== 'field' ||
+          (source.schema.contract === entry.target.schema.contract &&
+            source.schema.major === entry.target.schema.major &&
+            source.schema.revision === exactSchemaRevision)),
+    )
+    if (entry.claimKind === 'schema-derived-fact' && !hasExactSchemaSource) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/knowledge-schema-fact-without-schema-source',
+          'a schema-derived fact must cite the exact active schema revision',
+          ['spec', 'entries', index, 'sources'],
+        ),
+      )
+    }
+  })
+  const sourceLocale = spec.sourceLocale.toLowerCase()
+  for (const [logicalId, locales] of localesByLogicalId) {
+    if (locales.values.has(sourceLocale)) continue
+    diagnostics.push(
+      diagnostic(
+        'error',
+        'x3.sdk/knowledge-source-locale-missing',
+        `knowledge entry ${logicalId} has no ${spec.sourceLocale} source-locale version`,
+        ['spec', 'entries', locales.firstIndex, 'locale'],
+      ),
+    )
+  }
+  return diagnostics
+}
+
 function key(contract: ContractId, major: number): string {
   return `${contract}@${major}`
 }
@@ -1040,6 +1130,17 @@ export const A1_SPEC_SCHEMA_ENTRIES: readonly SpecSchemaEntry[] = [
       mode: 'data-only',
       project: dataOnlyProjector(CONTRACT_DEFINITION_FACT),
       conformanceProfile: 'org.modkitx/contract-definition-v1',
+    },
+  },
+  {
+    contract: KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
+    major: 1,
+    schema: knowledgePackSpecV1Schema,
+    validateSemantics: validateKnowledgePackSemantics,
+    registration: {
+      mode: 'data-only',
+      project: dataOnlyProjector(KNOWLEDGE_PACK_FACT),
+      conformanceProfile: 'org.modkitx/knowledge-pack-v1',
     },
   },
 ] as const

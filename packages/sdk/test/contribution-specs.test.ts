@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   CODEC_CONTRIBUTION_CONTRACT,
+  KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
   VIEWER_CONTRIBUTION_CONTRACT,
   createContributionContractRegistry,
@@ -160,7 +161,7 @@ describe('A-1 contribution spec schemas', () => {
 
   it('validates data-source inventory records outside the executable contribution registry', async () => {
     expect(await validateWithSchema(dataSourceContributionSpecV1Schema, dataSourceSpec)).toEqual([])
-    expect(A1_SPEC_SCHEMA_ENTRIES).toHaveLength(6)
+    expect(A1_SPEC_SCHEMA_ENTRIES).toHaveLength(7)
   })
 
   it.each([
@@ -169,11 +170,193 @@ describe('A-1 contribution spec schemas', () => {
     [VIEWER_CONTRIBUTION_CONTRACT, 'org.example/tree-viewer', viewerSpec],
   ] as const)('validates %s through the envelope-selected schema', async (contract, id, spec) => {
     const result = await validateContributionManifest(manifest(contract, id, spec), registry)
-    expect(result.specState).toBe('validated')
+    expect(result.specState, JSON.stringify(result.diagnostics)).toBe('validated')
     expect(result.activationEligible).toBe(false)
     expect(
       result.diagnostics.some(diagnostic => diagnostic.code === 'x3.sdk/schema-only-contract'),
     ).toBe(true)
+  })
+
+  it('validates and projects knowledge packs as data-only inventory', async () => {
+    const knowledgeSpec = {
+      schemaVersion: 1,
+      sourceLocale: 'en',
+      priority: 100,
+      gameIds: ['starcraft-2'],
+      entries: [
+        {
+          id: 'org.example.sc2/life-max',
+          target: {
+            kind: 'field',
+            ecosystem: 'starcraft-2',
+            schema: {
+              contract: 'org.example/sc2-data-schema',
+              major: 1,
+              revision: 'sha256:fixture',
+            },
+            typeId: 'CUnit',
+            canonicalPath: ['LifeMax'],
+          },
+          locale: 'en',
+          title: 'Maximum life',
+          summary: 'The maximum life of a unit before modifiers.',
+          claimKind: 'schema-derived-fact',
+          confidence: 'verified',
+          sources: [
+            {
+              kind: 'schema',
+              title: 'Fixture schema',
+              schema: {
+                contract: 'org.example/sc2-data-schema',
+                major: 1,
+                revision: 'sha256:fixture',
+              },
+              revision: 'sha256:fixture',
+              reviewedAt: '2026-08-28',
+            },
+          ],
+        },
+      ],
+    } as const
+    const result = await validateContributionManifest(
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help', knowledgeSpec),
+      registry,
+    )
+    expect(result.specState).toBe('validated')
+    expect(result.inventoryEligible).toBe(true)
+    expect(result.activationEligible).toBe(false)
+
+    const duplicate = await validateContributionManifest(
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help-duplicate', {
+        ...knowledgeSpec,
+        entries: [...knowledgeSpec.entries, knowledgeSpec.entries[0]],
+      }),
+      registry,
+    )
+    expect(duplicate.specState).toBe('invalid')
+    expect(duplicate.diagnostics.map(item => item.code)).toContain('x3.sdk/duplicate-semantic-id')
+
+    const unsupportedSchemaFact = await validateContributionManifest(
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help-unproved', {
+        ...knowledgeSpec,
+        entries: [
+          {
+            ...knowledgeSpec.entries[0],
+            sources: [
+              {
+                kind: 'community-wiki',
+                title: 'A wiki is interpretation, not schema authority',
+                url: 'https://example.com/wiki',
+                reviewedAt: '2026-08-28',
+              },
+            ],
+          },
+        ],
+      }),
+      registry,
+    )
+    expect(unsupportedSchemaFact.specState).toBe('invalid')
+    expect(unsupportedSchemaFact.diagnostics.map(item => item.code)).toContain(
+      'x3.sdk/knowledge-schema-fact-without-schema-source',
+    )
+
+    const wrongSchemaRevision = await validateContributionManifest(
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help-wrong-revision', {
+        ...knowledgeSpec,
+        entries: [
+          {
+            ...knowledgeSpec.entries[0],
+            sources: [
+              {
+                kind: 'schema',
+                title: 'Different schema revision',
+                schema: {
+                  contract: 'org.example/sc2-data-schema',
+                  major: 1,
+                  revision: 'sha256:other',
+                },
+                revision: 'sha256:other',
+                reviewedAt: '2026-08-28',
+              },
+            ],
+          },
+        ],
+      }),
+      registry,
+    )
+    expect(wrongSchemaRevision.specState).toBe('invalid')
+    expect(wrongSchemaRevision.diagnostics.map(item => item.code)).toContain(
+      'x3.sdk/knowledge-schema-fact-without-schema-source',
+    )
+
+    const mismatchedTranslation = await validateContributionManifest(
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help-target-mismatch', {
+        ...knowledgeSpec,
+        entries: [
+          knowledgeSpec.entries[0],
+          {
+            ...knowledgeSpec.entries[0],
+            locale: 'ru',
+            target: {
+              ...knowledgeSpec.entries[0].target,
+              canonicalPath: ['ShieldsMax'],
+            },
+          },
+        ],
+      }),
+      registry,
+    )
+    expect(mismatchedTranslation.specState).toBe('invalid')
+    expect(mismatchedTranslation.diagnostics.map(item => item.code)).toContain(
+      'x3.sdk/knowledge-logical-id-target-mismatch',
+    )
+
+    const missingSourceLocale = await validateContributionManifest(
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help-locale-missing', {
+        ...knowledgeSpec,
+        entries: [{ ...knowledgeSpec.entries[0], locale: 'ru' }],
+      }),
+      registry,
+    )
+    expect(missingSourceLocale.specState).toBe('invalid')
+    expect(missingSourceLocale.diagnostics.map(item => item.code)).toContain(
+      'x3.sdk/knowledge-source-locale-missing',
+    )
+
+    const oversizedTitle = await validateContributionManifest(
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help-oversized', {
+        ...knowledgeSpec,
+        entries: [{ ...knowledgeSpec.entries[0], title: 'x'.repeat(257) }],
+      }),
+      registry,
+    )
+    expect(oversizedTitle.specState).toBe('invalid')
+    expect(oversizedTitle.diagnostics.map(item => item.code)).toContain('x3.sdk/invalid-spec')
+
+    const oversizedCoordinates = await validateContributionManifest(
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help-id-oversized', {
+        ...knowledgeSpec,
+        entries: [
+          {
+            ...knowledgeSpec.entries[0],
+            id: `org.example/${'x'.repeat(300)}`,
+            target: {
+              ...knowledgeSpec.entries[0].target,
+              schema: {
+                ...knowledgeSpec.entries[0].target.schema,
+                contract: `org.example/${'y'.repeat(300)}`,
+              },
+            },
+          },
+        ],
+      }),
+      registry,
+    )
+    expect(oversizedCoordinates.specState).toBe('invalid')
+    expect(oversizedCoordinates.diagnostics.map(item => item.code)).toContain('x3.sdk/invalid-spec')
+    expect(oversizedCoordinates.diagnostics.map(item => item.code)).not.toContain(
+      'x3.sdk/semantic-validator-failed',
+    )
   })
 
   it('binds producer trait claims to exact custom definition versions', async () => {

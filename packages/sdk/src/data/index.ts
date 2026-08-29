@@ -3,6 +3,8 @@
 import type {
   Lease,
   RelationGraphSource,
+  SubjectCalculationsSource,
+  SubjectFactsSource,
   TableDataSource,
   TreeDataSource,
 } from '../asset-capabilities/data-sources.js'
@@ -61,6 +63,8 @@ export interface DataWorkspaceDocumentRequirement {
   readonly path: string
   readonly kind: DataWorkspaceDocumentKind
   readonly locale?: string
+  /** Missing optional catalog/localization files are normal and do not make the snapshot partial. */
+  readonly required?: boolean
 }
 
 export interface DataWorkspacePlanRequest {
@@ -790,6 +794,21 @@ export interface DataFacetOpenRequest {
   readonly signal?: AbortSignal
 }
 
+/** Bounded request for one semantic subject card over an existing immutable data snapshot. */
+export interface DataSubjectFactsOpenRequest extends DataFacetOpenRequest {
+  readonly subject: DataEntityRef
+  readonly maxEntities: number
+  readonly maxRelations: number
+  readonly maxCalculations: number
+}
+
+/** Bounded request for auditable read-only calculations over one immutable subject snapshot. */
+export interface DataSubjectCalculationsOpenRequest extends DataFacetOpenRequest {
+  readonly subject: DataEntityRef
+  readonly maxEntities: number
+  readonly maxCalculations: number
+}
+
 /** Resource-plan accounting required by the additive workspace contract. */
 export interface ResolvedDataWorkspaceAnalysisRequest extends DataCatalogAnalysisRequest {
   readonly plannedDocumentCount: number
@@ -816,6 +835,12 @@ export interface ResolvedDataWorkspace {
   openDefinitionTable(request: DataFacetOpenRequest): Promise<Lease<TableDataSource>>
   openLocalizationTable(request: DataFacetOpenRequest): Promise<Lease<TableDataSource>>
   openRelations(request: DataFacetOpenRequest): Promise<Lease<RelationGraphSource>>
+  /** Optional additive projection; providers without semantic cards remain valid at major 1. */
+  openSubjectFacts?(request: DataSubjectFactsOpenRequest): Promise<Lease<SubjectFactsSource>>
+  /** Optional additive projection; unsupported calculations stay explicit in the returned source. */
+  openSubjectCalculations?(
+    request: DataSubjectCalculationsOpenRequest,
+  ): Promise<Lease<SubjectCalculationsSource>>
 }
 
 /** JSON-safe route advertised by a data contribution. */

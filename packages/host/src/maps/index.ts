@@ -16,6 +16,8 @@ import {
   RESOLVED_MAP_WORKSPACE_CONTRACT,
   WORLD_SCENE_SOURCE_CONTRACT,
   type CandidateWorldSceneSource,
+  type MapPreviewPreparationDocumentReadRequest,
+  type MapPreviewPreparationDocumentReadResult,
   type MapPreviewPreparationDiagnostic,
   type MapPreviewPreparationNamespaceIndex,
   type MapPreviewPreparationNamespaceSearchIndex,
@@ -55,6 +57,7 @@ import type {
   NamespaceEntrySource,
   NamespaceEntrySearchQuery,
   PermissionGrant,
+  RelationGraphSource,
   ResourceBudget,
   ResourceSessionPort,
   RevisionId,
@@ -64,6 +67,7 @@ import type {
   ServiceFacetMatchContext,
   ServiceFacetMatchResult,
   ServiceFacetMatcherProfile,
+  SubjectSelectorSource,
 } from '@modkitx-x3/sdk'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { CompanionOrigin } from '../input-resolution.js'
@@ -72,8 +76,14 @@ import { createWorkspaceNamespaceCompanionOrigin } from '../namespace-origin.js'
 import { createResourceSession } from '../resource-session.js'
 import { createHostServiceResolver } from '../service-leases.js'
 import { assembleSubjectDescriptor, createAssetSession } from '../session.js'
-import { analyzeResolvedDataWorkspace, type ResolvedDataWorkspaceLimits } from '../data/index.js'
+import {
+  analyzeResolvedDataWorkspace,
+  createResolvedDataSubjectSelectorLease,
+  type ResolvedDataWorkspaceLimits,
+} from '../data/index.js'
 import { createCandidateWorldSceneLease } from './world-source.js'
+
+export { createCandidateWorldSceneLease } from './world-source.js'
 
 /** Owner id under which the standard semantic-map definition is registered. */
 export const STANDARD_MAPS_OWNER = 'org.modkitx/maps'
@@ -1053,6 +1063,14 @@ export async function analyzeResolvedMapWorkspace(
 export interface OpenMapPreviewAssetSessionRequest extends AnalyzeResolvedMapWorkspaceRequest {
   /** Stable URI of the map/container subject whose workspace the host is projecting. */
   readonly subjectUri: string
+  /** Optional catalog sources resolved over the same workspace/resource revision. */
+  readonly catalogSources?: MapPreviewCatalogSources
+}
+
+export interface MapPreviewCatalogSources {
+  readonly selector?: SubjectSelectorSource
+  readonly relations: RelationGraphSource
+  release(): Promise<void>
 }
 
 export type MapPreviewAssetSessionResult =
@@ -1120,6 +1138,32 @@ function borrowCommonWorldScene(candidate: CandidateWorldSceneSource): Lease<Wor
   })
 }
 
+/** A consumer-scoped view over an analysis-owned callable data source. */
+function borrowDataSource<Value extends object>(source: Value): Lease<Value> {
+  let live = true
+  // The publisher may freeze its source. Proxying that frozen object directly and returning a
+  // wrapped method violates the ECMAScript invariant for non-configurable data properties, so the
+  // consumer view uses an empty capability target and delegates reads to the owner.
+  const target = Object.create(null) as object
+  const value = new Proxy(target, {
+    get(_target, property) {
+      const member = Reflect.get(source, property, source) as unknown
+      if (typeof member !== 'function') return member
+      return (...args: unknown[]) => {
+        if (!live) throw new TypeError('map preview data-source lease has been released')
+        return Reflect.apply(member, source, args)
+      }
+    },
+  }) as Value
+  return Object.freeze({
+    value,
+    release(): Promise<void> {
+      live = false
+      return Promise.resolve()
+    },
+  })
+}
+
 /**
  * Opens a host-owned, read-only AssetSession over the common world candidate.
  *
@@ -1134,15 +1178,16 @@ export async function openMapPreviewAssetSession(
   try {
     analyzed = await analyzeResolvedMapWorkspace(request)
   } catch (error) {
-    await request.resources.dispose()
+    await Promise.allSettled([request.resources.dispose(), request.catalogSources?.release()])
     throw error
   }
   if (analyzed.state === 'unresolved') {
-    await request.resources.dispose()
+    await Promise.allSettled([request.resources.dispose(), request.catalogSources?.release()])
     return analyzed
   }
 
   try {
+    const catalogSources = request.catalogSources
     const descriptor = await assembleSubjectDescriptor({
       schemaVersion: 2,
       subjectUri: request.subjectUri,
@@ -1161,7 +1206,15 @@ export async function openMapPreviewAssetSession(
         randomAccess: true,
         trusted: false,
       },
-      dataSources: [{ contract: WORLD_SCENE_SOURCE_CONTRACT, major: 1 }],
+      dataSources: [
+        { contract: WORLD_SCENE_SOURCE_CONTRACT, major: 1 },
+        ...(catalogSources === undefined
+          ? []
+          : [{ contract: contractId('common.view/relation-graph-source'), major: 1 as const }]),
+        ...(catalogSources?.selector === undefined
+          ? []
+          : [{ contract: contractId('common.view/subject-selector-source'), major: 1 as const }]),
+      ],
       diagnostics: analyzed.diagnostics.map(previewDiagnostic),
       revision: request.resources.revision,
     })
@@ -1175,16 +1228,35 @@ export async function openMapPreviewAssetSession(
         Contract extends KnownDataSourceId,
         Major extends DataSourceMajor<Contract>,
       >(contract: Contract, major: Major): Promise<Lease<DataSourceOf<Contract, Major>>> {
-        if (contract !== WORLD_SCENE_SOURCE_CONTRACT || major !== 1) {
-          throw new ModkitError({
-            code: 'x3.host/map-preview-data-source-unavailable',
-            message: `map preview does not publish ${contract}@${String(major)}`,
-          })
+        if (major === 1) {
+          if (contract === WORLD_SCENE_SOURCE_CONTRACT) {
+            return borrowCommonWorldScene(analyzed.world.value) as Lease<
+              DataSourceOf<Contract, Major>
+            >
+          }
+          if (contract === 'common.view/relation-graph-source' && catalogSources !== undefined) {
+            return borrowDataSource(catalogSources.relations) as Lease<
+              DataSourceOf<Contract, Major>
+            >
+          }
+          if (
+            contract === 'common.view/subject-selector-source' &&
+            catalogSources?.selector !== undefined
+          ) {
+            return borrowDataSource(catalogSources.selector) as Lease<DataSourceOf<Contract, Major>>
+          }
         }
-        return borrowCommonWorldScene(analyzed.world.value) as Lease<DataSourceOf<Contract, Major>>
+        throw new ModkitError({
+          code: 'x3.host/map-preview-data-source-unavailable',
+          message: `map preview does not publish ${contract}@${String(major)}`,
+        })
       },
       // createAssetSession releases in reverse order: analysis first, then its ResourceSession.
-      release: [() => request.resources.dispose(), () => analyzed.release()],
+      release: [
+        () => request.resources.dispose(),
+        ...(catalogSources === undefined ? [] : [() => catalogSources.release()]),
+        () => analyzed.release(),
+      ],
     })
     return Object.freeze({
       state: 'opened' as const,
@@ -1195,7 +1267,11 @@ export async function openMapPreviewAssetSession(
       diagnostics: analyzed.diagnostics,
     })
   } catch (error) {
-    await Promise.allSettled([analyzed.release(), request.resources.dispose()])
+    await Promise.allSettled([
+      analyzed.release(),
+      request.catalogSources?.release(),
+      request.resources.dispose(),
+    ])
     throw error
   }
 }
@@ -1293,6 +1369,10 @@ const MAX_PREVIEW_NAMESPACE_FACT_ENTRIES = 20_000
 const MAX_PREVIEW_NAMESPACE_FACT_PAGES = 256
 const MAX_PREVIEW_NAMESPACE_PATH_CHARS = 4_096
 const MAX_PREVIEW_NAMESPACE_CURSOR_CHARS = 4_096
+const MAX_PREVIEW_DOCUMENT_READS = 8
+const MAX_PREVIEW_DOCUMENT_READ_BYTES = 1_048_576
+const MAX_PREVIEW_DOCUMENT_TOTAL_BYTES = 4_194_304
+const MAX_PREVIEW_DOCUMENT_ROUNDS = 8
 
 function positiveCoordinatorLimit(value: number, label: string): number {
   if (!Number.isSafeInteger(value) || value <= 0) {
@@ -1380,6 +1460,51 @@ function validateNamespaceSearchRequests(
     throw new TypeError('map preview preparation returned invalid namespace searches')
   }
   return value as readonly MapPreviewPreparationNamespaceSearchRequest[]
+}
+
+function validateDocumentReadRequests(
+  value: unknown,
+): readonly MapPreviewPreparationDocumentReadRequest[] {
+  if (!Array.isArray(value) || value.length === 0 || value.length > MAX_PREVIEW_DOCUMENT_READS) {
+    throw new TypeError('map preview preparation returned invalid document reads')
+  }
+  let totalBytes = 0
+  const identities = new Set<string>()
+  for (const [index, item] of value.entries()) {
+    const document = recordOf(item)
+    if (
+      document === undefined ||
+      !Object.keys(document).every(
+        key => key === 'documentId' || key === 'path' || key === 'maxBytes',
+      ) ||
+      !nonEmptyString(document['documentId']) ||
+      document['documentId'].length > 256 ||
+      document['documentId'].includes('\0') ||
+      !nonEmptyString(document['path']) ||
+      document['path'].length > MAX_PREVIEW_NAMESPACE_PATH_CHARS ||
+      document['path'].includes('\0') ||
+      document['path'].startsWith('/') ||
+      /^[a-z]:/iu.test(document['path']) ||
+      document['path']
+        .replace(/\\/gu, '/')
+        .split('/')
+        .some(part => part === '..') ||
+      !Number.isSafeInteger(document['maxBytes']) ||
+      Number(document['maxBytes']) <= 0 ||
+      Number(document['maxBytes']) > MAX_PREVIEW_DOCUMENT_READ_BYTES
+    ) {
+      throw new TypeError(`map preview document read ${index} is malformed`)
+    }
+    if (identities.has(document['documentId'])) {
+      throw new TypeError('map preview document reads contain duplicate document ids')
+    }
+    identities.add(document['documentId'])
+    totalBytes += Number(document['maxBytes'])
+  }
+  if (totalBytes > MAX_PREVIEW_DOCUMENT_TOTAL_BYTES) {
+    throw new TypeError('map preview document reads exceed the total byte budget')
+  }
+  return value as readonly MapPreviewPreparationDocumentReadRequest[]
 }
 
 function jsonSafeValue(value: unknown, depth = 0): boolean {
@@ -1516,6 +1641,17 @@ function validatePreparationResult(
     validateNamespaceSearchRequests(record['searches'])
     return value as MapPreviewPreparationResult
   }
+  if (record['state'] === 'document-read-required') {
+    if (
+      !Object.keys(record).every(
+        key => key === 'state' || key === 'documents' || key === 'diagnostics',
+      )
+    ) {
+      throw new TypeError('map preview preparation document-read result contains unknown fields')
+    }
+    validateDocumentReadRequests(record['documents'])
+    return value as MapPreviewPreparationResult
+  }
   if (record['state'] === 'prepared') {
     const plan = recordOf(record['plan'])
     if (
@@ -1551,6 +1687,7 @@ function mapPreviewPreparationSubject(
   descriptor: AnyDescriptor,
   namespace: MapPreviewPreparationNamespaceIndex,
   namespaceSearches: readonly MapPreviewPreparationNamespaceSearchIndex[] = Object.freeze([]),
+  documentReads: readonly MapPreviewPreparationDocumentReadResult[] = Object.freeze([]),
 ): MapPreviewPreparationRequest['subject'] {
   const formatId = 'identity' in descriptor ? descriptor.identity.formatId : undefined
   if (!nonEmptyString(formatId)) {
@@ -1572,6 +1709,7 @@ function mapPreviewPreparationSubject(
     ),
     namespace,
     namespaceSearches: Object.freeze(namespaceSearches.map(item => Object.freeze(item))),
+    documentReads: Object.freeze(documentReads.map(item => Object.freeze(item))),
   })
 }
 
@@ -1762,6 +1900,130 @@ async function boundedPreparationNamespaceSearches(
   }
 }
 
+async function boundedPreparationDocumentReads(
+  original: AssetSession,
+  descriptor: AnyDescriptor,
+  requests: readonly MapPreviewPreparationDocumentReadRequest[],
+  signal?: AbortSignal,
+): Promise<readonly MapPreviewPreparationDocumentReadResult[]> {
+  const extraction = descriptor.operations.find(
+    item => item.id === CONTAINER_EXTRACT_OPERATION_ID && item.state === 'available',
+  )
+  if (
+    extraction === undefined ||
+    !descriptor.dataSources.some(
+      item => item.contract === 'common.view/namespace-entry-source' && item.major === 1,
+    )
+  ) {
+    return Object.freeze(
+      requests.map(request =>
+        Object.freeze({
+          documentId: request.documentId,
+          path: request.path,
+          state: 'unsupported' as const,
+        }),
+      ),
+    )
+  }
+
+  const lease = await original.dataSource('common.view/namespace-entry-source', 1)
+  const release = releaseOnce(() => lease.release())
+  try {
+    const source = lease.value as NamespaceEntrySource
+    const decoder = new TextDecoder('utf-8', { fatal: false })
+    const results: MapPreviewPreparationDocumentReadResult[] = []
+    for (const request of requests) {
+      signal?.throwIfAborted()
+      let page
+      try {
+        page = await source.list(request.path, { limit: 16 }, signal)
+      } catch (error) {
+        if (signal?.aborted) throw error
+        results.push(
+          Object.freeze({
+            documentId: request.documentId,
+            path: request.path,
+            state: 'unreadable' as const,
+          }),
+        )
+        continue
+      }
+      const normalizedPath = request.path.replace(/\\/gu, '/')
+      const entry = page.items.find(
+        item => item.kind === 'file' && item.path.replace(/\\/gu, '/') === normalizedPath,
+      )
+      if (entry === undefined) {
+        results.push(
+          Object.freeze({
+            documentId: request.documentId,
+            path: request.path,
+            state: 'missing' as const,
+          }),
+        )
+        continue
+      }
+      if (entry.size !== undefined && entry.size > BigInt(request.maxBytes)) {
+        results.push(
+          Object.freeze({
+            documentId: request.documentId,
+            path: request.path,
+            state: 'too-large' as const,
+          }),
+        )
+        continue
+      }
+      try {
+        const invoked = await original
+          .operations()
+          .invoke(
+            extraction.handlerId,
+            { entryId: entry.id },
+            signal === undefined ? {} : { signal },
+          )
+        if (
+          invoked.state !== 'ok' ||
+          invoked.output.kind !== 'bytes' ||
+          invoked.output.value.byteLength > request.maxBytes
+        ) {
+          results.push(
+            Object.freeze({
+              documentId: request.documentId,
+              path: request.path,
+              state:
+                invoked.state === 'ok' &&
+                invoked.output.kind === 'bytes' &&
+                invoked.output.value.byteLength > request.maxBytes
+                  ? ('too-large' as const)
+                  : ('unreadable' as const),
+            }),
+          )
+          continue
+        }
+        results.push(
+          Object.freeze({
+            documentId: request.documentId,
+            path: request.path,
+            state: 'read' as const,
+            text: decoder.decode(invoked.output.value),
+          }),
+        )
+      } catch (error) {
+        if (signal?.aborted) throw error
+        results.push(
+          Object.freeze({
+            documentId: request.documentId,
+            path: request.path,
+            state: 'unreadable' as const,
+          }),
+        )
+      }
+    }
+    return Object.freeze(results)
+  } finally {
+    await release()
+  }
+}
+
 function workspaceDiagnostics(workspace: ModWorkspaceLock): Diagnostic[] {
   return workspace.diagnostics.map(item =>
     diagnostic(
@@ -1832,6 +2094,7 @@ function releaseOnce(release: () => Promise<void>): () => Promise<void> {
 
 type MapPreviewCatalogEnrichment = Readonly<{
   catalog?: DataCatalogSnapshot
+  sources?: MapPreviewCatalogSources
   diagnostics: readonly Diagnostic[]
 }>
 
@@ -1885,25 +2148,31 @@ async function enrichMapPreviewCatalog(
     })
   }
 
-  try {
-    await analyzed.release()
-  } catch (error) {
-    return Object.freeze({
-      diagnostics: boundedDiagnostics(
-        [
-          ...analyzed.diagnostics,
-          diagnostic(
-            'warning',
-            'x3.host/map-preview-catalog-release-failed',
-            `map preview catalog leases could not be released cleanly (${error instanceof Error ? error.message : String(error)})`,
-          ),
-        ],
-        request.limits.maxDiagnostics,
-      ),
-    })
-  }
+  const selector = createResolvedDataSubjectSelectorLease(analyzed, {
+    maxPageSize: request.catalogEnrichment.limits.maxPageSize,
+    maxEntities: request.catalogEnrichment.limits.maxEntities,
+    maxRelations: request.catalogEnrichment.limits.maxEntities,
+    // The selector request crosses a game-provider boundary. Keep the shared Product-GA ceiling
+    // within the strictest bundled semantic provider instead of making every opened card fail.
+    maxCalculations: Math.min(request.catalogEnrichment.limits.maxEntities, 256),
+  })
+  let released = false
   return Object.freeze({
     catalog: analyzed.snapshot,
+    sources: Object.freeze({
+      ...(selector === undefined ? {} : { selector: selector.value }),
+      relations: analyzed.facets.relations.value,
+      async release(): Promise<void> {
+        if (released) return
+        released = true
+        const results = await Promise.allSettled([
+          ...(selector === undefined ? [] : [selector.release()]),
+          analyzed.release(),
+        ])
+        const failed = results.find(result => result.status === 'rejected')
+        if (failed?.status === 'rejected') throw failed.reason
+      },
+    }),
     diagnostics: boundedDiagnostics(analyzed.diagnostics, request.limits.maxDiagnostics),
   })
 }
@@ -2082,6 +2351,7 @@ export async function coordinateMapPreviewAssetSession(
 
   let prepared: MapPreviewPreparationResult
   let searchRoundDiagnostics: readonly MapPreviewPreparationDiagnostic[] = Object.freeze([])
+  const documentRoundDiagnostics: MapPreviewPreparationDiagnostic[] = []
   try {
     const namespace = await boundedPreparationNamespace(
       request.original,
@@ -2090,6 +2360,7 @@ export async function coordinateMapPreviewAssetSession(
       maxSubjectPages,
       request.signal,
     )
+    let namespaceSearches: readonly MapPreviewPreparationNamespaceSearchIndex[] = Object.freeze([])
     subject = mapPreviewPreparationSubject(descriptor, namespace)
     prepared = validatePreparationResult(
       await preparation.prepare({
@@ -2105,7 +2376,7 @@ export async function coordinateMapPreviewAssetSession(
     )
     if (prepared.state === 'namespace-search-required') {
       searchRoundDiagnostics = prepared.diagnostics
-      const namespaceSearches = await boundedPreparationNamespaceSearches(
+      namespaceSearches = await boundedPreparationNamespaceSearches(
         request.original,
         descriptor,
         prepared.searches,
@@ -2132,12 +2403,55 @@ export async function coordinateMapPreviewAssetSession(
         )
       }
     }
+    const accumulatedDocumentReads = new Map<string, MapPreviewPreparationDocumentReadResult>()
+    let documentRounds = 0
+    while (prepared.state === 'document-read-required') {
+      if (documentRounds >= MAX_PREVIEW_DOCUMENT_ROUNDS) {
+        throw new TypeError(
+          `map preview preparation exceeded ${MAX_PREVIEW_DOCUMENT_ROUNDS} document-read rounds`,
+        )
+      }
+      documentRounds += 1
+      documentRoundDiagnostics.push(...prepared.diagnostics)
+      const documents = validateDocumentReadRequests(prepared.documents)
+      const documentReads = await boundedPreparationDocumentReads(
+        request.original,
+        descriptor,
+        documents,
+        request.signal,
+      )
+      for (const document of documentReads) {
+        accumulatedDocumentReads.set(document.documentId, document)
+      }
+      subject = mapPreviewPreparationSubject(
+        descriptor,
+        namespace,
+        namespaceSearches,
+        Object.freeze([...accumulatedDocumentReads.values()]),
+      )
+      prepared = validatePreparationResult(
+        await preparation.prepare({
+          subject,
+          maxCandidates,
+          maxRoots,
+          maxDepth,
+          ...(request.selectionId === undefined ? {} : { selectionId: request.selectionId }),
+          ...(request.signal === undefined ? {} : { signal: request.signal }),
+        }),
+        maxCandidates,
+        maxRoots,
+      )
+      if (prepared.state === 'namespace-search-required') {
+        throw new TypeError('map preview preparation requested a namespace search after documents')
+      }
+    }
   } catch (error) {
     return {
       state: 'unresolved',
       diagnostics: Object.freeze([
         ...resolutionDiagnostics,
         ...preparationDiagnostics(searchRoundDiagnostics),
+        ...preparationDiagnostics(documentRoundDiagnostics),
         diagnostic(
           'error',
           'x3.host/map-preview-preparation-invalid',
@@ -2157,6 +2471,7 @@ export async function coordinateMapPreviewAssetSession(
   try {
     providerDiagnostics = preparationDiagnostics([
       ...searchRoundDiagnostics,
+      ...documentRoundDiagnostics,
       ...prepared.diagnostics,
     ])
   } catch (error) {
@@ -2304,6 +2619,7 @@ export async function coordinateMapPreviewAssetSession(
       resources,
       subjectUri: descriptor.subjectUri,
       ...(enrichment.catalog === undefined ? {} : { catalog: enrichment.catalog }),
+      ...(enrichment.sources === undefined ? {} : { catalogSources: enrichment.sources }),
       limits: request.limits,
       ...(request.signal === undefined ? {} : { signal: request.signal }),
     })

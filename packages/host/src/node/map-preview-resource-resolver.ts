@@ -1,8 +1,8 @@
 /** Node-only resolver for generic installed-game archive locators in map-preview plans. */
 
-import { realpath } from 'node:fs/promises'
+import { realpath, stat } from 'node:fs/promises'
 import { isAbsolute, relative, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   ModkitError,
@@ -17,27 +17,42 @@ import {
 } from '@modkitx-x3/sdk'
 import type { GameInstallation } from '@modkitx-x3/sdk/games'
 import type { MapPreviewHostResourceRoot } from '@modkitx-x3/sdk/maps'
+import { VirtualFileSystem } from '@modkitx-x3/vfs'
+import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
 import { discoverGameInstallations } from '../games/index.js'
 import {
   createCompositeWorkspaceNamespaceCompanionOrigin,
   type CompositeWorkspaceNamespaceRoot,
 } from '../namespace-origin.js'
+import { openSubject } from '../subject-open.js'
 import type {
   MapPreviewResourcePlanResolution,
   MapPreviewResourcePlanResolver,
   ResolveMapPreviewResourcePlanRequest,
 } from '../maps/index.js'
 import type { SubjectServices } from '../subject-services.js'
+import { artifactNamespaceSourceFromVfsMount } from '../vfs-source.js'
 import { openFileArtifactSource } from './file-artifact-source.js'
 
 const LOCATOR_KIND = 'game-installation-archive'
+const SUBJECT_LOCATOR_KIND = 'game-installation-subject'
 export const NODE_GAME_INSTALLATION_ARCHIVE_MAP_PREVIEW_RESOLVER_ID =
   'org.modkitx.node/game-installation-archive-map-preview'
+export const NODE_GAME_INSTALLATION_RESOURCE_MAP_PREVIEW_RESOLVER_ID =
+  'org.modkitx.node/game-installation-resource-map-preview'
 const LOCATOR_KEYS = new Set([
   'schemaVersion',
   'kind',
   'gameId',
   'archiveRelativePaths',
+  'openedSubjectPolicy',
+])
+const SUBJECT_LOCATOR_KEYS = new Set([
+  'schemaVersion',
+  'kind',
+  'gameId',
+  'relativePaths',
+  'namespaceFallbackPrefix',
   'openedSubjectPolicy',
 ])
 const MAXIMUM_ARCHIVE_PATHS = 16
@@ -54,6 +69,20 @@ interface GameInstallationArchiveLocator {
   readonly openedSubjectPolicy: OpenedSubjectPolicy
 }
 
+interface GameInstallationSubjectLocator {
+  readonly schemaVersion: 1
+  readonly kind: typeof SUBJECT_LOCATOR_KIND
+  readonly gameId: string
+  /** Exact loose directory or packed-file alternatives below the confirmed installation root. */
+  readonly relativePaths: readonly string[]
+  /** When exact alternatives are absent, open the installation namespace at this prefix. */
+  readonly namespaceFallbackPrefix?: string
+  readonly openedSubjectPolicy: OpenedSubjectPolicy
+}
+
+type GameInstallationResourceLocator =
+  GameInstallationArchiveLocator | GameInstallationSubjectLocator
+
 interface NamespaceMount {
   readonly session: AssetSession
   readonly namespace: NamespaceEntrySource
@@ -64,7 +93,10 @@ interface NamespaceMount {
 
 export interface NodeMapPreviewResourcePlanResolverOptions {
   /** Ordinary subject services; archive format selection remains inventory-owned. */
-  readonly subjects: Pick<SubjectServices, 'open'>
+  readonly subjects: Pick<SubjectServices, 'open'> &
+    Partial<
+      Pick<SubjectServices, 'inventory' | 'target' | 'executionBackends' | 'serviceDefinitions'>
+    >
   /** User/app settings, keyed by the same extension-owned game id used for discovery routing. */
   readonly configuredPaths?: Readonly<Record<string, readonly string[]>>
   readonly maxInstallationCandidates?: number
@@ -142,6 +174,59 @@ function parseLocator(root: MapPreviewHostResourceRoot): GameInstallationArchive
   })
 }
 
+function parseSubjectLocator(root: MapPreviewHostResourceRoot): GameInstallationSubjectLocator {
+  const value = recordOf(root.locator)
+  if (
+    value === undefined ||
+    Object.keys(value).some(key => !SUBJECT_LOCATOR_KEYS.has(key)) ||
+    value['schemaVersion'] !== 1 ||
+    value['kind'] !== SUBJECT_LOCATOR_KIND ||
+    !nonEmptyString(value['gameId']) ||
+    !Array.isArray(value['relativePaths']) ||
+    value['relativePaths'].length === 0 ||
+    value['relativePaths'].length > MAXIMUM_ARCHIVE_PATHS ||
+    (value['namespaceFallbackPrefix'] !== undefined &&
+      !nonEmptyString(value['namespaceFallbackPrefix'])) ||
+    !['installation-only', 'prefer-matching-opened-subject'].includes(
+      String(value['openedSubjectPolicy']),
+    )
+  ) {
+    throw new TypeError(
+      `resource root ${root.rootId} has an invalid ${SUBJECT_LOCATOR_KIND} locator`,
+    )
+  }
+  const relativePaths = value['relativePaths'].map((item, index) =>
+    confinedRelativePath(item, `${root.rootId}.relativePaths[${index}]`),
+  )
+  const folded = relativePaths.map(item =>
+    process.platform === 'win32' ? item.toLowerCase() : item,
+  )
+  if (new Set(folded).size !== folded.length) {
+    throw new TypeError(`resource root ${root.rootId} subject paths must be unique`)
+  }
+  return Object.freeze({
+    schemaVersion: 1,
+    kind: SUBJECT_LOCATOR_KIND,
+    gameId: value['gameId'],
+    relativePaths: Object.freeze(relativePaths),
+    ...(value['namespaceFallbackPrefix'] === undefined
+      ? {}
+      : {
+          namespaceFallbackPrefix: confinedRelativePath(
+            value['namespaceFallbackPrefix'],
+            `${root.rootId}.namespaceFallbackPrefix`,
+          ),
+        }),
+    openedSubjectPolicy: value['openedSubjectPolicy'] as OpenedSubjectPolicy,
+  })
+}
+
+function parseResourceLocator(root: MapPreviewHostResourceRoot): GameInstallationResourceLocator {
+  return recordOf(root.locator)?.['kind'] === SUBJECT_LOCATOR_KIND
+    ? parseSubjectLocator(root)
+    : parseLocator(root)
+}
+
 function inside(root: string, candidate: string): boolean {
   const path = relative(root, candidate)
   return path === '' || (!path.startsWith('..') && !isAbsolute(path))
@@ -158,7 +243,7 @@ function missingPathError(value: unknown): boolean {
 
 async function exactArchivePath(
   installation: GameInstallation,
-  locator: GameInstallationArchiveLocator,
+  locator: Pick<GameInstallationArchiveLocator, 'archiveRelativePaths'>,
 ): Promise<{ state: 'resolved'; path: string } | { state: 'missing' } | { state: 'ambiguous' }> {
   const installationRoot = await realpath(resolve(installation.installPath))
   const matches: string[] = []
@@ -314,7 +399,10 @@ export function createNodeMapPreviewResourcePlanResolver(
         return unresolved(code, message, findings)
       }
 
-      if (request.plan.resolverId !== NODE_GAME_INSTALLATION_ARCHIVE_MAP_PREVIEW_RESOLVER_ID) {
+      if (
+        request.plan.resolverId !== NODE_GAME_INSTALLATION_ARCHIVE_MAP_PREVIEW_RESOLVER_ID &&
+        request.plan.resolverId !== NODE_GAME_INSTALLATION_RESOURCE_MAP_PREVIEW_RESOLVER_ID
+      ) {
         return fail(
           'x3.host/map-preview-resource-resolver-unknown',
           `this resolver does not implement ${request.plan.resolverId}`,
@@ -323,11 +411,11 @@ export function createNodeMapPreviewResourcePlanResolver(
 
       let locatedRoots: readonly Readonly<{
         root: MapPreviewHostResourceRoot
-        locator: GameInstallationArchiveLocator
+        locator: GameInstallationResourceLocator
       }>[]
       try {
         locatedRoots = request.plan.roots.map(root =>
-          Object.freeze({ root, locator: parseLocator(root) }),
+          Object.freeze({ root, locator: parseResourceLocator(root) }),
         )
       } catch (error) {
         return fail(
@@ -494,9 +582,14 @@ export function createNodeMapPreviewResourcePlanResolver(
             findings,
           )
         }
-        let archive: Awaited<ReturnType<typeof exactArchivePath>>
+        let resource: Awaited<ReturnType<typeof exactArchivePath>>
         try {
-          archive = await exactArchivePath(installation, item.locator)
+          resource = await exactArchivePath(
+            installation,
+            item.locator.kind === LOCATOR_KIND
+              ? item.locator
+              : { archiveRelativePaths: item.locator.relativePaths },
+          )
         } catch (error) {
           return fail(
             'x3.host/map-preview-installation-path-invalid',
@@ -504,17 +597,34 @@ export function createNodeMapPreviewResourcePlanResolver(
             findings,
           )
         }
-        if (archive.state === 'missing') {
+        if (resource.state === 'ambiguous') {
           return fail(
-            'x3.host/map-preview-installation-archive-missing',
-            `${item.root.rootId} matched none of its exact archive paths`,
+            'x3.host/map-preview-installation-archive-ambiguous',
+            `${item.root.rootId} matched more than one exact installed resource path`,
             findings,
           )
         }
-        if (archive.state === 'ambiguous') {
+        let resourcePath: string
+        let resourcePrefix = ''
+        if (resource.state === 'resolved') {
+          resourcePath = resource.path
+        } else if (
+          item.locator.kind === SUBJECT_LOCATOR_KIND &&
+          item.locator.namespaceFallbackPrefix !== undefined
+        ) {
+          resourcePath = await realpath(resolve(installation.installPath))
+          resourcePrefix = item.locator.namespaceFallbackPrefix
+          findings.push(
+            diagnostic(
+              'information',
+              'x3.host/map-preview-installation-namespace-fallback',
+              `${item.root.rootId} has no exact loose subject; using the confirmed installation namespace prefix ${resourcePrefix}`,
+            ),
+          )
+        } else {
           return fail(
-            'x3.host/map-preview-installation-archive-ambiguous',
-            `${item.root.rootId} matched more than one exact archive path`,
+            'x3.host/map-preview-installation-archive-missing',
+            `${item.root.rootId} matched none of its exact installed resource paths`,
             findings,
           )
         }
@@ -523,7 +633,7 @@ export function createNodeMapPreviewResourcePlanResolver(
         if (
           item.locator.openedSubjectPolicy === 'prefer-matching-opened-subject' &&
           openedSubjectPath !== undefined &&
-          pathKey(openedSubjectPath) === pathKey(archive.path)
+          pathKey(openedSubjectPath) === pathKey(resourcePath)
         ) {
           if (originalMount === undefined) {
             try {
@@ -539,36 +649,76 @@ export function createNodeMapPreviewResourcePlanResolver(
           }
           mount = originalMount
         } else {
-          const key = pathKey(archive.path)
+          const key = pathKey(resourcePath)
           const existing = externalMounts.get(key)
           if (existing !== undefined) {
             mount = existing
           } else {
             let opened: Awaited<ReturnType<SubjectServices['open']>>
+            let releaseSource = async (): Promise<void> => undefined
             try {
-              const source = await openFileArtifactSource(
-                archive.path,
-                request.signal === undefined ? {} : { signal: request.signal },
-              )
-              opened = await options.subjects.open({
-                source,
-                path: archive.path,
-                intent: 'inspect',
-                grant: request.grant,
-                budget: request.budgets,
-                ...(request.signal === undefined ? {} : { signal: request.signal }),
-              })
+              const resourceInfo = await stat(resourcePath)
+              if (resourceInfo.isDirectory()) {
+                if (
+                  options.subjects.inventory === undefined ||
+                  options.subjects.target === undefined ||
+                  options.subjects.executionBackends === undefined
+                ) {
+                  throw new TypeError(
+                    'directory resource opening requires inventory, target and execution backends',
+                  )
+                }
+                const vfs = new VirtualFileSystem().registerProvider(createFileVfsProvider())
+                try {
+                  const vfsMount = await vfs.openMount(
+                    pathToFileURL(resourcePath).href,
+                    request.signal === undefined ? {} : { signal: request.signal },
+                  )
+                  releaseSource = async () => vfs.dispose()
+                  opened = await openSubject({
+                    inventory: options.subjects.inventory,
+                    source: artifactNamespaceSourceFromVfsMount(vfsMount),
+                    path: resourcePath,
+                    intent: 'inspect',
+                    target: options.subjects.target,
+                    grant: request.grant,
+                    budget: request.budgets,
+                    executionBackends: options.subjects.executionBackends,
+                    ...(options.subjects.serviceDefinitions === undefined
+                      ? {}
+                      : { serviceDefinitions: options.subjects.serviceDefinitions }),
+                    ...(request.signal === undefined ? {} : { signal: request.signal }),
+                  })
+                } catch (error) {
+                  await vfs.dispose()
+                  throw error
+                }
+              } else {
+                opened = await options.subjects.open({
+                  source: await openFileArtifactSource(
+                    resourcePath,
+                    request.signal === undefined ? {} : { signal: request.signal },
+                  ),
+                  path: resourcePath,
+                  intent: 'inspect',
+                  grant: request.grant,
+                  budget: request.budgets,
+                  ...(request.signal === undefined ? {} : { signal: request.signal }),
+                })
+              }
             } catch (error) {
+              await releaseSource()
               return fail(
                 'x3.host/map-preview-installation-archive-open-failed',
-                `ordinary subject opening failed for ${archive.path} (${error instanceof Error ? error.message : String(error)})`,
+                `ordinary subject opening failed for ${resourcePath} (${error instanceof Error ? error.message : String(error)})`,
                 findings,
               )
             }
             if (opened.state !== 'opened') {
+              await releaseSource()
               return fail(
                 'x3.host/map-preview-installation-archive-unresolved',
-                `ordinary subject opening did not resolve ${archive.path}`,
+                `ordinary subject opening did not resolve ${resourcePath}`,
                 [...findings, ...opened.diagnostics],
               )
             }
@@ -577,6 +727,7 @@ export function createNodeMapPreviewResourcePlanResolver(
               openedMount = await namespaceMount(opened.session)
             } catch (error) {
               await opened.session.dispose()
+              await releaseSource()
               return fail(
                 'x3.host/map-preview-installation-archive-unusable',
                 error instanceof Error ? error.message : String(error),
@@ -585,14 +736,16 @@ export function createNodeMapPreviewResourcePlanResolver(
             }
             mount = openedMount
             externalMounts.set(key, mount)
-            releases.push(() => releaseAll([() => mount.session.dispose(), mount.namespaceRelease]))
+            releases.push(() =>
+              releaseAll([releaseSource, () => mount.session.dispose(), mount.namespaceRelease]),
+            )
           }
         }
         rootsById.set(
           item.root.rootId,
           Object.freeze({
             rootId: item.root.rootId,
-            pathPrefix: '',
+            pathPrefix: resourcePrefix,
             logicalPrefix: workspaceRoot.sourcePath,
             namespace: mount.namespace,
             containerRevision: mount.revision,

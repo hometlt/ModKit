@@ -59,6 +59,21 @@ export interface MapPreviewPreparationNamespaceSearchIndex {
   readonly entries: readonly MapPreviewPreparationNamespaceEntry[]
 }
 
+/** One bounded metadata document a preparation provider asks the host to read from the subject. */
+export interface MapPreviewPreparationDocumentReadRequest {
+  readonly documentId: string
+  readonly path: string
+  readonly maxBytes: number
+}
+
+/** JSON-only result of a host-owned document read; live namespace and extraction handles stay local. */
+export interface MapPreviewPreparationDocumentReadResult {
+  readonly documentId: string
+  readonly path: string
+  readonly state: 'read' | 'missing' | 'too-large' | 'unreadable' | 'unsupported'
+  readonly text?: string
+}
+
 /** JSON-safe descriptor facts exposed to a preparation provider; no live session crosses the ABI. */
 export interface MapPreviewPreparationSubject {
   readonly schemaVersion: 1
@@ -72,6 +87,8 @@ export interface MapPreviewPreparationSubject {
   readonly namespace: MapPreviewPreparationNamespaceIndex
   /** Results of one host-owned indexed-search round; absent on older hosts, empty initially. */
   readonly namespaceSearches?: readonly MapPreviewPreparationNamespaceSearchIndex[]
+  /** Results of one provider-requested bounded metadata read round. */
+  readonly documentReads?: readonly MapPreviewPreparationDocumentReadResult[]
 }
 
 export interface MapPreviewPreparationDiagnostic {
@@ -157,6 +174,11 @@ export type MapPreviewPreparationResult =
   | Readonly<{
       state: 'namespace-search-required'
       searches: readonly MapPreviewPreparationNamespaceSearchRequest[]
+      diagnostics: readonly MapPreviewPreparationDiagnostic[]
+    }>
+  | Readonly<{
+      state: 'document-read-required'
+      documents: readonly MapPreviewPreparationDocumentReadRequest[]
       diagnostics: readonly MapPreviewPreparationDiagnostic[]
     }>
   | Readonly<{

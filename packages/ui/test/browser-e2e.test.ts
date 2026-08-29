@@ -431,6 +431,408 @@ describe('13C real-browser viewer host', () => {
     expect(await page.locator('img').count()).toBe(0)
   })
 
+  it('resolves focused table-cell knowledge through the host and ignores stale hover results', async () => {
+    await reset()
+    const result = await page.evaluate(async () => {
+      const modkit = (
+        globalThis as unknown as {
+          modkit: {
+            ui: Record<string, unknown>
+            browserHost: Record<string, unknown>
+          }
+        }
+      ).modkit
+      const root = document.querySelector('#app') as HTMLElement
+      const target = (conceptId: string) => ({
+        kind: 'concept',
+        ecosystem: 'fixture',
+        conceptId,
+      })
+      const observedSignals: AbortSignal[] = []
+      const table = {
+        async shape() {
+          return { rows: 1, columns: 2 }
+        },
+        async rows() {
+          return { items: [{ index: 7, cells: ['old', 'current'] }] }
+        },
+        async cell(coord: { row: number; column: number }, signal: AbortSignal) {
+          observedSignals.push(signal)
+          return {
+            value: coord.column === 0 ? 'old' : 'current',
+            knowledgeTarget: target(coord.column === 0 ? 'old' : 'current'),
+          }
+        },
+        async *search() {},
+      }
+      const hit = (conceptId: string, summary: string) => ({
+        entry: {
+          id: `org.example/${conceptId}`,
+          target: target(conceptId),
+          locale: 'en',
+          title: conceptId,
+          summary,
+          claimKind: 'documented-interpretation',
+          confidence: 'high',
+          sources: [
+            {
+              kind: 'external-reference',
+              title: 'unsafe',
+              url: 'javascript:alert(1)',
+              reviewedAt: '2026-08-28',
+            },
+            {
+              kind: 'official-documentation',
+              title: 'Fixture documentation',
+              url: 'https://example.com/fixture',
+              reviewedAt: '2026-08-28',
+            },
+          ],
+        },
+        provenance: {
+          packId: 'org.example/fixture-pack',
+          ownerExtensionId: 'org.example/fixture',
+          extensionVersion: '1.0.0',
+          manifestPath: 'contributions/knowledge.json',
+          manifestDigest: 'sha256:manifest',
+          artifactDigest: 'sha256:artifact',
+        },
+        localeRank: 0,
+      })
+      const knowledge = {
+        snapshotId: 'fixture',
+        async search() {
+          throw new Error('table help must use exact resolve')
+        },
+        async resolve(query: { target: { conceptId: string } }) {
+          if (query.target.conceptId === 'old') {
+            await new Promise(resolve => setTimeout(resolve, 60))
+            return {
+              snapshotId: 'fixture',
+              total: 1,
+              items: [hit('old', 'STALE DESCRIPTION')],
+              completeness: 'complete',
+              diagnostics: [],
+            }
+          }
+          return {
+            snapshotId: 'fixture',
+            total: 1,
+            items: [hit('current', `Current <img src=x> ${'x'.repeat(800)}`)],
+            completeness: 'complete',
+            diagnostics: [],
+          }
+        },
+      }
+      const slot = {
+        slotId: 'table',
+        kind: 'stage',
+        contributionId: 'org.modkitx.ui/table-stage',
+        extensionId: 'org.modkitx/ui',
+        priority: 320,
+        bindings: [{ bindingId: 'table', contract: 'common.view/table-data-source', major: 1 }],
+      }
+      const host = await (
+        modkit.browserHost['createBrowserViewerHost'] as (args: unknown) => Promise<{
+          unmount(): Promise<void>
+        }>
+      )({
+        root,
+        descriptor: { revision: 'r', operations: [], diagnostics: [] },
+        resolved: {
+          plan: {
+            subjectUri: 'memory://table-knowledge',
+            revision: 'r',
+            slots: [slot],
+            activeStage: 'table',
+            alternateStages: [],
+            unsatisfied: [],
+          },
+          bindings: [],
+          planDigest: 'fixture',
+        },
+        sources: {
+          async get() {
+            return { value: table, async release() {} }
+          },
+        },
+        operations: { async invoke() {}, async dispose() {} },
+        knowledge,
+        modules: { 'org.modkitx.ui/table-stage': modkit.ui['tableViewer'] },
+      })
+      const cells = [...root.querySelectorAll('td')]
+      cells[0]?.dispatchEvent(new MouseEvent('mouseenter'))
+      await new Promise(resolve => setTimeout(resolve, 0))
+      ;(cells[1] as HTMLElement | undefined)?.focus()
+      await new Promise(resolve => setTimeout(resolve, 90))
+      const panel = root.querySelector('[data-knowledge-state]') as HTMLElement
+      const summary = panel.querySelector('span')
+      const link = panel.querySelector('a')
+      const observed = {
+        state: panel.dataset['knowledgeState'],
+        text: panel.textContent,
+        summaryLength: summary?.textContent?.length,
+        href: link?.getAttribute('href'),
+        target: link?.getAttribute('target'),
+        rel: link?.getAttribute('rel'),
+        referrerPolicy: link?.getAttribute('referrerpolicy'),
+        images: panel.querySelectorAll('img').length,
+        firstAborted: observedSignals[0]?.aborted,
+      }
+      await host.unmount()
+      return observed
+    })
+
+    expect(result.state).toBe('resolved')
+    expect(result.text).toContain('Current <img src=x>')
+    expect(result.text).not.toContain('STALE DESCRIPTION')
+    expect(result.summaryLength).toBe(513)
+    expect(result.href).toBe('https://example.com/fixture')
+    expect(result.target).toBe('_blank')
+    expect(result.rel).toBe('noopener noreferrer')
+    expect(result.referrerPolicy).toBe('no-referrer')
+    expect(result.images).toBe(0)
+    expect(result.firstAborted).toBe(true)
+  })
+
+  it('marks table-cell knowledge missing without a port, target, or matching description', async () => {
+    await reset()
+    const result = await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const root = document.querySelector('#app') as HTMLElement
+      const slot = {
+        slotId: 'table',
+        kind: 'stage',
+        contributionId: 'org.modkitx.ui/table-stage',
+        extensionId: 'org.modkitx/ui',
+        priority: 320,
+        bindings: [{ bindingId: 'table', contract: 'common.view/table-data-source', major: 1 }],
+      }
+      const target = { kind: 'concept', ecosystem: 'fixture', conceptId: 'missing' }
+      const knowledge = {
+        snapshotId: 'fixture',
+        async search() {
+          throw new Error('table help must use exact resolve')
+        },
+        async resolve() {
+          return {
+            snapshotId: 'fixture',
+            total: 0,
+            items: [],
+            completeness: 'complete',
+            diagnostics: [],
+          }
+        },
+      }
+      const run = async (mode: 'no-port' | 'no-target' | 'no-hit') => {
+        let cellCalls = 0
+        let resolveCalls = 0
+        const source = {
+          async shape() {
+            return { rows: 1, columns: 1 }
+          },
+          async rows() {
+            return { items: [{ index: 0, cells: [mode] }] }
+          },
+          async cell() {
+            cellCalls += 1
+            return mode === 'no-target' ? { value: mode } : { value: mode, knowledgeTarget: target }
+          },
+          async *search() {},
+        }
+        const mounted = await (
+          ui['tableViewer'] as { mount(args: unknown): Promise<{ unmount(): Promise<void> }> }
+        ).mount({
+          container: root,
+          descriptor: { revision: 'r', operations: [], diagnostics: [] },
+          slot,
+          sources: {
+            async get() {
+              return { value: source, async release() {} }
+            },
+          },
+          operations: { async invoke() {}, async dispose() {} },
+          ...(mode === 'no-port'
+            ? {}
+            : {
+                knowledge: {
+                  ...knowledge,
+                  async resolve() {
+                    resolveCalls += 1
+                    return knowledge.resolve()
+                  },
+                },
+              }),
+        })
+        ;(root.querySelector('td') as HTMLElement).focus()
+        await new Promise(resolve => setTimeout(resolve, 10))
+        const panel = root.querySelector('[data-knowledge-state]') as HTMLElement
+        const observed = {
+          state: panel.dataset['knowledgeState'],
+          text: panel.textContent,
+          cellCalls,
+          resolveCalls,
+        }
+        await mounted.unmount()
+        return observed
+      }
+      return {
+        noPort: await run('no-port'),
+        noTarget: await run('no-target'),
+        noHit: await run('no-hit'),
+      }
+    })
+
+    expect(result.noPort).toEqual({
+      state: 'missing',
+      text: 'Description is not available yet.',
+      cellCalls: 0,
+      resolveCalls: 0,
+    })
+    expect(result.noTarget).toEqual({
+      state: 'missing',
+      text: 'Description is not available yet.',
+      cellCalls: 1,
+      resolveCalls: 0,
+    })
+    expect(result.noHit).toEqual({
+      state: 'missing',
+      text: 'Description is not available yet.',
+      cellCalls: 1,
+      resolveCalls: 1,
+    })
+  })
+
+  it('resolves exact subject-card field knowledge and cancels stale requests', async () => {
+    await reset()
+    const result = await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const root = document.querySelector('#app') as HTMLElement
+      const target = (conceptId: string) => ({
+        kind: 'concept',
+        ecosystem: 'fixture',
+        conceptId,
+      })
+      const observedSignals: AbortSignal[] = []
+      const hit = (conceptId: string, summary: string) => ({
+        entry: {
+          id: `org.example/${conceptId}`,
+          target: target(conceptId),
+          locale: 'en',
+          title: conceptId,
+          summary,
+          claimKind: 'documented-interpretation',
+          confidence: 'high',
+          sources: [
+            {
+              kind: 'external-reference',
+              title: 'unsafe',
+              url: 'javascript:alert(1)',
+              reviewedAt: '2026-08-28',
+            },
+            {
+              kind: 'official-documentation',
+              title: 'Complete field documentation',
+              url: 'https://example.com/card-field',
+              reviewedAt: '2026-08-28',
+            },
+          ],
+        },
+        provenance: {
+          packId: 'org.example/fixture-pack',
+          ownerExtensionId: 'org.example/fixture',
+          extensionVersion: '1.0.0',
+          manifestPath: 'contributions/knowledge.json',
+          manifestDigest: 'sha256:manifest',
+          artifactDigest: 'sha256:artifact',
+        },
+        localeRank: 0,
+      })
+      const card = (
+        ui['createSubjectCard'] as (
+          document: Document,
+          options: unknown,
+        ) => { root: HTMLElement; destroy(): void }
+      )(document, {
+        label: 'Fixture card',
+        sections: [
+          { kind: 'header', title: 'Fixture' },
+          {
+            kind: 'fields',
+            id: 'facts',
+            title: 'Facts',
+            expanded: true,
+            fields: [
+              { name: 'Old', value: '1', knowledgeTarget: target('old') },
+              { name: 'Current', value: '2', knowledgeTarget: target('current') },
+            ],
+          },
+        ],
+        knowledgeLocales: ['ru', 'en'],
+        knowledge: {
+          snapshotId: 'fixture',
+          async search() {
+            throw new Error('card field help must use exact resolve')
+          },
+          async resolve(
+            query: { target: { conceptId: string }; locales: readonly string[] },
+            signal: AbortSignal,
+          ) {
+            observedSignals.push(signal)
+            if (query.target.conceptId === 'old')
+              await new Promise(resolve => setTimeout(resolve, 60))
+            return {
+              snapshotId: 'fixture',
+              total: 1,
+              items: [
+                hit(
+                  query.target.conceptId,
+                  query.target.conceptId === 'old'
+                    ? 'STALE CARD DESCRIPTION'
+                    : `Current <img src=x> ${'x'.repeat(800)}`,
+                ),
+              ],
+              completeness: 'complete',
+              diagnostics: [],
+            }
+          },
+        },
+      })
+      root.append(card.root)
+      const fields = [...root.querySelectorAll<HTMLElement>('[data-mk-part="card.field"]')]
+      fields[0]?.dispatchEvent(new MouseEvent('mouseenter'))
+      await new Promise(resolve => setTimeout(resolve, 0))
+      fields[1]?.focus()
+      await new Promise(resolve => setTimeout(resolve, 90))
+      const panel = root.querySelector<HTMLElement>('[data-mk-part="card.knowledge"]')
+      const link = panel?.querySelector('a')
+      const observed = {
+        state: panel?.dataset['knowledgeState'],
+        text: panel?.textContent,
+        summaryLength: panel?.querySelector('span')?.textContent?.length,
+        href: link?.getAttribute('href'),
+        target: link?.getAttribute('target'),
+        rel: link?.getAttribute('rel'),
+        referrerPolicy: link?.getAttribute('referrerpolicy'),
+        images: panel?.querySelectorAll('img').length,
+        firstAborted: observedSignals[0]?.aborted,
+      }
+      card.destroy()
+      return observed
+    })
+
+    expect(result.state).toBe('resolved')
+    expect(result.text).toContain('Current <img src=x>')
+    expect(result.text).not.toContain('STALE CARD DESCRIPTION')
+    expect(result.summaryLength).toBe(513)
+    expect(result.href).toBe('https://example.com/card-field')
+    expect(result.target).toBe('_blank')
+    expect(result.rel).toBe('noopener noreferrer')
+    expect(result.referrerPolicy).toBe('no-referrer')
+    expect(result.images).toBe(0)
+    expect(result.firstAborted).toBe(true)
+  })
+
   it('mounts the bounded relation viewer and releases its aborted lease on unmount', async () => {
     await reset()
     await page.evaluate(async () => {
@@ -534,6 +936,250 @@ describe('13C real-browser viewer host', () => {
       ),
     ).toEqual({ releases: 1, aborted: true })
     expect(await page.locator('#app').evaluate(element => element.childElementCount)).toBe(0)
+  })
+
+  it('mounts subject cards and auditable calculations from their shared contracts', async () => {
+    await reset()
+    const result = await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const root = document.querySelector('#app') as HTMLElement
+      let releases = 0
+      const facts = {
+        async summary() {
+          return {
+            snapshotId: 'facts-1',
+            identity: {
+              subjectId: 'unit:Marine',
+              label: 'Marine',
+              kind: 'entity',
+              type: 'Unit',
+              origins: [{ label: 'Marine.xml' }],
+            },
+            groupCount: 1,
+            relationCount: 1,
+          }
+        },
+        async groups() {
+          return { items: [{ id: 'combat', label: 'Combat', factCount: 1 }] }
+        },
+        async facts() {
+          return {
+            items: [{ id: 'life', label: 'Life', value: 45, provenance: [{ label: 'UnitData' }] }],
+          }
+        },
+        async relations() {
+          return {
+            items: [
+              {
+                role: 'uses',
+                subjectId: 'weapon:GaussRifle',
+                label: 'Gauss Rifle',
+                kind: 'Weapon',
+              },
+            ],
+          }
+        },
+      }
+      const calculations = {
+        async summary() {
+          return {
+            snapshotId: 'calculations-1',
+            subjectId: 'unit:Marine',
+            totalCalculations: 1,
+            completeness: 'complete',
+          }
+        },
+        async calculations() {
+          return {
+            items: [
+              {
+                id: 'weapon-dps',
+                label: 'Weapon DPS',
+                formula: {
+                  id: 'weapon-dps-v1',
+                  name: 'Damage per second',
+                  version: '1',
+                  expression: 'damage / period',
+                },
+                status: 'computed',
+                value: 9.8,
+                unit: 'damage/s',
+                inputs: [
+                  {
+                    id: 'damage',
+                    label: 'Damage',
+                    state: 'resolved',
+                    value: 6,
+                    provenance: [{ label: 'GaussRifle' }],
+                  },
+                ],
+                provenance: [{ label: 'Marine → GaussRifle' }],
+                warnings: [],
+              },
+            ],
+          }
+        },
+      }
+      const sources = {
+        async get(binding: { contract: string }) {
+          return {
+            value: binding.contract.includes('subject-facts') ? facts : calculations,
+            async release() {
+              releases += 1
+            },
+          }
+        },
+      }
+      const common = {
+        container: root,
+        descriptor: { revision: 'r', operations: [], diagnostics: [] },
+        sources,
+        operations: { async invoke() {}, async dispose() {} },
+      }
+      const card = await (
+        ui['subjectCardViewer'] as { mount(args: unknown): Promise<{ unmount(): Promise<void> }> }
+      ).mount({
+        ...common,
+        slot: {
+          slotId: 'card',
+          kind: 'stage',
+          contributionId: 'org.modkitx.ui/subject-card-stage',
+          extensionId: 'org.modkitx/ui',
+          priority: 390,
+          bindings: [
+            { bindingId: 'facts', contract: 'common.view/subject-facts-source', major: 1 },
+          ],
+        },
+      })
+      ;[...root.querySelectorAll('button')]
+        .find(button => button.textContent?.includes('Related subjects'))
+        ?.click()
+      const cardText = root.textContent
+      await card.unmount()
+      const calculationView = await (
+        ui['subjectCalculationsViewer'] as {
+          mount(args: unknown): Promise<{ unmount(): Promise<void> }>
+        }
+      ).mount({
+        ...common,
+        slot: {
+          slotId: 'calculations',
+          kind: 'stage',
+          contributionId: 'org.modkitx.ui/subject-calculations-stage',
+          extensionId: 'org.modkitx/ui',
+          priority: 380,
+          bindings: [
+            {
+              bindingId: 'calculations',
+              contract: 'common.view/subject-calculations-source',
+              major: 1,
+            },
+          ],
+        },
+      })
+      const calculationsText = root.textContent
+      const status = root
+        .querySelector('[data-mk-part="calculations.item"]')
+        ?.getAttribute('data-status')
+      await calculationView.unmount()
+      return { cardText, calculationsText, status, releases, remaining: root.childElementCount }
+    })
+
+    expect(result.cardText).toContain('Marine')
+    expect(result.cardText).toContain('Life')
+    expect(result.cardText).toContain('Gauss Rifle')
+    expect(result.calculationsText).toContain('Weapon DPS')
+    expect(result.calculationsText).toContain('damage / period')
+    expect(result.calculationsText).toContain('GaussRifle')
+    expect(result.status).toBe('computed')
+    expect(result.releases).toBe(2)
+    expect(result.remaining).toBe(0)
+  })
+
+  it('renders a source-neutral semantic game template through view.template', async () => {
+    await reset()
+    const result = await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const root = document.querySelector('#app') as HTMLElement
+      let invoked = 0
+      const mount = await (
+        ui['gameTemplateViewer'] as {
+          mount(args: unknown): Promise<{ unmount(): Promise<void> }>
+        }
+      ).mount({
+        container: root,
+        descriptor: {
+          revision: 'template-r1',
+          operations: [
+            {
+              id: 'view.template',
+              handlerId: 'game-template-preview',
+              state: 'available',
+              mutatesSource: false,
+            },
+          ],
+          diagnostics: [],
+        },
+        slot: {
+          slotId: 'template',
+          kind: 'stage',
+          contributionId: 'org.modkitx.ui/game-template-stage',
+          extensionId: 'org.modkitx/ui',
+          priority: 365,
+          bindings: [],
+        },
+        sources: {
+          async get() {
+            throw new Error('template stage needs no data source')
+          },
+        },
+        operations: {
+          async invoke(handlerId: string) {
+            invoked += 1
+            if (handlerId !== 'game-template-preview') throw new Error('wrong handler')
+            return {
+              state: 'ok',
+              diagnostics: [],
+              output: {
+                kind: 'json',
+                value: {
+                  schemaVersion: 1,
+                  operationId: 'view.template',
+                  templateKind: 'fixture-tech-tree-v1',
+                  entryUri: 'memory://template',
+                  resolvedTree: { kind: 'tree', nodes: [{ id: 'Marine' }] },
+                  displayItems: [{ id: 'Marine', label: 'Marine' }],
+                  diagnostics: [
+                    { code: 'fixture-note', severity: 'information', message: 'Semantic proof.' },
+                  ],
+                  completeness: 'partial',
+                  fidelity: { comparison: 'semantic', unsupported: ['runtime-effects'] },
+                  provenance: { source: 'fixture' },
+                  digest: { algorithm: 'fixture', value: '1' },
+                },
+              },
+            }
+          },
+          async dispose() {},
+        },
+      })
+      const text = root.textContent
+      const kind = root.querySelector('[data-template-kind]')?.getAttribute('data-template-kind')
+      const completeness = root
+        .querySelector('[data-completeness]')
+        ?.getAttribute('data-completeness')
+      await mount.unmount()
+      return { text, kind, completeness, invoked, remaining: root.childElementCount }
+    })
+
+    expect(result.text).toContain('fixture-tech-tree-v1')
+    expect(result.text).toContain('Marine')
+    expect(result.text).toContain('runtime-effects')
+    expect(result.text).toContain('Semantic proof.')
+    expect(result.kind).toBe('fixture-tech-tree-v1')
+    expect(result.completeness).toBe('partial')
+    expect(result.invoked).toBe(1)
+    expect(result.remaining).toBe(0)
   })
 
   it('switches stages 100 times without reopening the asset and releases every lease', async () => {
@@ -1651,12 +2297,29 @@ describe('13C real-browser viewer host', () => {
       const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
       const typed = ui as unknown as typeof import('@modkitx-x3/ui')
       const root = document.querySelector('#app') as HTMLElement
-      const state = { opens: 0, descriptors: 0, mounts: 0, unmounts: 0, disposes: 0 }
+      const state = {
+        opens: 0,
+        descriptors: 0,
+        mounts: 0,
+        knowledgeMounts: 0,
+        unmounts: 0,
+        disposes: 0,
+      }
+      const knowledge = {
+        snapshotId: 'preview-knowledge',
+        async search() {
+          throw new Error('unused')
+        },
+        async resolve() {
+          throw new Error('unused')
+        },
+      }
       const viewer = (label: string) =>
         ({
           abiVersion: 1,
-          async mount(args: { container: unknown }) {
+          async mount(args: { container: unknown; knowledge?: unknown }) {
             state.mounts += 1
+            if (args.knowledge === knowledge) state.knowledgeMounts += 1
             ;(args.container as HTMLElement).textContent = label
             return {
               async update() {},
@@ -1668,6 +2331,7 @@ describe('13C real-browser viewer host', () => {
         }) as const
       const preview = typed.createCodecPreview({
         supported: ['.JSON', 'json'],
+        knowledge: knowledge as never,
         stages: [
           { id: 'primary', label: 'Primary', contract: 'test.view/primary', module: viewer('one') },
           {
@@ -1729,6 +2393,7 @@ describe('13C real-browser viewer host', () => {
       opens: 1,
       descriptors: 1,
       mounts: 2,
+      knowledgeMounts: 2,
       unmounts: 1,
       disposes: 0,
     })
@@ -2195,5 +2860,160 @@ describe('13C real-browser viewer host', () => {
       reloads: 1,
       destroyed: 1,
     })
+  })
+
+  it('shows semantic model facets and switches between decoded primitives', async () => {
+    await reset()
+    await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const root = document.querySelector('#app') as HTMLElement
+      const primitiveCalls: string[] = []
+      let releases = 0
+      const primitive = (id: string, offset: number) => ({
+        id,
+        topology: 'triangles' as const,
+        positions: new Float32Array([offset, 0, 0, offset + 1, 0, 0, offset, 1, 0]),
+        indices: new Uint32Array([0, 1, 2]),
+      })
+      const scene = {
+        async info() {
+          return {
+            scenes: 1,
+            nodes: 2,
+            meshes: 1,
+            primitives: 2,
+            materials: 1,
+            textures: 1,
+            animations: 1,
+            geometryAccess: 'decoded' as const,
+          }
+        },
+        async nodes() {
+          return { items: [] }
+        },
+        async meshes() {
+          return { items: [{ id: 'mesh', primitiveIds: ['hull', 'turret'] }] }
+        },
+        async primitive(id: string) {
+          primitiveCalls.push(id)
+          return primitive(id, id === 'hull' ? 0 : 4)
+        },
+      }
+      const skeleton = {
+        async info() {
+          return { bindings: 2, named: 2, companionBound: 0, hierarchies: 1 }
+        },
+        async bindings() {
+          return {
+            items: [
+              {
+                partId: 'bone/0',
+                boneIndex: 0,
+                boneName: 'Root',
+                provenance: 'direct' as const,
+                hierarchyId: 'bones',
+                parentBoneIndex: null,
+                nativeFlags: 1,
+                flagNames: ['inheritTranslation'],
+              },
+              {
+                partId: 'bone/1',
+                boneIndex: 1,
+                boneName: 'Turret',
+                provenance: 'direct' as const,
+                hierarchyId: 'bones',
+                parentBoneIndex: 0,
+                nativeFlags: 0,
+                flagNames: [],
+              },
+            ],
+          }
+        },
+      }
+      const materials = {
+        async info() {
+          return { materials: 1 }
+        },
+        async materials() {
+          return {
+            items: [
+              {
+                id: 'material-0',
+                name: 'Hull',
+                type: 'standard',
+                blendMode: 'opaque',
+                layers: [{ slot: 'diffuse', resourceId: 'Hull.dds' }],
+              },
+            ],
+          }
+        },
+      }
+      const values: Record<string, unknown> = {
+        'common.view/model-scene-source': scene,
+        'common.view/model-skeleton-source': skeleton,
+        'common.view/model-material-source': materials,
+      }
+      const slot = {
+        slotId: 'model',
+        kind: 'stage',
+        contributionId: 'org.modkitx.ui/model-stage',
+        extensionId: 'org.modkitx/ui',
+        priority: 100,
+        bindings: Object.keys(values).map(contract => ({
+          bindingId: contract,
+          contract,
+          major: 1,
+        })),
+      }
+      const mount = await typed.modelViewer.mount({
+        container: root,
+        descriptor: { revision: 'content-hash.sha256:model', operations: [], diagnostics: [] },
+        slot,
+        sources: {
+          async get(binding: { contract: string }) {
+            return {
+              value: values[binding.contract],
+              async release() {
+                releases += 1
+              },
+            }
+          },
+        },
+        operations: { async dispose() {} },
+      } as never)
+      ;(globalThis as unknown as Record<string, unknown>)['modelFixture'] = {
+        mount,
+        primitiveCalls,
+        releases: () => releases,
+      }
+    })
+
+    expect(await page.getByRole('combobox', { name: 'Model primitive' }).inputValue()).toBe('hull')
+    expect(await page.getByText('bones (2)', { exact: true }).isVisible()).toBe(true)
+    expect(await page.getByText('materials (1)', { exact: true }).isVisible()).toBe(true)
+    await page.getByRole('combobox', { name: 'Model primitive' }).selectOption('turret')
+    await page.waitForFunction(() =>
+      (
+        globalThis as unknown as { modelFixture: { primitiveCalls: string[] } }
+      ).modelFixture.primitiveCalls.includes('turret'),
+    )
+    expect(
+      await page.evaluate(
+        () =>
+          (globalThis as unknown as { modelFixture: { primitiveCalls: string[] } }).modelFixture
+            .primitiveCalls,
+      ),
+    ).toEqual(['hull', 'turret'])
+    await page.evaluate(async () => {
+      await (
+        globalThis as unknown as { modelFixture: { mount: { unmount(): Promise<void> } } }
+      ).modelFixture.mount.unmount()
+    })
+    expect(
+      await page.evaluate(() =>
+        (globalThis as unknown as { modelFixture: { releases(): number } }).modelFixture.releases(),
+      ),
+    ).toBe(5)
   })
 })

@@ -363,14 +363,16 @@ export function createLazyTableDataSource(options: LazyTableOptions): TableDataS
       }
     },
     rows: page,
-    async cell(coord: CellCoord): Promise<CellFacts> {
+    async cell(coord: CellCoord, signal?: AbortSignal): Promise<CellFacts> {
+      throwIfAborted(signal)
       if (coord.row < 0 || coord.column < 0 || coord.column >= options.columns) {
         throw new ModkitError({
           code: 'x3.host/table-cell-out-of-bounds',
           message: `table cell ${coord.row}:${coord.column} is outside the declared shape`,
         })
       }
-      for await (const row of options.iterate()) {
+      for await (const row of options.iterate(signal)) {
+        throwIfAborted(signal)
         if (row.index === coord.row) return { value: row.cells[coord.column] ?? '' }
       }
       throw new ModkitError({

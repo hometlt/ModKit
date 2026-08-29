@@ -64,6 +64,47 @@ const contributions = [
     },
   },
   {
+    id: 'subject-card-stage',
+    entrypoint: './dist/card/index.js',
+    spec: {
+      kind: 'stage',
+      consumesDataSources: [dataSource('common.view/subject-facts-source')],
+      priority: 390,
+      singletonGroup: 'center-stage',
+    },
+  },
+  {
+    id: 'subject-calculations-stage',
+    entrypoint: './dist/calculations/index.js',
+    spec: {
+      kind: 'stage',
+      consumesDataSources: [dataSource('common.view/subject-calculations-source')],
+      priority: 380,
+      singletonGroup: 'center-stage',
+    },
+  },
+  {
+    id: 'relation-graph-stage',
+    entrypoint: './dist/graph/index.js',
+    spec: {
+      kind: 'stage',
+      consumesDataSources: [dataSource('common.view/relation-graph-source')],
+      priority: 370,
+      singletonGroup: 'center-stage',
+    },
+  },
+  {
+    id: 'game-template-stage',
+    entrypoint: './dist/template/index.js',
+    spec: {
+      kind: 'stage',
+      requiresOperations: ['view.template'],
+      consumesDataSources: [],
+      priority: 365,
+      singletonGroup: 'center-stage',
+    },
+  },
+  {
     id: 'image-stage',
     entrypoint: './dist/image/index.js',
     spec: {

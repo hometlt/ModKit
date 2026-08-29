@@ -6,8 +6,8 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:d401834fd9c69231b3acade2fd79e5569a14c9e3363aa47dfe7e85e51d791f36",
-      "size": 38252544
+      "sha256": "sha256:76d42eb39131425c01878666d36fc05b629a3d43a2b2931eaafe1fc525869283",
+      "size": 41437696
     },
     {
       "catalog": [
@@ -265,15 +265,16 @@
           "contributions": [],
           "coordinate": "org.modkitx.blizzard/galaxy-language",
           "root": "extensions/blizzard/galaxy-language",
-          "sourceDigest": "sha256:2b74a916236e486e0849f0598e5be90ff2a88526b96014b457345f1a251f709f"
+          "sourceDigest": "sha256:9314e4f6812b5c2e87ca2825412fff8bf43dd1d2c9d2dfc27e0aaaf9efcf91cc"
         },
         {
           "contributions": [
+            "org.modkitx.blizzard/m3-preserving-writer",
             "org.modkitx/m3"
           ],
           "coordinate": "org.modkitx.blizzard/models",
           "root": "extensions/blizzard/models",
-          "sourceDigest": "sha256:ff14807ef6da411356f3dbebe8ebf57ded50dd41476bd2ae4f62962c49766f45"
+          "sourceDigest": "sha256:0bbdb3f61978bf1cb8cdf258d763e18709de85ad5e6616c2222c48fe8dd7459e"
         },
         {
           "contributions": [
@@ -282,20 +283,27 @@
           ],
           "coordinate": "org.modkitx.blizzard/mpq",
           "root": "extensions/blizzard/mpq",
-          "sourceDigest": "sha256:36eb34cb70c13b6fc957f99910dd64401fde066eb39e88296758b2b9fe36f478"
+          "sourceDigest": "sha256:103174985e7e314945d8fd5eadec0dc1742cb50896c40bdb95ab3bf4f6594243"
         },
         {
           "contributions": [
             "org.modkitx.blizzard/sc2-authored-text-writers",
+            "org.modkitx.blizzard/sc2-data-language",
+            "org.modkitx.blizzard/sc2-layout-language",
+            "org.modkitx.blizzard/sc2-triggers-language",
             "org.modkitx.blizzard/sc2-workspace-copy-writer",
             "org.modkitx/galaxy",
             "org.modkitx/sc2-bank",
+            "org.modkitx/sc2-bank-list",
             "org.modkitx/sc2-campaign",
+            "org.modkitx/sc2-campaign-directory",
             "org.modkitx/sc2-data",
             "org.modkitx/sc2-document-metadata",
             "org.modkitx/sc2-layout",
             "org.modkitx/sc2-map",
+            "org.modkitx/sc2-map-directory",
             "org.modkitx/sc2-mod",
+            "org.modkitx/sc2-mod-directory",
             "org.modkitx/sc2-replay",
             "org.modkitx/sc2-runtime",
             "org.modkitx/sc2-runtime-provider",
@@ -304,33 +312,43 @@
           ],
           "coordinate": "org.modkitx.blizzard/starcraft2",
           "root": "extensions/blizzard/starcraft2",
-          "sourceDigest": "sha256:67c51f18e78097ff6c5213cd72effde4381b31ab7e572c4d846e4f8e8a1cef76"
+          "sourceDigest": "sha256:243271e42f115b733c81c57f88a4231d53e3e0273e414a9518ffb2ae1cab2096"
         },
         {
           "contributions": [
+            "org.modkitx.blizzard/sc2-data-knowledge",
+            "org.modkitx.blizzard/sc2-data-schema-knowledge",
             "org.modkitx.blizzard/starcraft2-data",
             "org.modkitx.blizzard/starcraft2-installation",
+            "org.modkitx.blizzard/starcraft2-map-preview-preparation",
             "org.modkitx.blizzard/starcraft2-map-semantic",
+            "org.modkitx.blizzard/starcraft2-native-map-launch",
             "org.modkitx.blizzard/starcraft2-resolved-data",
             "org.modkitx.blizzard/starcraft2-workspace"
           ],
           "coordinate": "org.modkitx.blizzard/starcraft2-game",
           "root": "extensions/blizzard/starcraft2-game",
-          "sourceDigest": "sha256:d72542e7f9ca28402470688321e385d9d79b495c4d8b461dadf3d99f6226dae2"
+          "sourceDigest": "sha256:d2ddd4ba09307607eb02b80a803843f05cb05cf9fb31831fdebba02925bec4d2"
         }
       ],
       "file": "artifacts/modkitx-sc2-mod-studio.tar",
       "id": "sc2-mod-studio",
       "kind": "game-extension-bundle",
-      "sha256": "sha256:12c96598cfd852a39ea7416a28895de27405d687ac8d8a41d4c3cdc307be6de5",
-      "size": 1150464
+      "sha256": "sha256:390ad280d966f8bf72d0c75a2813fe303a060ffd348cecd31ac2fda6c62cf0c3",
+      "size": 16617472
     },
     {
       "catalog": [
         {
           "contributions": [
+            "org.modkitx.opensource/warzone-current-data-knowledge",
+            "org.modkitx.opensource/warzone-language",
+            "org.modkitx.opensource/warzone-legacy-data-knowledge",
+            "org.modkitx.opensource/warzone-pie-editor",
             "org.modkitx.opensource/warzone2100-data",
             "org.modkitx.opensource/warzone2100-installation",
+            "org.modkitx.opensource/warzone2100-installation-root",
+            "org.modkitx.opensource/warzone2100-map-package-writer",
             "org.modkitx.opensource/warzone2100-map-preview-preparation",
             "org.modkitx.opensource/warzone2100-map-semantic",
             "org.modkitx.opensource/warzone2100-resolved-data",
@@ -344,14 +362,14 @@
           ],
           "coordinate": "org.modkitx.opensource/warzone-2100",
           "root": "extensions/opensource/warzone-2100",
-          "sourceDigest": "sha256:6fef98d7769e8660893b5e44622ec5d2b4422005db8908868eb1bc2284f7f496"
+          "sourceDigest": "sha256:e21e8937dca6b03bc945192cba7016104484b176341c2d46b48a4f7eb58f3d8f"
         }
       ],
       "file": "artifacts/modkitx-warzone-2100-studio.tar",
       "id": "warzone-2100-studio",
       "kind": "game-extension-bundle",
-      "sha256": "sha256:80df64102e45a99459b0666fcf4015f59f77335f84b3cb536cd94ae7718d332b",
-      "size": 492544
+      "sha256": "sha256:961276221dd1883a6e9105cba91cde121952038b4595871928918ebc34e0508b",
+      "size": 1619456
     }
   ],
   "composition": {
@@ -377,15 +395,15 @@
       },
       {
         "path": "migration/product-profiles.json",
-        "sha256": "sha256:cde29731388e45bca1eca7935393eb9e7b36ed0dca0939d817f28c31c2c5cc7b"
+        "sha256": "sha256:f3f1642981931901cc22f905bf7b7121a35632998318b5b3a820dc8b7207a256"
       },
       {
         "path": "scripts/app-extension-sets.mjs",
-        "sha256": "sha256:fa2c114cf27a1605160ffae64ba0f70d0ad87919f75b0e6c1949f26f1b42fae7"
+        "sha256": "sha256:e6930c07aba094f9ef9ffa126fc0a56debf1d6b676e7fb771f7bfaa4fc4cbd61"
       },
       {
         "path": "scripts/bundle-hashes.json",
-        "sha256": "sha256:41db6806f5373c2c9abe1a785451abe60ff2b69b16d448eda22b64346a13a02d"
+        "sha256": "sha256:30435c7932c277802d42afe049f10c12189360f5556a5621e4bd3fbe8b592844"
       }
     ],
     "closure": "mk3-ga",
@@ -436,7 +454,7 @@
   },
   "licenseNotices": {
     "file": "LICENSE-NOTICES.txt",
-    "sha256": "sha256:dd64410239203145cf805d2925e3474190e79597dea21974b5874d44ac877732"
+    "sha256": "sha256:6fe2af18c7f84c2082dd810488612d0b90d03ba319b3c39e7bb0e1ff8485bd4d"
   },
   "release": {
     "authenticode": false,
@@ -457,7 +475,7 @@
   "sbom": {
     "file": "sbom.cdx.json",
     "format": "CycloneDX-1.5",
-    "sha256": "sha256:d3a1e965c8232aaf5b43d25690fdc7cd9c4d779f658dba9c0c1f3525d206da0a"
+    "sha256": "sha256:01634aa72bc610c5c03e550cdec52d016950016a15e3264a66bcae24e68974d9"
   },
   "schemaVersion": "release-manifest-1",
   "signing": {

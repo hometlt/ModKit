@@ -87,6 +87,39 @@ function fakeWorkspace(
     async current() {
       return current
     },
+    async completion() {
+      return undefined
+    },
+    async hover() {
+      return undefined
+    },
+    async signatureHelp() {
+      return undefined
+    },
+    async definition() {
+      return undefined
+    },
+    async references() {
+      return undefined
+    },
+    async prepareRename() {
+      return undefined
+    },
+    async rename() {
+      return undefined
+    },
+    async formatting() {
+      return undefined
+    },
+    async documentSymbols() {
+      return undefined
+    },
+    async workspaceSymbols() {
+      return undefined
+    },
+    async diagnostics() {
+      return undefined
+    },
     async close(uri) {
       closes.push(uri)
       current = undefined
@@ -257,6 +290,49 @@ describe('VS Code-free language session controller', () => {
         children: [expect.objectContaining({ name: 'inner' })],
       }),
     ])
+    await controller.shutdown()
+  })
+
+  it('forwards semantic requests as exact versioned bounded workspace calls', async () => {
+    const workspace = fakeWorkspace()
+    const completion = vi.spyOn(workspace, 'completion').mockResolvedValue({
+      items: [{ label: 'FixtureNative', kind: 'function' }],
+      isIncomplete: false,
+    })
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 0,
+      publishDiagnostics: () => undefined,
+    })
+    await controller.initialize()
+    await expect(
+      controller.completion(editorDocument(4), { line: 0, character: 3 }),
+    ).resolves.toEqual({
+      items: [{ label: 'FixtureNative', kind: 'function' }],
+      isIncomplete: false,
+    })
+    expect(completion).toHaveBeenCalledWith({
+      uri: 'file:///workspace/sample.fixture',
+      documentVersion: 4,
+      position: { line: 0, character: 3 },
+      maxResults: 512,
+      maxDocuments: 64,
+    })
+    const formatting = vi.spyOn(workspace, 'formatting').mockResolvedValue({
+      edits: [],
+      isComplete: true,
+    })
+    await expect(
+      controller.formatting(editorDocument(4), { tabSize: 2, insertSpaces: true }),
+    ).resolves.toEqual({ edits: [], isComplete: true })
+    expect(formatting).toHaveBeenCalledWith({
+      uri: 'file:///workspace/sample.fixture',
+      documentVersion: 4,
+      options: { tabSize: 2, insertSpaces: true },
+      maxResults: 512,
+      maxDocuments: 64,
+    })
     await controller.shutdown()
   })
 

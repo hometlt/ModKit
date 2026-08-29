@@ -23,6 +23,7 @@ import type {
   dataSourceMethodSurfaceV1Schema,
   dataSourceSurfaceV1Schema,
   editorContributionSpecV1Schema,
+  knowledgePackSpecV1Schema,
   serviceProviderContributionSpecV1Schema,
   traitDefinitionSpecV1Schema,
   viewerContributionSpecV1Schema,
@@ -48,6 +49,7 @@ import type {
   TraitDefinitionSpecV1Wire,
 } from '../src/definitions.js'
 import type { EditorContributionSpecV1Wire } from '../src/editing.js'
+import type { KnowledgePackSpecV1Wire } from '../src/knowledge/index.js'
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false
@@ -131,6 +133,15 @@ export type EditorContributionSpecDriftGate = Expect<
   Equal<
     DeepMutable<EditorContributionSpecV1Wire>,
     FromSchema<typeof editorContributionSpecV1Schema>
+  >
+>
+export type KnowledgePackSpecDriftGate = Expect<
+  Equal<
+    DeepMutable<KnowledgePackSpecV1Wire>,
+    FromSchema<
+      typeof knowledgePackSpecV1Schema,
+      { deserialize: [{ pattern: { title: 'JsonValue' }; output: DeepMutable<JsonValue> }] }
+    >
   >
 >
 export type DataSourceContributionSpecDriftGate = Expect<

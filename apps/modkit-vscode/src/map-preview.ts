@@ -16,11 +16,12 @@ export const MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY: NonNullable<
 > = Object.freeze({
   locales: Object.freeze(['enUS']),
   limits: Object.freeze({
-    maxRequirements: 64,
-    maxDocumentBytes: 4_194_304,
-    maxTextBytes: 16_777_216,
+    // A three-root SC2 workspace needs 327 bounded reads for all 108 catalog families plus locale.
+    maxRequirements: 512,
+    maxDocumentBytes: 16_777_216,
+    maxTextBytes: 268_435_456,
     maxEntities: 100_000,
-    maxDepth: 64,
+    maxDepth: 128,
     maxPageSize: 1_000,
   }),
 })

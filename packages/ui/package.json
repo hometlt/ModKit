@@ -110,9 +110,17 @@
       "types": "./dist/card/index.d.ts",
       "default": "./dist/card/index.js"
     },
+    "./calculations": {
+      "types": "./dist/calculations/index.d.ts",
+      "default": "./dist/calculations/index.js"
+    },
     "./graph": {
       "types": "./dist/graph/index.d.ts",
       "default": "./dist/graph/index.js"
+    },
+    "./template": {
+      "types": "./dist/template/index.d.ts",
+      "default": "./dist/template/index.js"
     },
     "./workbench": {
       "types": "./dist/workbench/index.d.ts",

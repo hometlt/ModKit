@@ -785,6 +785,46 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     return native
   }
 
+  const nativeCompletionKind = (kind: string): vscode.CompletionItemKind => {
+    switch (kind) {
+      case 'class':
+      case 'struct':
+        return vscode.CompletionItemKind.Class
+      case 'constant':
+        return vscode.CompletionItemKind.Constant
+      case 'enum':
+        return vscode.CompletionItemKind.Enum
+      case 'field':
+        return vscode.CompletionItemKind.Field
+      case 'function':
+        return vscode.CompletionItemKind.Function
+      case 'interface':
+        return vscode.CompletionItemKind.Interface
+      case 'keyword':
+        return vscode.CompletionItemKind.Keyword
+      case 'module':
+      case 'namespace':
+        return vscode.CompletionItemKind.Module
+      case 'parameter':
+      case 'variable':
+        return vscode.CompletionItemKind.Variable
+      case 'property':
+        return vscode.CompletionItemKind.Property
+      case 'snippet':
+        return vscode.CompletionItemKind.Snippet
+      case 'type':
+        return vscode.CompletionItemKind.TypeParameter
+      default:
+        return vscode.CompletionItemKind.Text
+    }
+  }
+
+  const nativeLocation = (location: {
+    readonly uri: string
+    readonly range: Parameters<typeof rangeOf>[0]
+  }): vscode.Location =>
+    new vscode.Location(vscode.Uri.parse(location.uri), rangeOf(location.range))
+
   const languageDocument = (document: vscode.TextDocument): EditorLanguageDocument => ({
     uri: document.uri.toString(),
     fileName: document.fileName,
@@ -874,6 +914,250 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             if (token.isCancellationRequested) return undefined
             log(
               `[language] document symbols failed: ${error instanceof Error ? error.message : String(error)}`,
+            )
+            return undefined
+          } finally {
+            cancellation.dispose()
+          }
+        },
+      }),
+      vscode.languages.registerDocumentFormattingEditProvider(languageSelector, {
+        async provideDocumentFormattingEdits(document, formatting, token) {
+          const cancellation = signalFor(token)
+          try {
+            const result = await languageController.formatting(
+              languageDocument(document),
+              {
+                tabSize: formatting.tabSize,
+                insertSpaces: formatting.insertSpaces,
+              },
+              cancellation.signal,
+            )
+            return result?.edits.map(item =>
+              vscode.TextEdit.replace(rangeOf(item.range), item.newText),
+            )
+          } catch (error) {
+            if (token.isCancellationRequested) return undefined
+            log(
+              `[language] formatting failed: ${error instanceof Error ? error.message : String(error)}`,
+            )
+            return undefined
+          } finally {
+            cancellation.dispose()
+          }
+        },
+      }),
+      vscode.languages.registerCompletionItemProvider(languageSelector, {
+        async provideCompletionItems(document, position, token) {
+          const cancellation = signalFor(token)
+          try {
+            const completion = await languageController.completion(
+              languageDocument(document),
+              { line: position.line, character: position.character },
+              cancellation.signal,
+            )
+            if (completion === undefined) return undefined
+            return new vscode.CompletionList(
+              completion.items.map(item => {
+                const native = new vscode.CompletionItem(
+                  item.label,
+                  nativeCompletionKind(item.kind),
+                )
+                if (item.detail !== undefined) native.detail = item.detail
+                if (item.documentation !== undefined) {
+                  native.documentation = new vscode.MarkdownString(item.documentation)
+                }
+                if (item.insertText !== undefined) {
+                  native.insertText =
+                    item.insertTextFormat === 'snippet'
+                      ? new vscode.SnippetString(item.insertText)
+                      : item.insertText
+                }
+                if (item.sortText !== undefined) native.sortText = item.sortText
+                return native
+              }),
+              completion.isIncomplete,
+            )
+          } catch (error) {
+            if (token.isCancellationRequested) return undefined
+            log(
+              `[language] completion failed: ${error instanceof Error ? error.message : String(error)}`,
+            )
+            return undefined
+          } finally {
+            cancellation.dispose()
+          }
+        },
+      }),
+      vscode.languages.registerHoverProvider(languageSelector, {
+        async provideHover(document, position, token) {
+          const cancellation = signalFor(token)
+          try {
+            const hover = await languageController.hover(
+              languageDocument(document),
+              { line: position.line, character: position.character },
+              cancellation.signal,
+            )
+            return hover === undefined
+              ? undefined
+              : new vscode.Hover(
+                  new vscode.MarkdownString(hover.markdown),
+                  hover.range === undefined ? undefined : rangeOf(hover.range),
+                )
+          } catch (error) {
+            if (token.isCancellationRequested) return undefined
+            log(
+              `[language] hover failed: ${error instanceof Error ? error.message : String(error)}`,
+            )
+            return undefined
+          } finally {
+            cancellation.dispose()
+          }
+        },
+      }),
+      vscode.languages.registerSignatureHelpProvider(
+        languageSelector,
+        {
+          async provideSignatureHelp(document, position, token) {
+            const cancellation = signalFor(token)
+            try {
+              const help = await languageController.signatureHelp(
+                languageDocument(document),
+                { line: position.line, character: position.character },
+                cancellation.signal,
+              )
+              if (help === undefined) return undefined
+              const native = new vscode.SignatureHelp()
+              native.activeSignature = help.activeSignature
+              native.activeParameter = help.activeParameter
+              native.signatures = help.signatures.map(signature => {
+                const item = new vscode.SignatureInformation(signature.label)
+                if (signature.documentation !== undefined) {
+                  item.documentation = signature.documentation
+                }
+                item.parameters = signature.parameters.map(
+                  parameter =>
+                    new vscode.ParameterInformation(parameter.label, parameter.documentation),
+                )
+                return item
+              })
+              return native
+            } catch (error) {
+              if (token.isCancellationRequested) return undefined
+              log(
+                `[language] signature help failed: ${error instanceof Error ? error.message : String(error)}`,
+              )
+              return undefined
+            } finally {
+              cancellation.dispose()
+            }
+          },
+        },
+        '(',
+        ',',
+      ),
+      vscode.languages.registerDefinitionProvider(languageSelector, {
+        async provideDefinition(document, position, token) {
+          const cancellation = signalFor(token)
+          try {
+            const result = await languageController.definition(
+              languageDocument(document),
+              { line: position.line, character: position.character },
+              cancellation.signal,
+            )
+            return result?.locations.map(nativeLocation)
+          } catch (error) {
+            if (token.isCancellationRequested) return undefined
+            log(
+              `[language] definition failed: ${error instanceof Error ? error.message : String(error)}`,
+            )
+            return undefined
+          } finally {
+            cancellation.dispose()
+          }
+        },
+      }),
+      vscode.languages.registerReferenceProvider(languageSelector, {
+        async provideReferences(document, position, context, token) {
+          const cancellation = signalFor(token)
+          try {
+            const result = await languageController.references(
+              languageDocument(document),
+              { line: position.line, character: position.character },
+              context.includeDeclaration,
+              cancellation.signal,
+            )
+            return result?.locations.map(nativeLocation)
+          } catch (error) {
+            if (token.isCancellationRequested) return undefined
+            log(
+              `[language] references failed: ${error instanceof Error ? error.message : String(error)}`,
+            )
+            return undefined
+          } finally {
+            cancellation.dispose()
+          }
+        },
+      }),
+      vscode.languages.registerRenameProvider(languageSelector, {
+        async prepareRename(document, position, token) {
+          const cancellation = signalFor(token)
+          try {
+            const result = await languageController.prepareRename(
+              languageDocument(document),
+              { line: position.line, character: position.character },
+              cancellation.signal,
+            )
+            return result === undefined
+              ? undefined
+              : { range: rangeOf(result.range), placeholder: result.placeholder }
+          } finally {
+            cancellation.dispose()
+          }
+        },
+        async provideRenameEdits(document, position, newName, token) {
+          const cancellation = signalFor(token)
+          try {
+            const result = await languageController.rename(
+              languageDocument(document),
+              { line: position.line, character: position.character },
+              newName,
+              cancellation.signal,
+            )
+            if (result === undefined) return undefined
+            const edit = new vscode.WorkspaceEdit()
+            for (const change of result.documentChanges) {
+              edit.set(
+                vscode.Uri.parse(change.uri),
+                change.edits.map(item =>
+                  vscode.TextEdit.replace(rangeOf(item.range), item.newText),
+                ),
+              )
+            }
+            return edit
+          } finally {
+            cancellation.dispose()
+          }
+        },
+      }),
+      vscode.languages.registerWorkspaceSymbolProvider({
+        async provideWorkspaceSymbols(query, token) {
+          const cancellation = signalFor(token)
+          try {
+            const result = await languageController.workspaceSymbols(query, cancellation.signal)
+            return result?.symbols.map(
+              symbol =>
+                new vscode.SymbolInformation(
+                  symbol.name,
+                  SYMBOL_KIND[symbol.kind],
+                  symbol.containerName ?? '',
+                  nativeLocation(symbol.location),
+                ),
+            )
+          } catch (error) {
+            if (token.isCancellationRequested) return undefined
+            log(
+              `[language] workspace symbols failed: ${error instanceof Error ? error.message : String(error)}`,
             )
             return undefined
           } finally {

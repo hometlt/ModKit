@@ -52,6 +52,7 @@ describe('deterministic ordering (MK3/23 §9.9)', () => {
   it('keeps exported closed operation vocabularies immutable at runtime', () => {
     expect(CONTAINER_EXTRACT_OPERATION_ID).toBe('container.extract')
     expect(SHARED_OPERATION_IDS).toContain(CONTAINER_EXTRACT_OPERATION_ID)
+    expect(SHARED_OPERATION_IDS).toContain('view.template')
     expect(() => (OPERATION_DOMAINS as unknown as string[]).push('evil')).toThrow(TypeError)
     expect(() => (SHARED_OPERATION_IDS as unknown as string[]).push('evil.run')).toThrow(TypeError)
   })

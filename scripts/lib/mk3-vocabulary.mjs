@@ -32,6 +32,7 @@ export const SHARED_OPERATION_IDS = [
   'view.inspect',
   'view.thumbnail',
   'view.hex',
+  'view.template',
   'media.play',
   'media.play-pause',
   'media.seek',

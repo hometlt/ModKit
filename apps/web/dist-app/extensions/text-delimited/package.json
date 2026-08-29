@@ -6,6 +6,7 @@
   "description": "Independent MK3 CSV and TSV codecs and syntax providers.",
   "exports": {
     ".": "./src/index.js",
+    "./linked": "./src/linked.js",
     "./formats": "./src/formats/index.js",
     "./formats/csv/codec": "./src/families/delimited/entrypoints/csv-codec.js",
     "./formats/csv/provider": "./src/families/delimited/entrypoints/csv-provider.js",

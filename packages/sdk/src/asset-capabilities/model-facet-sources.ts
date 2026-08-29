@@ -90,6 +90,14 @@ export interface ModelBoneBinding {
   readonly provenance: ModelBoneProvenance
   /** The hierarchy the index is resolved against, when the publisher names one. */
   readonly hierarchyId?: string
+  /** Parent in the same hierarchy. `null` is an explicitly declared root; absent is unknown. */
+  readonly parentBoneIndex?: number | null
+  /** Native publisher flags, retained without assigning cross-format meaning to unnamed bits. */
+  readonly nativeFlags?: number
+  /** Names for the native flag bits the publisher understands. */
+  readonly flagNames?: readonly string[]
+  /** Publisher-native 4×4 rest/bind matrix, in row order. Absent when the format has none. */
+  readonly restMatrix?: readonly number[]
 }
 
 export interface ModelSkeletonInfo {
@@ -126,6 +134,17 @@ export interface ModelAnimationChannel {
   readonly axis?: string
   readonly firstFrame: number
   readonly lastFrame: number
+  /** Decoded samples. Their values use the publisher's native component order. */
+  readonly samples?: readonly ModelAnimationSample[]
+}
+
+export interface ModelAnimationSample {
+  /** Index in the clip's ordered sample timeline. */
+  readonly frame: number
+  /** Native timestamp when the publisher exposes one. */
+  readonly timeMilliseconds?: number
+  /** Scalar/vector/quaternion components in the publisher's documented order. */
+  readonly value: readonly number[]
 }
 
 export interface ModelAnimationClip {
@@ -137,9 +156,16 @@ export interface ModelAnimationClip {
   readonly frames: number
   readonly frameRate?: number
   readonly hierarchyId?: string
+  /** Native inclusive time bounds; distinct from the normalized frame count. */
+  readonly nativeTimeBounds?: ModelAnimationTimeBounds
   readonly channels: readonly ModelAnimationChannel[]
   /** Channels the publisher recognised but does not represent; stated rather than dropped. */
   readonly unsupportedChannels?: number
+}
+
+export interface ModelAnimationTimeBounds {
+  readonly startMilliseconds: number
+  readonly endMilliseconds: number
 }
 
 export interface ModelAnimationInfo {
@@ -193,6 +219,19 @@ export interface ModelCollisionSource {
 // ---------------------------------------------------------------------------------------------
 // materials — publishers: OBJ (names and libraries), UVM (per-material extension contracts)
 
+export interface ModelMaterialLayerRef {
+  /** Publisher-qualified layer role (`diffuse`, `normal`, `emissive`, …). */
+  readonly slot: string
+  /** Joins `ModelResourceRef.id` when the layer names a resolved logical resource. */
+  readonly resourceId?: string
+  /** Publisher-native UV set/source selector. */
+  readonly uvSource?: number
+  /** Publisher-native colour-channel mask. */
+  readonly colorChannels?: number
+  readonly nativeFlags?: number
+  readonly flagNames?: readonly string[]
+}
+
 export interface ModelMaterialRef {
   /** Matches `ModelPrimitive.materialId`, so a primitive and its material can be joined. */
   readonly id: string
@@ -205,6 +244,14 @@ export interface ModelMaterialRef {
    * modelled: UV preserves shader *parameters* and does not define pixel output.
    */
   readonly contracts?: readonly string[]
+  /** Publisher-native material family (`standard`, `composite`, …). */
+  readonly type?: string
+  /** Publisher-native blend operation name when known. */
+  readonly blendMode?: string
+  readonly priority?: number
+  readonly nativeFlags?: number
+  readonly flagNames?: readonly string[]
+  readonly layers?: readonly ModelMaterialLayerRef[]
 }
 
 export interface ModelMaterialInfo {

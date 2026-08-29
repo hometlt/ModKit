@@ -72,19 +72,32 @@ function entriesOf(pkgDir) {
   })
 }
 
-/** Bare specifiers stay external: sibling packages and real dependencies alike. */
-const externalPlugin = {
-  name: 'externalise-bare-specifiers',
-  setup(b) {
-    b.onResolve({ filter: /.*/ }, args => {
-      if (args.kind === 'entry-point') return undefined
-      const isRelative = args.path.startsWith('.') || args.path.startsWith('/')
-      return isRelative ? undefined : { path: args.path, external: true }
-    })
-  },
+/**
+ * Bare specifiers stay external: sibling packages and real runtime dependencies alike.
+ *
+ * The generated validator entry is the deliberate exception. AJV's standalone emitter still
+ * references its tiny `dist/runtime/*` helpers, even though it does not ship the compiler in the
+ * generated program. Leaving those helpers external made the supposedly standalone validator
+ * entry depend on the build workspace's AJV installation and broke consumers that installed the
+ * bundled SDK without AJV. Inline the complete dependency closure for that one generated entry;
+ * it has no sibling-package imports and the bundle test pins that it remains import-free.
+ */
+function externalPlugin({ selfContained = false } = {}) {
+  return {
+    name: 'externalise-bare-specifiers',
+    setup(b) {
+      b.onResolve({ filter: /.*/ }, args => {
+        if (args.kind === 'entry-point') return undefined
+        const isRelative = args.path.startsWith('.') || args.path.startsWith('/')
+        if (isRelative || selfContained) return undefined
+        return { path: args.path, external: true }
+      })
+    },
+  }
 }
 
 async function bundleEntry(srcPath, outFile) {
+  const selfContained = outFile.endsWith(join('sdk', 'dist', 'manifest', 'validators.generated.js'))
   const result = await build({
     entryPoints: [srcPath],
     outfile: outFile,
@@ -96,7 +109,7 @@ async function bundleEntry(srcPath, outFile) {
     minify: false,
     sourcemap: false,
     legalComments: 'none',
-    plugins: [externalPlugin],
+    plugins: [externalPlugin({ selfContained })],
     logLevel: 'silent',
   })
   const file = result.outputFiles[0]

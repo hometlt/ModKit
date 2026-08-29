@@ -41,6 +41,12 @@ const CATALOG: readonly StageFacts[] = [
   { id: 'audio', label: 'Audio', contract: 'common.view/audio-media-source' },
   { id: 'video', label: 'Video', contract: 'common.view/video-media-source' },
   { id: 'archive', label: 'Entries', contract: 'common.view/namespace-entry-source' },
+  { id: 'card', label: 'Card', contract: 'common.view/subject-facts-source' },
+  {
+    id: 'calculations',
+    label: 'Calculations',
+    contract: 'common.view/subject-calculations-source',
+  },
   { id: 'table', label: 'Table', contract: 'common.view/table-data-source' },
   { id: 'tree', label: 'Tree', contract: 'common.view/tree-data-source' },
   { id: 'relations', label: 'Relations', contract: 'common.view/relation-graph-source' },
@@ -175,9 +181,12 @@ describe('VS Code view policy', () => {
     expect(importedSurfaces).toEqual([
       'audio',
       'code',
+      'card',
+      'calculations',
       'editor',
       'explorer',
       'graph',
+      'template',
       'hex',
       'hex-editor',
       'image',
@@ -195,12 +204,20 @@ describe('VS Code view policy', () => {
     expect(source).not.toContain('@modkitx-x3/ui/monaco')
     expect(source).not.toContain('@modkitx-x3/ui/settings')
     expect(source).not.toContain('@modkitx-x3/ui/workbench')
-    for (const id of ['relations', 'text-editor', 'edit', 'metadata', 'hex-editor']) {
+    for (const id of ['text-editor', 'edit', 'metadata', 'hex-editor']) {
       expect(source).toMatch(
         new RegExp(`id: '${id}',[\\s\\S]*?appLocal: true,[\\s\\S]*?\\n    \\}`, 'u'),
       )
     }
-    for (const id of ['archive', 'text', 'virtual-text', 'hex']) {
+    for (const id of [
+      'archive',
+      'card',
+      'calculations',
+      'relations',
+      'text',
+      'virtual-text',
+      'hex',
+    ]) {
       const start = source.indexOf(`id: '${id}'`)
       const nextStage = source.indexOf('\n    {', start)
       const block = source.slice(start, nextStage < 0 ? source.length : nextStage)

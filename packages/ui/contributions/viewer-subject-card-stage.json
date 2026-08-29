@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/viewer-contribution", "major": 1 },
+  "id": "org.modkitx.ui/subject-card-stage",
+  "displayName": "subject card stage",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./dist/card/index.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "stage",
+    "consumesDataSources": [{ "contract": "common.view/subject-facts-source", "major": 1 }],
+    "priority": 390,
+    "singletonGroup": "center-stage"
+  }
+}

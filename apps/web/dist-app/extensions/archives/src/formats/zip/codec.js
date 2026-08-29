@@ -122,7 +122,7 @@ function safePath(value) {
   return `${parts.join('/')}${normalized.endsWith('/') && parts.length > 0 ? '/' : ''}`
 }
 
-function parseZip(bytes, maxEntries) {
+export function parseZipArchive(bytes, maxEntries) {
   const eocd = findEocd(bytes)
   if (eocd < 0) throw new TypeError('ZIP end-of-central-directory record is missing')
   if (u16(bytes, eocd + 4) !== 0 || u16(bytes, eocd + 6) !== 0) {
@@ -193,7 +193,7 @@ async function inflateRaw(bytes) {
   return new Uint8Array(await new Response(stream).arrayBuffer())
 }
 
-async function extract(bytes, entry) {
+export async function extractZipArchiveEntry(bytes, entry) {
   if (entry.kind !== 'file') throw new TypeError('directories have no byte payload')
   if ((entry.flags & FLAG_ENCRYPTED) !== 0)
     throw new TypeError('encrypted ZIP entries are unsupported')
@@ -894,10 +894,24 @@ const definition = Object.freeze({
   async detect(bytes) {
     const signature = bytes.byteLength >= 4 ? u32(bytes, 0) : 0
     const match = signature === ZIP_LOCAL || signature === ZIP_EOCD
-    return { confidence: match ? 0.99 : 0.01, note: match ? 'zip-signature' : 'signature-mismatch' }
+    /*
+     * 0.95, not 0.99, and the four hundredths are the whole point.
+     *
+     * ZIP is a *carrier*: ODF, OOXML, Warzone `.wz`, JAR, EPUB and a dozen game packages are all
+     * "a ZIP plus something". Every one of those reads the same four magic bytes this does and then
+     * reads more — an uncompressed `mimetype` entry, a manifest, a declared layout. A carrier that
+     * scored as high as its passengers produced an exact tie, and the host's untie rule refuses to
+     * guess between equals: before block 12 slice 12-2 an `.odt` and a `.wz` did not open at all in
+     * any host that loaded this extension beside theirs.
+     *
+     * So the generic container sits one step below anything that matched this magic *and* its own
+     * structure. This is a floor for the whole class rather than a tweak for two formats: the next
+     * ZIP-backed format is protected without editing this line again.
+     */
+    return { confidence: match ? 0.95 : 0.01, note: match ? 'zip-signature' : 'signature-mismatch' }
   },
   async inspect(bytes, context) {
-    const entries = parseZip(bytes, context.budget.maxNodes)
+    const entries = parseZipArchive(bytes, context.budget.maxNodes)
     const files = entries.filter(entry => entry.kind === 'file')
     const directories = entries.length - files.length
     const uncompressedBytes = files.reduce((total, entry) => total + BigInt(entry.size), 0n)
@@ -971,7 +985,7 @@ const definition = Object.freeze({
           if (entry === undefined || entry.kind !== 'file') {
             throw new TypeError('ZIP file entry id was not found')
           }
-          return { kind: 'bytes', value: await extract(bytes, entry) }
+          return { kind: 'bytes', value: await extractZipArchiveEntry(bytes, entry) }
         },
         'edit-structure': editStructureHandler(
           bytes,

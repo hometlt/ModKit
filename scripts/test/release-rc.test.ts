@@ -69,6 +69,7 @@ function extension(
     contract: { id: 'org.modkitx/codec-contribution', major: 1 },
     spec: {},
   })
+  text(join(root, path, 'LICENSE.md'), `${license}\nhttps://example.invalid/license \n`)
   text(join(root, path, 'src', 'linked.js'), `export const extensionId = '${publisher}/${id}'\n`)
 }
 
@@ -232,6 +233,7 @@ describe('focused local RC artifacts', () => {
     const secondFiles = outputFiles(second)
     expect([...secondFiles.keys()].sort()).toEqual([...firstFiles.keys()].sort())
     for (const [name, bytes] of firstFiles) expect(secondFiles.get(name), name).toEqual(bytes)
+    expect(readFileSync(join(first, 'LICENSE-NOTICES.txt'), 'utf8')).not.toMatch(/[ \t]+$/mu)
 
     const { privateKey, publicKey } = generateKeyPairSync('ed25519')
     const privatePath = join(parent, 'local-private.pem')

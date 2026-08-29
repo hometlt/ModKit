@@ -28,6 +28,8 @@ const PUBLISHED_ENTRIES = [
   'packages/sdk/dist/editing.js',
   'packages/sdk/dist/service-contracts.js',
   'packages/sdk/dist/language/index.js',
+  'packages/sdk/dist/knowledge/index.js',
+  'packages/sdk/dist/templates/index.js',
   'packages/sdk/dist/renderer/index.js',
   'packages/sdk/dist/games/index.js',
   'packages/sdk/dist/mods/index.js',
@@ -51,6 +53,7 @@ const PUBLISHED_ENTRIES = [
   // protocol alone, without pulling inventory/resolution/gate code into a renderer or worker
   'packages/host/dist/execution/index.js',
   'packages/host/dist/language/index.js',
+  'packages/host/dist/knowledge/index.js',
   'packages/host/dist/renderer/index.js',
   'packages/host/dist/games/index.js',
   'packages/host/dist/mods/index.js',
@@ -79,7 +82,9 @@ const PUBLISHED_ENTRIES = [
   'packages/ui/dist/primitives/search-field.js',
   'packages/ui/dist/shell/chrome.js',
   'packages/ui/dist/card/index.js',
+  'packages/ui/dist/calculations/index.js',
   'packages/ui/dist/graph/index.js',
+  'packages/ui/dist/template/index.js',
   'packages/ui/dist/composition/index.js',
   'packages/ui/dist/workbench/index.js',
   'packages/ui/dist/settings/index.js',
@@ -153,6 +158,18 @@ describe('single-file production dist', () => {
     expect(sdk).not.toContain('ajv/dist/2020.js')
     expect(sdk).not.toContain('new Function')
     expect(sdk).not.toContain('unsafe-eval')
+
+    // AJV's standalone emitter references tiny runtime helpers. The validator entry must inline
+    // that complete closure: published SDK consumers are not required to install the compiler or
+    // rely on the build workspace's node_modules layout merely to validate a manifest.
+    const validators = readFileSync(
+      bundlePath('packages/sdk/dist/manifest/validators.generated.js'),
+      'utf8',
+    )
+    expect(validators).not.toMatch(/^\s*import\b/mu)
+    expect(validators).not.toMatch(/^\s*export\s+.*\s+from\b/mu)
+    expect(validators).not.toMatch(/\bimport\s*\(/u)
+    expect(validators).not.toMatch(/\bfrom\s*["']ajv\/dist\/runtime\//u)
 
     const host = readFileSync(bundlePath('packages/host/dist/index.js'), 'utf8')
     const hostImports = importSpecifiers(host)

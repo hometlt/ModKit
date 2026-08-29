@@ -2,7 +2,7 @@ schemaVersion: 'capability-registry-1'
 $comment: 'Semantic capability registry (слой 2, PLAN_MODKIT_MK3_FINAL_RU.md §3.3, блок 10 работы 4–6 и 11). Строка — пользовательская возможность, не поверхность кода; несколько технических строк могут реализовывать одну возможность. Гибрид: скелет выведен из migration/generated/source-inventory.json, scripts/mk2-port-ratchet.json, scripts/parity/common-coverage.json, reports/parity/latest.json и extensions/*/*/MIGRATION-NOTES*.json; семантические поля — данные. scripts/migration/check-registry.mjs заново выводит каждый машинный факт и сверяет, поэтому рукописное значение не может разойтись с деревом. Канонический порядок ключей и сортировка строк по capabilityId обязательны.'
 ownerAdditionsFrozen: true
 ownerAdditionsFrozenOn: '2026-08-28'
-ownerAdditionsFrozenNote: "Обязательный набор owner additions заморожен реестром блока 10 и уточнён решениями владельца для первого Product GA: ODG, Kane's Wrath, семь MK3-native text-data форматов, machine-readable closure приложений и RC блока 20, а также явная политика подписи MPQ из GA acceptance Fable. Новая экспериментальная идея получает experimental-optional и не расширяет Legacy Migration Complete; смена obligation требует решения владельца и обновления scope lock."
+ownerAdditionsFrozenNote: "Обязательный набор owner additions заморожен реестром блока 10 и уточнён решениями владельца для первого Product GA: ODG, семь MK3-native text-data форматов, machine-readable closure приложений и RC блока 20, явная политика подписи MPQ, а также knowledge packs, карточки, граф, расчёты, шаблоны, общий языковой анализ, read-only MCP и три inspection skill для общего Modkit, SC2 и Warzone. C&C 3, Kane's Wrath, Red Alert 3, Spring, Recoil и BAR не входят в этот closure и остаются после Multiverse STOP. Новая экспериментальная идея получает experimental-optional и не расширяет Legacy Migration Complete; смена obligation требует решения владельца и обновления scope lock."
 evidenceLegend:
   E0: 'Строка обнаружена; исполняемого MK3-контракта ещё нет (planned owner может быть уже назван).'
   E1: 'Contract/manifest существует и валидируется.'
@@ -13,10 +13,12 @@ evidenceLegend:
 scopeLock:
   focused-required-addition:
     - 'ODG'
-    - "Kane's Wrath"
     - 'MK3-native text-data (TSV/INI/JSON/JSONC/TOML/XML/YAML)'
     - 'Block 20 application and RC closure'
     - 'Blizzard MPQ native signature policy'
+    - 'Product GA knowledge packs, subject cards, relation graph and calculations for SC2 and Warzone'
+    - 'Product GA game templates and protocol-neutral language analysis'
+    - 'Product GA read-only Modkit MCP and three inspection skills'
   post-ga-required-proof:
     - 'SC1 CHK'
     - 'SC1 GRP'
@@ -31,7 +33,7 @@ scopeLock:
     - 'volume-grid-3d'
     - 'free-space-3d'
 counts:
-  capabilities: 321
+  capabilities: 331
   unmappedRules: 13
   unmappedUnits: 608
   mappedUnits: 512
@@ -14145,7 +14147,7 @@ capabilities:
       portFamily: 'opensource/warzone-2100'
       portVerdict: 'relocated-and-rewritten'
     migrationState: 'implemented'
-    supportState: 'partial'
+    supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
     evidenceLevel: 'E1'
     hostEvidence: 'node'
@@ -17006,6 +17008,313 @@ capabilities:
       commits: []
       tests: []
       reports: []
+  - capabilityId: 'platform/ai/inspection-skill-core'
+    userScenario: 'Попросить ИИ безопасно открыть выбранный поддерживаемый файл через Modkit, объяснить доступные возможности и вернуть ограниченные факты с источниками и честной полнотой.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: '.agents/skills/modkit-core'
+    plannedBlock: 21
+    dependsOn:
+      - 'platform/ai/modkit-mcp'
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities: []
+    mk3Contributions: []
+    mk3Operations:
+      - 'modkit.open_subject'
+      - 'modkit.inspect'
+      - 'modkit.list_subjects'
+      - 'modkit.select_subject'
+      - 'modkit.subject_facts'
+      - 'modkit.subject_calculations'
+      - 'modkit.close_selected_subject'
+      - 'modkit.close_subject'
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'host-facility-dependent'
+    evidenceLevel: 'E3'
+    hostEvidence: 'node'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors:
+      - 'MODKIT_MCP_SC2_LOOSE_SUBJECT'
+      - 'MODKIT_MCP_WZ_SUBJECT'
+    projection:
+      plane: 'code'
+      liveProjection: 'not-applicable'
+      portableMaterialization: 'not-applicable'
+      opaquePreservation: 'not-applicable'
+      nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'skill намеренно использует только bounded read-only MCP lifecycle; изменение файлов, запуск игры и произвольное выполнение кода не входят в Product GA'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'использовать только публичные read-only MCP tools, не читать файл собственным parser и всегда закрывать opaque handle'
+    closedBy:
+      commits: []
+      tests:
+        - 'apps/modkit-mcp/test/skill-routing.test.ts'
+        - 'apps/modkit-mcp/corpus/real-subjects.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#83-скиллы'
+  - capabilityId: 'platform/ai/inspection-skill-sc2'
+    userScenario: 'Попросить ИИ исследовать выбранную SC2Map, SC2Mod или SC2Campaign через resolved data, карточки, связи, расчёты, Galaxy, Triggers, Layout, карту и M3 без прямого обхода установки.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'extensions/blizzard/.agents/skills/modkit-sc2'
+    plannedBlock: 21
+    dependsOn:
+      - 'platform/ai/modkit-mcp'
+      - 'platform/language/document-analysis'
+      - 'platform/presentation/game-template-preview'
+      - 'platform/presentation/relation-graph'
+      - 'platform/presentation/subject-calculations'
+      - 'platform/presentation/subject-card'
+      - 'vertical/starcraft-2/native-inspect-authoring'
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities: []
+    mk3Contributions: []
+    mk3Operations:
+      - 'modkit.list_subjects'
+      - 'modkit.search_subjects'
+      - 'modkit.select_subject'
+      - 'modkit.subject_facts'
+      - 'modkit.relation_graph'
+      - 'modkit.subject_calculations'
+      - 'modkit.invoke_readonly'
+      - 'modkit.knowledge_resolve'
+      - 'modkit.close_selected_subject'
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'host-facility-dependent'
+    evidenceLevel: 'E3'
+    hostEvidence: 'node'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors:
+      - 'MODKIT_MCP_SC2_LOOSE_SUBJECT'
+      - 'MODKIT_MCP_SC2_ALLOWED_ROOTS'
+    projection:
+      plane: 'code'
+      liveProjection: 'not-applicable'
+      portableMaterialization: 'not-applicable'
+      opaquePreservation: 'not-applicable'
+      nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'реальный MCP corpus доказывает loose SC2Map и dependency-merged entity; отдельный прямой corpus каждой SC2Mod и SC2Campaign остаётся environment-bound проверкой'
+      - 'skill read-only и bounded; live Galaxy runtime через s2client или GSVM oracle отложен до Multiverse после обязательной паузы'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'открывать пользовательский SC2 package через Modkit и использовать только exact descriptor-advertised read-only операции'
+    closedBy:
+      commits: []
+      tests:
+        - 'apps/modkit-mcp/test/skill-routing.test.ts'
+        - 'apps/modkit-mcp/corpus/real-subjects.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#83-скиллы'
+  - capabilityId: 'platform/ai/inspection-skill-warzone'
+    userScenario: 'Попросить ИИ исследовать выбранный Warzone WZ, карту, таблицу, script или PIE через карточки, связи, расчёты и знания без распаковки архивов в поисковый каталог.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'extensions/opensource/warzone-2100/.agents/skills/modkit-warzone'
+    plannedBlock: 21
+    dependsOn:
+      - 'platform/ai/modkit-mcp'
+      - 'platform/language/document-analysis'
+      - 'platform/presentation/game-template-preview'
+      - 'platform/presentation/relation-graph'
+      - 'platform/presentation/subject-calculations'
+      - 'platform/presentation/subject-card'
+      - 'vertical/warzone-2100/native-inspect-authoring'
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities: []
+    mk3Contributions: []
+    mk3Operations:
+      - 'modkit.list_subjects'
+      - 'modkit.search_subjects'
+      - 'modkit.select_subject'
+      - 'modkit.subject_facts'
+      - 'modkit.relation_graph'
+      - 'modkit.subject_calculations'
+      - 'modkit.invoke_readonly'
+      - 'modkit.knowledge_resolve'
+      - 'modkit.close_selected_subject'
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'host-facility-dependent'
+    evidenceLevel: 'E3'
+    hostEvidence: 'node'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors:
+      - 'MODKIT_MCP_WZ_SUBJECT'
+    projection:
+      plane: 'code'
+      liveProjection: 'not-applicable'
+      portableMaterialization: 'not-applicable'
+      opaquePreservation: 'not-applicable'
+      nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'skill read-only и bounded; он не выполняет JavaScript, SLO/VLO или игровой runtime и не меняет архивы'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'открывать пользовательский WZ/map/data/script/PIE через Modkit и сохранять schema, provenance, diagnostics и incomplete state каждого ответа'
+    closedBy:
+      commits: []
+      tests:
+        - 'apps/modkit-mcp/test/skill-routing.test.ts'
+        - 'apps/modkit-mcp/corpus/real-subjects.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#83-скиллы'
+  - capabilityId: 'platform/ai/modkit-mcp'
+    userScenario: 'Подключить ИИ к одному read-only MCP Modkit и через ограниченные tools находить установленные SC2 и Warzone, открывать выбранный мод, получать знания, карточки, связи, расчёты, проверки и preview.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'apps/modkit-mcp'
+    plannedBlock: 21
+    dependsOn:
+      - 'game/starcraft-2/discover-open'
+      - 'game/warzone-2100/discover-open'
+      - 'platform/knowledge/knowledge-pack'
+      - 'platform/presentation/game-template-preview'
+      - 'platform/presentation/relation-graph'
+      - 'platform/presentation/subject-calculations'
+      - 'platform/presentation/subject-card'
+    sourceUnitIds: []
+    legacyEvidence: []
+    hostFacilities:
+      - 'read-source'
+    mk3Contributions: []
+    mk3Operations:
+      - 'modkit.inventory'
+      - 'modkit.capabilities'
+      - 'modkit.discover_installations'
+      - 'modkit.open_discovered'
+      - 'modkit.open_subject'
+      - 'modkit.open_selection'
+      - 'modkit.inspect'
+      - 'modkit.list_subjects'
+      - 'modkit.search_subjects'
+      - 'modkit.select_subject'
+      - 'modkit.close_selected_subject'
+      - 'modkit.subject_facts'
+      - 'modkit.relation_graph'
+      - 'modkit.subject_calculations'
+      - 'modkit.invoke_readonly'
+      - 'modkit.knowledge_search'
+      - 'modkit.knowledge_resolve'
+      - 'modkit.close_subject'
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'node-only'
+    evidenceLevel: 'E3'
+    hostEvidence: 'node'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors:
+      - 'MODKIT_MCP_SC2_LOOSE_SUBJECT'
+      - 'MODKIT_MCP_SC2_ALLOWED_ROOTS'
+      - 'MODKIT_MCP_WZ_SUBJECT'
+    projection:
+      plane: 'code'
+      liveProjection: 'not-applicable'
+      portableMaterialization: 'not-applicable'
+      opaquePreservation: 'not-applicable'
+      nativeExport: 'not-applicable'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'адаптер намеренно read-only: mutating operations, запуск игры и выполнение произвольного script запрещены до Multiverse'
+      - 'installation discovery ограничен загруженными providers и явным allowlist корней, а search, graph, formulas, knowledge и preview ограничены budgets, pages и opaque cursors'
+      - 'preview resource возвращает безопасный provider-published locator, а schema resource возвращает schema-bound knowledge; MCP не создаёт второй renderer или schema registry'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'MCP остаётся тонким read-only адаптером публичного host; недостающие discovery/search/resource маршруты должны использовать тот же inventory и permissions без второго реестра'
+    closedBy:
+      commits: []
+      tests:
+        - 'apps/modkit-mcp/test/server.test.ts'
+        - 'apps/modkit-mcp/test/skill-routing.test.ts'
+        - 'apps/modkit-mcp/corpus/real-subjects.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#82-mcp'
   - capabilityId: 'platform/apps/command-runtime-session-conformance'
     userScenario: 'Запускать одинаковые команды и управлять одинаковой runtime-сессией из всех шести приложений без разных правил поведения.'
     releaseTrack: 'mk3-priority'
@@ -17324,6 +17633,166 @@ capabilities:
         - 'scripts/test/out-of-tree-extension.test.ts'
         - 'scripts/test/scaffold.test.ts'
       reports: []
+  - capabilityId: 'platform/knowledge/knowledge-pack'
+    userScenario: 'Получить одно schema-bound описание игрового поля SC2 или Warzone с коротким и подробным текстом, локалью, источником, лицензией, датой проверки и уровнем доверия во всех клиентах Modkit.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'packages/sdk, packages/host, extensions/blizzard/starcraft2-game and extensions/opensource/warzone-2100'
+    plannedBlock: 20
+    dependsOn: []
+    sourceUnitIds: []
+    legacyEvidence:
+      - 'legacy:extensions/blizzard/starcraft-2/codecs/sc2-data/src/wiki'
+    hostFacilities: []
+    mk3Contributions:
+      - 'org.modkitx.blizzard/sc2-data-knowledge'
+      - 'org.modkitx.blizzard/sc2-data-schema-knowledge'
+      - 'org.modkitx.opensource/warzone-current-data-knowledge'
+      - 'org.modkitx.opensource/warzone-legacy-data-knowledge'
+    mk3Operations:
+      - 'knowledge.search'
+      - 'knowledge.resolve'
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E2'
+    hostEvidence: 'node-and-browser-worker'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
+      - 'MODKITX_WARZONE_ROOT'
+    projection:
+      plane: 'data'
+      liveProjection: 'live'
+      portableMaterialization: 'none'
+      opaquePreservation: 'none'
+      nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'SC2 coverage содержит 5066 source-backed field targets без пропусков, но 4714 описаний пока честно schema-only и требуют будущего ручного смыслового пересказа'
+      - 'Warzone current coverage содержит 273 source-backed field targets без пропусков, но 119 описаний пока schema-only; legacy TXT pack остаётся отдельным curated слоем'
+      - 'полные статьи внешних wiki доступны по прямым ссылкам; pack хранит только собственные краткие пересказы и schema provenance'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'единый inventory-backed knowledge catalog разрешает exact target и locale fallback; каждая видимая строка показывает найденное описание или явный missing knowledge'
+    closedBy:
+      commits: []
+      tests:
+        - 'packages/sdk/test/knowledge.test.ts'
+        - 'packages/host/test/knowledge.test.ts'
+        - 'packages/ui/test/card-knowledge.test.ts'
+        - 'extensions/blizzard/starcraft2-game/test/knowledge-pack.test.ts'
+        - 'extensions/blizzard/starcraft2-game/test/schema-knowledge-pack.test.ts'
+        - 'extensions/opensource/warzone-2100/test/legacy-knowledge-pack.test.ts'
+        - 'extensions/opensource/warzone-2100/test/modern-knowledge-pack.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#5-внутренняя-вики'
+  - capabilityId: 'platform/language/document-analysis'
+    userScenario: 'Получить protocol-neutral analysis, completion, hover, definition, references, безопасный rename, signature help, formatting, symbols и diagnostics для Galaxy, TriggerData, Layout, SC2 Data XML и Warzone JS, SLO и VLO через общий host и тонкие adapters.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'packages/sdk, packages/host, apps/modkit-vscode, extensions/blizzard and extensions/opensource/warzone-2100'
+    plannedBlock: 20
+    dependsOn:
+      - 'platform/knowledge/knowledge-pack'
+    sourceUnitIds: []
+    legacyEvidence:
+      - 'legacy:extensions/blizzard/starcraft-2/codecs/galaxy'
+      - 'legacy:extensions/blizzard/starcraft-2/codecs/sc2-layout'
+    hostFacilities: []
+    mk3Contributions:
+      - 'org.modkitx.blizzard/galaxy-language'
+      - 'org.modkitx.blizzard/sc2-data-language'
+      - 'org.modkitx.blizzard/sc2-layout-language'
+      - 'org.modkitx.blizzard/sc2-triggers-language'
+      - 'org.modkitx.opensource/warzone-language'
+    mk3Operations:
+      - 'language.analyze'
+      - 'language.completion'
+      - 'language.hover'
+      - 'language.definition'
+      - 'language.references'
+      - 'language.prepare-rename'
+      - 'language.rename'
+      - 'language.signature-help'
+      - 'language.formatting'
+      - 'language.document-symbols'
+      - 'language.workspace-symbols'
+      - 'language.diagnostics'
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E3'
+    hostEvidence: 'node-and-browser-worker'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
+      - 'MODKITX_WARZONE_ROOT'
+    projection:
+      plane: 'text'
+      liveProjection: 'live'
+      portableMaterialization: 'none'
+      opaquePreservation: 'none'
+      nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'cross-language ссылки разрешаются только для доказанных статических publisher и literal форм; dynamic expressions, malformed XML и duplicate targets возвращают честный partial result без угадывания'
+      - 'mixed-language workspace всегда bounded; при превышении maxDocuments host помечает snapshot incomplete и provider не выполняет небезопасный rename или полный reference claim'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'host владеет document revisions, cancellation и workspace index, а VS Code, Electron, PWA, CLI и headless используют одни protocol-neutral методы'
+    closedBy:
+      commits: []
+      tests:
+        - 'packages/host/test/language.test.ts'
+        - 'apps/modkit-vscode/test/language-session.test.ts'
+        - 'extensions/blizzard/galaxy-language/test/semantic-provider.test.ts'
+        - 'extensions/blizzard/starcraft2/test/sc2-data-language.test.ts'
+        - 'extensions/blizzard/starcraft2/test/sc2-layout-language.test.ts'
+        - 'extensions/blizzard/starcraft2/test/sc2-cross-language.test.ts'
+        - 'extensions/blizzard/starcraft2/test/semantic-conversion.test.ts'
+        - 'extensions/opensource/warzone-2100/test/language-provider.test.ts'
+        - 'extensions/opensource/warzone-2100/test/language-scavenger-corpus.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#7-языковая-архитектура'
   - capabilityId: 'platform/presentation/common-plan'
     userScenario: 'Открывать модели, карты и документы через один план просмотра с одинаковым смысловым результатом во всех подходящих приложениях.'
     releaseTrack: 'mk3-priority'
@@ -17387,6 +17856,306 @@ capabilities:
         - 'apps/web/test/presentation-plan-conformance.test.ts'
         - 'apps/electron/test/odf-view-policy.test.ts'
       reports: []
+  - capabilityId: 'platform/presentation/game-template-preview'
+    userScenario: 'Открыть SC2 tech tree или Warzone research tree через один общий template preview с параметрами, узлами, связями, секциями, ресурсами, действиями, источником и отчётом точности.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'packages/sdk, packages/ui, extensions/blizzard/starcraft2 and extensions/opensource/warzone-2100'
+    plannedBlock: 20
+    dependsOn:
+      - 'platform/presentation/common-plan'
+    sourceUnitIds: []
+    legacyEvidence:
+      - 'legacy:extensions/blizzard/starcraft-2/codecs/sc2-layout'
+    hostFacilities: []
+    mk3Contributions:
+      - 'org.modkitx.ui/game-template-stage'
+      - 'org.modkitx/sc2-layout'
+      - 'org.modkitx/warzone-wz'
+    mk3Operations:
+      - 'view.template'
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E3'
+    hostEvidence: 'node-and-browser-worker'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
+      - 'MODKITX_WARZONE_ROOT'
+    projection:
+      plane: 'template'
+      liveProjection: 'live'
+      portableMaterialization: 'none'
+      opaquePreservation: 'none'
+      nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'общий browser-main stage рисует semantic template result; headless clients и MCP возвращают bounded semantic data или preview locator без пиксельного renderer'
+      - 'SC2 tech tree и Warzone research tree имеют разные игровые поля и формируются игровыми providers, поэтому общий UI гарантирует общий контракт, а не одинаковый набор секций'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'игровые расширения строят один GameTemplatePreviewResult, а общий UI рисует его без веток SC2 или Warzone'
+    closedBy:
+      commits: []
+      tests:
+        - 'packages/sdk/test/templates.test.ts'
+        - 'packages/ui/test/browser-e2e.test.ts'
+        - 'extensions/blizzard/starcraft2/test/sc2-layout-preview.test.ts'
+        - 'extensions/opensource/warzone-2100/test/wz-legacy-semantics.test.ts'
+        - 'extensions/opensource/warzone-2100/test/wz-codec.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#6-карточки-графы-и-шаблоны'
+  - capabilityId: 'platform/presentation/relation-graph'
+    userScenario: 'Показать входящие, исходящие и ограниченные многошаговые связи SC2 и Warzone в одном графе с направлением, типом связи, provenance и честным incomplete state.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'packages/sdk, packages/ui, extensions/blizzard/starcraft2-game and extensions/opensource/warzone-2100'
+    plannedBlock: 20
+    dependsOn:
+      - 'platform/presentation/common-plan'
+    sourceUnitIds: []
+    legacyEvidence:
+      - 'legacy:packages/entity-cards/src/graph.ts'
+      - 'legacy:apps/modkit-vscode/src/relation-graph-data.ts'
+    hostFacilities: []
+    mk3Contributions:
+      - 'org.modkitx.ui/relation-graph-stage'
+      - 'org.modkitx.blizzard/starcraft2-resolved-data'
+      - 'org.modkitx/warzone-wz'
+    mk3Operations:
+      - 'relation.summary'
+      - 'relation.nodes'
+      - 'relation.edges'
+      - 'relation.traverse'
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'equivalent-better'
+    supportState: 'supported'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node-and-browser-worker'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts:
+        - 'parity'
+      liveSources: []
+    fixtures: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
+      - 'MODKITX_WARZONE_ROOT'
+    projection:
+      plane: 'graph'
+      liveProjection: 'live'
+      portableMaterialization: 'none'
+      opaquePreservation: 'none'
+      nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'граф намеренно bounded: неограниченное раскрытие, динамически вычисляемые script references и runtime-generated edges остаются incomplete с явной причиной'
+      - 'реальный MCP entity workflow доказан отдельно для SC2 и Scavenger; единый пиксельный snapshot двух игр не является требованием semantic parity'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'игровые providers публикуют common.view/relation-graph-source, а общий viewer и MCP выполняют bounded paging и traversal без знания игры'
+    closedBy:
+      commits: []
+      tests:
+        - 'packages/ui/test/relation-graph-source.test.ts'
+        - 'packages/ui/test/browser-e2e.test.ts'
+        - 'extensions/blizzard/starcraft2-game/test/full-data-schema.test.ts'
+        - 'extensions/blizzard/starcraft2-game/test/subject-facts.test.ts'
+        - 'extensions/opensource/warzone-2100/test/wz-legacy-semantics.test.ts'
+        - 'extensions/opensource/warzone-2100/test/wz-codec.test.ts'
+        - 'apps/modkit-mcp/test/server.test.ts'
+        - 'apps/modkit-mcp/corpus/real-subjects.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#6-карточки-графы-и-шаблоны'
+  - capabilityId: 'platform/presentation/subject-calculations'
+    userScenario: 'Открыть рассчитанное игровое значение SC2 или Warzone и увидеть формулу, входы, наследование, единицы, provenance, warnings и причину missing или unsupported.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'packages/sdk, packages/ui, extensions/blizzard/starcraft2-game and extensions/opensource/warzone-2100'
+    plannedBlock: 20
+    dependsOn:
+      - 'platform/knowledge/knowledge-pack'
+      - 'platform/presentation/common-plan'
+    sourceUnitIds: []
+    legacyEvidence:
+      - 'legacy:extensions/blizzard/starcraft-2/codecs/sc2-data/src/wiki/cards.ts'
+    hostFacilities: []
+    mk3Contributions:
+      - 'org.modkitx.ui/subject-calculations-stage'
+      - 'org.modkitx.blizzard/starcraft2-resolved-data'
+      - 'org.modkitx/warzone-wz'
+    mk3Operations:
+      - 'calculation.summary'
+      - 'calculation.list'
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'implemented'
+    supportState: 'supported'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E3'
+    hostEvidence: 'node-and-browser-worker'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts: []
+      liveSources: []
+    fixtures: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
+      - 'MODKITX_WARZONE_ROOT'
+    projection:
+      plane: 'data'
+      liveProjection: 'live'
+      portableMaterialization: 'none'
+      opaquePreservation: 'none'
+      nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'SC2 вычисляет только простой direct EffectDamage weapon DPS; abilities, production и сложные effect chains не закрыты'
+      - 'Warzone legacy и current JSON entities публикуют named formulas, но dependency/player overlays и production/research runtime rates при нехватке inputs честно остаются missing-data'
+      - 'формулы проверяют статические данные и provenance; live SC2 и Warzone runtime oracle отложен до Multiverse после обязательной паузы'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'каждая игра публикует named formula и inputs через common.view/subject-calculations-source, общий UI и MCP только отображают или передают bounded result'
+    closedBy:
+      commits: []
+      tests:
+        - 'packages/ui/test/browser-e2e.test.ts'
+        - 'extensions/blizzard/starcraft2-game/test/unit-weapon-dps.test.ts'
+        - 'extensions/blizzard/starcraft2-game/test/resolved-data-subject-services.test.ts'
+        - 'extensions/opensource/warzone-2100/test/wz-legacy-semantics.test.ts'
+        - 'extensions/opensource/warzone-2100/test/wz-codec.test.ts'
+        - 'apps/modkit-mcp/test/server.test.ts'
+        - 'apps/modkit-mcp/corpus/real-subjects.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#6-карточки-графы-и-шаблоны'
+  - capabilityId: 'platform/presentation/subject-card'
+    userScenario: 'Открыть карточку Unit, Weapon, Abil, Effect, Behavior, Upgrade, Button, Actor или Model SC2 и карточку Warzone template, component, weapon, structure, research, map object или script через один общий интерфейс.'
+    releaseTrack: 'mk3-priority'
+    origin: 'owner-addition'
+    obligation: 'focused-required-addition'
+    owner: 'packages/sdk, packages/ui, extensions/blizzard/starcraft2-game and extensions/opensource/warzone-2100'
+    plannedBlock: 20
+    dependsOn:
+      - 'platform/knowledge/knowledge-pack'
+      - 'platform/presentation/common-plan'
+      - 'platform/presentation/relation-graph'
+      - 'platform/presentation/subject-calculations'
+    sourceUnitIds: []
+    legacyEvidence:
+      - 'legacy:packages/entity-cards/src/model.ts'
+      - 'legacy:extensions/blizzard/starcraft-2/codecs/sc2-data/src/wiki/cards.ts'
+    hostFacilities: []
+    mk3Contributions:
+      - 'org.modkitx.ui/subject-card-stage'
+      - 'org.modkitx.blizzard/starcraft2-resolved-data'
+      - 'org.modkitx/warzone-wz'
+    mk3Operations:
+      - 'subject-facts.summary'
+      - 'subject-facts.groups'
+      - 'subject-facts.facts'
+      - 'subject-facts.relations'
+    allocation:
+      state: 'covered'
+      x3ContributionId: null
+      portFamily: null
+      portVerdict: null
+    migrationState: 'equivalent-better'
+    supportState: 'supported'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E4'
+    hostEvidence: 'node-and-browser-worker'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: null
+      rows: []
+      corpusKinds: []
+      verdicts:
+        - 'parity'
+      liveSources: []
+    fixtures: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
+      - 'MODKITX_WARZONE_ROOT'
+    projection:
+      plane: 'data'
+      liveProjection: 'live'
+      portableMaterialization: 'none'
+      opaquePreservation: 'none'
+      nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss:
+      - 'SC2 semantic parity доказана для девяти Product GA namespaces, но точное старое визуальное оформление и runtime-симуляция произвольных Upgrade или Behavior не входят в read-only card contract'
+      - 'Warzone modern и legacy data и SLO globals имеют отдельные entity cards; placed map objects остаются в world/map inspection, а не отдельном card selector'
+      - 'общий UI гарантирует состав sections, fields, links, knowledge и incomplete state, но не pixel-identical layout старого ModkitX'
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+    replacementWorkflow: 'игровой provider собирает common.view/subject-facts-source, а один общий card stage рисует sections, fields, links и knowledge без веток по игре'
+    closedBy:
+      commits: []
+      tests:
+        - 'packages/ui/test/browser-e2e.test.ts'
+        - 'extensions/blizzard/starcraft2-game/test/subject-facts.test.ts'
+        - 'extensions/blizzard/starcraft2-game/test/full-data-schema.test.ts'
+        - 'extensions/opensource/warzone-2100/test/wz-legacy-semantics.test.ts'
+        - 'extensions/opensource/warzone-2100/test/wz-codec.test.ts'
+        - 'apps/modkit-mcp/test/server.test.ts'
+        - 'apps/modkit-mcp/corpus/real-subjects.test.ts'
+      reports:
+        - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#6-карточки-графы-и-шаблоны'
   - capabilityId: 'platform/release/authenticode-signing'
     userScenario: 'Проверять подлинность опубликованных Windows-приложений Modkit по подписи Authenticode от владельца проекта.'
     releaseTrack: 'post-ga'
@@ -17450,12 +18219,22 @@ capabilities:
     owner: 'scripts/migration'
     plannedBlock: 20
     dependsOn:
+      - 'platform/ai/inspection-skill-core'
+      - 'platform/ai/inspection-skill-sc2'
+      - 'platform/ai/inspection-skill-warzone'
+      - 'platform/ai/modkit-mcp'
       - 'platform/apps/command-runtime-session-conformance'
       - 'platform/apps/priority-workflows'
       - 'platform/apps/recovery'
       - 'platform/extensions/lifecycle'
       - 'platform/extensions/out-of-tree'
+      - 'platform/knowledge/knowledge-pack'
+      - 'platform/language/document-analysis'
       - 'platform/presentation/common-plan'
+      - 'platform/presentation/game-template-preview'
+      - 'platform/presentation/relation-graph'
+      - 'platform/presentation/subject-calculations'
+      - 'platform/presentation/subject-card'
       - 'platform/release/reproducible-rc'
       - 'platform/tools/ga-priority'
       - 'vertical/starcraft-2/native-signature-policy'

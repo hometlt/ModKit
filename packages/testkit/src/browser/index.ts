@@ -2,6 +2,7 @@ import type {
   AnyDescriptor,
   AssetSession,
   AssetSessionEvent,
+  KnowledgeCatalog,
   OperationSession,
   PresentationSlot,
   ResolvedPresentationPlan,
@@ -17,6 +18,7 @@ export interface BrowserViewerHostOptions {
   readonly resolved: ResolvedPresentationPlan
   readonly sources: ViewerSources
   readonly operations: OperationSession
+  readonly knowledge?: KnowledgeCatalog
   readonly modules: Readonly<Record<string, ViewerModule>>
 }
 
@@ -135,6 +137,7 @@ export async function createBrowserViewerHost(
       slot,
       sources: options.sources,
       operations: options.operations,
+      ...(options.knowledge === undefined ? {} : { knowledge: options.knowledge }),
     })
     mounts += 1
     mounted.set(slot.slotId, { slot, container, mount })

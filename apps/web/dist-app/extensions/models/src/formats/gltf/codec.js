@@ -3,10 +3,20 @@ import {
   createModelSceneSource,
   createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
+import { decodeEmbeddedGltfBuffers, decodeGltfGeometry } from './geometry.js'
 
 const decoder = new TextDecoder('utf-8', { fatal: true })
 
 function looksLikeGltf(bytes) {
+  if (
+    bytes.length >= 12 &&
+    bytes[0] === 0x67 &&
+    bytes[1] === 0x6c &&
+    bytes[2] === 0x54 &&
+    bytes[3] === 0x46
+  ) {
+    return true
+  }
   try {
     const prefix = decoder
       .decode(bytes)
@@ -20,6 +30,79 @@ function looksLikeGltf(bytes) {
   } catch {
     return false
   }
+}
+
+function u32(bytes, offset) {
+  if (offset < 0 || offset + 4 > bytes.byteLength) throw new TypeError('GLB header is truncated')
+  return new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getUint32(0, true)
+}
+
+function parseGlb(bytes, budget) {
+  if (u32(bytes, 0) !== 0x46546c67 || u32(bytes, 4) !== 2 || u32(bytes, 8) !== bytes.byteLength) {
+    throw new TypeError('GLB 2.0 header is invalid')
+  }
+  let offset = 12
+  let jsonBytes
+  const binaryChunks = []
+  while (offset < bytes.byteLength) {
+    const length = u32(bytes, offset)
+    const type = u32(bytes, offset + 4)
+    const end = offset + 8 + length
+    if (length % 4 !== 0 || end > bytes.byteLength) throw new TypeError('GLB chunk is invalid')
+    const payload = bytes.subarray(offset + 8, end)
+    if (type === 0x4e4f534a && jsonBytes === undefined) jsonBytes = payload
+    else if (type === 0x004e4942) binaryChunks.push(payload)
+    offset = end
+  }
+  if (jsonBytes === undefined) throw new TypeError('GLB JSON chunk is missing')
+  const parsed = parseGltf(decoder.decode(jsonBytes).trimEnd(), budget)
+  const buffers = array(parsed.document, 'buffers')
+  const decodedBuffers = []
+  const externalUris = []
+  let binaryIndex = 0
+  let decodedBytes = 0
+  for (const [bufferIndex, buffer] of buffers.entries()) {
+    if (typeof buffer?.uri === 'string') {
+      const decoded = decodeEmbeddedGltfBuffers({ buffers: [buffer] }, budget)
+      decodedBuffers.push(decoded.buffers[0])
+      decodedBytes += decoded.bytes
+      externalUris.push(...decoded.externalUris)
+      continue
+    }
+    const chunk = binaryChunks[binaryIndex]
+    binaryIndex += 1
+    if (chunk === undefined || !Number.isSafeInteger(buffer?.byteLength)) {
+      externalUris.push(`buffer:${bufferIndex}:missing-bin-chunk`)
+      decodedBuffers.push(undefined)
+      continue
+    }
+    if (chunk.byteLength < buffer.byteLength) {
+      throw new TypeError(`GLB buffer ${bufferIndex} is shorter than its declared byteLength`)
+    }
+    decodedBuffers.push(chunk.subarray(0, buffer.byteLength))
+    decodedBytes += buffer.byteLength
+    if (decodedBytes > budget.maxScalarBytes) {
+      throw new RangeError('GLB buffers exceed maxScalarBytes budget')
+    }
+  }
+  return Object.freeze({
+    ...parsed,
+    binary: true,
+    decoded: Object.freeze({
+      buffers: Object.freeze(decodedBuffers),
+      externalUris: Object.freeze(externalUris),
+      bytes: decodedBytes,
+    }),
+  })
+}
+
+function parseGltfBytes(bytes, budget) {
+  return looksLikeGltf(bytes) && u32(bytes, 0) === 0x46546c67
+    ? parseGlb(bytes, budget)
+    : Object.freeze({
+        ...parseGltf(decoder.decode(bytes).replace(/^\uFEFF/u, ''), budget),
+        binary: false,
+      })
 }
 
 function array(value, key) {
@@ -487,8 +570,7 @@ const definition = Object.freeze({
     }
   },
   async inspect(bytes, context) {
-    const text = decoder.decode(bytes).replace(/^\uFEFF/u, '')
-    const gltf = parseGltf(text, context.budget)
+    const gltf = parseGltfBytes(bytes, context.budget)
     const document = gltf.document
     const scenes = array(document, 'scenes')
     const nodes = array(document, 'nodes')
@@ -503,31 +585,44 @@ const definition = Object.freeze({
       (total, mesh) => total + (Array.isArray(mesh?.primitives) ? mesh.primitives.length : 0),
       0,
     )
-    const model = createModelSceneSource({
-      info: {
-        scenes: scenes.length,
-        nodes: nodes.length,
-        meshes: meshes.length,
-        primitives: primitiveCount,
-        materials: materials.length,
-        textures: textures.length,
-        animations: animations.length,
-        geometryAccess: 'metadata-only',
-      },
-      nodes: nodes.map((node, index) => ({
+    const decoded = gltf.decoded ?? decodeEmbeddedGltfBuffers(document, context.budget)
+    const geometry =
+      decoded.externalUris.length === 0
+        ? decodeGltfGeometry(document, decoded.buffers, context.budget, decoded.bytes)
+        : undefined
+    const sceneNodes =
+      geometry?.scene.nodes ??
+      nodes.map((node, index) => ({
         id: `node-${index}`,
         ...(typeof node.name === 'string' ? { name: node.name } : {}),
         childIds: (Array.isArray(node.children) ? node.children : []).map(child => `node-${child}`),
         meshIds: Number.isSafeInteger(node.mesh) ? [`mesh-${node.mesh}`] : [],
         transform: nodeTransform(node),
-      })),
-      meshes: meshes.map((mesh, index) => ({
+      }))
+    const sceneMeshes =
+      geometry?.scene.meshes ??
+      meshes.map((mesh, index) => ({
         id: `mesh-${index}`,
         ...(typeof mesh?.name === 'string' ? { name: mesh.name } : {}),
         primitiveIds: (Array.isArray(mesh?.primitives) ? mesh.primitives : []).map(
           (_primitive, primitiveIndex) => `mesh-${index}-primitive-${primitiveIndex}`,
         ),
-      })),
+      }))
+    const model = createModelSceneSource({
+      info: {
+        scenes: scenes.length,
+        nodes: sceneNodes.length,
+        meshes: sceneMeshes.length,
+        primitives: geometry?.scene.primitives.length ?? primitiveCount,
+        materials: materials.length,
+        textures: textures.length,
+        animations: animations.length,
+        ...(geometry?.scene.bounds === undefined ? {} : { bounds: geometry.scene.bounds }),
+        geometryAccess: geometry === undefined ? 'metadata-only' : 'decoded',
+      },
+      nodes: sceneNodes,
+      meshes: sceneMeshes,
+      primitives: geometry?.scene.primitives ?? [],
     })
     const relations = createRelationGraphSource(document, String(context.primary.revision))
     const subjectFacts = createSubjectFactsSource(document, context)
@@ -545,12 +640,13 @@ const definition = Object.freeze({
     })
     return {
       summary: {
-        format: 'gltf',
+        format: gltf.binary ? 'glb' : 'gltf',
         version: document.asset.version,
         generator: document.asset.generator ?? null,
         scenes: scenes.length,
         nodes: nodes.length,
         meshes: meshes.length,
+        primitives: geometry?.scene.primitives.length ?? primitiveCount,
         materials: materials.length,
         textures: textures.length,
         animations: animations.length,
@@ -569,6 +665,7 @@ const definition = Object.freeze({
             { key: 'scenes', value: scenes.length },
             { key: 'nodes', value: nodes.length },
             { key: 'meshes', value: meshes.length },
+            { key: 'primitives', value: geometry?.scene.primitives.length ?? primitiveCount },
             { key: 'materials', value: materials.length },
             { key: 'textures', value: textures.length },
             { key: 'animations', value: animations.length },
@@ -579,7 +676,15 @@ const definition = Object.freeze({
       ],
       traits: [
         ...(meshes.length > 0
-          ? [{ id: 'model.geometry', parameters: { meshes: meshes.length } }]
+          ? [
+              {
+                id: 'model.geometry',
+                parameters: {
+                  meshes: meshes.length,
+                  primitives: geometry?.scene.primitives.length ?? primitiveCount,
+                },
+              },
+            ]
           : []),
         ...(materials.length > 0
           ? [{ id: 'model.materials', parameters: { count: materials.length } }]
@@ -600,19 +705,24 @@ const definition = Object.freeze({
           : []),
         { id: 'scene.objects', parameters: { scenes: scenes.length, nodes: nodes.length } },
         { id: 'structure.hierarchy', parameters: { nodeCount: gltf.nodes, lazy: true } },
-        { id: 'content.text', parameters: { encoding: 'utf-8' } },
+        ...(gltf.binary ? [] : [{ id: 'content.text', parameters: { encoding: 'utf-8' } }]),
       ],
-      text: true,
+      text: !gltf.binary,
+      maxDecodedBytes: geometry?.scene.decodedBytes ?? decoded.bytes,
       dataSources: {
         'common.view/tree-data-source': tree,
         'common.view/model-scene-source': model,
         'common.view/relation-graph-source': relations,
         'common.view/subject-facts-source': subjectFacts,
       },
-      unsupportedFeatures:
-        gltf.externalUris.length > 0
-          ? ['external-resource-resolution', 'render-model']
-          : ['render-model'],
+      unsupportedFeatures: [
+        ...(gltf.externalUris.length > 0 ? ['external-resource-resolution'] : []),
+        ...(geometry === undefined ? ['decoded-geometry'] : []),
+        'sparse-accessors',
+        'draco-compression',
+        'meshopt-compression',
+        'animation-playback',
+      ],
     }
   },
 })

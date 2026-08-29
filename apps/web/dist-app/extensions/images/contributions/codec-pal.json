@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/pal",
+  "displayName": "Palette image",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/pal/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/pal/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "The MK3 port validates and renders raw 256-color Westwood 6-bit/RGB8 palettes, JASC-PAL text, and Microsoft RIFF PAL as a 16 by 16 RGBA8 swatch.",
+    "Palette remapping, writing, metadata mutation, and pixel editing remain unsupported."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "pal", "label": "Palette image" }],
+    "roles": ["media"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
+    "match": {
+      "extensions": ["pal"],
+      "signatures": [
+        { "from": "start", "offset": 0, "bytesHex": "4a4153432d50414c" },
+        { "from": "start", "offset": 8, "bytesHex": "50414c20" }
+      ]
+    },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "raster-metadata",
+        "contract": "common.image/raster-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/raster-image-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

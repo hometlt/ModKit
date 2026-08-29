@@ -1,459 +1,83 @@
 import {
+  CONTAINER_EXTRACT_OPERATION_ID,
   EXPLORER_MAXIMUM_BYTES,
   EXTENSION_ROOT_FAILURE_CODES,
   ViewerMountScope,
   WEB_EDITING_NOTICE,
   WEB_EXTENSION_CATALOG,
   WEB_PREVIEW_FALLBACK,
+  applyDensity,
+  applyTheme,
   catalogCoordinates,
-  codecFidelityEvidenceRecords,
   compareUtf8,
   containerCoordinate,
-  createBrowserEditingBackend,
+  coordinateMapPreviewAssetSession,
   createCodecPreview,
   createDirectoryAccess,
   createEditorArea,
-  createEvidenceRegistry,
   createExplorer,
   createIndexedDbExtensionStore,
-  createRawWriter,
   createSingleFileAccess,
-  createSubjectEditing,
   createSurface,
+  createViewerMount,
+  createWebEditingArm,
   createWebPreviewStages,
   createWebSubjectServices,
   createWebTopology,
   defineViewerModule,
+  describeEditability,
   describeFileCapability,
   diagnostic,
+  diagnosticsBySeverity,
   element,
-  init_define_MODKIT_EMBED_EXTENSION_ORIGINS,
+  invokeOperation,
   isWritableHandle,
   loadUserExtensionRoots,
   mountWebWorkbench,
+  nestedSubjectServices,
+  openNestedSubject,
   presentationSlotId,
   probeWebFacilities,
   requestUserExtensionPermission,
+  requestWriteAccess,
+  resolveCommonPresentationPlan,
+  resolveFormatWriter,
   revisionId,
+  safeViewerText,
   setPart,
   setState,
-  setViewerText
-} from "./chunks/chunk-QVNY3HUK.js";
+  setViewerText,
+  sourceRevisionToken,
+  sourceUriFor,
+  stageIdOf
+} from "./chunks/chunk-4CWXPF3C.js";
+import {
+  init_define_MODKIT_EMBED_EXTENSION_ORIGINS
+} from "./chunks/chunk-HJULOH5B.js";
 
 // apps/web/src/shell.ts
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/ui/dist/settings/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var PARTS = Object.freeze([
-  // shared surface
-  "viewer",
-  "viewer.toolbar",
-  "viewer.status",
-  "viewer.empty",
-  // bounded + virtual text
-  "text",
-  "text.line",
-  "virtual-text",
-  "virtual-text.line",
-  // hex
-  "hex",
-  "hex.toolbar",
-  "hex.offset-input",
-  "hex.go",
-  "hex.content",
-  "hex.row",
-  "hex.gutter",
-  "hex.cell",
-  "hex.ascii",
-  // tree
-  "tree",
-  "tree.list",
-  "tree.item",
-  "tree.label",
-  "tree.children",
-  // table
-  "table",
-  "table.caption",
-  "table.body",
-  "table.row",
-  "table.cell",
-  "table.next",
-  // namespace
-  "namespace",
-  "namespace.list",
-  "namespace.item",
-  "namespace.label",
-  "namespace.detail",
-  "namespace.children",
-  // transport
-  "transport",
-  "transport.status",
-  "transport.controls",
-  "transport.button",
-  "transport.track",
-  // diagnostics panel
-  "diagnostics",
-  "diagnostics.group",
-  "diagnostics.heading",
-  "diagnostics.list",
-  "diagnostics.item",
-  "diagnostics.message",
-  // operation toolbar
-  "operations",
-  "operations.status",
-  "operations.button",
-  // search field (PR3 member) and filter chrome
-  "search",
-  "search.input",
-  "search.toggles",
-  "search.toggle",
-  "search.status",
-  "search.nav",
-  "search.message",
-  "filter-bar",
-  "filter-bar.facets",
-  "filter-bar.facet",
-  // format inspector
-  "format",
-  "format.header",
-  "format.badge",
-  "format.body",
-  // metadata and properties (MK2 assets-viewer parity)
-  "metadata",
-  "metadata.group",
-  "metadata.heading",
-  "metadata.row",
-  "metadata.label",
-  "metadata.value",
-  "properties",
-  "properties.row",
-  "properties.name",
-  "properties.value",
-  "properties.origin",
-  // image stage
-  "image",
-  "image.canvas",
-  "image.toolbar",
-  "image.readout",
-  // image editing surface (MK2 assetsTextureViewer parity)
-  "imageedit",
-  "imageedit.tools",
-  "imageedit.tool",
-  "imageedit.options",
-  "imageedit.swatch",
-  "imageedit.size",
-  "imageedit.actions",
-  "imageedit.action",
-  "imageedit.marquee",
-  "imageedit.status",
-  "imageedit.warning",
-  // audio stage
-  "audio",
-  "audio.waveform",
-  "audio.toolbar",
-  "audio.readout",
-  "audio.player",
-  // vector stage
-  "vector",
-  "vector.image",
-  "vector.readout",
-  // video stage
-  "video",
-  "video.player",
-  "video.readout",
-  // model stage
-  "model",
-  "model.canvas",
-  "model.readout",
-  "model.toolbar",
-  // view gizmo — its own component, usable by any 3D stage
-  "gizmo",
-  "gizmo.svg",
-  "gizmo.axis",
-  "gizmo.handle",
-  "gizmo.label",
-  // archive explorer composite
-  "archive",
-  "archive.tree",
-  "archive.entries",
-  "archive.preview",
-  // file tree (MK2 archive explorer chrome)
-  "filetree",
-  "filetree.toolbar",
-  "filetree.list",
-  "filetree.node",
-  "filetree.row",
-  "filetree.twisty",
-  "filetree.icon",
-  "filetree.label",
-  "filetree.badge",
-  "filetree.children",
-  "filetree.empty",
-  // explorer: tree + preview shell shared by every host that browses real files
-  "explorer",
-  "explorer.toolbar",
-  "explorer.action",
-  "explorer.sidebar",
-  "explorer.preview",
-  "explorer.dropzone",
-  "explorer.status",
-  "explorer.tabs",
-  "explorer.tab",
-  "explorer.stage",
-  "explorer.placeholder",
-  // preview header and view picker
-  "explorer.header",
-  "explorer.breadcrumb",
-  "explorer.crumb",
-  "explorer.viewpicker",
-  // editor area: one or more groups, each with its own tab strip
-  "explorer.editors",
-  "explorer.group",
-  "explorer.tabstrip",
-  "explorer.filetab",
-  "explorer.filetab-close",
-  "explorer.tabcontent",
-  "explorer.split",
-  // right-click menu on a tab: Close / Close Others / Close to the Right / Close All
-  "explorer.tabmenu",
-  "explorer.tabmenu-item",
-  // custom window chrome, drawn by the app when the native frame is hidden
-  "titlebar",
-  "titlebar.drag",
-  "titlebar.title",
-  "titlebar.controls",
-  "titlebar.button",
-  "titlebar.menu",
-  "titlebar.menu-item",
-  "titlebar.menu-panel",
-  "titlebar.menu-entry",
-  "titlebar.menu-separator",
-  // settings surface
-  "settings",
-  "settings.groups",
-  "settings.group",
-  "settings.pane",
-  "settings.row",
-  "settings.label",
-  "settings.description",
-  "settings.control",
-  "settings.select",
-  "settings.input",
-  "settings.list",
-  "settings.extension",
-  "settings.extension-text",
-  "settings.toggle",
-  "settings.remove",
-  "settings.adder",
-  "settings.add",
-  "settings.close",
-  "settings.status",
-  // generic form vocabulary — any surface that collects input (an edit panel, a dialog).
-  // Named generically because the settings.* family is named for the settings surface, and a
-  // theme styling a form should not have to know which surface hosts it.
-  "form",
-  "form.row",
-  "form.label",
-  "form.description",
-  "form.control",
-  "form.input",
-  "form.select",
-  "form.actions",
-  "form.button",
-  "form.status",
-  // collapsible property sections
-  "accordion",
-  "accordion.section",
-  "accordion.header",
-  "accordion.twisty",
-  "accordion.title",
-  "accordion.hint",
-  "accordion.body",
-  "accordion.field",
-  "accordion.field-name",
-  "accordion.field-value",
-  // shell chrome
-  "shell",
-  "shell.header",
-  "shell.breadcrumb",
-  "shell.crumb",
-  "shell.crumb-icon",
-  "shell.crumb-more",
-  "shell.footer",
-  "shell.footer-start",
-  "shell.footer-end",
-  "shell.status-item",
-  // application workbench
-  "workbench",
-  "workbench.titlebar",
-  "workbench.activitybar",
-  "workbench.sidebar",
-  "workbench.main",
-  "workbench.panel",
-  "workbench.statusbar",
-  "workbench.host-status",
-  // view picker
-  "viewpicker",
-  "viewpicker.modes",
-  "viewpicker.mode",
-  "viewpicker.select",
-  // subject card composition
-  "card",
-  "card.section",
-  "card.header",
-  "card.portrait",
-  "card.identity",
-  "card.title",
-  "card.subtitle",
-  "card.ref",
-  "card.locale",
-  "card.chips",
-  "card.chip",
-  "card.description",
-  "card.note",
-  "card.statrow",
-  "card.stat",
-  "card.stat-icon",
-  "card.stat-value",
-  "card.stat-delta",
-  "card.grid",
-  "card.grid-cell",
-  "card.grid-hotkey",
-  "card.grid-icon",
-  "card.fields",
-  "card.field",
-  "card.field-name",
-  "card.field-value",
-  "card.links",
-  "card.link-item",
-  "card.subcards",
-  "card.subcard",
-  "card.subcard-head",
-  "card.subcard-body",
-  "card.custom",
-  // relation graph
-  "graph",
-  "graph.sidebar",
-  "graph.sidebar-head",
-  "graph.types",
-  "graph.type",
-  "graph.type-swatch",
-  "graph.type-count",
-  "graph.main",
-  "graph.controls",
-  "graph.control",
-  "graph.canvas",
-  "graph.status",
-  "graph.hint",
-  "graph.footer",
-  "graph.footer-group",
-  "graph.footer-item",
-  // editor
-  "editor",
-  "editor.toolbar",
-  "editor.text"
-]);
-var PART_SET = new Set(PARTS);
-var PART_ATTRIBUTE = "data-mk-part";
-var STATE_ATTRIBUTE = "data-mk-state";
-var STATES = Object.freeze([
-  "loading",
-  "empty",
-  "error",
-  "disabled",
-  "readonly",
-  "truncated",
-  "over-budget",
-  "degraded",
-  "active",
-  "stale",
-  "mutating",
-  "invalid",
-  "no-match",
-  "selected",
-  /** A drop is hovering over this surface and would be accepted. */
-  "drop-target"
-]);
-var STATE_SET = new Set(STATES);
-function setPart2(element22, part) {
-  if (!PART_SET.has(part)) throw new TypeError(`unregistered part: ${part}`);
-  element22.setAttribute(PART_ATTRIBUTE, part);
-}
-function setState2(element22, states) {
-  for (const state of states) {
-    if (!STATE_SET.has(state)) throw new TypeError(`unregistered state: ${state}`);
-  }
-  if (states.length === 0) element22.removeAttribute(STATE_ATTRIBUTE);
-  else element22.setAttribute(STATE_ATTRIBUTE, [...new Set(states)].join(" "));
-}
-var VIEWER_CSP = Object.freeze({
-  defaultSrc: "'none'",
-  scriptSrc: "'self'",
-  styleSrc: "'self'",
-  // C1 in ADR-UI-001. `style-src-attr` does not inherit from `style-src`, so the ban on the
-  // `style` attribute has to be stated here or it is not enforced at all. Components set dynamic
-  // values through CSSOM (`style.setProperty`), which this does not block.
-  styleSrcAttr: "'none'",
-  imgSrc: "'self' blob: data:",
-  // The audio and video stages hand a codec-owned encoded representation to the platform player
-  // as a blob; without this the policy falls through to default-src 'none' and playback dies.
-  mediaSrc: "'self' blob:",
-  fontSrc: "'self'",
-  connectSrc: "'self'",
-  workerSrc: "'self' blob:",
-  frameSrc: "'none'"
-});
-var VIEWER_CSP_TRUSTED_EDITOR = Object.freeze({
-  ...VIEWER_CSP,
-  styleSrc: "'self' 'unsafe-inline'",
-  // Measured: the editor renders each visible line as markup carrying a `style` attribute with its
-  // computed `top` and `height`. Under `style-src-attr 'none'` those attributes are refused, the
-  // lines never reach their positions, and the text visibly jumps as the view scrolls. This is the
-  // C1 exclusion the ADR anticipates for a trusted in-process editor, scoped to that host only.
-  styleSrcAttr: "'unsafe-inline'",
-  // The editor's icon font is inlined as a data URI by the bundler; `font-src 'self'` alone
-  // rejects it and the glyphs fall back to tofu.
-  fontSrc: "'self' data:"
-});
-var policyText = (policy) => Object.entries(policy).map(
-  ([name, value]) => `${name.replace(/[A-Z]/gu, (match) => `-${match.toLowerCase()}`)} ${value}`
-).join("; ");
-var VIEWER_CSP_TEXT = policyText(VIEWER_CSP);
-var VIEWER_CSP_TRUSTED_EDITOR_TEXT = policyText(VIEWER_CSP_TRUSTED_EDITOR);
-var HOSTILE_TEXT = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/gu;
-function safeViewerText(value, maximum = 1e6) {
-  const text = String(value);
-  const bounded = text.length > maximum ? `${text.slice(0, maximum)}\u2026` : text;
-  return bounded.replace(HOSTILE_TEXT, (character) => {
-    const code = character.codePointAt(0)?.toString(16).toUpperCase().padStart(4, "0") ?? "0000";
-    return `\\u{${code}}`;
-  });
-}
-function setViewerText2(node, value, maximum) {
-  node.textContent = safeViewerText(value, maximum);
-}
-function element2(parent, tag, options = {}) {
-  const node = parent.ownerDocument.createElement(tag);
-  if (options.className !== void 0) node.className = options.className;
-  if (options.role !== void 0) node.setAttribute("role", options.role);
-  if (options.text !== void 0) setViewerText2(node, options.text);
-  if (options.part !== void 0) setPart2(node, options.part);
-  if (options.state !== void 0) setState2(node, options.state);
-  parent.append(node);
-  return node;
-}
+
+// packages/ui/dist/settings/model.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var RECENT_LIMIT = 10;
+var GAME_INSTALLATION_PATH_LIMIT = 16;
+var GAME_INSTALLATION_PATH_LENGTH_LIMIT = 4096;
 var SETTINGS_SCHEMA_VERSION = 1;
 var DEFAULT_SETTINGS = Object.freeze({
   schemaVersion: SETTINGS_SCHEMA_VERSION,
   appearance: Object.freeze({ theme: "modkit-dark", density: "compact" }),
   extensions: Object.freeze([]),
+  gameInstallations: Object.freeze({}),
   recent: Object.freeze([]),
   disabledContributions: Object.freeze([])
 });
 var isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var asText = (value) => typeof value === "string" && value.trim() !== "" ? value.trim() : void 0;
+var isAbsoluteLocalPath = (value) => /^(?:[a-z]:[\\/]|[\\/]{2}[^\\/]+[\\/][^\\/]+|\/)/iu.test(value);
 function normalizeSettings(value) {
   const problems = [];
   if (!isRecord(value)) {
@@ -464,9 +88,7 @@ function normalizeSettings(value) {
   }
   const version = value["schemaVersion"];
   if (version !== void 0 && version !== SETTINGS_SCHEMA_VERSION) {
-    problems.push(
-      `unknown schemaVersion ${String(version)}; expected ${SETTINGS_SCHEMA_VERSION}. Unrecognised fields were ignored.`
-    );
+    problems.push(`unknown schemaVersion ${String(version)}; expected ${SETTINGS_SCHEMA_VERSION}. Unrecognised fields were ignored.`);
   }
   const appearanceInput = isRecord(value["appearance"]) ? value["appearance"] : {};
   const theme = asText(appearanceInput["theme"]) ?? DEFAULT_SETTINGS.appearance.theme;
@@ -509,6 +131,48 @@ function normalizeSettings(value) {
       }
     }
   }
+  const gameInstallations = {};
+  const gameInstallationsInput = value["gameInstallations"];
+  if (gameInstallationsInput !== void 0 && !isRecord(gameInstallationsInput)) {
+    problems.push("gameInstallations must be an object; it was ignored");
+  } else {
+    for (const [rawGameId, item] of Object.entries(gameInstallationsInput ?? {})) {
+      const gameId = rawGameId.trim().toLowerCase();
+      if (!/^[a-z0-9][a-z0-9.-]*\/[a-z0-9][a-z0-9._-]*$/u.test(gameId)) {
+        problems.push(`gameInstallations key "${rawGameId}" is not a qualified game id; ignored`);
+        continue;
+      }
+      if (!isRecord(item) || !Array.isArray(item["configuredPaths"])) {
+        problems.push(`gameInstallations.${gameId}.configuredPaths must be an array; ignored`);
+        continue;
+      }
+      const configuredPaths = [];
+      const seenPaths = /* @__PURE__ */ new Set();
+      for (const [index, pathInput] of item["configuredPaths"].entries()) {
+        const path = asText(pathInput);
+        if (path === void 0 || path.includes("\0") || path.length > GAME_INSTALLATION_PATH_LENGTH_LIMIT || !isAbsoluteLocalPath(path) || /^(?:[a-z][a-z0-9+.-]*:\/\/|file:)/iu.test(path)) {
+          problems.push(`gameInstallations.${gameId}.configuredPaths[${index}] is not a valid local path; ignored`);
+          continue;
+        }
+        if (seenPaths.has(path))
+          continue;
+        seenPaths.add(path);
+        configuredPaths.push(path);
+        if (configuredPaths.length >= GAME_INSTALLATION_PATH_LIMIT) {
+          if (index + 1 < item["configuredPaths"].length) {
+            problems.push(`gameInstallations.${gameId}.configuredPaths was truncated at ${GAME_INSTALLATION_PATH_LIMIT}`);
+          }
+          break;
+        }
+      }
+      if (gameInstallations[gameId] !== void 0) {
+        problems.push(`gameInstallations key "${rawGameId}" duplicates "${gameId}"; the later entry won`);
+      }
+      gameInstallations[gameId] = Object.freeze({
+        configuredPaths: Object.freeze(configuredPaths)
+      });
+    }
+  }
   const recent = [];
   const recentInput = value["recent"];
   if (recentInput !== void 0 && !Array.isArray(recentInput)) {
@@ -516,12 +180,15 @@ function normalizeSettings(value) {
   } else {
     const seenPaths = /* @__PURE__ */ new Set();
     for (const item of recentInput ?? []) {
-      if (!isRecord(item)) continue;
+      if (!isRecord(item))
+        continue;
       const path = asText(item["path"]);
-      if (path === void 0 || seenPaths.has(path)) continue;
+      if (path === void 0 || seenPaths.has(path))
+        continue;
       seenPaths.add(path);
       recent.push({ path, kind: item["kind"] === "file" ? "file" : "folder" });
-      if (recent.length >= RECENT_LIMIT) break;
+      if (recent.length >= RECENT_LIMIT)
+        break;
     }
   }
   const disabled = [];
@@ -536,7 +203,8 @@ function normalizeSettings(value) {
         problems.push(`disabledContributions[${index}] is not a contribution id; ignored`);
         continue;
       }
-      if (seenIds.has(id)) continue;
+      if (seenIds.has(id))
+        continue;
       seenIds.add(id);
       disabled.push(id);
     }
@@ -547,6 +215,7 @@ function normalizeSettings(value) {
       schemaVersion: SETTINGS_SCHEMA_VERSION,
       appearance: Object.freeze({ theme, density }),
       extensions: Object.freeze(extensions),
+      gameInstallations: Object.freeze(gameInstallations),
       recent: Object.freeze(recent),
       disabledContributions: Object.freeze(disabled)
     }),
@@ -554,34 +223,33 @@ function normalizeSettings(value) {
   };
 }
 function serializeSettings(document2) {
-  return `${JSON.stringify(
-    {
-      schemaVersion: document2.schemaVersion,
-      appearance: { theme: document2.appearance.theme, density: document2.appearance.density },
-      // Recency is meaningful order, so this list is written as-is rather than sorted.
-      recent: document2.recent.map((entry) => ({ path: entry.path, kind: entry.kind })),
-      // A set: sorted, so the same choice made in two hosts produces the same bytes.
-      disabledContributions: [...document2.disabledContributions].sort(compareUtf8),
-      extensions: [...document2.extensions].sort((a, b) => compareUtf8(a.id, b.id)).map((entry) => ({
-        id: entry.id,
-        path: entry.path,
-        enabled: entry.enabled,
-        ...entry.options === void 0 ? {} : { options: entry.options }
-      }))
-    },
-    null,
-    2
-  )}
+  return `${JSON.stringify({
+    schemaVersion: document2.schemaVersion,
+    appearance: { theme: document2.appearance.theme, density: document2.appearance.density },
+    // Recency is meaningful order, so this list is written as-is rather than sorted.
+    recent: document2.recent.map((entry) => ({ path: entry.path, kind: entry.kind })),
+    // A set: sorted, so the same choice made in two hosts produces the same bytes.
+    disabledContributions: [...document2.disabledContributions].sort(compareUtf8),
+    gameInstallations: Object.fromEntries(Object.entries(document2.gameInstallations).sort(([left], [right]) => compareUtf8(left, right)).map(([gameId, setting]) => [gameId, { configuredPaths: [...setting.configuredPaths] }])),
+    extensions: [...document2.extensions].sort((a, b) => compareUtf8(a.id, b.id)).map((entry) => ({
+      id: entry.id,
+      path: entry.path,
+      enabled: entry.enabled,
+      ...entry.options === void 0 ? {} : { options: entry.options }
+    }))
+  }, null, 2)}
 `;
 }
+
+// packages/ui/dist/settings/index.js
 function createSettingsUi(document2, options) {
   const root = document2.createElement("div");
   root.className = "modkit-viewer modkit-settings";
-  setPart2(root, "settings");
-  const groupList = element2(root, "nav", { part: "settings.groups" });
+  setPart(root, "settings");
+  const groupList = element(root, "nav", { part: "settings.groups" });
   groupList.setAttribute("aria-label", "Settings groups");
   if (options.onClose !== void 0) {
-    const close = element2(groupList, "button", {
+    const close = element(groupList, "button", {
       part: "settings.close",
       text: "\u2190 Back"
     });
@@ -589,17 +257,18 @@ function createSettingsUi(document2, options) {
     close.title = "Close settings (Esc)";
     close.addEventListener("click", () => options.onClose?.());
     root.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") options.onClose?.();
+      if (event.key === "Escape")
+        options.onClose?.();
     });
     root.tabIndex = -1;
   }
-  const pane = element2(root, "div", { part: "settings.pane" });
-  const status = element2(root, "output", { part: "settings.status" });
+  const pane = element(root, "div", { part: "settings.pane" });
+  const status = element(root, "output", { part: "settings.status" });
   let current = DEFAULT_SETTINGS;
   let activeGroup = "appearance";
   const say = (message, bad = false) => {
     status.textContent = message;
-    setState2(status, bad ? ["error"] : []);
+    setState(status, bad ? ["error"] : []);
   };
   const persist = async (next) => {
     try {
@@ -612,10 +281,10 @@ function createSettingsUi(document2, options) {
     }
   };
   const row = (host, label, description) => {
-    const wrapper = element2(host, "div", { part: "settings.row" });
-    element2(wrapper, "div", { part: "settings.label", text: label });
-    element2(wrapper, "div", { part: "settings.description", text: description });
-    return element2(wrapper, "div", { part: "settings.control" });
+    const wrapper = element(host, "div", { part: "settings.row" });
+    element(wrapper, "div", { part: "settings.label", text: label });
+    element(wrapper, "div", { part: "settings.description", text: description });
+    return element(wrapper, "div", { part: "settings.control" });
   };
   const appearanceGroup = {
     id: "appearance",
@@ -623,7 +292,7 @@ function createSettingsUi(document2, options) {
     render(host) {
       if (options.themes.length > 0) {
         const control = row(host, "Color theme", "Applies immediately and to every viewer surface.");
-        const select = element2(control, "select", { part: "settings.select" });
+        const select = element(control, "select", { part: "settings.select" });
         select.setAttribute("aria-label", "Color theme");
         for (const theme of options.themes) {
           const option = document2.createElement("option");
@@ -638,12 +307,8 @@ function createSettingsUi(document2, options) {
           void persist({ ...current, appearance });
         });
       }
-      const densityControl = row(
-        host,
-        "Density",
-        "Compact matches VS Code list metrics; comfortable suits touch and larger displays."
-      );
-      const density = element2(densityControl, "select", {
+      const densityControl = row(host, "Density", "Compact matches VS Code list metrics; comfortable suits touch and larger displays.");
+      const density = element(densityControl, "select", {
         part: "settings.select"
       });
       density.setAttribute("aria-label", "Density");
@@ -668,28 +333,28 @@ function createSettingsUi(document2, options) {
     id: "extensions",
     label: "Extensions",
     render(host) {
-      const intro = element2(host, "p", { part: "settings.description" });
+      const intro = element(host, "p", { part: "settings.description" });
       intro.textContent = `Extensions are listed in ${options.store.location}. Each entry is an id, a path the host loads from, and whether it is enabled. The same file is read by the desktop app, the web app and a headless run.`;
       const readOnly = options.extensionsReadOnly;
       if (readOnly !== void 0) {
-        element2(host, "p", {
+        element(host, "p", {
           part: "settings.description",
           text: safeViewerText(readOnly, 400)
         });
       }
-      const list = element2(host, "div", { part: "settings.list" });
+      const list = element(host, "div", { part: "settings.list" });
       const draw = () => {
         list.replaceChildren();
         if (current.extensions.length === 0) {
-          element2(list, "p", {
+          element(list, "p", {
             part: "settings.description",
             text: "No extensions are configured yet."
           });
         }
         for (const entry of current.extensions) {
-          const item = element2(list, "div", { part: "settings.extension" });
+          const item = element(list, "div", { part: "settings.extension" });
           if (readOnly === void 0) {
-            const toggle = element2(item, "input", {
+            const toggle = element(item, "input", {
               part: "settings.toggle"
             });
             toggle.type = "checkbox";
@@ -698,25 +363,23 @@ function createSettingsUi(document2, options) {
             toggle.addEventListener("change", () => {
               void persist({
                 ...current,
-                extensions: current.extensions.map(
-                  (other) => other.id === entry.id ? { ...other, enabled: toggle.checked } : other
-                )
+                extensions: current.extensions.map((other) => other.id === entry.id ? { ...other, enabled: toggle.checked } : other)
               }).then(draw);
             });
           } else {
-            element2(item, "div", {
+            element(item, "div", {
               part: "settings.description",
               text: entry.enabled ? "enabled" : "disabled"
             });
           }
-          const text = element2(item, "div", { part: "settings.extension-text" });
-          element2(text, "div", { part: "settings.label", text: safeViewerText(entry.id, 200) });
-          element2(text, "div", {
+          const text = element(item, "div", { part: "settings.extension-text" });
+          element(text, "div", { part: "settings.label", text: safeViewerText(entry.id, 200) });
+          element(text, "div", {
             part: "settings.description",
             text: safeViewerText(entry.path, 400)
           });
           if (readOnly === void 0) {
-            const remove = element2(item, "button", {
+            const remove = element(item, "button", {
               part: "settings.remove",
               text: "Remove"
             });
@@ -731,12 +394,13 @@ function createSettingsUi(document2, options) {
         }
       };
       draw();
-      if (readOnly !== void 0) return;
-      const adder = element2(host, "div", { part: "settings.adder" });
-      const id = element2(adder, "input", { part: "settings.input" });
+      if (readOnly !== void 0)
+        return;
+      const adder = element(host, "div", { part: "settings.adder" });
+      const id = element(adder, "input", { part: "settings.input" });
       id.placeholder = "publisher/name";
       id.setAttribute("aria-label", "Extension id");
-      const path = element2(adder, "input", { part: "settings.input" });
+      const path = element(adder, "input", { part: "settings.input" });
       path.placeholder = "path, package or URL";
       path.setAttribute("aria-label", "Extension location");
       const add = (entry) => {
@@ -745,7 +409,7 @@ function createSettingsUi(document2, options) {
           extensions: [...current.extensions.filter((other) => other.id !== entry.id), entry]
         }).then(draw);
       };
-      const addButton = element2(adder, "button", {
+      const addButton = element(adder, "button", {
         part: "settings.add",
         text: "Add"
       });
@@ -762,7 +426,7 @@ function createSettingsUi(document2, options) {
         path.value = "";
       });
       if (options.browseForExtension !== void 0) {
-        const browse = element2(adder, "button", {
+        const browse = element(adder, "button", {
           part: "settings.add",
           text: "Browse\u2026"
         });
@@ -770,7 +434,8 @@ function createSettingsUi(document2, options) {
         browse.addEventListener("click", () => {
           void (async () => {
             const picked = await options.browseForExtension?.();
-            if (picked !== void 0) add({ ...picked, enabled: true });
+            if (picked !== void 0)
+              add({ ...picked, enabled: true });
           })();
         });
       }
@@ -782,34 +447,36 @@ function createSettingsUi(document2, options) {
     label: "File associations",
     render(host) {
       const types = [...options.associableTypes ?? []].sort();
-      element2(host, "p", {
+      element(host, "p", {
         part: "settings.description",
         text: "Make this app the default for the formats its codecs can open. Registration is per-user and reversible from the operating system, and nothing is written until you apply it."
       });
       if (types.length === 0) {
-        element2(host, "p", {
+        element(host, "p", {
           part: "settings.description",
           text: "No codecs are loaded, so there is nothing to associate."
         });
         return;
       }
       const chosen = new Set(types);
-      const list = element2(host, "div", { part: "settings.list" });
+      const list = element(host, "div", { part: "settings.list" });
       for (const type of types) {
-        const item = element2(list, "div", { part: "settings.extension" });
-        const toggle = element2(item, "input", { part: "settings.toggle" });
+        const item = element(list, "div", { part: "settings.extension" });
+        const toggle = element(item, "input", { part: "settings.toggle" });
         toggle.type = "checkbox";
         toggle.checked = true;
         toggle.setAttribute("aria-label", `Associate .${type}`);
         toggle.addEventListener("change", () => {
-          if (toggle.checked) chosen.add(type);
-          else chosen.delete(type);
+          if (toggle.checked)
+            chosen.add(type);
+          else
+            chosen.delete(type);
         });
-        const text = element2(item, "div", { part: "settings.extension-text" });
-        element2(text, "div", { part: "settings.label", text: `.${type}` });
+        const text = element(item, "div", { part: "settings.extension-text" });
+        element(text, "div", { part: "settings.label", text: `.${type}` });
       }
-      const actions = element2(host, "div", { part: "settings.adder" });
-      const all = element2(actions, "button", {
+      const actions = element(host, "div", { part: "settings.adder" });
+      const all = element(actions, "button", {
         part: "settings.add",
         text: "Select all"
       });
@@ -820,7 +487,7 @@ function createSettingsUi(document2, options) {
           node.dispatchEvent(new Event("change"));
         }
       });
-      const none = element2(actions, "button", {
+      const none = element(actions, "button", {
         part: "settings.add",
         text: "Select none"
       });
@@ -831,7 +498,7 @@ function createSettingsUi(document2, options) {
           node.dispatchEvent(new Event("change"));
         }
       });
-      const apply = element2(actions, "button", {
+      const apply = element(actions, "button", {
         part: "settings.add",
         text: "Set as default app"
       });
@@ -846,10 +513,7 @@ function createSettingsUi(document2, options) {
             apply.disabled = true;
             say(await registerFileTypes?.([...chosen]) ?? "Nothing to register.");
           } catch (error) {
-            say(
-              `Could not register: ${error instanceof Error ? error.message : String(error)}`,
-              true
-            );
+            say(`Could not register: ${error instanceof Error ? error.message : String(error)}`, true);
           } finally {
             apply.disabled = false;
           }
@@ -863,17 +527,14 @@ function createSettingsUi(document2, options) {
     if (group.id.trim() === "" || group.label.trim() === "") {
       throw new Error("settings extra groups require a non-empty id and label");
     }
-    if (extraIds.has(group.id)) throw new Error(`duplicate settings group id: ${group.id}`);
+    if (extraIds.has(group.id))
+      throw new Error(`duplicate settings group id: ${group.id}`);
     extraIds.add(group.id);
   }
   const extrasById = new Map(extraGroups.map((group) => [group.id, group]));
-  const primaryGroups = [appearanceGroup, extensionsGroup].map(
-    (group) => extrasById.get(group.id) ?? group
-  );
+  const primaryGroups = [appearanceGroup, extensionsGroup].map((group) => extrasById.get(group.id) ?? group);
   const primaryIds = new Set(primaryGroups.map((group) => group.id));
-  const additionalGroups = extraGroups.filter(
-    (group) => !primaryIds.has(group.id) && !(options.registerFileTypes !== void 0 && group.id === associationsGroup.id)
-  );
+  const additionalGroups = extraGroups.filter((group) => !primaryIds.has(group.id) && !(options.registerFileTypes !== void 0 && group.id === associationsGroup.id));
   const groups = [
     ...primaryGroups,
     ...additionalGroups,
@@ -881,7 +542,8 @@ function createSettingsUi(document2, options) {
   ];
   function showActiveGroup() {
     const group = groups.find((item) => item.id === activeGroup) ?? groups[0];
-    if (group !== void 0) showGroup(group);
+    if (group !== void 0)
+      showGroup(group);
   }
   const groupContext = {
     get settings() {
@@ -898,12 +560,12 @@ function createSettingsUi(document2, options) {
     for (const node of groupList.querySelectorAll('[data-mk-part="settings.group"]')) {
       const selected = node.getAttribute("data-group") === group.id;
       node.setAttribute("aria-selected", String(selected));
-      setState2(node, selected ? ["selected"] : []);
+      setState(node, selected ? ["selected"] : []);
     }
     group.render(pane, groupContext);
   };
   for (const group of groups) {
-    const button2 = element2(groupList, "button", {
+    const button2 = element(groupList, "button", {
       part: "settings.group",
       text: group.label
     });
@@ -920,25 +582,218 @@ function createSettingsUi(document2, options) {
       const { document: loaded, problems } = await options.store.read();
       current = loaded;
       options.onAppearance?.(loaded.appearance);
-      say(
-        problems.length === 0 ? `Loaded from ${options.store.location}` : `Loaded with ${problems.length} problem(s): ${problems.join("; ")}`,
-        problems.length > 0
-      );
-      for (const group of groups) await group.reload?.(groupContext);
+      say(problems.length === 0 ? `Loaded from ${options.store.location}` : `Loaded with ${problems.length} problem(s): ${problems.join("; ")}`, problems.length > 0);
+      for (const group of groups)
+        await group.reload?.(groupContext);
       showActiveGroup();
     },
     showGroup(groupId) {
       const group = groups.find((item) => item.id === groupId);
-      if (group === void 0) return false;
+      if (group === void 0)
+        return false;
       showGroup(group);
       return true;
     },
     destroy() {
-      for (const group of groups) group.destroy?.();
+      for (const group of groups)
+        group.destroy?.();
       root.remove();
     }
   };
   return ui;
+}
+
+// packages/ui/dist/localization/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var EN_MESSAGES = Object.freeze({
+  "app.title": "Modkit MK3",
+  "app.starting": "Starting Modkit MK3\u2026",
+  "action.openFile": "Open file\u2026",
+  "action.openFileTitle": "Open a single file in a new tab",
+  "action.splitEditor": "Split editor",
+  "action.splitEditorTitle": "Open the next file beside this one",
+  "action.enableEditing": "Enable editing",
+  "action.enableEditingTitle": "Ask this browser for permission to write the file or folder you picked",
+  "action.restartSession": "Restart session",
+  "action.restartSessionTitle": "Reload Modkit after the codec worker stopped",
+  "settings.bundled": "Bundled extensions",
+  "settings.bundledExcluded": "Bundled but not served here",
+  "settings.bundledDescription": "{count} extensions were attested at build time and are served from this origin under extensions/. They are listed read-only because {reason}.",
+  "sidebar.host": "Host",
+  "sidebar.facilities": "Facilities",
+  "sidebar.samples": "Served samples",
+  "sidebar.language": "Language",
+  "sidebar.hostSummary": "{extensions} extensions \xB7 {types} detectable types \xB7 codecs run {profiles} in {realm} \xB7 shared memory {sharedMemory}",
+  "locale.en": "English",
+  "locale.ru": "\u0420\u0443\u0441\u0441\u043A\u0438\u0439",
+  "common.yes": "yes",
+  "common.no": "no",
+  "activity.files": "Files",
+  "activity.explorer": "Explorer",
+  "activity.host": "Host",
+  "activity.hostTitle": "Show or hide the host panel",
+  "activity.info": "Info",
+  "activity.infoTitle": "Show or hide diagnostics and operations",
+  "activity.settings": "Settings",
+  "status.noFileEditable": "No file is open yet, so nothing is editable.",
+  "status.workerUnavailable": "Codec worker stopped \xB7 restart the session to continue",
+  "status.ready": "Ready \xB7 {extensions} extensions \xB7 {notices} boot notice(s)",
+  "confirm.discardAndRestart": "Some tabs have unsaved changes. Restart the session and discard them?",
+  "error.openFile": "Could not open the file: {reason}",
+  "error.drop": "Drop failed: {reason}",
+  "error.fetch": "{path} could not be fetched from this origin."
+});
+var RU_MESSAGES = Object.freeze({
+  "app.title": "Modkit MK3",
+  "app.starting": "\u0417\u0430\u043F\u0443\u0441\u043A Modkit MK3\u2026",
+  "action.openFile": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0444\u0430\u0439\u043B\u2026",
+  "action.openFileTitle": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043E\u0434\u0438\u043D \u0444\u0430\u0439\u043B \u0432 \u043D\u043E\u0432\u043E\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u0435",
+  "action.splitEditor": "\u0420\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440",
+  "action.splitEditorTitle": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u0444\u0430\u0439\u043B \u0440\u044F\u0434\u043E\u043C \u0441 \u0442\u0435\u043A\u0443\u0449\u0438\u043C",
+  "action.enableEditing": "\u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435",
+  "action.enableEditingTitle": "\u0417\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u0443 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430 \u043F\u0440\u0430\u0432\u043E \u0437\u0430\u043F\u0438\u0441\u0438 \u0432 \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u0444\u0430\u0439\u043B \u0438\u043B\u0438 \u043F\u0430\u043F\u043A\u0443",
+  "action.restartSession": "\u041F\u0435\u0440\u0435\u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C \u0441\u0435\u0430\u043D\u0441",
+  "action.restartSessionTitle": "\u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C Modkit \u043F\u043E\u0441\u043B\u0435 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0438 \u0440\u0430\u0431\u043E\u0447\u0435\u0433\u043E \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0430 \u043A\u043E\u0434\u0435\u043A\u043E\u0432",
+  "settings.bundled": "\u0412\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u0435 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
+  "settings.bundledExcluded": "\u0412\u0441\u0442\u0440\u043E\u0435\u043D\u044B, \u043D\u043E \u0437\u0434\u0435\u0441\u044C \u043D\u0435 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u044B",
+  "settings.bundledDescription": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0430\u0442\u0442\u0435\u0441\u0442\u043E\u0432\u0430\u043D\u043E \u043F\u0440\u0438 \u0441\u0431\u043E\u0440\u043A\u0435: {count}. \u041E\u043D\u0438 \u043F\u0443\u0431\u043B\u0438\u043A\u0443\u044E\u0442\u0441\u044F \u0441 \u044D\u0442\u043E\u0433\u043E origin \u0432 extensions/ \u0438 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u043B\u044F \u0447\u0442\u0435\u043D\u0438\u044F: {reason}.",
+  "sidebar.host": "\u0425\u043E\u0441\u0442",
+  "sidebar.facilities": "\u0412\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438",
+  "sidebar.samples": "\u041F\u0440\u0438\u043C\u0435\u0440\u044B \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u0430",
+  "sidebar.language": "\u042F\u0437\u044B\u043A",
+  "sidebar.hostSummary": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439: {extensions} \xB7 \u0440\u0430\u0441\u043F\u043E\u0437\u043D\u0430\u0432\u0430\u0435\u043C\u044B\u0445 \u0442\u0438\u043F\u043E\u0432: {types} \xB7 \u043A\u043E\u0434\u0435\u043A\u0438 \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442 \u043A\u0430\u043A {profiles} \u0432 {realm} \xB7 \u043E\u0431\u0449\u0430\u044F \u043F\u0430\u043C\u044F\u0442\u044C: {sharedMemory}",
+  "locale.en": "English",
+  "locale.ru": "\u0420\u0443\u0441\u0441\u043A\u0438\u0439",
+  "common.yes": "\u0434\u0430",
+  "common.no": "\u043D\u0435\u0442",
+  "activity.files": "\u0424\u0430\u0439\u043B\u044B",
+  "activity.explorer": "\u041F\u0440\u043E\u0432\u043E\u0434\u043D\u0438\u043A",
+  "activity.host": "\u0425\u043E\u0441\u0442",
+  "activity.hostTitle": "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u044C \u043F\u0430\u043D\u0435\u043B\u044C \u0445\u043E\u0441\u0442\u0430",
+  "activity.info": "\u0418\u043D\u0444\u043E",
+  "activity.infoTitle": "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u044C \u0434\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0443 \u0438 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438",
+  "activity.settings": "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438",
+  "status.noFileEditable": "\u0424\u0430\u0439\u043B \u0435\u0449\u0451 \u043D\u0435 \u043E\u0442\u043A\u0440\u044B\u0442 \u2014 \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u043F\u043E\u043A\u0430 \u043D\u0435\u0447\u0435\u0433\u043E.",
+  "status.workerUnavailable": "\u0420\u0430\u0431\u043E\u0447\u0438\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441 \u043A\u043E\u0434\u0435\u043A\u043E\u0432 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \xB7 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u0435 \u0441\u0435\u0430\u043D\u0441, \u0447\u0442\u043E\u0431\u044B \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0438\u0442\u044C",
+  "status.ready": "\u0413\u043E\u0442\u043E\u0432\u043E \xB7 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439: {extensions} \xB7 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 \u0437\u0430\u043F\u0443\u0441\u043A\u0430: {notices}",
+  "confirm.discardAndRestart": "\u0412 \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u0445 \u0432\u043A\u043B\u0430\u0434\u043A\u0430\u0445 \u0435\u0441\u0442\u044C \u043D\u0435\u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F. \u041F\u0435\u0440\u0435\u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C \u0441\u0435\u0430\u043D\u0441 \u0438 \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0438\u0445?",
+  "error.openFile": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u0444\u0430\u0439\u043B: {reason}",
+  "error.drop": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u0438\u043D\u044F\u0442\u044C \u0444\u0430\u0439\u043B: {reason}",
+  "error.fetch": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C {path} \u0441 \u044D\u0442\u043E\u0433\u043E origin."
+});
+var UI_MESSAGES = Object.freeze({
+  en: EN_MESSAGES,
+  ru: RU_MESSAGES
+});
+function resolveUiLocale(requested) {
+  const candidates = requested === void 0 ? [] : typeof requested === "string" ? [requested] : requested;
+  for (const candidate of candidates) {
+    const language = candidate.trim().toLowerCase().split("-")[0];
+    if (language === "ru")
+      return "ru";
+    if (language === "en")
+      return "en";
+  }
+  return "en";
+}
+function createUiLocalizer(locale, overrides = {}) {
+  const catalog = Object.freeze({ ...UI_MESSAGES[locale], ...overrides });
+  const localizer = {
+    locale,
+    text(key, values = {}) {
+      return catalog[key].replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value = values[name];
+        return value === void 0 ? `{${name}}` : String(value);
+      });
+    }
+  };
+  return Object.freeze(localizer);
+}
+
+// apps/web/src/map-preview.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY = Object.freeze({
+  locales: Object.freeze(["enUS"]),
+  limits: Object.freeze({
+    // A three-root SC2 workspace needs 327 bounded reads for all 108 catalog families plus locale.
+    maxRequirements: 512,
+    maxDocumentBytes: 16777216,
+    maxTextBytes: 268435456,
+    maxEntities: 1e5,
+    maxDepth: 128,
+    maxPageSize: 1e3
+  })
+});
+var COORDINATOR_LIMITS = Object.freeze({
+  // Pinned mp.wz publishes 39 map candidates; 64 is the bounded product ceiling above that corpus.
+  maxCandidates: 64,
+  maxSubjectEntries: 4096,
+  maxSubjectPages: 64,
+  maxRoots: 64,
+  maxDepth: 16,
+  catalogEnrichment: MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
+  limits: Object.freeze({
+    maxRequirements: 8,
+    maxDocumentBytes: 1e6,
+    maxTotalBytes: 4e6,
+    maxObjects: 1e5,
+    maxRegions: 1e4,
+    maxTerrainCells: 1e5,
+    maxTerrainSamples: 1e5,
+    maxDepth: 64,
+    maxPageSize: 4096,
+    maxDiagnostics: 100
+  })
+});
+var selectionDiagnostic = () => diagnostic(
+  "information",
+  "x3.app/map-preview-selection-required",
+  "Map preview needs an explicit selection; choose one of the returned map-preview candidates to continue."
+);
+var permissionDiagnostic = () => diagnostic(
+  "information",
+  "x3.app/web-map-preview-permission-required",
+  "This map needs installation resources that the browser cannot search for automatically; grant or select them in a desktop host."
+);
+async function prepareWebMapPreview(request) {
+  let result;
+  try {
+    result = await (request.coordinate ?? coordinateMapPreviewAssetSession)({
+      services: request.services,
+      grant: request.grant,
+      budgets: request.budgets,
+      original: request.opened.session,
+      ...request.selectionId === void 0 ? {} : { selectionId: request.selectionId },
+      ...COORDINATOR_LIMITS,
+      ...request.catalog === void 0 ? {} : { catalog: request.catalog },
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+  } catch (error) {
+    await request.opened.session.dispose();
+    throw error;
+  }
+  const permissionRequired = result.state === "unresolved" && result.diagnostics.some((item) => item.code === "x3.host/map-preview-resource-resolver-required");
+  const diagnostics = Object.freeze([
+    ...request.opened.diagnostics,
+    ...result.diagnostics,
+    ...result.state === "selection-required" ? [selectionDiagnostic()] : [],
+    ...permissionRequired ? [permissionDiagnostic()] : []
+  ]);
+  const candidates = result.state === "selection-required" ? Object.freeze(
+    result.candidates.map(
+      (candidate) => Object.freeze({ kind: "map-preview-selection", ...candidate })
+    )
+  ) : Object.freeze([]);
+  const opened = Object.freeze({
+    ...request.opened,
+    ...result.state === "opened" ? { descriptor: result.descriptor, session: result.session } : {},
+    diagnostics
+  });
+  return Object.freeze({
+    state: permissionRequired ? "permission-required" : result.state,
+    opened,
+    candidates
+  });
 }
 
 // apps/web/src/extensions-ui.ts
@@ -1150,378 +1005,6 @@ function mountExtensionsUi(documentRef, options) {
     reload,
     current: () => loaded
   };
-}
-
-// apps/web/src/editing.ts
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var WEB_SOURCE_SCHEME = "file-picker://";
-var sourceUriFor = (entryId) => `${WEB_SOURCE_SCHEME}${encodeURIComponent(entryId)}`;
-var sourceRevisionToken = (snapshot) => `provider-token:${snapshot.size}-${snapshot.lastModified}`;
-var report = (state, editable, sentence) => Object.freeze({ state, editable, sentence });
-var describe2 = (error) => error instanceof Error ? error.message : String(error);
-async function describeEditability(access, entryId, name = entryId) {
-  const handle = access?.handleOf(entryId);
-  if (!isWritableHandle(handle)) {
-    return report(
-      "no-handle",
-      false,
-      `${name} has no writable handle: it arrived through a file input, a drop or a fetch, so this page can show it but can never save it back. Pick it through "Open file\u2026" or a folder to edit it.`
-    );
-  }
-  const grant = access?.writeGrant ?? handle;
-  let state;
-  try {
-    state = await grant.queryPermission?.({ mode: "readwrite" });
-  } catch (error) {
-    return report(
-      "no-permission-surface",
-      true,
-      `${name} has a writable handle, but this browser could not report its write permission (${describe2(error)}); the first save is where it is decided.`
-    );
-  }
-  if (state === void 0) {
-    return report(
-      "no-permission-surface",
-      true,
-      `${name} has a writable handle, but this browser exposes no permission query, so whether the write is allowed is decided by the first save.`
-    );
-  }
-  if (state === "denied") {
-    return report(
-      "denied",
-      false,
-      `Write access was denied for ${name}, so its text and hex editors are dropped. This build will not offer a save it already knows the browser refuses.`
-    );
-  }
-  if (state === "granted") {
-    return report("granted", true, `${name} can be saved in place: write access is granted.`);
-  }
-  return report(
-    "prompt",
-    true,
-    `${name} can be saved in place once you allow write access; the browser asks on the first save, or use "Enable editing" to answer it now.`
-  );
-}
-async function requestWriteAccess(access) {
-  const grant = access?.writeGrant;
-  if (access === void 0) {
-    return { state: "no-handle", sentence: "Open a folder or pick a file before enabling editing." };
-  }
-  if (grant === void 0) {
-    return {
-      state: "no-handle",
-      sentence: `${access.label} has no writable handle: files opened through a drop, a plain file input or a fetch cannot be written back. Use "Open file\u2026" or a granted folder instead.`
-    };
-  }
-  const ask = grant.requestPermission;
-  if (ask === void 0) {
-    return {
-      state: "no-permission-surface",
-      sentence: `${access.label} cannot be asked for write permission in this browser; a save will try directly and report what the browser answers.`
-    };
-  }
-  try {
-    const state = await ask.call(grant, { mode: "readwrite" });
-    if (state === "granted") {
-      return {
-        state: "granted",
-        sentence: `Write access granted for ${access.label}: the text and hex editors can save.`
-      };
-    }
-    return {
-      state: state === "denied" ? "denied" : "prompt",
-      sentence: state === "denied" ? `Write access denied for ${access.label}; files opened from now on show no editor.` : `Write access was not granted for ${access.label}; nothing was changed.`
-    };
-  } catch (error) {
-    return {
-      state: "no-permission-surface",
-      sentence: `Asking for write access to ${access.label} failed: ${describe2(error)}`
-    };
-  }
-}
-var isRecord2 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
-function byteRuns(value) {
-  if (!Array.isArray(value) || value.length === 0) return void 0;
-  const runs = [];
-  for (const item of value) {
-    if (!isRecord2(item)) return void 0;
-    const range = item["range"];
-    const payload = item["payload"];
-    if (!isRecord2(range) || !isRecord2(payload)) return void 0;
-    if (range["kind"] !== "bytes" || typeof range["offset"] !== "bigint") return void 0;
-    if (payload["kind"] !== "inline" || !(payload["bytes"] instanceof Uint8Array)) return void 0;
-    const offset = Number(range["offset"]);
-    if (!Number.isSafeInteger(offset) || offset < 0) return void 0;
-    runs.push({ offset, bytes: payload["bytes"] });
-  }
-  return runs;
-}
-function mergeByteRuns(runs, original) {
-  if (runs.length === 0) return void 0;
-  let start = Number.MAX_SAFE_INTEGER;
-  let end = 0;
-  for (const run of runs) {
-    start = Math.min(start, run.offset);
-    end = Math.max(end, run.offset + run.bytes.byteLength);
-  }
-  if (start > end || end > original.byteLength) return void 0;
-  const window2 = original.slice(start, end);
-  for (const run of runs) window2.set(run.bytes, run.offset - start);
-  return { offset: start, bytes: window2 };
-}
-function normalizeChangeSet(change, targets, original) {
-  if (!isRecord2(change)) return void 0;
-  const declared = change["targets"];
-  if (Array.isArray(declared) && declared.length > 0) return change;
-  const target = targets[0];
-  if (target === void 0) return void 0;
-  const runs = byteRuns(change["edits"]);
-  if (runs === void 0) return void 0;
-  const merged = mergeByteRuns(runs, original);
-  if (merged === void 0) return void 0;
-  return {
-    targets,
-    edits: [
-      {
-        operation: "replace",
-        targetId: target.targetId,
-        source: target.ownerSource,
-        range: {
-          kind: "bytes",
-          offset: BigInt(merged.offset),
-          length: BigInt(merged.bytes.byteLength)
-        },
-        payload: { kind: "inline", bytes: merged.bytes },
-        label: "Edit bytes"
-      }
-    ],
-    provenance: { actor: "user" }
-  };
-}
-function describeRejection(reason) {
-  switch (reason) {
-    case "stale-revision":
-      return "the file changed on disk after this tab read it";
-    case "permission-missing":
-      return "the grant this subject was opened under does not carry write permission";
-    case "write-scope-mismatch":
-      return "the plan names a source outside this subject";
-    case "guarantee-unachievable":
-      return "this backend cannot promise the guarantee the plan asks for";
-    case "fidelity-unproven":
-      return "no evidence proves the writer keeps what the plan claims it keeps";
-    case "confirmation-required":
-      return "a lossy write needs an explicit confirmation this host does not collect";
-    case "payload-unavailable":
-      return "the edited bytes exceed what this host will hand over inline";
-    case "source-read-only":
-      return "the backend behind this source is read-only";
-    case "cancelled":
-      return "the save was cancelled";
-    default:
-      return "the plan did not describe this subject at its open revision";
-  }
-}
-var firstMessage = (diagnostics) => diagnostics[0]?.message;
-function webEditEvidence(inventory, descriptor) {
-  if (descriptor.interpretation !== "codec") return createEvidenceRegistry();
-  return codecFidelityEvidenceRecords(inventory, {
-    codecId: descriptor.identity.codecId,
-    formatId: descriptor.identity.formatId
-  }).reduce((registry, record) => registry.with(record), createEvidenceRegistry());
-}
-function createWebEditingArm(options) {
-  const writer = createRawWriter();
-  const backend = createBrowserEditingBackend({
-    handleFor: options.handleFor,
-    // The same token the shell pins its sources with, passed explicitly so the two are visibly
-    // one function rather than two that happen to agree today.
-    revisionOf: (snapshot) => sourceRevisionToken({ size: snapshot.size, lastModified: snapshot.lastModified ?? 0 }),
-    ...options.maxPayloadBytes === void 0 ? {} : { maxPayloadBytes: options.maxPayloadBytes }
-  });
-  const speaking = (base, request) => {
-    const targets = base.edit.targets;
-    const notice = (line) => options.onNotice(`${request.name}: ${line}`);
-    const refused = (line) => {
-      notice(line);
-      return {
-        valid: false,
-        diagnostics: [diagnostic("error", "x3.app.web/edit-change-unsupported", line)]
-      };
-    };
-    const edit = {
-      revision: base.edit.revision,
-      targets,
-      state: () => base.edit.state(),
-      async propose(change) {
-        const normalized = normalizeChangeSet(change, targets, request.bytes);
-        if (normalized === void 0) {
-          return refused(
-            "this editor produced a change this host cannot express as a literal replacement"
-          );
-        }
-        options.onDirty(request.entryId, true);
-        const result = await base.edit.propose(normalized);
-        if (!result.valid) {
-          notice(firstMessage(result.diagnostics) ?? "the writer refused the change");
-        }
-        return result;
-      },
-      async plan(change) {
-        const normalized = normalizeChangeSet(change, targets, request.bytes);
-        if (normalized === void 0) {
-          throw new TypeError("this host cannot plan the change set this editor produced");
-        }
-        return base.edit.plan(normalized);
-      },
-      dispose: () => base.edit.dispose()
-    };
-    const announce = (result, what) => {
-      if (result.state === "committed") {
-        options.onDirty(request.entryId, false);
-        notice(
-          `${what} \u2014 written to the file this tab opened. Reopen it before editing again: this tab still holds the revision it read.`
-        );
-      } else if (result.state === "not-applied") {
-        notice(
-          `${what} refused \u2014 ${describeRejection(result.reason)}${firstMessage(result.diagnostics) === void 0 ? "" : ` (${firstMessage(result.diagnostics) ?? ""})`}.`
-        );
-      } else if (result.state === "rolled-back") {
-        notice(`${what} failed and the file was rolled back to what it held before.`);
-      } else {
-        notice(`${what} landed only partly; recovery is available in the receipt.`);
-      }
-      return result;
-    };
-    const commit = {
-      async prepare(plan, prepareOptions) {
-        const result = await base.commit.prepare(plan, prepareOptions);
-        if (result.state === "conflict") {
-          notice(
-            "refused \u2014 the file changed on disk after this tab read it, so nothing was overwritten. Reopen it and redo the edit."
-          );
-        } else if (result.state === "rejected") {
-          notice(`refused before writing \u2014 ${describeRejection(result.reason)}.`);
-        }
-        return result;
-      },
-      async commit(prepared, commitOptions) {
-        return announce(await base.commit.commit(prepared, commitOptions), "Saved");
-      },
-      async undo(transactionId, undoOptions) {
-        return announce(await base.commit.undo(transactionId, undoOptions), "Undo");
-      },
-      async redo(transactionId, redoOptions) {
-        return announce(await base.commit.redo(transactionId, redoOptions), "Redo");
-      }
-    };
-    const authorization = {
-      async request(plan, requestOptions) {
-        const state = await options.ensureWriteAccess(request.entryId);
-        if (state !== "granted") {
-          notice(
-            state === "denied" ? "not saved \u2014 this browser denied write access to the file." : `not saved \u2014 write access was not granted (${state}).`
-          );
-          return void 0;
-        }
-        return base.authorization.request(plan, requestOptions);
-      }
-    };
-    return Object.freeze({ edit, commit, payloads: base.payloads, authorization });
-  };
-  const applying = (ports, request) => async (plan) => {
-    const authorized = await ports.authorization.request(plan);
-    if (authorized === void 0) {
-      return {
-        message: `${request.name} was not written: this browser did not grant write access`,
-        failed: true
-      };
-    }
-    const prepared = await ports.commit.prepare(plan, { grant: authorized.grant });
-    if (prepared.state === "conflict") {
-      return {
-        message: `refused before writing: ${describeRejection("stale-revision")} (${prepared.conflicts.length} conflict(s))`,
-        failed: true
-      };
-    }
-    if (prepared.state === "rejected") {
-      return {
-        message: `refused before writing: ${describeRejection(prepared.reason)} (${prepared.reason})`,
-        failed: true
-      };
-    }
-    const result = await ports.commit.commit(prepared.prepared, { grant: authorized.grant });
-    if (result.state === "committed") {
-      return { message: `applied and written to ${request.name}`, failed: false };
-    }
-    if (result.state === "not-applied") {
-      return {
-        message: `not applied: ${describeRejection(result.reason)} (${result.reason})`,
-        failed: true
-      };
-    }
-    if (result.state === "rolled-back") {
-      return {
-        message: `not applied: the write failed and ${request.name} was rolled back`,
-        failed: true
-      };
-    }
-    return {
-      message: `${request.name} was only partly written; recovery is in the receipt`,
-      failed: true
-    };
-  };
-  const arm = {
-    backend,
-    editorFor(request) {
-      let editing;
-      try {
-        const evidence = webEditEvidence(options.inventory, request.opened.descriptor);
-        editing = createSubjectEditing({
-          opened: request.opened,
-          grant: request.grant,
-          // One backend, and only for a source this session really holds a handle for: an unknown
-          // source must reach `derive` as "no backend", not as a backend that would refuse later.
-          backendFor: (sourceId) => options.handleFor(sourceId) === void 0 ? void 0 : backend,
-          evidenceFor: (plan) => evidence.evidenceFor(plan),
-          writer,
-          /*
-           * No `expectedWriter`. It pins every committed plan's evidence to *one* writer identity,
-           * which was right while the raw writer was the only thing that could produce a plan here
-           * — and is wrong the moment this app offers a codec's mutating operations, because those
-           * plans are the codec's and their evidence names the codec. The pin is not the check it
-           * looks like either: this subject's inventory-derived registry already names, record by
-           * record, which writer proved which claim, and an absent record is still refused.
-           */
-          ...options.maxInlinePayloadBytes === void 0 ? {} : { maxInlinePayloadBytes: options.maxInlinePayloadBytes }
-        });
-      } catch (error) {
-        options.onNotice(`${request.name} cannot be edited here: ${describe2(error)}`);
-        return void 0;
-      }
-      const base = editing.editorPorts;
-      if (base === void 0) {
-        options.onNotice(`${request.name} cannot be edited here: no writer backs this subject.`);
-        return void 0;
-      }
-      const ports = speaking(base, request);
-      return Object.freeze({
-        ports,
-        // Bound to the `SubjectEditing` that issued the grant snapshot: the plan is checked against
-        // *this* subject at *this* revision, which is the check a renderer over an RPC arm has to
-        // ask the serving side for and a page holding the host can simply make.
-        planFromOperation: (output) => editing.planFromOperation(output),
-        applyPlan: applying(ports, request)
-      });
-    },
-    portsFor(request) {
-      return arm.editorFor(request)?.ports;
-    },
-    async dispose() {
-      await backend.dispose();
-    }
-  };
-  return Object.freeze(arm);
 }
 
 // apps/web/src/edit-panel.ts
@@ -2016,542 +1499,40 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/ui/dist/panels/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var PARTS2 = Object.freeze([
-  // shared surface
-  "viewer",
-  "viewer.toolbar",
-  "viewer.status",
-  "viewer.empty",
-  // bounded + virtual text
-  "text",
-  "text.line",
-  "virtual-text",
-  "virtual-text.line",
-  // hex
-  "hex",
-  "hex.toolbar",
-  "hex.offset-input",
-  "hex.go",
-  "hex.content",
-  "hex.row",
-  "hex.gutter",
-  "hex.cell",
-  "hex.ascii",
-  // tree
-  "tree",
-  "tree.list",
-  "tree.item",
-  "tree.label",
-  "tree.children",
-  // table
-  "table",
-  "table.caption",
-  "table.body",
-  "table.row",
-  "table.cell",
-  "table.next",
-  // namespace
-  "namespace",
-  "namespace.list",
-  "namespace.item",
-  "namespace.label",
-  "namespace.detail",
-  "namespace.children",
-  // transport
-  "transport",
-  "transport.status",
-  "transport.controls",
-  "transport.button",
-  "transport.track",
-  // diagnostics panel
-  "diagnostics",
-  "diagnostics.group",
-  "diagnostics.heading",
-  "diagnostics.list",
-  "diagnostics.item",
-  "diagnostics.message",
-  // operation toolbar
-  "operations",
-  "operations.status",
-  "operations.button",
-  // search field (PR3 member) and filter chrome
-  "search",
-  "search.input",
-  "search.toggles",
-  "search.toggle",
-  "search.status",
-  "search.nav",
-  "search.message",
-  "filter-bar",
-  "filter-bar.facets",
-  "filter-bar.facet",
-  // format inspector
-  "format",
-  "format.header",
-  "format.badge",
-  "format.body",
-  // metadata and properties (MK2 assets-viewer parity)
-  "metadata",
-  "metadata.group",
-  "metadata.heading",
-  "metadata.row",
-  "metadata.label",
-  "metadata.value",
-  "properties",
-  "properties.row",
-  "properties.name",
-  "properties.value",
-  "properties.origin",
-  // image stage
-  "image",
-  "image.canvas",
-  "image.toolbar",
-  "image.readout",
-  // image editing surface (MK2 assetsTextureViewer parity)
-  "imageedit",
-  "imageedit.tools",
-  "imageedit.tool",
-  "imageedit.options",
-  "imageedit.swatch",
-  "imageedit.size",
-  "imageedit.actions",
-  "imageedit.action",
-  "imageedit.marquee",
-  "imageedit.status",
-  "imageedit.warning",
-  // audio stage
-  "audio",
-  "audio.waveform",
-  "audio.toolbar",
-  "audio.readout",
-  "audio.player",
-  // vector stage
-  "vector",
-  "vector.image",
-  "vector.readout",
-  // video stage
-  "video",
-  "video.player",
-  "video.readout",
-  // model stage
-  "model",
-  "model.canvas",
-  "model.readout",
-  "model.toolbar",
-  // view gizmo — its own component, usable by any 3D stage
-  "gizmo",
-  "gizmo.svg",
-  "gizmo.axis",
-  "gizmo.handle",
-  "gizmo.label",
-  // archive explorer composite
-  "archive",
-  "archive.tree",
-  "archive.entries",
-  "archive.preview",
-  // file tree (MK2 archive explorer chrome)
-  "filetree",
-  "filetree.toolbar",
-  "filetree.list",
-  "filetree.node",
-  "filetree.row",
-  "filetree.twisty",
-  "filetree.icon",
-  "filetree.label",
-  "filetree.badge",
-  "filetree.children",
-  "filetree.empty",
-  // explorer: tree + preview shell shared by every host that browses real files
-  "explorer",
-  "explorer.toolbar",
-  "explorer.action",
-  "explorer.sidebar",
-  "explorer.preview",
-  "explorer.dropzone",
-  "explorer.status",
-  "explorer.tabs",
-  "explorer.tab",
-  "explorer.stage",
-  "explorer.placeholder",
-  // preview header and view picker
-  "explorer.header",
-  "explorer.breadcrumb",
-  "explorer.crumb",
-  "explorer.viewpicker",
-  // editor area: one or more groups, each with its own tab strip
-  "explorer.editors",
-  "explorer.group",
-  "explorer.tabstrip",
-  "explorer.filetab",
-  "explorer.filetab-close",
-  "explorer.tabcontent",
-  "explorer.split",
-  // right-click menu on a tab: Close / Close Others / Close to the Right / Close All
-  "explorer.tabmenu",
-  "explorer.tabmenu-item",
-  // custom window chrome, drawn by the app when the native frame is hidden
-  "titlebar",
-  "titlebar.drag",
-  "titlebar.title",
-  "titlebar.controls",
-  "titlebar.button",
-  "titlebar.menu",
-  "titlebar.menu-item",
-  "titlebar.menu-panel",
-  "titlebar.menu-entry",
-  "titlebar.menu-separator",
-  // settings surface
-  "settings",
-  "settings.groups",
-  "settings.group",
-  "settings.pane",
-  "settings.row",
-  "settings.label",
-  "settings.description",
-  "settings.control",
-  "settings.select",
-  "settings.input",
-  "settings.list",
-  "settings.extension",
-  "settings.extension-text",
-  "settings.toggle",
-  "settings.remove",
-  "settings.adder",
-  "settings.add",
-  "settings.close",
-  "settings.status",
-  // generic form vocabulary — any surface that collects input (an edit panel, a dialog).
-  // Named generically because the settings.* family is named for the settings surface, and a
-  // theme styling a form should not have to know which surface hosts it.
-  "form",
-  "form.row",
-  "form.label",
-  "form.description",
-  "form.control",
-  "form.input",
-  "form.select",
-  "form.actions",
-  "form.button",
-  "form.status",
-  // collapsible property sections
-  "accordion",
-  "accordion.section",
-  "accordion.header",
-  "accordion.twisty",
-  "accordion.title",
-  "accordion.hint",
-  "accordion.body",
-  "accordion.field",
-  "accordion.field-name",
-  "accordion.field-value",
-  // shell chrome
-  "shell",
-  "shell.header",
-  "shell.breadcrumb",
-  "shell.crumb",
-  "shell.crumb-icon",
-  "shell.crumb-more",
-  "shell.footer",
-  "shell.footer-start",
-  "shell.footer-end",
-  "shell.status-item",
-  // application workbench
-  "workbench",
-  "workbench.titlebar",
-  "workbench.activitybar",
-  "workbench.sidebar",
-  "workbench.main",
-  "workbench.panel",
-  "workbench.statusbar",
-  "workbench.host-status",
-  // view picker
-  "viewpicker",
-  "viewpicker.modes",
-  "viewpicker.mode",
-  "viewpicker.select",
-  // subject card composition
-  "card",
-  "card.section",
-  "card.header",
-  "card.portrait",
-  "card.identity",
-  "card.title",
-  "card.subtitle",
-  "card.ref",
-  "card.locale",
-  "card.chips",
-  "card.chip",
-  "card.description",
-  "card.note",
-  "card.statrow",
-  "card.stat",
-  "card.stat-icon",
-  "card.stat-value",
-  "card.stat-delta",
-  "card.grid",
-  "card.grid-cell",
-  "card.grid-hotkey",
-  "card.grid-icon",
-  "card.fields",
-  "card.field",
-  "card.field-name",
-  "card.field-value",
-  "card.links",
-  "card.link-item",
-  "card.subcards",
-  "card.subcard",
-  "card.subcard-head",
-  "card.subcard-body",
-  "card.custom",
-  // relation graph
-  "graph",
-  "graph.sidebar",
-  "graph.sidebar-head",
-  "graph.types",
-  "graph.type",
-  "graph.type-swatch",
-  "graph.type-count",
-  "graph.main",
-  "graph.controls",
-  "graph.control",
-  "graph.canvas",
-  "graph.status",
-  "graph.hint",
-  "graph.footer",
-  "graph.footer-group",
-  "graph.footer-item",
-  // editor
-  "editor",
-  "editor.toolbar",
-  "editor.text"
-]);
-var PART_SET2 = new Set(PARTS2);
-var PART_ATTRIBUTE2 = "data-mk-part";
-var STATE_ATTRIBUTE2 = "data-mk-state";
-var STATES2 = Object.freeze([
-  "loading",
-  "empty",
-  "error",
-  "disabled",
-  "readonly",
-  "truncated",
-  "over-budget",
-  "degraded",
-  "active",
-  "stale",
-  "mutating",
-  "invalid",
-  "no-match",
-  "selected",
-  /** A drop is hovering over this surface and would be accepted. */
-  "drop-target"
-]);
-var STATE_SET2 = new Set(STATES2);
-function setPart3(element22, part) {
-  if (!PART_SET2.has(part)) throw new TypeError(`unregistered part: ${part}`);
-  element22.setAttribute(PART_ATTRIBUTE2, part);
-}
-function setState3(element22, states) {
-  for (const state of states) {
-    if (!STATE_SET2.has(state)) throw new TypeError(`unregistered state: ${state}`);
-  }
-  if (states.length === 0) element22.removeAttribute(STATE_ATTRIBUTE2);
-  else element22.setAttribute(STATE_ATTRIBUTE2, [...new Set(states)].join(" "));
-}
-var VIEWER_CSP2 = Object.freeze({
-  defaultSrc: "'none'",
-  scriptSrc: "'self'",
-  styleSrc: "'self'",
-  // C1 in ADR-UI-001. `style-src-attr` does not inherit from `style-src`, so the ban on the
-  // `style` attribute has to be stated here or it is not enforced at all. Components set dynamic
-  // values through CSSOM (`style.setProperty`), which this does not block.
-  styleSrcAttr: "'none'",
-  imgSrc: "'self' blob: data:",
-  // The audio and video stages hand a codec-owned encoded representation to the platform player
-  // as a blob; without this the policy falls through to default-src 'none' and playback dies.
-  mediaSrc: "'self' blob:",
-  fontSrc: "'self'",
-  connectSrc: "'self'",
-  workerSrc: "'self' blob:",
-  frameSrc: "'none'"
-});
-var VIEWER_CSP_TRUSTED_EDITOR2 = Object.freeze({
-  ...VIEWER_CSP2,
-  styleSrc: "'self' 'unsafe-inline'",
-  // Measured: the editor renders each visible line as markup carrying a `style` attribute with its
-  // computed `top` and `height`. Under `style-src-attr 'none'` those attributes are refused, the
-  // lines never reach their positions, and the text visibly jumps as the view scrolls. This is the
-  // C1 exclusion the ADR anticipates for a trusted in-process editor, scoped to that host only.
-  styleSrcAttr: "'unsafe-inline'",
-  // The editor's icon font is inlined as a data URI by the bundler; `font-src 'self'` alone
-  // rejects it and the glyphs fall back to tofu.
-  fontSrc: "'self' data:"
-});
-var policyText2 = (policy) => Object.entries(policy).map(
-  ([name, value]) => `${name.replace(/[A-Z]/gu, (match) => `-${match.toLowerCase()}`)} ${value}`
-).join("; ");
-var VIEWER_CSP_TEXT2 = policyText2(VIEWER_CSP2);
-var VIEWER_CSP_TRUSTED_EDITOR_TEXT2 = policyText2(VIEWER_CSP_TRUSTED_EDITOR2);
-var HOSTILE_TEXT2 = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/gu;
-function safeViewerText2(value, maximum = 1e6) {
-  const text = String(value);
-  const bounded = text.length > maximum ? `${text.slice(0, maximum)}\u2026` : text;
-  return bounded.replace(HOSTILE_TEXT2, (character) => {
-    const code = character.codePointAt(0)?.toString(16).toUpperCase().padStart(4, "0") ?? "0000";
-    return `\\u{${code}}`;
-  });
-}
-function setViewerText3(node, value, maximum) {
-  node.textContent = safeViewerText2(value, maximum);
-}
-function requireContainer(value) {
-  if (typeof value !== "object" || value === null || !("ownerDocument" in value) || !("replaceChildren" in value) || typeof value.replaceChildren !== "function") {
-    throw new TypeError("viewer container must be a DOM element");
-  }
-  return value;
-}
-function createSurface2(container, label) {
-  const host = requireContainer(container);
-  const root = host.ownerDocument.createElement("section");
-  root.className = "modkit-viewer";
-  root.tabIndex = 0;
-  root.setAttribute("role", "region");
-  root.setAttribute("aria-label", label);
-  root.dataset["modkitViewer"] = label;
-  setPart3(root, "viewer");
-  host.replaceChildren(root);
-  return root;
-}
-function element3(parent, tag, options = {}) {
-  const node = parent.ownerDocument.createElement(tag);
-  if (options.className !== void 0) node.className = options.className;
-  if (options.role !== void 0) node.setAttribute("role", options.role);
-  if (options.text !== void 0) setViewerText3(node, options.text);
-  if (options.part !== void 0) setPart3(node, options.part);
-  if (options.state !== void 0) setState3(node, options.state);
-  parent.append(node);
-  return node;
-}
-var ViewerMountScope2 = class {
-  controller = new AbortController();
-  signal = this.controller.signal;
-  #leases = [];
-  #cleanup = [];
-  #closed = false;
-  constructor(parent) {
-    if (parent?.aborted) this.controller.abort(parent.reason);
-    else if (parent !== void 0) {
-      const abort = () => this.controller.abort(parent.reason);
-      parent.addEventListener("abort", abort, { once: true });
-      this.#cleanup.push(() => parent.removeEventListener("abort", abort));
-    }
-  }
-  lease(lease) {
-    this.#leases.push(lease);
-    return lease;
-  }
-  cleanup(callback) {
-    this.#cleanup.push(callback);
-  }
-  async close() {
-    if (this.#closed) return;
-    this.#closed = true;
-    this.controller.abort("viewer-unmounted");
-    for (const callback of this.#cleanup.reverse()) await callback();
-    for (const lease of this.#leases.reverse()) await lease.release();
-  }
-};
-function createViewerMount(root, scope, initial, render) {
-  let state = initial;
-  return Object.freeze({
-    async update(args) {
-      if (scope.signal.aborted) return;
-      state = args;
-      root.setAttribute("aria-label", safeViewerText2(args.slot.contributionId, 512));
-      await render(state);
-    },
-    async unmount() {
-      await scope.close();
-      root.remove();
-    }
-  });
-}
-function defineViewerModule2(module) {
-  return Object.freeze(module);
-}
-function operationById(descriptor, operationId) {
-  return descriptor.operations.find((operation) => operation.id === operationId);
-}
-async function invokeOperation(descriptor, operations, operationId, input, options) {
-  const declaration = operationById(descriptor, operationId);
-  if (declaration === void 0) {
-    return {
-      state: "rejected",
-      reason: "not-declared",
-      diagnostics: []
-    };
-  }
-  if (declaration.state !== "available") {
-    return {
-      state: "rejected",
-      reason: declaration.state === "dependency-required" ? "dependency-required" : "disabled",
-      diagnostics: []
-    };
-  }
-  return operations.invoke(declaration.handlerId, input, {
-    ...options?.signal === void 0 ? {} : { signal: options.signal },
-    ...options?.onProgress === void 0 ? {} : {
-      onProgress: (progress) => options.onProgress?.(progress.completed, progress.total, progress.message)
-    }
-  });
-}
-function diagnosticsBySeverity(diagnostics) {
-  const unique = /* @__PURE__ */ new Map();
-  for (const item of diagnostics) unique.set(item.id, item);
-  const values = [...unique.values()];
-  return Object.freeze({
-    error: Object.freeze(values.filter((item) => item.severity === "error")),
-    warning: Object.freeze(values.filter((item) => item.severity === "warning")),
-    information: Object.freeze(values.filter((item) => item.severity === "information")),
-    hint: Object.freeze(values.filter((item) => item.severity === "hint"))
-  });
-}
 function renderDiagnostics(root, descriptor) {
   root.replaceChildren();
   const grouped = diagnosticsBySeverity(descriptor.diagnostics);
   for (const severity of ["error", "warning", "information", "hint"]) {
-    const section = element3(root, "section", { part: "diagnostics.group" });
+    const section = element(root, "section", { part: "diagnostics.group" });
     section.dataset["severity"] = severity;
-    element3(section, "h2", {
+    element(section, "h2", {
       text: `${severity} (${grouped[severity].length})`,
       part: "diagnostics.heading"
     });
-    const list = element3(section, "ul", { part: "diagnostics.list" });
+    const list = element(section, "ul", { part: "diagnostics.list" });
     for (const diagnostic2 of grouped[severity]) {
-      const item = element3(list, "li", { part: "diagnostics.item" });
+      const item = element(list, "li", { part: "diagnostics.item" });
       item.dataset["severity"] = severity;
-      const button2 = element3(item, "button", {
+      const button2 = element(item, "button", {
         text: diagnostic2.message,
         part: "diagnostics.message"
       });
       button2.type = "button";
       button2.dataset["diagnosticId"] = diagnostic2.id;
       button2.addEventListener("click", () => {
-        root.dispatchEvent(
-          new CustomEvent("modkit-diagnostic-jump", {
-            bubbles: true,
-            detail: { id: diagnostic2.id, range: diagnostic2.range }
-          })
-        );
+        root.dispatchEvent(new CustomEvent("modkit-diagnostic-jump", {
+          bubbles: true,
+          detail: { id: diagnostic2.id, range: diagnostic2.range }
+        }));
       });
     }
   }
 }
-var diagnosticsPanel = defineViewerModule2({
+var diagnosticsPanel = defineViewerModule({
   abiVersion: 1,
   async mount(args) {
-    const scope = new ViewerMountScope2(args.signal);
-    const root = createSurface2(args.container, "Diagnostics");
+    const scope = new ViewerMountScope(args.signal);
+    const root = createSurface(args.container, "Diagnostics");
     renderDiagnostics(root, args.descriptor);
     return createViewerMount(root, scope, args, ({ descriptor }) => {
       renderDiagnostics(root, descriptor);
@@ -2560,10 +1541,11 @@ var diagnosticsPanel = defineViewerModule2({
 });
 function renderToolbar(root, descriptor, operations, signal) {
   root.replaceChildren();
-  const status = element3(root, "output", { text: "Ready", part: "operations.status" });
+  const status = element(root, "output", { text: "Ready", part: "operations.status" });
   for (const operation of descriptor.operations) {
-    if (operation.mutatesSource === true) continue;
-    const button2 = element3(root, "button", {
+    if (operation.mutatesSource === true)
+      continue;
+    const button2 = element(root, "button", {
       text: operation.id,
       part: "operations.button"
     });
@@ -2577,28 +1559,18 @@ function renderToolbar(root, descriptor, operations, signal) {
       button2.disabled = true;
       invokeOperation(descriptor, operations, operation.id, null, {
         signal,
-        onProgress: (completed, total, message) => setViewerText3(status, `${message ?? "Working"}: ${completed}/${total ?? "?"}`)
-      }).then(
-        (result) => setViewerText3(
-          status,
-          result.state === "ok" ? `${operation.id}: complete` : result.reason
-        )
-      ).catch(
-        (error) => setViewerText3(
-          status,
-          `${operation.id}: ${error instanceof Error ? error.message : String(error)}`
-        )
-      ).finally(() => {
+        onProgress: (completed, total, message) => setViewerText(status, `${message ?? "Working"}: ${completed}/${total ?? "?"}`)
+      }).then((result) => setViewerText(status, result.state === "ok" ? `${operation.id}: complete` : result.reason)).catch((error) => setViewerText(status, `${operation.id}: ${error instanceof Error ? error.message : String(error)}`)).finally(() => {
         button2.disabled = false;
       });
     });
   }
 }
-var operationToolbar = defineViewerModule2({
+var operationToolbar = defineViewerModule({
   abiVersion: 1,
   async mount(args) {
-    const scope = new ViewerMountScope2(args.signal);
-    const root = createSurface2(args.container, "Operations");
+    const scope = new ViewerMountScope(args.signal);
+    const root = createSurface(args.container, "Operations");
     renderToolbar(root, args.descriptor, args.operations, scope.signal);
     return createViewerMount(root, scope, args, ({ descriptor }) => {
       renderToolbar(root, descriptor, args.operations, scope.signal);
@@ -2739,765 +1711,36 @@ function createInspector(document2, options = {}) {
   };
 }
 
-// apps/web/src/settings.ts
+// apps/web/src/session-recovery.ts
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/ui/dist/tokens/index.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var t = (name, tier, type, description, extra = {}) => ({ name, tier, type, isPublic: true, description, ...extra });
-var PALETTE_STEPS = [
-  "050",
-  "100",
-  "200",
-  "300",
-  "400",
-  "500",
-  "600",
-  "700",
-  "800",
-  "900"
-];
-var PALETTE_HUES = ["neutral", "accent", "ok", "warn", "error", "info"];
-var tier1 = PALETTE_HUES.flatMap(
-  (hue) => PALETTE_STEPS.map((step) => t(`palette.${hue}.${step}`, 1, "color", `${hue} ramp step ${step}`))
-);
-var tier2 = [
-  // surfaces
-  t("color.bg", 2, "color", "window ground behind everything"),
-  t("color.surface", 2, "color", "default component surface"),
-  t("color.raised", 2, "color", "surface above the default plane"),
-  t("color.sunken", 2, "color", "inset surface such as an input well"),
-  t("color.overlay", 2, "color", "floating surface: menu, popover, dialog"),
-  t("color.scrim", 2, "color", "dimming layer behind a modal"),
-  // text
-  t("color.fg", 2, "color", "primary text"),
-  t("color.fg-muted", 2, "color", "secondary text"),
-  t("color.fg-subtle", 2, "color", "tertiary text and placeholders"),
-  t("color.fg-inverse", 2, "color", "text on an accent fill"),
-  t("color.fg-disabled", 2, "color", "disabled text"),
-  t("color.fg-link", 2, "color", "hyperlink text"),
-  t("color.fg-destructive", 2, "color", "destructive action text"),
-  // lines
-  t("color.border", 2, "color", "default separator and component border"),
-  t("color.border-strong", 2, "color", "emphasised border"),
-  t("color.separator", 2, "color", "hairline between list sections"),
-  // interaction
-  t("color.accent", 2, "color", "primary action fill"),
-  t("color.accent-fg", 2, "color", "text on the accent fill"),
-  t("color.accent-muted", 2, "color", "low-emphasis accent wash"),
-  t("color.accent-muted-fg", 2, "color", "text on the accent wash"),
-  t("color.focus", 2, "color", "focus ring"),
-  t("color.hover", 2, "color", "hover wash"),
-  t("color.active", 2, "color", "pressed wash"),
-  t("color.selection", 2, "color", "active selection fill"),
-  t("color.selection-inactive", 2, "color", "selection fill when the surface is unfocused"),
-  t("color.selection-fg", 2, "color", "text on a selection fill"),
-  t("color.match-highlight", 2, "color", "search match highlight"),
-  t("color.drop-target", 2, "color", "drag-and-drop target indicator"),
-  t("color.readonly", 2, "color", "read-only field wash"),
-  // status
-  ...["ok", "warn", "error", "info"].flatMap((s) => [
-    t(`status.${s}`, 2, "color", `${s} indicator colour`),
-    t(`status.${s}-fg`, 2, "color", `text on a ${s} fill`),
-    t(`status.${s}-bg`, 2, "color", `${s} background wash`),
-    t(`status.${s}-border`, 2, "color", `${s} border`)
-  ]),
-  // scrollbars
-  t("color.scrollbar-track", 2, "color", "scrollbar trough"),
-  t("color.scrollbar-thumb", 2, "color", "scrollbar thumb"),
-  t("color.scrollbar-thumb-hover", 2, "color", "scrollbar thumb, hovered"),
-  t("color.scrollbar-thumb-active", 2, "color", "scrollbar thumb while dragging"),
-  t("color.scrollbar-shadow", 2, "color", "hairline separating a scrolled pane from its content"),
-  // canvas / GPU surfaces — these are not UI chrome and need their own roles
-  t("color.canvas-bg", 2, "color", "canvas or WebGL scene ground"),
-  t("color.canvas-grid", 2, "color", "scene grid lines"),
-  t("color.canvas-gizmo", 2, "color", "scene gizmo and axis handles"),
-  // Axis identity is a convention users read at a glance (X red, Y green, Z blue), so the three
-  // get their own roles rather than borrowing from the categorical ramp, which a theme may reorder.
-  t("color.axis-x", 2, "color", "X axis handle and line"),
-  t("color.axis-y", 2, "color", "Y axis handle and line"),
-  t("color.axis-z", 2, "color", "Z axis handle and line"),
-  t("color.canvas-selection", 2, "color", "selected geometry outline"),
-  // graph / chart categorical ramp
-  ...["1", "2", "3", "4", "5", "6"].map(
-    (n) => t(`chart.categorical-${n}`, 2, "color", `categorical series ${n}`)
-  ),
-  t("color.graph-node", 2, "color", "relation-graph node fill"),
-  t("color.graph-edge", 2, "color", "relation-graph edge stroke"),
-  t("color.graph-edge-dead", 2, "color", "unresolved reference edge"),
-  // diff
-  t("color.diff-added", 2, "color", "added line or cell wash"),
-  t("color.diff-removed", 2, "color", "removed line or cell wash"),
-  t("color.diff-changed", 2, "color", "changed line or cell wash"),
-  // space
-  ...["0", "1", "2", "3", "4", "5", "6", "7", "8"].map(
-    (n) => t(`space.${n}`, 2, "length", `spacing step ${n}`)
-  ),
-  // radius
-  ...["none", "sm", "md", "lg", "pill"].map(
-    (r) => t(`radius.${r}`, 2, "length", `corner radius ${r}`)
-  ),
-  // type
-  t("font.sans", 2, "font-family", "UI typeface stack"),
-  t("font.mono", 2, "font-family", "monospace stack for IDs, code, offsets"),
-  ...["xs", "sm", "md", "lg", "xl"].map((s) => t(`font.size-${s}`, 2, "length", `font size ${s}`)),
-  ...["normal", "medium", "bold"].map((w) => t(`font.weight-${w}`, 2, "number", `font weight ${w}`)),
-  ...["tight", "normal", "loose"].map((l) => t(`line.${l}`, 2, "number", `line height ${l}`)),
-  // metrics
-  t("size.row", 2, "length", "list and table row height"),
-  t("size.control", 2, "length", "default control height"),
-  t("size.icon", 2, "length", "default icon box"),
-  t("size.touch", 2, "length", "minimum touch target"),
-  t("size.scrollbar", 2, "length", "scrollbar thickness"),
-  t("size.scrollbar-thin", 2, "length", "scrollbar thickness inside dense panes"),
-  // layering
-  ...["base", "sticky", "dropdown", "overlay", "modal", "toast"].map(
-    (z) => t(`z.${z}`, 2, "z-index", `stacking band: ${z}`)
-  ),
-  // motion
-  ...["fast", "normal", "slow"].map(
-    (d) => t(`motion.${d}`, 2, "duration", `transition duration ${d}`)
-  ),
-  t("motion.ease", 2, "easing", "default easing curve"),
-  // elevation
-  ...["1", "2", "3"].map((e) => t(`elevation.${e}`, 2, "shadow", `elevation level ${e}`)),
-  t("shadow.focus-ring", 2, "shadow", "focus ring shadow")
-];
-var c = (name, component, type, derivesFrom, description) => t(name, 3, type, description, { component, derivesFrom });
-var runtime = (name, component, type, runtimeDefault, description) => t(name, 3, type, description, { component, runtimeDefault });
-var tier3 = [
-  runtime("tree.indent-level", "tree", "number", "0", "nesting depth of the current tree row"),
-  runtime("card.grid-columns", "card", "number", "5", "column count of the current card grid"),
-  // Context-menu placement is per-instance pixel geometry, which C3 routes through tokens.
-  runtime("explorer.menu-x", "explorer", "length", "0px", "context menu left offset"),
-  runtime("explorer.menu-y", "explorer", "length", "0px", "context menu top offset"),
-  c("table.row-height", "table", "length", "size.row", "table row height"),
-  c("table.header-bg", "table", "color", "color.raised", "table header background"),
-  c("table.cell-padding-x", "table", "length", "space.2", "table cell horizontal padding"),
-  c("tree.indent", "tree", "length", "space.4", "tree nesting indent per level"),
-  c("tree.row-height", "tree", "length", "size.row", "tree row height"),
-  c("hex.byte-gap", "hex", "length", "space.1", "gap between hex byte columns"),
-  c("hex.gutter-fg", "hex", "color", "color.fg-subtle", "hex offset gutter text"),
-  c("text.line-height", "text", "number", "line.normal", "text stage line height"),
-  c("shell.rail-width", "shell", "length", "space.8", "default side rail width"),
-  c("shell.splitter-size", "shell", "length", "space.1", "splitter hit area thickness"),
-  c("toolbar.height", "toolbar", "length", "size.control", "toolbar height"),
-  c("panel.padding", "panel", "length", "space.3", "panel content padding"),
-  c("transport.track-height", "transport", "length", "space.2", "transport scrub track height")
-];
-var TOKENS = Object.freeze([...tier1, ...tier2, ...tier3]);
-var TOKENS_BY_NAME = new Map(
-  TOKENS.map((token) => [token.name, token])
-);
-var TOKEN_NAMES = Object.freeze([
-  "palette.neutral.050",
-  "palette.neutral.100",
-  "palette.neutral.200",
-  "palette.neutral.300",
-  "palette.neutral.400",
-  "palette.neutral.500",
-  "palette.neutral.600",
-  "palette.neutral.700",
-  "palette.neutral.800",
-  "palette.neutral.900",
-  "palette.accent.050",
-  "palette.accent.100",
-  "palette.accent.200",
-  "palette.accent.300",
-  "palette.accent.400",
-  "palette.accent.500",
-  "palette.accent.600",
-  "palette.accent.700",
-  "palette.accent.800",
-  "palette.accent.900",
-  "palette.ok.050",
-  "palette.ok.100",
-  "palette.ok.200",
-  "palette.ok.300",
-  "palette.ok.400",
-  "palette.ok.500",
-  "palette.ok.600",
-  "palette.ok.700",
-  "palette.ok.800",
-  "palette.ok.900",
-  "palette.warn.050",
-  "palette.warn.100",
-  "palette.warn.200",
-  "palette.warn.300",
-  "palette.warn.400",
-  "palette.warn.500",
-  "palette.warn.600",
-  "palette.warn.700",
-  "palette.warn.800",
-  "palette.warn.900",
-  "palette.error.050",
-  "palette.error.100",
-  "palette.error.200",
-  "palette.error.300",
-  "palette.error.400",
-  "palette.error.500",
-  "palette.error.600",
-  "palette.error.700",
-  "palette.error.800",
-  "palette.error.900",
-  "palette.info.050",
-  "palette.info.100",
-  "palette.info.200",
-  "palette.info.300",
-  "palette.info.400",
-  "palette.info.500",
-  "palette.info.600",
-  "palette.info.700",
-  "palette.info.800",
-  "palette.info.900",
-  "color.bg",
-  "color.surface",
-  "color.raised",
-  "color.sunken",
-  "color.overlay",
-  "color.scrim",
-  "color.fg",
-  "color.fg-muted",
-  "color.fg-subtle",
-  "color.fg-inverse",
-  "color.fg-disabled",
-  "color.fg-link",
-  "color.fg-destructive",
-  "color.border",
-  "color.border-strong",
-  "color.separator",
-  "color.accent",
-  "color.accent-fg",
-  "color.accent-muted",
-  "color.accent-muted-fg",
-  "color.focus",
-  "color.hover",
-  "color.active",
-  "color.selection",
-  "color.selection-inactive",
-  "color.selection-fg",
-  "color.match-highlight",
-  "color.drop-target",
-  "color.readonly",
-  "status.ok",
-  "status.ok-fg",
-  "status.ok-bg",
-  "status.ok-border",
-  "status.warn",
-  "status.warn-fg",
-  "status.warn-bg",
-  "status.warn-border",
-  "status.error",
-  "status.error-fg",
-  "status.error-bg",
-  "status.error-border",
-  "status.info",
-  "status.info-fg",
-  "status.info-bg",
-  "status.info-border",
-  "color.scrollbar-track",
-  "color.scrollbar-thumb",
-  "color.scrollbar-thumb-hover",
-  "color.scrollbar-thumb-active",
-  "color.scrollbar-shadow",
-  "color.canvas-bg",
-  "color.canvas-grid",
-  "color.canvas-gizmo",
-  "color.axis-x",
-  "color.axis-y",
-  "color.axis-z",
-  "color.canvas-selection",
-  "chart.categorical-1",
-  "chart.categorical-2",
-  "chart.categorical-3",
-  "chart.categorical-4",
-  "chart.categorical-5",
-  "chart.categorical-6",
-  "color.graph-node",
-  "color.graph-edge",
-  "color.graph-edge-dead",
-  "color.diff-added",
-  "color.diff-removed",
-  "color.diff-changed",
-  "space.0",
-  "space.1",
-  "space.2",
-  "space.3",
-  "space.4",
-  "space.5",
-  "space.6",
-  "space.7",
-  "space.8",
-  "radius.none",
-  "radius.sm",
-  "radius.md",
-  "radius.lg",
-  "radius.pill",
-  "font.sans",
-  "font.mono",
-  "font.size-xs",
-  "font.size-sm",
-  "font.size-md",
-  "font.size-lg",
-  "font.size-xl",
-  "font.weight-normal",
-  "font.weight-medium",
-  "font.weight-bold",
-  "line.tight",
-  "line.normal",
-  "line.loose",
-  "size.row",
-  "size.control",
-  "size.icon",
-  "size.touch",
-  "size.scrollbar",
-  "size.scrollbar-thin",
-  "z.base",
-  "z.sticky",
-  "z.dropdown",
-  "z.overlay",
-  "z.modal",
-  "z.toast",
-  "motion.fast",
-  "motion.normal",
-  "motion.slow",
-  "motion.ease",
-  "elevation.1",
-  "elevation.2",
-  "elevation.3",
-  "shadow.focus-ring",
-  "tree.indent-level",
-  "card.grid-columns",
-  "explorer.menu-x",
-  "explorer.menu-y",
-  "table.row-height",
-  "table.header-bg",
-  "table.cell-padding-x",
-  "tree.indent",
-  "tree.row-height",
-  "hex.byte-gap",
-  "hex.gutter-fg",
-  "text.line-height",
-  "shell.rail-width",
-  "shell.splitter-size",
-  "toolbar.height",
-  "panel.padding",
-  "transport.track-height"
-]);
-var RAMPS = {
-  neutral: [
-    "#fafafa",
-    "#f0f0f0",
-    "#e0e0e0",
-    "#c6c6c6",
-    "#9a9a9a",
-    "#6e6e6e",
-    "#4a4a4a",
-    "#333333",
-    "#232323",
-    "#141414"
-  ],
-  accent: [
-    "#e8f2fc",
-    "#c7e0f7",
-    "#9ccaf0",
-    "#6bafe6",
-    "#3b93db",
-    "#0078d4",
-    "#005fb8",
-    "#004a93",
-    "#00376e",
-    "#002649"
-  ],
-  ok: [
-    "#e6f5e9",
-    "#c3e7cb",
-    "#97d5a5",
-    "#6bc27f",
-    "#4fb265",
-    "#2ea043",
-    "#238636",
-    "#1a6b2a",
-    "#13501f",
-    "#0c3514"
-  ],
-  warn: [
-    "#fcf3d8",
-    "#f7e3a6",
-    "#f0cf6e",
-    "#e5ba3c",
-    "#d9a520",
-    "#bf8700",
-    "#9a6d00",
-    "#7a5600",
-    "#5a3f00",
-    "#3b2900"
-  ],
-  error: [
-    "#fde8e8",
-    "#fac7c7",
-    "#f49b9b",
-    "#ec6f6f",
-    "#e14b4b",
-    "#cf2222",
-    "#a81b1b",
-    "#851515",
-    "#620f0f",
-    "#400a0a"
-  ],
-  info: [
-    "#e6f4fb",
-    "#c0e3f5",
-    "#8ecdec",
-    "#5cb6e2",
-    "#33a2d8",
-    "#0f8bc7",
-    "#0b6e9e",
-    "#085576",
-    "#063d54",
-    "#042634"
-  ]
-};
-var STEPS = ["050", "100", "200", "300", "400", "500", "600", "700", "800", "900"];
-function rampValues(overrides = {}) {
-  const out = {};
-  for (const [hue, ramp] of Object.entries({ ...RAMPS, ...overrides })) {
-    ramp.forEach((value, index) => {
-      out[`palette.${hue}.${STEPS[index]}`] = value;
-    });
-  }
-  return out;
-}
-var STRUCTURE = {
-  "space.0": "0",
-  "space.1": "2px",
-  "space.2": "4px",
-  "space.3": "8px",
-  "space.4": "12px",
-  "space.5": "16px",
-  "space.6": "24px",
-  "space.7": "32px",
-  "space.8": "48px",
-  "radius.none": "0",
-  "radius.sm": "2px",
-  "radius.md": "4px",
-  "radius.lg": "8px",
-  "radius.pill": "9999px",
-  "font.sans": "'Segoe UI Variable Text', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
-  "font.mono": "ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, 'Courier New', monospace",
-  "font.size-xs": "11px",
-  "font.size-sm": "12px",
-  "font.size-md": "13px",
-  "font.size-lg": "15px",
-  "font.size-xl": "19px",
-  "font.weight-normal": "400",
-  "font.weight-medium": "600",
-  "font.weight-bold": "700",
-  "line.tight": "1.2",
-  "line.normal": "1.45",
-  "line.loose": "1.7",
-  "size.row": "22px",
-  "size.control": "26px",
-  "size.icon": "16px",
-  "size.touch": "44px",
-  "size.scrollbar": "10px",
-  "size.scrollbar-thin": "6px",
-  "z.base": "0",
-  "z.sticky": "10",
-  "z.dropdown": "20",
-  "z.overlay": "30",
-  "z.modal": "40",
-  "z.toast": "50",
-  "motion.fast": "80ms",
-  "motion.normal": "140ms",
-  "motion.slow": "240ms",
-  "motion.ease": "cubic-bezier(0.2, 0, 0.13, 1)"
-};
-var CHART_DARK = {
-  "chart.categorical-1": "#4daafc",
-  "chart.categorical-2": "#89d185",
-  "chart.categorical-3": "#e5ba3c",
-  "chart.categorical-4": "#f49b9b",
-  "chart.categorical-5": "#c58af9",
-  "chart.categorical-6": "#4ec9b0"
-};
-var CHART_LIGHT = {
-  "chart.categorical-1": "#005fb8",
-  "chart.categorical-2": "#238636",
-  "chart.categorical-3": "#9a6d00",
-  "chart.categorical-4": "#a81b1b",
-  "chart.categorical-5": "#7a3fb5",
-  "chart.categorical-6": "#0b6e9e"
-};
-var PALETTES = Object.freeze([
-  {
-    id: "modkit-dark",
-    displayName: "Modkit Dark",
-    appearance: "dark",
-    isDefaultFor: "dark",
-    values: Object.freeze({
-      ...rampValues(),
-      ...STRUCTURE,
-      ...CHART_DARK,
-      "color.bg": "#1f1f1f",
-      "color.surface": "#1f1f1f",
-      "color.raised": "#252526",
-      "color.sunken": "#181818",
-      "color.overlay": "#2c2c2d",
-      "color.scrim": "rgba(0, 0, 0, 0.55)",
-      "color.fg": "#cccccc",
-      "color.fg-muted": "#9d9d9d",
-      "color.fg-subtle": "#7a7a7a",
-      "color.fg-inverse": "#ffffff",
-      "color.fg-disabled": "#5a5a5a",
-      "color.fg-link": "#4daafc",
-      "color.fg-destructive": "#f14c4c",
-      "color.border": "#2b2b2b",
-      "color.border-strong": "#3c3c3c",
-      "color.separator": "#2b2b2b",
-      "color.accent": "#0078d4",
-      "color.accent-fg": "#ffffff",
-      "color.accent-muted": "#04395e",
-      "color.accent-muted-fg": "#ffffff",
-      "color.focus": "#0078d4",
-      "color.hover": "#2a2d2e",
-      "color.active": "#37373d",
-      "color.selection": "#04395e",
-      "color.selection-inactive": "#2e2e2e",
-      "color.selection-fg": "#ffffff",
-      "color.match-highlight": "#623315",
-      "color.drop-target": "#0078d4",
-      "color.readonly": "#262626",
-      "status.ok": "#89d185",
-      "status.ok-fg": "#0c3514",
-      "status.ok-bg": "#143620",
-      "status.ok-border": "#2ea043",
-      "status.warn": "#cca700",
-      "status.warn-fg": "#3b2900",
-      "status.warn-bg": "#3a2f00",
-      "status.warn-border": "#bf8700",
-      "status.error": "#f14c4c",
-      "status.error-fg": "#400a0a",
-      "status.error-bg": "#3a1414",
-      "status.error-border": "#cf2222",
-      "status.info": "#3794ff",
-      "status.info-fg": "#042634",
-      "status.info-bg": "#10293d",
-      "status.info-border": "#0f8bc7",
-      "color.scrollbar-track": "rgba(0, 0, 0, 0.16)",
-      "color.scrollbar-thumb": "rgba(121, 121, 121, 0.4)",
-      "color.scrollbar-thumb-hover": "rgba(150, 150, 150, 0.7)",
-      "color.scrollbar-thumb-active": "rgba(180, 180, 180, 0.9)",
-      "color.scrollbar-shadow": "rgba(0, 0, 0, 0.36)",
-      "color.canvas-bg": "#141414",
-      "color.canvas-grid": "#2b2b2b",
-      "color.canvas-gizmo": "#9d9d9d",
-      "color.axis-x": "#ff3366",
-      "color.axis-y": "#33ff88",
-      "color.axis-z": "#3388ff",
-      "color.canvas-selection": "#f5a623",
-      "color.graph-node": "#3c3c3c",
-      "color.graph-edge": "#5a5a5a",
-      "color.graph-edge-dead": "#f14c4c",
-      "color.diff-added": "#1b3a24",
-      "color.diff-removed": "#3a1d1d",
-      "color.diff-changed": "#2e2a17",
-      "elevation.1": "0 1px 2px rgba(0, 0, 0, 0.4)",
-      "elevation.2": "0 2px 8px rgba(0, 0, 0, 0.5)",
-      "elevation.3": "0 8px 24px rgba(0, 0, 0, 0.6)",
-      "shadow.focus-ring": "0 0 0 1px #0078d4"
-    })
-  },
-  {
-    id: "modkit-light",
-    displayName: "Modkit Light",
-    appearance: "light",
-    isDefaultFor: "light",
-    values: Object.freeze({
-      ...rampValues(),
-      ...STRUCTURE,
-      ...CHART_LIGHT,
-      "color.bg": "#ffffff",
-      "color.surface": "#ffffff",
-      "color.raised": "#f8f8f8",
-      "color.sunken": "#f0f0f0",
-      "color.overlay": "#ffffff",
-      "color.scrim": "rgba(0, 0, 0, 0.3)",
-      "color.fg": "#3b3b3b",
-      "color.fg-muted": "#616161",
-      "color.fg-subtle": "#8b8b8b",
-      "color.fg-inverse": "#ffffff",
-      "color.fg-disabled": "#a6a6a6",
-      "color.fg-link": "#005fb8",
-      "color.fg-destructive": "#cf2222",
-      "color.border": "#e0e0e0",
-      "color.border-strong": "#c6c6c6",
-      "color.separator": "#ececec",
-      "color.accent": "#005fb8",
-      "color.accent-fg": "#ffffff",
-      "color.accent-muted": "#cfe4fa",
-      "color.accent-muted-fg": "#0a3d63",
-      "color.focus": "#005fb8",
-      "color.hover": "#e8e8e8",
-      "color.active": "#dcdcdc",
-      "color.selection": "#cfe4fa",
-      "color.selection-inactive": "#e4e6f1",
-      "color.selection-fg": "#1a1a1a",
-      "color.match-highlight": "#fdea9b",
-      "color.drop-target": "#005fb8",
-      "color.readonly": "#f5f5f5",
-      "status.ok": "#238636",
-      "status.ok-fg": "#0c3514",
-      "status.ok-bg": "#e6f5e9",
-      "status.ok-border": "#97d5a5",
-      "status.warn": "#9a6d00",
-      "status.warn-fg": "#3b2900",
-      "status.warn-bg": "#fcf3d8",
-      "status.warn-border": "#f0cf6e",
-      "status.error": "#cf2222",
-      "status.error-fg": "#400a0a",
-      "status.error-bg": "#fde8e8",
-      "status.error-border": "#f49b9b",
-      "status.info": "#0b6e9e",
-      "status.info-fg": "#042634",
-      "status.info-bg": "#e6f4fb",
-      "status.info-border": "#8ecdec",
-      "color.scrollbar-track": "rgba(0, 0, 0, 0.05)",
-      "color.scrollbar-thumb": "rgba(100, 100, 100, 0.4)",
-      "color.scrollbar-thumb-hover": "rgba(80, 80, 80, 0.6)",
-      "color.scrollbar-thumb-active": "rgba(60, 60, 60, 0.8)",
-      "color.scrollbar-shadow": "rgba(0, 0, 0, 0.12)",
-      "color.canvas-bg": "#f4f4f4",
-      "color.canvas-grid": "#e0e0e0",
-      "color.canvas-gizmo": "#616161",
-      "color.axis-x": "#c02047",
-      "color.axis-y": "#1f8f4d",
-      "color.axis-z": "#1f6fd0",
-      "color.canvas-selection": "#c96a00",
-      "color.graph-node": "#e0e0e0",
-      "color.graph-edge": "#9a9a9a",
-      "color.graph-edge-dead": "#cf2222",
-      "color.diff-added": "#e2f6e7",
-      "color.diff-removed": "#fbe6e6",
-      "color.diff-changed": "#fbf3d6",
-      "elevation.1": "0 1px 2px rgba(0, 0, 0, 0.12)",
-      "elevation.2": "0 2px 8px rgba(0, 0, 0, 0.16)",
-      "elevation.3": "0 8px 24px rgba(0, 0, 0, 0.2)",
-      "shadow.focus-ring": "0 0 0 1px #005fb8"
-    })
-  },
-  {
-    id: "modkit-high-contrast",
-    displayName: "Modkit High Contrast",
-    appearance: "dark",
-    values: Object.freeze({
-      ...rampValues({
-        neutral: [
-          "#ffffff",
-          "#ffffff",
-          "#e0e0e0",
-          "#c6c6c6",
-          "#9a9a9a",
-          "#6e6e6e",
-          "#4a4a4a",
-          "#333333",
-          "#1a1a1a",
-          "#000000"
-        ]
-      }),
-      ...STRUCTURE,
-      ...CHART_DARK,
-      "color.bg": "#000000",
-      "color.surface": "#000000",
-      "color.raised": "#0d0d0d",
-      "color.sunken": "#000000",
-      "color.overlay": "#000000",
-      "color.scrim": "rgba(0, 0, 0, 0.8)",
-      "color.fg": "#ffffff",
-      "color.fg-muted": "#ffffff",
-      "color.fg-subtle": "#d6d6d6",
-      "color.fg-inverse": "#000000",
-      "color.fg-disabled": "#a6a6a6",
-      "color.fg-link": "#3794ff",
-      "color.fg-destructive": "#f48771",
-      "color.border": "#6fc3df",
-      "color.border-strong": "#ffffff",
-      "color.separator": "#6fc3df",
-      "color.accent": "#0078d4",
-      "color.accent-fg": "#ffffff",
-      "color.accent-muted": "#000000",
-      "color.accent-muted-fg": "#ffffff",
-      "color.focus": "#f38518",
-      "color.hover": "#0d0d0d",
-      "color.active": "#1a1a1a",
-      "color.selection": "#000000",
-      "color.selection-inactive": "#000000",
-      "color.selection-fg": "#ffffff",
-      "color.match-highlight": "#000000",
-      "color.drop-target": "#f38518",
-      "color.readonly": "#0d0d0d",
-      "status.ok": "#89d185",
-      "status.ok-fg": "#000000",
-      "status.ok-bg": "#000000",
-      "status.ok-border": "#89d185",
-      "status.warn": "#ffd700",
-      "status.warn-fg": "#000000",
-      "status.warn-bg": "#000000",
-      "status.warn-border": "#ffd700",
-      "status.error": "#f48771",
-      "status.error-fg": "#000000",
-      "status.error-bg": "#000000",
-      "status.error-border": "#f48771",
-      "status.info": "#3794ff",
-      "status.info-fg": "#000000",
-      "status.info-bg": "#000000",
-      "status.info-border": "#3794ff",
-      "color.scrollbar-track": "#000000",
-      "color.scrollbar-thumb": "#6fc3df",
-      "color.scrollbar-thumb-hover": "#ffffff",
-      "color.scrollbar-thumb-active": "#f38518",
-      "color.scrollbar-shadow": "#6fc3df",
-      "color.canvas-bg": "#000000",
-      "color.canvas-grid": "#6fc3df",
-      "color.canvas-gizmo": "#ffffff",
-      "color.axis-x": "#ff6b8a",
-      "color.axis-y": "#4dff9e",
-      "color.axis-z": "#6bb6ff",
-      "color.canvas-selection": "#f38518",
-      "color.graph-node": "#000000",
-      "color.graph-edge": "#6fc3df",
-      "color.graph-edge-dead": "#f48771",
-      "color.diff-added": "#000000",
-      "color.diff-removed": "#000000",
-      "color.diff-changed": "#000000",
-      "elevation.1": "0 0 0 1px #6fc3df",
-      "elevation.2": "0 0 0 1px #6fc3df",
-      "elevation.3": "0 0 0 1px #ffffff",
-      "shadow.focus-ring": "0 0 0 2px #f38518"
-    })
-  }
-]);
-var PALETTES_BY_ID = new Map(
-  PALETTES.map((palette) => [palette.id, palette])
-);
-var THEME_ATTRIBUTE = "data-mk-theme";
-var DENSITY_ATTRIBUTE = "data-mk-density";
-function requireElement(value) {
-  if (typeof value !== "object" || value === null || !("style" in value) || typeof value.style !== "object") {
-    throw new TypeError("token target must be a DOM element");
-  }
-  return value;
-}
-function applyTheme(root, theme) {
-  const target = requireElement(root);
-  if (theme === void 0) target.removeAttribute(THEME_ATTRIBUTE);
-  else target.setAttribute(THEME_ATTRIBUTE, theme);
-}
-function applyDensity(root, density) {
-  requireElement(root).setAttribute(DENSITY_ATTRIBUTE, density);
+var WEB_WORKER_CRASHED = "x3.host/worker-crashed";
+function createWebSessionRecovery(options) {
+  let current = "healthy";
+  let restarting = false;
+  return Object.freeze({
+    state: () => current,
+    report(diagnostic2) {
+      if (diagnostic2.code !== WEB_WORKER_CRASHED) return;
+      current = "worker-unavailable";
+      options.onState(current, diagnostic2.message);
+    },
+    async restart() {
+      if (current !== "worker-unavailable" || restarting) return false;
+      if (options.hasUnsaved() && !options.confirmDiscard()) return false;
+      restarting = true;
+      try {
+        await options.restart();
+        return true;
+      } catch (error) {
+        restarting = false;
+        throw error;
+      }
+    }
+  });
 }
 
 // apps/web/src/settings.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var SETTINGS_STORAGE_KEY = "org.modkitx.app.web/settings";
 var EXTENSIONS_READ_ONLY_REASON = "this host has no enable/disable switch for an inventoried extension yet, so the settings extension list cannot be written here; add or remove your own extension folders in the Extensions panel instead";
 var WEB_THEMES = Object.freeze([
@@ -3562,7 +1805,7 @@ var SAMPLES = Object.freeze([
   { path: "./samples/sample.mp3", label: "sample.mp3 \u2014 one second of MP3 silence" },
   { path: "./samples/sample.zip", label: "sample.zip \u2014 container namespace" }
 ]);
-var describe3 = (error) => error instanceof Error ? error.message : String(error);
+var describe2 = (error) => error instanceof Error ? error.message : String(error);
 function requireRoot() {
   const node = document.querySelector("#root");
   if (node === null) throw new Error("missing #root");
@@ -3630,8 +1873,18 @@ async function fetchServed(baseUrl, path) {
 async function boot() {
   const probe = probeWebFacilities();
   const baseUrl = new URL("./", document.baseURI);
+  const pageUrl = new URL(window.location.href);
+  const locale = resolveUiLocale(pageUrl.searchParams.get("lang") ?? navigator.languages);
+  const localizer = createUiLocalizer(locale);
+  const t = localizer.text;
+  document.documentElement.lang = locale;
+  document.title = t("app.title");
+  const booting = document.querySelector(".booting");
+  if (booting !== null) setViewerText(booting, t("app.starting"));
   const capability = describeFileCapability(window);
   const bootDiagnostics = [];
+  const bootSessionDiagnostics = [];
+  const recoveryHost = {};
   const extensionStore = createIndexedDbExtensionStore(indexedDB);
   const subtle = {
     digest: (algorithm, data) => crypto.subtle.digest(algorithm, data)
@@ -3676,9 +1929,12 @@ async function boot() {
     },
     onDiagnostic: (diagnostic2) => {
       bootDiagnostics.push(`${diagnostic2.code}: ${diagnostic2.message}`);
+      bootSessionDiagnostics.push({ code: diagnostic2.code, message: diagnostic2.message });
+      recoveryHost.current?.report(diagnostic2);
       console.info(`[worker] ${diagnostic2.severity} ${diagnostic2.code}: ${diagnostic2.message}`);
     }
   });
+  window.addEventListener("pagehide", () => void services.dispose(), { once: true });
   host.services = services;
   await extensionsUi.reload();
   const workbench = mountWebWorkbench(
@@ -3689,13 +1945,21 @@ async function boot() {
       main: services.main,
       worker: services.worker
     },
-    "Modkit MK3"
+    t("app.title")
   );
   const statusLine = document.createElement("output");
   statusLine.className = "web-status";
-  workbench.root.querySelector('[data-mk-part="workbench.statusbar"]')?.append(statusLine);
+  const restartSession = document.createElement("button");
+  restartSession.className = "web-session-restart";
+  restartSession.type = "button";
+  restartSession.hidden = true;
+  restartSession.textContent = t("action.restartSession");
+  restartSession.title = t("action.restartSessionTitle");
+  workbench.root.querySelector('[data-mk-part="workbench.statusbar"]')?.append(statusLine, restartSession);
   const say = (message) => setViewerText(statusLine, message, 400);
   const operationSessions = /* @__PURE__ */ new Map();
+  const assetSessions = /* @__PURE__ */ new Map();
+  const pendingNested = /* @__PURE__ */ new Map();
   const inspected = /* @__PURE__ */ new Map();
   const entryOfDescriptor = /* @__PURE__ */ new Map();
   const openedEntries = /* @__PURE__ */ new Map();
@@ -3753,7 +2017,7 @@ async function boot() {
   const editability = /* @__PURE__ */ new Map();
   const editingStatus = document.createElement("p");
   setPart(editingStatus, "settings.status");
-  setViewerText(editingStatus, "No file is open yet, so nothing is editable.");
+  setViewerText(editingStatus, t("status.noFileEditable"));
   const noteEditing = (message) => setViewerText(editingStatus, message, 400);
   let markDirty = () => void 0;
   let focused;
@@ -3782,8 +2046,54 @@ async function boot() {
     }
   });
   let openCount = 0;
+  const nestedEntryId = (containerKey, entryPath) => `x3-nested:${containerKey}#${entryPath}`;
   const stages = createWebPreviewStages({
-    operationsFor: (descriptor) => operationSessions.get(descriptorKey(descriptor))
+    operationsFor: (descriptor) => operationSessions.get(descriptorKey(descriptor)),
+    /*
+     * The web half of `block9/archive-entry-as-subject` (block 13 slice B).
+     *
+     * Electron reached this route from its composition and VS Code reached it from its Explorer;
+     * this page reached it from nowhere, and its archive stage settled for a hex pane. The route is
+     * the host's, unchanged: the parent container stays open and leased for as long as the child
+     * lives, so a model inside an archive finds its texture inside that same archive rather than
+     * through a file this browser could not open anyway.
+     */
+    async openNestedEntry(descriptor, entryId, entryPath) {
+      const key = descriptorKey(descriptor);
+      const parent = assetSessions.get(key);
+      if (parent === void 0) return "The session that opened this container is no longer held.";
+      const nested = await openNestedSubject({
+        parent,
+        entryId,
+        ...nestedSubjectServices(services),
+        grant: { id: `pwa-nested-${openCount}`, classes: ["read-source"] },
+        budget: {
+          maxInputBytes: BigInt(EXPLORER_MAXIMUM_BYTES),
+          maxDepth: 256,
+          maxNodes: 1e6,
+          maxScalarBytes: 64 * 1024 * 1024,
+          maxDiagnostics: 1e4,
+          deadlineMs: 3e4
+        }
+      });
+      if (nested.result.state !== "opened") {
+        return `${entryPath} \u2014 no codec claimed it inside this container (${nested.result.reason}).`;
+      }
+      const operations = operationSessions.get(key);
+      const extract = descriptor.operations.find(
+        (operation) => operation.state === "available" && !operation.mutatesSource && operation.id === CONTAINER_EXTRACT_OPERATION_ID
+      );
+      let bytes = new Uint8Array();
+      if (operations !== void 0 && extract !== void 0) {
+        const read = await operations.invoke(extract.handlerId, { entryId }, {});
+        if (read.state === "ok" && read.output.kind === "bytes") bytes = read.output.value.slice();
+      }
+      const id = nestedEntryId(key, entryPath);
+      const label = entryPath.slice(entryPath.lastIndexOf("/") + 1);
+      pendingNested.set(id, { result: nested.result, bytes, label });
+      await editors.open({ id, name: label, directory: false });
+      return void 0;
+    }
   });
   const previewBase = {
     supported: services.supportedExtensions,
@@ -3797,24 +2107,67 @@ async function boot() {
         id: `pwa-${openCount}`,
         classes: writable ? ["read-source", "write-source"] : ["read-source"]
       };
-      const result = await services.open({
+      const budget = {
+        maxInputBytes: BigInt(EXPLORER_MAXIMUM_BYTES),
+        maxDepth: 256,
+        maxNodes: 1e6,
+        maxScalarBytes: 64 * 1024 * 1024,
+        maxDiagnostics: 1e4,
+        deadlineMs: 3e4
+      };
+      const nested = pendingNested.get(entry.id);
+      if (nested !== void 0) pendingNested.delete(entry.id);
+      const ordinary = nested?.result ?? await services.open({
         source: bytesSource(entry.id, bytes, token),
         path: entry.name,
         intent: "full",
         grant,
-        budget: {
-          maxInputBytes: BigInt(EXPLORER_MAXIMUM_BYTES),
-          maxDepth: 256,
-          maxNodes: 1e6,
-          maxScalarBytes: 64 * 1024 * 1024,
-          maxDiagnostics: 1e4,
-          deadlineMs: 3e4
-        },
+        budget,
         ...signal === void 0 ? {} : { signal }
       });
-      if (result.state === "unresolved") {
-        say(`${entry.name} \u2014 no codec claimed it (${result.reason}); showing the raw bytes.`);
+      if (ordinary.state === "unresolved") {
+        say(`${entry.name} \u2014 no codec claimed it (${ordinary.reason}); showing the raw bytes.`);
         return void 0;
+      }
+      let mapPreview = await prepareWebMapPreview({
+        services,
+        opened: ordinary,
+        grant,
+        budgets: budget,
+        ...signal === void 0 ? {} : { signal }
+      });
+      if (mapPreview.state === "selection-required") {
+        const choice = window.prompt(
+          `Choose a map for the World view by entering its id:
+
+${mapPreview.candidates.map(
+            (candidate) => `${candidate.candidateId} \u2014 ${candidate.displayName}${candidate.sourcePath === void 0 ? "" : ` (${candidate.sourcePath})`}`
+          ).join("\n")}`,
+          ""
+        );
+        const selected = mapPreview.candidates.find(
+          (candidate) => candidate.candidateId === choice?.trim()
+        );
+        if (selected !== void 0) {
+          mapPreview = await prepareWebMapPreview({
+            services,
+            opened: ordinary,
+            grant,
+            budgets: budget,
+            selectionId: selected.candidateId,
+            ...signal === void 0 ? {} : { signal }
+          });
+        }
+      }
+      const result = mapPreview.opened;
+      if (mapPreview.state === "permission-required") {
+        say(
+          `${entry.name} \u2014 map preview needs installation resources the browser cannot search; the ordinary archive view remains open.`
+        );
+      } else if (mapPreview.state === "selection-required") {
+        say(
+          `${entry.name} \u2014 map preview needs a choice (${mapPreview.candidates.map((candidate) => candidate.displayName).join(", ")}); the ordinary archive view remains open.`
+        );
       }
       const boundary = result.diagnostics.some(
         (item) => item.code === "x3.host/worker-shared-process"
@@ -3824,19 +2177,55 @@ async function boot() {
       );
       const session = result.session;
       const key = descriptorKey(result.descriptor);
+      const presentation = await resolveCommonPresentationPlan(
+        result.descriptor,
+        {
+          sessionId: `pwa:${key}`,
+          providerId: result.selected.contributionId,
+          variantId: result.selected.variantId
+        },
+        { availableStageIds: stages.map(stageIdOf) }
+      );
       const operations = session.operations();
+      let commandAuthority;
+      if (nested === void 0 && access?.handleOf(entry.id) !== void 0) {
+        try {
+          commandAuthority = services.commands.authorize({
+            access,
+            entry,
+            request: { intent: "full", grant, budget }
+          });
+        } catch (error) {
+          say(`${entry.name} \u2014 shared commands unavailable: ${String(error)}`);
+        }
+      }
       operationSessions.set(key, operations);
+      assetSessions.set(key, result.session);
       openedEntries.set(entry.id, entry);
       entryOfDescriptor.set(key, entry.id);
+      let releaseWriter;
       if (writable) {
+        const writerResolution = await resolveFormatWriter({
+          services: services.main,
+          opened: result,
+          grant,
+          budgets: budget
+        });
+        writerResolution.diagnostics.forEach((item) => say(`${entry.name} \u2014 ${item.message}`));
+        releaseWriter = writerResolution.release;
         const editor = editing.editorFor({
           entryId: entry.id,
           name: entry.name,
           opened: result,
           grant,
-          bytes
+          bytes,
+          ...writerResolution.writer === void 0 ? {} : { writer: writerResolution.writer }
         });
         if (editor !== void 0) subjectEditors.set(entry.id, editor);
+        else {
+          await releaseWriter?.();
+          releaseWriter = void 0;
+        }
       }
       const decision = editability.get(entry.id);
       inspected.set(entry.id, {
@@ -3849,16 +2238,20 @@ async function boot() {
       inspecting = void 0;
       inspect(entry.id);
       return {
+        ...presentation === void 0 ? {} : { presentation: presentation.plan },
         descriptor: () => session.descriptor(),
         dataSource: (contract, major) => session.dataSource(contract, major),
         async dispose() {
           operationSessions.delete(key);
+          assetSessions.delete(key);
           entryOfDescriptor.delete(key);
           inspected.delete(entry.id);
           openedEntries.delete(entry.id);
           subjectEditors.delete(entry.id);
           writableHandles.delete(sourceUriFor(entry.id));
+          commandAuthority?.revoke();
           if (inspecting === entry.id) inspect(void 0);
+          await releaseWriter?.();
           await session.dispose();
         }
       };
@@ -3893,6 +2286,8 @@ async function boot() {
       return window.confirm(`${entry.name} has unsaved changes. Close the tab and discard them?`) ? "discard" : "cancel";
     },
     async read(entry, signal) {
+      const nested = pendingNested.get(entry.id);
+      if (nested !== void 0) return nested.bytes;
       if (access === void 0) throw new Error("no folder or file is open");
       const snapshot = await access.snapshotOf(entry.id, signal);
       if (snapshot === void 0) pinnedRevisions.delete(entry.id);
@@ -3912,6 +2307,21 @@ async function boot() {
     }
   });
   markDirty = (entryId, dirty) => editors.markDirty(entryId, dirty);
+  const recovery = createWebSessionRecovery({
+    hasUnsaved: () => editors.hasUnsaved(),
+    confirmDiscard: () => window.confirm(t("confirm.discardAndRestart")),
+    restart: async () => {
+      await services.dispose();
+      window.location.reload();
+    },
+    onState: (state) => {
+      restartSession.hidden = state !== "worker-unavailable";
+      if (state === "worker-unavailable") say(t("status.workerUnavailable"));
+    }
+  });
+  recoveryHost.current = recovery;
+  for (const diagnostic2 of bootSessionDiagnostics) recovery.report(diagnostic2);
+  restartSession.addEventListener("click", () => void recovery.restart());
   editors.root.addEventListener("input", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement) || target.dataset["mkPart"] !== "editor.text") return;
@@ -3953,28 +2363,24 @@ async function boot() {
     await explorer.setAccess(picked.access);
     await editors.open(picked.entry);
   }
-  toolbarAction("Open file\u2026", "Open a single file in a new tab", () => {
+  toolbarAction(t("action.openFile"), t("action.openFileTitle"), () => {
     void (async () => {
       try {
         const picked = await pickFile();
         if (picked !== void 0) await openFile(picked.file, picked.handle);
       } catch (error) {
-        say(`Could not open the file: ${describe3(error)}`);
+        say(t("error.openFile", { reason: describe2(error) }));
       }
     })();
   });
-  toolbarAction("Split editor", "Open the next file beside this one", () => editors.split());
-  toolbarAction(
-    "Enable editing",
-    "Ask this browser for permission to write the file or folder you picked",
-    () => {
-      void (async () => {
-        const asked = await requestWriteAccess(access);
-        say(asked.sentence);
-        noteEditing(asked.sentence);
-      })();
-    }
-  );
+  toolbarAction(t("action.splitEditor"), t("action.splitEditorTitle"), () => editors.split());
+  toolbarAction(t("action.enableEditing"), t("action.enableEditingTitle"), () => {
+    void (async () => {
+      const asked = await requestWriteAccess(access);
+      say(asked.sentence);
+      noteEditing(asked.sentence);
+    })();
+  });
   const stopEvent = (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -3993,7 +2399,7 @@ async function boot() {
     setState(editors.root, []);
     const file = event.dataTransfer?.files[0];
     if (file === void 0) return;
-    void openFile(file).catch((error) => say(`Drop failed: ${describe3(error)}`));
+    void openFile(file).catch((error) => say(t("error.drop", { reason: describe2(error) })));
   });
   const store = createWebSettingsStore(window.localStorage);
   const settingsUi = createSettingsUi(document, {
@@ -4009,10 +2415,13 @@ async function boot() {
   function bundledExtensionsSection() {
     const section = document.createElement("section");
     section.className = "web-extensions";
-    element(section, "h2", { text: "Bundled extensions" });
+    element(section, "h2", { text: t("settings.bundled") });
     element(section, "p", {
       part: "settings.description",
-      text: `${WEB_EXTENSION_CATALOG.extensions.length} extensions were attested at build time and are served from this origin under extensions/. They are listed read-only because ${EXTENSIONS_READ_ONLY_REASON}.`
+      text: t("settings.bundledDescription", {
+        count: WEB_EXTENSION_CATALOG.extensions.length,
+        reason: EXTENSIONS_READ_ONLY_REASON
+      })
     });
     const list = element(section, "div", { part: "settings.list" });
     for (const entry of WEB_EXTENSION_CATALOG.extensions) {
@@ -4022,7 +2431,7 @@ async function boot() {
       element(text, "div", { part: "settings.description", text: entry.artifactRoot });
     }
     if (WEB_EXTENSION_CATALOG.excluded.length > 0) {
-      element(section, "h2", { text: "Bundled but not served here" });
+      element(section, "h2", { text: t("settings.bundledExcluded") });
       const excluded = element(section, "div", { part: "settings.list" });
       for (const entry of WEB_EXTENSION_CATALOG.excluded) {
         const item = element(excluded, "div", { part: "settings.extension" });
@@ -4039,20 +2448,26 @@ async function boot() {
   await settingsUi.reload();
   const sidebar = document.createElement("div");
   sidebar.className = "web-host-panel";
-  element(sidebar, "h2", { text: "Host" });
+  element(sidebar, "h2", { text: t("sidebar.host") });
   element(sidebar, "p", {
     part: "settings.description",
-    text: `${services.main.inventory.extensions.length} extensions \xB7 ${services.supportedExtensions.length} detectable types \xB7 codecs run ${services.executionProfiles.join("/")} in ${services.worker.profile.realmId} \xB7 shared memory ${probe.sharedMemory ? "yes" : "no"}`
+    text: t("sidebar.hostSummary", {
+      extensions: services.main.inventory.extensions.length,
+      types: services.supportedExtensions.length,
+      profiles: services.executionProfiles.join("/"),
+      realm: services.worker.profile.realmId,
+      sharedMemory: t(probe.sharedMemory ? "common.yes" : "common.no")
+    })
   });
   element(sidebar, "p", { part: "settings.description", text: capability.notice });
   element(sidebar, "p", { part: "settings.description", text: WEB_EDITING_NOTICE });
   sidebar.append(editingStatus);
-  element(sidebar, "h2", { text: "Facilities" });
+  element(sidebar, "h2", { text: t("sidebar.facilities") });
   const facilities = element(sidebar, "ul", { part: "settings.list" });
   for (const facility of services.main.profile.facilities) {
     element(facilities, "li", { text: facility });
   }
-  element(sidebar, "h2", { text: "Served samples" });
+  element(sidebar, "h2", { text: t("sidebar.samples") });
   const sampleList = element(sidebar, "div", { part: "settings.list" });
   for (const sample of SAMPLES) {
     const button2 = element(sampleList, "button", {
@@ -4061,9 +2476,26 @@ async function boot() {
     });
     button2.type = "button";
     button2.addEventListener("click", () => {
-      void openServed(sample.path).catch((error) => say(describe3(error)));
+      void openServed(sample.path).catch((error) => say(describe2(error)));
     });
   }
+  element(sidebar, "h2", { text: t("sidebar.language") });
+  const localePicker = element(sidebar, "select", {
+    part: "settings.select"
+  });
+  for (const candidate of ["en", "ru"]) {
+    const option = document.createElement("option");
+    option.value = candidate;
+    setViewerText(option, t(`locale.${candidate}`));
+    localePicker.append(option);
+  }
+  localePicker.value = locale;
+  localePicker.setAttribute("aria-label", t("sidebar.language"));
+  localePicker.addEventListener("change", () => {
+    const target = new URL(window.location.href);
+    target.searchParams.set("lang", localePicker.value);
+    window.location.assign(target.href);
+  });
   workbench.setSidebar(sidebar);
   let activeView = "explorer";
   function showView(name) {
@@ -4084,32 +2516,34 @@ async function boot() {
     button2.addEventListener("click", run);
     workbench.activitybar.append(button2);
   };
-  activity("Files", "Explorer", () => showView("explorer"), "explorer");
-  activity("Host", "Show or hide the host panel", () => {
+  activity(t("activity.files"), t("activity.explorer"), () => showView("explorer"), "explorer");
+  activity(t("activity.host"), t("activity.hostTitle"), () => {
     workbench.sidebar.hidden = !workbench.sidebar.hidden;
   });
-  activity("Info", "Show or hide diagnostics and operations", () => {
+  activity(t("activity.info"), t("activity.infoTitle"), () => {
     workbench.panel.hidden = !workbench.panel.hidden;
   });
-  activity("Settings", "Settings", () => showView("settings"), "settings");
+  activity(t("activity.settings"), t("activity.settings"), () => showView("settings"), "settings");
   workbench.panel.hidden = true;
   workbench.sidebar.hidden = false;
   showView("explorer");
   await inspector.show(void 0);
   say(
-    `Ready \xB7 ${services.main.inventory.extensions.length} extensions \xB7 ${bootDiagnostics.length} boot notice(s)`
+    t("status.ready", {
+      extensions: services.main.inventory.extensions.length,
+      notices: bootDiagnostics.length
+    })
   );
   async function openServed(path) {
     const file = await fetchServed(baseUrl, path);
     if (file === void 0) {
-      say(`${path} could not be fetched from this origin.`);
+      say(t("error.fetch", { path }));
       return;
     }
     if (activeView !== "explorer") showView("explorer");
     await openFile(file);
   }
-  const query = new URL(window.location.href).searchParams;
-  const requested = query.get("open");
+  const requested = pageUrl.searchParams.get("open");
   if (requested !== null) await openServed(requested);
   async function probeEditing(log) {
     const encoder = new TextEncoder();
@@ -4276,20 +2710,20 @@ async function boot() {
       }
     }
   }
-  if (query.get("selftest") !== null) {
+  if (pageUrl.searchParams.get("selftest") !== null) {
     await selfTest({ openServed, editors, settingsView, inspector, probeEditing });
   }
 }
 async function selfTest(parts) {
-  const report2 = document.createElement("pre");
-  setPart(report2, "viewer.status");
-  report2.className = "web-selftest";
-  document.body.append(report2);
+  const report = document.createElement("pre");
+  setPart(report, "viewer.status");
+  report.className = "web-selftest";
+  document.body.append(report);
   const lines = [];
   const log = (line) => {
     console.info(line);
     lines.push(line);
-    report2.textContent = lines.join("\n");
+    report.textContent = lines.join("\n");
   };
   const picker = () => {
     const node = parts.editors.root.querySelector('[data-mk-part="explorer.viewpicker"]');
@@ -4317,7 +2751,7 @@ async function selfTest(parts) {
       }
       log(`selftest: ${name} -> views [${views.join(", ")}] mounted=${mounted}`);
     } catch (error) {
-      log(`selftest: ${name} -> FAILED ${describe3(error)}`);
+      log(`selftest: ${name} -> FAILED ${describe2(error)}`);
     }
   }
   const tabs = parts.editors.root.querySelectorAll('[data-mk-part="explorer.filetab"]').length;
@@ -4338,7 +2772,7 @@ async function selfTest(parts) {
   try {
     await parts.probeEditing(log);
   } catch (error) {
-    log(`selftest: editing probe FAILED ${describe3(error)}`);
+    log(`selftest: editing probe FAILED ${describe2(error)}`);
   }
   for (const theme of WEB_THEMES) {
     document.documentElement.setAttribute("data-mk-theme", theme.id);
@@ -4361,6 +2795,6 @@ boot().then(registerServiceWorker).catch((error) => {
   node.replaceChildren();
   const failure = document.createElement("p");
   failure.className = "booting";
-  failure.textContent = `Boot failed: ${describe3(error)}`;
+  failure.textContent = `Boot failed: ${describe2(error)}`;
   node.append(failure);
 });

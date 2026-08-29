@@ -252,9 +252,35 @@ describe('NXT-103 — standard data-source surfaces', () => {
     expect(STANDARD_DATA_SOURCE_SURFACES['common.view/byte-range-source'].methods['size']).toEqual({
       kind: 'value',
     })
+    expect(STANDARD_DATA_SOURCE_SURFACES['common.view/table-data-source'].methods['cell']).toEqual({
+      kind: 'value',
+      signal: 'last',
+    })
     expect(STANDARD_DATA_SOURCE_SURFACES['common.view/world-scene-source'].methods).toEqual({
       info: { kind: 'value', signal: 'last' },
       page: { kind: 'value', signal: 'last' },
+    })
+    expect(
+      STANDARD_DATA_SOURCE_SURFACES['common.view/subject-calculations-source'].methods,
+    ).toEqual({
+      summary: { kind: 'value', signal: 'last' },
+      calculations: { kind: 'value', signal: 'last' },
+    })
+    expect(STANDARD_DATA_SOURCE_SURFACES['common.view/subject-selector-source'].methods).toEqual({
+      summary: { kind: 'value', signal: 'last' },
+      subjects: { kind: 'value', signal: 'last' },
+      openFacts: {
+        kind: 'lease',
+        result: { contract: contractId('common.view/subject-facts-source'), major: 1 },
+        wrapper: 'lease',
+        signal: 'last',
+      },
+      openCalculations: {
+        kind: 'lease',
+        result: { contract: contractId('common.view/subject-calculations-source'), major: 1 },
+        wrapper: 'lease',
+        signal: 'last',
+      },
     })
   })
 
@@ -270,6 +296,8 @@ describe('NXT-103 — standard data-source surfaces', () => {
     expect(ADMITTED_DATA_SOURCE_CONTRACTS).not.toContain('common.view/slide-deck-source')
     expect(dataSourceMaturity('common.view/world-scene-source')).toBe('publisher-candidate')
     expect(ADMITTED_DATA_SOURCE_CONTRACTS).not.toContain('common.view/world-scene-source')
+    expect(dataSourceMaturity('common.view/subject-calculations-source')).toBe('admitted')
+    expect(ADMITTED_DATA_SOURCE_CONTRACTS).toContain('common.view/subject-calculations-source')
     /*
      * ODP-only slides, M3-only sockets and the not-yet-frozen common world surface remain
      * candidates. Skeleton was promoted only after M3 supplied an independent Blizzard publisher
@@ -282,9 +310,10 @@ describe('NXT-103 — standard data-source surfaces', () => {
     ).toEqual([
       'common.view/world-scene-source',
       'common.view/model-socket-source',
+      'common.view/subject-selector-source',
       'common.view/slide-deck-source',
     ])
-    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 3)
+    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 4)
     // the base model contract is untouched: a facet beside a contract is not a change to it
     expect(dataSourceMaturity('common.view/model-scene-source')).toBe('admitted')
     for (const contract of ADMITTED_DATA_SOURCE_CONTRACTS) {

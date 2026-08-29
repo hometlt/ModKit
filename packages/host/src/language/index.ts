@@ -164,10 +164,65 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
     matching: Object.freeze({ profile: LANGUAGE_DOCUMENT_MATCHER_PROFILE, major: 1 }),
     conformanceProfile: 'common.language/document-analysis-v1',
     surface: Object.freeze({
-      fields: Object.freeze(['contract', 'languageIds']),
+      fields: Object.freeze(['contract', 'languageIds', 'workspaceLanguageIds']),
       methods: Object.freeze({
         analyze: Object.freeze({
           kind: 'value',
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        completion: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        hover: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        signatureHelp: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        definition: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        references: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        prepareRename: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        rename: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        formatting: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        documentSymbols: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        workspaceSymbols: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        diagnostics: Object.freeze({
+          kind: 'value',
+          optional: true,
           signal: Object.freeze({ arg: 0, key: 'signal' }),
         }),
       }),
@@ -223,10 +278,17 @@ export type LanguageProviderResolution =
 
 function isLanguageProvider(value: unknown): value is LanguageProvider {
   const record = recordOf(value)
+  const workspaceLanguageIds = record?.['workspaceLanguageIds']
   return (
     record?.['contract'] === LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT &&
     Array.isArray(record['languageIds']) &&
     record['languageIds'].every(item => typeof item === 'string') &&
+    (workspaceLanguageIds === undefined ||
+      (Array.isArray(workspaceLanguageIds) &&
+        workspaceLanguageIds.length > 0 &&
+        workspaceLanguageIds.length <= 16 &&
+        workspaceLanguageIds.every(item => typeof item === 'string' && item.trim().length > 0) &&
+        new Set(workspaceLanguageIds).size === workspaceLanguageIds.length)) &&
     typeof record['analyze'] === 'function'
   )
 }
@@ -334,9 +396,16 @@ export {
   createLanguageWorkspace,
   languageProviderRoutes,
   LANGUAGE_ANALYSIS_INVALID,
+  LANGUAGE_DEFAULT_MAX_DOCUMENTS,
+  LANGUAGE_DEFAULT_MAX_EDITS,
+  LANGUAGE_DEFAULT_MAX_RESULTS,
   LANGUAGE_DOCUMENT_ALREADY_OPEN,
   LANGUAGE_DOCUMENT_CHANGE_INVALID,
   LANGUAGE_DOCUMENT_NOT_OPEN,
+  LANGUAGE_FEATURE_INVALID,
+  LANGUAGE_MAX_DOCUMENTS,
+  LANGUAGE_MAX_EDITS,
+  LANGUAGE_MAX_RESULTS,
   LANGUAGE_PROVIDER_FAILED,
   LANGUAGE_WORKSPACE_NOT_INITIALIZED,
   LANGUAGE_WORKSPACE_SHUT_DOWN,
@@ -344,5 +413,10 @@ export {
   type LanguageWorkspace,
   type LanguageWorkspaceAnalysisResult,
   type LanguageWorkspaceDocumentRequest,
+  type LanguageWorkspaceFeatureRequest,
   type LanguageWorkspaceOptions,
+  type LanguageWorkspacePositionRequest,
+  type LanguageWorkspaceReferencesRequest,
+  type LanguageWorkspaceRenameRequest,
+  type LanguageWorkspaceSymbolsRequest,
 } from './workspace.js'

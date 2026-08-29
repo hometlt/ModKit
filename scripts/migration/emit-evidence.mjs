@@ -33,6 +33,19 @@ const check = process.argv.includes('--check')
 const rawDir = path.join(repoRoot, 'reports', 'evidence', 'raw')
 const outPath = path.join(repoRoot, 'migration', 'generated', 'evidence.json')
 
+const canonicalTestPath = value => {
+  const portable = value.replaceAll('\\', '/')
+  const mirrors = [
+    ['/modkit-warzone/', 'extensions/opensource/warzone-2100/'],
+    ['/modkit-blizzard/', 'extensions/blizzard/'],
+  ]
+  for (const [marker, canonicalRoot] of mirrors) {
+    const markerIndex = portable.lastIndexOf(marker)
+    if (markerIndex !== -1) return `${canonicalRoot}${portable.slice(markerIndex + marker.length)}`
+  }
+  return portable
+}
+
 if (!existsSync(rawDir)) {
   process.stderr.write(
     'evidence: no reports/evidence/raw — run `pnpm test` first; declarations are written by the suites themselves\n',
@@ -87,7 +100,10 @@ for (const name of readdirSync(rawDir).sort()) {
       const record = {
         capabilityId,
         operation: raw.operation,
-        test: raw.test,
+        // Standalone game repositories mirror their sources into this tree. Evidence belongs to
+        // the canonical Product-GA row, so the same assertion must not become a second proof just
+        // because it also ran from the sibling repository checkout.
+        test: canonicalTestPath(raw.test),
         ...(raw.contributionId === undefined ? {} : { contributionId: raw.contributionId }),
         ...(raw.note === undefined ? {} : { note: raw.note }),
       }

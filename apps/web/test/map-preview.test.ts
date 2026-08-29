@@ -64,11 +64,11 @@ describe('Web map preview binding', () => {
     expect(MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY).toEqual({
       locales: ['enUS'],
       limits: {
-        maxRequirements: 64,
-        maxDocumentBytes: 4_194_304,
-        maxTextBytes: 16_777_216,
+        maxRequirements: 512,
+        maxDocumentBytes: 16_777_216,
+        maxTextBytes: 268_435_456,
         maxEntities: 100_000,
-        maxDepth: 64,
+        maxDepth: 128,
         maxPageSize: 1_000,
       },
     })

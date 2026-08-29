@@ -28,6 +28,9 @@ export const STAGE_ORDER: readonly string[] = Object.freeze([
   'audio',
   'video',
   'archive',
+  'template',
+  'card',
+  'calculations',
   'table',
   'tree',
   'relations',
@@ -51,12 +54,14 @@ export const EDITABLE_STAGE_IDS: readonly string[] = Object.freeze([
 export interface StageFacts {
   readonly id?: string
   readonly label: string
-  readonly contract: string
+  readonly contract?: string
+  readonly operation?: string
   readonly trait?: string
   readonly editable?: boolean
 }
 
-export const stageIdOf = (stage: StageFacts): string => stage.id ?? stage.contract
+export const stageIdOf = (stage: StageFacts): string =>
+  stage.id ?? stage.contract ?? stage.operation ?? 'invalid-stage'
 
 /** Data sources the descriptor publishes, as plain contract names. */
 export function publishedContracts(descriptor: Record<string, unknown>): readonly string[] {
@@ -127,11 +132,17 @@ export function applicableStages<Stage extends StageFacts>(
   options: { readonly editorPorts?: boolean } = {},
 ): readonly Stage[] {
   const published = new Set(publishedContracts(descriptor))
+  const operations = new Set(
+    descriptorOperations(descriptor)
+      .filter(operation => operation.state === 'available')
+      .map(operation => operation.id),
+  )
   const traits = new Set(descriptorTraits(descriptor))
   return Object.freeze(
     stages.filter(
       stage =>
-        published.has(stage.contract) &&
+        (stage.contract === undefined || published.has(stage.contract)) &&
+        (stage.operation === undefined || operations.has(stage.operation)) &&
         (stage.trait === undefined || traits.has(stage.trait)) &&
         (stage.editable !== true || options.editorPorts === true),
     ),

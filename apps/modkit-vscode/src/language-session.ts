@@ -15,11 +15,22 @@ import {
 } from '@modkitx-x3/core'
 import type {
   LanguageDiagnostic,
+  LanguageDiagnosticList,
+  LanguageCompletionList,
   LanguageDocument,
+  LanguageFormattingOptions,
+  LanguageHover,
+  LanguageLocationList,
+  LanguagePosition,
   LanguageRange,
+  LanguageRenamePreparation,
+  LanguageSignatureHelp,
   LanguageSymbol,
   LanguageSymbolKind,
   LanguageTokenKind,
+  LanguageTextEditList,
+  LanguageWorkspaceEdit,
+  LanguageWorkspaceSymbolList,
 } from '@modkitx-x3/sdk/language'
 import type {
   LanguageProviderRoute,
@@ -113,12 +124,66 @@ export interface LanguageSessionController {
     document: EditorLanguageDocument,
     signal?: AbortSignal,
   ): Promise<readonly EditorDocumentSymbol[] | undefined>
+  completion(
+    document: EditorLanguageDocument,
+    position: LanguagePosition,
+    signal?: AbortSignal,
+  ): Promise<LanguageCompletionList | undefined>
+  hover(
+    document: EditorLanguageDocument,
+    position: LanguagePosition,
+    signal?: AbortSignal,
+  ): Promise<LanguageHover | undefined>
+  signatureHelp(
+    document: EditorLanguageDocument,
+    position: LanguagePosition,
+    signal?: AbortSignal,
+  ): Promise<LanguageSignatureHelp | undefined>
+  definition(
+    document: EditorLanguageDocument,
+    position: LanguagePosition,
+    signal?: AbortSignal,
+  ): Promise<LanguageLocationList | undefined>
+  references(
+    document: EditorLanguageDocument,
+    position: LanguagePosition,
+    includeDeclaration: boolean,
+    signal?: AbortSignal,
+  ): Promise<LanguageLocationList | undefined>
+  prepareRename(
+    document: EditorLanguageDocument,
+    position: LanguagePosition,
+    signal?: AbortSignal,
+  ): Promise<LanguageRenamePreparation | undefined>
+  rename(
+    document: EditorLanguageDocument,
+    position: LanguagePosition,
+    newName: string,
+    signal?: AbortSignal,
+  ): Promise<LanguageWorkspaceEdit | undefined>
+  formatting(
+    document: EditorLanguageDocument,
+    formatting: LanguageFormattingOptions,
+    signal?: AbortSignal,
+  ): Promise<LanguageTextEditList | undefined>
+  workspaceSymbols(
+    query: string,
+    signal?: AbortSignal,
+  ): Promise<LanguageWorkspaceSymbolList | undefined>
+  diagnostics(
+    document: EditorLanguageDocument,
+    signal?: AbortSignal,
+  ): Promise<LanguageDiagnosticList | undefined>
   semanticTokens(
     document: EditorLanguageDocument,
     signal?: AbortSignal,
   ): Promise<readonly EditorSemanticToken[] | undefined>
   shutdown(): Promise<void>
 }
+
+const EDITOR_MAX_RESULTS = 512
+const EDITOR_MAX_DOCUMENTS = 64
+const EDITOR_MAX_EDITS = 4_096
 
 interface Selection {
   readonly state: 'selected'
@@ -507,7 +572,197 @@ export function createLanguageSessionController(
       signal?: AbortSignal,
     ): Promise<readonly EditorDocumentSymbol[] | undefined> {
       const result = await ensure(document, signal)
-      return result === undefined ? undefined : Object.freeze(result.analysis.symbols.map(symbolOf))
+      if (result === undefined) return undefined
+      const semantic = await options.workspace.documentSymbols({
+        uri: document.uri,
+        documentVersion: document.version,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        ...(signal === undefined ? {} : { signal }),
+      })
+      const symbols = semantic?.symbols ?? result.analysis.symbols
+      return Object.freeze(symbols.map(symbolOf))
+    },
+
+    async completion(
+      document: EditorLanguageDocument,
+      position: LanguagePosition,
+      signal?: AbortSignal,
+    ): Promise<LanguageCompletionList | undefined> {
+      const result = await ensure(document, signal)
+      if (result === undefined) return undefined
+      return options.workspace.completion({
+        uri: document.uri,
+        documentVersion: document.version,
+        position,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+
+    async hover(
+      document: EditorLanguageDocument,
+      position: LanguagePosition,
+      signal?: AbortSignal,
+    ): Promise<LanguageHover | undefined> {
+      const result = await ensure(document, signal)
+      if (result === undefined) return undefined
+      return options.workspace.hover({
+        uri: document.uri,
+        documentVersion: document.version,
+        position,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+
+    async signatureHelp(
+      document: EditorLanguageDocument,
+      position: LanguagePosition,
+      signal?: AbortSignal,
+    ): Promise<LanguageSignatureHelp | undefined> {
+      const result = await ensure(document, signal)
+      if (result === undefined) return undefined
+      return options.workspace.signatureHelp({
+        uri: document.uri,
+        documentVersion: document.version,
+        position,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+
+    async definition(
+      document: EditorLanguageDocument,
+      position: LanguagePosition,
+      signal?: AbortSignal,
+    ): Promise<LanguageLocationList | undefined> {
+      const result = await ensure(document, signal)
+      if (result === undefined) return undefined
+      return options.workspace.definition({
+        uri: document.uri,
+        documentVersion: document.version,
+        position,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+
+    async references(
+      document: EditorLanguageDocument,
+      position: LanguagePosition,
+      includeDeclaration: boolean,
+      signal?: AbortSignal,
+    ): Promise<LanguageLocationList | undefined> {
+      const result = await ensure(document, signal)
+      if (result === undefined) return undefined
+      return options.workspace.references({
+        uri: document.uri,
+        documentVersion: document.version,
+        position,
+        includeDeclaration,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+
+    async prepareRename(
+      document: EditorLanguageDocument,
+      position: LanguagePosition,
+      signal?: AbortSignal,
+    ): Promise<LanguageRenamePreparation | undefined> {
+      const result = await ensure(document, signal)
+      if (result === undefined) return undefined
+      return options.workspace.prepareRename({
+        uri: document.uri,
+        documentVersion: document.version,
+        position,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+
+    async rename(
+      document: EditorLanguageDocument,
+      position: LanguagePosition,
+      newName: string,
+      signal?: AbortSignal,
+    ): Promise<LanguageWorkspaceEdit | undefined> {
+      const result = await ensure(document, signal)
+      if (result === undefined) return undefined
+      return options.workspace.rename({
+        uri: document.uri,
+        documentVersion: document.version,
+        position,
+        newName,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        maxEdits: EDITOR_MAX_EDITS,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+
+    async formatting(
+      document: EditorLanguageDocument,
+      formatting: LanguageFormattingOptions,
+      signal?: AbortSignal,
+    ): Promise<LanguageTextEditList | undefined> {
+      const result = await ensure(document, signal)
+      if (result === undefined) return undefined
+      return options.workspace.formatting({
+        uri: document.uri,
+        documentVersion: document.version,
+        options: formatting,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+
+    async workspaceSymbols(
+      query: string,
+      signal?: AbortSignal,
+    ): Promise<LanguageWorkspaceSymbolList | undefined> {
+      requireReady()
+      const tracked = documents.values().next().value as TrackedDocument | undefined
+      if (tracked === undefined) return undefined
+      const result = await ensure(tracked.document, signal)
+      if (result === undefined) return undefined
+      return options.workspace.workspaceSymbols({
+        uri: tracked.document.uri,
+        documentVersion: tracked.document.version,
+        query,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+
+    async diagnostics(
+      document: EditorLanguageDocument,
+      signal?: AbortSignal,
+    ): Promise<LanguageDiagnosticList | undefined> {
+      const result = await ensure(document, signal)
+      if (result === undefined) return undefined
+      const semantic = await options.workspace.diagnostics({
+        uri: document.uri,
+        documentVersion: document.version,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        ...(signal === undefined ? {} : { signal }),
+      })
+      return (
+        semantic ?? {
+          diagnostics: result.analysis.diagnostics,
+          isIncomplete: false,
+        }
+      )
     },
 
     async semanticTokens(

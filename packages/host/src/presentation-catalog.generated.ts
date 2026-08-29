@@ -228,6 +228,93 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
   }),
   Object.freeze({
     slot: Object.freeze({
+      slotId: 'card',
+      kind: 'stage',
+      contributionId: 'org.modkitx.ui/subject-card-stage',
+      extensionId: 'org.modkitx/ui',
+      priority: 390,
+      singletonGroup: 'center-stage',
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: 'card-content',
+          contract: 'common.view/subject-facts-source',
+          major: 1,
+        }),
+      ]),
+    }),
+    spec: Object.freeze({
+      kind: 'stage',
+      consumesDataSources: [{ contract: 'common.view/subject-facts-source', major: 1 }],
+      priority: 390,
+      singletonGroup: 'center-stage',
+    }),
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: 'calculations',
+      kind: 'stage',
+      contributionId: 'org.modkitx.ui/subject-calculations-stage',
+      extensionId: 'org.modkitx/ui',
+      priority: 380,
+      singletonGroup: 'center-stage',
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: 'calculations-content',
+          contract: 'common.view/subject-calculations-source',
+          major: 1,
+        }),
+      ]),
+    }),
+    spec: Object.freeze({
+      kind: 'stage',
+      consumesDataSources: [{ contract: 'common.view/subject-calculations-source', major: 1 }],
+      priority: 380,
+      singletonGroup: 'center-stage',
+    }),
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: 'relations',
+      kind: 'stage',
+      contributionId: 'org.modkitx.ui/relation-graph-stage',
+      extensionId: 'org.modkitx/ui',
+      priority: 370,
+      singletonGroup: 'center-stage',
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: 'relations-content',
+          contract: 'common.view/relation-graph-source',
+          major: 1,
+        }),
+      ]),
+    }),
+    spec: Object.freeze({
+      kind: 'stage',
+      consumesDataSources: [{ contract: 'common.view/relation-graph-source', major: 1 }],
+      priority: 370,
+      singletonGroup: 'center-stage',
+    }),
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: 'template',
+      kind: 'stage',
+      contributionId: 'org.modkitx.ui/game-template-stage',
+      extensionId: 'org.modkitx/ui',
+      priority: 365,
+      singletonGroup: 'center-stage',
+      bindings: Object.freeze([]),
+    }),
+    spec: Object.freeze({
+      kind: 'stage',
+      requiresOperations: ['view.template'],
+      consumesDataSources: [],
+      priority: 365,
+      singletonGroup: 'center-stage',
+    }),
+  }),
+  Object.freeze({
+    slot: Object.freeze({
       slotId: 'tree',
       kind: 'stage',
       contributionId: 'org.modkitx.ui/tree-stage',

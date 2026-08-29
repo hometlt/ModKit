@@ -44,7 +44,10 @@ export { videoViewer, VIDEO_MAXIMUM_BYTES } from './video/index.js'
 export {
   modelViewer,
   loadModelStage,
+  readModelFacetDetails,
   MODEL_MAXIMUM_PRIMITIVE_BYTES,
+  MODEL_MAXIMUM_PRIMITIVES,
+  type ModelFacetDetail,
   type ModelStageModel,
 } from './model/index.js'
 export {
@@ -96,6 +99,7 @@ export {
 export {
   createSubjectCard,
   loadSubjectCardSections,
+  subjectCardViewer,
   type CardChip,
   type CardField,
   type CardGridCell,
@@ -108,6 +112,14 @@ export {
   type SubjectCardLoadOptions,
 } from './card/index.js'
 export {
+  createSubjectCalculationsView,
+  loadSubjectCalculations,
+  subjectCalculationsViewer,
+  type SubjectCalculationsLoadOptions,
+  type SubjectCalculationsSnapshot,
+  type SubjectCalculationsView,
+} from './calculations/index.js'
+export {
   createRelationGraph,
   loadRelationGraphOptions,
   relationGraphViewer,
@@ -119,6 +131,7 @@ export {
   type RelationGraphOptions,
   type RelationGraphLoadOptions,
 } from './graph/index.js'
+export { gameTemplateViewer, renderGameTemplatePreview } from './template/index.js'
 export {
   createShellHeader,
   createShellFooter,

@@ -9,8 +9,8 @@
   "registry": "migration/capabilities.yaml",
   "generator": "scripts/migration/emit-priority-scope.mjs",
   "counts": {
-    "total": 177,
-    "seed": 177,
+    "total": 187,
+    "seed": 187,
     "transitiveDependencies": 0,
     "byPlannedBlock": {
       "block-11": 15,
@@ -20,19 +20,20 @@
       "block-16": 33,
       "block-17": 20,
       "block-19": 1,
-      "block-20": 10,
+      "block-20": 16,
+      "block-21": 4,
       "block-22": 1,
       "block-23": 1,
       "block-25": 1
     },
     "byMigrationState": {
-      "equivalent-better": 21,
-      "implemented": 127,
+      "equivalent-better": 23,
+      "implemented": 135,
       "missing": 28,
       "relocated-multiverse": 1
     },
-    "byObligation": { "focused-required-addition": 23, "legacy-required": 154 },
-    "byEvidenceLevel": { "E0": 26, "E1": 28, "E2": 73, "E3": 12, "E4": 38 }
+    "byObligation": { "focused-required-addition": 33, "legacy-required": 154 },
+    "byEvidenceLevel": { "E0": 26, "E1": 28, "E2": 74, "E3": 19, "E4": 40 }
   },
   "deadlines": {
     "block-11": [
@@ -215,11 +216,23 @@
       "platform/apps/recovery",
       "platform/extensions/lifecycle",
       "platform/extensions/out-of-tree",
+      "platform/knowledge/knowledge-pack",
+      "platform/language/document-analysis",
       "platform/presentation/common-plan",
+      "platform/presentation/game-template-preview",
+      "platform/presentation/relation-graph",
+      "platform/presentation/subject-calculations",
+      "platform/presentation/subject-card",
       "platform/release/migration-zero-gap",
       "platform/release/reproducible-rc",
       "platform/tools/ga-priority",
       "vertical/starcraft-2/native-signature-policy"
+    ],
+    "block-21": [
+      "platform/ai/inspection-skill-core",
+      "platform/ai/inspection-skill-sc2",
+      "platform/ai/inspection-skill-warzone",
+      "platform/ai/modkit-mcp"
     ],
     "block-22": ["uv/uvw/world-materialization"],
     "block-23": ["uv/uvd/definitions"],
@@ -2217,7 +2230,7 @@
       "owner": "extensions/opensource/warzone-2100",
       "plannedBlock": 17,
       "migrationState": "implemented",
-      "supportState": "partial",
+      "supportState": "supported",
       "evidenceLevel": "E1",
       "allocationState": "covered",
       "portFamily": "opensource/warzone-2100",
@@ -2490,6 +2503,7 @@
         "format/sc2-mod/open-inspect"
       ],
       "requiredBy": [
+        "platform/ai/modkit-mcp",
         "vertical/starcraft-2/deterministic-playable-subset",
         "vertical/starcraft-2/native-inspect-authoring",
         "vertical/starcraft-2/native-round-trip",
@@ -2513,11 +2527,113 @@
       "corpusDescriptors": ["MODKITX_WARZONE_ROOT"],
       "dependsOn": ["format/warzone-pie/open-inspect", "format/zip/open-inspect"],
       "requiredBy": [
+        "platform/ai/modkit-mcp",
         "vertical/warzone-2100/deterministic-playable-subset",
         "vertical/warzone-2100/native-inspect-authoring",
         "vertical/warzone-2100/native-round-trip",
         "vertical/warzone-2100/native-to-uv",
         "vertical/warzone-2100/neutral-definitions-world"
+      ]
+    },
+    {
+      "capabilityId": "platform/ai/inspection-skill-core",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": ".agents/skills/modkit-core",
+      "plannedBlock": 21,
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E3",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": ["MODKIT_MCP_SC2_LOOSE_SUBJECT", "MODKIT_MCP_WZ_SUBJECT"],
+      "dependsOn": ["platform/ai/modkit-mcp"],
+      "requiredBy": ["platform/release/migration-zero-gap"]
+    },
+    {
+      "capabilityId": "platform/ai/inspection-skill-sc2",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "extensions/blizzard/.agents/skills/modkit-sc2",
+      "plannedBlock": 21,
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E3",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": ["MODKIT_MCP_SC2_LOOSE_SUBJECT", "MODKIT_MCP_SC2_ALLOWED_ROOTS"],
+      "dependsOn": [
+        "platform/ai/modkit-mcp",
+        "platform/language/document-analysis",
+        "platform/presentation/game-template-preview",
+        "platform/presentation/relation-graph",
+        "platform/presentation/subject-calculations",
+        "platform/presentation/subject-card",
+        "vertical/starcraft-2/native-inspect-authoring"
+      ],
+      "requiredBy": ["platform/release/migration-zero-gap"]
+    },
+    {
+      "capabilityId": "platform/ai/inspection-skill-warzone",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "extensions/opensource/warzone-2100/.agents/skills/modkit-warzone",
+      "plannedBlock": 21,
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E3",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": ["MODKIT_MCP_WZ_SUBJECT"],
+      "dependsOn": [
+        "platform/ai/modkit-mcp",
+        "platform/language/document-analysis",
+        "platform/presentation/game-template-preview",
+        "platform/presentation/relation-graph",
+        "platform/presentation/subject-calculations",
+        "platform/presentation/subject-card",
+        "vertical/warzone-2100/native-inspect-authoring"
+      ],
+      "requiredBy": ["platform/release/migration-zero-gap"]
+    },
+    {
+      "capabilityId": "platform/ai/modkit-mcp",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "apps/modkit-mcp",
+      "plannedBlock": 21,
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E3",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": [
+        "MODKIT_MCP_SC2_LOOSE_SUBJECT",
+        "MODKIT_MCP_SC2_ALLOWED_ROOTS",
+        "MODKIT_MCP_WZ_SUBJECT"
+      ],
+      "dependsOn": [
+        "game/starcraft-2/discover-open",
+        "game/warzone-2100/discover-open",
+        "platform/knowledge/knowledge-pack",
+        "platform/presentation/game-template-preview",
+        "platform/presentation/relation-graph",
+        "platform/presentation/subject-calculations",
+        "platform/presentation/subject-card"
+      ],
+      "requiredBy": [
+        "platform/ai/inspection-skill-core",
+        "platform/ai/inspection-skill-sc2",
+        "platform/ai/inspection-skill-warzone",
+        "platform/release/migration-zero-gap"
       ]
     },
     {
@@ -2621,6 +2737,50 @@
       "requiredBy": ["platform/release/migration-zero-gap", "platform/release/reproducible-rc"]
     },
     {
+      "capabilityId": "platform/knowledge/knowledge-pack",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "packages/sdk, packages/host, extensions/blizzard/starcraft2-game and extensions/opensource/warzone-2100",
+      "plannedBlock": 20,
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E2",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": ["MODKITX_SC2_ROOT", "MODKITX_WARZONE_ROOT"],
+      "dependsOn": [],
+      "requiredBy": [
+        "platform/ai/modkit-mcp",
+        "platform/language/document-analysis",
+        "platform/presentation/subject-calculations",
+        "platform/presentation/subject-card",
+        "platform/release/migration-zero-gap"
+      ]
+    },
+    {
+      "capabilityId": "platform/language/document-analysis",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "packages/sdk, packages/host, apps/modkit-vscode, extensions/blizzard and extensions/opensource/warzone-2100",
+      "plannedBlock": 20,
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E3",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": ["MODKITX_SC2_ROOT", "MODKITX_WARZONE_ROOT"],
+      "dependsOn": ["platform/knowledge/knowledge-pack"],
+      "requiredBy": [
+        "platform/ai/inspection-skill-sc2",
+        "platform/ai/inspection-skill-warzone",
+        "platform/release/migration-zero-gap"
+      ]
+    },
+    {
       "capabilityId": "platform/presentation/common-plan",
       "inclusion": "seed",
       "releaseTrack": "mk3-priority",
@@ -2635,7 +2795,109 @@
       "portFamily": null,
       "corpusDescriptors": [],
       "dependsOn": [],
-      "requiredBy": ["platform/apps/priority-workflows", "platform/release/migration-zero-gap"]
+      "requiredBy": [
+        "platform/apps/priority-workflows",
+        "platform/presentation/game-template-preview",
+        "platform/presentation/relation-graph",
+        "platform/presentation/subject-calculations",
+        "platform/presentation/subject-card",
+        "platform/release/migration-zero-gap"
+      ]
+    },
+    {
+      "capabilityId": "platform/presentation/game-template-preview",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "packages/sdk, packages/ui, extensions/blizzard/starcraft2 and extensions/opensource/warzone-2100",
+      "plannedBlock": 20,
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E3",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": ["MODKITX_SC2_ROOT", "MODKITX_WARZONE_ROOT"],
+      "dependsOn": ["platform/presentation/common-plan"],
+      "requiredBy": [
+        "platform/ai/inspection-skill-sc2",
+        "platform/ai/inspection-skill-warzone",
+        "platform/ai/modkit-mcp",
+        "platform/release/migration-zero-gap"
+      ]
+    },
+    {
+      "capabilityId": "platform/presentation/relation-graph",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "packages/sdk, packages/ui, extensions/blizzard/starcraft2-game and extensions/opensource/warzone-2100",
+      "plannedBlock": 20,
+      "migrationState": "equivalent-better",
+      "supportState": "supported",
+      "evidenceLevel": "E4",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": ["MODKITX_SC2_ROOT", "MODKITX_WARZONE_ROOT"],
+      "dependsOn": ["platform/presentation/common-plan"],
+      "requiredBy": [
+        "platform/ai/inspection-skill-sc2",
+        "platform/ai/inspection-skill-warzone",
+        "platform/ai/modkit-mcp",
+        "platform/presentation/subject-card",
+        "platform/release/migration-zero-gap"
+      ]
+    },
+    {
+      "capabilityId": "platform/presentation/subject-calculations",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "packages/sdk, packages/ui, extensions/blizzard/starcraft2-game and extensions/opensource/warzone-2100",
+      "plannedBlock": 20,
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E3",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": ["MODKITX_SC2_ROOT", "MODKITX_WARZONE_ROOT"],
+      "dependsOn": ["platform/knowledge/knowledge-pack", "platform/presentation/common-plan"],
+      "requiredBy": [
+        "platform/ai/inspection-skill-sc2",
+        "platform/ai/inspection-skill-warzone",
+        "platform/ai/modkit-mcp",
+        "platform/presentation/subject-card",
+        "platform/release/migration-zero-gap"
+      ]
+    },
+    {
+      "capabilityId": "platform/presentation/subject-card",
+      "inclusion": "seed",
+      "releaseTrack": "mk3-priority",
+      "origin": "owner-addition",
+      "obligation": "focused-required-addition",
+      "owner": "packages/sdk, packages/ui, extensions/blizzard/starcraft2-game and extensions/opensource/warzone-2100",
+      "plannedBlock": 20,
+      "migrationState": "equivalent-better",
+      "supportState": "supported",
+      "evidenceLevel": "E4",
+      "allocationState": "covered",
+      "portFamily": null,
+      "corpusDescriptors": ["MODKITX_SC2_ROOT", "MODKITX_WARZONE_ROOT"],
+      "dependsOn": [
+        "platform/knowledge/knowledge-pack",
+        "platform/presentation/common-plan",
+        "platform/presentation/relation-graph",
+        "platform/presentation/subject-calculations"
+      ],
+      "requiredBy": [
+        "platform/ai/inspection-skill-sc2",
+        "platform/ai/inspection-skill-warzone",
+        "platform/ai/modkit-mcp",
+        "platform/release/migration-zero-gap"
+      ]
     },
     {
       "capabilityId": "platform/release/migration-zero-gap",
@@ -2652,12 +2914,22 @@
       "portFamily": null,
       "corpusDescriptors": [],
       "dependsOn": [
+        "platform/ai/inspection-skill-core",
+        "platform/ai/inspection-skill-sc2",
+        "platform/ai/inspection-skill-warzone",
+        "platform/ai/modkit-mcp",
         "platform/apps/command-runtime-session-conformance",
         "platform/apps/priority-workflows",
         "platform/apps/recovery",
         "platform/extensions/lifecycle",
         "platform/extensions/out-of-tree",
+        "platform/knowledge/knowledge-pack",
+        "platform/language/document-analysis",
         "platform/presentation/common-plan",
+        "platform/presentation/game-template-preview",
+        "platform/presentation/relation-graph",
+        "platform/presentation/subject-calculations",
+        "platform/presentation/subject-card",
         "platform/release/reproducible-rc",
         "platform/tools/ga-priority",
         "vertical/starcraft-2/native-signature-policy"
@@ -3324,7 +3596,11 @@
       "portFamily": null,
       "corpusDescriptors": ["MODKITX_SC2_ROOT"],
       "dependsOn": ["game/starcraft-2/discover-open"],
-      "requiredBy": ["vertical/starcraft-2/native-round-trip", "vertical/starcraft-2/native-to-uv"]
+      "requiredBy": [
+        "platform/ai/inspection-skill-sc2",
+        "vertical/starcraft-2/native-round-trip",
+        "vertical/starcraft-2/native-to-uv"
+      ]
     },
     {
       "capabilityId": "vertical/starcraft-2/native-round-trip",
@@ -3438,6 +3714,7 @@
       "corpusDescriptors": ["MODKITX_WARZONE_ROOT"],
       "dependsOn": ["game/warzone-2100/discover-open"],
       "requiredBy": [
+        "platform/ai/inspection-skill-warzone",
         "vertical/warzone-2100/native-round-trip",
         "vertical/warzone-2100/native-to-uv"
       ]

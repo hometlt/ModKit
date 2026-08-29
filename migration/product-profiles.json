@@ -64,7 +64,7 @@
         "org.modkitx.blizzard/starcraft2-resolved-data",
         "org.modkitx.blizzard/starcraft2-workspace"
       ],
-      "note": "Профиль использует отдельное игровое расширение с автоматическим поиском установки и ручными путями из настроек; общий хост не импортирует код StarCraft II."
+      "note": "Профиль использует отдельное игровое расширение с автоматическим поиском установки и ручными путями из настроек; общий хост не импортирует код StarCraft II. Состав профиля доступен, но обязательные Product GA knowledge, карточки, граф связей, расчёты, game template, полный анализ документов, MCP и SC2 inspection skill остаются отдельными partial registry gaps до доказанного закрытия."
     },
     {
       "id": "cnc-sage-studio",
@@ -108,7 +108,7 @@
         "org.modkitx.opensource/warzone2100-map-semantic",
         "org.modkitx.opensource/warzone2100-resolved-data"
       ],
-      "note": "Профиль использует одно конечное игровое расширение для PIE, WZ, IMG, LEV, WRF, map, поиска установки и основных данных объектов; незакрытые агрегатные authoring, round-trip и runtime обещания остаются отдельными registry gaps."
+      "note": "Профиль использует одно конечное игровое расширение для PIE, WZ, IMG, LEV, WRF, map, поиска установки и основных данных объектов. Состав профиля доступен, но обязательные Product GA knowledge, карточки, граф связей, расчёты, game template, полный анализ документов, MCP и Warzone inspection skill, а также незакрытые authoring и round-trip обещания остаются отдельными registry gaps."
     },
     {
       "id": "bar-spring-studio",
@@ -178,7 +178,7 @@
       ],
       "plannedFamilies": [],
       "serviceProviders": [],
-      "note": "Batch inspect/convert/validate с machine-readable выводом: ни editor, ни renderer, ни UI-вокабуляр в граф не попадают (см. reference profile headless-host)."
+      "note": "Batch inspect/convert/validate с machine-readable выводом: ни editor, ни renderer, ни UI-вокабуляр в граф не попадают (см. reference profile headless-host). Статус available означает доступный состав, а не готовность Product GA: read-only MCP и три inspection skill отслеживаются отдельными partial registry gaps."
     }
   ],
   "referenceProfiles": {
@@ -269,7 +269,7 @@
     "$comment": "Reference bundle baseline блока 10: состав уже зафиксирован владельцем в scripts/bundle-hashes.json и охраняется pnpm bundle:check байт-в-байт. Здесь фиксируется только состав (какие entry входят в baseline), чтобы профиль нельзя было расширить молча.",
     "source": "scripts/bundle-hashes.json",
     "ratchet": "pnpm bundle:check",
-    "entryCount": 69,
+    "entryCount": 74,
     "entries": [
       "apps/modkit-cli/dist/main.js",
       "packages/core/dist/index.js",
@@ -279,6 +279,7 @@
       "packages/host/dist/execution/index.js",
       "packages/host/dist/games/index.js",
       "packages/host/dist/index.js",
+      "packages/host/dist/knowledge/index.js",
       "packages/host/dist/language/index.js",
       "packages/host/dist/maps/index.js",
       "packages/host/dist/mods/index.js",
@@ -293,6 +294,7 @@
       "packages/sdk/dist/formats/index.js",
       "packages/sdk/dist/games/index.js",
       "packages/sdk/dist/index.js",
+      "packages/sdk/dist/knowledge/index.js",
       "packages/sdk/dist/language/index.js",
       "packages/sdk/dist/manifest/validators.generated.js",
       "packages/sdk/dist/maps/index.js",
@@ -301,9 +303,11 @@
       "packages/sdk/dist/runtime/index.js",
       "packages/sdk/dist/service-contracts.js",
       "packages/sdk/dist/subjects/index.js",
+      "packages/sdk/dist/templates/index.js",
       "packages/sdk/dist/text-data/index.js",
       "packages/sdk/dist/ui-contracts/index.js",
       "packages/ui/dist/audio/index.js",
+      "packages/ui/dist/calculations/index.js",
       "packages/ui/dist/card/index.js",
       "packages/ui/dist/code/index.js",
       "packages/ui/dist/composition/index.js",
@@ -325,6 +329,7 @@
       "packages/ui/dist/settings/index.js",
       "packages/ui/dist/shell/chrome.js",
       "packages/ui/dist/table/index.js",
+      "packages/ui/dist/template/index.js",
       "packages/ui/dist/text-virtual/index.js",
       "packages/ui/dist/tokens/index.js",
       "packages/ui/dist/transport/index.js",

@@ -206,14 +206,23 @@ const priorityGate = join(scriptsDir, 'migration', 'emit-priority-scope.mjs')
 // Fixture runs never write into the repository: the closure output goes to a throwaway directory.
 const scopeOut = mkdtempSync(join(tmpdir(), 'x3-priority-scope-'))
 
-const BLOCK_20_PRODUCT_GA_OBLIGATIONS = [
+const PRODUCT_GA_ZERO_GAP_DEPENDENCIES = [
+  'platform/ai/inspection-skill-core',
+  'platform/ai/inspection-skill-sc2',
+  'platform/ai/inspection-skill-warzone',
+  'platform/ai/modkit-mcp',
   'platform/apps/command-runtime-session-conformance',
   'platform/apps/priority-workflows',
   'platform/apps/recovery',
   'platform/extensions/lifecycle',
   'platform/extensions/out-of-tree',
+  'platform/knowledge/knowledge-pack',
+  'platform/language/document-analysis',
   'platform/presentation/common-plan',
-  'platform/release/migration-zero-gap',
+  'platform/presentation/game-template-preview',
+  'platform/presentation/relation-graph',
+  'platform/presentation/subject-calculations',
+  'platform/presentation/subject-card',
   'platform/release/reproducible-rc',
   'platform/tools/ga-priority',
   'vertical/starcraft-2/native-signature-policy',
@@ -229,7 +238,7 @@ function runPriority(registry: string, extra: readonly string[] = []) {
 }
 
 describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
-  it('keeps every Block 20 Product GA obligation inside the machine-readable mk3-ga closure', () => {
+  it('keeps every Product GA zero-gap dependency inside the machine-readable mk3-ga closure', () => {
     const root = join(scriptsDir, '..', 'migration')
     const registry = parseCanonicalYaml(readFileSync(join(root, 'capabilities.yaml'), 'utf8')) as {
       readonly capabilities: readonly {
@@ -248,20 +257,19 @@ describe('phase-aware priority gate (plan §3.5, block 10 works 6–7)', () => {
     const rows = new Map(registry.capabilities.map(row => [row.capabilityId, row]))
     const scoped = new Map(ga.units.map(unit => [unit.capabilityId, unit]))
 
-    for (const id of BLOCK_20_PRODUCT_GA_OBLIGATIONS) {
-      expect(rows.get(id), `${id} registry row`).toMatchObject({
-        plannedBlock: 20,
-        releaseTrack: 'mk3-priority',
-      })
-      expect(scoped.get(id), `${id} mk3-ga unit`).toMatchObject({ plannedBlock: 20 })
-    }
-
     const zeroGap = rows.get('platform/release/migration-zero-gap')
-    expect(new Set(zeroGap?.dependsOn)).toEqual(
-      new Set(
-        BLOCK_20_PRODUCT_GA_OBLIGATIONS.filter(id => id !== 'platform/release/migration-zero-gap'),
-      ),
-    )
+    expect(zeroGap).toMatchObject({ plannedBlock: 20, releaseTrack: 'mk3-priority' })
+    expect(scoped.get('platform/release/migration-zero-gap')).toMatchObject({ plannedBlock: 20 })
+    expect(zeroGap?.dependsOn).toHaveLength(PRODUCT_GA_ZERO_GAP_DEPENDENCIES.length)
+    expect(new Set(zeroGap?.dependsOn)).toEqual(new Set(PRODUCT_GA_ZERO_GAP_DEPENDENCIES))
+
+    for (const id of PRODUCT_GA_ZERO_GAP_DEPENDENCIES) {
+      const row = rows.get(id)
+      expect(row, `${id} registry row`).toMatchObject({ releaseTrack: 'mk3-priority' })
+      expect(scoped.get(id), `${id} mk3-ga unit`).toMatchObject({
+        plannedBlock: row?.plannedBlock,
+      })
+    }
   })
 
   it('emits three monotonic release closures deterministically', () => {

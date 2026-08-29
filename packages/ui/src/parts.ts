@@ -148,6 +148,12 @@ export const PARTS = Object.freeze([
   'model.canvas',
   'model.readout',
   'model.toolbar',
+  'model.primitive-selector',
+  'model.facets',
+  'model.facet',
+  'model.facet-summary',
+  'model.facet-list',
+  'model.facet-item',
 
   // view gizmo — its own component, usable by any 3D stage
   'gizmo',
@@ -318,6 +324,7 @@ export const PARTS = Object.freeze([
   'card.field',
   'card.field-name',
   'card.field-value',
+  'card.knowledge',
   'card.links',
   'card.link-item',
   'card.subcards',
@@ -343,6 +350,18 @@ export const PARTS = Object.freeze([
   'graph.footer',
   'graph.footer-group',
   'graph.footer-item',
+
+  // auditable subject calculations
+  'calculations',
+  'calculations.summary',
+  'calculations.list',
+  'calculations.item',
+  'calculations.heading',
+  'calculations.result',
+  'calculations.formula',
+  'calculations.inputs',
+  'calculations.input',
+  'calculations.warnings',
 
   // editor
   'editor',

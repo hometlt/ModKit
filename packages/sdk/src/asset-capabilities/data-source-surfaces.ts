@@ -26,6 +26,8 @@ import type {
   NamespaceEntrySource,
   RelationGraphSource,
   SlideDeckSource,
+  SubjectSelectorSource,
+  SubjectCalculationsSource,
   SubjectFactsSource,
   TableDataSource,
   TextDataSource,
@@ -138,7 +140,7 @@ const tableDataSourceSurface = {
   methods: {
     shape: value,
     rows: cancellableValue,
-    cell: value,
+    cell: cancellableValue,
     search: iterable,
   },
 } as const satisfies SurfaceOf<TableDataSource>
@@ -279,6 +281,32 @@ const subjectFactsSourceSurface = {
   },
 } as const satisfies SurfaceOf<SubjectFactsSource>
 
+const subjectCalculationsSourceSurface = {
+  methods: {
+    summary: cancellableValue,
+    calculations: cancellableValue,
+  },
+} as const satisfies SurfaceOf<SubjectCalculationsSource>
+
+const subjectSelectorSourceSurface = {
+  methods: {
+    summary: cancellableValue,
+    subjects: cancellableValue,
+    openFacts: {
+      kind: 'lease',
+      result: { contract: contractId('common.view/subject-facts-source'), major: 1 },
+      wrapper: 'lease',
+      ...sig,
+    },
+    openCalculations: {
+      kind: 'lease',
+      result: { contract: contractId('common.view/subject-calculations-source'), major: 1 },
+      wrapper: 'lease',
+      ...sig,
+    },
+  },
+} as const satisfies SurfaceOf<SubjectSelectorSource>
+
 /** Method surfaces of the standard data-source contracts, all `major 1`. */
 export const STANDARD_DATA_SOURCE_SURFACES: Readonly<
   Record<StandardDataSourceId, DataSourceSurfaceV1>
@@ -302,7 +330,9 @@ export const STANDARD_DATA_SOURCE_SURFACES: Readonly<
   'common.view/model-material-source': modelMaterialSourceSurface,
   'common.view/model-socket-source': modelSocketSourceSurface,
   'common.view/relation-graph-source': relationGraphSourceSurface,
+  'common.view/subject-selector-source': subjectSelectorSourceSurface,
   'common.view/subject-facts-source': subjectFactsSourceSurface,
+  'common.view/subject-calculations-source': subjectCalculationsSourceSurface,
   'common.view/slide-deck-source': slideDeckSourceSurface,
 })
 

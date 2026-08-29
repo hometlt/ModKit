@@ -102,11 +102,178 @@ export interface LanguageAnalysis {
   readonly symbols: readonly LanguageSymbol[]
 }
 
+/** A location in an open or provider-owned protocol-neutral document. */
+export interface LanguageLocation {
+  readonly uri: string
+  readonly range: LanguageRange
+}
+
+export type LanguageCompletionItemKind =
+  LanguageSymbolKind | 'keyword' | 'parameter' | 'snippet' | 'text' | 'type'
+
+export interface LanguageCompletionItem {
+  readonly label: string
+  readonly kind: LanguageCompletionItemKind
+  readonly detail?: string
+  readonly documentation?: string
+  readonly insertText?: string
+  readonly insertTextFormat?: 'plain-text' | 'snippet'
+  readonly sortText?: string
+}
+
+export interface LanguageCompletionList {
+  readonly items: readonly LanguageCompletionItem[]
+  /** True when a caller limit or a bounded workspace snapshot omitted possible items. */
+  readonly isIncomplete: boolean
+}
+
+export interface LanguageHover {
+  readonly markdown: string
+  readonly range?: LanguageRange
+  readonly provenance?: string
+}
+
+export interface LanguageSignatureParameter {
+  readonly label: string
+  readonly documentation?: string
+}
+
+export interface LanguageSignatureInformation {
+  readonly label: string
+  readonly documentation?: string
+  readonly parameters: readonly LanguageSignatureParameter[]
+}
+
+export interface LanguageSignatureHelp {
+  readonly signatures: readonly LanguageSignatureInformation[]
+  readonly activeSignature: number
+  readonly activeParameter: number
+}
+
+export interface LanguageLocationList {
+  readonly locations: readonly LanguageLocation[]
+  readonly isIncomplete: boolean
+}
+
+export interface LanguageRenamePreparation {
+  readonly range: LanguageRange
+  readonly placeholder: string
+}
+
+export interface LanguageTextEdit {
+  readonly range: LanguageRange
+  readonly newText: string
+}
+
+export interface LanguageFormattingOptions {
+  /** Indentation width in UTF-16 columns. */
+  readonly tabSize: number
+  readonly insertSpaces: boolean
+  /** Omitted preserves the source document's final-newline state. */
+  readonly finalNewline?: boolean
+}
+
+export interface LanguageTextEditList {
+  readonly edits: readonly LanguageTextEdit[]
+  /** Formatting is refused instead of returning a partial edit set. */
+  readonly isComplete: true
+}
+
+export interface LanguageTextDocumentEdit {
+  readonly uri: string
+  /** Exact open snapshot version against which the edits were calculated. */
+  readonly documentVersion: number
+  readonly edits: readonly LanguageTextEdit[]
+}
+
+export interface LanguageWorkspaceEdit {
+  readonly documentChanges: readonly LanguageTextDocumentEdit[]
+  /** Rename is refused instead of returning this object when the workspace snapshot is partial. */
+  readonly isComplete: true
+}
+
+export interface LanguageWorkspaceSymbol {
+  readonly name: string
+  readonly kind: LanguageSymbolKind
+  readonly location: LanguageLocation
+  readonly containerName?: string
+  readonly detail?: string
+}
+
+export interface LanguageWorkspaceSymbolList {
+  readonly symbols: readonly LanguageWorkspaceSymbol[]
+  readonly isIncomplete: boolean
+}
+
+export interface LanguageDocumentSymbolList {
+  readonly symbols: readonly LanguageSymbol[]
+  readonly isIncomplete: boolean
+}
+
+export interface LanguageDiagnosticList {
+  readonly diagnostics: readonly LanguageDiagnostic[]
+  readonly isIncomplete: boolean
+}
+
+/**
+ * Full snapshots supplied to one semantic request. `workspaceDocuments` includes `document` and
+ * never exceeds `maxDocuments`; no provider owns mutable editor state or transport objects.
+ */
+export interface LanguageFeatureRequest {
+  readonly document: LanguageDocument
+  readonly workspaceDocuments: readonly LanguageDocument[]
+  readonly workspaceIncomplete: boolean
+  readonly maxResults: number
+  readonly maxDocuments: number
+  readonly signal?: AbortSignal
+}
+
+export interface LanguagePositionRequest extends LanguageFeatureRequest {
+  readonly position: LanguagePosition
+}
+
+export interface LanguageReferencesRequest extends LanguagePositionRequest {
+  readonly includeDeclaration?: boolean
+}
+
+export interface LanguageRenameRequest extends LanguagePositionRequest {
+  readonly newName: string
+  readonly maxEdits: number
+}
+
+export interface LanguageWorkspaceSymbolsRequest extends LanguageFeatureRequest {
+  readonly query: string
+}
+
+export interface LanguageFormattingRequest extends LanguageFeatureRequest {
+  readonly options: LanguageFormattingOptions
+}
+
 /** Activated provider surface. It is deliberately independent of any LSP transport package. */
 export interface LanguageProvider {
   readonly contract: typeof LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT
   readonly languageIds: readonly string[]
+  /**
+   * Explicit opt-in for bounded mixed-language workspace snapshots.
+   *
+   * Omission preserves the v1 behavior: feature requests contain only documents whose language
+   * id matches the primary document. Providers that compose protocol-neutral cross-language
+   * indexes may list the additional language ids they can parse here. The host still applies the
+   * caller's maxDocuments bound and marks truncated snapshots incomplete.
+   */
+  readonly workspaceLanguageIds?: readonly string[]
   analyze(request: LanguageAnalysisRequest): Promise<LanguageAnalysis>
+  completion?(request: LanguagePositionRequest): Promise<LanguageCompletionList>
+  hover?(request: LanguagePositionRequest): Promise<LanguageHover | undefined>
+  signatureHelp?(request: LanguagePositionRequest): Promise<LanguageSignatureHelp | undefined>
+  definition?(request: LanguagePositionRequest): Promise<LanguageLocationList>
+  references?(request: LanguageReferencesRequest): Promise<LanguageLocationList>
+  prepareRename?(request: LanguagePositionRequest): Promise<LanguageRenamePreparation | undefined>
+  rename?(request: LanguageRenameRequest): Promise<LanguageWorkspaceEdit | undefined>
+  formatting?(request: LanguageFormattingRequest): Promise<LanguageTextEditList>
+  documentSymbols?(request: LanguageFeatureRequest): Promise<LanguageDocumentSymbolList>
+  workspaceSymbols?(request: LanguageWorkspaceSymbolsRequest): Promise<LanguageWorkspaceSymbolList>
+  diagnostics?(request: LanguageFeatureRequest): Promise<LanguageDiagnosticList>
 }
 
 /** JSON-safe route advertised by a provider contribution. */

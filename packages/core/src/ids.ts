@@ -132,6 +132,7 @@ export const SHARED_OPERATION_IDS = Object.freeze([
   'view.inspect',
   'view.thumbnail',
   'view.hex',
+  'view.template',
   'media.play',
   'media.play-pause',
   'media.seek',

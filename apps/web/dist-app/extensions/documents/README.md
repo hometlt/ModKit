@@ -4,3 +4,27 @@ Document-family reference extension. Markdown exposes source text and a structur
 validates groups/control words and exposes portable flow metadata without mislabelling legacy ANSI
 bytes as UTF-8. The two formats do not import each other. Rendering and sanitization remain
 separate viewer concerns.
+
+## The OpenDocument quartet
+
+ODT, ODS, ODP and ODG are four separate contributions over one private package reader (`src/odf/`).
+The reader is private on purpose: it is not exported from this package and nothing outside this
+directory imports it, so a shared ODF reader never becomes a second archive platform.
+
+Detection reads OpenDocument's own rule rather than the file name — the `mimetype` entry must be
+first, stored uncompressed, and hold the exact media type — so a renamed package still opens and a
+package belonging to another ODF format is refused by name.
+
+Each codec publishes only what it actually recovered, through the generic contracts: ODT flow,
+outline and text; ODS sheets, cells and formulas _as text, never evaluated_; ODP ordered slides
+(`common.view/slide-deck-source@1`, a publisher-candidate contract — see ADR-DOC-001) plus a vector
+preview of the first page; ODG pages, shapes, text and the same vector scene. The vector scene is a
+derived structural preview built from the geometry that was parsed; ODF styles are not interpreted,
+so it is deliberately unstyled and is not a rendering of the page. No writer is declared: preserving
+repack and round-trip are unproved, so nothing here claims that an unknown package entry survives an
+edit.
+
+Where a module lives is meaningful. A codec relocated from the MK2 staging area keeps
+`src/<codec>/codec.js` and is counted by the MK2 port ratchet; a codec authored for MK3 lives at
+`src/formats/<codec>/codec.js` and is not, because it was never a port to lose. ODT, ODS and ODP
+came from `extensions/mk2/uncommon-documents`; Markdown, RTF and ODG were written here.

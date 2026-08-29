@@ -28,6 +28,8 @@ const SHELL = [
   './vendor/sdk/index.js',
   './vendor/codec-kit/index.js',
   './vendor/codec-kit/text/index.js',
+  './vendor/blizzard-mpq/fresh-writer.js',
+  './vendor/blizzard-mpq/native-preserving.js',
   './favicon-32.png',
   './icon-192.png',
   './icon-512.png',

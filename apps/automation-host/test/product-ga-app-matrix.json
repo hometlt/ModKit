@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "subject": "apps/web/public/favicon-32.png",
+  "formatId": "png",
+  "dataSource": "common.view/byte-range-source",
+  "surfaces": [
+    {
+      "id": "vscode",
+      "execution": "direct-host-open",
+      "uiRemainder": "The unit gate does not render the VS Code custom-editor webview; the separate VS Code smoke suite owns the real extension-window lifecycle."
+    },
+    {
+      "id": "electron",
+      "execution": "direct-host-open",
+      "uiRemainder": "The unit gate does not create an Electron BrowserWindow or visually inspect its renderer."
+    },
+    {
+      "id": "web",
+      "execution": "direct-host-open",
+      "uiRemainder": "The unit gate uses the production browser worker entry with structural DOM fakes; the separate browser boot suite owns an actual page."
+    },
+    {
+      "id": "cli",
+      "execution": "real-process-open",
+      "uiRemainder": null
+    },
+    {
+      "id": "automation",
+      "execution": "direct-host-open",
+      "uiRemainder": null
+    },
+    {
+      "id": "server",
+      "execution": "direct-host-open",
+      "uiRemainder": "This gate exercises the server composition directly; the separate server RPC suite owns the transport boundary."
+    },
+    {
+      "id": "mcp",
+      "execution": "separate-real-client-server-corpus",
+      "uiRemainder": null
+    }
+  ]
+}

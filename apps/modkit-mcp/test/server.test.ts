@@ -1,0 +1,1188 @@
+import { readFile } from 'node:fs/promises'
+import { delimiter, resolve } from 'node:path'
+import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
+import type { Inventory } from '@modkitx-x3/host'
+import type {
+  AnyDescriptor,
+  AssetSession,
+  KnowledgeCatalog,
+  KnowledgeTarget,
+} from '@modkitx-x3/sdk'
+import { afterEach, describe, expect, it } from 'vitest'
+import {
+  ConfigurationError,
+  MCP_MAX_OUTPUT_BYTES,
+  ModkitMcpRuntime,
+  boundedJson,
+  createModkitMcpServer,
+  encodeKnowledgeResourceTarget,
+  parseModkitMcpConfiguration,
+  type McpEnvelope,
+  type McpOpenedSubject,
+  type ModkitMcpHostPort,
+} from '../src/index.js'
+
+const fixture = JSON.parse(
+  await readFile(new URL('./fixtures/untrusted-facts.json', import.meta.url), 'utf8'),
+) as { readonly summary: string; readonly source: string }
+
+const descriptor = {
+  schemaVersion: 2,
+  subjectUri: 'fixture://subject',
+  origin: { kind: 'single', binding: { source: { kind: 'opaque', id: 'fixture' } } },
+  traits: [],
+  operations: [
+    {
+      id: 'fixture/read',
+      handlerId: 'read',
+      mutatesSource: false,
+      state: 'available',
+    },
+    {
+      id: 'fixture/slow',
+      handlerId: 'slow',
+      mutatesSource: false,
+      state: 'available',
+    },
+    {
+      id: 'fixture/oversized',
+      handlerId: 'oversized',
+      mutatesSource: false,
+      state: 'available',
+    },
+    {
+      id: 'fixture/rejected',
+      handlerId: 'rejected',
+      mutatesSource: false,
+      state: 'available',
+    },
+    {
+      id: 'fixture/late-stream',
+      handlerId: 'late-stream',
+      mutatesSource: false,
+      state: 'available',
+    },
+    {
+      id: 'fixture/write',
+      handlerId: 'write',
+      mutatesSource: true,
+      state: 'available',
+    },
+  ],
+  constraints: { readOnly: true, seekable: true, randomAccess: true, trusted: false },
+  dataSources: [
+    { contract: 'common.view/subject-selector-source', major: 1 },
+    { contract: 'common.view/subject-facts-source', major: 1 },
+    { contract: 'common.view/relation-graph-source', major: 1 },
+    { contract: 'common.view/subject-calculations-source', major: 1 },
+  ],
+  diagnostics: [],
+  revision: 'fixture-revision',
+  interpretation: 'codec',
+  identity: {
+    codecId: 'fixture/codec',
+    codecVersion: '1.0.0',
+    formatId: 'fixture',
+    formatLabel: 'Fixture',
+    confidence: 1,
+    detection: [],
+  },
+  metadata: [],
+} as unknown as AnyDescriptor
+
+const sourceProvenance = [{ label: 'fixture', semanticPath: ['field'] }]
+
+function fakeSession(
+  options: {
+    readonly waitForAbort?: boolean
+    readonly onOperationInvoke?: (handlerId: string) => void
+    readonly onOperationAbort?: (handlerId: string) => void
+    readonly lateAbortController?: AbortController
+    readonly onStreamRelease?: () => void
+    readonly ignoreFactsAbort?: boolean
+  } = {},
+): AssetSession {
+  const facts = {
+    summary: async (signal?: AbortSignal) => {
+      signal?.throwIfAborted()
+      return {
+        snapshotId: 'facts-v1',
+        identity: {
+          subjectId: 'fixture-subject',
+          label: 'Fixture subject',
+          kind: 'fixture',
+          origins: sourceProvenance,
+        },
+        groupCount: 1,
+        relationCount: 1,
+        preview: {
+          source: { kind: 'opaque' as const, id: 'fixture-preview' },
+          mediaType: 'image/png',
+          label: 'Fixture preview',
+        },
+      }
+    },
+    groups: async (_page: unknown, signal?: AbortSignal) => {
+      signal?.throwIfAborted()
+      if (options.ignoreFactsAbort) await new Promise<void>(() => undefined)
+      if (options.waitForAbort) {
+        await new Promise<void>((_resolve, reject) => {
+          signal?.addEventListener('abort', () => reject(signal.reason), { once: true })
+        })
+      }
+      signal?.throwIfAborted()
+      return { items: [{ id: 'general', label: 'General', factCount: 1 }] }
+    },
+    facts: async () => ({
+      items: [
+        {
+          id: 'fixture/value',
+          label: 'Fixture value',
+          value: fixture.summary,
+          provenance: sourceProvenance,
+          knowledgeTarget: {
+            kind: 'concept',
+            ecosystem: 'fixture',
+            conceptId: 'fixture-value',
+          },
+        },
+      ],
+    }),
+    relations: async () => ({
+      items: [{ role: 'uses', subjectId: 'other', label: 'Other', kind: 'fixture' }],
+    }),
+  }
+  const graphNodes = [
+    { id: 'a', label: 'A', type: 'fixture' },
+    { id: 'b', label: 'B', type: 'fixture' },
+    { id: 'c', label: 'C', type: 'fixture' },
+    { id: 'x', label: 'X', type: 'fixture' },
+  ]
+  const graphEdges = [
+    { from: 'a', to: 'b', role: 'uses' },
+    { from: 'b', to: 'c', role: 'uses' },
+    { from: 'x', to: 'a', role: 'produces' },
+  ]
+  const graphPage = <Value>(
+    values: readonly Value[],
+    page: { readonly cursor?: string; readonly limit: number },
+  ) => {
+    const offset = page.cursor === undefined ? 0 : Number(page.cursor)
+    const items = values.slice(offset, offset + page.limit)
+    const nextOffset = offset + items.length
+    return {
+      items,
+      ...(nextOffset < values.length ? { nextCursor: String(nextOffset) } : {}),
+    }
+  }
+  const graph = {
+    summary: async () => ({
+      snapshotId: 'graph-v1',
+      totalNodes: graphNodes.length,
+      totalEdges: graphEdges.length,
+      types: [{ id: 'fixture', label: 'Fixture', count: graphNodes.length, tone: 1 }],
+      completeness: 'complete' as const,
+    }),
+    nodes: async (page: { readonly cursor?: string; readonly limit: number }) =>
+      graphPage(graphNodes, page),
+    edges: async (page: { readonly cursor?: string; readonly limit: number }) =>
+      graphPage(graphEdges, page),
+  }
+  const calculations = {
+    summary: async () => ({
+      snapshotId: 'facts-v1',
+      subjectId: 'fixture-subject',
+      totalCalculations: 1,
+      completeness: 'complete' as const,
+    }),
+    calculations: async () => ({
+      items: [
+        {
+          id: 'fixture/double',
+          label: 'Double',
+          formula: { id: 'double', name: 'Double', version: '1', expression: 'x * 2' },
+          status: 'computed' as const,
+          value: 4,
+          inputs: [
+            {
+              id: 'x',
+              label: 'X',
+              state: 'resolved' as const,
+              value: 2,
+              provenance: sourceProvenance,
+            },
+          ],
+          provenance: sourceProvenance,
+          warnings: [],
+        },
+      ],
+    }),
+  }
+  const selector = {
+    summary: async () => ({
+      snapshotId: 'facts-v1',
+      totalSubjects: 1,
+      completeness: 'complete' as const,
+    }),
+    subjects: async (query: {
+      readonly kind?: string
+      readonly type?: string
+      readonly text?: string
+    }) => {
+      const item = {
+        subjectId: 'fixture-subject',
+        label: 'Fixture subject',
+        kind: 'fixture',
+        type: 'Fixture',
+      }
+      const text = query.text?.toLowerCase()
+      return {
+        items:
+          (query.kind === undefined || query.kind === item.kind) &&
+          (query.type === undefined || query.type === item.type) &&
+          (text === undefined ||
+            item.subjectId.includes(text) ||
+            item.label.toLowerCase().includes(text))
+            ? [item]
+            : [],
+      }
+    },
+    openFacts: async (subjectId: string) => {
+      if (subjectId !== 'fixture-subject') throw new RangeError('fixture subject not found')
+      return { value: facts, release: async () => undefined }
+    },
+    openCalculations: async (subjectId: string) => {
+      if (subjectId !== 'fixture-subject') throw new RangeError('fixture subject not found')
+      return { value: calculations, release: async () => undefined }
+    },
+  }
+  return {
+    revision: 'fixture-revision' as never,
+    state: () => 'live',
+    descriptor: async () => descriptor,
+    dataSource: async contract => {
+      const value =
+        contract === 'common.view/subject-selector-source'
+          ? selector
+          : contract === 'common.view/subject-facts-source'
+            ? facts
+            : contract === 'common.view/relation-graph-source'
+              ? graph
+              : calculations
+      return { value, release: async () => undefined } as never
+    },
+    operations: () => ({
+      invoke: async (handlerId, input, invokeOptions) => {
+        options.onOperationInvoke?.(handlerId)
+        if (handlerId === 'read') {
+          invokeOptions?.onProgress?.({ completed: 1, total: 1, message: fixture.summary })
+          return {
+            state: 'ok',
+            output: { kind: 'json', value: { input, summary: fixture.summary } },
+            diagnostics: [],
+          }
+        }
+        if (handlerId === 'slow') {
+          return new Promise(resolve => {
+            const operationSignal = invokeOptions?.signal
+            const aborted = (): void => {
+              options.onOperationAbort?.(handlerId)
+              resolve({ state: 'rejected', reason: 'cancelled', diagnostics: [] })
+            }
+            operationSignal?.addEventListener('abort', aborted, { once: true })
+            if (operationSignal?.aborted === true) aborted()
+          })
+        }
+        if (handlerId === 'oversized') {
+          const value: { text: string; self?: unknown } = { text: 'x'.repeat(2_000_000) }
+          value.self = value
+          return {
+            state: 'ok',
+            output: { kind: 'json', value },
+            diagnostics: [],
+          } as never
+        }
+        if (handlerId === 'rejected') {
+          return {
+            state: 'rejected',
+            reason: 'dependency-required',
+            diagnostics: [
+              {
+                code: 'fixture/dependency-required',
+                message: fixture.summary,
+                severity: 'warning',
+              },
+            ],
+          }
+        }
+        if (handlerId === 'late-stream') {
+          options.lateAbortController?.abort()
+          return {
+            state: 'ok',
+            output: {
+              kind: 'stream',
+              stream: {
+                value: {
+                  chunks: async function* () {
+                    yield new Uint8Array([1, 2, 3])
+                  },
+                },
+                release: async () => options.onStreamRelease?.(),
+              },
+            },
+            diagnostics: [],
+          }
+        }
+        return { state: 'rejected', reason: 'not-declared', diagnostics: [] }
+      },
+      dispose: async () => undefined,
+    }),
+    events: async function* () {
+      yield* []
+    },
+    dispose: async () => undefined,
+  }
+}
+
+const inventory = {
+  extensions: [
+    {
+      source: 'fixture-extension',
+      origin: 'installed',
+      container: 'directory',
+      manifest: { schemaVersion: 1, publisher: 'fixture', id: 'extension', version: '1.0.0' },
+      contributions: [],
+    },
+  ],
+  diagnostics: [],
+} as unknown as Inventory
+
+function fakeKnowledge(): KnowledgeCatalog {
+  const target: KnowledgeTarget = {
+    kind: 'concept',
+    ecosystem: 'fixture',
+    conceptId: 'fixture-value',
+  }
+  const page = {
+    snapshotId: 'knowledge-v1',
+    total: 1,
+    items: [
+      {
+        entry: {
+          id: 'fixture/entry',
+          target,
+          locale: 'en',
+          title: 'Fixture',
+          summary: fixture.summary,
+          claimKind: 'external-reference' as const,
+          confidence: 'low' as const,
+          sources: [
+            {
+              kind: 'external-reference' as const,
+              title: 'Fixture source',
+              url: fixture.source,
+              reviewedAt: '2026-08-28',
+            },
+          ],
+        },
+        provenance: {
+          packId: 'fixture/pack',
+          ownerExtensionId: 'fixture/extension',
+          extensionVersion: '1.0.0',
+          manifestPath: 'knowledge.json',
+          manifestDigest: 'sha256:fixture',
+          artifactDigest: 'sha256:fixture',
+        },
+        localeRank: 0,
+      },
+    ],
+    completeness: 'complete' as const,
+    diagnostics: [],
+  }
+  return {
+    snapshotId: page.snapshotId,
+    search: async (_query, signal) => {
+      signal?.throwIfAborted()
+      return page
+    },
+    resolve: async (_query, signal) => {
+      signal?.throwIfAborted()
+      return page
+    },
+  }
+}
+
+function fakeHost(
+  options: {
+    readonly waitForAbort?: boolean
+    readonly lateAbortController?: AbortController
+    readonly withSelection?: boolean
+    readonly withDiscovery?: boolean
+    readonly ignoreFactsAbort?: boolean
+  } = {},
+) {
+  let closes = 0
+  const operationInvocations: string[] = []
+  const operationAborts: string[] = []
+  let streamReleases = 0
+  const selectionInvocations: string[] = []
+  const host: ModkitMcpHostPort = {
+    inventory,
+    knowledge: fakeKnowledge(),
+    roots: ['C:\\allowed'],
+    extensionCoordinates: ['fixture/extension'],
+    executionProfiles: ['worker-brokered'],
+    supportedExtensions: ['fixture'],
+    ...(options.withDiscovery
+      ? {
+          async discoverInstallations() {
+            return {
+              snapshotId: 'installations-v1',
+              complete: true,
+              items: [
+                {
+                  selectionId: 'fixture-installation',
+                  gameId: 'fixture-game',
+                  displayName: 'Fixture Game',
+                  openable: true,
+                  version: '1.0',
+                },
+              ],
+              diagnostics: [],
+            }
+          },
+          async openDiscovered(selectionId: string, signal?: AbortSignal) {
+            if (selectionId !== 'fixture-installation') {
+              throw new RangeError('fixture discovery selection not found')
+            }
+            return host.open('C:\\allowed\\fixture', signal)
+          },
+        }
+      : {}),
+    async open(_path, signal): Promise<McpOpenedSubject> {
+      signal?.throwIfAborted()
+      const snapshot = {
+        state: 'opened',
+        sessionId: 'host-session-do-not-expose',
+        descriptor: descriptor as unknown as Record<string, unknown>,
+        selected: { contributionId: 'fixture/codec', variantId: 'worker', confidence: 1 },
+        candidates: [],
+        diagnostics: [],
+      } as const
+      const makeSession = () =>
+        fakeSession({
+          ...options,
+          onOperationInvoke: handlerId => operationInvocations.push(handlerId),
+          onOperationAbort: handlerId => operationAborts.push(handlerId),
+          onStreamRelease: () => {
+            streamReleases += 1
+          },
+        })
+      const close = async () => {
+        closes += 1
+      }
+      return {
+        snapshot,
+        session: makeSession(),
+        close,
+        ...(options.withSelection
+          ? {
+              selectionCandidates: [
+                {
+                  candidateId: 'fixture-candidate',
+                  displayName: 'Fixture candidate',
+                  sourcePath: 'fixtures/example',
+                },
+              ],
+              async select(selectionId: string, selectionSignal?: AbortSignal) {
+                selectionSignal?.throwIfAborted()
+                selectionInvocations.push(selectionId)
+                if (selectionId !== 'fixture-candidate') {
+                  throw new RangeError('fixture candidate not found')
+                }
+                return { snapshot, session: makeSession(), close }
+              },
+            }
+          : {}),
+      }
+    },
+    close: async () => undefined,
+  }
+  return {
+    host,
+    closes: () => closes,
+    operationInvocations: () => operationInvocations,
+    operationAborts: () => operationAborts,
+    streamReleases: () => streamReleases,
+    selectionInvocations: () => selectionInvocations,
+  }
+}
+
+const clients: {
+  readonly client: Client
+  readonly app: ReturnType<typeof createModkitMcpServer>
+}[] = []
+
+afterEach(async () => {
+  await Promise.allSettled(
+    clients.splice(0).flatMap(({ client, app }) => [client.close(), app.dispose()]),
+  )
+})
+
+async function connected(host: ModkitMcpHostPort) {
+  const app = createModkitMcpServer(host)
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
+  const client = new Client({ name: 'modkit-mcp-test', version: '1.0.0' })
+  await Promise.all([app.server.connect(serverTransport), client.connect(clientTransport)])
+  clients.push({ client, app })
+  return { client, app }
+}
+
+const structured = (value: { readonly structuredContent?: unknown }): McpEnvelope =>
+  value.structuredContent as McpEnvelope
+
+const handleFrom = (value: McpEnvelope): string =>
+  (value.data as { readonly handle: string }).handle
+
+describe('MCP configuration', () => {
+  it('requires explicit absolute root and extension allowlists', () => {
+    expect(() => parseModkitMcpConfiguration([], {})).toThrow(ConfigurationError)
+    expect(() =>
+      parseModkitMcpConfiguration(['--root', 'relative', '--extension', 'C:\\extensions'], {}),
+    ).toThrow(/absolute/u)
+  })
+
+  it('accepts repeatable CLI paths and independent environment fallbacks', () => {
+    const config = parseModkitMcpConfiguration(['--root', 'C:\\one', '--root', 'C:\\two'], {
+      MODKIT_MCP_EXTENSIONS: ['C:\\ext-a', 'C:\\ext-b'].join(delimiter),
+    })
+    expect(config.roots).toEqual([resolve('C:\\one'), resolve('C:\\two')])
+    expect(config.extensions).toEqual([resolve('C:\\ext-a'), resolve('C:\\ext-b')])
+  })
+})
+
+describe('bounded protocol projection', () => {
+  it('caps cycles and oversized text before serialization', () => {
+    const cyclic: { self?: unknown; text: string } = { text: 'x'.repeat(2_000_000) }
+    cyclic.self = cyclic
+    const projected = boundedJson(cyclic)
+    const text = JSON.stringify(projected.value)
+    expect(projected.capped).toBe(true)
+    expect(Buffer.byteLength(text)).toBeLessThan(MCP_MAX_OUTPUT_BYTES)
+    expect(text).toContain('cycle omitted')
+  })
+
+  it('projects hostile object keys without prototype mutation', () => {
+    const projected = boundedJson(JSON.parse('{"__proto__":{"polluted":true}}'))
+    const record = projected.value as Record<string, unknown>
+    expect(Object.getPrototypeOf(record)).toBeNull()
+    expect(Object.hasOwn(record, '__proto__')).toBe(true)
+    expect(({} as { polluted?: boolean }).polluted).toBeUndefined()
+  })
+})
+
+describe('read-only MCP v2 adapter', () => {
+  it('advertises only bounded read-only tools and resources', async () => {
+    const { client } = await connected(fakeHost().host)
+    const tools = await client.listTools()
+    expect(tools.tools.map(tool => tool.name)).toEqual([
+      'modkit.inventory',
+      'modkit.capabilities',
+      'modkit.discover_installations',
+      'modkit.open_discovered',
+      'modkit.open_subject',
+      'modkit.close_subject',
+      'modkit.open_selection',
+      'modkit.inspect',
+      'modkit.list_subjects',
+      'modkit.search_subjects',
+      'modkit.select_subject',
+      'modkit.close_selected_subject',
+      'modkit.subject_facts',
+      'modkit.relation_graph',
+      'modkit.subject_calculations',
+      'modkit.invoke_readonly',
+      'modkit.knowledge_search',
+      'modkit.knowledge_resolve',
+    ])
+    expect(tools.tools.every(tool => tool.annotations?.readOnlyHint === true)).toBe(true)
+    expect(tools.tools.some(tool => /write|save/u.test(tool.name))).toBe(false)
+    const resources = await client.listResources()
+    expect(resources.resources.map(resource => resource.uri)).toEqual([
+      'modkit://inventory',
+      'modkit://capabilities',
+    ])
+    const templates = await client.listResourceTemplates()
+    expect(templates.resourceTemplates.map(template => template.uriTemplate)).toEqual([
+      'modkit://subject/{handle}/inspect',
+      'modkit://subject/{handle}/facts',
+      'modkit://subject/{handle}/graph',
+      'modkit://subject/{handle}/formulas',
+      'modkit://subject/{handle}/preview',
+      'modkit://knowledge/{target}/{locale}',
+      'modkit://schema/{target}/{locale}',
+    ])
+  })
+
+  it('opens, inspects and closes an opaque handle', async () => {
+    const fake = fakeHost()
+    const { client } = await connected(fake.host)
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:\\allowed\\fixture' },
+      }),
+    )
+    const handle = handleFrom(opened)
+    expect(handle).not.toBe('host-session-do-not-expose')
+    const inspected = structured(
+      await client.callTool({ name: 'modkit.inspect', arguments: { handle } }),
+    )
+    expect(inspected.trust).toBe('untrusted-data')
+    expect(JSON.stringify(inspected.data)).toContain('fixture/write')
+    const resource = await client.readResource({ uri: `modkit://subject/${handle}/inspect` })
+    const first = resource.contents[0]
+    expect(first !== undefined && 'text' in first ? first.text : '').toContain('fixture-revision')
+    const closed = structured(
+      await client.callTool({ name: 'modkit.close_subject', arguments: { handle } }),
+    )
+    expect((closed.data as { state: string }).state).toBe('closed')
+    expect(fake.closes()).toBe(1)
+  })
+
+  it('continues an open container selection on the same handle', async () => {
+    const fake = fakeHost({ withSelection: true })
+    const { client } = await connected(fake.host)
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:\\allowed\\fixture' },
+      }),
+    )
+    const handle = handleFrom(opened)
+    expect(opened.data).toMatchObject({
+      selectionCandidates: [{ candidateId: 'fixture-candidate' }],
+    })
+    const selected = structured(
+      await client.callTool({
+        name: 'modkit.open_selection',
+        arguments: { handle, selectionId: 'fixture-candidate' },
+      }),
+    )
+    expect(selected.data).toMatchObject({ state: 'opened', handle })
+    expect(fake.selectionInvocations()).toEqual(['fixture-candidate'])
+    await client.callTool({ name: 'modkit.close_subject', arguments: { handle } })
+    expect(fake.closes()).toBe(1)
+  })
+
+  it('opens an opaque verified discovery result and closes its handle on success and error', async () => {
+    const fake = fakeHost({ withDiscovery: true })
+    const { client } = await connected(fake.host)
+    const discovered = structured(
+      await client.callTool({
+        name: 'modkit.discover_installations',
+        arguments: { gameId: 'fixture-game', maxCandidates: 4 },
+      }),
+    )
+    expect(JSON.stringify(discovered.data)).not.toContain('C:\\allowed')
+    expect(discovered.data).toMatchObject({
+      items: [
+        {
+          selectionId: 'fixture-installation',
+          openable: true,
+          locator: { kind: 'discovered-installation' },
+        },
+      ],
+    })
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_discovered',
+        arguments: { selectionId: 'fixture-installation' },
+      }),
+    )
+    const handle = handleFrom(opened)
+    const closed = structured(
+      await client.callTool({ name: 'modkit.close_subject', arguments: { handle } }),
+    )
+    expect(closed.data).toMatchObject({ state: 'closed', handle })
+    const refused = await client.callTool({
+      name: 'modkit.open_discovered',
+      arguments: { selectionId: 'missing-installation' },
+    })
+    expect(refused.isError).toBe(true)
+    const secondClose = await client.callTool({
+      name: 'modkit.close_subject',
+      arguments: { handle },
+    })
+    expect(structured(secondClose).diagnostics[0]?.code).toBe('x3.mcp/unknown-handle')
+    expect(fake.closes()).toBe(1)
+  })
+
+  it('reads facts, graph, calculations and the single injected knowledge catalog', async () => {
+    const { client } = await connected(fakeHost().host)
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:\\allowed\\fixture' },
+      }),
+    )
+    const handle = handleFrom(opened)
+    const facts = structured(
+      await client.callTool({
+        name: 'modkit.subject_facts',
+        arguments: { handle, view: 'facts', groupId: 'general', limit: 10 },
+      }),
+    )
+    expect(JSON.stringify(facts.data)).toContain(fixture.summary)
+    expect(facts.provenance).toHaveLength(1)
+    const graph = structured(
+      await client.callTool({
+        name: 'modkit.relation_graph',
+        arguments: { handle, view: 'edges', limit: 10 },
+      }),
+    )
+    expect(JSON.stringify(graph.data)).toContain('uses')
+    const traversal = structured(
+      await client.callTool({
+        name: 'modkit.relation_graph',
+        arguments: { handle, view: 'traverse', roots: ['a'], depth: 2 },
+      }),
+    )
+    expect(traversal.completeness).toBe('complete')
+    expect(traversal.data).toMatchObject({
+      roots: ['a'],
+      direction: 'outgoing',
+      depth: 2,
+      nodes: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
+      edges: [
+        { from: 'a', to: 'b' },
+        { from: 'b', to: 'c' },
+      ],
+      missingNodeIds: [],
+      scanned: { nodes: 4, edges: 3 },
+    })
+    const calculations = structured(
+      await client.callTool({
+        name: 'modkit.subject_calculations',
+        arguments: { handle, view: 'calculations', limit: 10 },
+      }),
+    )
+    expect(JSON.stringify(calculations.data)).toContain('x * 2')
+    const knowledge = structured(
+      await client.callTool({
+        name: 'modkit.knowledge_resolve',
+        arguments: {
+          target: { kind: 'concept', ecosystem: 'fixture', conceptId: 'fixture-value' },
+          locales: ['en'],
+          limit: 10,
+        },
+      }),
+    )
+    expect(JSON.stringify(knowledge.data)).toContain(fixture.source)
+    expect(knowledge.snapshotId).toBe('knowledge-v1')
+
+    const graphResource = await client.readResource({ uri: `modkit://subject/${handle}/graph` })
+    const formulasResource = await client.readResource({
+      uri: `modkit://subject/${handle}/formulas`,
+    })
+    const previewResource = await client.readResource({
+      uri: `modkit://subject/${handle}/preview`,
+    })
+    expect(JSON.stringify(graphResource.contents)).toContain('graph-v1')
+    expect(JSON.stringify(formulasResource.contents)).toContain('x * 2')
+    expect(JSON.stringify(previewResource.contents)).toContain('fixture-preview')
+
+    const knowledgeTarget = encodeKnowledgeResourceTarget({
+      kind: 'concept',
+      ecosystem: 'fixture',
+      conceptId: 'fixture-value',
+    })
+    const schemaTarget = encodeKnowledgeResourceTarget({
+      kind: 'field',
+      ecosystem: 'fixture',
+      schema: { contract: 'fixture/schema', major: 1, revision: 'v1' },
+      typeId: 'Fixture',
+      canonicalPath: ['value'],
+    })
+    const knowledgeResource = await client.readResource({
+      uri: `modkit://knowledge/${knowledgeTarget}/en`,
+    })
+    const schemaResource = await client.readResource({
+      uri: `modkit://schema/${schemaTarget}/en`,
+    })
+    expect(JSON.stringify(knowledgeResource.contents)).toContain(fixture.source)
+    expect(JSON.stringify(schemaResource.contents)).toContain('knowledge-v1')
+  })
+
+  it('lists and selects a publisher-parsed entity through host-owned leases', async () => {
+    const { client } = await connected(fakeHost().host)
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:\\allowed\\fixture' },
+      }),
+    )
+    const parentHandle = handleFrom(opened)
+    const listed = structured(
+      await client.callTool({
+        name: 'modkit.list_subjects',
+        arguments: { handle: parentHandle, limit: 10, kind: 'fixture', text: 'subject' },
+      }),
+    )
+    expect(listed.data).toMatchObject({
+      total: 1,
+      items: [{ subjectId: 'fixture-subject', kind: 'fixture' }],
+    })
+    const filteredOut = structured(
+      await client.callTool({
+        name: 'modkit.list_subjects',
+        arguments: { handle: parentHandle, limit: 10, kind: 'not-fixture' },
+      }),
+    )
+    expect(filteredOut.data).toMatchObject({ total: 1, items: [] })
+    const exact = structured(
+      await client.callTool({
+        name: 'modkit.search_subjects',
+        arguments: {
+          handle: parentHandle,
+          subjectId: 'fixture-subject',
+          kind: 'fixture',
+          limit: 10,
+        },
+      }),
+    )
+    expect(exact.data).toMatchObject({
+      items: [
+        {
+          subjectId: 'fixture-subject',
+          locator: {
+            kind: 'nested-subject',
+            handle: parentHandle,
+            subjectId: 'fixture-subject',
+          },
+          coordinate: { namespace: 'fixture', entityId: 'fixture-subject' },
+        },
+      ],
+    })
+    const exactMiss = structured(
+      await client.callTool({
+        name: 'modkit.search_subjects',
+        arguments: { handle: parentHandle, label: 'fixture subject', limit: 10 },
+      }),
+    )
+    expect(exactMiss.data).toMatchObject({ items: [] })
+    const graphPage = structured(
+      await client.callTool({
+        name: 'modkit.relation_graph',
+        arguments: { handle: parentHandle, view: 'nodes', limit: 1 },
+      }),
+    )
+    const crossedCursor = await client.callTool({
+      name: 'modkit.search_subjects',
+      arguments: {
+        handle: parentHandle,
+        subjectId: 'fixture-subject',
+        cursor: graphPage.nextCursor,
+        limit: 10,
+      },
+    })
+    expect(crossedCursor.isError).toBe(true)
+    expect(structured(crossedCursor).diagnostics[0]?.code).toBe('x3.mcp/invalid-cursor')
+    const selected = structured(
+      await client.callTool({
+        name: 'modkit.select_subject',
+        arguments: { handle: parentHandle, subjectId: 'fixture-subject' },
+      }),
+    )
+    const entityHandle = handleFrom(selected)
+    expect(entityHandle).not.toBe(parentHandle)
+    const facts = structured(
+      await client.callTool({
+        name: 'modkit.subject_facts',
+        arguments: { handle: entityHandle, view: 'summary' },
+      }),
+    )
+    const calculations = structured(
+      await client.callTool({
+        name: 'modkit.subject_calculations',
+        arguments: { handle: entityHandle, view: 'summary' },
+      }),
+    )
+    expect(facts.data).toMatchObject({ identity: { subjectId: 'fixture-subject' } })
+    expect(calculations.data).toMatchObject({ subjectId: 'fixture-subject' })
+    const closed = structured(
+      await client.callTool({
+        name: 'modkit.close_selected_subject',
+        arguments: { handle: entityHandle },
+      }),
+    )
+    expect(closed.data).toMatchObject({ state: 'closed', subjectId: 'fixture-subject' })
+  })
+
+  it('force-closes a selected subject when its source ignores cancellation', async () => {
+    const fake = fakeHost({ ignoreFactsAbort: true })
+    const runtime = new ModkitMcpRuntime(fake.host)
+    const opened = await runtime.open('C:\\allowed\\fixture', new AbortController().signal)
+    const parentHandle = handleFrom(opened)
+    const selected = await runtime.selectSubject(
+      parentHandle,
+      'fixture-subject',
+      new AbortController().signal,
+    )
+    const entityHandle = handleFrom(selected)
+    const pending = runtime.facts(
+      entityHandle,
+      { view: 'groups', limit: 10 },
+      new AbortController().signal,
+    )
+    void pending.catch(() => undefined)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const started = performance.now()
+    const closed = await runtime.closeEntity(entityHandle)
+    expect(performance.now() - started).toBeGreaterThanOrEqual(900)
+    expect(closed).toMatchObject({
+      completeness: 'capped',
+      diagnostics: [{ code: 'x3.mcp/close-deadline' }],
+    })
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+    await runtime.close(parentHandle)
+  })
+
+  it('marks a depth-limited relation traversal incomplete when its source scan is capped', async () => {
+    const { client } = await connected(fakeHost().host)
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:\\allowed\\fixture' },
+      }),
+    )
+    const traversal = structured(
+      await client.callTool({
+        name: 'modkit.relation_graph',
+        arguments: {
+          handle: handleFrom(opened),
+          view: 'traverse',
+          roots: ['a'],
+          direction: 'both',
+          depth: 3,
+          scanLimit: 1,
+        },
+      }),
+    )
+    expect(traversal.completeness).toBe('capped')
+    expect(traversal.diagnostics.map(item => item.code)).toContain(
+      'x3.mcp/relation-graph-scan-capped',
+    )
+    expect(traversal.data).toMatchObject({
+      roots: ['a'],
+      scanned: { nodes: 1, edges: 1 },
+    })
+  })
+
+  it('invokes an exact descriptor-advertised read-only operation with bounded evidence', async () => {
+    const fake = fakeHost()
+    const { client } = await connected(fake.host)
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:\\allowed\\fixture' },
+      }),
+    )
+    const result = structured(
+      await client.callTool({
+        name: 'modkit.invoke_readonly',
+        arguments: {
+          handle: handleFrom(opened),
+          operationId: 'fixture/read',
+          input: { value: 2 },
+        },
+      }),
+    )
+    expect(result.completeness).toBe('complete')
+    expect(result.provenance).toHaveLength(2)
+    expect(JSON.stringify(result.data)).toContain(fixture.summary)
+    expect(fake.operationInvocations()).toEqual(['read'])
+  })
+
+  it('refuses mutating and unknown operation IDs before session invocation', async () => {
+    const fake = fakeHost()
+    const { client } = await connected(fake.host)
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:\\allowed\\fixture' },
+      }),
+    )
+    const handle = handleFrom(opened)
+    const mutating = await client.callTool({
+      name: 'modkit.invoke_readonly',
+      arguments: { handle, operationId: 'fixture/write', input: null },
+    })
+    expect(mutating.isError).toBe(true)
+    expect(structured(mutating).diagnostics[0]?.code).toBe('x3.mcp/mutating-operation-refused')
+    const unknown = await client.callTool({
+      name: 'modkit.invoke_readonly',
+      arguments: { handle, operationId: 'fixture/missing', input: null },
+    })
+    expect(unknown.isError).toBe(true)
+    expect(structured(unknown).diagnostics[0]?.code).toBe('x3.mcp/operation-not-declared')
+    expect(fake.operationInvocations()).toEqual([])
+  })
+
+  it('preserves a host operation rejection as bounded invalid data', async () => {
+    const fake = fakeHost()
+    const { client } = await connected(fake.host)
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:\\allowed\\fixture' },
+      }),
+    )
+    const response = await client.callTool({
+      name: 'modkit.invoke_readonly',
+      arguments: {
+        handle: handleFrom(opened),
+        operationId: 'fixture/rejected',
+        input: null,
+      },
+    })
+    const result = structured(response)
+    expect(response.isError).not.toBe(true)
+    expect(result.completeness).toBe('invalid')
+    expect(result.diagnostics[0]?.code).toBe('fixture/dependency-required')
+    expect(result.provenance).toHaveLength(2)
+    expect(result.data).toMatchObject({ result: { state: 'rejected' }, progress: [] })
+    expect(fake.operationInvocations()).toEqual(['rejected'])
+  })
+
+  it('caps oversized cyclic operation output without leaking the cycle', async () => {
+    const fake = fakeHost()
+    const runtime = new ModkitMcpRuntime(fake.host)
+    const opened = await runtime.open('C:\\allowed\\fixture', new AbortController().signal)
+    const result = await runtime.invokeReadonly(
+      handleFrom(opened),
+      'fixture/oversized',
+      null,
+      new AbortController().signal,
+    )
+    const text = JSON.stringify(result)
+    expect(result.completeness).toBe('capped')
+    expect(text).toContain('cycle omitted')
+    expect(Buffer.byteLength(text)).toBeLessThan(MCP_MAX_OUTPUT_BYTES)
+    await runtime.dispose()
+  })
+
+  it('rejects capped hostile operation input before session invocation', async () => {
+    const fake = fakeHost()
+    const runtime = new ModkitMcpRuntime(fake.host)
+    const opened = await runtime.open('C:\\allowed\\fixture', new AbortController().signal)
+    const cyclic: { self?: unknown } = {}
+    cyclic.self = cyclic
+    await expect(
+      runtime.invokeReadonly(
+        handleFrom(opened),
+        'fixture/read',
+        cyclic,
+        new AbortController().signal,
+      ),
+    ).rejects.toMatchObject({ code: 'x3.mcp/operation-input-too-large' })
+    expect(fake.operationInvocations()).toEqual([])
+    await runtime.dispose()
+  })
+
+  it('cancels an active operation and drains it when its handle closes', async () => {
+    const fake = fakeHost()
+    const runtime = new ModkitMcpRuntime(fake.host)
+    const opened = await runtime.open('C:\\allowed\\fixture', new AbortController().signal)
+    const handle = handleFrom(opened)
+    const pending = runtime.invokeReadonly(
+      handle,
+      'fixture/slow',
+      null,
+      new AbortController().signal,
+    )
+    while (fake.operationInvocations().length === 0) {
+      await new Promise(resolve => setTimeout(resolve, 0))
+    }
+    const [invocation, closed] = await Promise.allSettled([pending, runtime.close(handle)])
+    expect(invocation).toMatchObject({ status: 'rejected' })
+    expect(fake.operationAborts()).toEqual(['slow'])
+    expect(closed).toMatchObject({ status: 'fulfilled', value: { completeness: 'complete' } })
+    expect(fake.operationInvocations()).toEqual(['slow'])
+    expect(fake.closes()).toBe(1)
+  })
+
+  it('releases a returned stream when a late abort makes normalization throw', async () => {
+    const controller = new AbortController()
+    const fake = fakeHost({ lateAbortController: controller })
+    const runtime = new ModkitMcpRuntime(fake.host)
+    const opened = await runtime.open('C:\\allowed\\fixture', new AbortController().signal)
+    const handle = handleFrom(opened)
+    await expect(
+      runtime.invokeReadonly(handle, 'fixture/late-stream', null, controller.signal),
+    ).rejects.toMatchObject({ name: 'AbortError' })
+    const closed = await runtime.close(handle)
+    expect(closed.completeness).toBe('complete')
+    expect(fake.streamReleases()).toBe(1)
+  })
+
+  it('rejects oversized requests before the host port is called', async () => {
+    const fake = fakeHost()
+    const { client } = await connected(fake.host)
+    const result = await client.callTool({
+      name: 'modkit.open_subject',
+      arguments: { path: `C:\\allowed\\${'x'.repeat(5_000)}` },
+    })
+    expect(result.isError).toBe(true)
+    expect(result.content[0]).toMatchObject({ type: 'text' })
+    expect(fake.closes()).toBe(0)
+  })
+
+  it('binds data-source cursors to the exact handle, snapshot and view', async () => {
+    const { client } = await connected(fakeHost().host)
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:\\allowed\\fixture' },
+      }),
+    )
+    const handle = handleFrom(opened)
+    const nodes = structured(
+      await client.callTool({
+        name: 'modkit.relation_graph',
+        arguments: { handle, view: 'nodes', limit: 1 },
+      }),
+    )
+    expect(nodes.nextCursor).not.toBeNull()
+    const crossed = await client.callTool({
+      name: 'modkit.relation_graph',
+      arguments: { handle, view: 'edges', limit: 1, cursor: nodes.nextCursor },
+    })
+    expect(crossed.isError).toBe(true)
+    expect(structured(crossed).diagnostics[0]?.code).toBe('x3.mcp/invalid-cursor')
+    const cursor = nodes.nextCursor ?? ''
+    const tampered = `${cursor.slice(0, -1)}${cursor.endsWith('A') ? 'B' : 'A'}`
+    const forged = await client.callTool({
+      name: 'modkit.relation_graph',
+      arguments: { handle, view: 'nodes', limit: 1, cursor: tampered },
+    })
+    expect(forged.isError).toBe(true)
+  })
+
+  it('aborts an active source read before closing its handle', async () => {
+    const fake = fakeHost({ waitForAbort: true })
+    const runtime = new ModkitMcpRuntime(fake.host)
+    const opened = await runtime.open('C:\\allowed\\fixture', new AbortController().signal)
+    const handle = handleFrom(opened)
+    const pending = runtime.facts(
+      handle,
+      { view: 'groups', limit: 10 },
+      new AbortController().signal,
+    )
+    await expect(Promise.allSettled([pending, runtime.close(handle)])).resolves.toEqual([
+      expect.objectContaining({ status: 'rejected' }),
+      expect.objectContaining({ status: 'fulfilled' }),
+    ])
+    expect(fake.closes()).toBe(1)
+  })
+})

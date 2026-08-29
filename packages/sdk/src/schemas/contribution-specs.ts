@@ -2,6 +2,7 @@
 
 import { deepFreeze, UINT64_DECIMAL_PATTERN } from '@modkitx-x3/core'
 import { STANDARD_DATA_SOURCE_CONTRACTS } from '../asset-capabilities/data-source-ids.js'
+import { KNOWLEDGE_LOCALE_PATTERN } from '../knowledge/index.js'
 import {
   METHOD_NAME_PATTERN,
   NAMESPACED_DOTTED_PATTERN,
@@ -625,6 +626,204 @@ export const editorContributionSpecV1Schema = {
   },
 } as const
 
+const localeTag = {
+  type: 'string',
+  pattern: KNOWLEDGE_LOCALE_PATTERN,
+  maxLength: 64,
+} as const
+
+const knowledgeShortText = { type: 'string', minLength: 1, maxLength: 128 } as const
+const knowledgeTitle = { type: 'string', minLength: 1, maxLength: 256 } as const
+const boundedKnowledgeQualifiedId = {
+  type: 'string',
+  pattern: QUALIFIED_PATTERN,
+  maxLength: 256,
+} as const
+
+const knowledgeSchemaCoordinate = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['contract', 'major', 'revision'],
+  properties: {
+    contract: boundedKnowledgeQualifiedId,
+    major: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    revision: { type: 'string', minLength: 1, maxLength: 256 },
+  },
+} as const
+
+const knowledgeTargetSchema = {
+  oneOf: [
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['kind', 'ecosystem', 'schema', 'typeId', 'canonicalPath'],
+      properties: {
+        kind: { const: 'field' },
+        ecosystem: knowledgeShortText,
+        schema: knowledgeSchemaCoordinate,
+        typeId: knowledgeShortText,
+        canonicalPath: {
+          type: 'array',
+          items: knowledgeShortText,
+          minItems: 1,
+          maxItems: 32,
+        },
+      },
+    },
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['kind', 'ecosystem', 'subjectKind'],
+      properties: {
+        kind: { const: 'subject' },
+        ecosystem: knowledgeShortText,
+        subjectKind: knowledgeShortText,
+        subjectId: { type: 'string', minLength: 1, maxLength: 512 },
+      },
+    },
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['kind', 'ecosystem', 'formatId'],
+      properties: {
+        kind: { const: 'format' },
+        ecosystem: knowledgeShortText,
+        formatId: knowledgeShortText,
+      },
+    },
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['kind', 'ecosystem', 'code'],
+      properties: {
+        kind: { const: 'diagnostic' },
+        ecosystem: knowledgeShortText,
+        code: { type: 'string', minLength: 1, maxLength: 256 },
+      },
+    },
+    {
+      type: 'object',
+      additionalProperties: false,
+      required: ['kind', 'ecosystem', 'conceptId'],
+      properties: {
+        kind: { const: 'concept' },
+        ecosystem: knowledgeShortText,
+        conceptId: knowledgeShortText,
+      },
+    },
+  ],
+} as const
+
+const knowledgeSourceSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['kind', 'title', 'reviewedAt'],
+  properties: {
+    kind: {
+      enum: [
+        'schema',
+        'official-documentation',
+        'source-code',
+        'community-wiki',
+        'observed-corpus',
+        'external-reference',
+      ],
+    },
+    title: knowledgeTitle,
+    url: { type: 'string', pattern: '^https://[^\\s]+$', maxLength: 2048 },
+    schema: knowledgeSchemaCoordinate,
+    revision: { type: 'string', minLength: 1, maxLength: 256 },
+    license: { type: 'string', minLength: 1, maxLength: 256 },
+    reviewedAt: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+  },
+} as const
+
+const knowledgeEntrySchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['id', 'target', 'locale', 'title', 'summary', 'claimKind', 'confidence', 'sources'],
+  properties: {
+    id: boundedKnowledgeQualifiedId,
+    target: knowledgeTargetSchema,
+    locale: localeTag,
+    title: knowledgeTitle,
+    summary: { type: 'string', minLength: 1, maxLength: 1024 },
+    claimKind: {
+      enum: [
+        'schema-derived-fact',
+        'documented-interpretation',
+        'community-note',
+        'external-reference',
+      ],
+    },
+    confidence: { enum: ['verified', 'high', 'medium', 'low'] },
+    aliases: {
+      type: 'array',
+      items: knowledgeShortText,
+      maxItems: 32,
+      uniqueItems: true,
+    },
+    keywords: {
+      type: 'array',
+      items: knowledgeShortText,
+      maxItems: 32,
+      uniqueItems: true,
+    },
+    details: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        valueType: knowledgeShortText,
+        units: knowledgeShortText,
+        defaultValue: { title: 'JsonValue' },
+        allowedValues: { type: 'array', items: { title: 'JsonValue' }, maxItems: 512 },
+        deprecated: { type: 'boolean' },
+        formulaRole: { type: 'string', minLength: 1, maxLength: 512 },
+      },
+    },
+    relations: {
+      type: 'array',
+      maxItems: 64,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['role', 'target'],
+        properties: { role: knowledgeShortText, target: knowledgeTargetSchema },
+      },
+    },
+    examples: {
+      type: 'array',
+      maxItems: 16,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['title', 'text'],
+        properties: {
+          title: knowledgeTitle,
+          text: { type: 'string', minLength: 1, maxLength: 2048 },
+        },
+      },
+    },
+    sources: { type: 'array', items: knowledgeSourceSchema, minItems: 1, maxItems: 16 },
+  },
+} as const
+
+/** Data-only knowledge pack: summaries and provenance, never executable authority. */
+export const knowledgePackSpecV1Schema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.modkitx.org/x3/knowledge-pack-spec.v1.schema.json',
+  type: 'object',
+  additionalProperties: false,
+  required: ['schemaVersion', 'sourceLocale', 'priority', 'entries'],
+  properties: {
+    schemaVersion: { const: 1 },
+    sourceLocale: localeTag,
+    priority: { type: 'number' },
+    gameIds: { type: 'array', items: knowledgeShortText, maxItems: 32, uniqueItems: true },
+    entries: { type: 'array', items: knowledgeEntrySchema, minItems: 1, maxItems: 10_000 },
+  },
+} as const
+
 export const traitDefinitionSpecV1Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   $id: 'https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json',
@@ -880,6 +1079,7 @@ deepFreeze(codecContributionSpecV1Schema)
 deepFreeze(serviceProviderContributionSpecV1Schema)
 deepFreeze(viewerContributionSpecV1Schema)
 deepFreeze(editorContributionSpecV1Schema)
+deepFreeze(knowledgePackSpecV1Schema)
 deepFreeze(traitDefinitionSpecV1Schema)
 deepFreeze(serviceContractDefinitionSpecV1Schema)
 deepFreeze(dataSourceMethodSurfaceV1Schema)

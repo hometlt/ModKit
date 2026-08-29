@@ -30,8 +30,12 @@ export const STAGE_ORDER: readonly string[] = Object.freeze([
   'model',
   'vector',
   'archive',
+  'template',
+  'card',
+  'calculations',
   'table',
   'tree',
+  'relations',
   'text',
   'virtual-text',
   'hex',
@@ -92,11 +96,13 @@ export const PANEL_POLICY: readonly PanelPolicy[] = Object.freeze([
 export interface StageFacts {
   readonly id?: string
   readonly label: string
-  readonly contract: string
+  readonly contract?: string
+  readonly operation?: string
   readonly trait?: string
 }
 
-const stageId = (stage: StageFacts): string => stage.id ?? stage.contract
+const stageId = (stage: StageFacts): string =>
+  stage.id ?? stage.contract ?? stage.operation ?? 'invalid-stage'
 
 /**
  * Merge the generated catalog with the application's own stages and put the result in policy
@@ -198,11 +204,18 @@ export function applicableStages<Stage extends StageFacts>(
   descriptor: Record<string, unknown>,
 ): readonly Stage[] {
   const published = new Set(publishedContracts(descriptor))
+  const operations = new Set(
+    descriptorOperations(descriptor)
+      .filter(operation => operation.state === 'available')
+      .map(operation => operation.id),
+  )
   const traits = new Set(descriptorTraits(descriptor))
   return Object.freeze(
     stages.filter(
       stage =>
-        published.has(stage.contract) && (stage.trait === undefined || traits.has(stage.trait)),
+        (stage.contract === undefined || published.has(stage.contract)) &&
+        (stage.operation === undefined || operations.has(stage.operation)) &&
+        (stage.trait === undefined || traits.has(stage.trait)),
     ),
   )
 }

@@ -675,6 +675,46 @@
     align-items: center;
   }
 
+  [data-mk-part='model.primitive-selector'] {
+    min-width: 10rem;
+    max-width: min(24rem, 45vw);
+  }
+
+  [data-mk-part='model.facets'] {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: var(--mk-space-2);
+    max-height: 14rem;
+    overflow: auto;
+  }
+
+  [data-mk-part='model.facet'] {
+    min-width: 0;
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-sunken);
+  }
+
+  [data-mk-part='model.facet-summary'] {
+    padding: var(--mk-space-2);
+    cursor: pointer;
+    font-weight: var(--mk-font-weight-medium);
+  }
+
+  [data-mk-part='model.facet-list'] {
+    max-height: 9rem;
+    margin: 0;
+    padding: 0 var(--mk-space-3) var(--mk-space-2) calc(var(--mk-space-3) + 1rem);
+    overflow: auto;
+  }
+
+  [data-mk-part='model.facet-item'] {
+    color: var(--mk-color-fg-muted);
+    font-family: var(--mk-font-mono);
+    font-size: var(--mk-font-size-xs);
+    overflow-wrap: anywhere;
+  }
+
   /* The stage owns the drag, so the pointer must read as a manipulator, not as text. */
   [data-mk-part='model.canvas'] {
     touch-action: none;

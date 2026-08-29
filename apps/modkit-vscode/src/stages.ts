@@ -12,9 +12,12 @@
  */
 import { audioViewer } from '@modkitx-x3/ui/audio'
 import { boundedTextViewer } from '@modkitx-x3/ui/code'
+import { subjectCardViewer } from '@modkitx-x3/ui/card'
+import { subjectCalculationsViewer } from '@modkitx-x3/ui/calculations'
 import { textEditor } from '@modkitx-x3/ui/editor'
 import type { PreviewStage } from '@modkitx-x3/ui/explorer'
 import { relationGraphViewer } from '@modkitx-x3/ui/graph'
+import { gameTemplateViewer } from '@modkitx-x3/ui/template'
 import { hexViewer } from '@modkitx-x3/ui/hex'
 import { hexEditor } from '@modkitx-x3/ui/hex-editor'
 import { imageViewer } from '@modkitx-x3/ui/image'
@@ -81,6 +84,24 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       contract: 'common.view/namespace-entry-source',
       module: vscodeArchiveStage,
     },
+    {
+      id: 'template',
+      label: 'Template',
+      operation: 'view.template',
+      module: gameTemplateViewer,
+    },
+    {
+      id: 'card',
+      label: 'Card',
+      contract: 'common.view/subject-facts-source',
+      module: subjectCardViewer,
+    },
+    {
+      id: 'calculations',
+      label: 'Calculations',
+      contract: 'common.view/subject-calculations-source',
+      module: subjectCalculationsViewer,
+    },
     { id: 'table', label: 'Table', contract: 'common.view/table-data-source', module: tableViewer },
     { id: 'tree', label: 'Tree', contract: 'common.view/tree-data-source', module: treeViewer },
     {
@@ -88,7 +109,6 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       label: 'Relations',
       contract: 'common.view/relation-graph-source',
       module: relationGraphViewer,
-      appLocal: true,
     },
     {
       id: 'text',

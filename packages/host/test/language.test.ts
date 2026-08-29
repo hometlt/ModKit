@@ -8,6 +8,7 @@ import {
   createBundledServiceDefinitionRegistry,
   createExecutionBackendRegistry,
   createHostComposition,
+  defineLinkedExtension,
   linkedExtensionInputs,
   linkedInProcessBackend,
   registerServiceDefinitionsOrThrow,
@@ -18,8 +19,10 @@ import {
 import {
   createLanguageWorkspace,
   languageProviderRoutes,
+  LANGUAGE_DOCUMENT_CONTRACT_DEFINITION,
   LANGUAGE_ANALYSIS_INVALID,
   LANGUAGE_DOCUMENT_CHANGE_INVALID,
+  LANGUAGE_FEATURE_INVALID,
   LANGUAGE_PROVIDER_FAILED,
   LANGUAGE_WORKSPACE_SHUT_DOWN,
   resolveLanguageProvider,
@@ -156,6 +159,76 @@ async function controlledLanguageServices(module: LinkedModule): Promise<Languag
   return { ...controlledComposition, serviceDefinitions: controlledDefinitions }
 }
 
+async function mixedLanguageServices(
+  provider: Readonly<Record<string, unknown>>,
+): Promise<LanguageHostServices> {
+  const contribution = (id: string, languageId: string, extension: string) => ({
+    schemaVersion: 1,
+    contract: { id: 'org.modkitx/service-provider-contribution', major: 1 },
+    id: `org.modkitx.test/${id}`,
+    displayName: id,
+    runtimeVariants: [
+      {
+        variantId: 'trusted-node',
+        entrypoint: `./src/${id}.js`,
+        target: { environments: ['node'] },
+        executionProfile: 'trusted-in-process',
+        requestedPermissionClasses: [],
+      },
+    ],
+    spec: {
+      provides: [
+        {
+          offerId: `${id}-v1`,
+          contract: 'common.language/document-analysis',
+          major: 1,
+          version: '1.0.0',
+          facet: { languageIds: [languageId], extensions: [extension] },
+        },
+      ],
+      lifecycleScope: 'session',
+    },
+  })
+  const module = providerModule(provider)
+  const galaxy = contribution('mixed-galaxy', 'galaxy', 'galaxy')
+  const data = contribution('mixed-data', 'sc2-data', 'xml')
+  const linkedFixture = defineLinkedExtension({
+    source: 'linked:test/mixed-language',
+    packageJson: {
+      name: 'modkit-test-mixed-language',
+      version: '1.0.0',
+      license: 'MIT',
+      type: 'module',
+      description: 'Mixed-language host test fixture.',
+      modkit: {
+        schemaVersion: 1,
+        publisher: 'org.modkitx.test',
+        id: 'mixed-language',
+        contributionManifests: ['./contributions/*.json'],
+      },
+    },
+    contributions: [
+      { path: 'contributions/galaxy.json', manifest: galaxy },
+      { path: 'contributions/data.json', manifest: data },
+    ],
+    modules: {
+      './src/mixed-galaxy.js': module,
+      './src/mixed-data.js': module,
+    },
+  })
+  const linked = linkedExtensionInputs([linkedFixture])
+  const executionBackends = createExecutionBackendRegistry([linkedInProcessBackend(linked.modules)])
+  const controlledComposition = await createHostComposition({
+    topology,
+    realmId: REALM,
+    extensions: linked.inputs,
+    executionBackends,
+  })
+  const controlledDefinitions = createBundledServiceDefinitionRegistry()
+  await registerServiceDefinitionsOrThrow(controlledComposition.inventory, controlledDefinitions)
+  return { ...controlledComposition, serviceDefinitions: controlledDefinitions }
+}
+
 const providerModule = (
   provider: Readonly<Record<string, unknown>>,
   release: () => void = () => undefined,
@@ -166,6 +239,23 @@ const providerModule = (
 })
 
 describe('standard language contract and Galaxy provider', () => {
+  it('advertises semantic methods as optional protocol-neutral surface features', () => {
+    expect(LANGUAGE_DOCUMENT_CONTRACT_DEFINITION.surface?.methods).toMatchObject({
+      analyze: { kind: 'value' },
+      completion: { kind: 'value', optional: true },
+      hover: { kind: 'value', optional: true },
+      signatureHelp: { kind: 'value', optional: true },
+      definition: { kind: 'value', optional: true },
+      references: { kind: 'value', optional: true },
+      prepareRename: { kind: 'value', optional: true },
+      rename: { kind: 'value', optional: true },
+      formatting: { kind: 'value', optional: true },
+      documentSymbols: { kind: 'value', optional: true },
+      workspaceSymbols: { kind: 'value', optional: true },
+      diagnostics: { kind: 'value', optional: true },
+    })
+  })
+
   it('projects configured routes deterministically and deduplicates runtime variants', () => {
     expect(languageProviderRoutes(composition.inventory)).toEqual([
       { languageId: 'galaxy', documentKind: 'galaxy-source', extension: 'ai' },
@@ -271,6 +361,253 @@ describe('standard language contract and Galaxy provider', () => {
 })
 
 describe('language workspace lifecycle', () => {
+  it('keeps one-language snapshots by default and passes mixed documents only by explicit opt-in', async () => {
+    const snapshots: string[][] = []
+    const create = (workspaceLanguageIds?: readonly string[]) => ({
+      contract: 'common.language/document-analysis',
+      languageIds: ['galaxy', 'sc2-data'],
+      ...(workspaceLanguageIds === undefined ? {} : { workspaceLanguageIds }),
+      analyze: (request: { readonly document: LanguageDocument }) =>
+        Promise.resolve(analysisFor(request)),
+      completion: (request: {
+        readonly workspaceDocuments: readonly LanguageDocument[]
+        readonly workspaceIncomplete: boolean
+      }) => {
+        snapshots.push(request.workspaceDocuments.map(item => item.languageId))
+        return Promise.resolve({ items: [], isIncomplete: request.workspaceIncomplete })
+      },
+    })
+    const exercise = async (workspaceLanguageIds?: readonly string[], maxDocuments = 8) => {
+      const services = await mixedLanguageServices(create(workspaceLanguageIds))
+      const fixtureRoutes = languageProviderRoutes(services.inventory)
+      if (fixtureRoutes.length === 0) throw new Error('mixed fixture registered no routes')
+      const workspace = createLanguageWorkspace({
+        services,
+        grant: { id: 'mixed-language-snapshot', classes: [] },
+        budgets,
+      })
+      await workspace.initialize()
+      const galaxyRequest = languageRequest(1)
+      const galaxyOpenRequest = {
+        languageId: 'galaxy',
+        extension: 'galaxy',
+        document: galaxyRequest.document,
+      }
+      const openedGalaxy = await workspace.open(galaxyOpenRequest)
+      if (openedGalaxy.state !== 'resolved')
+        throw new Error(JSON.stringify(openedGalaxy.hostDiagnostics))
+      await workspace.open({
+        languageId: 'sc2-data',
+        extension: 'xml',
+        document: {
+          uri: 'file:///Base.SC2Data/GameData/UnitData.xml',
+          languageId: 'sc2-data',
+          version: 1,
+          text: '<Catalog><CUnit id="Marine"/></Catalog>',
+        },
+      })
+      const completion = await workspace.completion({
+        uri: languageRequest(1).document.uri,
+        documentVersion: 1,
+        position: { line: 0, character: 1 },
+        maxDocuments,
+      })
+      await workspace.shutdown()
+      return completion
+    }
+
+    expect(await exercise()).toMatchObject({ isIncomplete: false })
+    expect(await exercise(['galaxy', 'sc2-data'])).toMatchObject({ isIncomplete: false })
+    expect(await exercise(['galaxy', 'sc2-data'], 1)).toMatchObject({ isIncomplete: true })
+    expect(snapshots).toEqual([['galaxy'], ['galaxy', 'sc2-data'], ['galaxy']])
+  })
+
+  it('passes an exact bounded workspace snapshot to optional semantic methods', async () => {
+    let seen:
+      | {
+          readonly uri: string
+          readonly versions: readonly number[]
+          readonly maxResults: number
+          readonly maxDocuments: number
+        }
+      | undefined
+    const services = await controlledLanguageServices(
+      providerModule({
+        contract: 'common.language/document-analysis',
+        languageIds: ['galaxy'],
+        analyze: (request: { readonly document: LanguageDocument }) =>
+          Promise.resolve(analysisFor(request)),
+        completion: (request: {
+          readonly document: LanguageDocument
+          readonly workspaceDocuments: readonly LanguageDocument[]
+          readonly maxResults: number
+          readonly maxDocuments: number
+        }) => {
+          seen = {
+            uri: request.document.uri,
+            versions: request.workspaceDocuments.map(document => document.version),
+            maxResults: request.maxResults,
+            maxDocuments: request.maxDocuments,
+          }
+          return Promise.resolve({
+            items: [{ label: 'FixtureNative', kind: 'function' }],
+            isIncomplete: false,
+          })
+        },
+      }),
+    )
+    const workspace = createLanguageWorkspace({
+      services,
+      grant: { id: 'workspace-features', classes: [] },
+      budgets,
+    })
+    await workspace.initialize()
+    await workspace.open(languageRequest(1))
+    await workspace.open({
+      ...languageRequest(3),
+      extension: 'ai',
+      document: {
+        ...languageRequest(3).document,
+        uri: 'file:///TriggerLibs/Other.galaxy',
+      },
+    })
+    await expect(
+      workspace.completion({
+        uri: languageRequest(1).document.uri,
+        documentVersion: 1,
+        position: { line: 0, character: 1 },
+        maxResults: 7,
+        maxDocuments: 2,
+      }),
+    ).resolves.toEqual({
+      items: [{ label: 'FixtureNative', kind: 'function' }],
+      isIncomplete: false,
+    })
+    expect(seen).toEqual({
+      uri: languageRequest(1).document.uri,
+      versions: [1, 3],
+      maxResults: 7,
+      maxDocuments: 2,
+    })
+    await workspace.shutdown()
+  })
+
+  it('validates formatting options and complete non-overlapping edit lists', async () => {
+    const services = await controlledLanguageServices(
+      providerModule({
+        contract: 'common.language/document-analysis',
+        languageIds: ['galaxy'],
+        analyze: (request: { readonly document: LanguageDocument }) =>
+          Promise.resolve(analysisFor(request)),
+        formatting: (request: { readonly document: LanguageDocument }) =>
+          Promise.resolve({
+            edits: [
+              {
+                range: {
+                  start: { line: 0, character: 0 },
+                  end: { line: 0, character: request.document.text.length },
+                },
+                newText: 'void Test() {\n  return;\n}',
+              },
+            ],
+            isComplete: true,
+          }),
+      }),
+    )
+    const workspace = createLanguageWorkspace({
+      services,
+      grant: { id: 'workspace-formatting', classes: [] },
+      budgets,
+    })
+    await workspace.initialize()
+    await workspace.open(languageRequest(1))
+    await expect(
+      workspace.formatting({
+        uri: languageRequest(1).document.uri,
+        documentVersion: 1,
+        options: { tabSize: 2, insertSpaces: true },
+      }),
+    ).resolves.toEqual({
+      edits: [expect.objectContaining({ newText: 'void Test() {\n  return;\n}' })],
+      isComplete: true,
+    })
+    await expect(
+      workspace.formatting({
+        uri: languageRequest(1).document.uri,
+        documentVersion: 1,
+        options: { tabSize: 0, insertSpaces: true },
+      }),
+    ).rejects.toMatchObject({ code: LANGUAGE_FEATURE_INVALID })
+    await workspace.shutdown()
+  })
+
+  it('cancels a semantic result when any open workspace snapshot changes', async () => {
+    let finish: (() => void) | undefined
+    const services = await controlledLanguageServices(
+      providerModule({
+        contract: 'common.language/document-analysis',
+        languageIds: ['galaxy'],
+        analyze: (request: { readonly document: LanguageDocument }) =>
+          Promise.resolve(analysisFor(request)),
+        completion: () =>
+          new Promise(resolve => {
+            finish = () => resolve({ items: [], isIncomplete: false })
+          }),
+      }),
+    )
+    const workspace = createLanguageWorkspace({
+      services,
+      grant: { id: 'workspace-feature-stale', classes: [] },
+      budgets,
+    })
+    await workspace.initialize()
+    await workspace.open(languageRequest(1))
+    const stale = workspace.completion({
+      uri: languageRequest(1).document.uri,
+      documentVersion: 1,
+      position: { line: 0, character: 1 },
+    })
+    await workspace.change(languageRequest(2))
+    finish?.()
+    await expect(stale).rejects.toBeInstanceOf(OperationCancelledError)
+    await workspace.shutdown()
+  })
+
+  it('rejects provider results that exceed the caller result bound', async () => {
+    const services = await controlledLanguageServices(
+      providerModule({
+        contract: 'common.language/document-analysis',
+        languageIds: ['galaxy'],
+        analyze: (request: { readonly document: LanguageDocument }) =>
+          Promise.resolve(analysisFor(request)),
+        completion: () =>
+          Promise.resolve({
+            items: [
+              { label: 'One', kind: 'function' },
+              { label: 'Two', kind: 'function' },
+            ],
+            isIncomplete: false,
+          }),
+      }),
+    )
+    const workspace = createLanguageWorkspace({
+      services,
+      grant: { id: 'workspace-feature-bounds', classes: [] },
+      budgets,
+    })
+    await workspace.initialize()
+    await workspace.open(languageRequest(1))
+    await expect(
+      workspace.completion({
+        uri: languageRequest(1).document.uri,
+        documentVersion: 1,
+        position: { line: 0, character: 1 },
+        maxResults: 1,
+      }),
+    ).rejects.toMatchObject({ code: LANGUAGE_FEATURE_INVALID })
+    await workspace.shutdown()
+  })
+
   it('initializes idempotently, keeps one lease across changes, and releases it exactly once', async () => {
     let releases = 0
     const services = await controlledLanguageServices(

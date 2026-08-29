@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/ktx",
+  "displayName": "Khronos Texture v1",
+  "status": "partial",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/ktx/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/ktx/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "The MK3 port validates KTX1 endianness, key/value records, mip/image ranges, arrays, cubemaps, and depth slices; bounded first-image RGBA8 access is limited to uncompressed unsigned-byte RGB/RGBA.",
+    "Compressed block decoding, later mip/layer/face/slice decoding, writing, metadata mutation, and pixel editing remain unsupported."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "ktx", "label": "Khronos Texture v1" }],
+    "roles": ["media"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
+    "match": {
+      "extensions": ["ktx"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "ab4b54582031" }]
+    },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "raster-metadata",
+        "contract": "common.image/raster-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/raster-image-source", "major": 1 },
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "traitDeclarations": [
+      { "id": "image.compressed-blocks", "representation": "runtime", "presence": "may-expose" }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

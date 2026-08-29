@@ -1,5 +1,5 @@
 /**
- * The five optional model facet contracts, as published by real codecs (block 12, slice 12-1).
+ * The optional model facet contracts, as published by real codecs (block 12, slice 12-1).
  *
  * Slice 11C0 declared `common.view/model-{resource-refs,skeleton,animation,collision,material}-
  * source@1` with shapes derived from what the block-9 codecs already computed ad hoc in their
@@ -31,7 +31,7 @@ import {
   type ProjectionReceipt,
   type ResourceBudget,
 } from '@modkitx-x3/sdk'
-import { MODEL_FACET_CONTRACTS, readModelFacets } from '@modkitx-x3/ui/model'
+import { MODEL_FACET_CONTRACTS, readModelFacetDetails, readModelFacets } from '@modkitx-x3/ui/model'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const fixtureRoot = join(import.meta.dirname, 'fixtures')
@@ -601,5 +601,47 @@ describe('one generic consumer reads every publisher the same way', () => {
     )
     expect(readout).toEqual([])
     await session.dispose()
+  })
+
+  it('renders bounded semantic details without a format-specific viewer branch', async () => {
+    const { session, contracts } = await openCodec('w3x', new TextEncoder().encode(RICH_W3X))
+    const releases: { release(): Promise<void> }[] = []
+    try {
+      const bound = MODEL_FACET_CONTRACTS.filter(contract => contracts.includes(contract))
+      const details = await readModelFacetDetails(
+        {
+          async get(binding: { contract: string; major?: number }) {
+            return session.dataSource(binding.contract as never, binding.major ?? 1)
+          },
+        } as never,
+        slotFor(bound) as never,
+        {
+          lease<T>(value: T): T {
+            releases.push(value as unknown as { release(): Promise<void> })
+            return value
+          },
+        },
+      )
+      expect(details).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            contract: 'common.view/model-skeleton-source',
+            label: 'bones',
+            items: [
+              expect.stringMatching(/^#0 ROOTTRANSFORM/u),
+              expect.stringMatching(/^#1 TURRET/u),
+            ],
+            truncated: false,
+          }),
+          expect.objectContaining({
+            contract: 'common.view/model-collision-source',
+            items: ['HITBOX · mesh · mesh-role'],
+          }),
+        ]),
+      )
+    } finally {
+      await Promise.all(releases.map(lease => lease.release()))
+      await session.dispose()
+    }
   })
 })

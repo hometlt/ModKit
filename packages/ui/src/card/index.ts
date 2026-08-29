@@ -9,11 +9,27 @@
  * `custom` is the escape hatch for a genuinely bespoke template (a command card, a skill tree),
  * and it still renders inside the same chrome, collapsing and theming like every other section.
  */
-import type { JsonValue, Page, SubjectFact, SubjectFactsSource } from '@modkitx-x3/sdk'
+import type {
+  JsonValue,
+  KnowledgeCatalog,
+  KnowledgeHit,
+  KnowledgeTarget,
+  Page,
+  SubjectFact,
+  SubjectFactsSource,
+  ViewerModule,
+} from '@modkitx-x3/sdk'
 import { createAccordion, accordionField } from '../primitives/accordion.js'
 import { setPart, setState } from '../parts.js'
 import { setToken } from '../tokens/index.js'
-import { safeViewerText } from '../viewer/index.js'
+import {
+  createSurface,
+  createViewerMount,
+  defineViewerModule,
+  safeViewerText,
+  unknownSourceLease,
+  ViewerMountScope,
+} from '../viewer/index.js'
 
 export interface CardRef {
   readonly label: string
@@ -42,6 +58,8 @@ export interface CardField {
   /** Rendered as a chip after the value: the origin subject, a unit, a schema hint. */
   readonly badge?: string
   readonly title?: string
+  /** Exact codec-owned address for lazily resolving field help. */
+  readonly knowledgeTarget?: KnowledgeTarget
 }
 
 export interface CardGridCell {
@@ -125,6 +143,9 @@ export type CardSection =
 export interface SubjectCardOptions {
   readonly label: string
   readonly sections: readonly CardSection[]
+  /** Optional read-only knowledge snapshot; cards remain usable when it is absent. */
+  readonly knowledge?: KnowledgeCatalog
+  readonly knowledgeLocales?: readonly string[]
   onNavigate?(ref: CardRef): void
 }
 
@@ -179,6 +200,7 @@ function factField(fact: SubjectFact): CardField {
     value: factValue(fact.value),
     ...(provenance.length === 0 ? {} : { badge: provenance[0] }),
     ...(provenance.length <= 1 ? {} : { title: provenance.join(' · ') }),
+    ...(fact.knowledgeTarget === undefined ? {} : { knowledgeTarget: fact.knowledgeTarget }),
   }
 }
 
@@ -398,7 +420,12 @@ function renderHeader(
   host.append(header)
 }
 
-function renderFields(document: Document, host: HTMLElement, fields: readonly CardField[]): void {
+function renderFields(
+  document: Document,
+  host: HTMLElement,
+  fields: readonly CardField[],
+  inspectKnowledge?: (target: KnowledgeTarget | undefined) => void,
+): void {
   const list = document.createElement('div')
   list.className = 'modkit-card__fields'
   list.setAttribute('role', 'table')
@@ -407,6 +434,7 @@ function renderFields(document: Document, host: HTMLElement, fields: readonly Ca
     const row = document.createElement('div')
     row.className = 'modkit-card__field'
     setPart(row, 'card.field')
+    row.tabIndex = 0
     if (field.title !== undefined) row.title = field.title
     const name = document.createElement('span')
     name.textContent = safeViewerText(field.name, 128)
@@ -423,6 +451,11 @@ function renderFields(document: Document, host: HTMLElement, fields: readonly Ca
       setPart(badge, 'card.chip')
       row.append(badge)
     }
+    if (inspectKnowledge !== undefined) {
+      const inspect = () => inspectKnowledge(field.knowledgeTarget)
+      row.addEventListener('focus', inspect)
+      row.addEventListener('mouseenter', inspect)
+    }
     list.append(row)
   }
   host.append(list)
@@ -437,6 +470,88 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
   const header = options.sections.find(section => section.kind === 'header')
   if (header !== undefined) renderHeader(document, root, header, options.onNavigate)
 
+  const knowledge = document.createElement('aside')
+  knowledge.className = 'modkit-card__knowledge'
+  knowledge.setAttribute('role', 'status')
+  knowledge.setAttribute('aria-live', 'polite')
+  knowledge.dataset['knowledgeState'] = 'missing'
+  setPart(knowledge, 'card.knowledge')
+  knowledge.textContent = 'Description is not available yet.'
+  root.append(knowledge)
+
+  let lookupRevision = 0
+  let lookupController: AbortController | undefined
+  const cancelLookup = (reason: string): number => {
+    lookupRevision += 1
+    lookupController?.abort(reason)
+    lookupController = undefined
+    return lookupRevision
+  }
+  const showMissingKnowledge = (): void => {
+    knowledge.dataset['knowledgeState'] = 'missing'
+    knowledge.replaceChildren()
+    knowledge.textContent = 'Description is not available yet.'
+  }
+  const directSource = (
+    hit: KnowledgeHit,
+  ): { readonly title: string; readonly url: URL } | undefined => {
+    for (const source of hit.entry.sources) {
+      if (source.url === undefined) continue
+      try {
+        const url = new URL(source.url)
+        if (url.protocol === 'https:') return { title: source.title, url }
+      } catch {
+        // Knowledge is untrusted data; malformed links are deliberately omitted.
+      }
+    }
+    return undefined
+  }
+  const showKnowledge = (hit: KnowledgeHit): void => {
+    knowledge.dataset['knowledgeState'] = 'resolved'
+    knowledge.replaceChildren()
+    const summary = document.createElement('span')
+    summary.textContent = safeViewerText(hit.entry.summary, 512)
+    knowledge.append(summary)
+    const source = directSource(hit)
+    if (source === undefined) return
+    knowledge.append(document.createTextNode(' '))
+    const link = document.createElement('a')
+    link.href = source.url.href
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    link.referrerPolicy = 'no-referrer'
+    link.textContent = safeViewerText(source.title, 160)
+    knowledge.append(link)
+  }
+  const inspectKnowledge = (target: KnowledgeTarget | undefined): void => {
+    const revision = cancelLookup('card-field-changed')
+    if (target === undefined || options.knowledge === undefined) {
+      showMissingKnowledge()
+      return
+    }
+    const controller = new AbortController()
+    lookupController = controller
+    knowledge.dataset['knowledgeState'] = 'loading'
+    knowledge.replaceChildren()
+    knowledge.textContent = 'Loading description…'
+    void (async () => {
+      try {
+        const page = await options.knowledge?.resolve(
+          { target, locales: options.knowledgeLocales ?? [], limit: 1 },
+          controller.signal,
+        )
+        if (controller.signal.aborted || revision !== lookupRevision) return
+        const hit = page?.items[0]
+        if (hit === undefined) showMissingKnowledge()
+        else showKnowledge(hit)
+      } catch {
+        if (!controller.signal.aborted && revision === lookupRevision) showMissingKnowledge()
+      } finally {
+        if (revision === lookupRevision) lookupController = undefined
+      }
+    })()
+  }
+
   const collapsible = options.sections.filter(section => section.kind !== 'header')
   const accordion = createAccordion(document, {
     label: `${options.label} sections`,
@@ -448,7 +563,7 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
         setPart(panel.parentElement ?? panel, 'accordion.section')
         switch (section.kind) {
           case 'fields':
-            renderFields(document, panel, section.fields)
+            renderFields(document, panel, section.fields, inspectKnowledge)
             return
           case 'links': {
             const list = document.createElement('div')
@@ -537,7 +652,7 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
               const body = document.createElement('div')
               body.className = 'modkit-card__subcard-body'
               setPart(body, 'card.subcard-body')
-              renderFields(document, body, card.fields)
+              renderFields(document, body, card.fields, inspectKnowledge)
               item.append(head, body)
               list.append(item)
             }
@@ -571,10 +686,49 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
   return {
     root,
     destroy() {
+      cancelLookup('card-destroyed')
       accordion.destroy()
       root.remove()
     },
   }
 }
+
+/** Standard stage adapter over the codec-owned, presentation-neutral subject facts source. */
+export const subjectCardViewer: ViewerModule = defineViewerModule({
+  abiVersion: 1,
+  async mount(args) {
+    const scope = new ViewerMountScope(args.signal)
+    const root = createSurface(args.container, 'Subject card')
+    try {
+      const lease = await unknownSourceLease(
+        args.sources,
+        args.slot,
+        'common.view/subject-facts-source',
+      )
+      if (lease === undefined) throw new TypeError('subject facts binding is unavailable')
+      scope.lease(lease)
+      const sections = await loadSubjectCardSections(lease.value as SubjectFactsSource, {
+        signal: scope.signal,
+      })
+      const card = createSubjectCard(root.ownerDocument, {
+        label: 'Subject card',
+        sections,
+        ...(args.knowledge === undefined ? {} : { knowledge: args.knowledge }),
+      })
+      root.append(card.root)
+      scope.cleanup(() => card.destroy())
+      root.dataset['revision'] = args.descriptor.revision
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        root.dataset['revision'] = descriptor.revision
+      })
+    } catch (error) {
+      await scope.close()
+      root.remove()
+      throw error
+    }
+  },
+})
+
+export default subjectCardViewer
 
 export { accordionField }

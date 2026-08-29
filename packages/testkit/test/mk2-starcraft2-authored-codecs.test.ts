@@ -156,7 +156,7 @@ describe('ported StarCraft II authored and structural codecs', () => {
         id: 'sc2-layout' as const,
         sample: 'minimal.SC2Layout',
         summary: { frames: 1, frameNames: ['FixturePanel'], constants: 1 },
-        columns: ['Kind', 'Name', 'Type / Value'],
+        columns: ['Kind', 'Path', 'Type / Value'],
         first: ['Include', 'UI/Layout/Shared.SC2Layout', ''],
       },
       {
@@ -191,7 +191,9 @@ describe('ported StarCraft II authored and structural codecs', () => {
     await expect(open('sc2-strings', encode('not-a-key-value-line'))).rejects.toThrow(
       /separator|entries/u,
     )
-    await expect(open('sc2-layout', encode('<Desc><Frame></Desc>'))).rejects.toThrow(/nesting/u)
+    await expect(open('sc2-layout', encode('<Desc><Frame></Desc>'))).rejects.toThrow(
+      'Unexpected closing tag Desc.; Element Frame is not closed.; Element Desc is not closed.; Frame requires attribute name.',
+    )
     await expect(
       open('sc2-data', encode('<Catalog><CUnit id="A"/></Catalog>'), { ...budget, maxNodes: 1 }),
     ).rejects.toThrow(/maxNodes/u)

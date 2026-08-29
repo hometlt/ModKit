@@ -72,6 +72,11 @@ describe('the Electron preview policy', () => {
 
   it('binds each slot to exactly one data source, shared by both catalogs', () => {
     for (const slot of presentation.filter(slot => slot.slotId !== 'archive')) {
+      if (slot.slotId === 'template') {
+        expect(slot.bindings).toHaveLength(0)
+        expect(viewerCatalogSource).toContain("operation: 'view.template'")
+        continue
+      }
       expect(slot.bindings).toHaveLength(1)
       const binding = slot.bindings[0]
       expect(binding).toBeDefined()

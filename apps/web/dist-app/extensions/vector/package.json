@@ -6,6 +6,7 @@
   "description": "Isolated MK3 vector codecs.",
   "exports": {
     ".": "./src/index.js",
+    "./linked": "./src/linked.js",
     "./formats/svg/codec": "./src/formats/svg/codec.js",
     "./formats/*/codec": "./src/formats/*/codec.js",
     "./package.json": "./package.json"

@@ -4,17 +4,26 @@ import {
   WEB_PREVIEW_FALLBACK,
   createCodecPreview,
   createSingleFileAccess,
+  createWebEditingArm,
   createWebPreviewStages,
   createWebSubjectServices,
-  define_MODKIT_EMBED_EXTENSION_ORIGINS_default,
+  describeEditability,
   element,
-  init_define_MODKIT_EMBED_EXTENSION_ORIGINS,
+  isWritableHandle,
+  requestWriteAccess,
+  resolveFormatWriter,
   revisionId,
   setPart,
   setState,
   setViewerText,
+  sourceRevisionToken,
+  sourceUriFor,
   stageIdOf
-} from "./chunks/chunk-QVNY3HUK.js";
+} from "./chunks/chunk-4CWXPF3C.js";
+import {
+  define_MODKIT_EMBED_EXTENSION_ORIGINS_default,
+  init_define_MODKIT_EMBED_EXTENSION_ORIGINS
+} from "./chunks/chunk-HJULOH5B.js";
 
 // apps/web/src/embed.ts
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
@@ -189,6 +198,21 @@ function shareByAssetBase(cache, assetBase, create) {
   return created;
 }
 var embedHosts = /* @__PURE__ */ new Map();
+var embedLifecycleScopes = /* @__PURE__ */ new WeakSet();
+async function disposeEmbedHosts() {
+  const pending = [...embedHosts.values()];
+  embedHosts.clear();
+  const settled = await Promise.allSettled(pending);
+  await Promise.allSettled(
+    settled.flatMap((item) => item.status === "fulfilled" ? [item.value.services.dispose()] : [])
+  );
+}
+function installEmbedHostLifecycle(scope = globalThis) {
+  if (embedLifecycleScopes.has(scope) || scope.addEventListener === void 0) return false;
+  embedLifecycleScopes.add(scope);
+  scope.addEventListener("pagehide", () => void disposeEmbedHosts(), { once: true });
+  return true;
+}
 var descriptorKey = (descriptor) => `${descriptor.subjectUri} :: ${descriptor.revision}`;
 async function loadStyles(assetBase) {
   const response = await fetch(new URL("modkit-ui.css", assetBase).href);
@@ -256,6 +280,7 @@ async function composeEmbedHost(assetBase, extensionCatalogUrl) {
   return Object.freeze({ assetBase, services, stages, styles, operations });
 }
 function embedHostFor(assetBase, extensionCatalogUrl) {
+  installEmbedHostLifecycle();
   const key = JSON.stringify([assetBase, extensionCatalogUrl ?? null]);
   return shareByAssetBase(embedHosts, key, () => composeEmbedHost(assetBase, extensionCatalogUrl));
 }
@@ -273,8 +298,8 @@ function fileLikeFrom(blob, fallbackName) {
     slice: (start, end) => blob.slice(start, end)
   };
 }
-function bytesSource(name, bytes, token) {
-  const uri = `memory://modkit-embed/${encodeURIComponent(name)}`;
+function bytesSource(name, bytes, token, sourceUri) {
+  const uri = sourceUri ?? `memory://modkit-embed/${encodeURIComponent(name)}`;
   return {
     kind: "bytes",
     ref: { id: uri, uri },
@@ -292,21 +317,26 @@ function bytesSource(name, bytes, token) {
   };
 }
 var openCount = 0;
-async function openEmbedSession(host, entry, bytes, signal) {
+async function openEmbedSession(host, entry, bytes, options, signal) {
   openCount += 1;
+  const grant = {
+    id: `modkit-embed-${openCount}`,
+    classes: options.writable ? ["read-source", "write-source"] : ["read-source"]
+  };
+  const budget = {
+    maxInputBytes: BigInt(EMBED_MAXIMUM_BYTES),
+    maxDepth: 256,
+    maxNodes: 1e6,
+    maxScalarBytes: 64 * 1024 * 1024,
+    maxDiagnostics: 1e4,
+    deadlineMs: 3e4
+  };
   const result = await host.services.open({
-    source: bytesSource(entry.name, bytes, `provider-token:embed-${openCount}-${bytes.byteLength}`),
+    source: bytesSource(entry.name, bytes, options.token, options.sourceUri),
     path: entry.name,
     intent: "full",
-    grant: { id: `modkit-embed-${openCount}`, classes: ["read-source"] },
-    budget: {
-      maxInputBytes: BigInt(EMBED_MAXIMUM_BYTES),
-      maxDepth: 256,
-      maxNodes: 1e6,
-      maxScalarBytes: 64 * 1024 * 1024,
-      maxDiagnostics: 1e4,
-      deadlineMs: 3e4
-    },
+    grant,
+    budget,
     ...signal === void 0 ? {} : { signal }
   });
   if (result.state === "unresolved") return void 0;
@@ -315,6 +345,9 @@ async function openEmbedSession(host, entry, bytes, signal) {
   const operations = session.operations();
   host.operations.set(key, operations);
   return {
+    opened: result,
+    grant,
+    budget,
     descriptor: () => session.descriptor(),
     dataSource: (contract, major) => session.dataSource(contract, major),
     async operations() {
@@ -355,6 +388,8 @@ function defineModkitElements(options = {}) {
     #handle;
     #abort;
     #blob;
+    #fileHandle;
+    #editing;
     #styled = false;
     /** Bumped by every load; a load whose token is stale mounts nothing. */
     #generation = 0;
@@ -402,6 +437,19 @@ function defineModkitElements(options = {}) {
     }
     set file(value) {
       this.#blob = value;
+      if (value !== void 0) this.#fileHandle = void 0;
+      if (this.isConnected) void this.#load();
+    }
+    /**
+     * A File System Access handle explicitly delegated by the embedding page. Unlike `file`, this
+     * may carry write authority; editable stages are offered only when `createWritable` exists.
+     */
+    get fileHandle() {
+      return this.#fileHandle;
+    }
+    set fileHandle(value) {
+      this.#fileHandle = value;
+      if (value !== void 0) this.#blob = void 0;
       if (this.isConnected) void this.#load();
     }
     /** The preferred stage id, reflected to the `view` attribute. */
@@ -476,7 +524,10 @@ function defineModkitElements(options = {}) {
     }
     async #unmount() {
       const handle = this.#handle;
+      const editing = this.#editing;
       this.#handle = void 0;
+      this.#editing = void 0;
+      this.removeAttribute("data-mk-dirty");
       this.#picker.hidden = true;
       this.#picker.replaceChildren();
       if (handle !== void 0) {
@@ -486,6 +537,7 @@ function defineModkitElements(options = {}) {
           console.warn("[modkit-viewer] unmount failed", error);
         }
       }
+      await editing?.dispose();
       this.#stage.replaceChildren();
     }
     async #show(viewId) {
@@ -500,6 +552,8 @@ function defineModkitElements(options = {}) {
     }
     /** The bytes to open: the `file` property when the page set one, else `src`. */
     async #read(name, signal) {
+      const fileHandle = this.#fileHandle;
+      if (fileHandle !== void 0) return fileHandle.getFile();
       const blob = this.#blob;
       if (blob !== void 0) return fileLikeFrom(blob, name);
       const src = this.getAttribute("src") ?? "";
@@ -533,7 +587,7 @@ function defineModkitElements(options = {}) {
         this.ownerDocument.baseURI
       );
       setViewerText(this.#title, name, 300);
-      if (this.#blob === void 0 && (this.getAttribute("src") ?? "") === "") {
+      if (this.#fileHandle === void 0 && this.#blob === void 0 && (this.getAttribute("src") ?? "") === "") {
         this.#say("Waiting for a file: set the src attribute or assign the file property.", "empty");
         return;
       }
@@ -581,14 +635,90 @@ function defineModkitElements(options = {}) {
           );
           return;
         }
-        const { access, entry } = createSingleFileAccess(file);
+        const fileHandle = this.#fileHandle;
+        const { access, entry } = createSingleFileAccess(file, fileHandle);
+        const snapshot = await access.snapshotOf(entry.id, controller.signal);
         const bytes = await access.read(entry.id, EMBED_MAXIMUM_BYTES, controller.signal);
         if (!current()) return;
+        const editability = await describeEditability(access, entry.id, entry.name);
+        const writable = editability.editable && snapshot !== void 0 && isWritableHandle(fileHandle);
+        const token = snapshot === void 0 ? `provider-token:embed-${generation}-${bytes.byteLength}` : sourceRevisionToken(snapshot);
+        const writableHandles = /* @__PURE__ */ new Map();
+        const sourceUri = writable ? sourceUriFor(entry.id) : void 0;
+        if (writable && sourceUri !== void 0) writableHandles.set(sourceUri, fileHandle);
+        let editorPorts;
+        if (writable) {
+          const editing = createWebEditingArm({
+            inventory: host.services.main.inventory,
+            handleFor: (sourceId) => writableHandles.get(sourceId),
+            onNotice: (message) => {
+              if (!current()) return;
+              this.#say(message, "ready");
+              this.dispatchEvent(
+                new CustomEvent("modkit-viewer-edit-status", {
+                  detail: { message },
+                  bubbles: false
+                })
+              );
+            },
+            onDirty: (_entryId, dirty) => {
+              if (!current()) return;
+              if (dirty) this.setAttribute("data-mk-dirty", "");
+              else this.removeAttribute("data-mk-dirty");
+            },
+            async ensureWriteAccess() {
+              const currentAccess = await describeEditability(access, entry.id, entry.name);
+              if (currentAccess.state === "granted" || currentAccess.state === "no-permission-surface")
+                return "granted";
+              if (currentAccess.state !== "prompt") return "denied";
+              const asked = await requestWriteAccess(access);
+              return asked.state === "granted" ? "granted" : asked.state === "denied" ? "denied" : "prompt";
+            }
+          });
+          this.#editing = editing;
+        }
         const previewer = createCodecPreview({
           supported: host.services.supportedExtensions,
           stages: preferStage(host.stages, this.getAttribute("view") ?? void 0),
           fallback: WEB_PREVIEW_FALLBACK,
-          openSession: (openedEntry, openedBytes, signal) => openEmbedSession(host, openedEntry, openedBytes, signal)
+          editorPorts: () => editorPorts,
+          openSession: async (openedEntry, openedBytes, signal) => {
+            const session = await openEmbedSession(
+              host,
+              openedEntry,
+              openedBytes,
+              { token, writable, ...sourceUri === void 0 ? {} : { sourceUri } },
+              signal
+            );
+            if (session !== void 0 && writable) {
+              const writerResolution = await resolveFormatWriter({
+                services: host.services.main,
+                opened: session.opened,
+                grant: session.grant,
+                budgets: session.budget
+              });
+              editorPorts = this.#editing?.editorFor({
+                entryId: entry.id,
+                name: entry.name,
+                opened: session.opened,
+                grant: session.grant,
+                bytes,
+                ...writerResolution.writer === void 0 ? {} : { writer: writerResolution.writer }
+              })?.ports;
+              if (editorPorts === void 0) await writerResolution.release?.();
+              else if (writerResolution.release !== void 0) {
+                const dispose = session.dispose.bind(session);
+                return {
+                  ...session,
+                  async dispose() {
+                    await writerResolution.release?.();
+                    await dispose();
+                  }
+                };
+              }
+            }
+            return session;
+          }
         });
         const handle = await previewer.open(this.#stage, entry, bytes, controller.signal);
         if (!current()) {
@@ -650,9 +780,11 @@ export {
   crossOriginRefusal,
   defineModkitElements,
   displayNameFor,
+  disposeEmbedHosts,
   embedHostFor,
   extensionCatalogRefusal,
   fileLikeFrom,
+  installEmbedHostLifecycle,
   parseWebExtensionCatalog,
   preferStage,
   resolveAssetBase,

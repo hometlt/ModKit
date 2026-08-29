@@ -7,6 +7,7 @@ import {
   CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT,
   EDITOR_CONTRIBUTION_CONTRACT,
   EDITOR_CONTRIBUTION_FACT,
+  KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
   TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
   VIEWER_CONTRIBUTION_CONTRACT,
@@ -155,7 +156,12 @@ function builtins(): readonly ContributionContractRegistration[] {
   const editor = entry(EDITOR_CONTRIBUTION_CONTRACT)
   const trait = entry(TRAIT_DEFINITION_CONTRIBUTION_CONTRACT)
   const definition = entry(CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT)
-  if (trait.registration === undefined || definition.registration === undefined) {
+  const knowledge = entry(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT)
+  if (
+    trait.registration === undefined ||
+    definition.registration === undefined ||
+    knowledge.registration === undefined
+  ) {
     throw new TypeError('A-1 definition registrations are missing')
   }
   return [
@@ -214,6 +220,14 @@ function builtins(): readonly ContributionContractRegistration[] {
       project: definition.registration.project,
       validateSemantics: definition.validateSemantics,
       conformanceProfile: definition.registration.conformanceProfile,
+    },
+    {
+      contract: { id: knowledge.contract, major: knowledge.major },
+      schema: knowledge.schema,
+      mode: 'data-only',
+      project: knowledge.registration.project,
+      validateSemantics: knowledge.validateSemantics,
+      conformanceProfile: knowledge.registration.conformanceProfile,
     },
   ]
 }

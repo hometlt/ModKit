@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
+  "id": "org.modkitx/astc",
+  "displayName": "ASTC Texture",
+  "status": "partial",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/astc/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/astc/codec.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "The dependency-free MK3 decoder covers two-dimensional LDR void-extent and five fixture-pinned single-partition block modes (0x42, 0x163, 0x243, 0x452 and 0x7cd), including binary/trit/quint weights, infill and single/dual planes.",
+    "The standalone container does not identify linear versus sRGB or LDR versus HDR profiles, so consumers must obtain that semantic from surrounding asset metadata.",
+    "All unverified block modes, multi-partition blocks, HDR endpoints/void extents, three-dimensional ASTC, HDR output, GPU upload and encoding remain follow-up work."
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "astc", "label": "ASTC Texture" }],
+    "roles": ["media"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
+    "match": {
+      "extensions": ["astc"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "13aba15c" }]
+    },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "raster-metadata",
+        "contract": "common.image/raster-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 },
+      { "contract": "common.view/raster-image-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "traitDeclarations": [
+      { "id": "image.compressed-blocks", "representation": "runtime", "presence": "may-expose" }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1073741824",
+      "maxDepth": 64,
+      "maxNodes": 100000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 1000
+    }
+  }
+}

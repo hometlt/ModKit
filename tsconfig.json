@@ -20,6 +20,9 @@
       "path": "apps/modkit-cli"
     },
     {
+      "path": "apps/modkit-mcp"
+    },
+    {
       "path": "apps/server"
     },
     {

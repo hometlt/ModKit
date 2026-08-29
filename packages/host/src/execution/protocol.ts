@@ -266,7 +266,10 @@ export interface ProtocolLimits {
 
 export const DEFAULT_PROTOCOL_LIMITS: ProtocolLimits = Object.freeze({
   maxDepth: 32,
-  maxNodes: 200_000,
+  // Resolved game catalogs legitimately carry tens of thousands of definitions and field nodes
+  // in one pinned snapshot. The byte, array, object-key, deadline and worker-memory ceilings still
+  // bound the frame; this node ceiling prevents valid schemas from being rejected first.
+  maxNodes: 4_000_000,
   maxStringLength: 4 * 1024 * 1024,
   maxArrayLength: 100_000,
   maxObjectKeys: 10_000,

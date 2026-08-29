@@ -734,11 +734,11 @@
       "properties": [
         {
           "name": "modkitx:artifacts",
-          "value": "common"
+          "value": "common,platform"
         },
         {
           "name": "modkitx:metadata-source",
-          "value": "extensions/common/containers/package.json"
+          "value": "apps/web/dist-app/extensions/containers/package.json"
         }
       ],
       "purl": "pkg:npm/modkit-extension-x3-containers@1.0.0",
@@ -774,7 +774,7 @@
       "licenses": [
         {
           "license": {
-            "id": "MIT"
+            "name": "SEE LICENSE IN LICENSE.md"
           }
         }
       ],
@@ -878,11 +878,11 @@
       "properties": [
         {
           "name": "modkitx:artifacts",
-          "value": "common"
+          "value": "common,platform"
         },
         {
           "name": "modkitx:metadata-source",
-          "value": "extensions/common/plain-text/package.json"
+          "value": "apps/web/dist-app/extensions/plain-text/package.json"
         }
       ],
       "purl": "pkg:npm/modkit-extension-x3-plain-text@1.0.0",
@@ -1250,6 +1250,30 @@
       "version": "1.8.0"
     },
     {
+      "bom-ref": "pkg:npm/typescript@5.9.3",
+      "licenses": [
+        {
+          "license": {
+            "name": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "typescript",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "warzone-2100-studio"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "npm:typescript"
+        }
+      ],
+      "purl": "pkg:npm/typescript@5.9.3",
+      "type": "library",
+      "version": "5.9.3"
+    },
+    {
       "bom-ref": "pkg:npm/yaml@2.9.0",
       "licenses": [
         {
@@ -1461,7 +1485,10 @@
       "dependsOn": [
         "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
         "pkg:npm/%40modkitx-x3/core@0.1.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
+        "pkg:npm/modkit-extension-x3-blizzard-mpq@1.0.0",
+        "pkg:npm/modkit-extension-x3-galaxy-language@1.0.0",
+        "pkg:npm/modkit-extension-x3-starcraft2-game@1.0.0"
       ],
       "ref": "pkg:npm/modkit-extension-x3-blizzard-starcraft2@1.0.0"
     },
@@ -1508,7 +1535,8 @@
         "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
         "pkg:npm/%40modkitx-x3/host@0.1.0",
         "pkg:npm/%40modkitx-x3/sdk@0.1.0",
-        "pkg:npm/modkit-extension-x3-archives@1.0.0"
+        "pkg:npm/modkit-extension-x3-archives@1.0.0",
+        "pkg:npm/typescript@5.9.3"
       ],
       "ref": "pkg:npm/modkit-extension-x3-opensource-warzone-2100@0.1.0"
     },
@@ -1637,6 +1665,10 @@
     {
       "dependsOn": [],
       "ref": "pkg:npm/smol-toml@1.8.0"
+    },
+    {
+      "dependsOn": [],
+      "ref": "pkg:npm/typescript@5.9.3"
     },
     {
       "dependsOn": [],

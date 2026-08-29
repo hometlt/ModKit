@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Modkit Core Inspector'
+  short_description: 'Inspect Modkit subjects through safe read-only tools'
+  default_prompt: 'Use $modkit-core to inspect this subject and explain its facts, links, calculations, and limits.'

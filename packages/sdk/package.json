@@ -40,6 +40,14 @@
       "types": "./dist/language/index.d.ts",
       "default": "./dist/language/index.js"
     },
+    "./knowledge": {
+      "types": "./dist/knowledge/index.d.ts",
+      "default": "./dist/knowledge/index.js"
+    },
+    "./templates": {
+      "types": "./dist/templates/index.d.ts",
+      "default": "./dist/templates/index.js"
+    },
     "./runtime": {
       "types": "./dist/runtime/index.d.ts",
       "default": "./dist/runtime/index.js"

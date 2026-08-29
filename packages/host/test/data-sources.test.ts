@@ -106,5 +106,8 @@ describe('A-6 lazy standard data sources', () => {
     await expect(
       source.rows({ kind: 'range', from: 0, count: 2 }, cancelled.signal),
     ).rejects.toMatchObject({ code: 'x3.core/operation-cancelled' })
+    await expect(source.cell({ row: 0, column: 0 }, cancelled.signal)).rejects.toMatchObject({
+      code: 'x3.core/operation-cancelled',
+    })
   })
 })

@@ -467,9 +467,9 @@ describe('installed StarCraft II CASC product path', () => {
           ],
           localizationKeys: ['Unit/Name/Marine'],
           limits: {
-            maxRequirements: 64,
-            maxDocumentBytes: 4_194_304,
-            maxTextBytes: 16_777_216,
+            maxRequirements: 512,
+            maxDocumentBytes: 16_777_216,
+            maxTextBytes: 268_435_456,
             maxEntities: 100_000,
             maxDepth: 128,
             maxPageSize: 128,
@@ -499,11 +499,11 @@ describe('installed StarCraft II CASC product path', () => {
           expect(
             liveData.plan.requirements
               .filter(item => item.kind === 'catalog')
-              .slice(0, 16)
+              .slice(0, 218)
               .map(item => item.rootId),
           ).toEqual([
-            ...Array(8).fill('retail:core.sc2mod'),
-            ...Array(8).fill('retail:liberty.sc2mod'),
+            ...Array(109).fill('retail:core.sc2mod'),
+            ...Array(109).fill('retail:liberty.sc2mod'),
           ])
           const liveMarine = liveData.snapshot.definitions.find(
             entity => entity.namespace === 'Unit' && entity.entityId === 'Marine',
@@ -526,12 +526,7 @@ describe('installed StarCraft II CASC product path', () => {
           expect(guardianShieldSearch).toMatchObject({
             typeId: 'CEffectEnumArea',
             fields: {
-              AreaArray: [
-                {
-                  index: '0',
-                  value: { Radius: 4, Effect: 'GuardianShieldApplyBehavior' },
-                },
-              ],
+              AreaArray: [{ Radius: 4, Effect: 'GuardianShieldApplyBehavior' }],
             },
           })
           expect(guardianShieldSearch?.sources).toContainEqual(
@@ -543,7 +538,7 @@ describe('installed StarCraft II CASC product path', () => {
                 from: { namespace: 'Effect', entityId: 'Corruption' },
                 to: { namespace: 'Effect', entityId: 'CorruptionLaunchMissile' },
                 role: 'PeriodicEffectArray',
-                dead: true,
+                dead: false,
               }),
               expect.objectContaining({
                 from: { namespace: 'Effect', entityId: 'GuardianShieldSearch' },
@@ -569,7 +564,14 @@ describe('installed StarCraft II CASC product path', () => {
             item => item.logicalId === `${mapRoot}/base.sc2data/gamedata/unitdata.xml`,
           )
           expect(activeUnit).toBeDefined()
-          if (activeUnit?.state === 'unresolved') expect(liveData.snapshot.complete).toBe(false)
+          if (activeUnit?.state === 'unresolved') {
+            expect(
+              liveData.plan.requirements.find(
+                item => item.path === `${mapRoot}/base.sc2data/gamedata/unitdata.xml`,
+              )?.required,
+            ).toBe(false)
+            expect(liveData.snapshot.complete).toBe(true)
+          }
           expect(liveData.snapshot.relations.length).toBeGreaterThan(0)
           expect(liveData.snapshot.localizedStrings).toContainEqual(
             expect.objectContaining({

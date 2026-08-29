@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "org.modkitx/viewer-contribution", "major": 1 },
+  "id": "org.modkitx.ui/game-template-stage",
+  "displayName": "game template stage",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./dist/template/index.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "stage",
+    "requiresOperations": ["view.template"],
+    "consumesDataSources": [],
+    "priority": 365,
+    "singletonGroup": "center-stage"
+  }
+}

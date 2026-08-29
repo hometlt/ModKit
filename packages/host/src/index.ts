@@ -211,6 +211,7 @@ export {
   WRITER_FACET_MATCHER,
 } from './editing-definitions.js'
 export * from './language/index.js'
+export * from './knowledge/index.js'
 export * from './runtime/index.js'
 export * from './renderer/index.js'
 export * from './games/index.js'

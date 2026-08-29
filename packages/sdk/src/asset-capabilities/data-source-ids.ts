@@ -21,7 +21,9 @@ export const STANDARD_DATA_SOURCE_CONTRACTS = Object.freeze([
   'common.view/model-material-source',
   'common.view/model-socket-source',
   'common.view/relation-graph-source',
+  'common.view/subject-selector-source',
   'common.view/subject-facts-source',
+  'common.view/subject-calculations-source',
   'common.view/slide-deck-source',
 ] as const)
 
@@ -56,6 +58,13 @@ export type DataSourceMaturity = 'admitted' | 'publisher-candidate'
  * `common.view/world-scene-source`: the shared callable surface is now backed by independent SC2
  * and Warzone candidate publishers, but it remains a candidate until the common viewer and frozen
  * `world-interchange-v1` conformance receipt exist. Standard wire availability is not GA.
+ *
+ * `common.view/subject-calculations-source` is admitted after both StarCraft II and Warzone 2100
+ * published the same bounded formula/input/result boundary and the common UI and MCP consumed it.
+ *
+ * `common.view/subject-selector-source` is a publisher candidate used by container-like subjects
+ * to lend the standard facts/calculations sources for one explicitly selected nested subject. It
+ * remains a candidate until another independent publisher proves the same selection boundary.
  *
  * `common.view/model-skeleton-source` was admitted after the independent Blizzard M3 family began
  * decoding `MODL.bones → BONE.name → CHAR` and publishing twelve corpus-backed bindings. W3D/W3X
@@ -100,7 +109,9 @@ export const DATA_SOURCE_MATURITY: Readonly<Record<StandardDataSourceId, DataSou
     'common.view/model-material-source': 'admitted',
     'common.view/model-socket-source': 'publisher-candidate',
     'common.view/relation-graph-source': 'admitted',
+    'common.view/subject-selector-source': 'publisher-candidate',
     'common.view/subject-facts-source': 'admitted',
+    'common.view/subject-calculations-source': 'admitted',
     'common.view/slide-deck-source': 'publisher-candidate',
   })
 

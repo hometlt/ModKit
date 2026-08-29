@@ -468,7 +468,15 @@ export function createModelResourceRefsSource({ references, truncated = false })
 
 /** `common.view/model-skeleton-source@1` — bone bindings and where each name came from. */
 export function createModelSkeletonSource({ bindings, hierarchies }) {
-  const items = [...bindings]
+  const items = bindings.map(binding => ({
+    ...binding,
+    ...(binding.flagNames === undefined
+      ? {}
+      : { flagNames: Object.freeze([...binding.flagNames]) }),
+    ...(binding.restMatrix === undefined
+      ? {}
+      : { restMatrix: Object.freeze([...binding.restMatrix]) }),
+  }))
   const info = Object.freeze({
     bindings: items.length,
     named: items.filter(item => item.boneName !== null).length,
@@ -481,7 +489,26 @@ export function createModelSkeletonSource({ bindings, hierarchies }) {
 
 /** `common.view/model-animation-source@1` — clips, and a rest pose stays a rest pose. */
 export function createModelAnimationSource({ clips }) {
-  const items = clips.map(clip => ({ ...clip, channels: Object.freeze([...clip.channels]) }))
+  const items = clips.map(clip => ({
+    ...clip,
+    ...(clip.nativeTimeBounds === undefined
+      ? {}
+      : { nativeTimeBounds: Object.freeze({ ...clip.nativeTimeBounds }) }),
+    channels: Object.freeze(
+      clip.channels.map(channel => ({
+        ...channel,
+        ...(channel.samples === undefined
+          ? {}
+          : {
+              samples: Object.freeze(
+                channel.samples.map(sample =>
+                  Object.freeze({ ...sample, value: Object.freeze([...sample.value]) }),
+                ),
+              ),
+            }),
+      })),
+    ),
+  }))
   const info = Object.freeze({
     clips: items.length,
     channelled: items.filter(clip => clip.channels.length > 0).length,
@@ -509,6 +536,21 @@ export function createModelMaterialSource({ materials, libraries }) {
     ...(material.contracts === undefined
       ? {}
       : { contracts: Object.freeze([...material.contracts]) }),
+    ...(material.flagNames === undefined
+      ? {}
+      : { flagNames: Object.freeze([...material.flagNames]) }),
+    ...(material.layers === undefined
+      ? {}
+      : {
+          layers: Object.freeze(
+            material.layers.map(layer => ({
+              ...layer,
+              ...(layer.flagNames === undefined
+                ? {}
+                : { flagNames: Object.freeze([...layer.flagNames]) }),
+            })),
+          ),
+        }),
   }))
   const byContract = {}
   for (const material of items) {

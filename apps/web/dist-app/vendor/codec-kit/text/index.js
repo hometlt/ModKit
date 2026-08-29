@@ -2,17 +2,19 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../chunks/chunk-YH4GRUBU.js";
+} from "../../../chunks/chunk-5AVQZD5N.js";
+import "../../../chunks/chunk-QT7HDXTG.js";
 import {
   revisionId
-} from "../../../chunks/chunk-CISYZWWS.js";
+} from "../../../chunks/chunk-6EID63DN.js";
 import {
   diagnostic,
   throwIfAborted,
   uint64
-} from "../../../chunks/chunk-VKK5N7MR.js";
+} from "../../../chunks/chunk-BKHLBCDQ.js";
+import "../../../chunks/chunk-YLVDSGH3.js";
 
-// extensions/_shared/codec-kit/src/text/codec-runtime.js
+// extensions/codec-kit/codec-kit/src/text/codec-runtime.js
 var BASE_OPERATIONS = Object.freeze([
   {
     id: "view.inspect",
@@ -287,7 +289,7 @@ function createTextCodec(definition, context) {
   });
 }
 
-// extensions/_shared/codec-kit/src/text/text.js
+// extensions/codec-kit/codec-kit/src/text/text.js
 function decodeInput(input) {
   if (typeof input.text === "string") {
     return {
@@ -417,7 +419,7 @@ function lease(value) {
   });
 }
 
-// extensions/_shared/codec-kit/src/text/tree-data-source.js
+// extensions/codec-kit/codec-kit/src/text/tree-data-source.js
 function treeDataSource(document) {
   const nodes = /* @__PURE__ */ new Map();
   const root = { id: "root", hasChildren: true };
@@ -459,7 +461,7 @@ function treeDataSource(document) {
   };
 }
 
-// extensions/_shared/codec-kit/src/text/provider-runtime.js
+// extensions/codec-kit/codec-kit/src/text/provider-runtime.js
 function decode(request) {
   try {
     return { decoded: decodeInput(request.input) };
@@ -526,7 +528,7 @@ function createSelectedProvider(definition, selection, factory = createTextSynta
   return factory(definition);
 }
 
-// extensions/_shared/codec-kit/src/text/scalars.js
+// extensions/codec-kit/codec-kit/src/text/scalars.js
 function scalar(value, raw = JSON.stringify(value)) {
   if (value === null) return { kind: "null", raw: "null" };
   if (typeof value === "boolean") return { kind: "boolean", value, raw: String(value) };

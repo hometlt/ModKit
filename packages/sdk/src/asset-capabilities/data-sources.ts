@@ -4,6 +4,7 @@
  */
 
 import { compareUtf8, isQualifiedId, type SourceSpan } from '@modkitx-x3/core'
+import type { KnowledgeTarget } from '../knowledge/index.js'
 import { snapshotJsonWireData } from '../manifest/validate.js'
 import { validateWithSchema } from '../manifest/validate.js'
 import { dataSourceContractDefinitionSpecV1Schema } from '../schemas/contribution-specs.js'
@@ -58,7 +59,9 @@ export {
   type ModelAnimationClip,
   type ModelAnimationInfo,
   type ModelAnimationKind,
+  type ModelAnimationSample,
   type ModelAnimationSource,
+  type ModelAnimationTimeBounds,
   type ModelBoneBinding,
   type ModelBoneProvenance,
   type ModelCollisionInfo,
@@ -66,6 +69,7 @@ export {
   type ModelCollisionSource,
   type ModelCollisionVolume,
   type ModelMaterialInfo,
+  type ModelMaterialLayerRef,
   type ModelMaterialRef,
   type ModelMaterialSource,
   type ModelResourceProvenance,
@@ -196,6 +200,8 @@ export interface TreeNodeFacts {
   readonly preview?: string
   readonly range?: SourceSpan
   readonly semanticPath?: readonly string[]
+  /** Exact lookup coordinate for optional host-provided help. */
+  readonly knowledgeTarget?: KnowledgeTarget
 }
 
 export interface TreeQuery {
@@ -237,6 +243,8 @@ export interface CellFacts {
   readonly value: string
   readonly range?: SourceSpan
   readonly diagnostics?: readonly AssetDiagnostic[]
+  /** Exact lookup coordinate for optional host-provided help. */
+  readonly knowledgeTarget?: KnowledgeTarget
 }
 
 export interface TableQuery {
@@ -250,7 +258,7 @@ export interface TableDataSource {
     readonly header?: readonly string[]
   }>
   rows(request: TablePageRequest, signal?: AbortSignal): Promise<Page<Row>>
-  cell(coord: CellCoord): Promise<CellFacts>
+  cell(coord: CellCoord, signal?: AbortSignal): Promise<CellFacts>
   search(query: TableQuery, signal?: AbortSignal): AsyncIterable<CellCoord>
 }
 
@@ -425,6 +433,8 @@ export interface SubjectFact {
   readonly label: string
   readonly value: JsonValue
   readonly provenance: readonly SubjectFactProvenance[]
+  /** Exact lookup coordinate for optional host-provided help. */
+  readonly knowledgeTarget?: KnowledgeTarget
 }
 
 export interface RelatedSubjectFact {
@@ -455,6 +465,110 @@ export interface SubjectFactsSource {
   groups(page: PageRequest, signal?: AbortSignal): Promise<Page<SubjectFactGroup>>
   facts(groupId: string, page: PageRequest, signal?: AbortSignal): Promise<Page<SubjectFact>>
   relations(page: PageRequest, signal?: AbortSignal): Promise<Page<RelatedSubjectFact>>
+}
+
+export type SubjectCalculationStatus = 'computed' | 'missing-data' | 'unsupported' | 'invalid'
+export type SubjectCalculationInputState = 'resolved' | 'defaulted' | 'missing' | 'unsupported'
+export type SubjectCalculationsCompleteness = 'complete' | 'partial' | 'capped'
+
+/** Stable, versioned mathematical rule used for a read-only subject calculation. */
+export interface SubjectCalculationFormula {
+  readonly id: string
+  readonly name: string
+  readonly version: string
+  /** Human-readable formula; it is documentation, not executable source code. */
+  readonly expression: string
+}
+
+/** One auditable value consumed by a calculation. */
+export interface SubjectCalculationInput {
+  readonly id: string
+  readonly label: string
+  readonly state: SubjectCalculationInputState
+  readonly value?: JsonValue
+  readonly unit?: string
+  readonly provenance: readonly SubjectFactProvenance[]
+  readonly knowledgeTarget?: KnowledgeTarget
+}
+
+export interface SubjectCalculationWarning {
+  readonly code: string
+  readonly message: string
+}
+
+/** One bounded result. Unsupported or incomplete work is explicit and never guessed. */
+export interface SubjectCalculation {
+  readonly id: string
+  readonly label: string
+  readonly formula: SubjectCalculationFormula
+  readonly status: SubjectCalculationStatus
+  readonly value?: JsonValue
+  /** Optional unrounded numeric result when `value` is a display-rounded number. */
+  readonly rawValue?: number
+  readonly unit?: string
+  readonly inputs: readonly SubjectCalculationInput[]
+  readonly provenance: readonly SubjectFactProvenance[]
+  readonly warnings: readonly SubjectCalculationWarning[]
+  readonly knowledgeTarget?: KnowledgeTarget
+}
+
+export interface SubjectCalculationsSummary {
+  readonly snapshotId: string
+  readonly subjectId: string
+  readonly totalCalculations: number
+  readonly completeness: SubjectCalculationsCompleteness
+  readonly reason?: string
+}
+
+/**
+ * Presentation-neutral read-only calculations for one subject. Formula versions, inputs,
+ * provenance and incomplete states cross the boundary together so UI and MCP clients can audit
+ * the result without reimplementing game rules.
+ */
+export interface SubjectCalculationsSource {
+  summary(signal?: AbortSignal): Promise<SubjectCalculationsSummary>
+  calculations(page: PageRequest, signal?: AbortSignal): Promise<Page<SubjectCalculation>>
+}
+
+export type SubjectSelectorCompleteness = 'complete' | 'partial' | 'capped'
+
+/** Stable identity of one nested subject that may be selected without parsing in the consumer. */
+export interface SelectableSubject {
+  readonly subjectId: string
+  readonly label: string
+  readonly kind: string
+  readonly type?: string
+}
+
+export interface SubjectSelectorSummary {
+  readonly snapshotId: string
+  readonly totalSubjects: number
+  readonly completeness: SubjectSelectorCompleteness
+  readonly reason?: string
+}
+
+/** Optional publisher-applied filters for large nested-subject catalogs. */
+export interface SubjectSelectorQuery extends PageRequest {
+  /** Exact semantic kind, for example an SC2 data namespace. */
+  readonly kind?: string
+  /** Exact publisher type within the kind. */
+  readonly type?: string
+  /** Case-insensitive match against stable id or display label. */
+  readonly text?: string
+}
+
+/**
+ * Read-only selection boundary for container-like subjects. The publisher owns parsing and lends
+ * standard entity sources; consumers retain only explicit leases and never reinterpret files.
+ */
+export interface SubjectSelectorSource {
+  summary(signal?: AbortSignal): Promise<SubjectSelectorSummary>
+  subjects(page: SubjectSelectorQuery, signal?: AbortSignal): Promise<Page<SelectableSubject>>
+  openFacts(subjectId: string, signal?: AbortSignal): Promise<Lease<SubjectFactsSource>>
+  openCalculations(
+    subjectId: string,
+    signal?: AbortSignal,
+  ): Promise<Lease<SubjectCalculationsSource>>
 }
 
 /**
@@ -526,7 +640,9 @@ export interface DataSourceContractMap {
   'common.view/model-material-source': { 1: ModelMaterialSource }
   'common.view/model-socket-source': { 1: ModelSocketSource }
   'common.view/relation-graph-source': { 1: RelationGraphSource }
+  'common.view/subject-selector-source': { 1: SubjectSelectorSource }
   'common.view/subject-facts-source': { 1: SubjectFactsSource }
+  'common.view/subject-calculations-source': { 1: SubjectCalculationsSource }
   'common.view/slide-deck-source': { 1: SlideDeckSource }
 }
 

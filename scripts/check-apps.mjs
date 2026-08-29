@@ -249,7 +249,7 @@ await checkApplicationSet(
   'cli',
   'mk2-extended',
   async extensions => ({ main: await cli.createModkitCliComposition(extensions) }),
-  { main: { offers: 85, active: 85 } },
+  { main: { offers: 97, active: 97 } },
 )
 await checkApplicationSet(
   'headless',
@@ -261,13 +261,13 @@ await checkApplicationSet(
   'headless',
   'blizzard-models',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 1, active: 1 } },
+  { main: { offers: 2, active: 2 } },
 )
 await checkApplicationSet(
   'headless',
   'mk2-extended',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 85, active: 85 } },
+  { main: { offers: 97, active: 97 } },
 )
 await checkApplicationSet(
   'pwa',
@@ -317,7 +317,7 @@ await checkApplicationSet(
   {
     main: { offers: 'none', active: 'none' },
     // The Warzone WZ writer is worker-brokered; the SC2 playable runtime remains trusted-node.
-    worker: { offers: 87, active: 87 },
+    worker: { offers: 98, active: 98 },
   },
 )
 await checkApplicationSet(
@@ -369,7 +369,7 @@ await checkApplicationSet(
     return { extensionHost: app.extensionHost, webview: app.webview }
   },
   {
-    extensionHost: { offers: 85, active: 85 },
+    extensionHost: { offers: 97, active: 97 },
     webview: { offers: 'none', active: 'none' },
   },
 )
@@ -405,7 +405,7 @@ await checkApplicationSet(
     return { main: app.main, renderer: app.renderer }
   },
   {
-    main: { offers: 85, active: 85 },
+    main: { offers: 97, active: 97 },
     renderer: { offers: 'none', active: 'none' },
   },
 )

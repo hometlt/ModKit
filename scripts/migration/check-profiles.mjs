@@ -18,8 +18,7 @@
 //
 // Usage: node scripts/migration/check-profiles.mjs [--profiles <path>] [--quiet]
 
-import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -50,18 +49,19 @@ if (profiles.schemaVersion !== 'product-profiles-1') {
 const RELEASE_CLOSURES = ['mk3-ga', 'mk3-multiverse-ga', 'mk3-deferred-games']
 
 const contributionIds = new Set()
-for (const file of execFileSync(
-  'git',
-  ['-C', repoRoot, 'ls-files', '--recurse-submodules', 'extensions/*/*/contributions/*.json'],
-  {
-    maxBuffer: 1 << 30,
-  },
-)
-  .toString('utf8')
-  .trim()
-  .split('\n')
-  .filter(Boolean)) {
-  contributionIds.add(readJson(path.join(repoRoot, file)).id)
+const extensionsRoot = path.join(repoRoot, 'extensions')
+for (const publisher of readdirSync(extensionsRoot, { withFileTypes: true })) {
+  if (!publisher.isDirectory()) continue
+  const publisherRoot = path.join(extensionsRoot, publisher.name)
+  for (const extension of readdirSync(publisherRoot, { withFileTypes: true })) {
+    if (!extension.isDirectory()) continue
+    const contributionsRoot = path.join(publisherRoot, extension.name, 'contributions')
+    if (!existsSync(contributionsRoot)) continue
+    for (const contribution of readdirSync(contributionsRoot, { withFileTypes: true })) {
+      if (!contribution.isFile() || !contribution.name.endsWith('.json')) continue
+      contributionIds.add(readJson(path.join(contributionsRoot, contribution.name)).id)
+    }
+  }
 }
 
 const optional = new Set(profiles.optionalFamilies ?? [])

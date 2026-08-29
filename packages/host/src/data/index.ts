@@ -11,6 +11,8 @@ import {
   type DataCatalogOfferFacet,
   type DataCatalogRequestFacet,
   type DataEntityRef,
+  type DataSubjectFactsOpenRequest,
+  type DataSubjectCalculationsOpenRequest,
   type DataLocalizationDocument,
   type DataWorkspaceDocumentRequirement,
   type DataWorkspacePlan,
@@ -21,8 +23,12 @@ import type {
   DefinitionInventoryResult,
   Lease,
   ModWorkspaceLock,
+  Page,
   PermissionGrant,
   RelationGraphSource,
+  SelectableSubject,
+  SubjectSelectorQuery,
+  SubjectCalculationsSource,
   ResourceBudget,
   ResourceSessionPort,
   RevisionId,
@@ -32,6 +38,8 @@ import type {
   ServiceFacetMatchContext,
   ServiceFacetMatchResult,
   ServiceFacetMatcherProfile,
+  SubjectFactsSource,
+  SubjectSelectorSource,
   TableDataSource,
   TreeDataSource,
 } from '@modkitx-x3/sdk'
@@ -200,6 +208,23 @@ export const RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION: ServiceContractDefinit
           kind: 'lease',
           wrapper: 'lease',
           result: Object.freeze({ contract: 'common.view/relation-graph-source', major: 1 }),
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        openSubjectFacts: Object.freeze({
+          kind: 'lease',
+          optional: true,
+          wrapper: 'lease',
+          result: Object.freeze({ contract: 'common.view/subject-facts-source', major: 1 }),
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        openSubjectCalculations: Object.freeze({
+          kind: 'lease',
+          optional: true,
+          wrapper: 'lease',
+          result: Object.freeze({
+            contract: 'common.view/subject-calculations-source',
+            major: 1,
+          }),
           signal: Object.freeze({ arg: 0, key: 'signal' }),
         }),
       }),
@@ -472,12 +497,26 @@ export interface ResolvedDataWorkspaceFacets {
   readonly relations: Lease<RelationGraphSource>
 }
 
+export type ResolvedDataSubjectFactsOpenRequest = Omit<DataSubjectFactsOpenRequest, 'snapshotId'>
+export type ResolvedDataSubjectCalculationsOpenRequest = Omit<
+  DataSubjectCalculationsOpenRequest,
+  'snapshotId'
+>
+
 export type AnalyzedResolvedDataWorkspace =
   | Readonly<{
       state: 'resolved'
       snapshot: ResolvedDataWorkspaceSnapshot
       plan: DataWorkspacePlan
       facets: ResolvedDataWorkspaceFacets
+      /** Present only when the selected game provider implements semantic subject cards. */
+      openSubjectFacts?: (
+        request: ResolvedDataSubjectFactsOpenRequest,
+      ) => Promise<Lease<SubjectFactsSource>>
+      /** Present only when the selected game provider implements auditable calculations. */
+      openSubjectCalculations?: (
+        request: ResolvedDataSubjectCalculationsOpenRequest,
+      ) => Promise<Lease<SubjectCalculationsSource>>
       diagnostics: readonly Diagnostic[]
       release(): Promise<void>
     }>
@@ -485,6 +524,143 @@ export type AnalyzedResolvedDataWorkspace =
       state: 'unresolved'
       diagnostics: readonly Diagnostic[]
     }>
+
+export interface ResolvedDataSubjectSelectorLimits {
+  readonly maxPageSize: number
+  readonly maxEntities: number
+  readonly maxRelations: number
+  readonly maxCalculations: number
+}
+
+/**
+ * Lend entity cards and calculations from one already-resolved workspace without exposing its
+ * parser or files to consumers. The analysis remains caller-owned and must outlive this lease.
+ */
+export function createResolvedDataSubjectSelectorLease(
+  analyzed: Extract<AnalyzedResolvedDataWorkspace, { readonly state: 'resolved' }>,
+  inputLimits: ResolvedDataSubjectSelectorLimits,
+): Lease<SubjectSelectorSource> | undefined {
+  if (analyzed.openSubjectFacts === undefined || analyzed.openSubjectCalculations === undefined) {
+    return undefined
+  }
+  const openSubjectFacts = analyzed.openSubjectFacts
+  const openSubjectCalculations = analyzed.openSubjectCalculations
+  const limits = Object.freeze({
+    maxPageSize: positiveBound(inputLimits.maxPageSize, 'maxPageSize'),
+    maxEntities: positiveBound(inputLimits.maxEntities, 'maxEntities'),
+    maxRelations: positiveBound(inputLimits.maxRelations, 'maxRelations'),
+    maxCalculations: positiveBound(inputLimits.maxCalculations, 'maxCalculations'),
+  })
+  const snapshot = analyzed.snapshot
+  const localized = new Map(snapshot.localizedStrings.map(item => [item.key, item.value]))
+  const subjects = Object.freeze(
+    snapshot.definitions
+      .map(entity => {
+        const authoredName = entity.fields['Name']
+        const label =
+          typeof authoredName === 'string'
+            ? (localized.get(authoredName) ?? entity.entityId)
+            : entity.entityId
+        return Object.freeze({
+          subjectId: `${entity.namespace}/${entity.entityId}`,
+          label,
+          kind: entity.namespace,
+          type: entity.typeId,
+        }) satisfies SelectableSubject
+      })
+      .sort((left, right) => left.subjectId.localeCompare(right.subjectId)),
+  )
+  const byId = new Map<string, SelectableSubject>(subjects.map(item => [item.subjectId, item]))
+  let live = true
+  const assertLive = (signal?: AbortSignal): void => {
+    signal?.throwIfAborted()
+    if (!live) throw new Error('resolved data subject selector lease has been released')
+  }
+  const page = (request: SubjectSelectorQuery, signal?: AbortSignal): Page<SelectableSubject> => {
+    assertLive(signal)
+    if (
+      !Number.isSafeInteger(request.limit) ||
+      request.limit < 1 ||
+      request.limit > limits.maxPageSize
+    ) {
+      throw new RangeError(`subject selector limit must be between 1 and ${limits.maxPageSize}`)
+    }
+    const text = request.text?.trim().toLocaleLowerCase('en-US')
+    const filtered = subjects.filter(
+      subject =>
+        (request.kind === undefined || subject.kind === request.kind) &&
+        (request.type === undefined || subject.type === request.type) &&
+        (text === undefined ||
+          text.length === 0 ||
+          subject.subjectId.toLocaleLowerCase('en-US').includes(text) ||
+          subject.label.toLocaleLowerCase('en-US').includes(text)),
+    )
+    const offset =
+      request.cursor === undefined ? 0 : Number(request.cursor.replace(/^subject:/u, ''))
+    if (
+      !Number.isSafeInteger(offset) ||
+      offset < 0 ||
+      offset > filtered.length ||
+      (request.cursor !== undefined && request.cursor !== `subject:${offset}`)
+    ) {
+      throw new RangeError('subject selector cursor is invalid or stale')
+    }
+    const end = Math.min(filtered.length, offset + request.limit)
+    return Object.freeze({
+      items: Object.freeze(filtered.slice(offset, end)),
+      ...(end < filtered.length ? { nextCursor: `subject:${end}` } : {}),
+    })
+  }
+  const selected = (subjectId: string, signal?: AbortSignal): SelectableSubject => {
+    assertLive(signal)
+    const subject = byId.get(subjectId)
+    if (subject === undefined) throw new RangeError(`resolved data subject not found: ${subjectId}`)
+    return subject
+  }
+  const source: SubjectSelectorSource = Object.freeze({
+    async summary(signal?: AbortSignal) {
+      assertLive(signal)
+      return Object.freeze({
+        snapshotId: snapshot.snapshotId,
+        totalSubjects: subjects.length,
+        completeness: snapshot.complete ? ('complete' as const) : ('partial' as const),
+        ...(snapshot.complete ? {} : { reason: 'the resolved data workspace is incomplete' }),
+      })
+    },
+    subjects: async (request: SubjectSelectorQuery, signal?: AbortSignal) => page(request, signal),
+    async openFacts(subjectId: string, signal?: AbortSignal) {
+      const subject = selected(subjectId, signal)
+      return openSubjectFacts({
+        subject: {
+          namespace: subject.kind,
+          entityId: subject.subjectId.slice(subject.kind.length + 1),
+        },
+        ...limits,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+    async openCalculations(subjectId: string, signal?: AbortSignal) {
+      const subject = selected(subjectId, signal)
+      return openSubjectCalculations({
+        subject: {
+          namespace: subject.kind,
+          entityId: subject.subjectId.slice(subject.kind.length + 1),
+        },
+        maxPageSize: limits.maxPageSize,
+        maxEntities: limits.maxEntities,
+        maxCalculations: limits.maxCalculations,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+  })
+  return Object.freeze({
+    value: source,
+    release(): Promise<void> {
+      live = false
+      return Promise.resolve()
+    },
+  })
+}
 
 function positiveBound(value: number, label: string): number {
   if (!Number.isSafeInteger(value) || value <= 0) {
@@ -546,6 +722,11 @@ function validateWorkspacePlan(
   let localizationRank = -1
   let localizationStarted = false
   for (const requirement of plan.requirements) {
+    if (requirement.required !== undefined && typeof requirement.required !== 'boolean') {
+      throw new TypeError(
+        `workspace data requirement ${requirement.requirementId} has invalid required flag`,
+      )
+    }
     if (requirementIds.has(requirement.requirementId)) {
       throw new TypeError(`workspace data requirement ${requirement.requirementId} is duplicated`)
     }
@@ -744,8 +925,10 @@ export async function analyzeResolvedDataWorkspace(
         request.signal,
       )
       if (loaded.state === 'unresolved') {
-        diagnostics.push(loaded.diagnostic)
-        unresolvedRequirementIds.push(requirement.requirementId)
+        if (requirement.required !== false) {
+          diagnostics.push(loaded.diagnostic)
+          unresolvedRequirementIds.push(requirement.requirementId)
+        }
         continue
       }
       textBytes += new TextEncoder().encode(loaded.text).byteLength
@@ -787,7 +970,8 @@ export async function analyzeResolvedDataWorkspace(
       locales: request.locales,
       localizationKeys: request.localizationKeys ?? [],
       queries: request.queries,
-      plannedDocumentCount: plan.requirements.length,
+      plannedDocumentCount:
+        documents.length + localizationDocuments.length + unresolvedRequirementIds.length,
       unresolvedRequirementIds,
       snapshotId: `${String(request.resources.revision)}:${revisions.join('|')}`,
       maxDocuments: limits.maxRequirements,
@@ -813,20 +997,59 @@ export async function analyzeResolvedDataWorkspace(
     const relations = await resolution.workspace.openRelations(facetRequest)
     opened.push(relations)
     let released = false
+    const openSubjectFacts = resolution.workspace.openSubjectFacts
+    const openSubjectCalculations = resolution.workspace.openSubjectCalculations
     return Object.freeze({
       state: 'resolved',
       snapshot,
       plan,
       facets: Object.freeze({ schemaTree, definitions, localization, relations }),
+      ...(openSubjectFacts === undefined
+        ? {}
+        : {
+            async openSubjectFacts(
+              request: ResolvedDataSubjectFactsOpenRequest,
+            ): Promise<Lease<SubjectFactsSource>> {
+              if (released) throw new Error('resolved data workspace analysis is released')
+              const lease = await openSubjectFacts.call(resolution.workspace, {
+                ...request,
+                snapshotId: snapshot.snapshotId,
+              })
+              if (released) {
+                await lease.release()
+                throw new Error('resolved data workspace analysis was released while opening facts')
+              }
+              opened.push(lease)
+              return lease
+            },
+          }),
+      ...(openSubjectCalculations === undefined
+        ? {}
+        : {
+            async openSubjectCalculations(
+              request: ResolvedDataSubjectCalculationsOpenRequest,
+            ): Promise<Lease<SubjectCalculationsSource>> {
+              if (released) throw new Error('resolved data workspace analysis is released')
+              const lease = await openSubjectCalculations.call(resolution.workspace, {
+                ...request,
+                snapshotId: snapshot.snapshotId,
+              })
+              if (released) {
+                await lease.release()
+                throw new Error(
+                  'resolved data workspace analysis was released while opening calculations',
+                )
+              }
+              opened.push(lease)
+              return lease
+            },
+          }),
       diagnostics: Object.freeze(diagnostics),
       async release() {
         if (released) return
         released = true
         const results = await Promise.allSettled([
-          relations.release(),
-          localization.release(),
-          definitions.release(),
-          schemaTree.release(),
+          ...[...opened].reverse().map(lease => lease.release()),
           resolution.release(),
         ])
         const failure = results.find(result => result.status === 'rejected')

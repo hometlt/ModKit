@@ -2,15 +2,18 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-YH4GRUBU.js";
+} from "../../chunks/chunk-5AVQZD5N.js";
+import "../../chunks/chunk-QT7HDXTG.js";
 import {
-  revisionId
-} from "../../chunks/chunk-CISYZWWS.js";
+  revisionId,
+  toPortableProjectionReceipt
+} from "../../chunks/chunk-6EID63DN.js";
 import {
   canonicalJsonStringify
-} from "../../chunks/chunk-VKK5N7MR.js";
+} from "../../chunks/chunk-BKHLBCDQ.js";
+import "../../chunks/chunk-YLVDSGH3.js";
 
-// extensions/_shared/codec-kit/src/index.js
+// extensions/codec-kit/codec-kit/src/index.js
 var INSPECTION_OPERATIONS = Object.freeze([
   Object.freeze({
     id: "view.inspect",
@@ -383,6 +386,191 @@ function createModelSceneSource({ info, nodes, meshes, primitives = [] }) {
   }
   return Object.freeze(source);
 }
+function facetPage(items, request) {
+  if (!Number.isSafeInteger(request?.limit) || request.limit <= 0) {
+    throw new TypeError("model facet page limit must be a positive safe integer");
+  }
+  const start = pageStart(request.cursor);
+  const values = items.slice(start, start + request.limit);
+  return Object.freeze({
+    items: Object.freeze(values),
+    ...start + values.length < items.length ? { nextCursor: String(start + values.length) } : {}
+  });
+}
+function facetSource(info, key, items) {
+  const owned = Object.freeze(items.map((item) => Object.freeze({ ...item })));
+  const source = {
+    async info(signal) {
+      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+      return info;
+    }
+  };
+  source[key] = async (request, signal) => {
+    if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+    return facetPage(owned, request);
+  };
+  return Object.freeze(source);
+}
+function createModelResourceRefsSource({ references, truncated = false }) {
+  const items = [...references];
+  const info = Object.freeze({
+    references: items.length,
+    bound: items.filter((item) => item.bindingId !== void 0).length,
+    truncated: truncated === true
+  });
+  return facetSource(info, "references", items);
+}
+function createModelSkeletonSource({ bindings, hierarchies }) {
+  const items = bindings.map((binding) => ({
+    ...binding,
+    ...binding.flagNames === void 0 ? {} : { flagNames: Object.freeze([...binding.flagNames]) },
+    ...binding.restMatrix === void 0 ? {} : { restMatrix: Object.freeze([...binding.restMatrix]) }
+  }));
+  const info = Object.freeze({
+    bindings: items.length,
+    named: items.filter((item) => item.boneName !== null).length,
+    companionBound: items.filter((item) => item.provenance === "companion").length,
+    // absent, not zero, when the publisher does not enumerate hierarchies
+    ...hierarchies === void 0 ? {} : { hierarchies }
+  });
+  return facetSource(info, "bindings", items);
+}
+function createModelAnimationSource({ clips }) {
+  const items = clips.map((clip) => ({
+    ...clip,
+    ...clip.nativeTimeBounds === void 0 ? {} : { nativeTimeBounds: Object.freeze({ ...clip.nativeTimeBounds }) },
+    channels: Object.freeze(
+      clip.channels.map((channel) => ({
+        ...channel,
+        ...channel.samples === void 0 ? {} : {
+          samples: Object.freeze(
+            channel.samples.map(
+              (sample) => Object.freeze({ ...sample, value: Object.freeze([...sample.value]) })
+            )
+          )
+        }
+      }))
+    )
+  }));
+  const info = Object.freeze({
+    clips: items.length,
+    channelled: items.filter((clip) => clip.channels.length > 0).length,
+    companionBound: items.filter((clip) => clip.provenance === "companion").length
+  });
+  return facetSource(info, "clips", items);
+}
+function createModelCollisionSource({ volumes }) {
+  const items = volumes.map((volume) => ({
+    ...volume,
+    ...volume.types === void 0 ? {} : { types: Object.freeze([...volume.types]) }
+  }));
+  const byKind = {};
+  for (const volume of items) byKind[volume.kind] = (byKind[volume.kind] ?? 0) + 1;
+  const info = Object.freeze({ volumes: items.length, byKind: Object.freeze(byKind) });
+  return facetSource(info, "volumes", items);
+}
+function createModelMaterialSource({ materials, libraries }) {
+  const items = materials.map((material) => ({
+    ...material,
+    ...material.contracts === void 0 ? {} : { contracts: Object.freeze([...material.contracts]) },
+    ...material.flagNames === void 0 ? {} : { flagNames: Object.freeze([...material.flagNames]) },
+    ...material.layers === void 0 ? {} : {
+      layers: Object.freeze(
+        material.layers.map((layer) => ({
+          ...layer,
+          ...layer.flagNames === void 0 ? {} : { flagNames: Object.freeze([...layer.flagNames]) }
+        }))
+      )
+    }
+  }));
+  const byContract = {};
+  for (const material of items) {
+    for (const contract of material.contracts ?? []) {
+      byContract[contract] = (byContract[contract] ?? 0) + 1;
+    }
+  }
+  const info = Object.freeze({
+    materials: items.length,
+    // absent, not zero, when the format has no library concept at all
+    ...libraries === void 0 ? {} : { libraries },
+    ...Object.keys(byContract).length === 0 ? {} : { byContract: Object.freeze(byContract) }
+  });
+  return facetSource(info, "materials", items);
+}
+function createModelSocketSource({ sockets }) {
+  const items = sockets.map((socket) => ({
+    ...socket,
+    ...socket.orientation === void 0 ? {} : { orientation: Object.freeze({ ...socket.orientation }) }
+  }));
+  const byRole = {};
+  for (const socket of items) byRole[socket.role] = (byRole[socket.role] ?? 0) + 1;
+  return facetSource(
+    Object.freeze({ sockets: items.length, byRole: Object.freeze(byRole) }),
+    "sockets",
+    items
+  );
+}
+var PROJECTION_RECEIPT_METADATA_ID = "uv-projection-receipt";
+var PLANE_STATES = /* @__PURE__ */ new Set(["normalized", "preserved", "inferred", "lost"]);
+var CONFIDENCES = /* @__PURE__ */ new Set(["exact", "high", "partial", "heuristic"]);
+function createProjectionReceipt(receipt) {
+  const planes = [...receipt.planes ?? []];
+  if (planes.length === 0)
+    throw new TypeError("a projection receipt must record at least one plane");
+  for (const plane of planes) {
+    if (!PLANE_STATES.has(plane.state)) {
+      throw new TypeError(`projection plane \xAB${plane.planeId}\xBB has an unknown state ${plane.state}`);
+    }
+  }
+  if (!CONFIDENCES.has(receipt.confidence)) {
+    throw new TypeError(`projection receipt has an unknown confidence ${receipt.confidence}`);
+  }
+  if ((receipt.evidence ?? []).length === 0) {
+    throw new TypeError(
+      "a projection receipt made of no evidence is a claim with nothing behind it; state at least one declared or observed fact"
+    );
+  }
+  return Object.freeze({
+    form: "local",
+    adapter: Object.freeze({ ...receipt.adapter }),
+    subjectRevision: receipt.subjectRevision,
+    companions: Object.freeze((receipt.companions ?? []).map((item) => Object.freeze({ ...item }))),
+    basis: Object.freeze({ ...receipt.basis }),
+    planes: Object.freeze(planes.map((plane) => Object.freeze({ ...plane }))),
+    evidence: Object.freeze(receipt.evidence.map((item) => Object.freeze({ ...item }))),
+    confidence: receipt.confidence,
+    ...receipt.semanticHash === void 0 ? {} : { semanticHash: receipt.semanticHash },
+    ...receipt.sourceUri === void 0 ? {} : { sourceUri: receipt.sourceUri }
+  });
+}
+function jsonSafe(value) {
+  if (typeof value === "bigint") return value.toString();
+  if (Array.isArray(value)) return value.map(jsonSafe);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, jsonSafe(item)]));
+  }
+  return value;
+}
+function projectionReceiptMetadataGroup(receipt, identity) {
+  const portable = toPortableProjectionReceipt(receipt, identity);
+  return Object.freeze({
+    id: PROJECTION_RECEIPT_METADATA_ID,
+    label: "UV projection receipt",
+    entries: Object.freeze([Object.freeze({ key: "receipt", value: jsonSafe(portable) })])
+  });
+}
+var CODEC_SOURCE_IDENTITY = Object.freeze({
+  kind: "redacted",
+  reason: "a codec projects a subject the host already opened; its portable identity is the subject revision this receipt carries, and an ambient URI would leak the producing machine into every copy"
+});
+function descriptorMetadata(inspection) {
+  const groups = inspection.metadata ?? [];
+  if (inspection.projectionReceipt === void 0) return groups;
+  return [
+    ...groups,
+    projectionReceiptMetadataGroup(inspection.projectionReceipt, CODEC_SOURCE_IDENTITY)
+  ];
+}
 async function readAll(source, budget, signal) {
   if (source.kind !== "bytes" || source.size === void 0) {
     throw new TypeError("inspection codecs require a sized byte source");
@@ -402,12 +590,17 @@ async function readAll(source, budget, signal) {
   }
   return result;
 }
-function originFrom(input, primary) {
+function originFrom(input, primary, companions = []) {
+  const requiredCompanionBindings = new Set(
+    companions.flatMap(
+      (companion) => companion.required === true && companion.state === "resolved" ? companion.bindingIds : []
+    )
+  );
   const toBinding = (binding) => ({
     id: binding.bindingId,
     role: binding.role,
     source: binding.source,
-    required: binding.sourceKind === "candidate",
+    required: binding.sourceKind === "candidate" || requiredCompanionBindings.has(binding.bindingId),
     ownership: binding.ownership,
     revision: binding.revision
   });
@@ -419,6 +612,9 @@ function originFrom(input, primary) {
       primary: input.primaryBindingId
     };
   }
+  if (input.originKind === "namespace") {
+    return { kind: "namespace", root: input.root, revision: input.revisions.namespaceRevision };
+  }
   throw new TypeError("inspection codec requires a physical byte input");
 }
 function probeLength(plan, size) {
@@ -427,11 +623,61 @@ function probeLength(plan, size) {
   const available = size === void 0 ? declared : Number(size);
   return Math.max(0, Math.min(declared, available));
 }
-function createInspectionCodec(definition) {
+function createInspectionCodec(definition, contributionContext) {
+  const namespaceDefinition = definition.namespace;
   const customOperations = Object.freeze([...definition.operations ?? []]);
-  const operationDeclarations = Object.freeze([...INSPECTION_OPERATIONS, ...customOperations]);
+  const sharedOperations = namespaceDefinition === void 0 ? INSPECTION_OPERATIONS : INSPECTION_OPERATIONS.filter((operation) => operation.handlerId !== "export-raw");
+  const operationDeclarations = Object.freeze([...sharedOperations, ...customOperations]);
   return Object.freeze({
     async probe(request, signal) {
+      if (namespaceDefinition !== void 0) {
+        if (request.source.kind !== "namespace" || request.plan.kind !== "namespace") {
+          throw new TypeError(`${definition.id} requires a namespace probe`);
+        }
+        const namespaceLease = await request.source.openNamespace(signal);
+        try {
+          const markers = [];
+          for (const path of request.plan.markers) {
+            let entryLease;
+            try {
+              entryLease = await namespaceLease.value.open(path, signal);
+            } catch (error) {
+              const code = error?.code;
+              if (code === "x3.host/namespace-entry-not-found") continue;
+              throw error;
+            }
+            try {
+              markers.push(
+                Object.freeze({
+                  path,
+                  kind: entryLease.value.kind === "namespace" ? "directory" : "file",
+                  ...entryLease.value.kind === "bytes" && entryLease.value.size !== void 0 ? { size: entryLease.value.size } : {}
+                })
+              );
+            } finally {
+              await entryLease.release();
+            }
+          }
+          const detected2 = await namespaceDefinition.detect(
+            Object.freeze(markers),
+            request.source.ref.uri
+          );
+          return Object.freeze({
+            codecId: definition.id,
+            confidence: detected2.confidence,
+            evidence: Object.freeze([
+              Object.freeze({
+                kind: detected2.kind ?? "structure",
+                weight: detected2.confidence,
+                note: detected2.note
+              })
+            ]),
+            requiredRanges: Object.freeze([])
+          });
+        } finally {
+          await namespaceLease.release();
+        }
+      }
       if (request.source.kind !== "bytes" || request.plan.kind !== "bytes") {
         throw new TypeError(`${definition.id} requires a byte probe`);
       }
@@ -456,7 +702,16 @@ function createInspectionCodec(definition) {
         ])
       });
     },
-    async planInput() {
+    async planInput(source, evidence, signal) {
+      if (definition.planInput !== void 0) {
+        return definition.planInput(source, evidence, signal, contributionContext);
+      }
+      if (namespaceDefinition !== void 0) {
+        if (source.kind !== "namespace") {
+          throw new TypeError(`${definition.id} requires a namespace input`);
+        }
+        return Object.freeze({ originKind: "namespace", requirements: Object.freeze([]) });
+      }
       return Object.freeze({
         originKind: "single",
         candidate: Object.freeze({ bindingId: "content", role: "content", ownership: "owned" }),
@@ -464,6 +719,92 @@ function createInspectionCodec(definition) {
       });
     },
     async open(input, intent, budget, signal) {
+      if (namespaceDefinition !== void 0) {
+        if (input.originKind !== "namespace") {
+          throw new TypeError(`${definition.id} requires a namespace input`);
+        }
+        const namespaceLease = await input.openNamespace(signal);
+        try {
+          const inspection = await namespaceDefinition.inspect(namespaceLease.value, {
+            budget,
+            signal,
+            intent,
+            namespace: namespaceLease.value,
+            input
+          });
+          const dataSources = new Map(Object.entries(inspection.dataSources ?? {}));
+          const descriptor = await assembleSubjectDescriptor({
+            schemaVersion: 2,
+            subjectUri: input.root.uri,
+            origin: originFrom(input),
+            interpretation: "codec",
+            identity: {
+              codecId: definition.id,
+              codecVersion: definition.version ?? "1.0.0",
+              formatId: definition.format.id,
+              formatLabel: definition.format.label,
+              ...definition.format.mediaType === void 0 ? {} : { mediaType: definition.format.mediaType },
+              confidence: inspection.detection.confidence,
+              detection: [
+                {
+                  kind: inspection.detection.kind ?? "structure",
+                  weight: inspection.detection.confidence,
+                  ...inspection.detection.note === void 0 ? {} : { note: inspection.detection.note }
+                }
+              ]
+            },
+            traits: inspection.traits.map((trait) => ({
+              id: trait.id,
+              descriptorVersion: 1,
+              state: "available",
+              ...trait.parameters === void 0 ? {} : { parameters: trait.parameters }
+            })),
+            operations: operationDeclarations.map((operation) => ({
+              id: operation.id,
+              handlerId: operation.handlerId,
+              mutatesSource: operation.mutatesSource,
+              state: "available"
+            })),
+            constraints: {
+              readOnly: !operationDeclarations.some((operation) => operation.mutatesSource === true),
+              seekable: false,
+              randomAccess: false,
+              trusted: false,
+              ...inspection.maxDecodedBytes === void 0 ? {} : { maxDecodedBytes: String(inspection.maxDecodedBytes) },
+              ...inspection.unsupportedFeatures === void 0 ? {} : { unsupportedFeatures: inspection.unsupportedFeatures }
+            },
+            dataSources: [...dataSources.keys()].map((contract) => ({ contract, major: 1 })),
+            diagnostics: inspection.diagnostics ?? [],
+            metadata: descriptorMetadata(inspection),
+            revision: input.revisions.revision
+          });
+          const handlers = new Map([
+            ["inspect", async () => ({ kind: "json", value: inspection.summary })],
+            ["validate", async () => ({ kind: "none" })],
+            ...Object.entries(inspection.handlers ?? {})
+          ]);
+          return createAssetSession({
+            revision: revisionId(input.revisions.revision),
+            descriptor,
+            operationDeclarations,
+            permissionGrant: {
+              id: `${definition.format.id}-inspection-session`,
+              classes: declaredPermissionClasses(operationDeclarations)
+            },
+            handlers,
+            async openDataSource(contract) {
+              const value = dataSources.get(contract);
+              if (value === void 0)
+                throw new TypeError(`${definition.id} does not publish ${contract}`);
+              return simpleLease(value);
+            },
+            release: [() => namespaceLease.release()]
+          }).session;
+        } catch (error) {
+          await namespaceLease.release();
+          throw error;
+        }
+      }
       if (input.originKind !== "single" && input.originKind !== "bundle") {
         throw new TypeError(`${definition.id} requires a single or bundle byte input`);
       }
@@ -500,11 +841,28 @@ function createInspectionCodec(definition) {
         ]);
         if (inspection.text === true) {
           dataSources.set("common.view/text-data-source", createUtf8TextDataSource(byteSource));
+        } else if (typeof inspection.text === "string") {
+          const textBytes = new TextEncoder().encode(inspection.text);
+          const textByteSource = Object.freeze({
+            async size() {
+              return BigInt(textBytes.byteLength);
+            },
+            async read(offset, length, readSignal) {
+              if (readSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+              if (offset < 0n || offset > BigInt(textBytes.byteLength) || length < 0)
+                throw new RangeError("text byte range is outside the source");
+              return textBytes.slice(
+                Number(offset),
+                Math.min(textBytes.byteLength, Number(offset) + length)
+              );
+            }
+          });
+          dataSources.set("common.view/text-data-source", createUtf8TextDataSource(textByteSource));
         }
         const descriptor = await assembleSubjectDescriptor({
           schemaVersion: 2,
           subjectUri: primary.source.uri,
-          origin: originFrom(input, primary),
+          origin: originFrom(input, primary, inspection.companions),
           interpretation: "codec",
           identity: {
             codecId: definition.id,
@@ -544,7 +902,8 @@ function createInspectionCodec(definition) {
           },
           dataSources: [...dataSources.keys()].map((contract) => ({ contract, major: 1 })),
           diagnostics: inspection.diagnostics ?? [],
-          metadata: inspection.metadata,
+          metadata: descriptorMetadata(inspection),
+          ...inspection.companions === void 0 ? {} : { companions: inspection.companions },
           revision: input.revisions.revision
         });
         const handlers = new Map([
@@ -699,12 +1058,20 @@ function defineWriter({
 }
 export {
   INSPECTION_OPERATIONS,
+  PROJECTION_RECEIPT_METADATA_ID,
   TRANSPORT_OPERATIONS,
   assetRevisionFromInput,
   createAudioMediaSource,
   createEncodedMediaSource,
   createInspectionCodec,
+  createModelAnimationSource,
+  createModelCollisionSource,
+  createModelMaterialSource,
+  createModelResourceRefsSource,
   createModelSceneSource,
+  createModelSkeletonSource,
+  createModelSocketSource,
+  createProjectionReceipt,
   createRasterImageSource,
   createTransportHandlers,
   createTransportSource,
@@ -714,6 +1081,7 @@ export {
   declaredPermissionClasses,
   defineWriter,
   editPlanFromInput,
+  projectionReceiptMetadataGroup,
   replaceBytes,
   simpleLease
 };

@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/codec-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx/odg",
+  "displayName": "OpenDocument drawing",
+  "status": "partial",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/formats/odg/codec.js",
+      "target": {
+        "environments": ["node"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/formats/odg/codec.js",
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "limitations": [
+    "The vector scene is the first draw:page drawn from the geometry that was parsed; every page is listed in the tree and counted in the summary.",
+    "Rectangles, ellipses, lines, polylines, polygons and paths are drawn, and frame text is placed at its frame's origin. Custom shapes with enhanced geometry, connectors and embedded objects are counted as unparsed rather than approximated.",
+    "The scene is deliberately unstyled - a neutral stroke and no fill - because ODF styles are not interpreted here.",
+    "Detection reads the OpenDocument rule rather than the file name: the mimetype entry must be first, stored uncompressed, and hold this format's exact media type. A renamed file is still recognised; a file whose media type belongs to another format is refused.",
+    "Layout is not reproduced. Styles live in styles.xml and in automatic styles, which this reader does not interpret, so fonts, colours, spacing and page composition are absent rather than approximated.",
+    "Scripts and macros are never executed and external resources are never fetched; macro storages present in the package are counted and named instead.",
+    "ZIP64 and multi-disk packages, encrypted entries, and compression methods other than stored and deflate are refused rather than partially read.",
+    "Editing and source write-back are not implemented: a writer is not declarable until preserving repack and round-trip are proved, so no unknown package entry or XML node is claimed to survive an edit."
+  ],
+  "spec": {
+    "formatRefs": [
+      {
+        "formatId": "odg",
+        "label": "OpenDocument drawing",
+        "mediaType": "application/vnd.oasis.opendocument.graphics"
+      }
+    ],
+    "roles": ["semantic", "media"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {
+      "extensions": ["odg"],
+      "mediaTypes": ["application/vnd.oasis.opendocument.graphics"]
+    },
+    "probe": {
+      "kind": "bytes",
+      "ranges": [
+        {
+          "from": "start",
+          "length": 4096
+        }
+      ],
+      "maxBytes": 4096
+    },
+    "representations": [
+      {
+        "id": "vector-scene",
+        "contract": "common.vector/scene-metadata",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      {
+        "contract": "common.view/vector-scene-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/tree-data-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/text-data-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/byte-range-source",
+        "major": 1
+      }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "traitDeclarations": [
+      {
+        "id": "document.pages",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "vector.scene",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "vector.shapes",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "vector.text",
+        "representation": "source",
+        "presence": "may-expose"
+      },
+      {
+        "id": "structure.hierarchy",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "content.text",
+        "representation": "source",
+        "presence": "will-expose"
+      },
+      {
+        "id": "content.metadata",
+        "representation": "source",
+        "presence": "will-expose"
+      }
+    ],
+    "implementationTier": {
+      "claimed": 1
+    },
+    "budgets": {
+      "maxInputBytes": "268435456",
+      "maxDepth": 128,
+      "maxNodes": 1000000,
+      "maxScalarBytes": 104857600,
+      "maxDiagnostics": 10000
+    }
+  }
+}

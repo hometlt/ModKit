@@ -105,6 +105,13 @@
         "outputKinds": ["bytes"]
       },
       {
+        "id": "export.convert",
+        "handlerId": "convert-rgba8",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
         "id": "edit.field",
         "handlerId": "set-text",
         "mutatesSource": true,

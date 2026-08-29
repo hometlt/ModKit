@@ -182,7 +182,7 @@ describe('preferred stage', () => {
     { label: 'Hex', contract: 'common.view/byte-range-source' },
   ] as unknown as readonly PreviewStage[]
   const ids = (list: readonly PreviewStage[]): readonly string[] =>
-    list.map(stage => stage.id ?? stage.contract)
+    list.map(stage => stage.id ?? stage.contract ?? stage.operation ?? 'invalid-stage')
 
   it('moves the named stage to the front and keeps the rest in order', () => {
     expect(ids(preferStage(stages, 'table'))).toEqual([

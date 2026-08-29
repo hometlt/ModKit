@@ -6,11 +6,14 @@
   },
   "id": "org.modkitx/text-csv",
   "displayName": "CSV text data",
+  "status": "partial",
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
       "entrypoint": "./src/families/delimited/entrypoints/csv-codec.js",
-      "target": { "environments": ["node"] },
+      "target": {
+        "environments": ["node"]
+      },
       "executionProfile": "trusted-in-process",
       "requestedPermissionClasses": ["read-source"]
     },

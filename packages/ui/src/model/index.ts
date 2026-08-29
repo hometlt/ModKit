@@ -1,8 +1,14 @@
 import type {
   Lease,
+  ModelAnimationClip,
+  ModelBoneBinding,
+  ModelCollisionVolume,
+  ModelMaterialRef,
   ModelPrimitive,
+  ModelResourceRef,
   ModelSceneInfo,
   ModelSceneSource,
+  ModelSocketRef,
   ViewerModule,
 } from '@modkitx-x3/sdk'
 import {
@@ -28,6 +34,8 @@ export {
 export { createViewGizmo, GIZMO_SIZE, type ViewGizmo, type ViewGizmoOptions } from './gizmo.js'
 
 export const MODEL_MAXIMUM_PRIMITIVE_BYTES = 64 * 1024 * 1024
+export const MODEL_MAXIMUM_PRIMITIVES = 4096
+const MODEL_FACET_DETAIL_LIMIT = 64
 
 /**
  * The optional model facets this stage will read when a subject publishes them.
@@ -43,6 +51,7 @@ export const MODEL_FACET_CONTRACTS = Object.freeze([
   'common.view/model-animation-source',
   'common.view/model-collision-source',
   'common.view/model-material-source',
+  'common.view/model-socket-source',
 ] as const)
 
 /** Facet id → the one count worth putting on a single readout line. */
@@ -52,11 +61,20 @@ const FACET_READOUT: Readonly<Record<string, { label: string; key: string }>> = 
   'common.view/model-animation-source': { label: 'clips', key: 'clips' },
   'common.view/model-collision-source': { label: 'collision', key: 'volumes' },
   'common.view/model-material-source': { label: 'materials', key: 'materials' },
+  'common.view/model-socket-source': { label: 'sockets', key: 'sockets' },
 })
 
 export interface ModelStageModel {
   readonly info: ModelSceneInfo
+  readonly primitiveIds: readonly string[]
   readonly primitive?: ModelPrimitive
+}
+
+export interface ModelFacetDetail {
+  readonly contract: (typeof MODEL_FACET_CONTRACTS)[number]
+  readonly label: string
+  readonly items: readonly string[]
+  readonly truncated: boolean
 }
 
 /**
@@ -92,16 +110,115 @@ export async function loadModelStage(
   source: ModelSceneSource,
   signal?: AbortSignal,
 ): Promise<ModelStageModel> {
-  const [info, meshes] = await Promise.all([
-    source.info(signal),
-    source.meshes({ limit: 1 }, signal),
-  ])
-  const primitiveId = meshes.items[0]?.primitiveIds[0]
+  const info = await source.info(signal)
+  const primitiveIds: string[] = []
+  let cursor: string | undefined
+  do {
+    const page = await source.meshes(
+      {
+        limit: Math.min(256, MODEL_MAXIMUM_PRIMITIVES - primitiveIds.length),
+        ...(cursor === undefined ? {} : { cursor }),
+      },
+      signal,
+    )
+    for (const mesh of page.items) {
+      for (const id of mesh.primitiveIds) {
+        if (primitiveIds.length >= MODEL_MAXIMUM_PRIMITIVES) break
+        primitiveIds.push(id)
+      }
+    }
+    cursor = primitiveIds.length >= MODEL_MAXIMUM_PRIMITIVES ? undefined : page.nextCursor
+  } while (cursor !== undefined)
+  const primitiveId = primitiveIds[0]
   const primitive =
     primitiveId === undefined || source.primitive === undefined
       ? undefined
       : await source.primitive(primitiveId, { maxBytes: MODEL_MAXIMUM_PRIMITIVE_BYTES }, signal)
-  return { info, ...(primitive === undefined ? {} : { primitive }) }
+  return {
+    info,
+    primitiveIds: Object.freeze(primitiveIds),
+    ...(primitive === undefined ? {} : { primitive }),
+  }
+}
+
+function short(value: unknown): string {
+  const text = String(value ?? '').trim()
+  return text.length <= 160 ? text : `${text.slice(0, 157)}…`
+}
+
+function facetItem(contract: ModelFacetDetail['contract'], value: unknown): string {
+  if (contract === 'common.view/model-resource-refs-source') {
+    const item = value as ModelResourceRef
+    return `${short(item.id)} · ${item.role} · ${item.provenance}`
+  }
+  if (contract === 'common.view/model-skeleton-source') {
+    const item = value as ModelBoneBinding
+    const parent = item.parentBoneIndex === undefined ? '?' : (item.parentBoneIndex ?? 'root')
+    return `#${item.boneIndex} ${short(item.boneName ?? '(unnamed)')} · parent ${parent} · ${item.flagNames?.join(', ') || 'no named flags'}`
+  }
+  if (contract === 'common.view/model-animation-source') {
+    const item = value as ModelAnimationClip
+    const samples = item.channels.reduce(
+      (total, channel) => total + (channel.samples?.length ?? 0),
+      0,
+    )
+    return `${short(item.name)} · ${item.frames} frames · ${item.channels.length} channels · ${samples} samples`
+  }
+  if (contract === 'common.view/model-collision-source') {
+    const item = value as ModelCollisionVolume
+    return `${short(item.id)} · ${item.kind} · ${item.origin}`
+  }
+  if (contract === 'common.view/model-material-source') {
+    const item = value as ModelMaterialRef
+    return `${short(item.name ?? item.id)} · ${item.type ?? 'material'} · ${item.blendMode ?? 'blend unknown'} · ${item.layers?.length ?? 0} layers`
+  }
+  const item = value as ModelSocketRef
+  return `${short(item.sourceName ?? item.id)} · ${item.role} · ${item.nodeId}`
+}
+
+/** Read a small, bounded detail page for every optional model facet. */
+export async function readModelFacetDetails(
+  sources: Parameters<typeof unknownSourceLease>[0],
+  slot: Parameters<typeof unknownSourceLease>[1],
+  scope: { lease(lease: Lease<unknown>): Lease<unknown> },
+  signal?: AbortSignal,
+): Promise<readonly ModelFacetDetail[]> {
+  const methods: Readonly<Record<ModelFacetDetail['contract'], string>> = {
+    'common.view/model-resource-refs-source': 'references',
+    'common.view/model-skeleton-source': 'bindings',
+    'common.view/model-animation-source': 'clips',
+    'common.view/model-collision-source': 'volumes',
+    'common.view/model-material-source': 'materials',
+    'common.view/model-socket-source': 'sockets',
+  }
+  const details: ModelFacetDetail[] = []
+  for (const contract of MODEL_FACET_CONTRACTS) {
+    const lease = await unknownSourceLease(sources, slot, contract)
+    if (lease === undefined) continue
+    scope.lease(lease)
+    const method = methods[contract]
+    const source = lease.value as Record<
+      string,
+      (
+        request: { readonly limit: number },
+        abort?: AbortSignal,
+      ) => Promise<{
+        readonly items: readonly unknown[]
+        readonly nextCursor?: string
+      }>
+    >
+    const page = await source[method]?.({ limit: MODEL_FACET_DETAIL_LIMIT }, signal)
+    if (page === undefined) continue
+    details.push(
+      Object.freeze({
+        contract,
+        label: FACET_READOUT[contract]?.label ?? contract,
+        items: Object.freeze(page.items.map(item => facetItem(contract, item))),
+        truncated: page.nextCursor !== undefined,
+      }),
+    )
+  }
+  return Object.freeze(details)
 }
 
 /**
@@ -253,7 +370,8 @@ export const modelViewer: ViewerModule = defineViewerModule({
 
     setState(stage, ['loading'])
     try {
-      const model = await loadModelStage(lease.value as ModelSceneSource, scope.signal)
+      const sceneSource = lease.value as ModelSceneSource
+      const model = await loadModelStage(sceneSource, scope.signal)
       /*
        * `animations` is part of `ModelSceneInfo` and was the one count this readout never showed,
        * so a scene with animation tracks read exactly like one without. It is stated even at zero:
@@ -265,7 +383,10 @@ export const modelViewer: ViewerModule = defineViewerModule({
        * is read through the contracts alone — the same loop answers for a SAGE W3X, a Westwood VXL
        * and a Wavefront OBJ, which is what makes this a generic consumer rather than five readers.
        */
-      const facets = await readModelFacets(args.sources, args.slot, scope, scope.signal)
+      const [facets, facetDetails] = await Promise.all([
+        readModelFacets(args.sources, args.slot, scope, scope.signal),
+        readModelFacetDetails(args.sources, args.slot, scope, scope.signal),
+      ])
       setViewerText(
         readout,
         `${model.info.nodes} nodes · ${model.info.meshes} meshes · ` +
@@ -273,6 +394,21 @@ export const modelViewer: ViewerModule = defineViewerModule({
           `${model.info.animations} animations` +
           (facets.length === 0 ? '' : ` · ${facets.join(' · ')}`),
       )
+      if (facetDetails.length > 0) {
+        const panel = element(stage, 'section', { part: 'model.facets' })
+        panel.setAttribute('aria-label', 'Model details')
+        for (const detail of facetDetails) {
+          const group = element(panel, 'details', { part: 'model.facet' })
+          element(group, 'summary', {
+            part: 'model.facet-summary',
+            text: `${detail.label} (${detail.items.length}${detail.truncated ? '+' : ''})`,
+          })
+          const list = element(group, 'ul', { part: 'model.facet-list' })
+          for (const item of detail.items) {
+            element(list, 'li', { part: 'model.facet-item', text: item })
+          }
+        }
+      }
       if (model.primitive === undefined) {
         canvas.remove()
         gizmo.destroy()
@@ -282,7 +418,7 @@ export const modelViewer: ViewerModule = defineViewerModule({
           text: 'Scene metadata is available. A buffer resolver/renderer provider is required for geometry.',
         })
       } else {
-        const primitive = model.primitive
+        let primitive = model.primitive
         const redraw = (): void => {
           const pose = camera.pose
           drawPrimitive(canvas, primitive, camera.basis(), pose.distanceScale)
@@ -300,6 +436,39 @@ export const modelViewer: ViewerModule = defineViewerModule({
         button('Reset', 'Reset the camera to its default pose', () => camera.reset())
         button('−', 'Zoom out', () => camera.zoom(1))
         button('+', 'Zoom in', () => camera.zoom(-1))
+
+        if (model.primitiveIds.length > 1 && sceneSource.primitive !== undefined) {
+          const selector = element(toolbar, 'select', {
+            part: 'model.primitive-selector',
+          }) as HTMLSelectElement
+          selector.setAttribute('aria-label', 'Model primitive')
+          for (const id of model.primitiveIds) {
+            const option = element(selector, 'option', { text: id }) as HTMLOptionElement
+            option.value = id
+          }
+          let selection = 0
+          selector.addEventListener(
+            'change',
+            async () => {
+              const request = ++selection
+              selector.disabled = true
+              try {
+                const selected = await sceneSource.primitive?.(
+                  selector.value,
+                  { maxBytes: MODEL_MAXIMUM_PRIMITIVE_BYTES },
+                  scope.signal,
+                )
+                if (selected !== undefined && request === selection) {
+                  primitive = selected
+                  redraw()
+                }
+              } finally {
+                if (request === selection) selector.disabled = false
+              }
+            },
+            { signal: scope.signal },
+          )
+        }
 
         scope.cleanup(() => gizmo.destroy())
         redraw()

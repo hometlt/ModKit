@@ -61,14 +61,14 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 ## 3. Слой 2 — semantic capability registry
 
-Строк-возможностей: **321**. Owner additions заморожены 2026-08-28.
+Строк-возможностей: **331**. Owner additions заморожены 2026-08-28.
 
 ### 3.1. Release track и обязательность
 
 | releaseTrack              | Строк | obligation                  | Строк |
 | ------------------------- | ----- | --------------------------- | ----- |
 | `deferred-games-priority` | 42    | `experimental-optional`     | 2     |
-| `mk3-priority`            | 125   | `focused-required-addition` | 23    |
+| `mk3-priority`            | 135   | `focused-required-addition` | 33    |
 | `multiverse-priority`     | 10    | `legacy-required`           | 289   |
 | `post-ga`                 | 144   | `post-ga-required-proof`    | 7     |
 
@@ -78,11 +78,11 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | allocation                   | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
-| `absent`                     | 84    | `equivalent-better`    | 21    | E0            | 82    |
-| `covered`                    | 220   | `implemented`          | 215   | E1            | 110   |
-| `not-applicable`             | 1     | `missing`              | 84    | E2            | 75    |
-| `superseded`                 | 13    | `relocated-multiverse` | 1     | E3            | 14    |
-| `superseded-staging-present` | 3     |                        |       | E4            | 40    |
+| `absent`                     | 84    | `equivalent-better`    | 23    | E0            | 82    |
+| `covered`                    | 230   | `implemented`          | 223   | E1            | 110   |
+| `not-applicable`             | 1     | `missing`              | 84    | E2            | 76    |
+| `superseded`                 | 13    | `relocated-multiverse` | 1     | E3            | 21    |
+| `superseded-staging-present` | 3     |                        |       | E4            | 42    |
 
 ### 3.3. Доказанные writers
 
@@ -109,9 +109,9 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | Release              | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | -------------------- | ----- | ---- | ------------ | ---------- | -------------- |
-| `mk3-ga`             | 130   | 125  | 5            | 0          | —              |
-| `mk3-multiverse-ga`  | 135   | 135  | 0            | 3          | block-22       |
-| `mk3-deferred-games` | 177   | 177  | 0            | 28         | block-16       |
+| `mk3-ga`             | 140   | 135  | 5            | 0          | —              |
+| `mk3-multiverse-ga`  | 145   | 145  | 0            | 3          | block-22       |
+| `mk3-deferred-games` | 187   | 187  | 0            | 28         | block-16       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
@@ -123,11 +123,12 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `block-15`    | 23    | 0                 |
 | `block-17`    | 11    | 0                 |
 | `block-19`    | 1     | 0                 |
-| `block-20`    | 10    | 0                 |
+| `block-20`    | 16    | 0                 |
+| `block-21`    | 4     | 0                 |
 
 ## 5. Gap list — что осталось в `mk3-ga`
 
-Строк с нерешённым состоянием: **0** из 130. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
+Строк с нерешённым состоянием: **0** из 140. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
 
 ## 6. Дополнительные gaps следующих release
 

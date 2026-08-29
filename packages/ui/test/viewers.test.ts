@@ -26,6 +26,7 @@ import {
   LazyTreeModel,
   NamespaceModel,
   VirtualTextModel,
+  loadSubjectCalculations,
   normalizeNamespacePath,
   safeViewerText,
 } from '@modkitx-x3/ui'
@@ -113,9 +114,9 @@ async function viewerManifests(): Promise<ContributionManifestV1Wire[]> {
 }
 
 describe('13C universal viewer contracts and models', () => {
-  it('validates seventeen declarative viewer contributions and resolves them shuffle-stably', async () => {
+  it('validates twenty-one declarative viewer contributions and resolves them shuffle-stably', async () => {
     const manifests = await viewerManifests()
-    expect(manifests).toHaveLength(17)
+    expect(manifests).toHaveLength(21)
     const registry = createHostContributionContractRegistry().validationRegistry()
     for (const manifest of manifests) {
       const result = await validateContributionManifest(manifest, registry)
@@ -169,6 +170,43 @@ describe('13C universal viewer contracts and models', () => {
     expect(
       forward.plan.slots.find(slot => slot.slotId === forward.plan.activeStage)?.contributionId,
     ).toBe('org.modkitx.ui/table-stage')
+  })
+
+  it('loads auditable subject calculations with a visible consumer cap', async () => {
+    const snapshot = await loadSubjectCalculations(
+      {
+        async summary() {
+          return {
+            snapshotId: 'calculations-1',
+            subjectId: 'unit:Marine',
+            totalCalculations: 3,
+            completeness: 'complete' as const,
+          }
+        },
+        async calculations(request) {
+          const offset = Number(request.cursor ?? 0)
+          return {
+            items: [
+              {
+                id: `calculation-${offset}`,
+                label: `Calculation ${offset}`,
+                formula: { id: 'formula', name: 'Formula', version: '1', expression: 'a + b' },
+                status: 'computed' as const,
+                value: offset,
+                inputs: [],
+                provenance: [{ label: 'fixture' }],
+                warnings: [],
+              },
+            ],
+            ...(offset >= 2 ? {} : { nextCursor: String(offset + 1) }),
+          }
+        },
+      },
+      { maximum: 2, pageSize: 1 },
+    )
+    expect(snapshot.calculations.map(item => item.id)).toEqual(['calculation-0', 'calculation-1'])
+    expect(snapshot.capped).toBe(true)
+    expect(snapshot.summary.totalCalculations).toBe(3)
   })
 
   it('evaluates bounded vs virtual text before viewer activation', () => {
@@ -293,6 +331,7 @@ describe('13C universal viewer contracts and models', () => {
     expect((await tree.children(root)).items[0]?.id).toBe('child')
 
     const requests: unknown[] = []
+    let cellSignal: AbortSignal | undefined
     const table = new LazyTableModel({
       async shape() {
         return { rows: 'unknown' as const, columns: 2 }
@@ -303,7 +342,8 @@ describe('13C universal viewer contracts and models', () => {
           ? { items: [{ index: 0, cells: ['a', 'b'] }], nextCursor: '1' }
           : { items: [{ index: 1, cells: ['c', 'd'] }] }
       },
-      async cell() {
+      async cell(_coord, signal) {
+        cellSignal = signal
         return { value: 'a' }
       },
       async *search() {
@@ -313,6 +353,9 @@ describe('13C universal viewer contracts and models', () => {
     expect(await table.shape()).toEqual({ rows: 'unknown', columns: 2 })
     expect((await table.first()).items[0]?.index).toBe(0)
     expect((await table.next())?.items[0]?.index).toBe(1)
+    const cellController = new AbortController()
+    expect(await table.cell({ row: 0, column: 0 }, cellController.signal)).toEqual({ value: 'a' })
+    expect(cellSignal).toBe(cellController.signal)
     expect(requests).toHaveLength(2)
   })
 

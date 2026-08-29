@@ -92,9 +92,11 @@ describe('Block 15 SC2 scenario workflows', () => {
       expect(descriptor.constraints).toMatchObject({
         readOnly: true,
         unsupportedFeatures: expect.arrayContaining([
-          'trigger-library-dependency-resolution',
-          'semantic-trigger-library-lowering',
-          'trigger-to-galaxy-conversion',
+          'automatic-trigger-library-dependency-resolution',
+          'automatic-installed-game-native-library-loading',
+          'lossless-trigger-galaxy-roundtrip',
+          'arbitrary-galaxy-to-trigger-reconstruction',
+          'catalog-gamelink-rename',
           'execution',
           'source-writing',
         ]),
@@ -102,6 +104,8 @@ describe('Block 15 SC2 scenario workflows', () => {
       expect(descriptor.operations.map(operation => operation.id).toSorted()).toEqual([
         'asset.validate',
         'export.raw',
+        'org.modkitx/sc2-triggers.galaxy-to-triggers',
+        'org.modkitx/sc2-triggers.trigger-to-galaxy',
         'view.inspect',
       ])
 

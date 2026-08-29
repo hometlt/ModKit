@@ -1,8 +1,24 @@
 import {
   createInspectionCodec,
+  createModelCollisionSource,
+  createModelMaterialSource,
   createModelSceneSource,
+  createModelSocketSource,
+  createProjectionReceipt,
   createTreeDataSource,
 } from '@modkitx-x3/codec-kit'
+
+/**
+ * UVM/core is a glTF 2.0 profile, so its space is glTF's: right-handed, Y up, −Z forward, metres.
+ * Nothing is converted on the way in, which is why the geometry plane is `preserved`.
+ */
+const UVM_BASIS = Object.freeze({
+  handedness: 'right',
+  upAxis: 'y',
+  forwardAxis: '-z',
+  unit: 'meter',
+  metersPerUnit: 1,
+})
 
 const GLB_MAGIC = 0x46546c67
 const JSON_CHUNK = 0x4e4f534a
@@ -193,10 +209,67 @@ function validateUvmDocument(document, binaryByteLength) {
     throw new TypeError('UV_source_blob is declared but absent')
   }
   validateCollisionMetadata(document, used)
+  validateSocketMetadata(document, used)
   validateTeamColorMetadata(document, used)
   validateGameMaterialMetadata(document, used)
   validateEffectsMetadata(document, used)
   validateAnimationPointers(document, used)
+}
+
+function validateSocketMetadata(document, used) {
+  let count = 0
+  const axes = new Set(['+x', '-x', '+y', '-y', '+z', '-z'])
+  for (const [nodeIndex, candidate] of array(document, 'nodes').entries()) {
+    const node = object(candidate, `node ${nodeIndex}`)
+    const candidateSocket = node.extensions?.UV_game_socket
+    if (candidateSocket === undefined) continue
+    count += 1
+    const socket = object(candidateSocket, `node ${nodeIndex} UV_game_socket`)
+    if (!nonBlank(socket.role)) throw new TypeError(`node ${nodeIndex} socket needs a role`)
+    if (socket.index !== undefined && (!Number.isSafeInteger(socket.index) || socket.index < 0)) {
+      throw new RangeError(`node ${nodeIndex} socket index is invalid`)
+    }
+    if (socket.sourceName !== undefined && typeof socket.sourceName !== 'string') {
+      throw new TypeError(`node ${nodeIndex} socket sourceName is invalid`)
+    }
+    if (socket.forward !== undefined && !axes.has(socket.forward)) {
+      throw new TypeError(`node ${nodeIndex} socket forward axis is invalid`)
+    }
+    if (socket.up !== undefined && !axes.has(socket.up)) {
+      throw new TypeError(`node ${nodeIndex} socket up axis is invalid`)
+    }
+    const identity = socket.extras?.modkitx
+    if (identity !== undefined && (!nonBlank(identity.id) || !nonBlank(identity.nodeId))) {
+      throw new TypeError(`node ${nodeIndex} socket Modkit identity is invalid`)
+    }
+  }
+  if (count > 0 && !used.includes('UV_game_socket')) {
+    throw new TypeError('UV_game_socket is not declared in extensionsUsed')
+  }
+  if (count === 0 && used.includes('UV_game_socket')) {
+    throw new TypeError('UV_game_socket is declared but absent')
+  }
+}
+
+function decodeSockets(document) {
+  const sockets = []
+  for (const [nodeIndex, candidate] of array(document, 'nodes').entries()) {
+    const node = object(candidate, `node ${nodeIndex}`)
+    const extension = node.extensions?.UV_game_socket
+    if (extension === undefined) continue
+    const socket = object(extension, `node ${nodeIndex} UV_game_socket`)
+    const identity = socket.extras?.modkitx
+    sockets.push({
+      id: nonBlank(identity?.id) ? identity.id : `uvm-socket-${nodeIndex}`,
+      nodeId: nonBlank(identity?.nodeId) ? identity.nodeId : `node-${nodeIndex}`,
+      role: socket.role,
+      ...(typeof socket.sourceName === 'string' ? { sourceName: socket.sourceName } : {}),
+      ...(socket.forward === undefined || socket.up === undefined
+        ? {}
+        : { orientation: { forward: socket.forward, up: socket.up } }),
+    })
+  }
+  return Object.freeze(sockets)
 }
 
 function validateEffectsMetadata(document, used) {
@@ -664,6 +737,7 @@ function accessorValues(document, binary, accessorIndex, budget, purpose) {
 
 function decodeCollisions(document, binary, budget) {
   const byKind = Object.create(null)
+  const volumes = []
   let total = 0
   for (const [nodeIndex, nodeCandidate] of array(document, 'nodes').entries()) {
     const node = object(nodeCandidate, `node ${nodeIndex}`)
@@ -703,9 +777,64 @@ function decodeCollisions(document, binary, budget) {
       }
       total += 1
       byKind[shape.kind] = (byKind[shape.kind] ?? 0) + 1
+      /*
+       * The per-volume records `common.view/model-collision-source@1` publishes. UVM is the
+       * `declared-volume` publisher of that contract: a `UV_game_collision` shape is a volume the
+       * document declares, not a render mesh wearing a collision bit. The role travels as a
+       * publisher-qualified type, and stays absent when the document does not state one.
+       */
+      volumes.push(
+        Object.freeze({
+          id: `node-${nodeIndex}-collision-${shapeIndex}`,
+          kind: shape.kind,
+          origin: 'declared-volume',
+          ...(collisionNodeMesh(node) === undefined ? {} : { meshId: collisionNodeMesh(node) }),
+          ...(typeof extensionRole(extension) === 'string'
+            ? { types: Object.freeze([extensionRole(extension)]) }
+            : {}),
+        }),
+      )
     }
   }
-  return Object.freeze({ total, byKind: Object.freeze(byKind) })
+  return Object.freeze({ total, byKind: Object.freeze(byKind), volumes: Object.freeze(volumes) })
+}
+
+/** The mesh a collision node also draws, when it draws one; a volume-only node has none. */
+function collisionNodeMesh(node) {
+  return typeof node.mesh === 'number' ? `mesh-${node.mesh}` : undefined
+}
+
+function extensionRole(extension) {
+  const role = object(extension, 'UV_game_collision').role
+  return typeof role === 'string' ? role : undefined
+}
+
+/**
+ * Per-material contract coverage — `common.view/model-material-source@1`.
+ *
+ * The contracts are the extension names the document itself declares, not a vocabulary invented
+ * here: UV preserves shader *parameters* and does not define pixel output, so a material's identity
+ * plus the contracts it carries is exactly what this facet can honestly say about it.
+ */
+function decodeMaterialRefs(document) {
+  return array(document, 'materials').map((candidate, index) => {
+    const material = object(candidate, `material ${index}`)
+    const contracts = []
+    const snapshot = material.extensions?.UV_game_material?.params?.renderModel
+    if (snapshot?.version === 1) {
+      if (snapshot.standard !== undefined) contracts.push('UV_game_material/standard')
+      if (snapshot.composite !== undefined) contracts.push('UV_game_material/composite')
+    }
+    if (material.extensions?.UV_game_material_team_color !== undefined) {
+      contracts.push('UV_game_material_team_color')
+    }
+    return Object.freeze({
+      // the identity the artifact binding fixes, so a primitive and its material can be joined
+      id: `material-${index}`,
+      ...(typeof material.name === 'string' && material.name !== '' ? { name: material.name } : {}),
+      ...(contracts.length === 0 ? {} : { contracts: Object.freeze(contracts) }),
+    })
+  })
 }
 
 function decodeTeamColors(document) {
@@ -969,9 +1098,26 @@ function inspectUvm(bytes, context) {
   const teamColors = decodeTeamColors(document)
   const advancedMaterials = decodeAdvancedMaterials(document)
   const effects = decodeEffects(document)
+  const sockets = decodeSockets(document)
+  const materialRefs = decodeMaterialRefs(document)
   const identity = document.extensions.UV_asset
   const provenance = document.extensions.UV_provenance
   const preservedSourceBlobs = array(document.extensions.UV_source_blob, 'blobs').length
+  const bounds = (() => {
+    if (scene.primitives.length === 0) return undefined
+    const min = [Infinity, Infinity, Infinity]
+    const max = [-Infinity, -Infinity, -Infinity]
+    for (const primitive of scene.primitives) {
+      for (let offset = 0; offset < primitive.positions.length; offset += 3) {
+        for (let axis = 0; axis < 3; axis += 1) {
+          const value = primitive.positions[offset + axis]
+          min[axis] = Math.min(min[axis], value)
+          max[axis] = Math.max(max[axis], value)
+        }
+      }
+    }
+    return { min, max }
+  })()
   const model = createModelSceneSource({
     info: {
       scenes: array(document, 'scenes').length,
@@ -981,6 +1127,7 @@ function inspectUvm(bytes, context) {
       materials: scene.materials,
       textures: scene.textures,
       animations: scene.animations,
+      ...(bounds === undefined ? {} : { bounds }),
       geometryAccess: 'decoded',
     },
     nodes: scene.nodes,
@@ -1006,6 +1153,7 @@ function inspectUvm(bytes, context) {
       advancedMaterialContracts: advancedMaterials.total,
       advancedMaterialKinds: advancedMaterials.byContract,
       effects: effects.total,
+      sockets: sockets.length,
       effectProfile: effects.profile,
       effectKinds: effects.byKind,
       animatedEffectProperties: effects.animated,
@@ -1028,6 +1176,7 @@ function inspectUvm(bytes, context) {
           { key: 'teamColorMaterials', value: teamColors.total },
           { key: 'advancedMaterialContracts', value: advancedMaterials.total },
           { key: 'effects', value: effects.total },
+          { key: 'sockets', value: sockets.length },
           { key: 'animatedEffectProperties', value: effects.animated },
           { key: 'preservedSourceBlobs', value: preservedSourceBlobs },
         ],
@@ -1049,8 +1198,106 @@ function inspectUvm(bytes, context) {
       { id: 'scene.objects', parameters: { nodes: scene.nodes.length } },
       { id: 'structure.hierarchy', parameters: { nodeCount: decoded.jsonNodes, lazy: true } },
     ],
+    projectionReceipt: createProjectionReceipt({
+      adapter: { id: 'org.modkitx/model-uvm', version: '1.0.0' },
+      subjectRevision: context.input.revisions.revision,
+      companions: [],
+      basis: UVM_BASIS,
+      planes: [
+        {
+          planeId: 'geometry',
+          state: 'preserved',
+          // the document already is the UV space; there is nothing to convert
+          note: 'positions are read in the profile’s own right-handed Y-up metre space',
+        },
+        {
+          planeId: 'structure',
+          state: 'preserved',
+          note: 'the node graph, positionally identified',
+        },
+        {
+          planeId: 'materials',
+          state: scene.materials > 0 ? 'preserved' : 'lost',
+          note: `${scene.materials} material(s), ${advancedMaterials.total} carrying a render-model contract`,
+        },
+        {
+          planeId: 'collision',
+          state: collisions.total > 0 ? 'preserved' : 'lost',
+          note: `${collisions.total} declared UV_game_collision shape(s)`,
+        },
+        {
+          planeId: 'attachments',
+          state: sockets.length > 0 ? 'preserved' : 'lost',
+          note: `${sockets.length} UV_game_socket node extension(s) published with stable identity`,
+        },
+        {
+          planeId: 'resources',
+          state: 'lost',
+          note: `${scene.textures} texture(s) are counted from the document; this reader does not surface their references, so no resource facet is published`,
+        },
+        {
+          planeId: 'effects',
+          state: effects.total > 0 ? 'lost' : 'preserved',
+          note:
+            effects.total > 0
+              ? `${effects.total} UV_game_effects entry(ies) are counted by kind; per-emitter records have no contract to be published through`
+              : 'the document declares no effects',
+        },
+        ...(preservedSourceBlobs > 0
+          ? [
+              {
+                planeId: 'native-source-blob',
+                state: 'preserved',
+                note: `${preservedSourceBlobs} opaque UV_source_blob entry(ies) travel with the document untouched`,
+              },
+            ]
+          : []),
+      ],
+      evidence: [
+        {
+          kind: 'observed',
+          statement: `UVM ${document.asset.extras.uv.version}/${document.asset.extras.uv.profile}: ${scene.nodes.length} node(s), ${scene.primitives.length} primitive(s), ${sockets.length} socket(s)`,
+          bytesRead: BigInt(bytes.byteLength),
+        },
+        {
+          kind: 'declared',
+          statement: `the document declares its source format as «${provenance.source.format}» and its importer as ${provenance.importer?.id ?? 'unnamed'}`,
+          source: 'UV_provenance',
+        },
+        ...(Array.isArray(provenance.lost) && provenance.lost.length > 0
+          ? [
+              {
+                kind: 'declared',
+                statement: `the producing importer recorded ${provenance.lost.length} loss(es) in UV_provenance.lost`,
+                source: 'UV_provenance',
+              },
+            ]
+          : []),
+      ],
+      confidence: 'exact',
+    }),
     dataSources: {
       'common.view/model-scene-source': model,
+      ...(collisions.volumes.length === 0
+        ? {}
+        : {
+            'common.view/model-collision-source': createModelCollisionSource({
+              volumes: collisions.volumes,
+            }),
+          }),
+      ...(sockets.length === 0
+        ? {}
+        : {
+            'common.view/model-socket-source': createModelSocketSource({ sockets }),
+          }),
+      ...(materialRefs.length === 0
+        ? {}
+        : {
+            'common.view/model-material-source': createModelMaterialSource({
+              // UVM has no material-library concept, so `libraries` is absent rather than zero
+              materials: materialRefs,
+            }),
+          }),
       'common.view/tree-data-source': treeFor(
         document,
         scene,

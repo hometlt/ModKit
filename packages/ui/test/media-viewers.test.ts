@@ -34,7 +34,7 @@ describe('format-neutral media viewer models', () => {
     await expect(collectEncodedMedia(source, 4)).rejects.toThrow(/declared size/u)
   })
 
-  it('requests only one bounded model primitive and preserves metadata-only scenes', async () => {
+  it('discovers every bounded primitive id, loads only the first, and preserves metadata-only scenes', async () => {
     let requestedBytes = 0
     const decoded: ModelSceneSource = {
       async info() {
@@ -52,8 +52,13 @@ describe('format-neutral media viewer models', () => {
       async nodes() {
         return { items: [] }
       },
-      async meshes() {
-        return { items: [{ id: 'mesh', primitiveIds: ['triangle'] }] }
+      async meshes(request) {
+        return request.cursor === undefined
+          ? {
+              items: [{ id: 'mesh-a', primitiveIds: ['triangle', 'lines'] }],
+              nextCursor: 'second',
+            }
+          : { items: [{ id: 'mesh-b', primitiveIds: ['points'] }] }
       },
       async primitive(_id, request) {
         requestedBytes = request.maxBytes
@@ -65,7 +70,9 @@ describe('format-neutral media viewer models', () => {
         }
       },
     }
-    expect((await loadModelStage(decoded)).primitive?.id).toBe('triangle')
+    const loaded = await loadModelStage(decoded)
+    expect(loaded.primitive?.id).toBe('triangle')
+    expect(loaded.primitiveIds).toEqual(['triangle', 'lines', 'points'])
     expect(requestedBytes).toBeGreaterThan(0)
 
     const metadataOnly: ModelSceneSource = {
