@@ -20,6 +20,7 @@ import {
 import {
   createIndexedDbExtensionStore,
   createMemoryExtensionStore,
+  USER_EXTENSION_DATABASE,
   type IdbDatabaseLike,
   type IdbFactoryLike,
   type IdbObjectStoreLike,
@@ -131,6 +132,9 @@ describe('the installed-extensions panel', () => {
         failures: [],
         coordinates: [],
         rootIds: [],
+        moduleMap: {},
+        moduleMapOwners: {},
+        verifiedModuleRoots: [],
         serve: async url => ({
           ok: false,
           status: 404,
@@ -222,6 +226,7 @@ class FakeRequest<T> implements IdbRequestLike<T> {
 
 class FakeOpenRequest<T> extends FakeRequest<T> implements IdbOpenRequestLike<T> {
   onupgradeneeded: ((event: Event) => void) | null = null
+  transaction?: { abort(): void } | null
 }
 
 function settled<T>(initial: T, work: () => T): FakeRequest<T> {
@@ -272,15 +277,77 @@ function fakeIndexedDb(): { readonly factory: IdbFactoryLike; closes(): number }
   return {
     closes: () => closes,
     factory: {
+      databases: async () => (stores.has('roots') ? [{ name: USER_EXTENSION_DATABASE }] : []),
       open: () => {
         const request = new FakeOpenRequest<IdbDatabaseLike>(database)
         queueMicrotask(() => {
-          request.onupgradeneeded?.(new Event('upgradeneeded'))
+          if (!stores.has('roots')) request.onupgradeneeded?.(new Event('upgradeneeded'))
           request.onsuccess?.(new Event('success'))
         })
         return request
       },
     },
+  }
+}
+
+function fallbackIndexedDb(): {
+  readonly factory: IdbFactoryLike
+  readonly exists: () => boolean
+  readonly opens: () => number
+} {
+  const stores = new Map<string, Map<string, unknown>>()
+  let databaseExists = false
+  let openCount = 0
+
+  const objectStore = (name: string): IdbObjectStoreLike => {
+    const rows = stores.get(name)
+    if (rows === undefined) throw new Error(`no fallback object store «${name}»`)
+    return {
+      put: value =>
+        settled<unknown>(undefined, () => {
+          const id = (value as { readonly id?: unknown }).id
+          if (typeof id !== 'string') throw new Error('records need a string id')
+          rows.set(id, structuredClone(value))
+          return undefined
+        }),
+      delete: key => settled<unknown>(undefined, () => void rows.delete(key)),
+      getAll: () => settled<readonly unknown[]>([], () => [...rows.values()]),
+    }
+  }
+  const database: IdbDatabaseLike = {
+    objectStoreNames: { contains: name => stores.has(name) },
+    createObjectStore(name) {
+      stores.set(name, new Map())
+      return objectStore(name)
+    },
+    transaction: name => ({ objectStore: () => objectStore(name) }),
+    close: () => undefined,
+  }
+  return {
+    factory: {
+      open: () => {
+        openCount += 1
+        let aborted = false
+        const request = new FakeOpenRequest<IdbDatabaseLike>(database)
+        request.transaction = { abort: () => void (aborted = true) }
+        queueMicrotask(() => {
+          if (!databaseExists) request.onupgradeneeded?.(new Event('upgradeneeded'))
+          queueMicrotask(() => {
+            if (aborted) {
+              stores.clear()
+              request.error = new Error('AbortError')
+              request.onerror?.(new Event('error', { cancelable: true }))
+              return
+            }
+            databaseExists = true
+            request.onsuccess?.(new Event('success'))
+          })
+        })
+        return request
+      },
+    },
+    exists: () => databaseExists,
+    opens: () => openCount,
   }
 }
 
@@ -293,6 +360,20 @@ const record = (id: string, label: string, addedAt: number): StoredUserExtension
 })
 
 describe('the granted-folder store', () => {
+  it('leaves no database on an empty-shell read and finds an existing database without databases()', async () => {
+    const idb = fallbackIndexedDb()
+    const emptyShellStore = createIndexedDbExtensionStore(idb.factory)
+    expect(await emptyShellStore.list()).toEqual([])
+    expect(idb.opens()).toBe(1)
+    expect(idb.exists()).toBe(false)
+
+    await emptyShellStore.add(record('a', 'codecs', 1))
+    expect(idb.exists()).toBe(true)
+    const afterReload = createIndexedDbExtensionStore(idb.factory)
+    expect((await afterReload.list()).map(entry => entry.id)).toEqual(['a'])
+    expect(idb.exists()).toBe(true)
+  })
+
   it('survives a reload: what was added is what the next load lists', async () => {
     const idb = fakeIndexedDb()
     const first = createIndexedDbExtensionStore(idb.factory)

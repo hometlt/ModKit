@@ -7,11 +7,12 @@
  * theme stylesheets, fonts — is cached the first time it is used, which is what makes a format the
  * user has already opened openable again offline.
  *
- * Extension artifacts are cached like any other same-origin GET, and that is safe: the browser
- * worker backend re-verifies every file's bytes against the catalog's digests before it becomes
- * evaluable, so a cached copy is trusted no further than a freshly fetched one.
+ * The extension manager owns separate content-addressed package and signed-catalog caches. Shell
+ * upgrades preserve those caches; the browser worker still re-verifies package/file digests before
+ * any cached extension becomes evaluable.
  */
-const CACHE = 'modkit-mk3-shell-v3'
+const SHELL_CACHE_PREFIX = 'modkit-mk3-shell-'
+const CACHE = `${SHELL_CACHE_PREFIX}v3`
 
 /** Names the build always emits; a miss here is a broken build, so `addAll` may fail loudly. */
 const SHELL = [
@@ -28,8 +29,6 @@ const SHELL = [
   './vendor/sdk/index.js',
   './vendor/codec-kit/index.js',
   './vendor/codec-kit/text/index.js',
-  './vendor/blizzard-mpq/fresh-writer.js',
-  './vendor/blizzard-mpq/native-preserving.js',
   './favicon-32.png',
   './icon-192.png',
   './icon-512.png',
@@ -43,7 +42,6 @@ const OPTIONAL = [
   './icon-maskable-192.png',
   './icon-maskable-512.png',
   './apple-touch-icon.png',
-  './theme-sc2.css',
   './theme-nexus-forge.css',
   './theme-nexus-dominion.css',
   './fonts/saira/saira-latin.woff2',
@@ -71,7 +69,13 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches
       .keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
+      .then(keys =>
+        Promise.all(
+          keys
+            .filter(key => key.startsWith(SHELL_CACHE_PREFIX) && key !== CACHE)
+            .map(key => caches.delete(key)),
+        ),
+      )
       .then(() => self.clients.claim()),
   )
 })

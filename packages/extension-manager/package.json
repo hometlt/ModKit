@@ -1,0 +1,46 @@
+{
+  "name": "@modkitx/extension-manager",
+  "version": "0.1.0",
+  "description": "Protocol-neutral extension discovery, profiles, locks and VFS materialization for Modkit.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.12.1",
+  "bin": {
+    "modkit-extensions": "./src/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./node": {
+      "types": "./src/node.d.ts",
+      "default": "./src/node.js"
+    },
+    "./browser": {
+      "types": "./src/browser.d.ts",
+      "default": "./src/browser.js"
+    },
+    "./schemas/workspace": "./schemas/modkit.workspace.schema.json",
+    "./schemas/repository": "./schemas/modkit.repository.schema.json",
+    "./schemas/lock": "./schemas/modkit.extensions.lock.schema.json",
+    "./schemas/registry": "./schemas/modkit.registry.schema.json"
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "schemas",
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/index.js && node --check src/catalog.js && node --check src/client.js && node --check src/node.js && node --check src/node-adapters.js && node --check src/browser.js && node --check src/cli.js && pnpm test"
+  },
+  "dependencies": {
+    "@modkitx-x3/vfs": "workspace:*"
+  }
+}

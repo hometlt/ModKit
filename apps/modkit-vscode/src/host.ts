@@ -87,6 +87,7 @@ import {
   type BundledCatalogRoot,
   type DirectoryProbe,
   type ExtensionRootRequestLike,
+  type ManagedExtensionRootRequest,
 } from './extension-roots.js'
 
 /** Said once, so every refusal to write configuration reads the same. */
@@ -129,6 +130,8 @@ export interface VsCodeExtensionReport {
   readonly bundled: readonly string[]
   /** Coordinates of workspace-local and user-configured extensions that loaded. */
   readonly installed: readonly string[]
+  /** Enabled package roots supplied directly by the Node extension manager. */
+  readonly managed: readonly string[]
   /** Roots that did not load, with the reason. A broken one never stops the others. */
   readonly failures: readonly ExtensionRootFailure[]
   /** Settings entries that were not usable as a root at all (malformed, no path). */
@@ -182,6 +185,8 @@ export interface VsCodeSubjectHostOptions {
   readonly workspaceFolders?: readonly string[]
   /** Raw value of the `modkit.extensions` setting, exactly as the editor returned it. */
   readonly configuredExtensions?: unknown
+  /** Enabled roots returned by the Node manager for this activation/reload. */
+  readonly managedExtensions?: readonly ManagedExtensionRootRequest[]
   /**
    * Raw value of the `modkit.disabledContributions` setting, exactly as the editor returned it.
    *
@@ -261,10 +266,34 @@ export async function createVsCodeSubjectHost(
             `contain: ${resolved.missing.join(', ')}`,
         ]
   const configured = configuredExtensionRoots(options.configuredExtensions, path => resolve(path))
-  const userRequests: readonly ExtensionRootRequestLike[] = dedupeRoots([
+  const staticRequests: readonly ExtensionRootRequestLike[] = dedupeRoots([
     ...discoverWorkspaceRoots(options.workspaceFolders ?? [], probe),
     ...configured.roots,
   ])
+  const managedRequests = options.managedExtensions ?? []
+  const managedCoordinateCounts = new Map<string, number>()
+  for (const request of managedRequests) {
+    managedCoordinateCounts.set(
+      request.expectedId,
+      (managedCoordinateCounts.get(request.expectedId) ?? 0) + 1,
+    )
+  }
+  const managedDuplicateFailures: ExtensionRootFailure[] = managedRequests.flatMap(request =>
+    managedCoordinateCounts.get(request.expectedId) === 1
+      ? []
+      : [
+          {
+            root: request.root,
+            code: 'x3.host/extension-coordinate-conflict',
+            message:
+              `managed coordinate «${request.expectedId}» is provided by more than one ` +
+              'installed root; all copies were refused',
+          },
+        ],
+  )
+  const uniqueManagedRequests = managedRequests.filter(
+    request => managedCoordinateCounts.get(request.expectedId) === 1,
+  )
 
   /*
    * The first-party catalog is `bundled`, but deliberately without `allowTrustedInProcess`: the VS
@@ -274,11 +303,24 @@ export async function createVsCodeSubjectHost(
    * third realm exists for.
    */
   const bundled = await loadExtensionRoots(catalogRoots, { origin: 'bundled' })
-  const installed = await loadExtensionRoots(userRequests, {
+  const installed = await loadExtensionRoots(staticRequests, {
     origin: 'installed',
     claimed: bundled.coordinates,
   })
-  const extensionInputs: readonly ExtensionInput[] = [...bundled.inputs, ...installed.inputs]
+  /*
+   * Managed roots are a separate final group: a package may never shadow the build, workspace or
+   * a hand-authored `modkit.extensions` root. `loadExtensionRoots` reports the exact conflicting
+   * coordinate and rejects the managed root, so the ambiguity is visible and fail-closed.
+   */
+  const managed = await loadExtensionRoots(uniqueManagedRequests, {
+    origin: 'installed',
+    claimed: [...bundled.coordinates, ...installed.coordinates],
+  })
+  const extensionInputs: readonly ExtensionInput[] = [
+    ...bundled.inputs,
+    ...installed.inputs,
+    ...managed.inputs,
+  ]
   const switchedOff = configuredDisabledContributions(options.configuredDisabledContributions)
 
   const topology = createVsCodeDesktopTopology()
@@ -312,8 +354,14 @@ export async function createVsCodeSubjectHost(
 
   const extensions: VsCodeExtensionReport = Object.freeze({
     bundled: bundled.coordinates,
-    installed: installed.coordinates,
-    failures: Object.freeze([...bundled.failures, ...installed.failures]),
+    installed: Object.freeze([...installed.coordinates, ...managed.coordinates]),
+    managed: managed.coordinates,
+    failures: Object.freeze([
+      ...bundled.failures,
+      ...installed.failures,
+      ...managedDuplicateFailures,
+      ...managed.failures,
+    ]),
     // a malformed `modkit.disabledContributions` is the user's setting too, so it is reported in
     // the same place a malformed `modkit.extensions` entry is, not swallowed on the way past
     problems: Object.freeze([...catalogProblems, ...configured.problems, ...switchedOff.problems]),

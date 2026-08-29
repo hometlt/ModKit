@@ -20,6 +20,8 @@ export interface HttpFetchResponse {
   readonly ok: boolean
   readonly status: number
   readonly headers: HttpFetchHeaders
+  readonly url?: string
+  readonly redirected?: boolean
   arrayBuffer(): Promise<ArrayBuffer>
 }
 
@@ -28,6 +30,7 @@ export type HttpFetch = (
   init?: {
     readonly method?: string
     readonly headers?: Readonly<Record<string, string>>
+    readonly redirect?: 'manual'
     readonly signal?: AbortSignal
   },
 ) => Promise<HttpFetchResponse>
@@ -36,7 +39,12 @@ export interface HttpRangeSourceOptions {
   readonly fetch?: HttpFetch
   readonly size?: number
   readonly signal?: AbortSignal
+  readonly allowedOrigins?: readonly string[]
+  readonly maxRedirects?: number
 }
+
+const DEFAULT_MAX_REDIRECTS = 5
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308])
 
 const unavailable = (message: string, context: Readonly<Record<string, unknown>> = {}) =>
   new ModkitError({ code: 'x3.vfs/http-range-unavailable', message, context })
@@ -44,6 +52,102 @@ const unavailable = (message: string, context: Readonly<Record<string, unknown>>
 function assertSafeSize(size: number | undefined): asserts size is number {
   if (size !== undefined && Number.isSafeInteger(size) && size >= 0) return
   throw unavailable('HTTP range source requires a non-negative safe content length')
+}
+
+function redirectRefused(message: string, context: Readonly<Record<string, unknown>> = {}) {
+  return new ModkitError({ code: 'x3.vfs/http-redirect-refused', message, context })
+}
+
+function assertAllowedHttpUrl(
+  candidate: string,
+  allowedOrigins: readonly string[] | undefined,
+): URL {
+  let parsed: URL
+  try {
+    parsed = new URL(candidate)
+  } catch (cause) {
+    throw redirectRefused(`HTTP redirect target «${candidate}» is invalid`, { candidate, cause })
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw redirectRefused(`HTTP redirect target «${candidate}» is not HTTP(S)`, {
+      candidate,
+      protocol: parsed.protocol,
+    })
+  }
+  if (allowedOrigins !== undefined && !allowedOrigins.includes(parsed.origin)) {
+    throw new ModkitError({
+      code: 'x3.vfs/http-origin-refused',
+      message: `HTTP provider refuses origin «${parsed.origin}»`,
+      context: { origin: parsed.origin },
+    })
+  }
+  return parsed
+}
+
+interface RedirectFetchResult {
+  readonly response: HttpFetchResponse
+  readonly url: string
+}
+
+async function fetchWithCheckedRedirects(
+  url: string,
+  fetcher: HttpFetch,
+  init: NonNullable<Parameters<HttpFetch>[1]>,
+  allowedOrigins: readonly string[] | undefined,
+  maxRedirects: number,
+): Promise<RedirectFetchResult> {
+  let current = assertAllowedHttpUrl(url, allowedOrigins)
+  let redirects = 0
+  while (true) {
+    const response = await fetcher(current.href, { ...init, redirect: 'manual' })
+    if (response.redirected === true) {
+      throw redirectRefused('HTTP fetch followed a redirect outside the manual redirect policy', {
+        requested: current.href,
+        responseUrl: response.url,
+      })
+    }
+    if (response.url !== undefined && response.url !== '') {
+      const final = assertAllowedHttpUrl(response.url, allowedOrigins)
+      if (final.href !== current.href) {
+        throw redirectRefused('HTTP fetch returned a different final URL in manual redirect mode', {
+          requested: current.href,
+          responseUrl: final.href,
+        })
+      }
+    }
+    if (!REDIRECT_STATUSES.has(response.status)) {
+      return Object.freeze({ response, url: current.href })
+    }
+    if (redirects >= maxRedirects) {
+      throw redirectRefused(
+        `HTTP redirect chain exceeds the bounded hop limit of ${maxRedirects}`,
+        {
+          url: current.href,
+          maxRedirects,
+        },
+      )
+    }
+    const location = response.headers.get('location')
+    if (location === null || location === '') {
+      throw redirectRefused('HTTP redirect response has no Location header', {
+        url: current.href,
+        status: response.status,
+      })
+    }
+    let next: URL
+    try {
+      next = new URL(location, current)
+    } catch (cause) {
+      throw redirectRefused(`HTTP redirect Location «${location}» is invalid`, {
+        url: current.href,
+        location,
+        cause,
+      })
+    }
+    // Validate before the next request, so a disallowed target receives zero requests.
+    current = assertAllowedHttpUrl(next.href, allowedOrigins)
+    redirects += 1
+  }
 }
 
 function sourceStream(
@@ -73,15 +177,25 @@ export async function createHttpRangeSource(
 ): Promise<RandomAccessSource> {
   const fetcher = options.fetch ?? (globalThis.fetch as unknown as HttpFetch | undefined)
   if (fetcher === undefined) throw unavailable('this realm does not provide fetch')
+  const maxRedirects = options.maxRedirects ?? DEFAULT_MAX_REDIRECTS
+  if (!Number.isSafeInteger(maxRedirects) || maxRedirects < 0) {
+    throw redirectRefused('maxRedirects must be a non-negative safe integer', { maxRedirects })
+  }
+  let resolvedUrl = assertAllowedHttpUrl(url, options.allowedOrigins).href
   let size = options.size
   if (size === undefined) {
     throwIfAborted(options.signal)
-    const head = await fetcher(
-      url,
+    const result = await fetchWithCheckedRedirects(
+      resolvedUrl,
+      fetcher,
       options.signal === undefined
         ? { method: 'HEAD' }
         : { method: 'HEAD', signal: options.signal },
+      options.allowedOrigins,
+      maxRedirects,
     )
+    const head = result.response
+    resolvedUrl = result.url
     const length = head.headers.get('content-length')
     size = length === null ? undefined : Number(length)
     if (!head.ok || head.headers.get('accept-ranges')?.toLowerCase() !== 'bytes') {
@@ -99,11 +213,11 @@ export async function createHttpRangeSource(
     if (!disposed) return
     throw new ModkitError({
       code: 'x3.vfs/source-disposed',
-      message: `source «${url}» disposed`,
+      message: `source «${resolvedUrl}» disposed`,
     })
   }
   const source: RandomAccessSource = {
-    id: url,
+    id: resolvedUrl,
     async size(signal) {
       throwIfAborted(signal)
       assertLive()
@@ -119,15 +233,21 @@ export async function createHttpRangeSource(
         length < 0 ||
         offset + length > sourceSize
       ) {
-        throw rangeError(url, offset, length, sourceSize)
+        throw rangeError(resolvedUrl, offset, length, sourceSize)
       }
       if (length === 0) return new Uint8Array()
-      const response = await fetcher(url, {
-        headers: { Range: `bytes=${offset}-${offset + length - 1}` },
-        ...(signal === undefined ? {} : { signal }),
-      })
+      const { response } = await fetchWithCheckedRedirects(
+        resolvedUrl,
+        fetcher,
+        {
+          headers: { Range: `bytes=${offset}-${offset + length - 1}` },
+          ...(signal === undefined ? {} : { signal }),
+        },
+        options.allowedOrigins,
+        maxRedirects,
+      )
       if (response.status !== 206) {
-        throw unavailable(`HTTP source «${url}» ignored a bounded range request`, {
+        throw unavailable(`HTTP source «${resolvedUrl}» ignored a bounded range request`, {
           status: response.status,
           offset,
           length,
@@ -137,7 +257,7 @@ export async function createHttpRangeSource(
       if (bytes.byteLength !== length) {
         throw new ModkitError({
           code: 'x3.vfs/http-short-range-response',
-          message: `HTTP source «${url}» returned ${bytes.byteLength} bytes for a ${length}-byte range`,
+          message: `HTTP source «${resolvedUrl}» returned ${bytes.byteLength} bytes for a ${length}-byte range`,
           context: { offset, length, actual: bytes.byteLength },
         })
       }
@@ -159,6 +279,7 @@ export interface HttpVfsProviderOptions {
   readonly scheme?: 'http' | 'https'
   readonly fetch?: HttpFetch
   readonly allowedOrigins?: readonly string[]
+  readonly maxRedirects?: number
   readonly limits?: Partial<VfsLimits>
 }
 
@@ -173,6 +294,8 @@ class HttpMount implements VfsMount {
     readonly rootUri: string,
     private readonly sizeBytes: number,
     private readonly fetcher: HttpFetch | undefined,
+    private readonly allowedOrigins: readonly string[] | undefined,
+    private readonly maxRedirects: number | undefined,
     private readonly limits: VfsLimits,
   ) {
     this.id = rootUri
@@ -217,6 +340,8 @@ class HttpMount implements VfsMount {
     const raw = await createHttpRangeSource(this.rootUri, {
       size: this.sizeBytes,
       ...(this.fetcher === undefined ? {} : { fetch: this.fetcher }),
+      ...(this.allowedOrigins === undefined ? {} : { allowedOrigins: this.allowedOrigins }),
+      ...(this.maxRedirects === undefined ? {} : { maxRedirects: this.maxRedirects }),
       ...(signal === undefined ? {} : { signal }),
     })
     const source = budgetRandomAccessSource(raw, this.sizeBytes, this.limits, this.budget)
@@ -284,6 +409,12 @@ export class HttpVfsProvider implements VfsProvider {
     const limits = clampVfsLimits(context.limits, this.limits)
     const probe = await createHttpRangeSource(parsed.href, {
       ...(this.options.fetch === undefined ? {} : { fetch: this.options.fetch }),
+      ...(this.options.allowedOrigins === undefined
+        ? {}
+        : { allowedOrigins: this.options.allowedOrigins }),
+      ...(this.options.maxRedirects === undefined
+        ? {}
+        : { maxRedirects: this.options.maxRedirects }),
       ...(context.signal === undefined ? {} : { signal: context.signal }),
     })
     const size = await probe.size(context.signal)
@@ -295,7 +426,14 @@ export class HttpVfsProvider implements VfsProvider {
         context: { fileBytes: String(size), maxFileBytes: String(limits.maxFileBytes) },
       })
     }
-    return new HttpMount(parsed.href, size, this.options.fetch, limits)
+    return new HttpMount(
+      probe.id,
+      size,
+      this.options.fetch,
+      this.options.allowedOrigins,
+      this.options.maxRedirects,
+      limits,
+    )
   }
 }
 

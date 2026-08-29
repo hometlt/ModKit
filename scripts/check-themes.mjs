@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Installable-theme gate (REPORT_NEXUS_UI_ADAPTATION §4.4, R-1; ADR-UI-002).
 //
-// An installable theme is one stylesheet under assets/themes/<id>/theme.css that redefines
+// An installable theme is one stylesheet named by a bounded modkit.themes.json manifest that redefines
 // tokens under `[data-mk-theme='<id>']` and may decorate public parts. It touches no component.
 // A theme only overrides what it sets; everything else resolves to the *light* base on bare
 // `:root`. Structure (spacing, sizes, z-index, motion timing, font stacks) is shared and may be
@@ -9,8 +9,7 @@
 // silently paints a light scene ground. So:
 //
 //   1. every public tier-2 token of type `color` or `shadow` in the token contract is declared;
-//   2. the file declares `color-scheme` and only ever targets its own `[data-mk-theme='<id>']`
-//      (id = directory name);
+//   2. the file declares `color-scheme` and only ever targets its own `[data-mk-theme='<id>']`;
 //   3. `url(` appears only inside `@font-face` blocks and points at a relative `./fonts/...` file
 //      that exists under assets/fonts (VIEWER_CSP: `font-src 'self'`; nothing else may load);
 //   4. a theme that animates carries its own `@media (prefers-reduced-motion: reduce)` block —
@@ -21,10 +20,12 @@
 //
 // Usage: node scripts/check-themes.mjs [--root <dir>] [--quiet]
 
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { existsSync, readFileSync, statSync } from 'node:fs'
+import { join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
+
+import { appThemeStylesheets, resolveAppThemes } from './lib/app-themes.mjs'
 
 const args = process.argv.slice(2)
 const argValue = flag => {
@@ -105,28 +106,31 @@ function main() {
     process.exit(2)
   }
   const contract = JSON.parse(readFileSync(contractPath, 'utf8'))
-  const themesRoot = join(root, 'assets', 'themes')
   const fontsRoot = join(root, 'assets', 'fonts')
-  const ids = existsSync(themesRoot)
-    ? readdirSync(themesRoot)
-        .filter(name => statSync(join(themesRoot, name)).isDirectory())
-        .sort()
-    : []
+  let themes
+  try {
+    themes = appThemeStylesheets(resolveAppThemes({ repositoryRoot: root }))
+  } catch (error) {
+    process.stderr.write(
+      `themes:check: ${error instanceof Error ? error.message : String(error)}\n`,
+    )
+    process.exit(1)
+  }
   const failures = []
   let checked = 0
-  for (const id of ids) {
-    const file = join(themesRoot, id, 'theme.css')
-    if (!existsSync(file)) {
-      failures.push(`assets/themes/${id}: no theme.css`)
-      continue
-    }
-    const result = checkThemeFile({ id, css: readFileSync(file, 'utf8'), contract, fontsRoot })
+  for (const theme of themes) {
+    const displayPath = relative(root, theme.sourcePath).replaceAll('\\', '/')
+    const result = checkThemeFile({
+      id: theme.id,
+      css: readFileSync(theme.sourcePath, 'utf8'),
+      contract,
+      fontsRoot,
+    })
     checked += 1
-    for (const problem of result.problems)
-      failures.push(`assets/themes/${id}/theme.css: ${problem}`)
+    for (const problem of result.problems) failures.push(`${displayPath}: ${problem}`)
     if (!quiet) {
       process.stdout.write(
-        `  ${id}: ${result.declared} tokens declared, ${result.required} appearance roles required${result.animates ? ', animates' : ''}${result.problems.length === 0 ? ' — ok' : ''}\n`,
+        `  ${theme.id}: ${result.declared} tokens declared, ${result.required} appearance roles required${result.animates ? ', animates' : ''}${result.problems.length === 0 ? ' — ok' : ''}\n`,
       )
     }
   }

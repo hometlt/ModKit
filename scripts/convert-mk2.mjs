@@ -51,7 +51,7 @@ const argValue = flag => {
   return index === -1 ? undefined : args[index + 1]
 }
 const x3Root = resolve(fileURLToPath(new URL('..', import.meta.url)))
-const mk2Root = resolve(argValue('--mk2-root') ?? join(x3Root, '..', 'modkitx'))
+const mk2Root = resolve(argValue('--mk2-root') ?? join(x3Root, '..', 'references', 'modkitmk2'))
 const outRoot = resolve(argValue('--out') ?? join(x3Root, 'extensions', 'mk2'))
 const jsonPath = argValue('--json')
 // D2: the committed tree is mechanical + rework. `--mechanical-only` reproduces the narrower

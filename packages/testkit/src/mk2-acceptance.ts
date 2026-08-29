@@ -189,11 +189,12 @@ function directoryExists(path: string): boolean {
 
 /**
  * The MK2 checkout to read samples from: `MODKITX_MK2_ROOT` when set, else the sibling
- * `../modkitx`. `undefined` means "no corpus here" — callers skip instead of failing.
+ * `../references/modkitmk2`. `undefined` means "no corpus here" — callers skip instead of failing.
  */
 export function resolveMk2Root(repoRoot: string, env = process.env): string | undefined {
   const override = env.MODKITX_MK2_ROOT
-  const candidate = override === undefined ? join(repoRoot, '..', 'modkitx') : override
+  const candidate =
+    override === undefined ? join(repoRoot, '..', 'references', 'modkitmk2') : override
   return directoryExists(join(candidate, 'extensions')) ? candidate : undefined
 }
 

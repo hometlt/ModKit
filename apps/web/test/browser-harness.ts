@@ -126,12 +126,6 @@ export const nodeModuleMap: Readonly<Record<string, string>> = Object.freeze({
     .href,
   '@modkitx-x3/sdk': pathToFileURL(join(repositoryRoot, 'packages', 'sdk', 'dist', 'index.js'))
     .href,
-  'modkit-extension-x3-blizzard-mpq/fresh-writer': pathToFileURL(
-    join(repositoryRoot, '..', 'modkit-blizzard', 'mpq', 'src', 'mpq', 'fresh-writer.js'),
-  ).href,
-  'modkit-extension-x3-blizzard-mpq/native-preserving': pathToFileURL(
-    join(repositoryRoot, '..', 'modkit-blizzard', 'mpq', 'src', 'mpq', 'native-preserving.js'),
-  ).href,
 })
 
 export function domGlobals(fetch: ReturnType<typeof diskOrigin>['fetch']): WebDomGlobals {

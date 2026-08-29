@@ -138,6 +138,8 @@ describe('PWA boot', () => {
     expect(booted.host).toBe(true)
     // and the panel states the trust model rather than only listing folders
     expect(state.extensions).toMatch(/picked it|trusted because/u)
+    expect(state.extensions).toContain('Downloadable extensions')
+    expect(state.extensions).toContain('Check available extensions')
     expect(state.refusals).toEqual([])
     /*
      * The service worker cannot register in every embedded browser, and that is a property of the

@@ -8,15 +8,29 @@
  * decides what the renderer is allowed to do.
  */
 import { build } from 'esbuild'
-import { cpSync, existsSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+import {
+  appThemeStylesheets,
+  renderAppThemeDomData,
+  resolveAppThemes,
+} from '../../../scripts/lib/app-themes.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
 const repoRoot = resolve(appRoot, '..', '..')
-const dist = join(appRoot, 'dist-app')
+const outIndex = process.argv.indexOf('--out')
+const requestedOut = outIndex === -1 ? undefined : process.argv[outIndex + 1]
+if (outIndex !== -1 && (requestedOut === undefined || requestedOut.startsWith('--'))) {
+  throw new TypeError('--out needs a directory')
+}
+const dist = requestedOut === undefined ? join(appRoot, 'dist-app') : resolve(requestedOut)
+const appThemes = resolveAppThemes({ repositoryRoot: repoRoot })
+const themeStylesheets = appThemeStylesheets(appThemes)
 
+rmSync(dist, { recursive: true, force: true })
 mkdirSync(dist, { recursive: true })
 
 const rendererBuild = await build({
@@ -82,18 +96,14 @@ if (!existsSync(stylesheet)) {
   process.exit(1)
 }
 cpSync(stylesheet, join(dist, 'modkit-ui.css'))
-// Installable themes ship as plain stylesheets: token overrides under their own
-// `[data-mk-theme]` selector, no component code. Every theme under assets/themes is copied beside
-// the app as theme-<id>.css and linked; a theme only applies once its id is stamped on <html>.
-// Self-hosted fonts (assets/fonts, OFL) travel with them: theme @font-face rules point at ./fonts/.
-const themesRoot = join(repoRoot, 'assets', 'themes')
-const themeIds = readdirSync(themesRoot)
-  .filter(id => existsSync(join(themesRoot, id, 'theme.css')))
-  .sort()
-for (const id of themeIds) cpSync(join(themesRoot, id, 'theme.css'), join(dist, `theme-${id}.css`))
+// Themes are validated static inputs from the core manifest and optional
+// MODKIT_APP_THEME_ROOTS manifests. The renderer only sees build-generated DOM data.
+for (const theme of themeStylesheets) {
+  cpSync(theme.sourcePath, join(dist, theme.stylesheet.slice('./'.length)))
+}
 cpSync(join(repoRoot, 'assets', 'fonts'), join(dist, 'fonts'), { recursive: true })
-const themeLinks = themeIds
-  .map(id => `    <link rel="stylesheet" href="./theme-${id}.css" />`)
+const themeLinks = themeStylesheets
+  .map(theme => `    <link rel="stylesheet" href="${theme.stylesheet}" />`)
   .join('\n')
 
 /*
@@ -121,6 +131,7 @@ writeFileSync(
     <!-- Monaco CSS, extracted by esbuild so it loads from self rather than being injected. -->
     <link rel="stylesheet" href="./renderer.css" />
 ${themeLinks}
+${renderAppThemeDomData(appThemes)}
     <style>
       html,
       body {

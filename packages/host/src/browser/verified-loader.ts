@@ -12,20 +12,21 @@
  *    the artifact root is `x3.host/execution-load-rejected`;
  *  - without a digest map only the entrypoint is verified (`entrypointDigest`) and its imports
  *    are refused as `x3.host/artifact-not-pinned`;
- *  - bare specifiers resolve through the app-supplied `resolveBare` map and are rewritten to the
- *    returned URL **unverified** — the browser twin of `node_modules` under SB-1 (dependency
- *    digests are SB-4); a bare specifier the map does not know is refused;
+ *  - bare specifiers resolve through the app-supplied `resolveBare` map. A URL recognized by
+ *    `resolvePinned` enters the same digest-verified graph (cross-root extension dependency); an
+ *    unrecognized platform URL is reported as **unverified**, the browser twin of `node_modules`
+ *    under SB-1. A bare specifier the map does not know is refused;
  *  - only *static* `import`/`export … from` and literal `import('…')` are rewritten. A dynamic
- *    `import(expression)` cannot be verified ahead of evaluation and is refused. The specifier
- *    scanner is deliberately conservative: a missed rewrite can only leave a relative specifier
- *    inside a base-less module URL, which fails module resolution — mis-parsing degrades to
- *    refusal or a load error, never to unverified execution.
+ *    `import(expression)` cannot be verified ahead of evaluation and is refused. A real ES-module
+ *    lexer supplies exact source spans, so strings, comments, regex literals and escapes cannot
+ *    hide an executable import or make the rewriter modify an unrelated string.
  *
  * The module is runtime-agnostic (no DOM, no `node:`): digesting, fetching and URL minting are
  * injected, so the pipeline is unit-tested in Node with `data:` URLs and really evaluated there.
  */
 
 import { ModkitError } from '@modkitx-x3/core'
+import { parse } from 'es-module-lexer/js'
 
 export interface VerifiedLoaderOptions {
   /** Artifact root URL (href); every verified file must live under it. */
@@ -42,10 +43,20 @@ export interface VerifiedLoaderOptions {
   readonly createModuleUrl: (source: string) => string
   /** App-supplied module map for bare specifiers (unverified, SB-1); absent → refused. */
   readonly resolveBare?: (specifier: string) => string | undefined
+  /**
+   * Recognizes mapped URLs owned by another digest-pinned extension root. Recognized modules use
+   * the verified graph path; only unrecognized platform dependencies remain SB-1.
+   */
+  readonly resolvePinned?: (url: string) => VerifiedModuleRoot | undefined
   /** Ceilings: a hostile artifact cannot make the loader unbounded. */
   readonly maxFiles?: number
   readonly maxTotalBytes?: number
   readonly signal?: AbortSignal
+}
+
+export interface VerifiedModuleRoot {
+  readonly artifactRoot: string
+  readonly fileDigests: Readonly<Record<string, string>>
 }
 
 export interface VerifiedModuleGraph {
@@ -53,7 +64,7 @@ export interface VerifiedModuleGraph {
   readonly url: string
   /** Artifact-relative paths that were fetched and verified, in evaluation order. */
   readonly verified: readonly string[]
-  /** Bare specifiers that were rewritten through the module map (unverified, reported honestly). */
+  /** Bare specifiers rewritten to unpinned platform URLs (verified cross-root imports are absent). */
   readonly unverified: readonly string[]
 }
 
@@ -68,39 +79,59 @@ function refused(message: string, context?: Record<string, unknown>): ModkitErro
   })
 }
 
+interface ScannedModuleSpecifier {
+  readonly specifier: string
+  /** Exact source span containing only the specifier text, without its quotes. */
+  readonly start: number
+  readonly end: number
+}
+
+const STATIC_IMPORT = 1
+const DYNAMIC_IMPORT = 2
+const IMPORT_META = 3
+
 /**
- * Static ES module specifier scan. Comments are stripped first (string-aware enough for the
- * fail-closed contract documented above); matched are `import|export … from '…'`, bare
- * `import '…'`, and literal `import('…')`. A non-literal dynamic import refuses the file.
- *
- * The import clause may not contain a quote, a parenthesis or a semicolon. That is not a
- * stylistic bound, it is what keeps a side-effect import from being swallowed: with `[\s\S]*?`
- * there, the lazy clause of the *first* `import` would run past its own specifier's quotes and
- * pair with a later `from`, so
- *
- *     import 'left-pad'
- *     import { x } from '@modkitx-x3/codec-kit'
- *
- * reported only the second specifier. A bare specifier lost that way still fails closed — the
- * unrewritten specifier does not resolve inside the worker — but the host's own named refusal is
- * lost with it, and a *relative* side-effect import in that position was never fetched, hashed or
- * rewritten at all.
+ * Parse the ES module surface with a real lexer. Regex/comment stripping is unsafe here because
+ * comment-looking text inside strings or regex literals can hide a later executable import. The
+ * accepted subset intentionally stays narrow: ordinary static imports/re-exports and dynamic
+ * imports whose sole argument is a single- or double-quoted string.
  */
+function scanModuleImports(source: string): readonly ScannedModuleSpecifier[] {
+  let imports: ReturnType<typeof parse>[0]
+  try {
+    ;[imports] = parse(source)
+  } catch (cause) {
+    throw refused('module syntax cannot be parsed safely before evaluation', { cause })
+  }
+  const result: ScannedModuleSpecifier[] = []
+  for (const item of imports) {
+    if (item.t === IMPORT_META) continue
+    if (item.t !== STATIC_IMPORT && item.t !== DYNAMIC_IMPORT) {
+      throw refused('source/defer phase imports are outside the verified JavaScript subset', {
+        importType: item.t,
+      })
+    }
+    if (item.n === undefined) {
+      throw refused(
+        'dynamic import with a non-literal specifier cannot be verified before evaluation',
+      )
+    }
+    if (item.t === STATIC_IMPORT) {
+      result.push(Object.freeze({ specifier: item.n, start: item.s, end: item.e }))
+      continue
+    }
+    const raw = source.slice(item.s, item.e)
+    const quote = raw[0]
+    if ((quote !== "'" && quote !== '"') || raw.at(-1) !== quote || item.a !== -1) {
+      throw refused('only a single quoted literal is allowed in dynamic import before evaluation')
+    }
+    result.push(Object.freeze({ specifier: item.n, start: item.s + 1, end: item.e - 1 }))
+  }
+  return Object.freeze(result)
+}
+
 export function scanModuleSpecifiers(source: string): readonly string[] {
-  const stripped = source.replace(/\/\*[\s\S]*?\*\//gu, ' ').replace(/(^|[^:])\/\/[^\n]*/gu, '$1')
-  if (/\bimport\s*\(\s*[^'")\s]/u.test(stripped)) {
-    throw refused(
-      'dynamic import with a non-literal specifier cannot be verified before evaluation',
-    )
-  }
-  const specifiers: string[] = []
-  const pattern =
-    /\b(?:import|export)\s*(?:[^'"();]*?\bfrom\s+)?(['"])([^'"\n]+)\1|\bimport\s*\(\s*(['"])([^'"\n]+)\3\s*\)/gu
-  for (const match of stripped.matchAll(pattern)) {
-    const specifier = match[2] ?? match[4]
-    if (specifier !== undefined) specifiers.push(specifier)
-  }
-  return specifiers
+  return Object.freeze(scanModuleImports(source).map(item => item.specifier))
 }
 
 const isRelative = (specifier: string) =>
@@ -115,9 +146,24 @@ export async function loadVerifiedModuleGraph(
   entrypoint: string,
   options: VerifiedLoaderOptions,
 ): Promise<VerifiedModuleGraph> {
-  const root = options.artifactRoot.endsWith('/')
-    ? options.artifactRoot
-    : `${options.artifactRoot}/`
+  interface RootContext {
+    readonly root: string
+    readonly fileDigests?: Readonly<Record<string, string>>
+    readonly entrypointDigest?: string
+  }
+  const rootContext = (candidate: VerifiedModuleRoot): RootContext => ({
+    root: candidate.artifactRoot.endsWith('/')
+      ? candidate.artifactRoot
+      : `${candidate.artifactRoot}/`,
+    fileDigests: candidate.fileDigests,
+  })
+  const initial: RootContext = {
+    root: options.artifactRoot.endsWith('/') ? options.artifactRoot : `${options.artifactRoot}/`,
+    ...(options.fileDigests === undefined ? {} : { fileDigests: options.fileDigests }),
+    ...(options.entrypointDigest === undefined
+      ? {}
+      : { entrypointDigest: options.entrypointDigest }),
+  }
   const maxFiles = options.maxFiles ?? DEFAULT_MAX_FILES
   const maxTotalBytes = options.maxTotalBytes ?? DEFAULT_MAX_TOTAL_BYTES
   const verified: string[] = []
@@ -127,27 +173,27 @@ export async function loadVerifiedModuleGraph(
   let totalBytes = 0
   let files = 0
 
-  const relativePath = (href: string): string => {
-    if (!href.startsWith(root)) {
+  const relativePath = (href: string, context: RootContext): string => {
+    if (!href.startsWith(context.root)) {
       throw refused(`module ${href} escapes the artifact root`, { href })
     }
-    return decodeURIComponent(href.slice(root.length))
+    return decodeURIComponent(href.slice(context.root.length))
   }
 
-  const entryHref = new URL(entrypoint, root).href
-  const entryRelative = relativePath(entryHref)
+  const entryHref = new URL(entrypoint, initial.root).href
+  const entryRelative = relativePath(entryHref, initial)
 
-  async function build(href: string): Promise<string> {
+  async function build(href: string, context: RootContext): Promise<string> {
     const existing = built.get(href)
     if (existing !== undefined) return existing
     if (visiting.has(href)) {
       throw refused(
-        `import cycle at ${relativePath(href)}; an immutable module graph cannot represent it`,
+        `import cycle at ${relativePath(href, context)}; an immutable module graph cannot represent it`,
       )
     }
     visiting.add(href)
-    const relative = relativePath(href)
-    if (options.fileDigests === undefined && href !== entryHref) {
+    const relative = relativePath(href, context)
+    if (context.fileDigests === undefined && href !== entryHref) {
       throw new ModkitError({
         code: 'x3.host/artifact-not-pinned',
         message: `the inventory carries no per-file digests, so ${relative} cannot be verified before evaluation`,
@@ -162,8 +208,8 @@ export async function loadVerifiedModuleGraph(
       throw refused(`artifact exceeds the loader ceiling of ${maxTotalBytes} bytes`)
     }
     const expected =
-      options.fileDigests === undefined ? options.entrypointDigest : options.fileDigests[relative]
-    if (options.fileDigests !== undefined && expected === undefined) {
+      context.fileDigests === undefined ? context.entrypointDigest : context.fileDigests[relative]
+    if (context.fileDigests !== undefined && expected === undefined) {
       throw refused(`${relative} is not part of the inventoried artifact`, { relative })
     }
     if (expected !== undefined && (await options.digest(bytes)) !== expected) {
@@ -175,10 +221,16 @@ export async function loadVerifiedModuleGraph(
     }
     let source = new TextDecoder().decode(bytes)
     // children first: every specifier becomes an immutable URL before this file is minted
-    for (const specifier of scanModuleSpecifiers(source)) {
+    const replacements: {
+      readonly start: number
+      readonly end: number
+      readonly value: string
+    }[] = []
+    for (const scanned of scanModuleImports(source)) {
+      const specifier = scanned.specifier
       let target: string
       if (isRelative(specifier)) {
-        target = await build(new URL(specifier, href).href)
+        target = await build(new URL(specifier, href).href, context)
       } else {
         const mapped = options.resolveBare?.(specifier)
         if (mapped === undefined) {
@@ -187,11 +239,23 @@ export async function loadVerifiedModuleGraph(
             { specifier },
           )
         }
-        unverified.add(specifier)
-        target = mapped
+        const pinned = options.resolvePinned?.(mapped)
+        if (pinned === undefined) {
+          unverified.add(specifier)
+          target = mapped
+        } else {
+          target = await build(new URL(mapped).href, rootContext(pinned))
+        }
       }
-      source = source.split(`'${specifier}'`).join(`'${target}'`)
-      source = source.split(`"${specifier}"`).join(`"${target}"`)
+      // Replace the exact parsed string-literal span, not every lookalike string in the module.
+      replacements.push({
+        start: scanned.start - 1,
+        end: scanned.end + 1,
+        value: JSON.stringify(target),
+      })
+    }
+    for (const replacement of replacements.reverse()) {
+      source = `${source.slice(0, replacement.start)}${replacement.value}${source.slice(replacement.end)}`
     }
     const url = options.createModuleUrl(source)
     built.set(href, url)
@@ -200,7 +264,7 @@ export async function loadVerifiedModuleGraph(
     return url
   }
 
-  const url = await build(entryHref)
+  const url = await build(entryHref, initial)
   void entryRelative
   return Object.freeze({
     url,

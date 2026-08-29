@@ -21,6 +21,7 @@ import {
   createExplorer,
   createSettingsUi,
   normalizeSettings,
+  readAppThemeChoices,
   serializeSettings,
   setPart,
   withRecent,
@@ -41,6 +42,7 @@ import { createEditPanel } from './edit-panel.js'
 import {
   createExtensionsSettingsGroups,
   type BrowseResult,
+  type ExtensionManagerSnapshot,
   type ExtensionsReport,
 } from './extensions-page.js'
 import { createRendererEditorPorts, type RendererEditorPorts } from './editor-ports.js'
@@ -123,6 +125,12 @@ interface ExtensionsBridge {
   report(): Promise<ExtensionsReport>
   reload(): Promise<ExtensionsReport>
   browse(): Promise<BrowseResult>
+  managerSnapshot(): Promise<ExtensionManagerSnapshot>
+  managerRefresh(): Promise<void>
+  managerInstall(id: string, version?: string): Promise<void>
+  managerUpdate(id: string): Promise<void>
+  managerRemove(id: string): Promise<void>
+  managerSetEnabled(id: string, enabled: boolean): Promise<void>
 }
 
 const broker = (globalThis as { modkitBroker?: Broker }).modkitBroker
@@ -286,6 +294,7 @@ async function boot(): Promise<void> {
   // Bound locally: the narrowing above does not reach the nested helpers declared later.
   const bridge = broker
   const extensions = extensionsBridge
+  const appThemes = readAppThemeChoices(document)
   const { port: subjectPort, session: subjectSession } = await acquireSubjectPort(subjects)
   const subjectClient = await connectElectronSubjectClient({
     port: subjectPort,
@@ -829,19 +838,19 @@ async function boot(): Promise<void> {
     report: () => extensions.report(),
     browse: () => extensions.browse(),
     apply: () => reloadExtensions(),
+    manager: {
+      snapshot: () => extensions.managerSnapshot(),
+      refresh: () => extensions.managerRefresh(),
+      install: (id, version) => extensions.managerInstall(id, version),
+      update: id => extensions.managerUpdate(id),
+      remove: id => extensions.managerRemove(id),
+      setEnabled: (id, enabled) => extensions.managerSetEnabled(id, enabled),
+    },
   })
 
   const settingsUi = createSettingsUi(document, {
     store,
-    themes: [
-      { id: 'modkit-dark', label: 'Modkit Dark' },
-      { id: 'modkit-light', label: 'Modkit Light' },
-      { id: 'modkit-high-contrast', label: 'High contrast' },
-      // An installed theme is just an id plus a stylesheet; nothing about it is special-cased.
-      { id: 'sc2', label: 'StarCraft II' },
-      { id: 'nexus-forge', label: 'Nexus Forge' },
-      { id: 'nexus-dominion', label: 'Nexus Dominion' },
-    ],
+    themes: appThemes,
     onAppearance(appearance: SettingsDocument['appearance']) {
       applyTheme(document.documentElement, appearance.theme as never)
       applyDensity(document.documentElement, appearance.density)
@@ -1381,13 +1390,7 @@ async function selfTest(options: {
     console.log(`selftest: edit-op probes FAILED ${String(error)}`)
   }
 
-  // An installed theme must reach the tokens, not just the picker.
-  const before = getComputedStyle(document.documentElement).getPropertyValue('--mk-color-accent')
-  document.documentElement.setAttribute('data-mk-theme', 'sc2')
-  const after = getComputedStyle(document.documentElement).getPropertyValue('--mk-color-accent')
-  const scan = getComputedStyle(document.body, '::before').animationName
-  console.log(`selftest: theme accent ${before.trim()} -> ${after.trim()}, background ${scan}`)
-
+  const originalTheme = document.documentElement.getAttribute('data-mk-theme') ?? 'modkit-dark'
   const bar = document.querySelector('[data-mk-part="titlebar"]')
   const buttons = [...document.querySelectorAll('[data-mk-part="titlebar.button"]')].map(node =>
     node.getAttribute('data-command'),
@@ -1398,38 +1401,22 @@ async function selfTest(options: {
     `selftest: titlebar=${bar !== null} controls=[${buttons.join(', ')}] rail=${railed} sheen=${sheen}`,
   )
   const sheets = [...document.styleSheets].map(sheet => sheet.href?.split('/').pop() ?? 'inline')
-  let sheenRule = 'not found'
-  for (const sheet of document.styleSheets) {
-    try {
-      for (const rule of sheet.cssRules) {
-        const text = rule.cssText
-        if (text.includes('mk-sc2-sheen') && text.includes('body')) sheenRule = text.slice(0, 90)
-      }
-    } catch {
-      sheenRule = 'unreadable sheet'
-    }
-  }
-  console.log(`selftest: sheets=[${sheets.join(', ')}] sheenRule=${sheenRule.length} chars`)
+  console.log(`selftest: sheets=[${sheets.join(', ')}]`)
 
   // Every installed theme has to reach two places: the token cascade and the decor layer. Reading
   // the accent back proves the stylesheet is linked and its selector matches; reading the decor
   // animation name proves the theme found something to hang a background on in *this* host, which
   // is exactly what breaks silently when a host composes its own shell.
-  for (const [id, accent] of [
-    ['nexus-forge', '#b6f04a'],
-    ['nexus-dominion', '#f0a02a'],
-  ] as const) {
-    document.documentElement.setAttribute('data-mk-theme', id)
+  for (const theme of readAppThemeChoices(document)) {
+    document.documentElement.setAttribute('data-mk-theme', theme.id)
     const themed = getComputedStyle(document.documentElement)
       .getPropertyValue('--mk-color-accent')
       .trim()
     const anchor = document.querySelector('[data-mk-part="workbench"]') ?? document.body
     const decor = getComputedStyle(anchor, '::before').animationName
-    console.log(
-      `selftest: theme ${id} accent ${themed} (expected ${accent}, ${themed === accent ? 'ok' : 'MISMATCH'}) decor ${decor}`,
-    )
+    console.log(`selftest: theme ${theme.id} accent ${themed} decor ${decor}`)
   }
-  document.documentElement.setAttribute('data-mk-theme', 'sc2')
+  document.documentElement.setAttribute('data-mk-theme', originalTheme)
 
   const menus = [...document.querySelectorAll('[data-mk-part="titlebar.menu-item"]')].map(
     node => node.textContent,

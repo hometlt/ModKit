@@ -32,6 +32,7 @@ import {
   type WebExtensionDirectoryHandle,
 } from './extension-roots.js'
 import type { StoredUserExtension, UserExtensionStore } from './extension-store.js'
+import type { ManagedExtensionsController } from './managed-extensions-controller.js'
 import { catalogCoordinates, type WebExtensionCatalog } from './subjects.js'
 
 // ---------------------------------------------------------------------------------------------
@@ -143,6 +144,10 @@ export function describeExtensionList(input: ExtensionListInput): readonly Exten
 export interface ExtensionsUiOptions {
   readonly store: UserExtensionStore
   readonly catalog: WebExtensionCatalog
+  /** Optional catalog-backed package manager. Its catalog is read only after a visible action. */
+  readonly managedExtensions?: ManagedExtensionsController
+  /** Claims loaded before user folders, such as enabled downloaded packages. */
+  readonly additionalClaimedCoordinates?: readonly string[]
   /** WebCrypto's `subtle`; every digest in this panel is computed by the page with it. */
   readonly subtle: BrowserSubtleCryptoLike
   /**
@@ -176,10 +181,16 @@ function defaultId(): string {
   return uuid ?? `root-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
 }
 
-function button(parent: HTMLElement, part: PartName, label: string, onClick: () => void): void {
+function button(
+  parent: HTMLElement,
+  part: PartName,
+  label: string,
+  onClick: () => void,
+): HTMLElement {
   const node = element(parent, 'button', { part, text: label })
   node.setAttribute('type', 'button')
   node.addEventListener('click', onClick)
+  return node
 }
 
 /**
@@ -200,6 +211,9 @@ export function mountExtensionsUi(
     failures: [],
     coordinates: [],
     rootIds: [],
+    moduleMap: {},
+    moduleMapOwners: {},
+    verifiedModuleRoots: [],
     serve: async url => ({
       ok: false,
       status: 404,
@@ -210,13 +224,21 @@ export function mountExtensionsUi(
 
   const loadOptions = () => ({
     subtle: options.subtle,
-    claimed: catalogCoordinates(options.catalog),
+    claimed: [
+      ...catalogCoordinates(options.catalog),
+      ...(options.additionalClaimedCoordinates ?? []),
+    ],
     ...(options.maxFiles === undefined ? {} : { maxFiles: options.maxFiles }),
     ...(options.maxTotalBytes === undefined ? {} : { maxTotalBytes: options.maxTotalBytes }),
   })
 
   const reload = async (): Promise<void> => {
-    stored = await options.store.list()
+    const [nextStored] = await Promise.all([
+      options.store.list(),
+      // IndexedDB only: this never contacts the injected catalog port.
+      options.managedExtensions?.refreshInstalled(),
+    ])
+    stored = nextStored
     loaded = await loadUserExtensionRoots(
       stored.map(record => ({
         id: record.id,
@@ -305,6 +327,112 @@ export function mountExtensionsUi(
     })()
   }
 
+  const managedAction = (action: () => Promise<unknown>, success: string): void => {
+    void (async () => {
+      try {
+        await action()
+        status = success
+      } catch (error) {
+        status = `Extension action failed: ${describe(error)}`
+      }
+      render()
+    })()
+  }
+
+  const renderManagedExtensions = (): void => {
+    const controller = options.managedExtensions
+    if (controller === undefined) return
+    const model = controller.snapshot()
+    element(root, 'h3', { text: 'Downloadable extensions' })
+    element(root, 'p', {
+      part: 'settings.description',
+      text:
+        'The catalog is checked only when you ask. Installing stores verified package bytes; ' +
+        'nothing on this page imports or runs them.',
+    })
+    const catalogActions = element(root, 'div', { part: 'settings.adder' })
+    button(catalogActions, 'settings.add', 'Check available extensions', () =>
+      managedAction(
+        () => controller.refreshCatalog(),
+        `Extension catalog checked at ${model.catalogLocation}.`,
+      ),
+    )
+    element(catalogActions, 'span', {
+      part: 'settings.description',
+      text: model.catalogLoaded
+        ? `Catalog loaded from ${model.catalogLocation}.`
+        : `Catalog ${model.catalogLocation} has not been contacted in this session.`,
+    })
+
+    const list = element(root, 'div', { part: 'settings.list' })
+    for (const row of model.rows) {
+      const item = element(list, 'div', { part: 'settings.extension' })
+      const text = element(item, 'div', { part: 'settings.extension-text' })
+      element(text, 'div', { part: 'settings.label', text: row.name })
+      const states = [
+        row.available ? `Available ${row.availableVersion ?? ''}`.trim() : 'Not in catalog',
+        row.installed ? `Installed ${row.installedVersion ?? ''}`.trim() : 'Not installed',
+        row.installed ? (row.enabled ? 'Enabled' : 'Disabled') : undefined,
+        row.updateAvailable ? 'Update available' : undefined,
+      ].filter((value): value is string => value !== undefined)
+      element(text, 'div', { part: 'settings.description', text: states.join(' · ') })
+      if (row.description !== undefined) {
+        element(text, 'div', { part: 'settings.description', text: row.description })
+      }
+      element(text, 'div', {
+        part: 'settings.description',
+        text: `${row.trusted ? 'Trusted' : 'Not trusted'}: ${row.trustReason}`,
+      })
+
+      if (!row.installed && row.available) {
+        const install = button(item, 'settings.add', 'Install', () =>
+          managedAction(
+            () => controller.install(row.id),
+            `Installed ${row.name}. Reload the page to load the changed extension set.`,
+          ),
+        )
+        if (!row.trusted) {
+          install.setAttribute('disabled', '')
+          install.setAttribute('title', row.trustReason)
+        }
+      }
+      if (row.installed && row.updateAvailable) {
+        const update = button(item, 'settings.add', 'Update', () =>
+          managedAction(
+            () => controller.update(row.id),
+            `Updated ${row.name}. Reload the page to load the changed extension set.`,
+          ),
+        )
+        if (!row.trusted) {
+          update.setAttribute('disabled', '')
+          update.setAttribute('title', row.trustReason)
+        }
+      }
+      if (row.installed) {
+        button(item, 'settings.add', row.enabled ? 'Disable' : 'Enable', () =>
+          managedAction(
+            () => controller.enable(row.id, !row.enabled),
+            `${row.enabled ? 'Disabled' : 'Enabled'} ${row.name}. Reload the page to load the changed extension set.`,
+          ),
+        )
+        button(item, 'settings.remove', 'Remove', () =>
+          managedAction(
+            () => controller.remove(row.id),
+            `Removed ${row.name}. Reload the page to load the changed extension set.`,
+          ),
+        )
+      }
+    }
+    if (model.rows.length === 0) {
+      element(root, 'p', {
+        part: 'settings.description',
+        text: model.catalogLoaded
+          ? 'The catalog contains no extensions.'
+          : 'No downloaded extensions are installed. Check the catalog to see what is available.',
+      })
+    }
+  }
+
   function render(): void {
     root.replaceChildren()
     element(root, 'h2', { text: 'Extensions' })
@@ -354,6 +482,7 @@ export function mountExtensionsUi(
         text: 'No folders added yet.',
       })
     }
+    renderManagedExtensions()
     element(root, 'p', { part: 'settings.status', text: status })
   }
 

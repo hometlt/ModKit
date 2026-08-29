@@ -56,6 +56,24 @@ export {
 } from './map-preview.js'
 
 export {
+  createElectronExtensionManagerBackend,
+  type ElectronExtensionManagerBackend,
+  type ElectronExtensionManagerBackendOptions,
+} from './extension-manager-main.js'
+
+export {
+  composeElectronExtensionRoots,
+  ELECTRON_MANAGED_COORDINATE_CONFLICT,
+  ELECTRON_MANUAL_MANAGED_COORDINATE_CONFLICT,
+  type ElectronComposedExtensionRoot,
+  type ElectronExtensionRootComposition,
+  type ElectronExtensionRootCompositionOptions,
+  type ElectronExtensionRootConflict,
+  type ElectronManagedExtensionRoot,
+  type ElectronManualExtensionRoot,
+} from './extension-root-composition.js'
+
+export {
   continueElectronMapPreviewSelection,
   electronMapPreviewSelectionRequest,
   parseElectronMapPreviewSelectionRequest,

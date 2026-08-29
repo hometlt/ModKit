@@ -18,7 +18,7 @@ const requiredOrder = [
 const skills = [
   {
     name: 'modkit-core',
-    root: join(codingRoot, 'modkitX3', '.agents', 'skills', 'modkit-core'),
+    root: join(codingRoot, 'modkit-core', '.agents', 'skills', 'modkit-core'),
   },
   {
     name: 'modkit-sc2',

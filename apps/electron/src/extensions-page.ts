@@ -22,6 +22,13 @@ import {
   type SettingsUiGroup,
   type SettingsUiGroupContext,
 } from '@modkitx-x3/ui'
+import type {
+  ExtensionManagerClient,
+  ExtensionManagerEntry,
+  ExtensionManagerSnapshot,
+} from '@modkitx/extension-manager'
+
+export type { ExtensionManagerSnapshot } from '@modkitx/extension-manager'
 
 // ---------------------------------------------------------------------------------------------
 // what main reports
@@ -80,6 +87,40 @@ export interface ExtensionsReport {
   readonly supportedExtensions: readonly string[]
 }
 
+/** Common package-level entry; its artifact-store record may contain several extension roots. */
+export type ManagedExtensionEntry = ExtensionManagerEntry
+
+/** Electron's IPC bridge implements the shared app-level manager contract exactly. */
+export type ElectronExtensionManagerPort = ExtensionManagerClient
+
+export interface ExtensionManagerGroups {
+  readonly available: readonly ManagedExtensionEntry[]
+  readonly installed: readonly ManagedExtensionEntry[]
+  readonly enabled: readonly ManagedExtensionEntry[]
+  readonly updates: readonly ManagedExtensionEntry[]
+  readonly problems: readonly string[]
+}
+
+/** Stable grouping shared by the page and focused tests; entries retain the manager's order. */
+export function groupManagedExtensions(
+  snapshot: ExtensionManagerSnapshot,
+  problems: readonly string[] = Object.freeze([]),
+): ExtensionManagerGroups {
+  return Object.freeze({
+    available: Object.freeze(
+      snapshot.entries.filter(entry => entry.installedVersion === undefined),
+    ),
+    installed: Object.freeze(
+      snapshot.entries.filter(entry => entry.installedVersion !== undefined),
+    ),
+    enabled: Object.freeze(
+      snapshot.entries.filter(entry => entry.installedVersion !== undefined && entry.enabled),
+    ),
+    updates: Object.freeze(snapshot.entries.filter(entry => entry.updateAvailable)),
+    problems: Object.freeze([...problems]),
+  })
+}
+
 /** What the native folder dialog plus main's probe answered. */
 export type BrowseResult =
   | { readonly canceled: true }
@@ -121,6 +162,8 @@ export interface ExtensionsSettingsGroupsOptions {
    * offer it would have to say "restart to apply" in the same sentence the switch is drawn in.
    */
   apply(): Promise<ExtensionsReport>
+  /** Optional install/update lifecycle. Folder connections below remain available without it. */
+  readonly manager?: ElectronExtensionManagerPort
 }
 
 export interface ExtensionsSettingsGroups {
@@ -146,6 +189,8 @@ export function createExtensionsSettingsGroups(
   options: ExtensionsSettingsGroupsOptions,
 ): ExtensionsSettingsGroups {
   let report: ExtensionsReport | undefined
+  let managerSnapshot: ExtensionManagerSnapshot | undefined
+  const managerProblems: string[] = []
   let groupContext: SettingsUiGroupContext | undefined
   /** Busy while main recomposes: a second toggle mid-flight would compose against stale bytes. */
   let busy = false
@@ -212,6 +257,32 @@ export function createExtensionsSettingsGroups(
     }
   }
 
+  /** Run one explicit manager command, then safely recompose from manager state plus settings. */
+  const manage = async (
+    what: string,
+    operation: () => Promise<void>,
+    recompose = true,
+  ): Promise<void> => {
+    if (busy) return
+    busy = true
+    say(`${what}…`)
+    draw()
+    try {
+      await operation()
+      managerSnapshot = await options.manager?.snapshot()
+      managerProblems.length = 0
+      if (recompose) report = await options.apply()
+      say(`${what}: complete${report === undefined ? '.' : `. ${summarise(report)}`}`)
+    } catch (error) {
+      const problem = `${what} failed: ${describe(error)}`
+      managerProblems.unshift(problem)
+      say(problem, true)
+    } finally {
+      busy = false
+      draw()
+    }
+  }
+
   // ------------------------------------------------------------------ extensions group
   const addFolder = (): void => {
     void (async () => {
@@ -268,6 +339,133 @@ export function createExtensionsSettingsGroups(
         text: `The settings file could not be read: ${value.problem}`,
       })
       setState(problem, ['error'])
+    }
+
+    const manager = options.manager
+    if (manager !== undefined) {
+      const managed = groupManagedExtensions(
+        managerSnapshot ?? { entries: Object.freeze([]) },
+        managerProblems,
+      )
+      const managerActions = element(host, 'div', { part: 'settings.adder' })
+      const refresh = element(managerActions, 'button', {
+        part: 'settings.add',
+        text: 'Refresh extension catalog',
+      }) as HTMLButtonElement
+      refresh.type = 'button'
+      refresh.dataset['action'] = 'refresh-catalog'
+      refresh.disabled = busy
+      refresh.addEventListener('click', () => {
+        void manage('Refreshing extension catalog', () => manager.refresh(), false)
+      })
+
+      const renderManagedRows = (
+        label: string,
+        entries: readonly ManagedExtensionEntry[],
+        action: (entry: ManagedExtensionEntry, row: HTMLElement) => void,
+        empty: string,
+      ): void => {
+        element(host, 'div', { part: 'settings.label', text: label })
+        const list = element(host, 'div', { part: 'settings.list' })
+        if (entries.length === 0) {
+          element(list, 'p', { part: 'settings.description', text: empty })
+          return
+        }
+        for (const entry of entries) {
+          const row = element(list, 'div', { part: 'settings.extension' })
+          if (!entry.trusted) setState(row, ['error'])
+          const text = element(row, 'div', { part: 'settings.extension-text' })
+          element(text, 'div', {
+            part: 'settings.label',
+            text: safeViewerText(entry.displayName, 200),
+          })
+          element(text, 'div', {
+            part: 'settings.description',
+            text:
+              `${safeViewerText(entry.id, 200)} · ` +
+              `${entry.installedVersion ?? 'not installed'} → ${entry.availableVersion} · ` +
+              `${entry.trusted ? 'trusted source' : 'untrusted remote source'}`,
+          })
+          action(entry, row)
+        }
+      }
+
+      const button = (row: HTMLElement, label: string, action: string, run: () => void): void => {
+        const control = element(row, 'button', {
+          part: 'settings.remove',
+          text: label,
+        }) as HTMLButtonElement
+        control.type = 'button'
+        control.dataset['action'] = action
+        control.disabled = busy
+        control.addEventListener('click', run)
+      }
+
+      renderManagedRows(
+        'Available',
+        managed.available,
+        (entry, row) => {
+          button(row, 'Install', 'install', () => {
+            void manage(`Installing ${entry.id}`, () =>
+              manager.install(entry.id, entry.availableVersion),
+            )
+          })
+        },
+        'No installable extensions are in the current catalog.',
+      )
+      renderManagedRows(
+        'Installed',
+        managed.installed,
+        (entry, row) => {
+          button(
+            row,
+            entry.enabled ? 'Disable' : 'Enable',
+            entry.enabled ? 'disable' : 'enable',
+            () => {
+              void manage(`${entry.enabled ? 'Disabling' : 'Enabling'} ${entry.id}`, () =>
+                manager.setEnabled(entry.id, !entry.enabled),
+              )
+            },
+          )
+          button(row, 'Remove', 'remove', () => {
+            void manage(`Removing ${entry.id}`, () => manager.remove(entry.id))
+          })
+        },
+        'No extensions are installed by the manager.',
+      )
+      renderManagedRows(
+        'Enabled',
+        managed.enabled,
+        (entry, row) => {
+          button(row, 'Disable', 'disable', () => {
+            void manage(`Disabling ${entry.id}`, () => manager.setEnabled(entry.id, false))
+          })
+        },
+        'No managed extensions are enabled.',
+      )
+      renderManagedRows(
+        'Updates',
+        managed.updates,
+        (entry, row) => {
+          button(row, 'Update', 'update', () => {
+            void manage(`Updating ${entry.id}`, () => manager.update(entry.id))
+          })
+        },
+        'All managed extensions use the catalog version.',
+      )
+
+      element(host, 'div', { part: 'settings.label', text: 'Problems' })
+      const problems = element(host, 'div', { part: 'settings.list' })
+      if (managed.problems.length === 0) {
+        element(problems, 'p', { part: 'settings.description', text: 'No manager problems.' })
+      }
+      for (const message of managed.problems) {
+        const problem = element(problems, 'p', {
+          part: 'settings.description',
+          text: safeViewerText(message, 600),
+        })
+        setState(problem, ['error'])
+      }
     }
 
     const actions = element(host, 'div', { part: 'settings.adder' })
@@ -497,9 +695,13 @@ export function createExtensionsSettingsGroups(
       groupContext = context
       try {
         report = await options.report()
+        managerSnapshot = await options.manager?.snapshot()
+        managerProblems.length = 0
         say(summarise(report))
       } catch (error) {
-        say(`Could not read the extension state: ${describe(error)}`, true)
+        const problem = `Could not read the extension state: ${describe(error)}`
+        managerProblems.unshift(problem)
+        say(problem, true)
       }
       draw()
     },

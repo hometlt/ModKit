@@ -21,7 +21,6 @@ import {
   type NormalizedSettings,
   type SettingsDocument,
   type SettingsStore,
-  type ThemeChoice,
 } from '@modkitx-x3/ui/settings'
 import { applyDensity, applyTheme } from '@modkitx-x3/ui/tokens'
 
@@ -37,23 +36,6 @@ export const EXTENSIONS_READ_ONLY_REASON =
   'this host has no enable/disable switch for an inventoried extension yet, so the settings ' +
   'extension list cannot be written here; add or remove your own extension folders in the ' +
   'Extensions panel instead'
-
-/**
- * Every theme the build links.
- *
- * `apps/web/scripts/build.mjs` copies each `assets/themes/<id>/theme.css` next to the app and links
- * it from `index.html`; a stylesheet scoped to `[data-mk-theme='<id>']` only applies once that id
- * is stamped, which is what `applyAppearance` does. Adding a theme directory adds a picker entry
- * here — the list is the app's promise about what it actually ships.
- */
-export const WEB_THEMES: readonly ThemeChoice[] = Object.freeze([
-  { id: 'modkit-dark', label: 'Modkit Dark' },
-  { id: 'modkit-light', label: 'Modkit Light' },
-  { id: 'modkit-high-contrast', label: 'High contrast' },
-  { id: 'sc2', label: 'StarCraft II' },
-  { id: 'nexus-forge', label: 'Nexus Forge' },
-  { id: 'nexus-dominion', label: 'Nexus Dominion' },
-])
 
 const sameExtensions = (
   left: SettingsDocument['extensions'],

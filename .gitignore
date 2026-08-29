@@ -11,3 +11,5 @@ apps/modkit-vscode/dist-app/
 reports/evidence/
 # agent worktrees and local session state (the harness owns this directory)
 .claude/
+# Local codebase graph cache; regenerate it from the repository when needed.
+.codebase-memory/

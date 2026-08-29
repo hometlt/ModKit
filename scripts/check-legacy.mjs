@@ -18,7 +18,9 @@
 //   - marketplace / codec-host in package names or export subpaths (they are `host`
 //     modules, not packages)
 //   - the `@modkitx-x3/*` name scope is required for platform packages/apps only
-//     (BRIEF-12 §7.1); extension/example package names follow MK3/27 §0.2 and are free.
+//     (BRIEF-12 §7.1), except the deliberately ecosystem-stable
+//     `@modkitx/extension-manager`; extension/example package names follow MK3/27 §0.2 and are
+//     free.
 //
 // Exclusions (§3.5: otherwise the negative-test of the old manifest is impossible):
 //   - any path containing /fixtures/legacy/ (skipped entirely);
@@ -97,6 +99,7 @@ const RULES = [
 ]
 
 const FORBIDDEN_PACKAGE_NAME = /(marketplace|codec-host)/
+const PLATFORM_SCOPE_EXCEPTIONS = new Set(['@modkitx/extension-manager'])
 
 function walk(dir, out) {
   let entries
@@ -193,7 +196,12 @@ function checkPackageManifest(file, relPosix, findings, requireLabScope) {
       why: `forbidden package name «${name}» (host modules, not packages)`,
     })
   }
-  if (requireLabScope && name && !name.startsWith('@modkitx-x3/')) {
+  if (
+    requireLabScope &&
+    name &&
+    !name.startsWith('@modkitx-x3/') &&
+    !PLATFORM_SCOPE_EXCEPTIONS.has(name)
+  ) {
     findings.push({
       file: relPosix,
       line: 1,

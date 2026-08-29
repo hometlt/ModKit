@@ -124,7 +124,11 @@ const provePwaCommandCaller = () => {
     subjects: ['const commands = createWebCommandProtocol(services)', 'commands.dispose()'],
     shell: [
       'services.commands.authorize({',
-      "window.addEventListener('pagehide', () => void services.dispose(), { once: true })",
+      'window.addEventListener(',
+      "'pagehide',",
+      'services.dispose()',
+      'managedRuntime.dispose()',
+      '{ once: true },',
     ],
     embed: ['disposeEmbedHosts()', 'installEmbedHostLifecycle()'],
   })

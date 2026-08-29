@@ -4,7 +4,7 @@
  *   node scripts/build.mjs           build
  *   node scripts/build.mjs --serve   build and serve on 8730
  *
- * The catalog snapshot is derived from the generated UK-A catalog in a sibling `modkitx` checkout.
+ * The catalog snapshot is derived from the generated UK-A catalog in `references/modkit-docs`.
  * When that checkout is absent the snapshot records the reason and the gallery says so — it never
  * invents component rows.
  */
@@ -28,8 +28,8 @@ const dist = join(galleryRoot, 'dist')
 const catalogPath = resolve(
   repoRoot,
   '..',
-  'modkitx',
-  'docs',
+  'references',
+  'modkit-docs',
   'MK3',
   'uk-a',
   'component-catalog.md',
@@ -40,8 +40,8 @@ function buildSnapshot() {
   if (!existsSync(catalogPath)) {
     return {
       reason:
-        'Generated component catalog not found (expected a sibling modkitx checkout at ' +
-        '../modkitx/docs/MK3/uk-a/component-catalog.md). No rows are fabricated.',
+        'Generated component catalog not found (expected ' +
+        '../references/modkit-docs/MK3/uk-a/component-catalog.md). No rows are fabricated.',
       rows: [],
     }
   }

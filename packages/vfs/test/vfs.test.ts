@@ -283,6 +283,98 @@ describe('HTTP VFS provider', () => {
     )
     await vfs.dispose()
   })
+
+  it('checks a redirect target before requesting it and applies the same policy to range reads', async () => {
+    const calls: string[] = []
+    const fetcher: HttpFetch = async (url, init) => {
+      calls.push(`${init?.method ?? 'GET'} ${url}`)
+      expect(init?.redirect).toBe('manual')
+      if (url === 'https://assets.example/head-redirect.bin') {
+        return {
+          ok: false,
+          status: 302,
+          headers: {
+            get: name =>
+              name.toLowerCase() === 'location' ? 'https://evil.example/asset.bin' : null,
+          },
+          arrayBuffer: async () => new ArrayBuffer(0),
+        }
+      }
+      if (init?.method === 'HEAD') {
+        return {
+          ok: true,
+          status: 200,
+          headers: {
+            get: name =>
+              name.toLowerCase() === 'content-length'
+                ? '4'
+                : name.toLowerCase() === 'accept-ranges'
+                  ? 'bytes'
+                  : null,
+          },
+          arrayBuffer: async () => new ArrayBuffer(0),
+        }
+      }
+      return {
+        ok: false,
+        status: 307,
+        headers: {
+          get: name =>
+            name.toLowerCase() === 'location' ? 'https://evil.example/range.bin' : null,
+        },
+        arrayBuffer: async () => new ArrayBuffer(0),
+      }
+    }
+    const provider = createHttpVfsProvider({
+      fetch: fetcher,
+      allowedOrigins: ['https://assets.example'],
+    })
+
+    await expect(
+      provider.open('https://assets.example/head-redirect.bin', {
+        limits: DEFAULT_VFS_LIMITS,
+      }),
+    ).rejects.toMatchObject({ code: 'x3.vfs/http-origin-refused' })
+    expect(calls.filter(call => call.includes('evil.example'))).toEqual([])
+
+    const mount = await provider.open('https://assets.example/range-redirect.bin', {
+      limits: DEFAULT_VFS_LIMITS,
+    })
+    const source = await mount.open('')
+    await expect(source.readAt(0, 4)).rejects.toMatchObject({
+      code: 'x3.vfs/http-origin-refused',
+    })
+    expect(calls.filter(call => call.includes('evil.example'))).toEqual([])
+    await mount.dispose()
+  })
+
+  it('bounds manual redirect loops', async () => {
+    const calls: string[] = []
+    const fetcher: HttpFetch = async (url, init) => {
+      calls.push(url)
+      expect(init?.redirect).toBe('manual')
+      return {
+        ok: false,
+        status: 302,
+        headers: {
+          get: name => (name.toLowerCase() === 'location' ? '/loop.bin' : null),
+        },
+        arrayBuffer: async () => new ArrayBuffer(0),
+      }
+    }
+    const provider = createHttpVfsProvider({
+      fetch: fetcher,
+      allowedOrigins: ['https://assets.example'],
+      maxRedirects: 2,
+    })
+    await expect(
+      provider.open('https://assets.example/loop.bin', { limits: DEFAULT_VFS_LIMITS }),
+    ).rejects.toMatchObject({
+      code: 'x3.vfs/http-redirect-refused',
+      message: expect.stringContaining('bounded hop limit'),
+    })
+    expect(calls).toHaveLength(3)
+  })
 })
 
 describe('browser-file VFS provider', () => {

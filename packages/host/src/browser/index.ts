@@ -16,6 +16,7 @@ export {
   scanModuleSpecifiers,
   type VerifiedLoaderOptions,
   type VerifiedModuleGraph,
+  type VerifiedModuleRoot,
 } from './verified-loader.js'
 export {
   createBrowserWorkerBackend,

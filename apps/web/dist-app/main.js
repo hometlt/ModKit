@@ -9,14 +9,17 @@ import {
   applyDensity,
   applyTheme,
   catalogCoordinates,
+  combineLoadedExtensionRoots,
   compareUtf8,
   containerCoordinate,
   coordinateMapPreviewAssetSession,
+  createBrowserExtensionManager,
   createCodecPreview,
   createDirectoryAccess,
   createEditorArea,
   createExplorer,
   createIndexedDbExtensionStore,
+  createManagedExtensionsController,
   createSingleFileAccess,
   createSurface,
   createViewerMount,
@@ -32,6 +35,7 @@ import {
   element,
   invokeOperation,
   isWritableHandle,
+  loadManagedExtensionRoots,
   loadUserExtensionRoots,
   mountWebWorkbench,
   nestedSubjectServices,
@@ -42,6 +46,7 @@ import {
   requestWriteAccess,
   resolveCommonPresentationPlan,
   resolveFormatWriter,
+  resolveModuleMap,
   revisionId,
   safeViewerText,
   setPart,
@@ -50,7 +55,7 @@ import {
   sourceRevisionToken,
   sourceUriFor,
   stageIdOf
-} from "./chunks/chunk-4CWXPF3C.js";
+} from "./chunks/chunk-ETNSN34X.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunks/chunk-HJULOH5B.js";
@@ -242,6 +247,44 @@ function serializeSettings(document2) {
 }
 
 // packages/ui/dist/settings/index.js
+var APP_THEME_DOM_ID = "modkit-app-themes";
+var APP_THEME_ID = /^[a-z][a-z0-9-]{0,63}$/u;
+var APP_THEME_STYLESHEET = /^\.\/(?:modkit-ui|theme-[a-z][a-z0-9-]{0,63})\.css$/u;
+function readAppThemeChoices(document2) {
+  const node = document2.getElementById(APP_THEME_DOM_ID);
+  if (node?.textContent === null || node?.textContent === void 0) {
+    throw new Error(`missing #${APP_THEME_DOM_ID} build data`);
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(node.textContent);
+  } catch (error) {
+    throw new Error(`invalid #${APP_THEME_DOM_ID} JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > 64) {
+    throw new Error(`#${APP_THEME_DOM_ID} must contain between 1 and 64 themes`);
+  }
+  const ids = /* @__PURE__ */ new Set();
+  return Object.freeze(parsed.map((value, index) => {
+    const entry = value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
+    const id = entry?.["id"];
+    const label = entry?.["label"];
+    const stylesheet = entry?.["stylesheet"];
+    if (typeof id !== "string" || !APP_THEME_ID.test(id)) {
+      throw new Error(`#${APP_THEME_DOM_ID} theme ${index} has an invalid id`);
+    }
+    if (ids.has(id))
+      throw new Error(`#${APP_THEME_DOM_ID} contains duplicate theme id ${id}`);
+    ids.add(id);
+    if (typeof label !== "string" || label.trim() !== label || label.length === 0 || label.length > 80 || /[\u0000-\u001f\u007f]/u.test(label)) {
+      throw new Error(`#${APP_THEME_DOM_ID} theme ${index} has an invalid label`);
+    }
+    if (typeof stylesheet !== "string" || !APP_THEME_STYLESHEET.test(stylesheet)) {
+      throw new Error(`#${APP_THEME_DOM_ID} theme ${index} has an invalid stylesheet`);
+    }
+    return Object.freeze({ id, label, stylesheet });
+  }));
+}
 function createSettingsUi(document2, options) {
   const root = document2.createElement("div");
   root.className = "modkit-viewer modkit-settings";
@@ -852,6 +895,7 @@ function button(parent, part, label, onClick) {
   const node = element(parent, "button", { part, text: label });
   node.setAttribute("type", "button");
   node.addEventListener("click", onClick);
+  return node;
 }
 function mountExtensionsUi(documentRef, options) {
   const root = documentRef.createElement("section");
@@ -863,6 +907,9 @@ function mountExtensionsUi(documentRef, options) {
     failures: [],
     coordinates: [],
     rootIds: [],
+    moduleMap: {},
+    moduleMapOwners: {},
+    verifiedModuleRoots: [],
     serve: async (url) => ({
       ok: false,
       status: 404,
@@ -872,12 +919,20 @@ function mountExtensionsUi(documentRef, options) {
   let status = "";
   const loadOptions = () => ({
     subtle: options.subtle,
-    claimed: catalogCoordinates(options.catalog),
+    claimed: [
+      ...catalogCoordinates(options.catalog),
+      ...options.additionalClaimedCoordinates ?? []
+    ],
     ...options.maxFiles === void 0 ? {} : { maxFiles: options.maxFiles },
     ...options.maxTotalBytes === void 0 ? {} : { maxTotalBytes: options.maxTotalBytes }
   });
   const reload = async () => {
-    stored = await options.store.list();
+    const [nextStored] = await Promise.all([
+      options.store.list(),
+      // IndexedDB only: this never contacts the injected catalog port.
+      options.managedExtensions?.refreshInstalled()
+    ]);
+    stored = nextStored;
     loaded = await loadUserExtensionRoots(
       stored.map((record) => ({
         id: record.id,
@@ -951,6 +1006,117 @@ function mountExtensionsUi(documentRef, options) {
       }
     })();
   };
+  const managedAction = (action, success) => {
+    void (async () => {
+      try {
+        await action();
+        status = success;
+      } catch (error) {
+        status = `Extension action failed: ${describe(error)}`;
+      }
+      render();
+    })();
+  };
+  const renderManagedExtensions = () => {
+    const controller = options.managedExtensions;
+    if (controller === void 0) return;
+    const model = controller.snapshot();
+    element(root, "h3", { text: "Downloadable extensions" });
+    element(root, "p", {
+      part: "settings.description",
+      text: "The catalog is checked only when you ask. Installing stores verified package bytes; nothing on this page imports or runs them."
+    });
+    const catalogActions = element(root, "div", { part: "settings.adder" });
+    button(
+      catalogActions,
+      "settings.add",
+      "Check available extensions",
+      () => managedAction(
+        () => controller.refreshCatalog(),
+        `Extension catalog checked at ${model.catalogLocation}.`
+      )
+    );
+    element(catalogActions, "span", {
+      part: "settings.description",
+      text: model.catalogLoaded ? `Catalog loaded from ${model.catalogLocation}.` : `Catalog ${model.catalogLocation} has not been contacted in this session.`
+    });
+    const list = element(root, "div", { part: "settings.list" });
+    for (const row of model.rows) {
+      const item = element(list, "div", { part: "settings.extension" });
+      const text = element(item, "div", { part: "settings.extension-text" });
+      element(text, "div", { part: "settings.label", text: row.name });
+      const states = [
+        row.available ? `Available ${row.availableVersion ?? ""}`.trim() : "Not in catalog",
+        row.installed ? `Installed ${row.installedVersion ?? ""}`.trim() : "Not installed",
+        row.installed ? row.enabled ? "Enabled" : "Disabled" : void 0,
+        row.updateAvailable ? "Update available" : void 0
+      ].filter((value) => value !== void 0);
+      element(text, "div", { part: "settings.description", text: states.join(" \xB7 ") });
+      if (row.description !== void 0) {
+        element(text, "div", { part: "settings.description", text: row.description });
+      }
+      element(text, "div", {
+        part: "settings.description",
+        text: `${row.trusted ? "Trusted" : "Not trusted"}: ${row.trustReason}`
+      });
+      if (!row.installed && row.available) {
+        const install = button(
+          item,
+          "settings.add",
+          "Install",
+          () => managedAction(
+            () => controller.install(row.id),
+            `Installed ${row.name}. Reload the page to load the changed extension set.`
+          )
+        );
+        if (!row.trusted) {
+          install.setAttribute("disabled", "");
+          install.setAttribute("title", row.trustReason);
+        }
+      }
+      if (row.installed && row.updateAvailable) {
+        const update = button(
+          item,
+          "settings.add",
+          "Update",
+          () => managedAction(
+            () => controller.update(row.id),
+            `Updated ${row.name}. Reload the page to load the changed extension set.`
+          )
+        );
+        if (!row.trusted) {
+          update.setAttribute("disabled", "");
+          update.setAttribute("title", row.trustReason);
+        }
+      }
+      if (row.installed) {
+        button(
+          item,
+          "settings.add",
+          row.enabled ? "Disable" : "Enable",
+          () => managedAction(
+            () => controller.enable(row.id, !row.enabled),
+            `${row.enabled ? "Disabled" : "Enabled"} ${row.name}. Reload the page to load the changed extension set.`
+          )
+        );
+        button(
+          item,
+          "settings.remove",
+          "Remove",
+          () => managedAction(
+            () => controller.remove(row.id),
+            `Removed ${row.name}. Reload the page to load the changed extension set.`
+          )
+        );
+      }
+    }
+    if (model.rows.length === 0) {
+      element(root, "p", {
+        part: "settings.description",
+        text: model.catalogLoaded ? "The catalog contains no extensions." : "No downloaded extensions are installed. Check the catalog to see what is available."
+      });
+    }
+  };
   function render() {
     root.replaceChildren();
     element(root, "h2", { text: "Extensions" });
@@ -997,6 +1163,7 @@ function mountExtensionsUi(documentRef, options) {
         text: "No folders added yet."
       });
     }
+    renderManagedExtensions();
     element(root, "p", { part: "settings.status", text: status });
   }
   render();
@@ -1743,14 +1910,6 @@ function createWebSessionRecovery(options) {
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var SETTINGS_STORAGE_KEY = "org.modkitx.app.web/settings";
 var EXTENSIONS_READ_ONLY_REASON = "this host has no enable/disable switch for an inventoried extension yet, so the settings extension list cannot be written here; add or remove your own extension folders in the Extensions panel instead";
-var WEB_THEMES = Object.freeze([
-  { id: "modkit-dark", label: "Modkit Dark" },
-  { id: "modkit-light", label: "Modkit Light" },
-  { id: "modkit-high-contrast", label: "High contrast" },
-  { id: "sc2", label: "StarCraft II" },
-  { id: "nexus-forge", label: "Nexus Forge" },
-  { id: "nexus-dominion", label: "Nexus Dominion" }
-]);
 var sameExtensions = (left, right) => left.length === right.length && left.every((entry, index) => {
   const other = right[index];
   return other !== void 0 && other.id === entry.id && other.enabled === entry.enabled;
@@ -1872,6 +2031,7 @@ async function fetchServed(baseUrl, path) {
 }
 async function boot() {
   const probe = probeWebFacilities();
+  const appThemes = readAppThemeChoices(document);
   const baseUrl = new URL("./", document.baseURI);
   const pageUrl = new URL(window.location.href);
   const locale = resolveUiLocale(pageUrl.searchParams.get("lang") ?? navigator.languages);
@@ -1886,13 +2046,33 @@ async function boot() {
   const bootSessionDiagnostics = [];
   const recoveryHost = {};
   const extensionStore = createIndexedDbExtensionStore(indexedDB);
+  const managedRuntime = createBrowserExtensionManager({
+    indexedDB,
+    ...typeof caches === "undefined" ? {} : { cacheStorage: caches }
+    // No registry is configured in the generic PWA build. Product builds inject registry config
+    // through the exported factory; this offline default performs no network at boot or refresh.
+  });
+  const managedStorage = managedRuntime.storage;
+  const managedExtensions = createManagedExtensionsController({
+    client: managedRuntime.client,
+    catalogLocation: managedRuntime.catalogLocation
+  });
   const subtle = {
     digest: (algorithm, data) => crypto.subtle.digest(algorithm, data)
   };
+  const managedRoots = await loadManagedExtensionRoots(managedStorage, {
+    subtle,
+    claimed: catalogCoordinates(WEB_EXTENSION_CATALOG)
+  });
+  for (const failure of managedRoots.failures) {
+    bootDiagnostics.push(`${failure.code}: ${failure.message}`);
+  }
   const host = {};
   const extensionsUi = mountExtensionsUi(document, {
     store: extensionStore,
     catalog: WEB_EXTENSION_CATALOG,
+    managedExtensions,
+    additionalClaimedCoordinates: managedRoots.coordinates,
     subtle,
     pickDirectory: async () => {
       const picker = window.showDirectoryPicker;
@@ -1910,10 +2090,17 @@ async function boot() {
   for (const failure of extensionsUi.current().failures) {
     bootDiagnostics.push(`${failure.code}: ${failure.message}`);
   }
+  const loadedExtensionRoots = combineLoadedExtensionRoots(managedRoots, extensionsUi.current());
   const services = await createWebSubjectServices({
     baseUrl,
     catalog: WEB_EXTENSION_CATALOG,
-    userExtensions: extensionsUi.current(),
+    // Downloaded packages precede user-picked folders. Both already passed the same root loader,
+    // and the combined serve function is the one synthetic fetch used by the worker verifier.
+    userExtensions: loadedExtensionRoots,
+    moduleMap: Object.freeze({
+      ...resolveModuleMap(baseUrl),
+      ...loadedExtensionRoots.moduleMap
+    }),
     identity: identity(),
     probe,
     dom: {
@@ -1934,7 +2121,11 @@ async function boot() {
       console.info(`[worker] ${diagnostic2.severity} ${diagnostic2.code}: ${diagnostic2.message}`);
     }
   });
-  window.addEventListener("pagehide", () => void services.dispose(), { once: true });
+  window.addEventListener(
+    "pagehide",
+    () => void Promise.all([services.dispose(), managedRuntime.dispose()]),
+    { once: true }
+  );
   host.services = services;
   await extensionsUi.reload();
   const workbench = mountWebWorkbench(
@@ -2404,7 +2595,7 @@ ${mapPreview.candidates.map(
   const store = createWebSettingsStore(window.localStorage);
   const settingsUi = createSettingsUi(document, {
     store,
-    themes: WEB_THEMES,
+    themes: appThemes,
     onAppearance(appearance) {
       applyAppearance(document.documentElement, appearance);
     },
@@ -2774,7 +2965,7 @@ async function selfTest(parts) {
   } catch (error) {
     log(`selftest: editing probe FAILED ${describe2(error)}`);
   }
-  for (const theme of WEB_THEMES) {
+  for (const theme of readAppThemeChoices(document)) {
     document.documentElement.setAttribute("data-mk-theme", theme.id);
     const accent = getComputedStyle(document.documentElement).getPropertyValue("--mk-color-accent").trim();
     log(`selftest: theme ${theme.id} accent ${accent}`);

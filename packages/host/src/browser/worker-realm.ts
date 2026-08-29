@@ -27,7 +27,7 @@ import {
   type BrowserWorkerRealmFactory,
   type BrowserWorkerRealmHandle,
 } from './worker-backend.js'
-import type { VerifiedLoaderOptions } from './verified-loader.js'
+import type { VerifiedLoaderOptions, VerifiedModuleRoot } from './verified-loader.js'
 
 // ---------------------------------------------------------------------------------------------
 // structural DOM shapes
@@ -80,17 +80,25 @@ export interface BrowserLoaderHookOptions {
   readonly objectUrls: BrowserObjectUrlLike
   /** Bare specifier → module URL (unverified, SB-1); absent bare specifiers are refused. */
   readonly moduleMap?: Readonly<Record<string, string>>
+  /** Digest-pinned extension roots whose mapped exports stay on the verified loader path. */
+  readonly verifiedModuleRoots?: readonly VerifiedModuleRoot[]
 }
 
 /** Binds the verified loader to `fetch`, WebCrypto SHA-256 and `blob:` module URLs. */
 export function browserLoaderHooks(options: BrowserLoaderHookOptions): Pick<
   VerifiedLoaderOptions,
-  'fetchBytes' | 'digest' | 'createModuleUrl' | 'resolveBare'
+  'fetchBytes' | 'digest' | 'createModuleUrl' | 'resolveBare' | 'resolvePinned'
 > & {
   /** Revokes every minted `blob:` URL (call after the worker has imported the graph). */
   revokeAll(): void
 } {
   const minted: string[] = []
+  const pinnedRoots = (options.verifiedModuleRoots ?? [])
+    .map(root => ({
+      ...root,
+      artifactRoot: root.artifactRoot.endsWith('/') ? root.artifactRoot : `${root.artifactRoot}/`,
+    }))
+    .sort((left, right) => right.artifactRoot.length - left.artifactRoot.length)
   return {
     fetchBytes: async (url, signal) => {
       const response = await options.fetch(url, signal === undefined ? {} : { signal })
@@ -111,6 +119,7 @@ export function browserLoaderHooks(options: BrowserLoaderHookOptions): Pick<
       return url
     },
     resolveBare: specifier => options.moduleMap?.[specifier],
+    resolvePinned: url => pinnedRoots.find(root => url.startsWith(root.artifactRoot)),
     revokeAll: () => {
       for (const url of minted.splice(0)) options.objectUrls.revokeObjectURL(url)
     },

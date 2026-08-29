@@ -85,6 +85,16 @@ contextBridge.exposeInMainWorld('modkitExtensions', {
   reload: () => ipcRenderer.invoke('modkit.extensions.reload'),
   /** Native directory dialog plus a probe: the coordinate the folder declares, or why not. */
   browse: () => ipcRenderer.invoke('modkit.extensions.browse'),
+  /** Read the cached/local manager state; never refreshes a registry as a side effect. */
+  managerSnapshot: () => ipcRenderer.invoke('modkit.extensions.manager.snapshot'),
+  /** The only manager call allowed to contact the configured registry. */
+  managerRefresh: () => ipcRenderer.invoke('modkit.extensions.manager.refresh'),
+  managerInstall: (id, version) =>
+    ipcRenderer.invoke('modkit.extensions.manager.install', { id, version }),
+  managerUpdate: id => ipcRenderer.invoke('modkit.extensions.manager.update', { id }),
+  managerRemove: id => ipcRenderer.invoke('modkit.extensions.manager.remove', { id }),
+  managerSetEnabled: (id, enabled) =>
+    ipcRenderer.invoke('modkit.extensions.manager.set-enabled', { id, enabled }),
 })
 
 /** Window chrome. Separate from the broker: this touches the window, never the user's files. */

@@ -1,11 +1,13 @@
 # The production bootstrap dependency closure remains core, sdk, vfs and host. Workspace membership
-# is intentionally broader so optional UI/reference extensions can run conformance and pack tests;
-# none of the entries below becomes a bootstrap dependency merely by being workspace-linked.
+# is intentionally broader so optional packages and reference extensions can run conformance and
+# pack tests; none of the entries below becomes a bootstrap dependency merely by being
+# workspace-linked.
 packages:
   - 'packages/core'
   - 'packages/sdk'
   - 'packages/vfs'
   - 'packages/host'
+  - 'packages/extension-manager'
   - 'packages/ui'
   - 'packages/testkit'
   - 'apps/*'

@@ -240,6 +240,67 @@ describe('a root that is not an extension', () => {
   }, 60_000)
 })
 
+describe('managed extension roots', () => {
+  const root = join(repositoryRoot, 'extensions', 'common', 'text-json')
+  const coordinate = 'org.modkitx/text-json'
+
+  it('composes enabled manager roots directly without a modkit.extensions entry', async () => {
+    const host = await createVsCodeSubjectHost({
+      catalogCandidates: [],
+      configuredExtensions: [],
+      managedExtensions: [{ root, expectedId: coordinate }],
+    })
+
+    expect(host.extensions.installed).toEqual([coordinate])
+    expect(host.extensions.managed).toEqual([coordinate])
+    expect(host.extensions.failures).toEqual([])
+  }, 60_000)
+
+  it('refuses a managed coordinate already claimed by a manual root instead of shadowing it', async () => {
+    const host = await createVsCodeSubjectHost({
+      catalogCandidates: [],
+      configuredExtensions: [{ path: root, id: coordinate }],
+      managedExtensions: [{ root, expectedId: coordinate }],
+    })
+
+    expect(host.extensions.installed).toEqual([coordinate])
+    expect(host.extensions.managed).toEqual([])
+    expect(host.extensions.failures).toEqual([
+      expect.objectContaining({
+        root,
+        code: 'x3.host/extension-coordinate-conflict',
+      }),
+    ])
+  }, 60_000)
+
+  it('refuses every managed root when a coordinate is duplicated', async () => {
+    const duplicate = `${root}-duplicate`
+    const host = await createVsCodeSubjectHost({
+      catalogCandidates: [],
+      configuredExtensions: [],
+      managedExtensions: [
+        { root, expectedId: coordinate },
+        { root: duplicate, expectedId: coordinate },
+      ],
+    })
+
+    expect(host.extensions.installed).toEqual([])
+    expect(host.extensions.managed).toEqual([])
+    expect(host.extensions.failures).toEqual([
+      expect.objectContaining({
+        root,
+        code: 'x3.host/extension-coordinate-conflict',
+        message: expect.stringContaining('all copies were refused'),
+      }),
+      expect.objectContaining({
+        root: duplicate,
+        code: 'x3.host/extension-coordinate-conflict',
+        message: expect.stringContaining('all copies were refused'),
+      }),
+    ])
+  }, 60_000)
+})
+
 describe('the VS Code product open path with a configured extension', () => {
   it('opens the pinned SC2Map through configured and workspace roots', async () => {
     const fixtureRoot = join(

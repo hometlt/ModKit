@@ -59,6 +59,7 @@ import type {
   BrowserFetchLike,
   BrowserResponseLike,
   BrowserSubtleCryptoLike,
+  VerifiedModuleRoot,
 } from '@modkitx-x3/host/browser'
 import {
   iterateDirectoryChildren,
@@ -99,6 +100,8 @@ export const EXTENSION_ROOT_FAILURE_CODES = Object.freeze({
   identityMismatch: 'x3.host/extension-identity-mismatch',
   permissionRequired: 'x3.host/extension-root-permission-required',
   tooLarge: 'x3.host/extension-root-too-large',
+  moduleMapInvalid: 'x3.host/extension-module-map-invalid',
+  moduleMapConflict: 'x3.host/extension-module-map-conflict',
 })
 
 /** Origin every user-picked folder is loaded under. Not a parameter — see the header, point 3. */
@@ -154,6 +157,12 @@ export interface LoadedUserExtensionRoots {
   readonly coordinates: readonly string[]
   /** Request id of every loaded folder, parallel to `inputs`, so a list can offer a Remove. */
   readonly rootIds: readonly string[]
+  /** Bare package exports mapped to digest-pinned synthetic artifact URLs. */
+  readonly moduleMap: Readonly<Record<string, string>>
+  /** Root request that owns each module-map entry, used to refuse collisions as a whole root. */
+  readonly moduleMapOwners: Readonly<Record<string, string>>
+  /** Digest contexts recognized by the worker loader for mapped cross-root imports. */
+  readonly verifiedModuleRoots: readonly (VerifiedModuleRoot & { readonly rootId: string })[]
   /**
    * Answers the synthetic artifact URLs of the folders that loaded, and nothing else. A
    * composition installs it in front of the page's own `fetch`; see `./subjects.ts`.
@@ -329,6 +338,114 @@ interface ReadRoot {
   readonly input: ExtensionInput
   /** Path → handle for every artifact file, so the synthetic fetch can re-read the bytes. */
   readonly files: ReadonlyMap<string, WebFileHandleLike>
+  readonly moduleMap: Readonly<Record<string, string>>
+  readonly verifiedModuleRoot: VerifiedModuleRoot
+}
+
+const PACKAGE_NAME = /^(?:@[A-Za-z0-9._~-]+\/[A-Za-z0-9._~-]+|[A-Za-z0-9._~-]+)$/u
+
+function moduleMapFromPackage(
+  packageJson: unknown,
+  artifactRoot: string,
+  fileDigests: Readonly<Record<string, string>>,
+): Readonly<Record<string, string>> {
+  if (typeof packageJson !== 'object' || packageJson === null) return Object.freeze({})
+  const candidate = packageJson as { readonly name?: unknown; readonly exports?: unknown }
+  if (candidate.exports === undefined) return Object.freeze({})
+  if (typeof candidate.name !== 'string' || !PACKAGE_NAME.test(candidate.name)) {
+    throw refuse(
+      EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+      'package.json with exports must declare a bounded bare package name',
+      { field: 'name' },
+    )
+  }
+
+  const declared: readonly (readonly [string, unknown])[] =
+    typeof candidate.exports === 'string'
+      ? [['.', candidate.exports]]
+      : typeof candidate.exports === 'object' && candidate.exports !== null
+        ? Object.entries(candidate.exports as Readonly<Record<string, unknown>>)
+        : []
+  if (declared.length === 0 && candidate.exports !== undefined) {
+    throw refuse(
+      EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+      'package.json exports must be a relative string or a subpath-to-file object',
+      { field: 'exports' },
+    )
+  }
+
+  const map = new Map<string, string>()
+  for (const [subpath, target] of declared) {
+    if ((subpath !== '.' && !subpath.startsWith('./')) || typeof target !== 'string') {
+      throw refuse(
+        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+        `package export «${subpath}» must map directly to one relative file`,
+        { subpath },
+      )
+    }
+    if (
+      !target.startsWith('./') ||
+      target.includes('\\') ||
+      target.includes('?') ||
+      target.includes('#') ||
+      target
+        .slice(2)
+        .split('/')
+        .some(part => part === '' || part === '.' || part === '..')
+    ) {
+      throw refuse(
+        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+        `package export «${subpath}» escapes or does not name a bounded relative file`,
+        { subpath, target },
+      )
+    }
+    const subpathStars = [...subpath.matchAll(/\*/gu)].length
+    const targetStars = [...target.matchAll(/\*/gu)].length
+    if (subpathStars !== targetStars || subpathStars > 1) {
+      throw refuse(
+        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+        `package export «${subpath}» must use at most one matching wildcard`,
+        { subpath, target },
+      )
+    }
+    const targetRelative = target.slice(2)
+    const targets: readonly (readonly [string, string])[] =
+      targetStars === 0
+        ? [[subpath, targetRelative]]
+        : Object.keys(fileDigests)
+            .map(path => {
+              const [prefix = '', suffix = ''] = targetRelative.split('*')
+              if (!path.startsWith(prefix) || !path.endsWith(suffix)) return undefined
+              const capture = path.slice(prefix.length, path.length - suffix.length)
+              if (capture === '') return undefined
+              return [subpath.replace('*', capture), path] as const
+            })
+            .filter((entry): entry is readonly [string, string] => entry !== undefined)
+    if (
+      targets.length === 0 ||
+      targets.some(([, relative]) => fileDigests[relative] === undefined)
+    ) {
+      throw refuse(
+        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+        `package export «${subpath}» targets no inventoried file`,
+        { subpath, target },
+      )
+    }
+    for (const [resolvedSubpath, relative] of targets) {
+      const specifier =
+        resolvedSubpath === '.' ? candidate.name : `${candidate.name}/${resolvedSubpath.slice(2)}`
+      const url = new URL(relative, artifactRoot).href
+      if (map.has(specifier) && map.get(specifier) !== url) {
+        throw refuse(
+          EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+          `package exports declare duplicate specifier «${specifier}»`,
+          { specifier },
+        )
+      }
+      map.set(specifier, url)
+    }
+  }
+  return Object.freeze(Object.fromEntries(map))
 }
 
 /**
@@ -409,8 +526,11 @@ async function readGrantedRoot(
   }
 
   const artifactRoot = userExtensionArtifactRoot(request.id)
+  const moduleMap = moduleMapFromPackage(containers.packageJson, artifactRoot, fileDigests)
   return {
     files: handles,
+    moduleMap,
+    verifiedModuleRoot: Object.freeze({ artifactRoot, fileDigests: Object.freeze(fileDigests) }),
     input: {
       source: `user-folder/${label}`,
       containers,
@@ -540,6 +660,11 @@ export async function loadUserExtensionRoots(
   const rootIds: string[] = []
   const served = new Map<string, ReadonlyMap<string, WebFileHandleLike>>()
   const claimed = new Set(options.claimed ?? [])
+  const moduleMaps = new Map<string, Readonly<Record<string, string>>>()
+  const verifiedRoots = new Map<string, VerifiedModuleRoot>()
+  const specifierOwner = new Map<string, string>()
+  const conflictedRoots = new Set<string>()
+  const reportedConflicts = new Set<string>()
 
   for (const request of requests) {
     options.signal?.throwIfAborted()
@@ -598,13 +723,53 @@ export async function loadUserExtensionRoots(
     rootIds.push(request.id)
     inputs.push(read.input)
     served.set(request.id, read.files)
+    moduleMaps.set(request.id, read.moduleMap)
+    verifiedRoots.set(request.id, read.verifiedModuleRoot)
+    for (const specifier of Object.keys(read.moduleMap)) {
+      const existing = specifierOwner.get(specifier)
+      if (existing === undefined) {
+        specifierOwner.set(specifier, request.id)
+        continue
+      }
+      conflictedRoots.add(existing)
+      conflictedRoots.add(request.id)
+      for (const owner of [existing, request.id]) {
+        const key = `${owner}\0${specifier}`
+        if (reportedConflicts.has(key)) continue
+        reportedConflicts.add(key)
+        failures.push({
+          root: owner,
+          rootId: owner,
+          code: EXTENSION_ROOT_FAILURE_CODES.moduleMapConflict,
+          message: `bare module specifier «${specifier}» is exported by more than one extension root; every claimant is refused`,
+        })
+      }
+    }
+  }
+
+  const kept = rootIds
+    .map((rootId, index) => ({ rootId, index }))
+    .filter(({ rootId }) => !conflictedRoots.has(rootId))
+  const moduleMapEntries = new Map<string, string>()
+  const moduleMapOwnerEntries = new Map<string, string>()
+  const keptVerifiedRoots: (VerifiedModuleRoot & { readonly rootId: string })[] = []
+  for (const { rootId } of kept) {
+    for (const [specifier, url] of Object.entries(moduleMaps.get(rootId) ?? {})) {
+      moduleMapEntries.set(specifier, url)
+      moduleMapOwnerEntries.set(specifier, rootId)
+    }
+    const verified = verifiedRoots.get(rootId)
+    if (verified !== undefined) keptVerifiedRoots.push(Object.freeze({ ...verified, rootId }))
   }
 
   return Object.freeze({
-    inputs: Object.freeze(inputs),
+    inputs: Object.freeze(kept.map(({ index }) => inputs[index] as ExtensionInput)),
     failures: Object.freeze(failures),
-    coordinates: Object.freeze(coordinates),
-    rootIds: Object.freeze(rootIds),
+    coordinates: Object.freeze(kept.map(({ index }) => coordinates[index] as string)),
+    rootIds: Object.freeze(kept.map(({ rootId }) => rootId)),
+    moduleMap: Object.freeze(Object.fromEntries(moduleMapEntries)),
+    moduleMapOwners: Object.freeze(Object.fromEntries(moduleMapOwnerEntries)),
+    verifiedModuleRoots: Object.freeze(keptVerifiedRoots),
     serve: createUserExtensionFetch(served),
   })
 }
@@ -615,5 +780,8 @@ export const NO_USER_EXTENSION_ROOTS: LoadedUserExtensionRoots = Object.freeze({
   failures: Object.freeze([]),
   coordinates: Object.freeze([]),
   rootIds: Object.freeze([]),
+  moduleMap: Object.freeze({}),
+  moduleMapOwners: Object.freeze({}),
+  verifiedModuleRoots: Object.freeze([]),
   serve: async (url: string) => notFound(url),
 })

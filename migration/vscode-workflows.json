@@ -339,6 +339,48 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.extensions.disable",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.disable",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.extensions.enable",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.enable",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.extensions.install",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.install",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.extensions.refresh",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.refresh",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.extensions.remove",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.remove",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.extensions.update",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.update",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.game.launchActiveMap",
       "kind": "vscode-command",
       "key": "modkit.game.launchActiveMap",
@@ -440,6 +482,13 @@
       "factId": "x3:vscode-configuration-property:modkit.disabledContributions",
       "kind": "vscode-configuration-property",
       "key": "modkit.disabledContributions",
+      "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-configuration-property:modkit.extensionRegistry",
+      "kind": "vscode-configuration-property",
+      "key": "modkit.extensionRegistry",
       "workflowId": "vscode/manifest-settings",
       "state": "observed-only"
     },
@@ -681,7 +730,7 @@
         "owner": "apps/modkit-vscode and packages/ui",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
-        "reason": "Every focused installation, source, launch, diagnostics and renderer setting has an explicit generic setting, provider option, host policy or workflow mapping."
+        "reason": "Every focused installation, source, launch, diagnostics and renderer setting has an explicit generic setting, provider option, host policy or workflow mapping; the extension registry is an explicit catalog source whose network refresh requires a user command."
       }
     },
     {
@@ -750,7 +799,7 @@
         "owner": "apps/modkit-vscode and packages/host",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/recovery",
-        "reason": "Generic provider discovery, installed-game selection, persisted content-source configuration, unload, permission handling and recovery form one accepted lifecycle."
+        "reason": "Generic provider discovery, installed-game selection, persisted content-source configuration, extension install/update/remove and enable/disable commands, unload, permission handling and recovery form one accepted lifecycle."
       }
     },
     {

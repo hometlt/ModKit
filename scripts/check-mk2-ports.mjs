@@ -5,6 +5,8 @@ import { basename, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
+import { productExtensionDirectory } from './lib/external-extension-roots.mjs'
+
 const args = process.argv.slice(2)
 const argValue = flag => {
   const index = args.indexOf(flag)
@@ -54,6 +56,17 @@ for (const [group, root] of groupRoots) {
 }
 for (const key of Object.keys(ratchet.families)) {
   if (familySources.has(key)) continue
+  if (explicitRoot === undefined) {
+    // The authored workspace manifest owns legacy-family relocation. This keeps the ratchet
+    // neutral: moving Blizzard, Warzone or any future publisher out of the core repository does
+    // not require a hardcoded publisher list here, and a missing configured source remains a
+    // visible zero below.
+    const relocated = productExtensionDirectory(repoRoot, key.split('/'))
+    if (existsSync(relocated)) {
+      familySources.set(key, join(relocated, 'src'))
+      continue
+    }
+  }
   const groupRoot = groupRoots.get(key.slice(0, key.indexOf('/')))
   // A ratcheted family whose directory is gone still gets a row, and so a visible zero.
   familySources.set(key, groupRoot ? join(groupRoot, key.slice(key.indexOf('/') + 1), 'src') : '')

@@ -6,8 +6,8 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:42b95de4e6fa7a42e21c6ed34913ef98b0f7890dca44e368dec6788c2723e688",
-      "size": 41435136
+      "sha256": "sha256:35bcddc575774eea6430c72c4f757dc1261ac8fee142fd33bf0df72384a4dd39",
+      "size": 40004096
     },
     {
       "catalog": [
@@ -283,7 +283,7 @@
       },
       {
         "path": "scripts/bundle-hashes.json",
-        "sha256": "sha256:30435c7932c277802d42afe049f10c12189360f5556a5621e4bd3fbe8b592844"
+        "sha256": "sha256:b849c77fe058cd5eb028d64e1b7a4d971e2869572649f66dcb47fda94f96681d"
       }
     ],
     "closure": "mk3-ga",
@@ -377,7 +377,7 @@
   },
   "licenseNotices": {
     "file": "LICENSE-NOTICES.txt",
-    "sha256": "sha256:99fae948e459dfb0e8817aee08b445084e3e56b9509799f77042d25ca9dbbcac"
+    "sha256": "sha256:1a4f1811b0022f09f3a6aa943aa7c2289ce5609d2b172e27d8ce6df558659e36"
   },
   "release": {
     "authenticode": false,
@@ -387,7 +387,7 @@
       "cleanMachineInstaller": true,
       "instructions": {
         "file": "INSTALL.md",
-        "sha256": "sha256:330eaa2f15de5656495ff15517d92b236d88d435a773e23d66cf49ef567a44ae"
+        "sha256": "sha256:9b58bd2f253b2b5e62635a01b0ff3687b961e7348bd7d7d1a076dec23cce0653"
       },
       "kind": "verified-versioned-local-store",
       "remainder": null
@@ -398,7 +398,7 @@
   "sbom": {
     "file": "sbom.cdx.json",
     "format": "CycloneDX-1.5",
-    "sha256": "sha256:8fcfed9965b424a9221ac5b8a619065a59fabb501fa815b15be48001a406d2c9"
+    "sha256": "sha256:8008ecd216f91bb82290622a5c50c8ce800ea86f8f24247de7c500273e30578f"
   },
   "schemaVersion": "release-manifest-1",
   "signing": {

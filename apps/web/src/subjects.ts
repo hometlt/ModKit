@@ -153,8 +153,6 @@ export const WEB_WORKER_MODULE_MAP: Readonly<Record<string, string>> = Object.fr
   '@modkitx-x3/codec-kit/text': 'vendor/codec-kit/text/index.js',
   '@modkitx-x3/core': 'vendor/core/index.js',
   '@modkitx-x3/sdk': 'vendor/sdk/index.js',
-  'modkit-extension-x3-blizzard-mpq/fresh-writer': 'vendor/blizzard-mpq/fresh-writer.js',
-  'modkit-extension-x3-blizzard-mpq/native-preserving': 'vendor/blizzard-mpq/native-preserving.js',
 })
 
 /** The published worker entry as the build serves it. */
@@ -255,6 +253,22 @@ export async function createWebSubjectServices(
     ),
   ]
   const user = options.userExtensions ?? NO_USER_EXTENSION_ROOTS
+  const protectedPlatformModuleMap = resolveModuleMap(options.baseUrl)
+  const suppliedModuleMap = options.moduleMap ?? protectedPlatformModuleMap
+  const platformConflictedRoots = new Set<string>()
+  const platformModuleConflicts: UserExtensionRootFailure[] = []
+  for (const specifier of Object.keys(user.moduleMap)) {
+    if (!Object.hasOwn(protectedPlatformModuleMap, specifier)) continue
+    const owner = user.moduleMapOwners[specifier]
+    if (owner === undefined || platformConflictedRoots.has(owner)) continue
+    platformConflictedRoots.add(owner)
+    platformModuleConflicts.push({
+      root: owner,
+      rootId: owner,
+      code: 'x3.host/extension-module-map-conflict',
+      message: `extension root exports protected platform specifier «${specifier}» and is refused`,
+    })
+  }
   // First wins, second reported. A caller that passed the catalog's coordinates as `claimed`
   // has already seen these; a caller that did not still cannot end up with two loaded claimants,
   // because resolution order would then decide which extension a user actually gets.
@@ -264,13 +278,15 @@ export async function createWebSubjectServices(
     if (coordinate !== undefined) claimed.add(coordinate)
   }
   const userInputs: ExtensionInput[] = []
-  const userExtensionConflicts: UserExtensionRootFailure[] = []
+  const userExtensionConflicts: UserExtensionRootFailure[] = [...platformModuleConflicts]
   for (const [index, input] of user.inputs.entries()) {
+    const rootId = user.rootIds[index] ?? input.source
+    if (platformConflictedRoots.has(rootId)) continue
     const coordinate = user.coordinates[index] ?? extensionCoordinate(input)
     if (coordinate !== undefined && claimed.has(coordinate)) {
       userExtensionConflicts.push({
         root: input.source,
-        rootId: user.rootIds[index] ?? input.source,
+        rootId,
         code: 'x3.host/extension-coordinate-conflict',
         message: `«${coordinate}» is already loaded from another root; this one is ignored`,
       })
@@ -296,6 +312,19 @@ export async function createWebSubjectServices(
   const pageFetch = options.dom.fetch
   const fetch: BrowserFetchLike = (url, init) =>
     isUserExtensionUrl(url) ? user.serve(url, init) : pageFetch(url, init)
+  const moduleMapEntries = new Map(Object.entries(suppliedModuleMap))
+  for (const specifier of Object.keys(user.moduleMap)) {
+    if (!Object.hasOwn(protectedPlatformModuleMap, specifier)) moduleMapEntries.delete(specifier)
+  }
+  for (const [specifier, url] of Object.entries(user.moduleMap)) {
+    const owner = user.moduleMapOwners[specifier]
+    if (owner === undefined || platformConflictedRoots.has(owner)) continue
+    moduleMapEntries.set(specifier, url)
+  }
+  const moduleMap = Object.freeze(Object.fromEntries(moduleMapEntries))
+  const verifiedModuleRoots = user.verifiedModuleRoots.filter(
+    root => !platformConflictedRoots.has(root.rootId),
+  )
   /*
    * Composed by hand rather than through `createBrowserExecutionBackends` for one reason: that
    * helper does not forward the verified loader's `maxFiles`/`maxTotalBytes`, and a host that
@@ -308,7 +337,8 @@ export async function createWebSubjectServices(
     subtle: options.dom.subtle,
     Blob: options.dom.Blob,
     objectUrls: options.dom.objectUrls,
-    moduleMap: options.moduleMap ?? resolveModuleMap(options.baseUrl),
+    moduleMap,
+    verifiedModuleRoots,
   })
   const executionBackends = createExecutionBackendRegistry([
     createBrowserWorkerBackend({

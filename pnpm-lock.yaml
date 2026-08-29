@@ -26,6 +26,9 @@ importers:
       '@modkitx-x3/vfs':
         specifier: workspace:*
         version: link:packages/vfs
+      '@modkitx/extension-manager':
+        specifier: workspace:*
+        version: link:packages/extension-manager
       '@types/node':
         specifier: ^22.5.0
         version: 22.20.1
@@ -77,6 +80,9 @@ importers:
       '@modkitx-x3/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@modkitx/extension-manager':
+        specifier: workspace:*
+        version: link:../../packages/extension-manager
     devDependencies:
       electron:
         specifier: ^43.4.0
@@ -133,6 +139,9 @@ importers:
       '@modkitx-x3/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@modkitx/extension-manager':
+        specifier: workspace:*
+        version: link:../../packages/extension-manager
     devDependencies:
       '@types/vscode':
         specifier: ^1.125.0
@@ -167,6 +176,9 @@ importers:
       '@modkitx-x3/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@modkitx/extension-manager':
+        specifier: workspace:*
+        version: link:../../packages/extension-manager
 
   extensions/_reference/counter-runtime:
     dependencies:
@@ -626,6 +638,12 @@ importers:
 
   packages/core: {}
 
+  packages/extension-manager:
+    dependencies:
+      '@modkitx-x3/vfs':
+        specifier: workspace:*
+        version: link:../vfs
+
   packages/host:
     dependencies:
       '@modkitx-x3/core':
@@ -637,6 +655,9 @@ importers:
       '@modkitx-x3/vfs':
         specifier: workspace:*
         version: link:../vfs
+      es-module-lexer:
+        specifier: ^1.7.0
+        version: 1.7.0
 
   packages/sdk:
     dependencies:

@@ -42,7 +42,7 @@ const activationBudget = {
 const sessionBudget = { maxWallTimeMs: 100, maxTicks: 1_000, maxMemoryBytes: 1_000_000 }
 
 async function runSealedLegacyOracle(source: string, entrypoint: string, steps: number) {
-  const legacyRoot = resolve(repoRoot, '..', 'modkitx')
+  const legacyRoot = resolve(repoRoot, '..', 'references', 'modkitmk2')
   const lock = JSON.parse(
     await readFile(join(repoRoot, 'migration', 'oracle', 'legacy-oracle.lock.json'), 'utf8'),
   ) as { readonly legacy: { readonly headCommit: string } }

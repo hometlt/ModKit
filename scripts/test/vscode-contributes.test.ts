@@ -35,11 +35,18 @@ function run(output = generated, packageManifest = manifest) {
 
 describe('generated VS Code contributions', () => {
   it('pins generated contributions and their ordered activation events to package.json', () => {
+    const authorityDocument = JSON.parse(readFileSync(authority, 'utf8'))
+    const expectedActivationEventCount =
+      authorityDocument.commands.length +
+      authorityDocument.customEditors.length +
+      Object.values(authorityDocument.views as Record<string, unknown[]>).flat().length +
+      authorityDocument.fileSystemSchemes.length
     const result = run()
 
+    expect(expectedActivationEventCount).toBe(28)
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
-    expect(result.stdout).toContain('22 activation events')
+    expect(result.stdout).toContain(`${expectedActivationEventCount} activation events`)
   })
 
   it('rejects a package contribution that is absent from the generated authority', () => {

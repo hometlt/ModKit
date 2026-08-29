@@ -141,7 +141,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       },
       decisionRequired: 0,
       releaseCandidateGaps: 0,
-      currentX3ObservedFacts: 32,
+      currentX3ObservedFacts: 39,
     })
     expect(ledger.counts.byKind).toEqual({
       'cli-command': 5,
@@ -238,13 +238,13 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
     ).toHaveLength(62)
   })
 
-  it('records the factual 64→18, 11→1, 8→6 and 6→2 surface change', () => {
+  it('records the factual 64→24, 11→1, 8→6 and 6→2 surface change', () => {
     const ledger = JSON.parse(readFileSync(committedLedger, 'utf8'))
     expect(ledger.surfaceComparison).toEqual({
       legacyVsCode: { commands: 64, customEditors: 11, languages: 8, views: 6 },
       currentX3VsCode: {
-        commands: 18,
-        configurationProperties: 2,
+        commands: 24,
+        configurationProperties: 3,
         customEditors: 1,
         fileSystemSchemes: 1,
         keybindings: 0,
@@ -274,16 +274,78 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       'Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.',
     )
     expect(status).not.toContain('PWA не заявлен')
-    expect(ledger.currentX3Facts).toHaveLength(32)
+    expect(ledger.currentX3Facts).toHaveLength(39)
     expect(
       ledger.currentX3Facts.every((row: { state: string }) => row.state === 'observed-only'),
     ).toBe(true)
+    expect(
+      ledger.currentX3Facts
+        .filter(
+          (row: { key: string }) =>
+            row.key.startsWith('modkit.extensions.') || row.key === 'modkit.extensionRegistry',
+        )
+        .map((row: { key: string; kind: string; source: string; workflowId: string }) => ({
+          key: row.key,
+          kind: row.kind,
+          source: row.source.replace(/\[\d+\]$/, '[index]'),
+          workflowId: row.workflowId,
+        })),
+    ).toEqual([
+      {
+        key: 'modkit.extensions.disable',
+        kind: 'vscode-command',
+        source: 'contributes.commands[index]',
+        workflowId: 'vscode/source-workspace-lifecycle',
+      },
+      {
+        key: 'modkit.extensions.enable',
+        kind: 'vscode-command',
+        source: 'contributes.commands[index]',
+        workflowId: 'vscode/source-workspace-lifecycle',
+      },
+      {
+        key: 'modkit.extensions.install',
+        kind: 'vscode-command',
+        source: 'contributes.commands[index]',
+        workflowId: 'vscode/source-workspace-lifecycle',
+      },
+      {
+        key: 'modkit.extensions.refresh',
+        kind: 'vscode-command',
+        source: 'contributes.commands[index]',
+        workflowId: 'vscode/source-workspace-lifecycle',
+      },
+      {
+        key: 'modkit.extensions.remove',
+        kind: 'vscode-command',
+        source: 'contributes.commands[index]',
+        workflowId: 'vscode/source-workspace-lifecycle',
+      },
+      {
+        key: 'modkit.extensions.update',
+        kind: 'vscode-command',
+        source: 'contributes.commands[index]',
+        workflowId: 'vscode/source-workspace-lifecycle',
+      },
+      {
+        key: 'modkit.extensionRegistry',
+        kind: 'vscode-configuration-property',
+        source: 'contributes.configuration.modkit.extensionRegistry',
+        workflowId: 'vscode/manifest-settings',
+      },
+    ])
     expect(ledger.deadCommandRatchet).toEqual({
       publicContributedCommands: [
         'modkit.addExtensionFolder',
         'modkit.browseContainer',
         'modkit.explainResolution',
         'modkit.exportDiagnostics',
+        'modkit.extensions.disable',
+        'modkit.extensions.enable',
+        'modkit.extensions.install',
+        'modkit.extensions.refresh',
+        'modkit.extensions.remove',
+        'modkit.extensions.update',
         'modkit.game.launchActiveMap',
         'modkit.materializeContainerEntry',
         'modkit.navigateResource',
@@ -304,6 +366,12 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.browseContainer',
         'modkit.explainResolution',
         'modkit.exportDiagnostics',
+        'modkit.extensions.disable',
+        'modkit.extensions.enable',
+        'modkit.extensions.install',
+        'modkit.extensions.refresh',
+        'modkit.extensions.remove',
+        'modkit.extensions.update',
         'modkit.game.launchActiveMap',
         'modkit.materializeContainerEntry',
         'modkit.navigateResource',

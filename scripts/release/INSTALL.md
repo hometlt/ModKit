@@ -74,7 +74,7 @@ pnpm release:verify -- --out <FRESH-RC> --public-key <PUBLIC-KEY>
 В RC входят платформа, общий набор расширений, профили `sc2-mod-studio` и
 `warzone-2100-studio`, а также SBOM, сведения о лицензиях и эта инструкция. Код Blizzard и
 Warzone в архив платформы не копируется: репозитории `modkit-blizzard` и `modkit-warzone` должны
-лежать рядом с `modkitX3`, либо их пути задаются через `MODKIT_BLIZZARD_ROOT` и
+лежать рядом с `modkit-core`, либо их пути задаются через `MODKIT_BLIZZARD_ROOT` и
 `MODKIT_WARZONE_ROOT`. Подпись Ed25519 защищает манифест, а манифест хранит SHA-256 и размер
 каждого артефакта.
 

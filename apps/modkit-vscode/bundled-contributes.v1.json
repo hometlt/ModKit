@@ -6,6 +6,30 @@
       "title": "Modkit: Add Extension Folder…"
     },
     {
+      "command": "modkit.extensions.disable",
+      "title": "Modkit: Disable Extension…"
+    },
+    {
+      "command": "modkit.extensions.enable",
+      "title": "Modkit: Enable Extension…"
+    },
+    {
+      "command": "modkit.extensions.install",
+      "title": "Modkit: Install Extension…"
+    },
+    {
+      "command": "modkit.extensions.refresh",
+      "title": "Modkit: Refresh Extension Catalog"
+    },
+    {
+      "command": "modkit.extensions.remove",
+      "title": "Modkit: Remove Extension…"
+    },
+    {
+      "command": "modkit.extensions.update",
+      "title": "Modkit: Update Extension…"
+    },
+    {
       "command": "modkit.explainResolution",
       "title": "Modkit: Explain Resolution"
     },
@@ -103,6 +127,11 @@
             }
           ]
         }
+      },
+      "modkit.extensionRegistry": {
+        "type": "string",
+        "default": "",
+        "markdownDescription": "Catalog file or HTTPS URL used by the extension manager. Opening the Extensions view reads only its local cache; the registry is contacted only by `Modkit: Refresh Extension Catalog`. `MODKIT_EXTENSION_REGISTRY` is used when this setting is empty. Remote catalogs also require an Ed25519 key map in `MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS`; remote artifact origins stay blocked unless listed in `MODKIT_EXTENSION_ALLOWED_ORIGINS`."
       },
       "modkit.disabledContributions": {
         "type": "array",

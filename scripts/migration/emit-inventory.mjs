@@ -14,7 +14,8 @@
 // The legacy worktree IS the sealed state, so file contents are read from disk.
 //
 // Roots are named, never absolute: `legacy` and `docs` resolve through the uncommitted
-// migration/oracle/local/legacy-environment.local.json (fallbacks ../modkitx and ../docs).
+// migration/oracle/local/legacy-environment.local.json (fallbacks
+// ../references/modkitmk2 and ../references/modkit-docs).
 //
 // Determinism: no timestamps, no counters, no UUIDs inside the artifact. Freshness is proved by
 // re-running the generator (`--check`), not by a recorded date.
@@ -103,9 +104,12 @@ function resolveRoots() {
   if (existsSync(localDescriptorPath)) descriptor = readJson(localDescriptorPath)
   const legacy = path.resolve(
     repoRoot,
-    descriptor.legacyRoot ?? path.join(repoRoot, '..', 'modkitx'),
+    descriptor.legacyRoot ?? path.join(repoRoot, '..', 'references', 'modkitmk2'),
   )
-  const docs = path.resolve(repoRoot, descriptor.docsRoot ?? path.join(repoRoot, '..', 'docs'))
+  const docs = path.resolve(
+    repoRoot,
+    descriptor.docsRoot ?? path.join(repoRoot, '..', 'references', 'modkit-docs'),
+  )
   if (!existsSync(path.join(legacy, '.git'))) {
     environmentRequired(
       'sealed legacy oracle root is unavailable; set legacyRoot in migration/oracle/local/legacy-environment.local.json',

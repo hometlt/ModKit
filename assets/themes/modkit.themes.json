@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "themes": [
+    {
+      "id": "modkit-dark",
+      "label": "Modkit Dark",
+      "stylesheet": "modkit-ui.css"
+    },
+    {
+      "id": "modkit-light",
+      "label": "Modkit Light",
+      "stylesheet": "modkit-ui.css"
+    },
+    {
+      "id": "modkit-high-contrast",
+      "label": "High contrast",
+      "stylesheet": "modkit-ui.css"
+    },
+    {
+      "id": "nexus-forge",
+      "label": "Nexus Forge",
+      "stylesheet": "nexus-forge/theme.css"
+    },
+    {
+      "id": "nexus-dominion",
+      "label": "Nexus Dominion",
+      "stylesheet": "nexus-dominion/theme.css"
+    }
+  ]
+}

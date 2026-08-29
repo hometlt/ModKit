@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkit.dev/schemas/modkit.extensions.lock.schema.json",
+  "title": "Modkit extension lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "extensions"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "extensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "source", "version", "digest"],
+        "properties": {
+          "id": { "type": "string", "minLength": 3 },
+          "source": { "type": "string", "minLength": 1 },
+          "version": { "type": "string", "minLength": 1 },
+          "digest": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" }
+        }
+      }
+    }
+  }
+}

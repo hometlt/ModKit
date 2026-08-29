@@ -80,7 +80,7 @@ function resolveLegacyRoot() {
       return path.resolve(descriptor.legacyRoot)
     }
   }
-  return path.resolve(repoRoot, '..', 'modkitx')
+  return path.resolve(repoRoot, '..', 'references', 'modkitmk2')
 }
 
 function verifySealedCanonical(legacyRoot, lock) {

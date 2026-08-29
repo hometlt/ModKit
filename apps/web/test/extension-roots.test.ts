@@ -18,6 +18,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ModkitError } from '@modkitx-x3/core'
 import { commandRequest } from '@modkitx-x3/host'
+import { loadVerifiedModuleGraph } from '@modkitx-x3/host/browser'
 import { proves } from '@modkitx-x3/testkit'
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import {
@@ -161,6 +162,34 @@ const load = async (
   extra: Partial<{ claimed: readonly string[]; maxFiles: number; maxTotalBytes: number }> = {},
 ): Promise<LoadedUserExtensionRoots> => loadUserExtensionRoots(requests, { subtle, ...extra })
 
+function authoredTree(
+  packageName: string,
+  id: string,
+  exports: Readonly<Record<string, string>>,
+  files: Readonly<Record<string, string>>,
+): FakeTree {
+  return new Map([
+    [
+      'package.json',
+      encoder.encode(
+        JSON.stringify({
+          name: packageName,
+          version: '1.0.0',
+          type: 'module',
+          exports,
+          modkit: {
+            schemaVersion: 1,
+            publisher: 'org.example',
+            id,
+            contributionManifests: [],
+          },
+        }),
+      ),
+    ],
+    ...Object.entries(files).map(([path, source]) => [path, encoder.encode(source)] as const),
+  ])
+}
+
 afterEach(() => {
   spawned.splice(0)
 })
@@ -168,6 +197,99 @@ afterEach(() => {
 // ---------------------------------------------------------------------------------------------
 
 describe('user extension folders — loading', () => {
+  it('derives a multi-root module map and verifies a cross-root bare import', async () => {
+    const dependency = authoredTree(
+      'example-dependency',
+      'dependency',
+      { './value': './src/value.js' },
+      { 'src/value.js': 'export const answer = 42' },
+    )
+    const consumer = authoredTree(
+      'example-consumer',
+      'consumer',
+      { '.': './src/index.js' },
+      {
+        'src/index.js':
+          "import { answer } from 'example-dependency/value'; export const result = answer + 1",
+      },
+    )
+    const loaded = await load([
+      request('dependency', directoryHandle('dependency', dependency)),
+      request('consumer', directoryHandle('consumer', consumer)),
+    ])
+
+    expect(loaded.failures).toEqual([])
+    expect(Object.keys(loaded.moduleMap).sort()).toEqual([
+      'example-consumer',
+      'example-dependency/value',
+    ])
+    const consumerInput = loaded.inputs[loaded.rootIds.indexOf('consumer')]
+    if (consumerInput === undefined) throw new Error('consumer root did not load')
+    if (consumerInput.artifact.fileDigests === undefined) {
+      throw new Error('consumer root did not expose verified file digests')
+    }
+    const graph = await loadVerifiedModuleGraph('./src/index.js', {
+      artifactRoot: consumerInput.artifact.artifactRoot.href,
+      fileDigests: consumerInput.artifact.fileDigests,
+      fetchBytes: async url => {
+        const response = await loaded.serve(url)
+        if (!response.ok) throw new Error(`404 ${url}`)
+        return new Uint8Array(await response.arrayBuffer())
+      },
+      digest: async bytes => {
+        const hash = new Uint8Array(await webcrypto.subtle.digest('SHA-256', bytes))
+        return `sha256:${Buffer.from(hash).toString('hex')}`
+      },
+      createModuleUrl: source =>
+        `data:text/javascript;base64,${Buffer.from(source, 'utf8').toString('base64')}`,
+      resolveBare: specifier => loaded.moduleMap[specifier],
+      resolvePinned: url =>
+        loaded.verifiedModuleRoots.find(root => url.startsWith(root.artifactRoot)),
+    })
+    expect(graph.unverified).toEqual([])
+    expect([...graph.verified].sort()).toEqual(['src/index.js', 'src/value.js'])
+    expect(((await import(graph.url)) as { readonly result: number }).result).toBe(43)
+  })
+
+  it('refuses traversing exports and every claimant of a colliding package specifier', async () => {
+    const traversal = authoredTree(
+      'example-traversal',
+      'traversal',
+      { '.': '../escape.js' },
+      { 'escape.js': 'export {}' },
+    )
+    const invalid = await load([request('traversal', directoryHandle('traversal', traversal))])
+    expect(invalid.inputs).toEqual([])
+    expect(invalid.failures[0]?.code).toBe(EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid)
+
+    const first = authoredTree(
+      'example-collision',
+      'first',
+      { '.': './index.js' },
+      {
+        'index.js': 'export const owner = 1',
+      },
+    )
+    const second = authoredTree(
+      'example-collision',
+      'second',
+      { '.': './index.js' },
+      {
+        'index.js': 'export const owner = 2',
+      },
+    )
+    const collision = await load([
+      request('first', directoryHandle('first', first)),
+      request('second', directoryHandle('second', second)),
+    ])
+    expect(collision.inputs).toEqual([])
+    expect(collision.moduleMap).toEqual({})
+    expect(
+      collision.failures.filter(
+        failure => failure.code === EXTENSION_ROOT_FAILURE_CODES.moduleMapConflict,
+      ),
+    ).toHaveLength(2)
+  })
   it('a real extension folder loads with the right coordinate, and with the digests Node computes', async () => {
     const { loadExtensionDirectory } = await import('@modkitx-x3/host/node')
     const files = treeFromDisk(imagesRoot)
@@ -381,6 +503,37 @@ async function servicesOverUserFolder(
 }
 
 describe('user extension folders — the whole path', () => {
+  it('protects bundled platform specifiers by refusing the exporting external root', async () => {
+    const spoofed = authoredTree(
+      '@modkitx-x3/core',
+      'platform-spoof',
+      { '.': './index.js' },
+      {
+        'index.js': 'export const spoofed = true',
+      },
+    )
+    const loaded = await load([request('platform-spoof', directoryHandle('spoof', spoofed))])
+    expect(loaded.inputs).toHaveLength(1)
+    const services = await createWebSubjectServices({
+      baseUrl: ORIGIN,
+      catalog: { schemaVersion: 1, extensions: [], excluded: [] },
+      userExtensions: loaded,
+      identity,
+      probe,
+      dom: domGlobals(diskOrigin().fetch),
+      moduleMap: nodeModuleMap,
+      serviceDefinitions: false,
+    })
+    expect(services.supportedExtensions).toEqual([])
+    expect(services.userExtensionConflicts).toEqual([
+      expect.objectContaining({
+        rootId: 'platform-spoof',
+        code: EXTENSION_ROOT_FAILURE_CODES.moduleMapConflict,
+      }),
+    ])
+    await services.dispose()
+  })
+
   it('a granted folder supplies a real codec: worker-brokered, from bytes verified against the digests this page took', async () => {
     const files = treeFromDisk(imagesRoot)
     const loaded = await load([request('root-images', directoryHandle('images', files))])
@@ -413,11 +566,16 @@ describe('user extension folders — the whole path', () => {
 
   it('opens the pinned SC2Map from a selected content folder through a user extension folder', async () => {
     const starcraft2Root = join(repositoryRoot, '..', 'modkit-blizzard', 'starcraft2')
+    const mpqRoot = join(repositoryRoot, '..', 'modkit-blizzard', 'mpq')
     const loaded = await load([
+      request('root-mpq', directoryHandle('mpq', treeFromDisk(mpqRoot))),
       request('root-starcraft2', directoryHandle('starcraft2', treeFromDisk(starcraft2Root))),
     ])
     expect(loaded.failures).toEqual([])
-    expect(loaded.coordinates).toEqual(['org.modkitx.blizzard/starcraft2'])
+    expect(loaded.coordinates).toEqual([
+      'org.modkitx.blizzard/mpq',
+      'org.modkitx.blizzard/starcraft2',
+    ])
     const services = await servicesOverUserFolder(loaded, {}, WEB_EXTENSION_CATALOG)
 
     const content: FakeTree = new Map([

@@ -34,6 +34,8 @@ export interface IdbRequestLike<T> {
 
 export interface IdbOpenRequestLike<T> extends IdbRequestLike<T> {
   onupgradeneeded: ((event: Event) => void) | null
+  /** Present on a real IDBOpenDBRequest while an initial create/upgrade is running. */
+  readonly transaction?: { abort(): void } | null
 }
 
 export interface IdbObjectStoreLike {
@@ -54,7 +56,14 @@ export interface IdbDatabaseLike {
 }
 
 export interface IdbFactoryLike {
-  open(name: string, version: number): IdbOpenRequestLike<IdbDatabaseLike>
+  open(name: string, version?: number): IdbOpenRequestLike<IdbDatabaseLike>
+  /** Current browsers expose a non-creating database-name probe. */
+  databases?(): Promise<readonly { readonly name?: string }[]>
+}
+
+export interface IndexedDbExtensionStoreOptions {
+  /** Test/host seam for a non-creating database-name probe. */
+  readonly databaseExists?: (name: string) => Promise<boolean>
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -94,6 +103,48 @@ function settle<T>(request: IdbRequestLike<T>): Promise<T> {
           ? request.error
           : new Error(`IndexedDB request failed: ${String(request.error)}`),
       )
+  })
+}
+
+/**
+ * Probe a database on browsers which predate `indexedDB.databases()` without leaving an empty
+ * database behind. Opening a missing database starts its initial versionchange transaction; an
+ * abort rolls that creation back. Opening an existing database has no upgrade event and is closed
+ * immediately after the successful probe.
+ */
+async function probeExistingDatabase(
+  factory: IdbFactoryLike,
+  databaseName: string,
+): Promise<boolean> {
+  const request = factory.open(databaseName)
+  let abortedInitialCreation = false
+  return new Promise<boolean>((resolve, reject) => {
+    request.onupgradeneeded = () => {
+      abortedInitialCreation = true
+      try {
+        request.transaction?.abort()
+      } catch (error) {
+        reject(error)
+      }
+    }
+    request.onsuccess = () => {
+      request.result.close()
+      resolve(!abortedInitialCreation)
+    }
+    request.onerror = event => {
+      if (abortedInitialCreation) {
+        // The AbortError is the expected completion of the non-creating probe. Prevent it from
+        // bubbling as an unhandled IndexedDB error in a real page.
+        event.preventDefault()
+        resolve(false)
+        return
+      }
+      reject(
+        request.error instanceof Error
+          ? request.error
+          : new Error(`IndexedDB existence probe failed: ${String(request.error)}`),
+      )
+    }
   })
 }
 
@@ -143,7 +194,20 @@ export function createIndexedDbExtensionStore(
   factory: IdbFactoryLike,
   databaseName: string = USER_EXTENSION_DATABASE,
   storeName: string = USER_EXTENSION_STORE,
+  options: IndexedDbExtensionStoreOptions = {},
 ): UserExtensionStore {
+  let knownToExist = false
+  const exists = async (): Promise<boolean> => {
+    if (knownToExist) return true
+    const found =
+      options.databaseExists !== undefined
+        ? await options.databaseExists(databaseName)
+        : factory.databases !== undefined
+          ? (await factory.databases()).some(database => database.name === databaseName)
+          : await probeExistingDatabase(factory, databaseName)
+    if (found) knownToExist = true
+    return found
+  }
   const open = async (): Promise<IdbDatabaseLike> => {
     const request = factory.open(databaseName, 1)
     request.onupgradeneeded = () => {
@@ -152,7 +216,9 @@ export function createIndexedDbExtensionStore(
         database.createObjectStore(storeName, { keyPath: 'id' })
       }
     }
-    return settle(request)
+    const database = await settle(request)
+    knownToExist = true
+    return database
   }
 
   const withStore = async <T>(
@@ -171,6 +237,7 @@ export function createIndexedDbExtensionStore(
     location: `indexedDB[${databaseName}/${storeName}]`,
 
     async list() {
+      if (!(await exists())) return Object.freeze([])
       const rows = await withStore('readonly', store => settle(store.getAll()))
       const records: StoredUserExtension[] = []
       for (const row of rows) {
@@ -185,6 +252,7 @@ export function createIndexedDbExtensionStore(
     },
 
     async remove(id) {
+      if (!(await exists())) return
       await withStore('readwrite', store => settle(store.delete(id)))
     },
   }

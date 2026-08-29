@@ -70,7 +70,7 @@ if (variables.length === 0) {
   process.exit(1)
 }
 
-let legacyRoot = path.join(repoRoot, '..', 'modkitx')
+let legacyRoot = path.join(repoRoot, '..', 'references', 'modkitmk2')
 if (existsSync(localDescriptorPath)) {
   const descriptor = JSON.parse(readFileSync(localDescriptorPath, 'utf8'))
   if (typeof descriptor.legacyRoot === 'string') legacyRoot = descriptor.legacyRoot

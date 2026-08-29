@@ -11,6 +11,7 @@
  *    directory gets it without a settings entry, which is how a mod project ships a format the
  *    lab does not know.
  *  - the **`modkit.extensions` setting**, an explicit list the user wrote.
+ *  - enabled immutable package roots returned by the Node extension manager at activation.
  *
  * The last two are `installed` artifacts and never reach the in-process boundary at all.
  *
@@ -33,6 +34,11 @@ export interface DirectoryProbe {
 export interface ExtensionRootRequestLike {
   readonly root: string
   readonly expectedId?: string
+}
+
+/** A manager-owned artifact always carries the exact coordinate verified at installation. */
+export interface ManagedExtensionRootRequest extends ExtensionRootRequestLike {
+  readonly expectedId: string
 }
 
 /**

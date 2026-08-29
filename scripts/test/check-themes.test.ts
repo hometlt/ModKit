@@ -63,6 +63,18 @@ function makeRoot(name: string, themes: Record<string, string>, fonts: string[] 
     mkdirSync(join(root, 'assets', 'themes', id), { recursive: true })
     writeFileSync(join(root, 'assets', 'themes', id, 'theme.css'), css)
   }
+  mkdirSync(join(root, 'assets', 'themes'), { recursive: true })
+  writeFileSync(
+    join(root, 'assets', 'themes', 'modkit.themes.json'),
+    JSON.stringify({
+      schemaVersion: 1,
+      themes: Object.keys(themes).map(id => ({
+        id,
+        label: id,
+        stylesheet: `${id}/theme.css`,
+      })),
+    }),
+  )
   for (const font of fonts) {
     mkdirSync(join(root, 'assets', 'fonts', font.split('/')[0] ?? ''), { recursive: true })
     writeFileSync(join(root, 'assets', 'fonts', font), 'wOF2')
@@ -161,7 +173,7 @@ describe('themes:check — installable themes are complete and self-contained', 
     expect(stderr).not.toContain('calm/theme.css')
   })
 
-  it('keeps the real repository green (sc2 is complete under the live contract)', () => {
+  it('keeps the format-neutral repository themes green under the live contract', () => {
     const { status, stdout } = run(repositoryRoot)
     expect(status).toBe(0)
     expect(stdout).toContain('installable theme(s) complete under contract v1')

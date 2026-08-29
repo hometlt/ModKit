@@ -115,6 +115,7 @@ async function createWindow() {
     describeInventoryContributions,
     disabledContributionNotices,
     probeElectronExtensionRoot,
+    composeElectronExtensionRoots,
     parseElectronMapPreviewSelectionRequest,
     prepareElectronMapPreview,
     resolveElectronPresentationPlan,
@@ -132,12 +133,57 @@ async function createWindow() {
     resolveFormatWriter,
     commandRequest,
     createSubjectCommandEndpoint,
+    createElectronExtensionManagerBackend,
   } = await root
 
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
   const BUNDLED_ROOTS = BUNDLED_EXTENSION_DIRECTORIES.map(directory =>
     path.join(repositoryRoot, 'extensions', 'common', directory),
   )
+  const extensionRegistry =
+    process.env.MODKIT_EXTENSION_REGISTRY ||
+    path.join(repositoryRoot, '..', 'modkit-extension-registry', 'catalog', 'development.json')
+  const extensionAllowedOrigins = (process.env.MODKIT_EXTENSION_ALLOWED_ORIGINS || '')
+    .split(',')
+    .map(value => value.trim())
+    .filter(Boolean)
+  const extensionTrustedPublicKeys = (() => {
+    const text = process.env.MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS
+    if (text === undefined || text.trim() === '') return Object.freeze({})
+    if (text.length > 1_000_000) {
+      throw new TypeError('MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS is too large')
+    }
+    const parsed = JSON.parse(text)
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      throw new TypeError('MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS must be a JSON object')
+    }
+    for (const [keyId, publicKey] of Object.entries(parsed)) {
+      if (
+        keyId.length === 0 ||
+        keyId.length > 200 ||
+        typeof publicKey !== 'string' ||
+        publicKey.length === 0 ||
+        publicKey.length > 100_000
+      ) {
+        throw new TypeError('trusted extension public keys must be bounded non-empty strings')
+      }
+    }
+    return Object.freeze({ ...parsed })
+  })()
+  const extensionManager = createElectronExtensionManagerBackend({
+    registry: extensionRegistry,
+    baseDirectory: repositoryRoot,
+    // Empty by default for local development; release builds inject reviewed Ed25519 public keys.
+    trustedPublicKeys: extensionTrustedPublicKeys,
+    fetch: globalThis.fetch,
+    vfsOptions: {
+      ...(extensionAllowedOrigins.length === 0 ? {} : { allowedOrigins: extensionAllowedOrigins }),
+      ...(process.env.MODKIT_RAPID_POOL_ROOT
+        ? { rapidPoolRoot: process.env.MODKIT_RAPID_POOL_ROOT }
+        : {}),
+    },
+    storeRoot: path.join(app.getPath('userData'), 'managed-extensions'),
+  })
 
   /**
    * What the settings file asks this composition for.
@@ -190,21 +236,31 @@ async function createWindow() {
     }
   }
 
-  /** Compose the whole subject pipeline from what the settings file says right now. */
+  /** Compose the whole subject pipeline from manual settings and manager-owned package state. */
   const composeFromSettings = async () => {
     const configuration = await readExtensionConfiguration()
+    const managedRoots = await extensionManager.installedRoots()
+    const rootComposition = await composeElectronExtensionRoots({
+      manualRoots: configuration.entries,
+      managedRoots,
+      probeManual: (root, claimed) => probeElectronExtensionRoot(root, claimed),
+    })
+    const effectiveConfiguration = {
+      ...configuration,
+      conflicts: rootComposition.conflicts,
+    }
     const services = await createElectronSubjectServices(BUNDLED_ROOTS, {
       // worker realm diagnostics: the SB-1 shared-process notice, restarts, crashes, capped stdio
       onDiagnostic: diagnostic =>
         console.log(`[worker] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`),
-      userRoots: configuration.entries
-        .filter(entry => entry.enabled)
-        .map(entry => ({
-          root: entry.root,
-          ...(entry.id === undefined ? {} : { expectedId: entry.id }),
-        })),
+      userRoots: rootComposition.roots,
       disabledContributions: configuration.disabledContributions,
     })
+    for (const failure of rootComposition.conflicts) {
+      console.log(
+        `[main] extension not loaded: ${failure.root} — ${failure.code}: ${failure.message}`,
+      )
+    }
     for (const failure of services.extensions.failures) {
       console.log(
         `[main] extension not loaded: ${failure.root} — ${failure.code}: ${failure.message}`,
@@ -226,7 +282,7 @@ async function createWindow() {
         `renderer ${application.renderer.profile.facilities.length} facilities, ` +
         `codecs run in ${application.workers.profile.realmId} (${services.executionProfiles.join('/')})`,
     )
-    return { services, mapPreviewResourcePlanResolver, configuration }
+    return { services, mapPreviewResourcePlanResolver, configuration: effectiveConfiguration }
   }
 
   /*
@@ -266,6 +322,7 @@ async function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
     },
   })
+  window.once('closed', () => void extensionManager.dispose())
 
   // Navigation is denied by default; anything the user clicks goes to the real browser instead.
   const origin = pathToFileURL(RENDERER).href
@@ -964,7 +1021,7 @@ async function createWindow() {
    */
   const extensionReport = () => {
     const configuration = extensionConfiguration
-    const failures = subjectServices.extensions.failures
+    const failures = [...subjectServices.extensions.failures, ...(configuration.conflicts ?? [])]
     const installed = new Set(subjectServices.extensions.installed)
     const entries = configuration.entries.map(entry => {
       const failure = failures.find(item => item.root.toLowerCase() === entry.root.toLowerCase())
@@ -1037,6 +1094,75 @@ async function createWindow() {
 
   ipcMain.handle('modkit.extensions.report', () => extensionReport())
   ipcMain.handle('modkit.extensions.reload', () => reloadExtensions())
+
+  /*
+   * Distribution-package manager.
+   *
+   * The Node manager exclusively owns managed artifacts and enablement. Settings contain only
+   * manually connected folders. After a successful mutation the renderer uses the existing safe
+   * reload lifecycle (close tabs, recompose from installedRoots(), reopen tabs); it never performs
+   * filesystem or network work itself.
+   */
+  const managedId = value => {
+    if (
+      typeof value !== 'string' ||
+      value.length > 200 ||
+      !/^[a-z0-9]+(?:[.-][a-z0-9]+)*\/[a-z0-9]+(?:[.-][a-z0-9]+)*$/u.test(value)
+    ) {
+      throw new TypeError('managed extension id must be a bounded coordinate')
+    }
+    return value
+  }
+  const managedVersion = value => {
+    if (value === undefined) return undefined
+    if (
+      typeof value !== 'string' ||
+      value.length > 100 ||
+      !/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/u.test(value)
+    ) {
+      throw new TypeError('managed extension version must be bounded semver')
+    }
+    return value
+  }
+  const managerSnapshot = () => extensionManager.snapshot()
+  let managerMutation = Promise.resolve()
+  const serialManagerMutation = operation => {
+    const next = managerMutation.then(operation)
+    managerMutation = next.catch(() => undefined)
+    return next
+  }
+
+  ipcMain.handle('modkit.extensions.manager.snapshot', () => managerSnapshot())
+  ipcMain.handle('modkit.extensions.manager.refresh', () =>
+    serialManagerMutation(async () => {
+      await extensionManager.refresh()
+    }),
+  )
+  ipcMain.handle('modkit.extensions.manager.install', (_event, request) =>
+    serialManagerMutation(async () => {
+      const id = managedId(request?.id)
+      await extensionManager.install(id, managedVersion(request?.version))
+    }),
+  )
+  ipcMain.handle('modkit.extensions.manager.update', (_event, request) =>
+    serialManagerMutation(async () => {
+      const id = managedId(request?.id)
+      await extensionManager.update(id)
+    }),
+  )
+  ipcMain.handle('modkit.extensions.manager.remove', (_event, request) =>
+    serialManagerMutation(async () => {
+      const id = managedId(request?.id)
+      await extensionManager.remove(id)
+    }),
+  )
+  ipcMain.handle('modkit.extensions.manager.set-enabled', (_event, request) =>
+    serialManagerMutation(async () => {
+      const id = managedId(request?.id)
+      if (typeof request?.enabled !== 'boolean') throw new TypeError('enabled must be boolean')
+      await extensionManager.setEnabled(id, request.enabled)
+    }),
+  )
 
   /*
    * Picking an extension folder.

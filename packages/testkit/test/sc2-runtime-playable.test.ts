@@ -321,7 +321,7 @@ async function close(opened: Awaited<ReturnType<typeof openPlayable>>) {
 }
 
 async function runSealedLegacyPlayableOracle() {
-  const legacyRoot = resolve(repoRoot, '..', 'modkitx')
+  const legacyRoot = resolve(repoRoot, '..', 'references', 'modkitmk2')
   const lock = JSON.parse(
     await readFile(join(repoRoot, 'migration', 'oracle', 'legacy-oracle.lock.json'), 'utf8'),
   ) as { readonly legacy: { readonly headCommit: string } }

@@ -71,6 +71,7 @@
   "dependencies": {
     "@modkitx-x3/core": "workspace:*",
     "@modkitx-x3/sdk": "workspace:*",
-    "@modkitx-x3/vfs": "workspace:*"
+    "@modkitx-x3/vfs": "workspace:*",
+    "es-module-lexer": "^1.7.0"
   }
 }

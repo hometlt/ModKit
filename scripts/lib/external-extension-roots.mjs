@@ -1,33 +1,16 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 
-const REPOSITORIES = Object.freeze({
-  blizzard: Object.freeze({
-    environment: 'MODKIT_BLIZZARD_ROOT',
-    publisher: 'org.modkitx.blizzard',
-    sibling: 'modkit-blizzard',
-  }),
-  warzone: Object.freeze({
-    environment: 'MODKIT_WARZONE_ROOT',
-    publisher: 'org.modkitx.opensource',
-    sibling: 'modkit-warzone',
-  }),
-})
+import {
+  configuredSourceDescriptorSync,
+  resolveConfiguredRepositoryRootSync,
+  resolveLegacyExtensionDirectorySync,
+} from '@modkitx/extension-manager/node'
 
 const readJson = path => JSON.parse(readFileSync(path, 'utf8'))
 
 export function externalRepositoryRoot(workspaceRoot, repository, environment = process.env) {
-  const descriptor = REPOSITORIES[repository]
-  if (descriptor === undefined)
-    throw new Error(`unknown external extension repository: ${repository}`)
-  const configured = environment[descriptor.environment]
-  const candidate =
-    configured === undefined || configured.trim() === ''
-      ? join(dirname(resolve(workspaceRoot)), descriptor.sibling)
-      : isAbsolute(configured)
-        ? resolve(configured)
-        : resolve(workspaceRoot, configured)
-  return candidate
+  return resolveConfiguredRepositoryRootSync(workspaceRoot, repository, environment)
 }
 
 export function resolveExternalExtensionDirectory(
@@ -38,10 +21,15 @@ export function resolveExternalExtensionDirectory(
   const repositoryRoot = externalRepositoryRoot(workspaceRoot, descriptor.repository, environment)
   const root = resolve(repositoryRoot, ...(descriptor.path ?? []))
   if (!existsSync(root)) {
-    const repository = REPOSITORIES[descriptor.repository]
+    const repository = externalRepositoryDescriptor(
+      descriptor.repository,
+      workspaceRoot,
+      environment,
+    )
     throw new Error(
-      `external extension directory is missing: ${root}; clone ${repository.sibling} beside ` +
-        `modkitX3 or set ${repository.environment}`,
+      `external extension directory is missing: ${root}; configure source ` +
+        `«${descriptor.repository}» in modkit.workspace.json` +
+        (repository.environment === undefined ? '' : ` or set ${repository.environment}`),
     )
   }
   const packagePath = join(root, 'package.json')
@@ -51,30 +39,19 @@ export function resolveExternalExtensionDirectory(
   return root
 }
 
-export function externalRepositoryEnvironment(repository) {
-  const descriptor = REPOSITORIES[repository]
-  if (descriptor === undefined)
-    throw new Error(`unknown external extension repository: ${repository}`)
-  return descriptor.environment
+export function externalRepositoryEnvironment(repository, workspaceRoot = process.cwd()) {
+  return configuredSourceDescriptorSync(workspaceRoot, repository).environment
 }
 
-export function externalRepositoryDescriptor(repository) {
-  const descriptor = REPOSITORIES[repository]
-  if (descriptor === undefined)
-    throw new Error(`unknown external extension repository: ${repository}`)
-  return descriptor
+export function externalRepositoryDescriptor(
+  repository,
+  workspaceRoot = process.cwd(),
+  environment = process.env,
+) {
+  return configuredSourceDescriptorSync(workspaceRoot, repository, environment)
 }
 
 /** Resolve the historical `extensions/<publisher>/<name>` tuple without mounting game repos. */
 export function productExtensionDirectory(workspaceRoot, parts, environment = process.env) {
-  if (parts[0] === 'blizzard') {
-    return resolve(
-      externalRepositoryRoot(workspaceRoot, 'blizzard', environment),
-      ...parts.slice(1),
-    )
-  }
-  if (parts[0] === 'opensource' && parts[1] === 'warzone-2100') {
-    return resolve(externalRepositoryRoot(workspaceRoot, 'warzone', environment), ...parts.slice(2))
-  }
-  return resolve(workspaceRoot, 'extensions', ...parts)
+  return resolveLegacyExtensionDirectorySync(workspaceRoot, parts, environment)
 }

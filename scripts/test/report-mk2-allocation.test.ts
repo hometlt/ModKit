@@ -105,8 +105,8 @@ describe('MK2 → MK3 allocation report', () => {
     expect(json.extensions[0]?.issues.some(i => i.class === 'partial')).toBe(true) // dependsOn
   })
 
-  it('reproduces the sibling MK2 snapshot counts when modkitx is checked out beside the lab', () => {
-    const sibling = join(repoRoot, '..', 'modkitx')
+  it('reproduces the MK2 snapshot counts from references/modkitmk2', () => {
+    const sibling = join(repoRoot, '..', 'references', 'modkitmk2')
     if (!existsSync(join(sibling, 'extensions'))) {
       // No sibling checkout (CI without MK2): the report is not applicable, not failing.
       expect(true).toBe(true)

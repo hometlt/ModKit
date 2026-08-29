@@ -6,8 +6,6 @@
  * allowed to offer, and what happens when something tries to write an extension list this host
  * cannot honour.
  */
-import { existsSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { AnyDescriptor } from '@modkitx-x3/sdk'
 import { DEFAULT_SETTINGS, normalizeSettings, type SettingsDocument } from '@modkitx-x3/ui'
@@ -17,11 +15,9 @@ import {
   createWebSettingsStore,
   EXTENSIONS_READ_ONLY_REASON,
   SETTINGS_STORAGE_KEY,
-  WEB_THEMES,
   type WebStorageLike,
 } from '../src/settings.js'
 import { NON_MUTATING_OPERATION_IDS, nonMutatingDescriptor } from '../src/inspector.js'
-import { repositoryRoot } from './browser-harness.js'
 
 function memoryStorage(initial?: string): WebStorageLike & { readonly written: string[] } {
   const written: string[] = []
@@ -104,30 +100,12 @@ describe('web settings', () => {
 
   it('applies the appearance by stamping the two attributes the stylesheet selects on', () => {
     const root = fakeRoot()
-    applyAppearance(root, { theme: 'sc2', density: 'comfortable' })
-    expect(root.attributes.get('data-mk-theme')).toBe('sc2')
+    applyAppearance(root, { theme: 'fixture', density: 'comfortable' })
+    expect(root.attributes.get('data-mk-theme')).toBe('fixture')
     expect(root.attributes.get('data-mk-density')).toBe('comfortable')
     applyAppearance(root, { theme: 'modkit-light', density: 'compact' })
     expect(root.attributes.get('data-mk-theme')).toBe('modkit-light')
     expect(root.attributes.get('data-mk-density')).toBe('compact')
-  })
-
-  it('offers the three built-in themes plus every stylesheet the build actually ships', () => {
-    expect(WEB_THEMES.map(theme => theme.id)).toEqual([
-      'modkit-dark',
-      'modkit-light',
-      'modkit-high-contrast',
-      'sc2',
-      'nexus-forge',
-      'nexus-dominion',
-    ])
-    // the installable half is not a wish list: it is what `assets/themes/<id>/theme.css` contains
-    const themesRoot = join(repositoryRoot, 'assets', 'themes')
-    const installed = readdirSync(themesRoot)
-      .filter(id => existsSync(join(themesRoot, id, 'theme.css')))
-      .sort()
-    const offered = WEB_THEMES.map(theme => theme.id)
-    for (const id of installed) expect(offered).toContain(id)
   })
 
   it('lists the attested catalog and names why the rest is not served here', () => {

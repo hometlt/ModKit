@@ -27,9 +27,11 @@ import { blockingParityResults, buildParityReport, gitSha } from './report.mjs'
 
 const repoRoot = resolve(import.meta.dirname, '..', '..')
 const canonicalRoot = resolve(
-  process.env.MODKIT_PARITY_CANON_ROOT ?? join(repoRoot, '..', 'modkitx'),
+  process.env.MODKIT_PARITY_CANON_ROOT ?? join(repoRoot, '..', 'references', 'modkitmk2'),
 )
-const mk2Root = resolve(process.env.MODKITX_MK2_ROOT ?? join(repoRoot, '..', 'modkitx'))
+const mk2Root = resolve(
+  process.env.MODKITX_MK2_ROOT ?? join(repoRoot, '..', 'references', 'modkitmk2'),
+)
 const corpusPath = resolve(
   process.env.MODKIT_PARITY_CORPUS ?? join(import.meta.dirname, 'corpus.json'),
 )

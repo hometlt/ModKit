@@ -22,6 +22,73 @@ export interface ThemeChoice {
   readonly label: string
 }
 
+export interface AppThemeChoice extends ThemeChoice {
+  readonly stylesheet: string
+}
+
+export interface AppThemeDocumentLike {
+  getElementById(id: string): { readonly textContent: string | null } | null
+}
+
+export const APP_THEME_DOM_ID = 'modkit-app-themes'
+
+const APP_THEME_ID = /^[a-z][a-z0-9-]{0,63}$/u
+const APP_THEME_STYLESHEET = /^\.\/(?:modkit-ui|theme-[a-z][a-z0-9-]{0,63})\.css$/u
+
+/**
+ * Read the exact static theme set emitted by an application build.
+ *
+ * The runtime has no product or game theme registry. A generic build script validates source
+ * manifests, copies their stylesheets, and embeds this bounded JSON data in the host document.
+ */
+export function readAppThemeChoices(document: AppThemeDocumentLike): readonly AppThemeChoice[] {
+  const node = document.getElementById(APP_THEME_DOM_ID)
+  if (node?.textContent === null || node?.textContent === undefined) {
+    throw new Error(`missing #${APP_THEME_DOM_ID} build data`)
+  }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(node.textContent)
+  } catch (error) {
+    throw new Error(
+      `invalid #${APP_THEME_DOM_ID} JSON: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > 64) {
+    throw new Error(`#${APP_THEME_DOM_ID} must contain between 1 and 64 themes`)
+  }
+  const ids = new Set<string>()
+  return Object.freeze(
+    parsed.map((value, index) => {
+      const entry =
+        value !== null && typeof value === 'object' && !Array.isArray(value)
+          ? (value as Record<string, unknown>)
+          : undefined
+      const id = entry?.['id']
+      const label = entry?.['label']
+      const stylesheet = entry?.['stylesheet']
+      if (typeof id !== 'string' || !APP_THEME_ID.test(id)) {
+        throw new Error(`#${APP_THEME_DOM_ID} theme ${index} has an invalid id`)
+      }
+      if (ids.has(id)) throw new Error(`#${APP_THEME_DOM_ID} contains duplicate theme id ${id}`)
+      ids.add(id)
+      if (
+        typeof label !== 'string' ||
+        label.trim() !== label ||
+        label.length === 0 ||
+        label.length > 80 ||
+        /[\u0000-\u001f\u007f]/u.test(label)
+      ) {
+        throw new Error(`#${APP_THEME_DOM_ID} theme ${index} has an invalid label`)
+      }
+      if (typeof stylesheet !== 'string' || !APP_THEME_STYLESHEET.test(stylesheet)) {
+        throw new Error(`#${APP_THEME_DOM_ID} theme ${index} has an invalid stylesheet`)
+      }
+      return Object.freeze({ id, label, stylesheet })
+    }),
+  )
+}
+
 /** Host-owned state exposed to a settings group without giving it ownership of the shell. */
 export interface SettingsUiGroupContext {
   readonly settings: SettingsDocument

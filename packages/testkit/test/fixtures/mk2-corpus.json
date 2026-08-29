@@ -1,11 +1,11 @@
 {
-  "$comment": "Acceptance corpus for the MK2 → MK3 converted extensions (OPUS-MK2-01 task B, OPUS-MK2-02 task G). `extension` is a directory under `extensions/`. A `real` sample is a path relative to the MK2 checkout (MODKITX_MK2_ROOT, default ../modkitx) and is READ ONLY — no sample is ever copied into this repository; those cases are skipped when that checkout is absent, so CI without MK2 stays green. A `synthetic` sample is a file in test/fixtures/mk2-synthetic, written from the format specification by scripts/gen-synthetic-corpus.mjs; those cases always run and prove structural opening, not fidelity. 2026-08-24: владелец перенёс каталог `-references` из MK2 checkout в соседний `coding/references`; real-samples вне checkout адресуются как `../references/...` относительно MODKITX_MK2_ROOT.",
+  "$comment": "Acceptance corpus for the MK2 → MK3 converted extensions (OPUS-MK2-01 task B, OPUS-MK2-02 task G). `extension` is a directory under `extensions/`. A `real` sample is a path relative to the MK2 checkout (MODKITX_MK2_ROOT, default ../references/modkitmk2) and is READ ONLY — no sample is ever copied into this repository; those cases are skipped when that checkout is absent, so CI without MK2 stays green. A `synthetic` sample is a file in test/fixtures/mk2-synthetic, written from the format specification by scripts/gen-synthetic-corpus.mjs; those cases always run and prove structural opening, not fidelity. 2026-08-24: владелец перенёс каталог `-references` из MK2 checkout в соседний `coding/references`; real-samples вне checkout адресуются относительно MODKITX_MK2_ROOT.",
   "entries": [
     {
       "extension": "common/images",
       "contributionId": "org.modkitx/webp",
       "corpus": "real",
-      "sample": "../references/website/crossover/uploads/kane.webp",
+      "sample": "../website/crossover/uploads/kane.webp",
       "minimumConfidence": 0.9,
       "dataSource": "tree",
       "note": "RIFF/WEBP container: simple, no native decoder, VP8/VP8L/VP8X chunk walk"
@@ -14,7 +14,7 @@
       "extension": "common/images",
       "contributionId": "org.modkitx/image-jpeg",
       "corpus": "real",
-      "sample": "../references/website/crossover/uploads/earth.jpg",
+      "sample": "../website/crossover/uploads/earth.jpg",
       "minimumConfidence": 0.9,
       "dataSource": "tree",
       "note": "JFIF segment chain; v1 fidelity is header inspection, no pixel decoding"
@@ -503,7 +503,7 @@
       "extension": "common/audio",
       "contributionId": "org.modkitx/audio-mp3",
       "corpus": "real",
-      "sample": "../references/website/crossover/uploads/welcome-back-commander.mp3",
+      "sample": "../website/crossover/uploads/welcome-back-commander.mp3",
       "minimumConfidence": 0.8,
       "dataSource": "tree",
       "note": "MPEG-1 layer III frame header; v1 manifest routes on extension only"
@@ -654,7 +654,7 @@
       "extension": "common/models",
       "contributionId": "org.modkitx/model-gltf",
       "corpus": "real",
-      "sample": "../references/website/old-wiki/src/app/js-3d-model-viewer-master/original/duck.glb",
+      "sample": "../website/old-wiki/src/app/js-3d-model-viewer-master/original/duck.glb",
       "minimumConfidence": 0.9,
       "dataSource": "tree",
       "note": "glTF 2.0 binary container; JSON chunk only, no buffer decoding"
@@ -663,7 +663,7 @@
       "extension": "ea/archives",
       "contributionId": "org.modkitx/mix",
       "corpus": "real",
-      "sample": "../references/Mixer/ccmix/test_files/ts/tem.mix",
+      "sample": "../Mixer/ccmix/test_files/ts/tem.mix",
       "minimumConfidence": 0.6,
       "dataSource": "tree",
       "note": "Tiberian Sun MIX with an unencrypted (checksummed) header"
@@ -672,7 +672,7 @@
       "extension": "common/vector",
       "contributionId": "org.modkitx/vector-svg",
       "corpus": "real",
-      "sample": "../references/m3/packages/three-m3-loader/docs/favicon.svg",
+      "sample": "../m3/packages/three-m3-loader/docs/favicon.svg",
       "minimumConfidence": 0.6,
       "dataSource": "tree",
       "note": "SVG root element; v1 manifest has no magic, so probe parses structure"
@@ -681,7 +681,7 @@
       "extension": "mk2/adobe-flash",
       "contributionId": "org.modkitx/swf",
       "corpus": "real",
-      "sample": "../references/old-modkit-ts/sc2/core.sc2mod/base.sc2data/ui/flash/gameui/ipistol.swf",
+      "sample": "../old-modkit-ts/sc2/core.sc2mod/base.sc2data/ui/flash/gameui/ipistol.swf",
       "minimumConfidence": 0.9,
       "dataSource": "tree",
       "route": "opaque",

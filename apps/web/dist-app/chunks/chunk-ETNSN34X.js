@@ -131,9 +131,9 @@ function parseSemver(value2) {
     build
   };
 }
-function comparePrerelease(a, b) {
-  const ap = a.prerelease;
-  const bp = b.prerelease;
+function comparePrerelease(a2, b2) {
+  const ap = a2.prerelease;
+  const bp = b2.prerelease;
   if (ap.length === 0 && bp.length === 0)
     return 0;
   if (ap.length === 0)
@@ -141,9 +141,9 @@ function comparePrerelease(a, b) {
   if (bp.length === 0)
     return -1;
   const length = Math.min(ap.length, bp.length);
-  for (let i = 0; i < length; i += 1) {
-    const x = ap[i];
-    const y = bp[i];
+  for (let i2 = 0; i2 < length; i2 += 1) {
+    const x = ap[i2];
+    const y = bp[i2];
     if (x === y)
       continue;
     if (typeof x === "number" && typeof y === "number")
@@ -156,14 +156,14 @@ function comparePrerelease(a, b) {
   }
   return ap.length === bp.length ? 0 : ap.length < bp.length ? -1 : 1;
 }
-function compareSemver(a, b) {
-  if (a.major !== b.major)
-    return a.major < b.major ? -1 : 1;
-  if (a.minor !== b.minor)
-    return a.minor < b.minor ? -1 : 1;
-  if (a.patch !== b.patch)
-    return a.patch < b.patch ? -1 : 1;
-  return comparePrerelease(a, b);
+function compareSemver(a2, b2) {
+  if (a2.major !== b2.major)
+    return a2.major < b2.major ? -1 : 1;
+  if (a2.minor !== b2.minor)
+    return a2.minor < b2.minor ? -1 : 1;
+  if (a2.patch !== b2.patch)
+    return a2.patch < b2.patch ? -1 : 1;
+  return comparePrerelease(a2, b2);
 }
 function formatSemver(version) {
   const prerelease = version.prerelease.length === 0 ? "" : `-${version.prerelease.map(String).join(".")}`;
@@ -183,9 +183,9 @@ function canonicalComparatorConjunction(comparators) {
     "<=": 3,
     "<": 4
   };
-  return [...unique.entries()].sort(([, a], [, b]) => {
-    const byVersion = compareSemver(a.version, b.version);
-    return byVersion === 0 ? operatorOrder[a.op] - operatorOrder[b.op] : byVersion;
+  return [...unique.entries()].sort(([, a2], [, b2]) => {
+    const byVersion = compareSemver(a2.version, b2.version);
+    return byVersion === 0 ? operatorOrder[a2.op] - operatorOrder[b2.op] : byVersion;
   }).map(([rendered]) => rendered).join(" ");
 }
 function caretUpperBound(v) {
@@ -206,7 +206,7 @@ function parsePartial(value2) {
     return void 0;
   const minorRaw = m[2];
   const patchRaw = m[3];
-  const wild = (s) => s === "x" || s === "*";
+  const wild = (s2) => s2 === "x" || s2 === "*";
   if (minorRaw === void 0 || wild(minorRaw)) {
     if (wild(minorRaw) && patchRaw !== void 0)
       return void 0;
@@ -344,8 +344,8 @@ function versionRangeTargetsMajor(range, major) {
     const upperVsEnd = compareSemver(upper.version, end);
     const upperInside = upperVsEnd < 0 || upperVsEnd === 0 && upper.op === "<";
     const boundsOrder = compareSemver(lower.version, upper.version);
-    const nonEmpty3 = boundsOrder < 0 || boundsOrder === 0 && lower.op === ">=" && upper.op === "<=";
-    return lowerInside && upperInside && nonEmpty3;
+    const nonEmpty4 = boundsOrder < 0 || boundsOrder === 0 && lower.op === ">=" && upper.op === "<=";
+    return lowerInside && upperInside && nonEmpty4;
   });
 }
 function matches(version, comparator) {
@@ -364,7 +364,7 @@ function matches(version, comparator) {
   }
 }
 function satisfiesRange(version, range) {
-  return range.comparators.some((conjunction) => conjunction.every((c2) => matches(version, c2)));
+  return range.comparators.some((conjunction) => conjunction.every((c3) => matches(version, c3)));
 }
 
 // packages/core/dist/errors.js
@@ -503,32 +503,32 @@ function uint64(value2) {
 // packages/core/dist/ordering.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var encoder = new TextEncoder();
-function compareUtf8(a, b) {
+function compareUtf8(a2, b2) {
   let ascii = true;
-  const shorter = Math.min(a.length, b.length);
-  for (let i = 0; i < shorter; i += 1) {
-    if (a.charCodeAt(i) > 127 || b.charCodeAt(i) > 127) {
+  const shorter = Math.min(a2.length, b2.length);
+  for (let i2 = 0; i2 < shorter; i2 += 1) {
+    if (a2.charCodeAt(i2) > 127 || b2.charCodeAt(i2) > 127) {
       ascii = false;
       break;
     }
   }
-  if (ascii && /^[\x00-\x7F]*$/.test(a) && /^[\x00-\x7F]*$/.test(b)) {
-    return a < b ? -1 : a > b ? 1 : 0;
+  if (ascii && /^[\x00-\x7F]*$/.test(a2) && /^[\x00-\x7F]*$/.test(b2)) {
+    return a2 < b2 ? -1 : a2 > b2 ? 1 : 0;
   }
-  const ab = encoder.encode(a);
-  const bb = encoder.encode(b);
+  const ab = encoder.encode(a2);
+  const bb = encoder.encode(b2);
   const length = Math.min(ab.length, bb.length);
-  for (let i = 0; i < length; i += 1) {
-    const x = ab[i];
-    const y = bb[i];
+  for (let i2 = 0; i2 < length; i2 += 1) {
+    const x = ab[i2];
+    const y = bb[i2];
     if (x !== y)
       return x < y ? -1 : 1;
   }
   if (ab.length !== bb.length)
     return ab.length < bb.length ? -1 : 1;
-  if (a === b)
+  if (a2 === b2)
     return 0;
-  return a < b ? -1 : 1;
+  return a2 < b2 ? -1 : 1;
 }
 function sortedUtf8(values) {
   return [...values].sort(compareUtf8);
@@ -568,16 +568,16 @@ function render(value2, indent, depth, path) {
   if (Array.isArray(value2)) {
     if (value2.length === 0)
       return "[]";
-    const items = value2.map((item, i) => pad + render(item, indent, depth + 1, `${path}[${i}]`));
+    const items = value2.map((item, i2) => pad + render(item, indent, depth + 1, `${path}[${i2}]`));
     return `[
 ${items.join(",\n")}
 ${closePad}]`;
   }
-  const record = value2;
-  const keys = Object.keys(record).filter((key3) => record[key3] !== void 0).sort(compareUtf8);
+  const record3 = value2;
+  const keys = Object.keys(record3).filter((key3) => record3[key3] !== void 0).sort(compareUtf8);
   if (keys.length === 0)
     return "{}";
-  const entries = keys.map((key3) => `${pad}${JSON.stringify(key3)}: ${render(record[key3], indent, depth + 1, `${path}.${key3}`)}`);
+  const entries = keys.map((key3) => `${pad}${JSON.stringify(key3)}: ${render(record3[key3], indent, depth + 1, `${path}.${key3}`)}`);
   return `{
 ${entries.join(",\n")}
 ${closePad}}`;
@@ -663,8 +663,8 @@ function parseRevisionRef(value2) {
     return void 0;
   }
 }
-function assertSourceChain(source) {
-  for (let current = source; current !== void 0; current = current.parent) {
+function assertSourceChain(source2) {
+  for (let current = source2; current !== void 0; current = current.parent) {
     if (typeof current.id !== "string" || current.id.length === 0) {
       throw new TypeError("subject source id must be non-empty");
     }
@@ -683,11 +683,11 @@ function assertSubjectIdentity(identity) {
     throw new TypeError("nested subject key must be non-empty");
   }
 }
-function rootSubject(source, workspace) {
-  assertSourceChain(source);
+function rootSubject(source2, workspace) {
+  assertSourceChain(source2);
   return {
     ...workspace === void 0 ? {} : { workspace },
-    source,
+    source: source2,
     identity: { kind: "", key: "" }
   };
 }
@@ -697,9 +697,9 @@ function nestedSubject(owner, kind, key3) {
   return { ...owner, identity: { kind, key: key3 } };
 }
 var EXTENDED_SUBJECT_PREFIX = "x3-subject:";
-function sourceIdChain(source) {
+function sourceIdChain(source2) {
   const chain = [];
-  for (let current = source; current !== void 0; current = current.parent) {
+  for (let current = source2; current !== void 0; current = current.parent) {
     chain.push(current.id);
   }
   return chain.reverse();
@@ -707,14 +707,14 @@ function sourceIdChain(source) {
 function sourceFromIdChain(chain) {
   if (chain.length === 0)
     throw new TypeError("subject source chain must be non-empty");
-  let source;
+  let source2;
   for (const id of chain) {
     if (typeof id !== "string" || id.length === 0) {
       throw new TypeError("subject source id must be non-empty");
     }
-    source = { id, ...source === void 0 ? {} : { parent: source } };
+    source2 = { id, ...source2 === void 0 ? {} : { parent: source2 } };
   }
-  return source;
+  return source2;
 }
 function serializeSubjectRef(ref2) {
   assertSourceChain(ref2.source);
@@ -2807,15 +2807,15 @@ function deepFreeze2(value2) {
   return value2;
 }
 function snapshotJsonWireData(value2) {
-  const snapshot2 = snapshotJsonWireValue(value2);
-  if (snapshot2.diagnostics.length > 0) {
+  const snapshot3 = snapshotJsonWireValue(value2);
+  if (snapshot3.diagnostics.length > 0) {
     throw new ModkitError({
       code: "x3.sdk/non-json-schema-registration",
       message: "registered schema must be inert JSON data",
-      context: { diagnostics: snapshot2.diagnostics }
+      context: { diagnostics: snapshot3.diagnostics }
     });
   }
-  return deepFreeze2(snapshot2.value);
+  return deepFreeze2(snapshot3.value);
 }
 function snapshotJsonWireObject(value2) {
   return snapshotJsonWireData(value2);
@@ -2984,11 +2984,11 @@ function normalizeStrings(values) {
   return Object.freeze(uniqueSortedUtf8(values.map((value2) => nonEmpty(value2, "target list value"))));
 }
 function createHostRealmProfile(profile) {
-  const snapshot2 = snapshotJsonWireData(profile);
-  exactKeys(snapshot2, ["schemaVersion", "realmId", "revision", "target", "facilities", "budgets", "policy"], "profile");
-  if (snapshot2.schemaVersion !== 1)
+  const snapshot3 = snapshotJsonWireData(profile);
+  exactKeys(snapshot3, ["schemaVersion", "realmId", "revision", "target", "facilities", "budgets", "policy"], "profile");
+  if (snapshot3.schemaVersion !== 1)
     invalidProfile("host profile schemaVersion must be 1");
-  exactKeys(snapshot2.target, [
+  exactKeys(snapshot3.target, [
     "environment",
     "operatingSystem",
     "architecture",
@@ -2997,15 +2997,15 @@ function createHostRealmProfile(profile) {
     "hostCapabilities",
     "grantedPermissions"
   ], "target");
-  exactKeys(snapshot2.budgets, [
+  exactKeys(snapshot3.budgets, [
     "maxConcurrentTasks",
     "maxWorkerCount",
     "maxResidentBytes",
     "maxTransferBytes",
     "defaultDeadlineMs"
   ], "budgets");
-  exactKeys(snapshot2.policy, ["id", "revision", "digest"], "policy");
-  const rawTarget = snapshot2.target;
+  exactKeys(snapshot3.policy, ["id", "revision", "digest"], "policy");
+  const rawTarget = snapshot3.target;
   if ("hostCapabilities" in rawTarget || "grantedPermissions" in rawTarget) {
     return invalidProfile("target.hostCapabilities and target.grantedPermissions are projections and cannot be authored in a host profile");
   }
@@ -3022,7 +3022,7 @@ function createHostRealmProfile(profile) {
   if (architecture === "any" || !ARCHITECTURES.includes(architecture)) {
     invalidProfile("target.architecture must be concrete", { architecture: rawTarget.architecture });
   }
-  const facilities = uniqueSortedUtf8(snapshot2.facilities.map((value2) => hostFacilityId(value2)));
+  const facilities = uniqueSortedUtf8(snapshot3.facilities.map((value2) => hostFacilityId(value2)));
   const target = Object.freeze({
     environment: rawTarget.environment,
     operatingSystem: rawTarget.operatingSystem,
@@ -3031,21 +3031,21 @@ function createHostRealmProfile(profile) {
     ...rawTarget.externalTools === void 0 ? {} : { externalTools: normalizeStrings(rawTarget.externalTools) }
   });
   const budgets = Object.freeze({
-    maxConcurrentTasks: count(snapshot2.budgets.maxConcurrentTasks, "budgets.maxConcurrentTasks"),
-    maxWorkerCount: count(snapshot2.budgets.maxWorkerCount, "budgets.maxWorkerCount"),
-    maxResidentBytes: bytes(snapshot2.budgets.maxResidentBytes, "budgets.maxResidentBytes"),
-    maxTransferBytes: bytes(snapshot2.budgets.maxTransferBytes, "budgets.maxTransferBytes"),
-    defaultDeadlineMs: count(snapshot2.budgets.defaultDeadlineMs, "budgets.defaultDeadlineMs")
+    maxConcurrentTasks: count(snapshot3.budgets.maxConcurrentTasks, "budgets.maxConcurrentTasks"),
+    maxWorkerCount: count(snapshot3.budgets.maxWorkerCount, "budgets.maxWorkerCount"),
+    maxResidentBytes: bytes(snapshot3.budgets.maxResidentBytes, "budgets.maxResidentBytes"),
+    maxTransferBytes: bytes(snapshot3.budgets.maxTransferBytes, "budgets.maxTransferBytes"),
+    defaultDeadlineMs: count(snapshot3.budgets.defaultDeadlineMs, "budgets.defaultDeadlineMs")
   });
   const policy = Object.freeze({
-    id: nonEmpty(snapshot2.policy.id, "policy.id"),
-    revision: nonEmpty(snapshot2.policy.revision, "policy.revision"),
-    ...snapshot2.policy.digest === void 0 ? {} : { digest: nonEmpty(snapshot2.policy.digest, "policy.digest") }
+    id: nonEmpty(snapshot3.policy.id, "policy.id"),
+    revision: nonEmpty(snapshot3.policy.revision, "policy.revision"),
+    ...snapshot3.policy.digest === void 0 ? {} : { digest: nonEmpty(snapshot3.policy.digest, "policy.digest") }
   });
   return Object.freeze({
     schemaVersion: 1,
-    realmId: nonEmpty(snapshot2.realmId, "realmId"),
-    revision: nonEmpty(snapshot2.revision, "revision"),
+    realmId: nonEmpty(snapshot3.realmId, "realmId"),
+    revision: nonEmpty(snapshot3.revision, "revision"),
     target,
     facilities: Object.freeze(facilities),
     budgets,
@@ -3053,11 +3053,11 @@ function createHostRealmProfile(profile) {
   });
 }
 function createHostTopology(topology) {
-  const snapshot2 = snapshotJsonWireData(topology);
-  exactKeys(snapshot2, ["schemaVersion", "topologyId", "realms", "links"], "topology");
-  if (snapshot2.schemaVersion !== 1)
+  const snapshot3 = snapshotJsonWireData(topology);
+  exactKeys(snapshot3, ["schemaVersion", "topologyId", "realms", "links"], "topology");
+  if (snapshot3.schemaVersion !== 1)
     return invalidProfile("host topology schemaVersion must be 1");
-  const realms = snapshot2.realms.map(createHostRealmProfile);
+  const realms = snapshot3.realms.map(createHostRealmProfile);
   realms.sort((left, right) => compareUtf8(left.realmId, right.realmId));
   const realmIds = /* @__PURE__ */ new Set();
   for (const realm of realms) {
@@ -3065,7 +3065,7 @@ function createHostTopology(topology) {
       return invalidProfile(`duplicate realmId \xAB${realm.realmId}\xBB`);
     realmIds.add(realm.realmId);
   }
-  const links = snapshot2.links.map((link) => {
+  const links = snapshot3.links.map((link) => {
     exactKeys(link, ["fromRealm", "toRealm", "transports"], "transport link");
     if (!realmIds.has(link.fromRealm) || !realmIds.has(link.toRealm)) {
       return invalidProfile("transport link references an unknown realm", {
@@ -3095,7 +3095,7 @@ function createHostTopology(topology) {
   }
   return Object.freeze({
     schemaVersion: 1,
-    topologyId: nonEmpty(snapshot2.topologyId, "topologyId"),
+    topologyId: nonEmpty(snapshot3.topologyId, "topologyId"),
     realms: Object.freeze(realms),
     links: Object.freeze(links)
   });
@@ -3716,7 +3716,7 @@ var validateEditorContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [
     ...duplicateFieldDiagnostics(spec.requiresOperations, ["spec", "requiresOperations"], "operation"),
-    ...duplicateFieldDiagnostics(spec.consumesDataSources.map((source) => `${source.contract}@${source.major}`), ["spec", "consumesDataSources"], "data-source requirement")
+    ...duplicateFieldDiagnostics(spec.consumesDataSources.map((source2) => `${source2.contract}@${source2.major}`), ["spec", "consumesDataSources"], "data-source requirement")
   ];
   spec.requiresOperations.forEach((id, index) => {
     if (!EDITING_OPERATION_IDS.includes(id)) {
@@ -3882,7 +3882,7 @@ var validateKnowledgePackSemantics = (manifest) => {
     logicalLocales.values.add(entry2.locale.toLowerCase());
     localesByLogicalId.set(entry2.id, logicalLocales);
     const exactSchemaRevision = entry2.target.kind === "field" ? entry2.target.schema.revision : void 0;
-    const hasExactSchemaSource = entry2.sources.some((source) => source.kind === "schema" && source.schema !== void 0 && (entry2.target.kind !== "field" || source.schema.contract === entry2.target.schema.contract && source.schema.major === entry2.target.schema.major && source.schema.revision === exactSchemaRevision));
+    const hasExactSchemaSource = entry2.sources.some((source2) => source2.kind === "schema" && source2.schema !== void 0 && (entry2.target.kind !== "field" || source2.schema.contract === entry2.target.schema.contract && source2.schema.major === entry2.target.schema.major && source2.schema.revision === exactSchemaRevision));
     if (entry2.claimKind === "schema-derived-fact" && !hasExactSchemaSource) {
       diagnostics.push(diagnostic("error", "x3.sdk/knowledge-schema-fact-without-schema-source", "a schema-derived fact must cite the exact active schema revision", ["spec", "entries", index, "sources"]));
     }
@@ -4186,15 +4186,15 @@ function resolveModWorkspaceGraph(input) {
   }
   const diagnostics = [];
   const sourceIds = /* @__PURE__ */ new Set();
-  for (const source of input.sources) {
-    if (sourceIds.has(source.sourceId)) {
+  for (const source2 of input.sources) {
+    if (sourceIds.has(source2.sourceId)) {
       diagnostics.push({
         severity: "error",
         code: "common.mod/source-id-duplicate",
-        message: `workspace source id is duplicated: ${source.sourceId}`
+        message: `workspace source id is duplicated: ${source2.sourceId}`
       });
     } else {
-      sourceIds.add(source.sourceId);
+      sourceIds.add(source2.sourceId);
     }
   }
   const roots = /* @__PURE__ */ new Map();
@@ -4365,9 +4365,9 @@ function expandContributionManifests(patterns, files) {
   const entries = [];
   for (const file of normalizedFiles) {
     const matched = [];
-    for (let i = 0; i < patterns.length; i += 1) {
-      if (regexes[i].test(file))
-        matched.push(patterns[i]);
+    for (let i2 = 0; i2 < patterns.length; i2 += 1) {
+      if (regexes[i2].test(file))
+        matched.push(patterns[i2]);
     }
     if (matched.length > 1) {
       diagnostics.push(diagnostic("error", "x3.sdk/duplicate-pattern-match", `\xAB${file}\xBB matches ${matched.length} declarations`, [file], { patterns: matched }));
@@ -4382,7 +4382,7 @@ function expandContributionManifests(patterns, files) {
       diagnostics.push(diagnostic("error", "x3.sdk/pattern-without-matches", `\xAB${pattern}\xBB matched no files (optional groups do not exist in v1)`, [pattern]));
     }
   }
-  entries.sort((a, b) => compareUtf8(a.path, b.path));
+  entries.sort((a2, b2) => compareUtf8(a2.path, b2.path));
   return { entries, diagnostics };
 }
 
@@ -4515,15 +4515,15 @@ function grantValidity(grant, now = Date.now()) {
     return { state: "malformed", value: grant.expiresAt };
   return parsed > now ? { state: "valid" } : { state: "expired", at: grant.expiresAt };
 }
-function intersectClasses(a, b) {
-  return uniqueSortedUtf8(a.filter((cls) => b.includes(cls)));
+function intersectClasses(a2, b2) {
+  return uniqueSortedUtf8(a2.filter((cls) => b2.includes(cls)));
 }
-function intersectStrings(a, b) {
-  if (a === void 0)
-    return b === void 0 ? void 0 : [...b];
-  if (b === void 0)
-    return [...a];
-  return uniqueSortedUtf8(a.filter((item) => b.includes(item)));
+function intersectStrings(a2, b2) {
+  if (a2 === void 0)
+    return b2 === void 0 ? void 0 : [...b2];
+  if (b2 === void 0)
+    return [...a2];
+  return uniqueSortedUtf8(a2.filter((item) => b2.includes(item)));
 }
 function narrowPaths(parent, requestedRoots) {
   if (parent === void 0)
@@ -4873,11 +4873,11 @@ function normalizeDetection(item) {
     ...diagnostics === void 0 ? {} : { diagnostics: Object.freeze(diagnostics.map(normalizeDiagnostic)) }
   });
 }
-function freezeSource(source) {
+function freezeSource(source2) {
   return Object.freeze({
-    ...source,
-    ...source.parentIds === void 0 ? {} : {
-      parentIds: Object.freeze([...source.parentIds])
+    ...source2,
+    ...source2.parentIds === void 0 ? {} : {
+      parentIds: Object.freeze([...source2.parentIds])
     }
   });
 }
@@ -4953,9 +4953,9 @@ function normalizeOrigin(origin) {
   }
 }
 async function validateSubjectDescriptorV2(value2) {
-  let snapshot2;
+  let snapshot3;
   try {
-    snapshot2 = snapshotJsonWireData(value2);
+    snapshot3 = snapshotJsonWireData(value2);
   } catch (error) {
     return {
       diagnostics: [
@@ -4963,10 +4963,10 @@ async function validateSubjectDescriptorV2(value2) {
       ]
     };
   }
-  const schemaDiagnostics2 = await validateWithSchema(subjectDescriptorV2Schema, snapshot2);
+  const schemaDiagnostics2 = await validateWithSchema(subjectDescriptorV2Schema, snapshot3);
   if (hasErrors(schemaDiagnostics2))
     return { diagnostics: schemaDiagnostics2 };
-  const wire = snapshot2;
+  const wire = snapshot3;
   const semanticDiagnostics = [];
   const validateSubjectUri = (uri, path) => {
     try {
@@ -5287,8 +5287,8 @@ function deepFreezeJson(value2) {
   return Object.freeze(value2);
 }
 function inventoryRecordFor(contribution) {
-  const record = contribution[INVENTORY_RECORD];
-  return record !== void 0 && Object.isFrozen(record) && record.publicRecord === contribution.record ? record : void 0;
+  const record3 = contribution[INVENTORY_RECORD];
+  return record3 !== void 0 && Object.isFrozen(record3) && record3.publicRecord === contribution.record ? record3 : void 0;
 }
 function coordinate(manifest) {
   return `${manifest.publisher}/${manifest.id}`;
@@ -5349,7 +5349,7 @@ async function buildInventory(inputs, registry, options = {}) {
         localDiagnostics.push(diagnostic("information", "x3.host/contribution-disabled", `\xAB${manifestId}\xBB is disabled by host settings; it stays listed and can be re-enabled`, [input.source, entry2.path]));
       }
       let facts = [];
-      let record;
+      let record3;
       if (ownedManifest !== void 0 && result.inventoryEligible) {
         if (manifestDigest === void 0 || manifestDigest.trim().length === 0) {
           localDiagnostics.push(diagnostic("error", "x3.host/missing-manifest-digest", "the trusted loader did not attest the contribution manifest bytes", [input.source, entry2.path]));
@@ -5371,7 +5371,7 @@ async function buildInventory(inputs, registry, options = {}) {
             if (!Array.isArray(projected))
               throw new TypeError("projector must return an array");
             facts = Object.freeze(projected.map((fact2, index) => validateProjectedFact(fact2, context, index)));
-            record = Object.freeze({
+            record3 = Object.freeze({
               inventoryRecordId: context.inventoryRecordId,
               manifestDigest,
               artifactDigest: context.artifactDigest,
@@ -5382,7 +5382,7 @@ async function buildInventory(inputs, registry, options = {}) {
             inventoryEligible = false;
             activationEligible = false;
             facts = [];
-            record = void 0;
+            record3 = void 0;
           }
         }
       }
@@ -5393,12 +5393,12 @@ async function buildInventory(inputs, registry, options = {}) {
         inventoryEligible,
         activationEligible,
         facts,
-        ...record === void 0 ? {} : { record },
+        ...record3 === void 0 ? {} : { record: record3 },
         diagnostics: Object.freeze(localDiagnostics)
       };
-      if (record !== void 0 && ownedManifest !== void 0) {
+      if (record3 !== void 0 && ownedManifest !== void 0) {
         const privateRecord = Object.freeze({
-          publicRecord: record,
+          publicRecord: record3,
           manifest: ownedManifest,
           verifyArtifactDigest: input.artifact.verifyArtifactDigest,
           ...input.artifact.fileDigests === void 0 ? {} : { fileDigests: Object.freeze({ ...input.artifact.fileDigests }) },
@@ -5422,7 +5422,7 @@ async function buildInventory(inputs, registry, options = {}) {
       contributions
     });
   }
-  extensions.sort((a, b) => compareUtf8(coordinate(a.manifest), coordinate(b.manifest)));
+  extensions.sort((a2, b2) => compareUtf8(coordinate(a2.manifest), coordinate(b2.manifest)));
   const seenExtensions = /* @__PURE__ */ new Map();
   for (const extension of extensions) {
     const coord = coordinate(extension.manifest);
@@ -5449,7 +5449,7 @@ async function buildInventory(inputs, registry, options = {}) {
     }
   }
   const key3 = (d) => `${d.code}${(d.path ?? []).join("/")}${d.message}`;
-  diagnostics.sort((a, b) => compareUtf8(key3(a), key3(b)));
+  diagnostics.sort((a2, b2) => compareUtf8(key3(a2), key3(b2)));
   return { extensions, diagnostics };
 }
 function validateProjectedFact(value2, context, index) {
@@ -5921,7 +5921,7 @@ function resolveProvider(request, offers, preparation) {
     return true;
   });
   if (targetOk.length === 0) {
-    const onlyToolRejects = sawToolReject && !rejected2.some((r) => r.reason === "target-incompatible");
+    const onlyToolRejects = sawToolReject && !rejected2.some((r2) => r2.reason === "target-incompatible");
     return remember({
       state: "unresolved",
       reason: onlyToolRejects ? "external-tool-required" : "target-incompatible",
@@ -5970,16 +5970,16 @@ function resolveProvider(request, offers, preparation) {
     request.operation !== void 0 && (candidate.offer.operations ?? []).includes(request.operation) ? 1 : 0,
     preferredOutputs.filter((requirement) => (candidate.offer.outputs ?? []).some((offer) => traitOfferMatches(requirement, offer))).length
   ];
-  const compareTuple = (a, b) => {
-    for (let i = 0; i < a.length; i += 1) {
-      if (a[i] !== b[i])
-        return a[i] < b[i] ? 1 : -1;
+  const compareTuple = (a2, b2) => {
+    for (let i2 = 0; i2 < a2.length; i2 += 1) {
+      if (a2[i2] !== b2[i2])
+        return a2[i2] < b2[i2] ? 1 : -1;
     }
     return 0;
   };
-  const ranked = [...pool].sort((a, b) => compareTuple(score(a), score(b)) || compareUtf8(candidateSortKey(a), candidateSortKey(b)));
+  const ranked = [...pool].sort((a2, b2) => compareTuple(score(a2), score(b2)) || compareUtf8(candidateSortKey(a2), candidateSortKey(b2)));
   const best = ranked[0];
-  const tied = ranked.filter((c2) => compareTuple(score(c2), score(best)) === 0);
+  const tied = ranked.filter((c3) => compareTuple(score(c3), score(best)) === 0);
   if (tied.length > 1) {
     for (const candidate of tied) {
       reject(candidate.offer, "ambiguous", "preference tuple tie", candidate.contractOffer.offerId);
@@ -5999,7 +5999,7 @@ function resolveProvider(request, offers, preparation) {
   }, request);
 }
 function sortRejected(rejected2) {
-  return [...rejected2].sort((a, b) => compareUtf8(canonicalJsonStringify(a), canonicalJsonStringify(b)));
+  return [...rejected2].sort((a2, b2) => compareUtf8(canonicalJsonStringify(a2), canonicalJsonStringify(b2)));
 }
 
 // packages/host/dist/resolution/lock.js
@@ -6093,9 +6093,9 @@ function serializePolicyLock(entries) {
     }
     seen.set(key3, rendered);
   }
-  const sorted = [...entries].sort((a, b) => {
-    const byKey = compareUtf8(lockKeyString(a.key), lockKeyString(b.key));
-    return byKey !== 0 ? byKey : compareUtf8(canonicalJsonStringify(a), canonicalJsonStringify(b));
+  const sorted = [...entries].sort((a2, b2) => {
+    const byKey = compareUtf8(lockKeyString(a2.key), lockKeyString(b2.key));
+    return byKey !== 0 ? byKey : compareUtf8(canonicalJsonStringify(a2), canonicalJsonStringify(b2));
   });
   return canonicalJsonStringify({ schemaVersion: 1, entries: sorted });
 }
@@ -6435,26 +6435,26 @@ function deny(code, message, context) {
   });
 }
 function targetSatisfies(variant, target) {
-  const c2 = variant.target;
+  const c3 = variant.target;
   const problems = [];
   const has = (list, value2, anyAllowed = false) => list === void 0 || anyAllowed && list.includes("any") || list.includes(value2);
-  if (!has(c2.environments, target.environment))
+  if (!has(c3.environments, target.environment))
     problems.push(`environment ${target.environment}`);
-  if (!has(c2.operatingSystems, target.operatingSystem, true)) {
+  if (!has(c3.operatingSystems, target.operatingSystem, true)) {
     problems.push(`operatingSystem ${target.operatingSystem}`);
   }
-  if (!has(c2.architectures, target.architecture, true)) {
+  if (!has(c3.architectures, target.architecture, true)) {
     problems.push(`architecture ${target.architecture}`);
   }
-  for (const cap of c2.requiredHostCapabilities ?? []) {
+  for (const cap of c3.requiredHostCapabilities ?? []) {
     if (!(target.hostCapabilities ?? []).includes(cap))
       problems.push(`hostCapability ${cap}`);
   }
-  for (const api of c2.requiredWebApis ?? []) {
+  for (const api of c3.requiredWebApis ?? []) {
     if (!(target.webApis ?? []).includes(api))
       problems.push(`webApi ${api}`);
   }
-  for (const tool of c2.externalTools ?? []) {
+  for (const tool of c3.externalTools ?? []) {
     if (!(target.externalTools ?? []).includes(tool))
       problems.push(`externalTool ${tool}`);
   }
@@ -6576,12 +6576,12 @@ async function activateServiceProvider(options) {
   });
   options.diagnostics?.push(...activation.diagnostics);
   const providerId = options.result.selected.offer.providerId;
-  const fail2 = async (code, message) => {
+  const fail4 = async (code, message) => {
     await activation.release();
     throw new ModkitError({ code, message });
   };
   if (activation.module["abiVersion"] !== 1 || typeof activation.module["createProvider"] !== "function") {
-    return fail2("x3.host/invalid-service-provider-module", `provider ${providerId} does not implement ServiceProviderModule ABI v1`);
+    return fail4("x3.host/invalid-service-provider-module", `provider ${providerId} does not implement ServiceProviderModule ABI v1`);
   }
   const createProvider = activation.module["createProvider"];
   let lease;
@@ -6601,7 +6601,7 @@ async function activateServiceProvider(options) {
     throw error;
   }
   if (typeof lease !== "object" || lease === null || !("value" in lease) || typeof lease.release !== "function") {
-    return fail2("x3.host/invalid-service-provider-lease", `provider ${providerId} returned an invalid lease`);
+    return fail4("x3.host/invalid-service-provider-lease", `provider ${providerId} returned an invalid lease`);
   }
   let released = false;
   return Object.freeze({
@@ -6719,12 +6719,12 @@ function exactObject(value2, required, optional, label) {
   if (typeof value2 !== "object" || value2 === null || Array.isArray(value2)) {
     return fail("x3.host/invalid-detection-selection", `${label} must be an object`);
   }
-  const record = value2;
+  const record3 = value2;
   const allowed2 = /* @__PURE__ */ new Set([...required, ...optional]);
-  if (required.some((key3) => !(key3 in record)) || Object.keys(record).some((key3) => !allowed2.has(key3))) {
+  if (required.some((key3) => !(key3 in record3)) || Object.keys(record3).some((key3) => !allowed2.has(key3))) {
     return fail("x3.host/invalid-detection-selection", `${label} has missing or unknown fields`);
   }
-  return record;
+  return record3;
 }
 function nonBlank(value2, label) {
   if (typeof value2 !== "string" || value2.trim().length === 0) {
@@ -7272,20 +7272,20 @@ function runtimeBudget(host, spec) {
     ...deadline === void 0 ? {} : { deadlineMs: deadline }
   });
 }
-function boundedProbeSource(source, plan) {
+function boundedProbeSource(source2, plan) {
   let consumed = 0n;
   const maximum = BigInt(plan.maxBytes);
   const ranges = plan.ranges.map((range) => {
     const length = BigInt(range.length);
     if (range.from === "start")
       return { start: 0n, end: length };
-    if (source.size === void 0) {
+    if (source2.size === void 0) {
       throw new ModkitError({
         code: "x3.host/end-relative-probe-requires-size",
         message: "an end-relative probe range requires a sized source"
       });
     }
-    return { start: source.size > length ? source.size - length : 0n, end: source.size };
+    return { start: source2.size > length ? source2.size - length : 0n, end: source2.size };
   });
   const authorize = (offset, length) => {
     if (offset < 0n || length < 0n) {
@@ -7311,7 +7311,7 @@ function boundedProbeSource(source, plan) {
     consumed += length;
   };
   return Object.freeze({
-    ...source,
+    ...source2,
     async read(offset, length, signal) {
       if (!Number.isSafeInteger(length) || length < 0) {
         throw new ModkitError({
@@ -7320,7 +7320,7 @@ function boundedProbeSource(source, plan) {
         });
       }
       authorize(offset, BigInt(length));
-      return source.read(offset, length, signal);
+      return source2.read(offset, length, signal);
     },
     async *stream(range, signal) {
       if (range?.length === void 0) {
@@ -7331,7 +7331,7 @@ function boundedProbeSource(source, plan) {
       }
       authorize(range.offset, range.length);
       let received = 0n;
-      for await (const chunk of source.stream(range, signal)) {
+      for await (const chunk of source2.stream(range, signal)) {
         received += BigInt(chunk.byteLength);
         if (received > range.length) {
           throw new ModkitError({
@@ -7383,7 +7383,7 @@ function normalizeNamespaceProbePath(path, plan) {
   }
   return normalized;
 }
-function boundedNamespaceProbeSource(source, plan) {
+function boundedNamespaceProbeSource(source2, plan) {
   if (plan.markers.length > plan.maxEntries) {
     throw new ModkitError({
       code: "x3.host/namespace-probe-entry-budget-exceeded",
@@ -7451,9 +7451,9 @@ function boundedNamespaceProbeSource(source, plan) {
     });
   };
   return Object.freeze({
-    ...source,
+    ...source2,
     async openNamespace(signal) {
-      const lease = await source.openNamespace(signal);
+      const lease = await source2.openNamespace(signal);
       const guarded = Object.freeze({
         revision: lease.value.revision,
         async *list() {
@@ -7489,16 +7489,16 @@ function boundedNamespaceProbeSource(source, plan) {
     }
   });
 }
-async function probeCodec(codec, source, probe, signal) {
-  if (source.kind === "bytes" && probe.kind === "bytes") {
-    return codec.probe({ source: boundedProbeSource(source, probe), plan: probe }, signal);
+async function probeCodec(codec, source2, probe, signal) {
+  if (source2.kind === "bytes" && probe.kind === "bytes") {
+    return codec.probe({ source: boundedProbeSource(source2, probe), plan: probe }, signal);
   }
-  if (source.kind === "namespace" && probe.kind === "namespace") {
-    return codec.probe({ source: boundedNamespaceProbeSource(source, probe), plan: probe }, signal);
+  if (source2.kind === "namespace" && probe.kind === "namespace") {
+    return codec.probe({ source: boundedNamespaceProbeSource(source2, probe), plan: probe }, signal);
   }
   throw new ModkitError({
     code: "x3.host/probe-topology-mismatch",
-    message: `codec probe ${probe.kind} cannot inspect a ${source.kind} subject`
+    message: `codec probe ${probe.kind} cannot inspect a ${source2.kind} subject`
   });
 }
 function snapshotDetection(value2, contributionId2) {
@@ -7523,20 +7523,20 @@ function defaultResolveInput(context) {
         message: "a namespace input plan requires a namespace subject source"
       });
     }
-    const source2 = context.source;
+    const source3 = context.source;
     const compositionFingerprint2 = canonicalJsonStringify({
       topology: "namespace",
-      root: source2.ref,
-      revision: source2.revision
+      root: source3.ref,
+      revision: source3.revision
     });
     return Object.freeze({
       originKind: "namespace",
-      root: source2.ref,
+      root: source3.ref,
       bindings: Object.freeze([]),
       revisions: Object.freeze({
         topology: "namespace",
-        revision: source2.revision,
-        namespaceRevision: source2.revision,
+        revision: source3.revision,
+        namespaceRevision: source3.revision,
         bindings: Object.freeze([]),
         compositionFingerprint: compositionFingerprint2
       }),
@@ -7549,7 +7549,7 @@ function defaultResolveInput(context) {
       },
       async openNamespace(signal) {
         throwIfAborted(signal);
-        return source2.openNamespace(signal);
+        return source3.openNamespace(signal);
       }
     });
   }
@@ -7565,7 +7565,7 @@ function defaultResolveInput(context) {
       message: "a single-file input plan requires a byte subject source"
     });
   }
-  const source = context.source;
+  const source2 = context.source;
   const candidate = plan.candidate;
   if (candidate.bindingId.trim().length === 0 || candidate.role.trim().length === 0 || candidate.ownership !== "owned" && candidate.ownership !== "external") {
     throw new ModkitError({
@@ -7578,8 +7578,8 @@ function defaultResolveInput(context) {
     bindingId: candidate.bindingId,
     role: candidate.role,
     ownership: candidate.ownership,
-    source: source.ref,
-    revision: source.revision
+    source: source2.ref,
+    revision: source2.revision
   });
   const compositionFingerprint = canonicalJsonStringify({
     topology: "single",
@@ -7593,7 +7593,7 @@ function defaultResolveInput(context) {
     primaryBindingId: binding.bindingId,
     revisions: Object.freeze({
       topology: "single",
-      revision: source.revision,
+      revision: source2.revision,
       bindings: Object.freeze([
         Object.freeze({ bindingId: binding.bindingId, revision: binding.revision })
       ]),
@@ -7608,7 +7608,7 @@ function defaultResolveInput(context) {
           message: `asset input has no binding ${bindingId2}`
         });
       }
-      return Object.freeze({ value: source, release: async () => void 0 });
+      return Object.freeze({ value: source2, release: async () => void 0 });
     }
   });
 }
@@ -7631,7 +7631,7 @@ function assertCodec(value2, contributionId2) {
   return value2;
 }
 function noServiceResolver() {
-  const unavailable2 = (contract, major) => {
+  const unavailable3 = (contract, major) => {
     throw new ModkitError({
       code: "x3.host/service-contract-unregistered",
       message: `service contract ${contract}@${major} is unavailable in this composition`
@@ -7639,10 +7639,10 @@ function noServiceResolver() {
   };
   return {
     async resolve(request) {
-      return unavailable2(request.contract, request.major);
+      return unavailable3(request.contract, request.major);
     },
     async resolveUnknown(request) {
-      return unavailable2(request.contract, request.major);
+      return unavailable3(request.contract, request.major);
     }
   };
 }
@@ -7766,28 +7766,28 @@ async function unresolvedDescriptor(options, detections) {
     revision: options.source.revision
   });
 }
-async function textFallbackAvailable(source, signal) {
-  if (source.kind !== "bytes")
+async function textFallbackAvailable(source2, signal) {
+  if (source2.kind !== "bytes")
     return false;
-  if (source.size === void 0)
+  if (source2.size === void 0)
     return false;
-  const length = Number(source.size > 65536n ? 65536n : source.size);
+  const length = Number(source2.size > 65536n ? 65536n : source2.size);
   try {
-    const bytes2 = await source.read(0n, length, signal);
+    const bytes2 = await source2.read(0n, length, signal);
     new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
     return true;
   } catch {
     return false;
   }
 }
-async function unresolvedFallback(source, signal) {
-  if (source.kind === "namespace") {
+async function unresolvedFallback(source2, signal) {
+  if (source2.kind === "namespace") {
     return Object.freeze({ preferred: "none", available: Object.freeze([]) });
   }
-  const text2 = await textFallbackAvailable(source, signal);
+  const text3 = await textFallbackAvailable(source2, signal);
   return Object.freeze({
-    preferred: text2 ? "text" : "hex",
-    available: Object.freeze(text2 ? ["text", "hex"] : ["hex"])
+    preferred: text3 ? "text" : "hex",
+    available: Object.freeze(text3 ? ["text", "hex"] : ["hex"])
   });
 }
 async function openSubject(options) {
@@ -7865,7 +7865,7 @@ async function openSubject(options) {
         });
         continue;
       }
-      const record = {
+      const record3 = {
         resources,
         nestedLocks: []
       };
@@ -7877,7 +7877,7 @@ async function openSubject(options) {
           ...options.policy === void 0 ? {} : { policy: options.policy },
           ...options.signal === void 0 ? {} : { signal: options.signal }
         });
-        record.resources.add(activation.release);
+        record3.resources.add(activation.release);
         local.push(...activation.diagnostics);
         {
           const requested = candidate.contribution.manifest?.runtimeVariants?.find((item) => item.variantId === candidate.offer.runtimeVariant)?.requestedPermissionClasses ?? [];
@@ -7887,7 +7887,7 @@ async function openSubject(options) {
           }
         }
         const effectiveBudget = runtimeBudget(options.budget, candidate.spec);
-        const nestedLocks = record.nestedLocks;
+        const nestedLocks = record3.nestedLocks;
         const makeContext = (grant, chain) => {
           const contracts = options.serviceDefinitions === void 0 ? noServiceResolver() : createContractResolverPort({
             offers,
@@ -7915,7 +7915,7 @@ async function openSubject(options) {
                 diagnostics,
                 contextFor: (effectiveGrant) => makeContext(effectiveGrant, [...chain, key3])
               });
-              record.resources.add(() => nested.release());
+              record3.resources.add(() => nested.release());
               return Object.freeze({
                 value: nested.lease.value,
                 release: () => nested.release()
@@ -7935,7 +7935,7 @@ async function openSubject(options) {
         };
         const codec = assertCodec(codecModule(activation.module, candidate.contributionId).createCodec(makeContext(activation.effectiveGrant, [candidate.contributionId])), candidate.contributionId);
         const detection = snapshotDetection(await probeCodec(codec, options.source, candidate.spec.probe, options.signal), candidate.contributionId);
-        detected.push(Object.assign(record, {
+        detected.push(Object.assign(record3, {
           ...candidate,
           ticket: resolved2.ticket,
           codec,
@@ -7959,7 +7959,7 @@ async function openSubject(options) {
       } catch (error) {
         local.push(caughtDiagnostic("probe", error));
         try {
-          await record.resources.release();
+          await record3.resources.release();
         } catch (cleanupError) {
           local.push(caughtDiagnostic("cleanup", cleanupError));
         }
@@ -8064,8 +8064,8 @@ async function openSubject(options) {
       const index = explanations.indexOf(selectedExplanation);
       explanations[index] = Object.freeze({ ...selectedExplanation, state: "selected" });
     }
-    const record = inventoryRecordFor(best.contribution)?.publicRecord;
-    if (record === void 0) {
+    const record3 = inventoryRecordFor(best.contribution)?.publicRecord;
+    if (record3 === void 0) {
       throw new ModkitError({
         code: "x3.host/detection-selection-unattested",
         message: "selected codec has no attested inventory record"
@@ -8077,8 +8077,8 @@ async function openSubject(options) {
       contributionId: best.contributionId,
       variantId: best.offer.runtimeVariant,
       offerId: best.logicalOffer.offerId,
-      artifactDigest: record.artifactDigest,
-      manifestDigest: record.manifestDigest,
+      artifactDigest: record3.artifactDigest,
+      manifestDigest: record3.manifestDigest,
       sourceTopology: best.spec.sourceTopology,
       detection: best.detection
     }));
@@ -8516,10 +8516,10 @@ function createCompanionInputResolver(origin, options = {}) {
     return buildAssetInput(context, plan, origin, selected, signal);
   };
 }
-function countingSource(source, onBytes) {
-  if (source.kind !== "bytes")
-    return source;
-  const inner = source;
+function countingSource(source2, onBytes) {
+  if (source2.kind !== "bytes")
+    return source2;
+  const inner = source2;
   return Object.freeze({
     ...inner,
     async read(offset, length, signal) {
@@ -8567,16 +8567,16 @@ function buildAssetInput(context, plan, origin, selected, signal) {
   };
   const bindingsFor = (requirementId) => Object.freeze(requirementBindings.filter((item) => item.requirementId === requirementId));
   if (plan.originKind === "namespace") {
-    const source2 = context.source;
+    const source3 = context.source;
     const revisions2 = Object.freeze({
       topology: "namespace",
-      revision: source2.revision,
-      namespaceRevision: source2.revision,
+      revision: source3.revision,
+      namespaceRevision: source3.revision,
       bindings: Object.freeze(requirementBindings.map((item) => Object.freeze({ bindingId: item.bindingId, revision: item.revision }))),
       compositionFingerprint: canonicalJsonStringify({
         topology: "namespace",
-        root: source2.ref,
-        revision: source2.revision,
+        root: source3.ref,
+        revision: source3.revision,
         bindings: requirementBindings.map((item) => ({
           bindingId: item.bindingId,
           source: item.source,
@@ -8586,18 +8586,18 @@ function buildAssetInput(context, plan, origin, selected, signal) {
     });
     return Object.freeze({
       originKind: "namespace",
-      root: source2.ref,
+      root: source3.ref,
       bindings: Object.freeze(requirementBindings),
       revisions: revisions2,
       bindingsFor,
       openBinding: openRequirement,
       async openNamespace(openSignal) {
         throwIfAborted(openSignal ?? signal);
-        return source2.openNamespace(openSignal ?? signal);
+        return source3.openNamespace(openSignal ?? signal);
       }
     });
   }
-  const source = context.source;
+  const source2 = context.source;
   const candidatePlan = plan.candidate;
   if (candidatePlan === void 0 || candidatePlan.bindingId.trim().length === 0 || candidatePlan.role.trim().length === 0 || candidatePlan.ownership !== "owned" && candidatePlan.ownership !== "external") {
     throw new ModkitError({
@@ -8610,8 +8610,8 @@ function buildAssetInput(context, plan, origin, selected, signal) {
     bindingId: candidatePlan.bindingId,
     role: candidatePlan.role,
     ownership: candidatePlan.ownership,
-    source: source.ref,
-    revision: source.revision
+    source: source2.ref,
+    revision: source2.revision
   });
   if (requirementBindings.some((item) => item.bindingId === candidate.bindingId)) {
     throw new ModkitError({
@@ -8623,7 +8623,7 @@ function buildAssetInput(context, plan, origin, selected, signal) {
   const bindings = Object.freeze([candidate, ...requirementBindings]);
   const revisions = Object.freeze({
     topology: "bundle",
-    revision: source.revision,
+    revision: source2.revision,
     bindings: Object.freeze(bindings.map((item) => Object.freeze({ bindingId: item.bindingId, revision: item.revision }))),
     compositionFingerprint: canonicalJsonStringify({
       topology: "bundle",
@@ -8643,7 +8643,7 @@ function buildAssetInput(context, plan, origin, selected, signal) {
     async openBinding(bindingId2, openSignal) {
       throwIfAborted(openSignal ?? signal);
       if (bindingId2 === candidate.bindingId) {
-        return Object.freeze({ value: source, release: async () => void 0 });
+        return Object.freeze({ value: source2, release: async () => void 0 });
       }
       return openRequirement(bindingId2, openSignal);
     }
@@ -8732,8 +8732,8 @@ function createNamespaceCompanionOrigin(options) {
         await refLease.release();
         throw error;
       }
-      const source = containerEntrySource(refLease.value, containerEntryRevision(options.containerRevision, entry2.entryId, bytes2.byteLength), bytes2);
-      return Object.freeze({ value: source, release: () => refLease.release() });
+      const source2 = containerEntrySource(refLease.value, containerEntryRevision(options.containerRevision, entry2.entryId, bytes2.byteLength), bytes2);
+      return Object.freeze({ value: source2, release: () => refLease.release() });
     }
   });
 }
@@ -9029,7 +9029,7 @@ async function openNestedSubject(options) {
     };
     try {
       const bytes2 = await extract(entry2.id, options.signal);
-      const source = containerEntrySource(refLease.value, containerEntryRevision(descriptor.revision, entry2.id, bytes2.byteLength), bytes2);
+      const source2 = containerEntrySource(refLease.value, containerEntryRevision(descriptor.revision, entry2.id, bytes2.byteLength), bytes2);
       const origin = createNamespaceCompanionOrigin({
         namespace,
         primaryLogicalId: entry2.path,
@@ -9040,7 +9040,7 @@ async function openNestedSubject(options) {
       });
       const result = await openSubject({
         inventory: options.inventory,
-        source,
+        source: source2,
         path: entry2.path,
         intent: options.intent ?? "full",
         target: options.target,
@@ -9900,7 +9900,7 @@ function createCommandRuntime(descriptors) {
   if (byId.size !== descriptors.length) {
     throw new TypeError("two commands share one id; a command id names exactly one behaviour");
   }
-  const sorted = Object.freeze([...descriptors].sort((a, b) => a.id < b.id ? -1 : 1));
+  const sorted = Object.freeze([...descriptors].sort((a2, b2) => a2.id < b2.id ? -1 : 1));
   return Object.freeze({
     descriptors: sorted,
     get: (id) => byId.get(id),
@@ -10136,20 +10136,20 @@ var openCommand = {
   mutatesSource: false,
   async run(context, input) {
     return withSubject(OPEN_COMMAND, context, String(input.subject), async (subject, _session, descriptor, diagnostics) => {
-      const snapshot2 = subject.snapshot;
-      if (snapshot2.state !== "opened")
+      const snapshot3 = subject.snapshot;
+      if (snapshot3.state !== "opened")
         return failed(OPEN_COMMAND, COMMAND_SUBJECT_UNRESOLVED, "unreachable", diagnostics);
       return ok(OPEN_COMMAND, {
         ref: subject.ref,
         state: "opened",
         selected: {
-          contributionId: snapshot2.selected.contributionId,
-          variantId: snapshot2.selected.variantId,
-          confidence: snapshot2.selected.confidence
+          contributionId: snapshot3.selected.contributionId,
+          variantId: snapshot3.selected.variantId,
+          confidence: snapshot3.selected.confidence
         },
         formatId: descriptor.identity?.formatId ?? null,
         formatLabel: descriptor.identity?.formatLabel ?? null,
-        candidates: snapshot2.candidates.length,
+        candidates: snapshot3.candidates.length,
         operations: (descriptor.operations ?? []).map((item) => item.id)
       }, diagnostics);
     });
@@ -10501,6 +10501,331 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 // packages/host/dist/vfs-source.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
+// packages/vfs/dist/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/vfs/dist/source.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function rangeError(id, offset, length, size) {
+  return new ModkitError({
+    code: "x3.vfs/read-out-of-range",
+    message: `read [${offset}, ${offset + length}) exceeds source \xAB${id}\xBB of size ${size}`,
+    context: { id, offset, length, size }
+  });
+}
+var CHUNK = 64 * 1024;
+function createMemorySource(id, bytes2) {
+  let disposed = false;
+  const ensureLive = () => {
+    if (disposed) {
+      throw new ModkitError({ code: "x3.vfs/source-disposed", message: `source \xAB${id}\xBB disposed` });
+    }
+  };
+  return {
+    id,
+    // async so cancellation/disposal surface as rejections, never sync throws
+    async size(signal) {
+      throwIfAborted(signal);
+      ensureLive();
+      return bytes2.length;
+    },
+    async readAt(offset, length, signal) {
+      throwIfAborted(signal);
+      ensureLive();
+      if (offset < 0 || length < 0 || offset + length > bytes2.length) {
+        throw rangeError(id, offset, length, bytes2.length);
+      }
+      return bytes2.slice(offset, offset + length);
+    },
+    stream(start = 0, end = bytes2.length, signal) {
+      ensureLive();
+      let position = Math.max(0, start);
+      const stop = Math.min(end, bytes2.length);
+      return new ReadableStream({
+        pull(controller) {
+          throwIfAborted(signal);
+          if (position >= stop) {
+            controller.close();
+            return;
+          }
+          const next = Math.min(position + CHUNK, stop);
+          controller.enqueue(bytes2.slice(position, next));
+          position = next;
+        }
+      });
+    },
+    dispose() {
+      disposed = true;
+    }
+  };
+}
+async function collectStream(stream, signal) {
+  const chunks = [];
+  let total = 0;
+  const reader = stream.getReader();
+  try {
+    for (; ; ) {
+      throwIfAborted(signal);
+      const { done, value: value2 } = await reader.read();
+      if (done)
+        break;
+      chunks.push(value2);
+      total += value2.length;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return out;
+}
+
+// packages/vfs/dist/vfs.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var DEFAULT_VFS_LIMITS = Object.freeze({
+  // Large installed-game indexes are normal inputs (the pinned BAR rapid package has 18,413
+  // records). Providers still count before exposing an entry; this ceiling merely lets a caller
+  // grant a bounded installed-game-sized index instead of making that valid input impossible.
+  maxEntries: 25e3,
+  maxMaterializedBytes: 512n * 1024n * 1024n,
+  maxFileBytes: 8n * 1024n * 1024n * 1024n * 1024n,
+  maxReadBytes: 512n * 1024n * 1024n,
+  maxReadRangeBytes: 16 * 1024 * 1024,
+  maxStreamBytes: 512n * 1024n * 1024n,
+  maxPathBytes: 4096
+});
+var PATH_ENCODER = new TextEncoder();
+var SCHEME2 = /^([A-Za-z][A-Za-z0-9+.-]*):/u;
+function invalidPath(path, reason) {
+  return new ModkitError({
+    code: "x3.vfs/path-invalid",
+    message: `VFS path \xAB${path}\xBB is invalid: ${reason}`,
+    context: { path, reason }
+  });
+}
+function normalizeVfsPath(path) {
+  if (path.includes("\0"))
+    throw invalidPath(path, "NUL bytes are forbidden");
+  const parts = [];
+  for (const part of path.replaceAll("\\", "/").split("/")) {
+    if (part === "" || part === ".")
+      continue;
+    if (part === "..") {
+      throw new ModkitError({
+        code: "x3.vfs/path-escape-refused",
+        message: `VFS path \xAB${path}\xBB attempts to escape its mounted root`,
+        context: { path }
+      });
+    }
+    parts.push(part);
+  }
+  return parts.join("/");
+}
+function parseVfsScheme(uri) {
+  const match = SCHEME2.exec(uri);
+  const scheme = match?.[1];
+  if (scheme === void 0) {
+    throw new ModkitError({
+      code: "x3.vfs/uri-invalid",
+      message: `VFS source URI \xAB${uri}\xBB has no protocol scheme`,
+      context: { uri }
+    });
+  }
+  return scheme.toLowerCase();
+}
+function positiveSafeInteger(value2, name) {
+  if (!Number.isSafeInteger(value2) || value2 <= 0) {
+    throw new ModkitError({
+      code: "x3.vfs/limit-invalid",
+      message: `${name} must be a positive safe integer`,
+      context: { name, value: value2 }
+    });
+  }
+  return value2;
+}
+function positiveBigInt(value2, name) {
+  if (value2 <= 0n) {
+    throw new ModkitError({
+      code: "x3.vfs/limit-invalid",
+      message: `${name} must be positive`,
+      context: { name, value: String(value2) }
+    });
+  }
+  return value2;
+}
+function minimumBigInt(requested, maximum) {
+  return requested < maximum ? requested : maximum;
+}
+function clampVfsLimits(requested = {}, maximum = DEFAULT_VFS_LIMITS) {
+  const requestedEntries = positiveSafeInteger(requested.maxEntries ?? maximum.maxEntries, "maxEntries");
+  const requestedPathBytes = positiveSafeInteger(requested.maxPathBytes ?? maximum.maxPathBytes, "maxPathBytes");
+  const requestedMaterializedBytes = positiveBigInt(requested.maxMaterializedBytes ?? maximum.maxMaterializedBytes, "maxMaterializedBytes");
+  const requestedFileBytes = positiveBigInt(requested.maxFileBytes ?? maximum.maxFileBytes, "maxFileBytes");
+  const requestedReadBytes = positiveBigInt(requested.maxReadBytes ?? maximum.maxReadBytes, "maxReadBytes");
+  const requestedReadRangeBytes = positiveSafeInteger(requested.maxReadRangeBytes ?? maximum.maxReadRangeBytes, "maxReadRangeBytes");
+  const requestedStreamBytes = positiveBigInt(requested.maxStreamBytes ?? maximum.maxStreamBytes, "maxStreamBytes");
+  return Object.freeze({
+    maxEntries: Math.min(requestedEntries, maximum.maxEntries),
+    maxMaterializedBytes: minimumBigInt(requestedMaterializedBytes, maximum.maxMaterializedBytes),
+    maxFileBytes: minimumBigInt(requestedFileBytes, maximum.maxFileBytes),
+    maxReadBytes: minimumBigInt(requestedReadBytes, maximum.maxReadBytes),
+    maxReadRangeBytes: Math.min(requestedReadRangeBytes, maximum.maxReadRangeBytes),
+    maxStreamBytes: minimumBigInt(requestedStreamBytes, maximum.maxStreamBytes),
+    maxPathBytes: Math.min(requestedPathBytes, maximum.maxPathBytes)
+  });
+}
+function assertVfsPathBudget(path, limits) {
+  const bytes2 = PATH_ENCODER.encode(path).byteLength;
+  if (bytes2 > limits.maxPathBytes) {
+    throw new ModkitError({
+      code: "x3.vfs/path-budget-exceeded",
+      message: `VFS path exceeds the ${limits.maxPathBytes}-byte provider limit`,
+      context: { path, pathBytes: bytes2, maxPathBytes: limits.maxPathBytes }
+    });
+  }
+}
+var VfsProviderRegistry = class {
+  providers = /* @__PURE__ */ new Map();
+  register(provider) {
+    const scheme = parseVfsScheme(`${provider.scheme}:`);
+    if (this.providers.has(scheme)) {
+      throw new ModkitError({
+        code: "x3.vfs/provider-already-registered",
+        message: `a VFS provider for protocol \xAB${scheme}\xBB is already registered`,
+        context: { providerId: provider.id, scheme }
+      });
+    }
+    this.providers.set(scheme, provider);
+    return this;
+  }
+  unregister(scheme) {
+    const normalized = parseVfsScheme(`${scheme}:`);
+    const provider = this.providers.get(normalized);
+    this.providers.delete(normalized);
+    return provider;
+  }
+  resolve(uri) {
+    const scheme = parseVfsScheme(uri);
+    const provider = this.providers.get(scheme);
+    if (provider === void 0) {
+      throw new ModkitError({
+        code: "x3.vfs/provider-not-registered",
+        message: `no VFS provider is registered for protocol \xAB${scheme}\xBB`,
+        context: { scheme, uri }
+      });
+    }
+    return provider;
+  }
+  async open(uri, options = {}) {
+    throwIfAborted(options.signal);
+    const limits = clampVfsLimits(options.limits);
+    const context = options.signal === void 0 ? { limits } : { limits, signal: options.signal };
+    return this.resolve(uri).open(uri, context);
+  }
+};
+function isWithin(mountPath, path) {
+  return mountPath === "" || path === mountPath || path.startsWith(`${mountPath}/`);
+}
+var VirtualFileSystem = class {
+  providers;
+  mounts = /* @__PURE__ */ new Map();
+  disposed = false;
+  constructor(providers = new VfsProviderRegistry()) {
+    this.providers = providers;
+  }
+  registerProvider(provider) {
+    this.assertLive();
+    this.providers.register(provider);
+    return this;
+  }
+  async openMount(uri, options = {}) {
+    this.assertLive();
+    return this.providers.open(uri, options);
+  }
+  mount(path, mount) {
+    this.assertLive();
+    const normalized = normalizeVfsPath(path);
+    if (this.mounts.has(normalized)) {
+      throw new ModkitError({
+        code: "x3.vfs/mount-already-exists",
+        message: `a VFS source is already mounted at \xAB${normalized}\xBB`,
+        context: { path: normalized }
+      });
+    }
+    this.mounts.set(normalized, { path: normalized, mount });
+    return this;
+  }
+  unmount(path) {
+    this.assertLive();
+    const normalized = normalizeVfsPath(path);
+    const mounted = this.mounts.get(normalized);
+    this.mounts.delete(normalized);
+    return mounted?.mount;
+  }
+  resolve(path) {
+    this.assertLive();
+    const normalized = normalizeVfsPath(path);
+    let best;
+    for (const mounted of this.mounts.values()) {
+      if (!isWithin(mounted.path, normalized))
+        continue;
+      if (best === void 0 || mounted.path.length > best.path.length)
+        best = mounted;
+    }
+    if (best === void 0) {
+      throw new ModkitError({
+        code: "x3.vfs/mount-not-found",
+        message: `no VFS source is mounted for path \xAB${normalized}\xBB`,
+        context: { path: normalized }
+      });
+    }
+    const innerPath = best.path === "" ? normalized : normalized === best.path ? "" : normalized.slice(best.path.length + 1);
+    return { mountPath: best.path, mount: best.mount, path: innerPath };
+  }
+  async stat(path, signal) {
+    const resolved2 = this.resolve(path);
+    return resolved2.mount.stat(resolved2.path, signal);
+  }
+  list(path, signal) {
+    const resolved2 = this.resolve(path);
+    return resolved2.mount.list(resolved2.path, signal);
+  }
+  async open(path, signal) {
+    const resolved2 = this.resolve(path);
+    return resolved2.mount.open(resolved2.path, signal);
+  }
+  async dispose() {
+    if (this.disposed)
+      return;
+    this.disposed = true;
+    const mounts = new Set([...this.mounts.values()].map((value2) => value2.mount));
+    this.mounts.clear();
+    const results = await Promise.allSettled([...mounts].map(async (mount) => mount.dispose()));
+    const failures = results.filter((result) => result.status === "rejected");
+    if (failures.length > 0) {
+      const first = failures[0];
+      throw new ModkitError({
+        code: "x3.vfs/dispose-failed",
+        message: "one or more mounted VFS sources failed to dispose",
+        context: { failureCount: failures.length },
+        cause: first?.reason
+      });
+    }
+  }
+  assertLive() {
+    if (!this.disposed)
+      return;
+    throw new ModkitError({
+      code: "x3.vfs/filesystem-disposed",
+      message: "the virtual filesystem is disposed"
+    });
+  }
+};
+
 // packages/host/dist/subject-services.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
@@ -10749,19 +11074,19 @@ var ROUND_TRIPS = /* @__PURE__ */ new Set(["byte-identical", "semantic", "lossy"
 function facetOf(value2, keys) {
   if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
     return void 0;
-  const record = value2;
-  const own = Object.keys(record);
+  const record3 = value2;
+  const own = Object.keys(record3);
   if (own.length !== keys.length || !keys.every((key3) => own.includes(key3)))
     return void 0;
   for (const key3 of keys) {
-    if (typeof record[key3] !== "string" || record[key3].length === 0)
+    if (typeof record3[key3] !== "string" || record3[key3].length === 0)
       return void 0;
   }
-  if (!MUTATION_MODES.has(record["mutationMode"]))
+  if (!MUTATION_MODES.has(record3["mutationMode"]))
     return void 0;
-  if (!ROUND_TRIPS.has(record["minimumRoundTrip"]))
+  if (!ROUND_TRIPS.has(record3["minimumRoundTrip"]))
     return void 0;
-  return record;
+  return record3;
 }
 function matchWriterFacets(context) {
   const request = facetOf(context.requestFacet, REQUIREMENT_KEYS);
@@ -10864,14 +11189,14 @@ function stringList(value2) {
   return new Set(strings).size === strings.length ? strings : void 0;
 }
 function parseOffer(value2) {
-  const record = recordOf(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !OFFER_KEYS2.has(key3)))
+  const record3 = recordOf(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS2.has(key3)))
     return void 0;
-  const languageIds = stringList(record["languageIds"]);
+  const languageIds = stringList(record3["languageIds"]);
   if (languageIds === void 0)
     return void 0;
-  const rawKinds = record["documentKinds"];
-  const rawExtensions = record["extensions"];
+  const rawKinds = record3["documentKinds"];
+  const rawExtensions = record3["extensions"];
   const documentKinds = rawKinds === void 0 ? void 0 : stringList(rawKinds);
   const extensions = rawExtensions === void 0 ? void 0 : stringList(rawExtensions);
   if (rawKinds !== void 0 && documentKinds === void 0 || rawExtensions !== void 0 && extensions === void 0) {
@@ -10884,12 +11209,12 @@ function parseOffer(value2) {
   };
 }
 function parseRequest(value2) {
-  const record = recordOf(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !REQUEST_KEYS.has(key3)))
+  const record3 = recordOf(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !REQUEST_KEYS.has(key3)))
     return void 0;
-  const languageId = record["languageId"];
-  const documentKind = record["documentKind"];
-  const extension = record["extension"];
+  const languageId = record3["languageId"];
+  const documentKind = record3["documentKind"];
+  const extension = record3["extension"];
   if (typeof languageId !== "string" || languageId.trim().length === 0)
     return void 0;
   if (documentKind !== void 0 && (typeof documentKind !== "string" || documentKind.length === 0)) {
@@ -11059,17 +11384,17 @@ function stringList2(value2) {
   return new Set(strings).size === strings.length ? strings : void 0;
 }
 function parseOffer2(value2) {
-  const record = recordOf2(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !OFFER_KEYS3.has(key3)))
+  const record3 = recordOf2(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS3.has(key3)))
     return void 0;
-  const runtimeIds = stringList2(record["runtimeIds"]);
+  const runtimeIds = stringList2(record3["runtimeIds"]);
   return runtimeIds === void 0 ? void 0 : { runtimeIds };
 }
 function parseRequest2(value2) {
-  const record = recordOf2(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !REQUEST_KEYS2.has(key3)))
+  const record3 = recordOf2(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !REQUEST_KEYS2.has(key3)))
     return void 0;
-  const runtimeId = record["runtimeId"];
+  const runtimeId = record3["runtimeId"];
   return nonEmptyString3(runtimeId) ? { runtimeId } : void 0;
 }
 function matchRuntimeFacets(context) {
@@ -11188,19 +11513,19 @@ function outputKindList(value2) {
   return outputKinds.length === value2.length && new Set(outputKinds).size === outputKinds.length ? outputKinds : void 0;
 }
 function parseOffer3(value2) {
-  const record = recordOf3(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !OFFER_KEYS4.has(key3)))
+  const record3 = recordOf3(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS4.has(key3)))
     return void 0;
-  const rendererIds = stringList3(record["rendererIds"]);
-  const outputKinds = outputKindList(record["outputKinds"]);
+  const rendererIds = stringList3(record3["rendererIds"]);
+  const outputKinds = outputKindList(record3["outputKinds"]);
   return rendererIds === void 0 || outputKinds === void 0 ? void 0 : { rendererIds, outputKinds };
 }
 function parseRequest3(value2) {
-  const record = recordOf3(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !REQUEST_KEYS3.has(key3)))
+  const record3 = recordOf3(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !REQUEST_KEYS3.has(key3)))
     return void 0;
-  const rendererId = record["rendererId"];
-  const parsedOutput = outputKind(record["outputKind"]);
+  const rendererId = record3["rendererId"];
+  const parsedOutput = outputKind(record3["outputKind"]);
   if (parsedOutput === void 0 || rendererId !== void 0 && !nonEmptyString4(rendererId)) {
     return void 0;
   }
@@ -11300,18 +11625,18 @@ function stringList4(value2) {
   return new Set(strings).size === strings.length ? strings : void 0;
 }
 function parseOffer4(value2) {
-  const record = recordOf4(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !OFFER_KEYS5.has(key3)))
+  const record3 = recordOf4(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS5.has(key3)))
     return void 0;
-  const gameIds = stringList4(record["gameIds"]);
+  const gameIds = stringList4(record3["gameIds"]);
   return gameIds === void 0 ? void 0 : { gameIds };
 }
 function parseRequest4(value2) {
-  const record = recordOf4(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !REQUEST_KEYS4.has(key3))) {
+  const record3 = recordOf4(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !REQUEST_KEYS4.has(key3))) {
     return void 0;
   }
-  return nonEmptyString5(record["gameId"]) ? { gameId: record["gameId"] } : void 0;
+  return nonEmptyString5(record3["gameId"]) ? { gameId: record3["gameId"] } : void 0;
 }
 function matchGameInstallationFacets(context) {
   const offer = parseOffer4(context.offerFacet);
@@ -11422,19 +11747,19 @@ function stringList5(value2) {
   return new Set(strings).size === strings.length ? strings : void 0;
 }
 function parseOffer5(value2) {
-  const record = recordOf5(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !OFFER_KEYS6.has(key3))) {
+  const record3 = recordOf5(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS6.has(key3))) {
     return void 0;
   }
-  const gameIds = stringList5(record["gameIds"]);
+  const gameIds = stringList5(record3["gameIds"]);
   return gameIds === void 0 ? void 0 : { gameIds };
 }
 function parseRequest5(value2) {
-  const record = recordOf5(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !REQUEST_KEYS5.has(key3))) {
+  const record3 = recordOf5(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !REQUEST_KEYS5.has(key3))) {
     return void 0;
   }
-  return nonEmptyString6(record["gameId"]) ? { gameId: record["gameId"] } : void 0;
+  return nonEmptyString6(record3["gameId"]) ? { gameId: record3["gameId"] } : void 0;
 }
 function matchModWorkspaceFacets(context) {
   const offer = parseOffer5(context.offerFacet);
@@ -11520,19 +11845,19 @@ function stringList6(value2) {
   return new Set(strings).size === strings.length ? strings : void 0;
 }
 function parseOffer6(value2) {
-  const record = recordOf6(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !OFFER_KEYS7.has(key3))) {
+  const record3 = recordOf6(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS7.has(key3))) {
     return void 0;
   }
-  const gameIds = stringList6(record["gameIds"]);
+  const gameIds = stringList6(record3["gameIds"]);
   return gameIds === void 0 ? void 0 : { gameIds };
 }
 function parseRequest6(value2) {
-  const record = recordOf6(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !REQUEST_KEYS6.has(key3))) {
+  const record3 = recordOf6(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !REQUEST_KEYS6.has(key3))) {
     return void 0;
   }
-  return nonEmptyString7(record["gameId"]) ? { gameId: record["gameId"] } : void 0;
+  return nonEmptyString7(record3["gameId"]) ? { gameId: record3["gameId"] } : void 0;
 }
 function matchDataCatalogFacets(context) {
   const offer = parseOffer6(context.offerFacet);
@@ -11679,8 +12004,8 @@ function registerStandardDataDefinitions(definitions) {
   })));
 }
 function isResolvedDataWorkspace(value2) {
-  const record = recordOf6(value2);
-  return record?.["contract"] === RESOLVED_DATA_WORKSPACE_CONTRACT && nonEmptyString7(record["providerId"]) && stringList6(record["gameIds"]) !== void 0 && typeof record["plan"] === "function" && typeof record["analyze"] === "function" && typeof record["openSchemaTree"] === "function" && typeof record["openDefinitionTable"] === "function" && typeof record["openLocalizationTable"] === "function" && typeof record["openRelations"] === "function";
+  const record3 = recordOf6(value2);
+  return record3?.["contract"] === RESOLVED_DATA_WORKSPACE_CONTRACT && nonEmptyString7(record3["providerId"]) && stringList6(record3["gameIds"]) !== void 0 && typeof record3["plan"] === "function" && typeof record3["analyze"] === "function" && typeof record3["openSchemaTree"] === "function" && typeof record3["openDefinitionTable"] === "function" && typeof record3["openLocalizationTable"] === "function" && typeof record3["openRelations"] === "function";
 }
 async function resolveResolvedDataWorkspace(request) {
   const definitions = request.services.serviceDefinitions;
@@ -11742,15 +12067,17 @@ function createResolvedDataSubjectSelectorLease(analyzed, inputLimits) {
   if (analyzed.openSubjectFacts === void 0 || analyzed.openSubjectCalculations === void 0) {
     return void 0;
   }
+  const openSubjectFacts = analyzed.openSubjectFacts;
+  const openSubjectCalculations = analyzed.openSubjectCalculations;
   const limits = Object.freeze({
     maxPageSize: positiveBound(inputLimits.maxPageSize, "maxPageSize"),
     maxEntities: positiveBound(inputLimits.maxEntities, "maxEntities"),
     maxRelations: positiveBound(inputLimits.maxRelations, "maxRelations"),
     maxCalculations: positiveBound(inputLimits.maxCalculations, "maxCalculations")
   });
-  const snapshot2 = analyzed.snapshot;
-  const localized = new Map(snapshot2.localizedStrings.map((item) => [item.key, item.value]));
-  const subjects = Object.freeze(snapshot2.definitions.map((entity) => {
+  const snapshot3 = analyzed.snapshot;
+  const localized = new Map(snapshot3.localizedStrings.map((item) => [item.key, item.value]));
+  const subjects = Object.freeze(snapshot3.definitions.map((entity) => {
     const authoredName = entity.fields["Name"];
     const label = typeof authoredName === "string" ? localized.get(authoredName) ?? entity.entityId : entity.entityId;
     return Object.freeze({
@@ -11772,8 +12099,8 @@ function createResolvedDataSubjectSelectorLease(analyzed, inputLimits) {
     if (!Number.isSafeInteger(request.limit) || request.limit < 1 || request.limit > limits.maxPageSize) {
       throw new RangeError(`subject selector limit must be between 1 and ${limits.maxPageSize}`);
     }
-    const text2 = request.text?.trim().toLocaleLowerCase("en-US");
-    const filtered = subjects.filter((subject) => (request.kind === void 0 || subject.kind === request.kind) && (request.type === void 0 || subject.type === request.type) && (text2 === void 0 || text2.length === 0 || subject.subjectId.toLocaleLowerCase("en-US").includes(text2) || subject.label.toLocaleLowerCase("en-US").includes(text2)));
+    const text3 = request.text?.trim().toLocaleLowerCase("en-US");
+    const filtered = subjects.filter((subject) => (request.kind === void 0 || subject.kind === request.kind) && (request.type === void 0 || subject.type === request.type) && (text3 === void 0 || text3.length === 0 || subject.subjectId.toLocaleLowerCase("en-US").includes(text3) || subject.label.toLocaleLowerCase("en-US").includes(text3)));
     const offset = request.cursor === void 0 ? 0 : Number(request.cursor.replace(/^subject:/u, ""));
     if (!Number.isSafeInteger(offset) || offset < 0 || offset > filtered.length || request.cursor !== void 0 && request.cursor !== `subject:${offset}`) {
       throw new RangeError("subject selector cursor is invalid or stale");
@@ -11791,29 +12118,35 @@ function createResolvedDataSubjectSelectorLease(analyzed, inputLimits) {
       throw new RangeError(`resolved data subject not found: ${subjectId}`);
     return subject;
   };
-  const source = Object.freeze({
+  const source2 = Object.freeze({
     async summary(signal) {
       assertLive(signal);
       return Object.freeze({
-        snapshotId: snapshot2.snapshotId,
+        snapshotId: snapshot3.snapshotId,
         totalSubjects: subjects.length,
-        completeness: snapshot2.complete ? "complete" : "partial",
-        ...snapshot2.complete ? {} : { reason: "the resolved data workspace is incomplete" }
+        completeness: snapshot3.complete ? "complete" : "partial",
+        ...snapshot3.complete ? {} : { reason: "the resolved data workspace is incomplete" }
       });
     },
     subjects: async (request, signal) => page(request, signal),
     async openFacts(subjectId, signal) {
       const subject = selected(subjectId, signal);
-      return analyzed.openSubjectFacts({
-        subject: { namespace: subject.kind, entityId: subject.subjectId.slice(subject.kind.length + 1) },
+      return openSubjectFacts({
+        subject: {
+          namespace: subject.kind,
+          entityId: subject.subjectId.slice(subject.kind.length + 1)
+        },
         ...limits,
         ...signal === void 0 ? {} : { signal }
       });
     },
     async openCalculations(subjectId, signal) {
       const subject = selected(subjectId, signal);
-      return analyzed.openSubjectCalculations({
-        subject: { namespace: subject.kind, entityId: subject.subjectId.slice(subject.kind.length + 1) },
+      return openSubjectCalculations({
+        subject: {
+          namespace: subject.kind,
+          entityId: subject.subjectId.slice(subject.kind.length + 1)
+        },
         maxPageSize: limits.maxPageSize,
         maxEntities: limits.maxEntities,
         maxCalculations: limits.maxCalculations,
@@ -11822,7 +12155,7 @@ function createResolvedDataSubjectSelectorLease(analyzed, inputLimits) {
     }
   });
   return Object.freeze({
-    value: source,
+    value: source2,
     release() {
       live = false;
       return Promise.resolve();
@@ -11924,14 +12257,14 @@ async function readResourceText(resources, requirement, maxDocumentBytes, signal
     return { state: "unresolved", diagnostic: resolved2.diagnostic };
   }
   try {
-    const source = resolved2.lease.value;
-    if (source.kind !== "bytes") {
+    const source2 = resolved2.lease.value;
+    if (source2.kind !== "bytes") {
       return {
         state: "unresolved",
         diagnostic: diagnostic("warning", "x3.host/resolved-data-resource-not-bytes", `${requirement.path} resolved to a namespace instead of bytes`)
       };
     }
-    if (source.size !== void 0 && source.size > BigInt(maxDocumentBytes)) {
+    if (source2.size !== void 0 && source2.size > BigInt(maxDocumentBytes)) {
       return {
         state: "unresolved",
         diagnostic: diagnostic("warning", "x3.host/resolved-data-document-budget-exceeded", `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`)
@@ -11939,7 +12272,7 @@ async function readResourceText(resources, requirement, maxDocumentBytes, signal
     }
     const chunks = [];
     let bytes2 = 0;
-    for await (const chunk of source.stream(void 0, signal)) {
+    for await (const chunk of source2.stream(void 0, signal)) {
       bytes2 += chunk.byteLength;
       if (bytes2 > maxDocumentBytes) {
         return {
@@ -12054,7 +12387,7 @@ async function analyzeResolvedDataWorkspace(request) {
     if (request.resources.state() !== "live") {
       throw new Error("resource session was disposed while workspace data was loading");
     }
-    const snapshot2 = await resolution.workspace.analyze({
+    const snapshot3 = await resolution.workspace.analyze({
       workspaceId: request.workspace.workspaceId,
       gameId: request.workspace.gameId,
       documents,
@@ -12075,7 +12408,7 @@ async function analyzeResolvedDataWorkspace(request) {
       throw new Error("resource session was disposed while workspace data was analyzed");
     }
     const facetRequest = {
-      snapshotId: snapshot2.snapshotId,
+      snapshotId: snapshot3.snapshotId,
       maxPageSize: limits.maxPageSize,
       ...request.signal === void 0 ? {} : { signal: request.signal }
     };
@@ -12092,7 +12425,7 @@ async function analyzeResolvedDataWorkspace(request) {
     const openSubjectCalculations = resolution.workspace.openSubjectCalculations;
     return Object.freeze({
       state: "resolved",
-      snapshot: snapshot2,
+      snapshot: snapshot3,
       plan,
       facets: Object.freeze({ schemaTree, definitions, localization, relations }),
       ...openSubjectFacts === void 0 ? {} : {
@@ -12101,7 +12434,7 @@ async function analyzeResolvedDataWorkspace(request) {
             throw new Error("resolved data workspace analysis is released");
           const lease = await openSubjectFacts.call(resolution.workspace, {
             ...request2,
-            snapshotId: snapshot2.snapshotId
+            snapshotId: snapshot3.snapshotId
           });
           if (released) {
             await lease.release();
@@ -12117,7 +12450,7 @@ async function analyzeResolvedDataWorkspace(request) {
             throw new Error("resolved data workspace analysis is released");
           const lease = await openSubjectCalculations.call(resolution.workspace, {
             ...request2,
-            snapshotId: snapshot2.snapshotId
+            snapshotId: snapshot3.snapshotId
           });
           if (released) {
             await lease.release();
@@ -12136,9 +12469,9 @@ async function analyzeResolvedDataWorkspace(request) {
           ...[...opened].reverse().map((lease) => lease.release()),
           resolution.release()
         ]);
-        const failure = results.find((result) => result.status === "rejected");
-        if (failure?.status === "rejected")
-          throw failure.reason;
+        const failure2 = results.find((result) => result.status === "rejected");
+        if (failure2?.status === "rejected")
+          throw failure2.reason;
       }
     });
   } catch (error) {
@@ -12215,7 +12548,7 @@ function createResourceSession(options) {
   let bytes2 = 0n;
   let state = "live";
   const disposed = () => state === "disposed";
-  const record = (requirement, entry2) => {
+  const record3 = (requirement, entry2) => {
     const value2 = Object.freeze({
       requirementId: requirement.id,
       logicalId: requirement.logicalId,
@@ -12246,7 +12579,7 @@ function createResourceSession(options) {
       state: "unresolved",
       reason,
       diagnostic: item,
-      provenance: record(requirement, { state: "unresolved", reason, cached })
+      provenance: record3(requirement, { state: "unresolved", reason, cached })
     };
   };
   const parents = /* @__PURE__ */ new Map();
@@ -12377,7 +12710,7 @@ function createResourceSession(options) {
         state: "resolved",
         lease,
         revision: lease.value.revision,
-        provenance: record(requirement, {
+        provenance: record3(requirement, {
           state: "resolved",
           revision: lease.value.revision,
           bytes: size,
@@ -12393,9 +12726,9 @@ function createResourceSession(options) {
       const outstanding = [...held];
       held.clear();
       const results = await Promise.allSettled(outstanding.map((lease) => lease.release()));
-      const failure = results.find((result) => result.status === "rejected");
-      if (failure !== void 0 && failure.status === "rejected")
-        throw failure.reason;
+      const failure2 = results.find((result) => result.status === "rejected");
+      if (failure2 !== void 0 && failure2.status === "rejected")
+        throw failure2.reason;
     }
   };
 }
@@ -12510,8 +12843,8 @@ function canonicalPosition(position, transform) {
   };
   return Object.freeze({ x: axis("x"), y: axis("y"), z: axis("z") });
 }
-function admittedTerrainTransform(snapshot2, terrain, exact) {
-  const transform = snapshot2.terrainTransform;
+function admittedTerrainTransform(snapshot3, terrain, exact) {
+  const transform = snapshot3.terrainTransform;
   if (transform === void 0 || terrain === void 0 || !exact)
     return void 0;
   const finite = (value2) => Number.isFinite(value2);
@@ -12522,7 +12855,7 @@ function admittedTerrainTransform(snapshot2, terrain, exact) {
     }
     return value2.mapping.vertical === "direct-base-times-scale-plus-offset" && value2.source.format === "warzone-game-map" && (value2.source.heightEncoding === "uint8-times-2" || value2.source.heightEncoding === "uint16-le") && terrain.samples.every((sample) => sample.heightAdjustment === 0);
   };
-  if (transform.schemaVersion !== 1 || !Number.isSafeInteger(transform.descriptorVersion) || transform.descriptorVersion <= 0 || transform.snapshotId !== snapshot2.snapshotId || transform.heightMap.dim.length !== 2 || transform.heightMap.dim[0] !== terrain.width || transform.heightMap.dim[1] !== terrain.height || !Object.values(transform.heightMap.offset).every(finite) || !Object.values(transform.heightMap.scale).every(positive) || transform.mapping.horizontal !== "offset-plus-grid-index-times-scale" || !verticalMappingValid(transform) || transform.bounds.coordinateSpaceId !== "map-native") {
+  if (transform.schemaVersion !== 1 || !Number.isSafeInteger(transform.descriptorVersion) || transform.descriptorVersion <= 0 || transform.snapshotId !== snapshot3.snapshotId || transform.heightMap.dim.length !== 2 || transform.heightMap.dim[0] !== terrain.width || transform.heightMap.dim[1] !== terrain.height || !Object.values(transform.heightMap.offset).every(finite) || !Object.values(transform.heightMap.scale).every(positive) || transform.mapping.horizontal !== "offset-plus-grid-index-times-scale" || !verticalMappingValid(transform) || transform.bounds.coordinateSpaceId !== "map-native") {
     return void 0;
   }
   let minimum = { x: Infinity, y: Infinity, z: Infinity };
@@ -12544,8 +12877,8 @@ function admittedTerrainTransform(snapshot2, terrain, exact) {
   }
   return ["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] === minimum[axis] && transform.bounds.maximum[axis] === maximum[axis]) ? transform : void 0;
 }
-function admittedWorldCanonicalTransform(snapshot2, terrainTransform) {
-  const transform = snapshot2.uvwTransform;
+function admittedWorldCanonicalTransform(snapshot3, terrainTransform) {
+  const transform = snapshot3.uvwTransform;
   if (transform === void 0 || terrainTransform === void 0)
     return void 0;
   const finite = (value2) => Number.isFinite(value2);
@@ -12553,7 +12886,7 @@ function admittedWorldCanonicalTransform(snapshot2, terrainTransform) {
   const basis = transform.basis;
   const axes = Object.values(transform.axes);
   const sourceAxes = axes.map((item) => item.sourceAxis);
-  if (transform.schemaVersion !== 1 || transform.snapshotId !== snapshot2.snapshotId || transform.sourceCoordinateSpaceId !== "map-native" || transform.targetCoordinateSpaceId !== "uvw-canonical" || basis.handedness !== "right" || basis.upAxis !== "y" || basis.forwardAxis !== "+z" || basis.unit !== "meter" && basis.unit !== "source-unit" || basis.unit === "source-unit" && (basis.sourceUnit === void 0 || basis.sourceUnit.length === 0 || basis.metersPerUnit !== void 0) || basis.unitsPerCell !== void 0 && !positive(basis.unitsPerCell) || axes.some((item) => !finite(item.scale) || item.scale === 0 || !finite(item.offset)) || new Set(sourceAxes).size !== 3 || !Number.isSafeInteger(transform.heightfield.columns) || !Number.isSafeInteger(transform.heightfield.rows) || transform.heightfield.columns !== terrainTransform.heightMap.dim[0] || transform.heightfield.rows !== terrainTransform.heightMap.dim[1] || !positive(transform.heightfield.cellSize) || basis.unitsPerCell !== void 0 && basis.unitsPerCell !== transform.heightfield.cellSize || transform.heightfield.origin.length !== 3 || !transform.heightfield.origin.every(finite) || transform.heightfield.sourceRowOrder !== "reverse" || transform.bounds.coordinateSpaceId !== "uvw-canonical" || !Object.values(transform.bounds.minimum).every(finite) || !Object.values(transform.bounds.maximum).every(finite) || !["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] <= transform.bounds.maximum[axis]) || !Number.isSafeInteger(transform.proof.tupleCount) || transform.proof.tupleCount <= 0 || transform.proof.kind !== "adapter-qualification" || transform.proof.oracle.length === 0 || transform.proof.corpus.length === 0 || Object.keys(transform.proof.sourceDigests).length === 0 || !Object.values(transform.proof.sourceDigests).every((value2) => /^sha256:[0-9a-f]{64}$/u.test(value2)) || !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.nativeTupleDigest) || transform.proof.presentationTupleDigest !== void 0 && !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.presentationTupleDigest) || !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.canonicalTupleDigest) || transform.proof.comparison !== "ieee-754-binary64-exact") {
+  if (transform.schemaVersion !== 1 || transform.snapshotId !== snapshot3.snapshotId || transform.sourceCoordinateSpaceId !== "map-native" || transform.targetCoordinateSpaceId !== "uvw-canonical" || basis.handedness !== "right" || basis.upAxis !== "y" || basis.forwardAxis !== "+z" || basis.unit !== "meter" && basis.unit !== "source-unit" || basis.unit === "source-unit" && (basis.sourceUnit === void 0 || basis.sourceUnit.length === 0 || basis.metersPerUnit !== void 0) || basis.unitsPerCell !== void 0 && !positive(basis.unitsPerCell) || axes.some((item) => !finite(item.scale) || item.scale === 0 || !finite(item.offset)) || new Set(sourceAxes).size !== 3 || !Number.isSafeInteger(transform.heightfield.columns) || !Number.isSafeInteger(transform.heightfield.rows) || transform.heightfield.columns !== terrainTransform.heightMap.dim[0] || transform.heightfield.rows !== terrainTransform.heightMap.dim[1] || !positive(transform.heightfield.cellSize) || basis.unitsPerCell !== void 0 && basis.unitsPerCell !== transform.heightfield.cellSize || transform.heightfield.origin.length !== 3 || !transform.heightfield.origin.every(finite) || transform.heightfield.sourceRowOrder !== "reverse" || transform.bounds.coordinateSpaceId !== "uvw-canonical" || !Object.values(transform.bounds.minimum).every(finite) || !Object.values(transform.bounds.maximum).every(finite) || !["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] <= transform.bounds.maximum[axis]) || !Number.isSafeInteger(transform.proof.tupleCount) || transform.proof.tupleCount <= 0 || transform.proof.kind !== "adapter-qualification" || transform.proof.oracle.length === 0 || transform.proof.corpus.length === 0 || Object.keys(transform.proof.sourceDigests).length === 0 || !Object.values(transform.proof.sourceDigests).every((value2) => /^sha256:[0-9a-f]{64}$/u.test(value2)) || !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.nativeTupleDigest) || transform.proof.presentationTupleDigest !== void 0 && !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.presentationTupleDigest) || !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.canonicalTupleDigest) || transform.proof.comparison !== "ieee-754-binary64-exact") {
     return void 0;
   }
   const nativeBounds = terrainTransform.bounds;
@@ -12575,18 +12908,18 @@ function admittedWorldCanonicalTransform(snapshot2, terrainTransform) {
   }
   return ["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] === minimum[axis] && transform.bounds.maximum[axis] === maximum[axis]) ? transform : void 0;
 }
-function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
+function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize) {
   positiveLimit2(maxPageSize, Number.MAX_SAFE_INTEGER);
-  const semantic = snapshot2.semantic;
-  const terrainLayerId = layerId(snapshot2.snapshotId, "terrain");
-  const objectLayerId = layerId(snapshot2.snapshotId, "objects");
-  const regionLayerId = layerId(snapshot2.snapshotId, "regions");
-  const resourceLayerId = layerId(snapshot2.snapshotId, "resources");
-  const navigationLayerId = layerId(snapshot2.snapshotId, "navigation");
+  const semantic = snapshot3.semantic;
+  const terrainLayerId = layerId(snapshot3.snapshotId, "terrain");
+  const objectLayerId = layerId(snapshot3.snapshotId, "objects");
+  const regionLayerId = layerId(snapshot3.snapshotId, "regions");
+  const resourceLayerId = layerId(snapshot3.snapshotId, "resources");
+  const navigationLayerId = layerId(snapshot3.snapshotId, "navigation");
   const terrainSummary = semantic.terrain;
   const terrainExact = hasExactTerrainGrid(terrainSummary);
-  const terrainTransform = admittedTerrainTransform(snapshot2, terrainSummary, terrainExact);
-  const uvwTransform = admittedWorldCanonicalTransform(snapshot2, terrainTransform);
+  const terrainTransform = admittedTerrainTransform(snapshot3, terrainSummary, terrainExact);
+  const uvwTransform = admittedWorldCanonicalTransform(snapshot3, terrainTransform);
   const terrainLod = terrainExact ? "exact" : "sampled";
   const objectIdentities = /* @__PURE__ */ new Set();
   const semanticObjects = semantic.objects.filter((item) => {
@@ -12664,7 +12997,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
     resolved: item.resolved,
     objectIds: Object.freeze([...item.objectIds])
   })));
-  const navigation = Object.freeze((snapshot2.navigation?.samples ?? []).map((item) => Object.freeze({
+  const navigation = Object.freeze((snapshot3.navigation?.samples ?? []).map((item) => Object.freeze({
     facet: "navigation",
     id: `${navigationLayerId}:sample:${String(item.x)}:${String(item.y)}`,
     layerId: navigationLayerId,
@@ -12717,10 +13050,10 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
     Object.freeze({
       facet: "navigation",
       layerId: navigationLayerId,
-      state: snapshot2.navigation === void 0 ? "unavailable" : "partial",
-      itemCount: snapshot2.navigation?.cellCount ?? 0,
-      lods: Object.freeze(snapshot2.navigation === void 0 ? [] : ["summary", "sampled"]),
-      ...snapshot2.navigation === void 0 ? { reason: "publisher reported navigation unavailable" } : { reason: "native flags are sampled and their bit semantics remain publisher-defined" }
+      state: snapshot3.navigation === void 0 ? "unavailable" : "partial",
+      itemCount: snapshot3.navigation?.cellCount ?? 0,
+      lods: Object.freeze(snapshot3.navigation === void 0 ? [] : ["summary", "sampled"]),
+      ...snapshot3.navigation === void 0 ? { reason: "publisher reported navigation unavailable" } : { reason: "native flags are sampled and their bit semantics remain publisher-defined" }
     })
   ]);
   const layers = Object.freeze(facets.map((item) => Object.freeze({
@@ -12741,13 +13074,13 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
     ["navigation", navigation]
   ]);
   const info = Object.freeze({
-    contract: snapshot2.worldCandidate.contract,
-    major: snapshot2.worldCandidate.major,
-    maturity: snapshot2.worldCandidate.maturity,
-    snapshotId: snapshot2.snapshotId,
-    mapId: snapshot2.mapId,
-    coordinateSpaces: snapshot2.worldCandidate.coordinateSpaces,
-    crossSpaceTransforms: Object.freeze(snapshot2.worldCandidate.crossSpaceTransforms.map((item) => {
+    contract: snapshot3.worldCandidate.contract,
+    major: snapshot3.worldCandidate.major,
+    maturity: snapshot3.worldCandidate.maturity,
+    snapshotId: snapshot3.snapshotId,
+    mapId: snapshot3.mapId,
+    coordinateSpaces: snapshot3.worldCandidate.coordinateSpaces,
+    crossSpaceTransforms: Object.freeze(snapshot3.worldCandidate.crossSpaceTransforms.map((item) => {
       if (item.from === "height-grid" && item.to === "map-native" && terrainTransform === void 0) {
         return Object.freeze({
           ...item,
@@ -12836,15 +13169,15 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
       Object.freeze({
         facet: "navigation",
         coordinateSpaceId: "navigation-grid",
-        x: snapshot2.navigation === void 0 ? Object.freeze({ state: "unknown", reason: "navigation bounds unavailable" }) : Object.freeze({
+        x: snapshot3.navigation === void 0 ? Object.freeze({ state: "unknown", reason: "navigation bounds unavailable" }) : Object.freeze({
           state: "known",
           minimum: 0,
-          maximum: snapshot2.navigation.width - 1
+          maximum: snapshot3.navigation.width - 1
         }),
-        y: snapshot2.navigation === void 0 ? Object.freeze({ state: "unknown", reason: "navigation bounds unavailable" }) : Object.freeze({
+        y: snapshot3.navigation === void 0 ? Object.freeze({ state: "unknown", reason: "navigation bounds unavailable" }) : Object.freeze({
           state: "known",
           minimum: 0,
-          maximum: snapshot2.navigation.height - 1
+          maximum: snapshot3.navigation.height - 1
         }),
         z: Object.freeze({
           state: "unknown",
@@ -12856,9 +13189,9 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
     ...uvwTransform === void 0 ? {} : { uvwTransform },
     facets,
     provenance: Object.freeze(provenance.map((item) => Object.freeze({ ...item }))),
-    unknownFacets: snapshot2.worldCandidate.unknownFacets,
+    unknownFacets: snapshot3.worldCandidate.unknownFacets,
     lossPolicy: "explicit-partial",
-    complete: snapshot2.complete && duplicateObjectCount === 0 && duplicateRegionCount === 0 && incompleteObjectPositionCount === 0
+    complete: snapshot3.complete && duplicateObjectCount === 0 && duplicateRegionCount === 0 && incompleteObjectPositionCount === 0
   });
   let live = true;
   const assertLive = (signal) => {
@@ -12866,10 +13199,10 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
     if (!live)
       throw new TypeError("world scene source lease is released or stale");
   };
-  const source = Object.freeze({
-    contract: snapshot2.worldCandidate.contract,
-    major: snapshot2.worldCandidate.major,
-    snapshotId: snapshot2.snapshotId,
+  const source2 = Object.freeze({
+    contract: snapshot3.worldCandidate.contract,
+    major: snapshot3.worldCandidate.major,
+    snapshotId: snapshot3.snapshotId,
     async info(signal) {
       assertLive(signal);
       return Promise.resolve(info);
@@ -12877,11 +13210,11 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
     async page(request, signal) {
       assertLive(signal);
       positiveLimit2(request.limit, maxPageSize);
-      cursorOffset(request.cursor, snapshot2.snapshotId, canonicalQuery(request));
+      cursorOffset(request.cursor, snapshot3.snapshotId, canonicalQuery(request));
       const items = byFacet.get(request.facet);
       if (items === void 0) {
         return Promise.resolve(Object.freeze({
-          snapshotId: snapshot2.snapshotId,
+          snapshotId: snapshot3.snapshotId,
           facet: request.facet,
           state: "unsupported",
           items: Object.freeze([]),
@@ -12896,7 +13229,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
         const expectedLod = request.facet === "terrain" ? terrainLod : request.facet === "navigation" ? "sampled" : void 0;
         if (expectedLod !== void 0 && request.lod !== expectedLod) {
           return Promise.resolve(Object.freeze({
-            snapshotId: snapshot2.snapshotId,
+            snapshotId: snapshot3.snapshotId,
             facet: request.facet,
             state: "unsupported",
             items: Object.freeze([]),
@@ -12906,7 +13239,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
       }
       if (request.bounds !== void 0 && (request.facet === "layers" || request.facet === "regions" || request.facet === "resources")) {
         return Promise.resolve(Object.freeze({
-          snapshotId: snapshot2.snapshotId,
+          snapshotId: snapshot3.snapshotId,
           facet: request.facet,
           state: "unsupported",
           items: Object.freeze([]),
@@ -12915,7 +13248,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
       }
       if (request.facet !== "layers" && facetState?.state === "unavailable") {
         return Promise.resolve(Object.freeze({
-          snapshotId: snapshot2.snapshotId,
+          snapshotId: snapshot3.snapshotId,
           facet: request.facet,
           state: "unavailable",
           items: Object.freeze([]),
@@ -12934,11 +13267,11 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
         }
         return item.x >= bounds.minimumX && item.x <= bounds.maximumX && item.y >= bounds.minimumY && item.y <= bounds.maximumY;
       });
-      return Promise.resolve(pageItems(bounded, request, snapshot2.snapshotId, maxPageSize));
+      return Promise.resolve(pageItems(bounded, request, snapshot3.snapshotId, maxPageSize));
     }
   });
   return Object.freeze({
-    value: source,
+    value: source2,
     release() {
       live = false;
       return Promise.resolve();
@@ -12965,19 +13298,19 @@ function stringList7(value2) {
   return new Set(strings).size === strings.length ? strings : void 0;
 }
 function parseOffer7(value2) {
-  const record = recordOf7(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !OFFER_KEYS8.has(key3))) {
+  const record3 = recordOf7(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !OFFER_KEYS8.has(key3))) {
     return void 0;
   }
-  const gameIds = stringList7(record["gameIds"]);
+  const gameIds = stringList7(record3["gameIds"]);
   return gameIds === void 0 ? void 0 : { gameIds };
 }
 function parseRequest7(value2) {
-  const record = recordOf7(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !REQUEST_KEYS7.has(key3))) {
+  const record3 = recordOf7(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !REQUEST_KEYS7.has(key3))) {
     return void 0;
   }
-  return nonEmptyString8(record["gameId"]) ? { gameId: record["gameId"] } : void 0;
+  return nonEmptyString8(record3["gameId"]) ? { gameId: record3["gameId"] } : void 0;
 }
 function matchMapSemanticFacets(context) {
   const offer = parseOffer7(context.offerFacet);
@@ -12998,19 +13331,19 @@ var MAP_SEMANTIC_MATCHER = Object.freeze({
   match: matchMapSemanticFacets
 });
 function parsePreviewOffer(value2) {
-  const record = recordOf7(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !PREVIEW_OFFER_KEYS.has(key3))) {
+  const record3 = recordOf7(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !PREVIEW_OFFER_KEYS.has(key3))) {
     return void 0;
   }
-  const subjectFormatIds = stringList7(record["subjectFormatIds"]);
+  const subjectFormatIds = stringList7(record3["subjectFormatIds"]);
   return subjectFormatIds === void 0 ? void 0 : { subjectFormatIds };
 }
 function parsePreviewRequest(value2) {
-  const record = recordOf7(value2);
-  if (record === void 0 || Object.keys(record).some((key3) => !PREVIEW_REQUEST_KEYS.has(key3))) {
+  const record3 = recordOf7(value2);
+  if (record3 === void 0 || Object.keys(record3).some((key3) => !PREVIEW_REQUEST_KEYS.has(key3))) {
     return void 0;
   }
-  return nonEmptyString8(record["subjectFormatId"]) ? { subjectFormatId: record["subjectFormatId"] } : void 0;
+  return nonEmptyString8(record3["subjectFormatId"]) ? { subjectFormatId: record3["subjectFormatId"] } : void 0;
 }
 function matchMapPreviewPreparationFacets(context) {
   const offer = parsePreviewOffer(context.offerFacet);
@@ -13148,8 +13481,8 @@ function registerStandardMapDefinitions(definitions) {
   })));
 }
 function isResolvedMapWorkspace(value2) {
-  const record = recordOf7(value2);
-  return record?.["contract"] === RESOLVED_MAP_WORKSPACE_CONTRACT && nonEmptyString8(record["analyzerId"]) && stringList7(record["gameIds"]) !== void 0 && typeof record["plan"] === "function" && typeof record["analyze"] === "function";
+  const record3 = recordOf7(value2);
+  return record3?.["contract"] === RESOLVED_MAP_WORKSPACE_CONTRACT && nonEmptyString8(record3["analyzerId"]) && stringList7(record3["gameIds"]) !== void 0 && typeof record3["plan"] === "function" && typeof record3["analyze"] === "function";
 }
 async function resolveResolvedMapWorkspace(request) {
   const definitions = request.services.serviceDefinitions;
@@ -13208,8 +13541,8 @@ async function resolveResolvedMapWorkspace(request) {
   }
 }
 function isMapPreviewPreparation(value2) {
-  const record = recordOf7(value2);
-  return record?.["contract"] === MAP_PREVIEW_PREPARATION_CONTRACT && nonEmptyString8(record["preparationId"]) && stringList7(record["subjectFormatIds"]) !== void 0 && typeof record["prepare"] === "function";
+  const record3 = recordOf7(value2);
+  return record3?.["contract"] === MAP_PREVIEW_PREPARATION_CONTRACT && nonEmptyString8(record3["preparationId"]) && stringList7(record3["subjectFormatIds"]) !== void 0 && typeof record3["prepare"] === "function";
 }
 async function resolveMapPreviewPreparation(request) {
   const definitions = request.services.serviceDefinitions;
@@ -13343,16 +13676,16 @@ async function readResourceBytes(resources, requirement, maxDocumentBytes, remai
     return { state: "unresolved", diagnostic: resolved2.diagnostic, consumedBytes: 0 };
   }
   try {
-    const source = resolved2.lease.value;
-    if (source.kind !== "bytes") {
+    const source2 = resolved2.lease.value;
+    if (source2.kind !== "bytes") {
       return {
         state: "unresolved",
         diagnostic: diagnostic("warning", "x3.host/resolved-map-resource-not-bytes", `${requirement.path} resolved to a namespace instead of bytes`),
         consumedBytes: 0
       };
     }
-    if (source.size !== void 0 && (source.size > BigInt(maxDocumentBytes) || source.size > BigInt(remainingTotalBytes))) {
-      const totalExceeded = source.size > BigInt(remainingTotalBytes);
+    if (source2.size !== void 0 && (source2.size > BigInt(maxDocumentBytes) || source2.size > BigInt(remainingTotalBytes))) {
+      const totalExceeded = source2.size > BigInt(remainingTotalBytes);
       return {
         state: "unresolved",
         diagnostic: diagnostic("warning", totalExceeded ? "x3.host/resolved-map-total-budget-exceeded" : "x3.host/resolved-map-document-budget-exceeded", totalExceeded ? `${requirement.path} exceeds remaining maxTotalBytes ${remainingTotalBytes}` : `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`),
@@ -13361,7 +13694,7 @@ async function readResourceBytes(resources, requirement, maxDocumentBytes, remai
     }
     const chunks = [];
     let byteLength = 0;
-    for await (const chunk of source.stream(void 0, signal)) {
+    for await (const chunk of source2.stream(void 0, signal)) {
       byteLength += chunk.byteLength;
       if (byteLength > maxDocumentBytes || byteLength > remainingTotalBytes) {
         return {
@@ -13472,7 +13805,7 @@ async function analyzeResolvedMapWorkspace(request) {
       `map=${encodeURIComponent(plan.mapId)}`,
       ...revisions
     ].join("|");
-    const snapshot2 = await resolution.workspace.analyze({
+    const snapshot3 = await resolution.workspace.analyze({
       workspaceId: request.workspace.workspaceId,
       gameId: request.workspace.gameId,
       mapId: plan.mapId,
@@ -13495,11 +13828,11 @@ async function analyzeResolvedMapWorkspace(request) {
     if (request.resources.state() !== "live") {
       throw new Error("resource session was disposed while workspace map was analyzed");
     }
-    const world = createCandidateWorldSceneLease(snapshot2, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize);
+    const world = createCandidateWorldSceneLease(snapshot3, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize);
     let released = false;
     return Object.freeze({
       state: "resolved",
-      snapshot: snapshot2,
+      snapshot: snapshot3,
       plan,
       world,
       diagnostics: boundedDiagnostics(diagnostics, limits.maxDiagnostics),
@@ -13508,9 +13841,9 @@ async function analyzeResolvedMapWorkspace(request) {
           return;
         released = true;
         const results = await Promise.allSettled([world.release(), resolution.release()]);
-        const failure = results.find((result) => result.status === "rejected");
-        if (failure?.status === "rejected")
-          throw failure.reason;
+        const failure2 = results.find((result) => result.status === "rejected");
+        if (failure2?.status === "rejected")
+          throw failure2.reason;
       }
     });
   } catch (error) {
@@ -13544,7 +13877,7 @@ function borrowCommonWorldScene(candidate) {
     if (!live)
       throw new TypeError("world scene data-source lease has been released");
   };
-  const source = Object.freeze({
+  const source2 = Object.freeze({
     contract: WORLD_SCENE_SOURCE_CONTRACT,
     major: 1,
     snapshotId: candidate.snapshotId,
@@ -13562,25 +13895,25 @@ function borrowCommonWorldScene(candidate) {
     }
   });
   return Object.freeze({
-    value: source,
+    value: source2,
     release() {
       live = false;
       return Promise.resolve();
     }
   });
 }
-function borrowDataSource(source) {
+function borrowDataSource(source2) {
   let live = true;
   const target = /* @__PURE__ */ Object.create(null);
   const value2 = new Proxy(target, {
     get(_target, property) {
-      const member = Reflect.get(source, property, source);
+      const member = Reflect.get(source2, property, source2);
       if (typeof member !== "function")
         return member;
       return (...args) => {
         if (!live)
           throw new TypeError("map preview data-source lease has been released");
-        return Reflect.apply(member, source, args);
+        return Reflect.apply(member, source2, args);
       };
     }
   });
@@ -13605,6 +13938,7 @@ async function openMapPreviewAssetSession(request) {
     return analyzed;
   }
   try {
+    const catalogSources = request.catalogSources;
     const descriptor = await assembleSubjectDescriptor({
       schemaVersion: 2,
       subjectUri: request.subjectUri,
@@ -13625,8 +13959,8 @@ async function openMapPreviewAssetSession(request) {
       },
       dataSources: [
         { contract: WORLD_SCENE_SOURCE_CONTRACT, major: 1 },
-        ...request.catalogSources === void 0 ? [] : [{ contract: contractId("common.view/relation-graph-source"), major: 1 }],
-        ...request.catalogSources?.selector === void 0 ? [] : [{ contract: contractId("common.view/subject-selector-source"), major: 1 }]
+        ...catalogSources === void 0 ? [] : [{ contract: contractId("common.view/relation-graph-source"), major: 1 }],
+        ...catalogSources?.selector === void 0 ? [] : [{ contract: contractId("common.view/subject-selector-source"), major: 1 }]
       ],
       diagnostics: analyzed.diagnostics.map(previewDiagnostic),
       revision: request.resources.revision
@@ -13642,11 +13976,11 @@ async function openMapPreviewAssetSession(request) {
           if (contract === WORLD_SCENE_SOURCE_CONTRACT) {
             return borrowCommonWorldScene(analyzed.world.value);
           }
-          if (contract === "common.view/relation-graph-source" && request.catalogSources !== void 0) {
-            return borrowDataSource(request.catalogSources.relations);
+          if (contract === "common.view/relation-graph-source" && catalogSources !== void 0) {
+            return borrowDataSource(catalogSources.relations);
           }
-          if (contract === "common.view/subject-selector-source" && request.catalogSources?.selector !== void 0) {
-            return borrowDataSource(request.catalogSources.selector);
+          if (contract === "common.view/subject-selector-source" && catalogSources?.selector !== void 0) {
+            return borrowDataSource(catalogSources.selector);
           }
         }
         throw new ModkitError({
@@ -13657,7 +13991,7 @@ async function openMapPreviewAssetSession(request) {
       // createAssetSession releases in reverse order: analysis first, then its ResourceSession.
       release: [
         () => request.resources.dispose(),
-        ...request.catalogSources === void 0 ? [] : [() => request.catalogSources.release()],
+        ...catalogSources === void 0 ? [] : [() => catalogSources.release()],
         () => analyzed.release()
       ]
     });
@@ -13704,8 +14038,8 @@ function boundedCoordinatorLimit(value2, label, maximum) {
   return admitted;
 }
 function validPreparationDiagnostic(value2) {
-  const record = recordOf7(value2);
-  return record !== void 0 && Object.keys(record).every((key3) => ["code", "severity", "message", "path", "data"].includes(key3)) && nonEmptyString8(record["code"]) && PREVIEW_DIAGNOSTIC_SEVERITIES.has(String(record["severity"])) && nonEmptyString8(record["message"]) && (!Object.hasOwn(record, "path") || Array.isArray(record["path"]) && record["path"].every((item) => typeof item === "string" || Number.isSafeInteger(item))) && (!Object.hasOwn(record, "data") || jsonSafeValue(record["data"]));
+  const record3 = recordOf7(value2);
+  return record3 !== void 0 && Object.keys(record3).every((key3) => ["code", "severity", "message", "path", "data"].includes(key3)) && nonEmptyString8(record3["code"]) && PREVIEW_DIAGNOSTIC_SEVERITIES.has(String(record3["severity"])) && nonEmptyString8(record3["message"]) && (!Object.hasOwn(record3, "path") || Array.isArray(record3["path"]) && record3["path"].every((item) => typeof item === "string" || Number.isSafeInteger(item))) && (!Object.hasOwn(record3, "data") || jsonSafeValue(record3["data"]));
 }
 function validNamespaceSearchQuery(value2) {
   const query = recordOf7(value2);
@@ -13759,16 +14093,16 @@ function jsonSafeValue(value2, depth = 0) {
     return Number.isFinite(value2);
   if (Array.isArray(value2))
     return value2.every((item) => jsonSafeValue(item, depth + 1));
-  const record = recordOf7(value2);
-  return record !== void 0 && Object.values(record).every((item) => jsonSafeValue(item, depth + 1));
+  const record3 = recordOf7(value2);
+  return record3 !== void 0 && Object.values(record3).every((item) => jsonSafeValue(item, depth + 1));
 }
 function validHostResourceRoot(value2) {
-  const record = recordOf7(value2);
-  return record !== void 0 && Object.keys(record).every((key3) => key3 === "rootId" || key3 === "locator") && nonEmptyString8(record["rootId"]) && Object.hasOwn(record, "locator") && jsonSafeValue(record["locator"]);
+  const record3 = recordOf7(value2);
+  return record3 !== void 0 && Object.keys(record3).every((key3) => key3 === "rootId" || key3 === "locator") && nonEmptyString8(record3["rootId"]) && Object.hasOwn(record3, "locator") && jsonSafeValue(record3["locator"]);
 }
 function validSubjectNamespaceRoot(value2) {
-  const record = recordOf7(value2);
-  return record !== void 0 && Object.keys(record).every((key3) => key3 === "rootId" || key3 === "namespacePrefix") && nonEmptyString8(record["rootId"]) && typeof record["namespacePrefix"] === "string";
+  const record3 = recordOf7(value2);
+  return record3 !== void 0 && Object.keys(record3).every((key3) => key3 === "rootId" || key3 === "namespacePrefix") && nonEmptyString8(record3["rootId"]) && typeof record3["namespacePrefix"] === "string";
 }
 function validateResourcePlan(value2, maxRoots) {
   const plan = recordOf7(value2);
@@ -13793,19 +14127,19 @@ function validateResourcePlan(value2, maxRoots) {
   throw new TypeError("map preview preparation returned an unknown resource strategy");
 }
 function validatePreparationResult(value2, maxCandidates, maxRoots) {
-  const record = recordOf7(value2);
-  if (record === void 0 || !Array.isArray(record["diagnostics"]) || !record["diagnostics"].every(validPreparationDiagnostic)) {
+  const record3 = recordOf7(value2);
+  if (record3 === void 0 || !Array.isArray(record3["diagnostics"]) || !record3["diagnostics"].every(validPreparationDiagnostic)) {
     throw new TypeError("map preview preparation returned malformed diagnostics");
   }
-  if (record["state"] === "not-applicable" || record["state"] === "unresolved") {
-    if (!Object.keys(record).every((key3) => key3 === "state" || key3 === "diagnostics")) {
+  if (record3["state"] === "not-applicable" || record3["state"] === "unresolved") {
+    if (!Object.keys(record3).every((key3) => key3 === "state" || key3 === "diagnostics")) {
       throw new TypeError("map preview preparation result contains unknown fields");
     }
     return value2;
   }
-  if (record["state"] === "selection-required") {
-    const candidates = record["candidates"];
-    if (!Object.keys(record).every((key3) => key3 === "state" || key3 === "candidates" || key3 === "diagnostics") || !Array.isArray(candidates) || candidates.length === 0 || candidates.length > maxCandidates || !candidates.every((candidate) => {
+  if (record3["state"] === "selection-required") {
+    const candidates = record3["candidates"];
+    if (!Object.keys(record3).every((key3) => key3 === "state" || key3 === "candidates" || key3 === "diagnostics") || !Array.isArray(candidates) || candidates.length === 0 || candidates.length > maxCandidates || !candidates.every((candidate) => {
       const item = recordOf7(candidate);
       return item !== void 0 && Object.keys(item).every((key3) => key3 === "candidateId" || key3 === "displayName" || key3 === "sourcePath") && nonEmptyString8(item["candidateId"]) && nonEmptyString8(item["displayName"]) && (!Object.hasOwn(item, "sourcePath") || nonEmptyString8(item["sourcePath"]));
     }) || new Set(candidates.map((candidate) => String(recordOf7(candidate)?.["candidateId"] ?? ""))).size !== candidates.length) {
@@ -13813,23 +14147,23 @@ function validatePreparationResult(value2, maxCandidates, maxRoots) {
     }
     return value2;
   }
-  if (record["state"] === "namespace-search-required") {
-    if (!Object.keys(record).every((key3) => key3 === "state" || key3 === "searches" || key3 === "diagnostics")) {
+  if (record3["state"] === "namespace-search-required") {
+    if (!Object.keys(record3).every((key3) => key3 === "state" || key3 === "searches" || key3 === "diagnostics")) {
       throw new TypeError("map preview preparation search result contains unknown fields");
     }
-    validateNamespaceSearchRequests(record["searches"]);
+    validateNamespaceSearchRequests(record3["searches"]);
     return value2;
   }
-  if (record["state"] === "document-read-required") {
-    if (!Object.keys(record).every((key3) => key3 === "state" || key3 === "documents" || key3 === "diagnostics")) {
+  if (record3["state"] === "document-read-required") {
+    if (!Object.keys(record3).every((key3) => key3 === "state" || key3 === "documents" || key3 === "diagnostics")) {
       throw new TypeError("map preview preparation document-read result contains unknown fields");
     }
-    validateDocumentReadRequests(record["documents"]);
+    validateDocumentReadRequests(record3["documents"]);
     return value2;
   }
-  if (record["state"] === "prepared") {
-    const plan = recordOf7(record["plan"]);
-    if (!Object.keys(record).every((key3) => key3 === "state" || key3 === "plan" || key3 === "diagnostics") || plan?.["schemaVersion"] !== 1 || recordOf7(plan["workspace"]) === void 0 || !jsonSafeValue(plan["workspace"]) || !Object.keys(plan).every((key3) => key3 === "schemaVersion" || key3 === "workspace" || key3 === "resources")) {
+  if (record3["state"] === "prepared") {
+    const plan = recordOf7(record3["plan"]);
+    if (!Object.keys(record3).every((key3) => key3 === "state" || key3 === "plan" || key3 === "diagnostics") || plan?.["schemaVersion"] !== 1 || recordOf7(plan["workspace"]) === void 0 || !jsonSafeValue(plan["workspace"]) || !Object.keys(plan).every((key3) => key3 === "schemaVersion" || key3 === "workspace" || key3 === "resources")) {
       throw new TypeError("map preview preparation returned an invalid prepared plan");
     }
     validateResourcePlan(plan["resources"], maxRoots);
@@ -13928,8 +14262,8 @@ async function boundedPreparationNamespaceSearches(original, descriptor, searche
   const lease = await original.dataSource("common.view/namespace-entry-source", 1);
   const release = releaseOnce(() => lease.release());
   try {
-    const source = lease.value;
-    const searchNamespace = source.search?.bind(source);
+    const source2 = lease.value;
+    const searchNamespace = source2.search?.bind(source2);
     if (searchNamespace === void 0) {
       return Object.freeze(searches.map((search) => Object.freeze({
         searchId: search.searchId,
@@ -14001,14 +14335,14 @@ async function boundedPreparationDocumentReads(original, descriptor, requests, s
   const lease = await original.dataSource("common.view/namespace-entry-source", 1);
   const release = releaseOnce(() => lease.release());
   try {
-    const source = lease.value;
-    const decoder = new TextDecoder("utf-8", { fatal: false });
+    const source2 = lease.value;
+    const decoder2 = new TextDecoder("utf-8", { fatal: false });
     const results = [];
     for (const request of requests) {
       signal?.throwIfAborted();
       let page;
       try {
-        page = await source.list(request.path, { limit: 16 }, signal);
+        page = await source2.list(request.path, { limit: 16 }, signal);
       } catch (error) {
         if (signal?.aborted)
           throw error;
@@ -14051,7 +14385,7 @@ async function boundedPreparationDocumentReads(original, descriptor, requests, s
           documentId: request.documentId,
           path: request.path,
           state: "read",
-          text: decoder.decode(invoked.output.value)
+          text: decoder2.decode(invoked.output.value)
         }));
       } catch (error) {
         if (signal?.aborted)
@@ -14827,10 +15161,10 @@ var HandleTable = class {
     let leases = 0;
     let iterators = 0;
     let events = 0;
-    for (const record of this.records.values()) {
-      if (record.kind === "lease")
+    for (const record3 of this.records.values()) {
+      if (record3.kind === "lease")
         leases += 1;
-      else if (record.kind === "iterator")
+      else if (record3.kind === "iterator")
         iterators += 1;
       else
         events += 1;
@@ -14881,7 +15215,7 @@ var HandleTable = class {
     }
     this.sequence += 1;
     const id = `${this.owner}${this.generation}-${this.sequence}`;
-    const record = {
+    const record3 = {
       id,
       kind: input.kind,
       ...input.contract === void 0 ? {} : { contract: input.contract },
@@ -14892,10 +15226,10 @@ var HandleTable = class {
       release: input.release,
       released: false
     };
-    this.records.set(id, record);
+    this.records.set(id, record3);
     if (input.parent !== void 0)
       this.records.get(input.parent)?.children.add(id);
-    return record;
+    return record3;
   }
   parseId(id) {
     const match = /^([hw])(\d+)-(\d+)$/u.exec(id);
@@ -14923,29 +15257,29 @@ var HandleTable = class {
    * Release failures are collected, never swallowed.
    */
   async release(id) {
-    const record = this.records.get(id);
-    if (record === void 0)
+    const record3 = this.records.get(id);
+    if (record3 === void 0)
       return { released: false, failures: [] };
     const failures = [];
-    await this.releaseRecord(record, failures);
+    await this.releaseRecord(record3, failures);
     return { released: true, failures };
   }
-  async releaseRecord(record, failures) {
-    if (record.released)
+  async releaseRecord(record3, failures) {
+    if (record3.released)
       return;
-    record.released = true;
-    const children = [...record.children].reverse();
+    record3.released = true;
+    const children = [...record3.children].reverse();
     for (const childId of children) {
       const child = this.records.get(childId);
       if (child !== void 0)
         await this.releaseRecord(child, failures);
     }
-    this.records.delete(record.id);
-    if (record.parent !== void 0)
-      this.records.get(record.parent)?.children.delete(record.id);
+    this.records.delete(record3.id);
+    if (record3.parent !== void 0)
+      this.records.get(record3.parent)?.children.delete(record3.id);
     this.releasedTotal += 1;
     try {
-      await record.release();
+      await record3.release();
     } catch (error) {
       failures.push(error);
     }
@@ -14957,11 +15291,11 @@ var HandleTable = class {
     const released = [];
     const ids = [...this.records.keys()].reverse();
     for (const id of ids) {
-      const record = this.records.get(id);
-      if (record === void 0)
+      const record3 = this.records.get(id);
+      if (record3 === void 0)
         continue;
       released.push(id);
-      await this.releaseRecord(record, failures);
+      await this.releaseRecord(record3, failures);
     }
     return { released, failures };
   }
@@ -15090,8 +15424,8 @@ var Subscriptions = class {
   /** Live (not yet closed) subscriptions. */
   get size() {
     let live = 0;
-    for (const record of this.records.values())
-      if (!record.closed)
+    for (const record3 of this.records.values())
+      if (!record3.closed)
         live += 1;
     return live;
   }
@@ -15110,7 +15444,7 @@ var Subscriptions = class {
         retryability: "conditional"
       });
     }
-    const record = {
+    const record3 = {
       id,
       handle,
       queue: [],
@@ -15118,8 +15452,8 @@ var Subscriptions = class {
       closed: false,
       error: void 0
     };
-    this.records.set(id, record);
-    return record;
+    this.records.set(id, record3);
+    return record3;
   }
   get(id) {
     return this.records.get(id);
@@ -15129,24 +15463,24 @@ var Subscriptions = class {
   }
   /** Enqueues an event; `overflow` when the consumer is too slow (bounded queue). */
   push(id, value2) {
-    const record = this.records.get(id);
-    if (record === void 0 || record.closed)
+    const record3 = this.records.get(id);
+    if (record3 === void 0 || record3.closed)
       return "unknown";
-    if (record.queue.length >= this.limits.maxQueuedEvents)
+    if (record3.queue.length >= this.limits.maxQueuedEvents)
       return "overflow";
-    record.queue.push(value2);
-    record.wake?.();
+    record3.queue.push(value2);
+    record3.wake?.();
     return "queued";
   }
   /** Marks the stream ended (optionally by failure) and wakes the consumer; keeps the queue. */
   close(id, error) {
-    const record = this.records.get(id);
-    if (record === void 0)
+    const record3 = this.records.get(id);
+    if (record3 === void 0)
       return;
-    record.closed = true;
+    record3.closed = true;
     if (error !== void 0)
-      record.error = error;
-    record.wake?.();
+      record3.error = error;
+    record3.wake?.();
   }
   /** The consumer is done with the record (drained or abandoned). */
   drop(id) {
@@ -15240,25 +15574,25 @@ function isHandleRef(value2) {
   const inner = value2[HANDLE_MARKER];
   if (!isPlainObject(inner))
     return false;
-  const record = inner;
+  const record3 = inner;
   const innerKeys = Object.keys(inner).filter((key3) => key3 !== "data" && key3 !== "has").sort();
   const base = ["id", "kind"];
   const withContract = ["contract", "id", "kind", "major"];
   const shape = innerKeys.join(",") === base.join(",") || innerKeys.join(",") === withContract.join(",");
   if (!shape)
     return false;
-  if (record["data"] !== void 0 && !isPlainObject(record["data"]))
+  if (record3["data"] !== void 0 && !isPlainObject(record3["data"]))
     return false;
-  if (record["has"] !== void 0 && !isPresentList(record["has"]))
+  if (record3["has"] !== void 0 && !isPresentList(record3["has"]))
     return false;
-  if (typeof record["id"] !== "string" || !isHandleId(record["id"]))
+  if (typeof record3["id"] !== "string" || !isHandleId(record3["id"]))
     return false;
-  if (typeof record["kind"] !== "string" || !HANDLE_KINDS.includes(record["kind"]))
+  if (typeof record3["kind"] !== "string" || !HANDLE_KINDS.includes(record3["kind"]))
     return false;
   if (innerKeys.length === 4) {
-    if (typeof record["contract"] !== "string" || !isQualifiedId(record["contract"]))
+    if (typeof record3["contract"] !== "string" || !isQualifiedId(record3["contract"]))
       return false;
-    if (!Number.isSafeInteger(record["major"]) || record["major"] < 0)
+    if (!Number.isSafeInteger(record3["major"]) || record3["major"] < 0)
       return false;
   }
   return true;
@@ -15473,7 +15807,7 @@ function validateWireValue(value2, limits, handles = "forbid", path = []) {
 var RETRYABILITIES = ["never", "safe", "conditional"];
 var MAX_ERROR_MESSAGE = 8 * 1024;
 function toErrorDto(error, limits) {
-  const clip = (text2) => text2.length > MAX_ERROR_MESSAGE ? `${text2.slice(0, MAX_ERROR_MESSAGE)}\u2026` : text2;
+  const clip = (text3) => text3.length > MAX_ERROR_MESSAGE ? `${text3.slice(0, MAX_ERROR_MESSAGE)}\u2026` : text3;
   if (error instanceof OperationCancelledError) {
     return Object.freeze({
       code: error.code,
@@ -15521,8 +15855,8 @@ function fromErrorDto(dto) {
 function validateErrorDto(value2, limits, path = []) {
   if (!isPlainObject(value2))
     return violation("bad-error", "error must be an object", path);
-  const record = value2;
-  const keys = Object.keys(record);
+  const record3 = value2;
+  const keys = Object.keys(record3);
   const allowed2 = /* @__PURE__ */ new Set([
     "code",
     "message",
@@ -15535,32 +15869,32 @@ function validateErrorDto(value2, limits, path = []) {
     if (!allowed2.has(key3))
       return violation("bad-error", `unknown error key \xAB${key3}\xBB`, [...path, key3]);
   }
-  const code = record["code"];
+  const code = record3["code"];
   if (typeof code !== "string" || !isQualifiedId(code)) {
     return violation("bad-error", "error code must be a qualified id", [...path, "code"]);
   }
-  const message = record["message"];
+  const message = record3["message"];
   if (typeof message !== "string" || message.length > MAX_ERROR_MESSAGE + 1) {
     return violation("bad-error", "error message must be a bounded string", [...path, "message"]);
   }
-  const retryability = record["retryability"];
+  const retryability = record3["retryability"];
   if (typeof retryability !== "string" || !RETRYABILITIES.includes(retryability)) {
     return violation("bad-error", "error retryability is invalid", [...path, "retryability"]);
   }
   for (const flag of ["cancelled", "contextDropped"]) {
-    if (record[flag] !== void 0 && record[flag] !== true) {
+    if (record3[flag] !== void 0 && record3[flag] !== true) {
       return violation("bad-error", `error ${flag} must be true or absent`, [...path, flag]);
     }
   }
-  if (record["context"] !== void 0) {
-    if (!isPlainObject(record["context"])) {
+  if (record3["context"] !== void 0) {
+    if (!isPlainObject(record3["context"])) {
       return violation("bad-error", "error context must be an object", [...path, "context"]);
     }
-    const checked = validateWireValue(record["context"], limits, "forbid", [...path, "context"]);
+    const checked = validateWireValue(record3["context"], limits, "forbid", [...path, "context"]);
     if (!checked.ok)
       return checked;
   }
-  return { ok: true, value: Object.freeze({ ...record }) };
+  return { ok: true, value: Object.freeze({ ...record3 }) };
 }
 var ENVELOPE_KEYS = ["domain", "version", "session", "generation", "id", "t"];
 var FRAME_KEYS = {
@@ -15585,13 +15919,13 @@ var FRAME_KEYS = {
 function isMessageId(value2) {
   return Number.isSafeInteger(value2) && value2 >= 1;
 }
-function checkExactKeys(record, required, optional) {
+function checkExactKeys(record3, required, optional) {
   for (const key3 of required) {
-    if (!Object.hasOwn(record, key3))
+    if (!Object.hasOwn(record3, key3))
       return { code: "missing-key", message: `missing key \xAB${key3}\xBB`, path: [key3] };
   }
   const allowed2 = /* @__PURE__ */ new Set([...ENVELOPE_KEYS, ...required, ...optional]);
-  for (const key3 of Object.keys(record)) {
+  for (const key3 of Object.keys(record3)) {
     if (FORBIDDEN_KEYS.has(key3))
       return { code: "forbidden-key", message: `key \xAB${key3}\xBB is forbidden`, path: [key3] };
     if (!allowed2.has(key3))
@@ -15602,38 +15936,38 @@ function checkExactKeys(record, required, optional) {
 function validateFrame(input, limits, expect) {
   if (!isPlainObject(input))
     return violation("not-an-object", "frame must be a plain object");
-  const record = input;
-  if (record["domain"] !== CAPABILITY_RPC_DOMAIN || record["version"] !== CAPABILITY_RPC_VERSION) {
+  const record3 = input;
+  if (record3["domain"] !== CAPABILITY_RPC_DOMAIN || record3["version"] !== CAPABILITY_RPC_VERSION) {
     return violation("bad-envelope", "frame domain/version mismatch");
   }
-  if (record["session"] !== expect.session)
+  if (record3["session"] !== expect.session)
     return violation("bad-envelope", "frame session mismatch", ["session"]);
-  if (record["generation"] !== expect.generation) {
+  if (record3["generation"] !== expect.generation) {
     return violation("stale-generation", "frame generation does not match the live generation", [
       "generation"
     ]);
   }
-  if (!isMessageId(record["id"]))
+  if (!isMessageId(record3["id"]))
     return violation("bad-id", "frame id must be a positive safe integer", ["id"]);
-  const type = record["t"];
+  const type = record3["t"];
   if (typeof type !== "string" || !FRAME_TYPES.includes(type)) {
     return violation("bad-type", "unknown frame type", ["t"]);
   }
-  const t2 = type;
-  const keys = FRAME_KEYS[t2];
-  const keyViolation = checkExactKeys(record, keys.required, keys.optional);
+  const t3 = type;
+  const keys = FRAME_KEYS[t3];
+  const keyViolation = checkExactKeys(record3, keys.required, keys.optional);
   if (keyViolation !== void 0)
     return { ok: false, violation: keyViolation };
-  const str = (key3, test, code = "bad-value") => typeof record[key3] === "string" && record[key3].length > 0 && (test?.(record[key3]) ?? true) ? void 0 : violation(code, `\xAB${key3}\xBB is malformed`, [key3]);
-  const replyId = (key3) => isMessageId(record[key3]) ? void 0 : violation("bad-id", `\xAB${key3}\xBB must be a positive safe integer`, [key3]);
-  switch (t2) {
+  const str = (key3, test, code = "bad-value") => typeof record3[key3] === "string" && record3[key3].length > 0 && (test?.(record3[key3]) ?? true) ? void 0 : violation(code, `\xAB${key3}\xBB is malformed`, [key3]);
+  const replyId = (key3) => isMessageId(record3[key3]) ? void 0 : violation("bad-id", `\xAB${key3}\xBB must be a positive safe integer`, [key3]);
+  switch (t3) {
     case "load": {
       for (const key3 of ["moduleUrl", "artifactDigest"]) {
         const bad2 = str(key3, (value2) => value2.length <= limits.maxStringLength);
         if (bad2)
           return bad2;
       }
-      if (record["entrypointDigest"] !== void 0) {
+      if (record3["entrypointDigest"] !== void 0) {
         const bad2 = str("entrypointDigest", (value2) => value2.length <= 256);
         if (bad2)
           return bad2;
@@ -15647,16 +15981,16 @@ function validateFrame(input, limits, expect) {
       const bad = replyId("inReplyTo");
       if (bad)
         return bad;
-      if (record["abiVersion"] !== 1)
+      if (record3["abiVersion"] !== 1)
         return violation("bad-value", "abiVersion must be 1", ["abiVersion"]);
-      const exports = record["exports"];
+      const exports = record3["exports"];
       if (!Array.isArray(exports) || exports.length > limits.maxArrayLength || !exports.every((item) => typeof item === "string" && item.length > 0 && item.length <= 256)) {
         return violation("bad-value", "exports must be an array of short strings", ["exports"]);
       }
-      if (!isHandleRef(record["root"]))
+      if (!isHandleRef(record3["root"]))
         return violation("bad-handle", "root must be a handle ref", ["root"]);
       {
-        const checked = validateWireValue(record["root"], limits, "top", ["root"]);
+        const checked = validateWireValue(record3["root"], limits, "top", ["root"]);
         if (!checked.ok)
           return checked;
       }
@@ -15666,7 +16000,7 @@ function validateFrame(input, limits, expect) {
       const bad = str("handle", isHandleId, "bad-handle") ?? str("method", isMethodName, "bad-method");
       if (bad)
         return bad;
-      const args = record["args"];
+      const args = record3["args"];
       if (!Array.isArray(args))
         return violation("bad-value", "args must be an array", ["args"]);
       if (args.length > limits.maxArgs)
@@ -15674,7 +16008,7 @@ function validateFrame(input, limits, expect) {
       const checked = validateWireValue(args, limits, "nested", ["args"]);
       if (!checked.ok)
         return checked;
-      if (record["deadlineMs"] !== void 0 && (!Number.isSafeInteger(record["deadlineMs"]) || record["deadlineMs"] < 0)) {
+      if (record3["deadlineMs"] !== void 0 && (!Number.isSafeInteger(record3["deadlineMs"]) || record3["deadlineMs"] < 0)) {
         return violation("bad-value", "deadlineMs must be a non-negative safe integer", [
           "deadlineMs"
         ]);
@@ -15685,17 +16019,17 @@ function validateFrame(input, limits, expect) {
       const bad = replyId("inReplyTo");
       if (bad)
         return bad;
-      if (record["value"] !== void 0) {
-        const checked = validateWireValue(record["value"], limits, "top", ["value"]);
+      if (record3["value"] !== void 0) {
+        const checked = validateWireValue(record3["value"], limits, "top", ["value"]);
         if (!checked.ok)
           return checked;
       }
-      if (record["lease"] !== void 0) {
-        const lease = record["lease"];
+      if (record3["lease"] !== void 0) {
+        const lease = record3["lease"];
         if (!isHandleRef(lease) || lease[HANDLE_MARKER].kind !== "lease") {
           return violation("bad-handle", "lease must be a lease handle ref", ["lease"]);
         }
-        if (record["value"] !== void 0 && isHandleRef(record["value"])) {
+        if (record3["value"] !== void 0 && isHandleRef(record3["value"])) {
           return violation("bad-value", "a leased value cannot itself be a handle", ["value"]);
         }
         const checked = validateWireValue(lease, limits, "top", ["lease"]);
@@ -15708,7 +16042,7 @@ function validateFrame(input, limits, expect) {
       const bad = replyId("inReplyTo");
       if (bad)
         return bad;
-      const checked = validateErrorDto(record["error"], limits, ["error"]);
+      const checked = validateErrorDto(record3["error"], limits, ["error"]);
       if (!checked.ok)
         return checked;
       break;
@@ -15724,7 +16058,7 @@ function validateFrame(input, limits, expect) {
       const bad = str("handle", isHandleId, "bad-handle");
       if (bad)
         return bad;
-      const max = record["max"];
+      const max = record3["max"];
       if (max !== void 0 && (!Number.isSafeInteger(max) || max < 1 || max > limits.maxArrayLength)) {
         return violation("bad-value", `next.max must be an integer in 1..${limits.maxArrayLength}`, ["max"]);
       }
@@ -15741,13 +16075,13 @@ function validateFrame(input, limits, expect) {
       const bad = str("handle", isHandleId, "bad-handle");
       if (bad)
         return bad;
-      if (record["inReplyTo"] !== void 0) {
+      if (record3["inReplyTo"] !== void 0) {
         const badReply = replyId("inReplyTo");
         if (badReply)
           return badReply;
       }
-      if (record["error"] !== void 0) {
-        const checked = validateErrorDto(record["error"], limits, ["error"]);
+      if (record3["error"] !== void 0) {
+        const checked = validateErrorDto(record3["error"], limits, ["error"]);
         if (!checked.ok)
           return checked;
       }
@@ -15757,7 +16091,7 @@ function validateFrame(input, limits, expect) {
       const bad = str("subscription", isSubscriptionId, "bad-subscription");
       if (bad)
         return bad;
-      const checked = validateWireValue(record["value"], limits, "forbid", ["value"]);
+      const checked = validateWireValue(record3["value"], limits, "forbid", ["value"]);
       if (!checked.ok)
         return checked;
       break;
@@ -15772,7 +16106,7 @@ function validateFrame(input, limits, expect) {
       const bad = replyId("inReplyTo");
       if (bad)
         return bad;
-      const progress = record["progress"];
+      const progress = record3["progress"];
       if (!isPlainObject(progress))
         return violation("bad-progress", "progress must be an object", ["progress"]);
       const progressKeys = Object.keys(progress);
@@ -15806,7 +16140,7 @@ function validateFrame(input, limits, expect) {
       break;
     }
   }
-  return { ok: true, value: record };
+  return { ok: true, value: record3 };
 }
 
 // packages/host/dist/execution/surface.js
@@ -15973,14 +16307,14 @@ function createSurfaceRegistry(surfaces) {
     for (const [name, method] of Object.entries(surface.methods)) {
       methods[name] = snapshotMethod(name, method, key3);
     }
-    const snapshot2 = Object.freeze({
+    const snapshot3 = Object.freeze({
       contract: surface.contract,
       major: surface.major,
       methods: Object.freeze(methods),
       ...surface.releaseVia === void 0 ? {} : { releaseVia: surface.releaseVia },
       ...surface.fields === void 0 ? {} : { fields: Object.freeze([...surface.fields]) }
     });
-    byKey.set(key3, snapshot2);
+    byKey.set(key3, snapshot3);
   }
   for (const surface of byKey.values()) {
     for (const [name, method] of Object.entries(surface.methods)) {
@@ -16052,12 +16386,12 @@ var noopRelease = () => void 0;
 function normalizeProgress(value2) {
   if (typeof value2 !== "object" || value2 === null)
     return void 0;
-  const record = value2;
-  const completed = record["completed"];
+  const record3 = value2;
+  const completed = record3["completed"];
   if (typeof completed !== "number" || !Number.isFinite(completed) || completed < 0)
     return void 0;
-  const total = record["total"];
-  const message = record["message"];
+  const total = record3["total"];
+  const message = record3["message"];
   return {
     completed,
     ...typeof total === "number" && Number.isFinite(total) && total >= 0 ? { total } : {},
@@ -16180,14 +16514,14 @@ var EndpointImpl = class {
     }
     const data = this.fieldData(target, surface);
     const has = this.presentOptional(target, surface);
-    const record = this.table.allocate({
+    const record3 = this.table.allocate({
       kind: "lease",
       target,
       release,
       contract: surface.contract,
       major: surface.major
     });
-    return new LocalCapabilityImpl(this, handleRef(record.id, "lease", surface, data, has), surface.contract, surface.major);
+    return new LocalCapabilityImpl(this, handleRef(record3.id, "lease", surface, data, has), surface.contract, surface.major);
   }
   async load(request, options = {}) {
     this.assertOpen();
@@ -16237,10 +16571,10 @@ var EndpointImpl = class {
   }
   materialize(remote) {
     const surface = this.requireSurface(remote.contract, remote.major);
-    const object2 = {};
+    const object3 = {};
     for (const field of surface.fields ?? []) {
       if (Object.hasOwn(remote.data, field)) {
-        Object.defineProperty(object2, field, {
+        Object.defineProperty(object3, field, {
           value: remote.data[field],
           enumerable: true,
           writable: false
@@ -16300,11 +16634,11 @@ var EndpointImpl = class {
             return outcome.events;
         }
       };
-      object2[name] = method.kind === "iterable" || method.kind === "events" ? (...rawArgs) => lazyStream(() => invoke2(...rawArgs)) : invoke2;
+      object3[name] = method.kind === "iterable" || method.kind === "events" ? (...rawArgs) => lazyStream(() => invoke2(...rawArgs)) : invoke2;
     }
     if (surface.releaseVia !== void 0) {
-      const inner = object2[surface.releaseVia];
-      object2[surface.releaseVia] = async (...args) => {
+      const inner = object3[surface.releaseVia];
+      object3[surface.releaseVia] = async (...args) => {
         try {
           return await inner(...args);
         } finally {
@@ -16312,8 +16646,8 @@ var EndpointImpl = class {
         }
       };
     }
-    Object.defineProperty(object2, CAPABILITY_OF, { value: remote, enumerable: false });
-    return object2;
+    Object.defineProperty(object3, CAPABILITY_OF, { value: remote, enumerable: false });
+    return object3;
   }
   receive(raw) {
     if (this.state !== "open")
@@ -16399,8 +16733,8 @@ var EndpointImpl = class {
     for (const state of this.remote.values())
       state.released = true;
     const { failures } = await this.table.invalidate();
-    for (const failure of failures)
-      this.report("x3.host/rpc-release-failed", `release failed during teardown: ${failure instanceof Error ? failure.message : String(failure)}`);
+    for (const failure2 of failures)
+      this.report("x3.host/rpc-release-failed", `release failed during teardown: ${failure2 instanceof Error ? failure2.message : String(failure2)}`);
   }
   report(code, message) {
     this.onDiagnostic?.({ code, severity: "warning", message });
@@ -16826,29 +17160,29 @@ var EndpointImpl = class {
               this.subscriptions.register(subscription, id);
             }
             for (; ; ) {
-              const record = this.subscriptions.get(subscription);
-              if (record === void 0) {
+              const record3 = this.subscriptions.get(subscription);
+              if (record3 === void 0) {
                 finished = true;
                 return { done: true, value: void 0 };
               }
-              const item = record.queue.shift();
+              const item = record3.queue.shift();
               if (item !== void 0) {
                 const problem = decl.validateReturn?.(item);
                 if (problem !== void 0)
                   throw this.failWith({ code: "bad-return", message: problem });
                 return { done: false, value: item };
               }
-              if (record.closed) {
+              if (record3.closed) {
                 finished = true;
                 this.subscriptions.drop(subscription);
-                if (record.error !== void 0)
-                  throw record.error;
+                if (record3.error !== void 0)
+                  throw record3.error;
                 return { done: true, value: void 0 };
               }
               await new Promise((resolve) => {
-                record.wake = resolve;
+                record3.wake = resolve;
               });
-              record.wake = void 0;
+              record3.wake = void 0;
             }
           },
           return: async () => {
@@ -16865,8 +17199,8 @@ var EndpointImpl = class {
   // ------------------------------------------------------------------ internal: local side
   async releaseLocal(id) {
     const result = await this.table.release(id);
-    for (const failure of result.failures) {
-      this.report("x3.host/rpc-release-failed", `release of ${id} failed: ${failure instanceof Error ? failure.message : String(failure)}`);
+    for (const failure2 of result.failures) {
+      this.report("x3.host/rpc-release-failed", `release of ${id} failed: ${failure2 instanceof Error ? failure2.message : String(failure2)}`);
     }
   }
   decodeArgs(args) {
@@ -17114,20 +17448,20 @@ var EndpointImpl = class {
       });
       return;
     }
-    const record = lookup.record;
-    if (record.kind !== "lease" || record.contract === void 0 || record.major === void 0) {
+    const record3 = lookup.record;
+    if (record3.kind !== "lease" || record3.contract === void 0 || record3.major === void 0) {
       this.fail({
         code: "wrong-handle-kind",
-        message: `call on ${record.kind} handle ${frame.handle}`
+        message: `call on ${record3.kind} handle ${frame.handle}`
       });
       return;
     }
-    const surface = this.surfaces.surfaceFor(record.contract, record.major);
+    const surface = this.surfaces.surfaceFor(record3.contract, record3.major);
     const decl = surface?.methods[frame.method];
     if (surface === void 0 || decl === void 0) {
       this.fail({
         code: "unknown-method",
-        message: `no method \xAB${frame.method}\xBB on ${record.contract}@${record.major}`
+        message: `no method \xAB${frame.method}\xBB on ${record3.contract}@${record3.major}`
       });
       return;
     }
@@ -17144,7 +17478,7 @@ var EndpointImpl = class {
       this.reply(frame.id, { kind: "throw", error: toErrorDto(error, this.limits) });
       return;
     }
-    const target = record.target;
+    const target = record3.target;
     const fn = target[frame.method];
     if (typeof fn !== "function") {
       this.reply(frame.id, {
@@ -17226,7 +17560,7 @@ var EndpointImpl = class {
         }
         this.reply(frame.id, { kind: "return", value: result });
         if (surface.releaseVia === frame.method)
-          await this.releaseLocal(record.id);
+          await this.releaseLocal(record3.id);
         return;
       }
       case "leased-value": {
@@ -17250,7 +17584,7 @@ var EndpointImpl = class {
             kind: "lease",
             target: {},
             release: () => lease.release(),
-            parent: record.id
+            parent: record3.id
           });
           this.reply(frame.id, {
             kind: "return",
@@ -17288,7 +17622,7 @@ var EndpointImpl = class {
             release: lease === void 0 ? noopRelease : () => lease.release(),
             contract: resultSurface.contract,
             major: resultSurface.major,
-            parent: record.id
+            parent: record3.id
           });
           this.reply(frame.id, {
             kind: "handle",
@@ -17323,7 +17657,7 @@ var EndpointImpl = class {
               kind: "iterator",
               target: iteratorTarget,
               release: () => iteratorTarget.iterator.return?.().then(() => void 0),
-              parent: record.id
+              parent: record3.id
             });
             this.reply(frame.id, { kind: "handle", value: handleRef(child.id, "iterator") });
           } else {
@@ -17343,7 +17677,7 @@ var EndpointImpl = class {
                 }
                 return void 0;
               },
-              parent: record.id
+              parent: record3.id
             });
             this.reply(frame.id, { kind: "handle", value: handleRef(child.id, "events") });
           }
@@ -17550,8 +17884,8 @@ var EndpointImpl = class {
       return;
     }
     const error = frame.error === void 0 ? void 0 : fromErrorDto(frame.error);
-    for (const [id, record] of this.subscriptions.entries()) {
-      if (record.handle === frame.handle)
+    for (const [id, record3] of this.subscriptions.entries()) {
+      if (record3.handle === frame.handle)
         this.closeSubscription(id, error);
     }
     this.markRemoteReleased(frame.handle);
@@ -17624,8 +17958,8 @@ var EndpointImpl = class {
       return;
     }
     const result = await this.table.release(frame.handle);
-    for (const failure of result.failures) {
-      this.report("x3.host/rpc-release-failed", `release of ${frame.handle} failed: ${failure instanceof Error ? failure.message : String(failure)}`);
+    for (const failure2 of result.failures) {
+      this.report("x3.host/rpc-release-failed", `release of ${frame.handle} failed: ${failure2 instanceof Error ? failure2.message : String(failure2)}`);
     }
     this.reply(frame.id, { kind: "return", value: { released: result.released } });
   }
@@ -18025,17 +18359,17 @@ var HOST_RAW_WRITER_EVIDENCE_RECORD = Object.freeze({
   inputClass: "any",
   provenAt: "2026-08-19T00:00:00Z"
 });
-function evidenceOf(record) {
+function evidenceOf(record3) {
   return Object.freeze({
-    ...record.claim,
-    evidenceId: record.evidenceId,
-    corpusId: record.corpusId,
-    corpusDigest: record.corpusDigest,
-    conformanceProfile: record.conformanceProfile,
-    writer: record.writer,
-    optionsFingerprint: record.optionsFingerprint,
-    inputClass: record.inputClass,
-    provenAt: record.provenAt
+    ...record3.claim,
+    evidenceId: record3.evidenceId,
+    corpusId: record3.corpusId,
+    corpusDigest: record3.corpusDigest,
+    conformanceProfile: record3.conformanceProfile,
+    writer: record3.writer,
+    optionsFingerprint: record3.optionsFingerprint,
+    inputClass: record3.inputClass,
+    provenAt: record3.provenAt
   });
 }
 var sameClaim = (left, right) => left.roundTrip === right.roundTrip && left.preservesUnknownData === right.preservesUnknownData;
@@ -18043,11 +18377,11 @@ function createEvidenceRegistry(records = [HOST_RAW_WRITER_EVIDENCE_RECORD]) {
   const own = Object.freeze([...records]);
   const registry = {
     evidenceFor(plan, expectedWriter) {
-      const record = own.find((item) => sameClaim(item.claim, plan.fidelity) && (expectedWriter === void 0 || sameWriterIdentity(item.writer, expectedWriter)));
-      return record === void 0 ? void 0 : evidenceOf(record);
+      const record3 = own.find((item) => sameClaim(item.claim, plan.fidelity) && (expectedWriter === void 0 || sameWriterIdentity(item.writer, expectedWriter)));
+      return record3 === void 0 ? void 0 : evidenceOf(record3);
     },
     list: () => own,
-    with: (record) => createEvidenceRegistry([record, ...own])
+    with: (record3) => createEvidenceRegistry([record3, ...own])
   };
   return Object.freeze(registry);
 }
@@ -18115,13 +18449,13 @@ function createGrantSnapshot(value2) {
   if (!isNonBlank(value2.snapshotId) || !Array.isArray(value2.permissions) || !value2.permissions.every((permission) => PERMISSION_CLASSES.includes(permission)) || !Array.isArray(value2.sourceIds) || !value2.sourceIds.every(isNonBlank)) {
     throw new TypeError("grant snapshot is malformed");
   }
-  const snapshot2 = Object.freeze({
+  const snapshot3 = Object.freeze({
     snapshotId: value2.snapshotId,
     permissions: Object.freeze([...new Set(value2.permissions)].sort(compareUtf8)),
     sourceIds: Object.freeze([...new Set(value2.sourceIds)].sort(compareUtf8))
   });
-  issuedGrantSnapshots.add(snapshot2);
-  return snapshot2;
+  issuedGrantSnapshots.add(snapshot3);
+  return snapshot3;
 }
 function revisionValue(revision) {
   return {
@@ -19559,8 +19893,8 @@ var VIEWER_CSP_TEXT = policyText(VIEWER_CSP);
 var VIEWER_CSP_TRUSTED_EDITOR_TEXT = policyText(VIEWER_CSP_TRUSTED_EDITOR);
 var HOSTILE_TEXT = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/gu;
 function safeViewerText(value2, maximum = 1e6) {
-  const text2 = String(value2);
-  const bounded = text2.length > maximum ? `${text2.slice(0, maximum)}\u2026` : text2;
+  const text3 = String(value2);
+  const bounded = text3.length > maximum ? `${text3.slice(0, maximum)}\u2026` : text3;
   return bounded.replace(HOSTILE_TEXT, (character) => {
     const code = character.codePointAt(0)?.toString(16).toUpperCase().padStart(4, "0") ?? "0000";
     return `\\u{${code}}`;
@@ -19718,19 +20052,19 @@ function decodeUtf8(bytes2) {
 function looksTextual(bytes2) {
   return !bytes2.includes(0) && decodeUtf8(bytes2) !== void 0;
 }
-function indexText(text2) {
+function indexText(text3) {
   const lineStarts = [0];
   const kinds = /* @__PURE__ */ new Set();
-  for (const match of text2.matchAll(/\r\n|\r|\n/gu)) {
+  for (const match of text3.matchAll(/\r\n|\r|\n/gu)) {
     const value2 = match[0];
     kinds.add(value2 === "\r\n" ? "crlf" : value2 === "\r" ? "cr" : "lf");
     lineStarts.push((match.index ?? 0) + value2.length);
   }
   let longestLineBytes = 0;
   for (let line = 0; line < lineStarts.length; line += 1) {
-    const start = lineStarts[line] ?? text2.length;
-    const next = lineStarts[line + 1] ?? text2.length;
-    const withoutNewline = text2.slice(start, next).replace(/\r\n$|\r$|\n$/u, "");
+    const start = lineStarts[line] ?? text3.length;
+    const next = lineStarts[line + 1] ?? text3.length;
+    const withoutNewline = text3.slice(start, next).replace(/\r\n$|\r$|\n$/u, "");
     longestLineBytes = Math.max(longestLineBytes, encoder2.encode(withoutNewline).byteLength);
   }
   const values = [...kinds];
@@ -19796,11 +20130,11 @@ function linesInRange(index, fromLine, endCharacter) {
   return last - fromLine + 1;
 }
 function builtinTextSource(bytes2) {
-  const text2 = decodeUtf8(bytes2);
-  if (text2 === void 0 || bytes2.includes(0)) {
+  const text3 = decodeUtf8(bytes2);
+  if (text3 === void 0 || bytes2.includes(0)) {
     throw new TypeError("built-in text source requires complete NUL-free UTF-8 input");
   }
-  const index = indexText(text2);
+  const index = indexText(text3);
   const slice = async (request, signal) => {
     signal?.throwIfAborted();
     ensurePositivePage(request.maxBytes, "text page maxBytes");
@@ -19811,22 +20145,22 @@ function builtinTextSource(bytes2) {
       ensureLine(request.line);
       ensurePositivePage(request.lineCount, "text page lineCount");
       fromLine = request.line;
-      start = index.lineStarts[fromLine] ?? text2.length;
-      requestedEnd = index.lineStarts[fromLine + request.lineCount] ?? text2.length;
+      start = index.lineStarts[fromLine] ?? text3.length;
+      requestedEnd = index.lineStarts[fromLine + request.lineCount] ?? text3.length;
     } else {
       const parsed = parseCursor(request.cursor);
-      if (parsed.character > text2.length || parsed.line >= index.lineStarts.length) {
+      if (parsed.character > text3.length || parsed.line >= index.lineStarts.length) {
         throw new RangeError("built-in text cursor points beyond the source");
       }
       fromLine = parsed.line;
       start = parsed.character;
-      requestedEnd = text2.length;
+      requestedEnd = text3.length;
     }
-    const page = truncateUtf8(text2.slice(start, requestedEnd), request.maxBytes);
+    const page = truncateUtf8(text3.slice(start, requestedEnd), request.maxBytes);
     const actualEnd = start + page.length;
     const nextLine = cursorLine(index, actualEnd);
     const lineCount = page === "" ? 0 : linesInRange(index, fromLine, actualEnd);
-    if (actualEnd >= text2.length) {
+    if (actualEnd >= text3.length) {
       return { complete: true, text: page, fromLine, lineCount };
     }
     return {
@@ -19854,10 +20188,10 @@ function builtinTextSource(bytes2) {
       const flags = query.caseSensitive === true ? "gu" : "giu";
       const pattern = query.regex === true ? query.pattern : query.pattern.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
       const expression = new RegExp(pattern, flags);
-      for (const match of text2.matchAll(expression)) {
+      for (const match of text3.matchAll(expression)) {
         signal?.throwIfAborted();
         const character = match.index ?? 0;
-        const byteOffset = encoder2.encode(text2.slice(0, character)).byteLength;
+        const byteOffset = encoder2.encode(text3.slice(0, character)).byteLength;
         const byteLength = encoder2.encode(match[0]).byteLength;
         yield Object.freeze({
           byteOffset: uint64(BigInt(byteOffset)),
@@ -20122,11 +20456,11 @@ var tier2 = [
   t("color.drop-target", 2, "color", "drag-and-drop target indicator"),
   t("color.readonly", 2, "color", "read-only field wash"),
   // status
-  ...["ok", "warn", "error", "info"].flatMap((s) => [
-    t(`status.${s}`, 2, "color", `${s} indicator colour`),
-    t(`status.${s}-fg`, 2, "color", `text on a ${s} fill`),
-    t(`status.${s}-bg`, 2, "color", `${s} background wash`),
-    t(`status.${s}-border`, 2, "color", `${s} border`)
+  ...["ok", "warn", "error", "info"].flatMap((s2) => [
+    t(`status.${s2}`, 2, "color", `${s2} indicator colour`),
+    t(`status.${s2}-fg`, 2, "color", `text on a ${s2} fill`),
+    t(`status.${s2}-bg`, 2, "color", `${s2} background wash`),
+    t(`status.${s2}-border`, 2, "color", `${s2} border`)
   ]),
   // scrollbars
   t("color.scrollbar-track", 2, "color", "scrollbar trough"),
@@ -20145,7 +20479,7 @@ var tier2 = [
   t("color.axis-z", 2, "color", "Z axis handle and line"),
   t("color.canvas-selection", 2, "color", "selected geometry outline"),
   // graph / chart categorical ramp
-  ...["1", "2", "3", "4", "5", "6"].map((n) => t(`chart.categorical-${n}`, 2, "color", `categorical series ${n}`)),
+  ...["1", "2", "3", "4", "5", "6"].map((n2) => t(`chart.categorical-${n2}`, 2, "color", `categorical series ${n2}`)),
   t("color.graph-node", 2, "color", "relation-graph node fill"),
   t("color.graph-edge", 2, "color", "relation-graph edge stroke"),
   t("color.graph-edge-dead", 2, "color", "unresolved reference edge"),
@@ -20154,15 +20488,15 @@ var tier2 = [
   t("color.diff-removed", 2, "color", "removed line or cell wash"),
   t("color.diff-changed", 2, "color", "changed line or cell wash"),
   // space
-  ...["0", "1", "2", "3", "4", "5", "6", "7", "8"].map((n) => t(`space.${n}`, 2, "length", `spacing step ${n}`)),
+  ...["0", "1", "2", "3", "4", "5", "6", "7", "8"].map((n2) => t(`space.${n2}`, 2, "length", `spacing step ${n2}`)),
   // radius
-  ...["none", "sm", "md", "lg", "pill"].map((r) => t(`radius.${r}`, 2, "length", `corner radius ${r}`)),
+  ...["none", "sm", "md", "lg", "pill"].map((r2) => t(`radius.${r2}`, 2, "length", `corner radius ${r2}`)),
   // type
   t("font.sans", 2, "font-family", "UI typeface stack"),
   t("font.mono", 2, "font-family", "monospace stack for IDs, code, offsets"),
-  ...["xs", "sm", "md", "lg", "xl"].map((s) => t(`font.size-${s}`, 2, "length", `font size ${s}`)),
+  ...["xs", "sm", "md", "lg", "xl"].map((s2) => t(`font.size-${s2}`, 2, "length", `font size ${s2}`)),
   ...["normal", "medium", "bold"].map((w) => t(`font.weight-${w}`, 2, "number", `font weight ${w}`)),
-  ...["tight", "normal", "loose"].map((l) => t(`line.${l}`, 2, "number", `line height ${l}`)),
+  ...["tight", "normal", "loose"].map((l2) => t(`line.${l2}`, 2, "number", `line height ${l2}`)),
   // metrics
   t("size.row", 2, "length", "list and table row height"),
   t("size.control", 2, "length", "default control height"),
@@ -20176,7 +20510,7 @@ var tier2 = [
   ...["fast", "normal", "slow"].map((d) => t(`motion.${d}`, 2, "duration", `transition duration ${d}`)),
   t("motion.ease", 2, "easing", "default easing curve"),
   // elevation
-  ...["1", "2", "3"].map((e) => t(`elevation.${e}`, 2, "shadow", `elevation level ${e}`)),
+  ...["1", "2", "3"].map((e2) => t(`elevation.${e2}`, 2, "shadow", `elevation level ${e2}`)),
   t("shadow.focus-ring", 2, "shadow", "focus ring shadow")
 ];
 var c = (name, component, type, derivesFrom, description) => t(name, 3, type, description, { component, derivesFrom });
@@ -20822,10 +21156,10 @@ function createFileTree(document, options) {
       let descendant = false;
       for (const child of children)
         descendant = visit(child) || descendant;
-      const self = predicate(row.node);
-      if (self || descendant)
+      const self2 = predicate(row.node);
+      if (self2 || descendant)
         keep.add(row.node.id);
-      return self || descendant;
+      return self2 || descendant;
     };
     for (const row of rows.values()) {
       if (row.element.parentElement === list)
@@ -20933,14 +21267,14 @@ var WORD = /[A-Za-z0-9_]/u;
 function isWordChar(character) {
   return character.length > 0 && WORD.test(character);
 }
-function hasWordBoundary(text2, start, end) {
-  return !isWordChar(text2.charAt(start - 1)) && !isWordChar(text2.charAt(end));
+function hasWordBoundary(text3, start, end) {
+  return !isWordChar(text3.charAt(start - 1)) && !isWordChar(text3.charAt(end));
 }
-function wholeWordSource(source) {
-  return `(?<![A-Za-z0-9_])(?:${source})(?![A-Za-z0-9_])`;
+function wholeWordSource(source2) {
+  return `(?<![A-Za-z0-9_])(?:${source2})(?![A-Za-z0-9_])`;
 }
-function escapeRegExp(text2) {
-  return text2.replace(/[\\^$+?.()|[\]{}*]/gu, "\\$&");
+function escapeRegExp(text3) {
+  return text3.replace(/[\\^$+?.()|[\]{}*]/gu, "\\$&");
 }
 function globSource(query) {
   return `^${query.split("*").map(escapeRegExp).join(".*")}$`;
@@ -20975,8 +21309,8 @@ function compileSearch(query, options = {}) {
     };
   }
   try {
-    const source = wholeWord ? wholeWordSource(query) : query;
-    return { kind: "regex", regex: new RegExp(source, caseSensitive ? "u" : "iu") };
+    const source2 = wholeWord ? wholeWordSource(query) : query;
+    return { kind: "regex", regex: new RegExp(source2, caseSensitive ? "u" : "iu") };
   } catch (error) {
     return { kind: "invalid", message: describe2(error) };
   }
@@ -20984,28 +21318,28 @@ function compileSearch(query, options = {}) {
 function describe2(error) {
   return error instanceof Error ? error.message : "Invalid regular expression";
 }
-function matches2(text2, compiled) {
+function matches2(text3, compiled) {
   switch (compiled.kind) {
     case "empty":
       return true;
     case "invalid":
       return false;
     case "regex":
-      return compiled.regex.test(text2);
+      return compiled.regex.test(text3);
     case "plain":
-      return matchRanges(text2, compiled, true).length > 0;
+      return matchRanges(text3, compiled, true).length > 0;
     default:
       return false;
   }
 }
-function matchRanges(text2, compiled, firstOnly = false) {
+function matchRanges(text3, compiled, firstOnly = false) {
   if (compiled.kind === "empty" || compiled.kind === "invalid")
     return [];
   if (compiled.kind === "regex") {
     const ranges2 = [];
     const scanner = new RegExp(compiled.regex.source, compiled.regex.flags.includes("g") ? compiled.regex.flags : `${compiled.regex.flags}g`);
     let guard = 0;
-    for (const match of text2.matchAll(scanner)) {
+    for (const match of text3.matchAll(scanner)) {
       if (match.index === void 0)
         continue;
       const end = match.index + match[0].length;
@@ -21023,12 +21357,12 @@ function matchRanges(text2, compiled, firstOnly = false) {
   const needle = compiled.needle;
   if (needle.length === 0)
     return [];
-  const haystack = compiled.caseSensitive ? text2 : text2.toLowerCase();
+  const haystack = compiled.caseSensitive ? text3 : text3.toLowerCase();
   const ranges = [];
   let at = haystack.indexOf(needle);
   while (at >= 0) {
     const end = at + needle.length;
-    if (!compiled.wholeWord || hasWordBoundary(text2, at, end)) {
+    if (!compiled.wholeWord || hasWordBoundary(text3, at, end)) {
       ranges.push({ start: at, end });
       if (firstOnly)
         break;
@@ -21406,7 +21740,7 @@ function createExplorer(document, options) {
       label: current.label,
       async loadChildren(node, signal) {
         const entries = await current.list(node?.id, signal);
-        return [...entries].sort((a, b) => a.directory === b.directory ? a.name.localeCompare(b.name) : a.directory ? -1 : 1).map((entry2) => ({
+        return [...entries].sort((a2, b2) => a2.directory === b2.directory ? a2.name.localeCompare(b2.name) : a2.directory ? -1 : 1).map((entry2) => ({
           id: entry2.id,
           label: entry2.name,
           hasChildren: entry2.directory,
@@ -33164,8 +33498,2589 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 // packages/host/dist/browser/sources.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
+// packages/vfs/dist/providers/browser-file/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/vfs/dist/read-budget.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var VfsReadBudget = class {
+  maximum;
+  consumed = 0n;
+  reserved = 0n;
+  constructor(maximum) {
+    this.maximum = maximum;
+  }
+  reserve(bytes2, sourceId) {
+    const requested = BigInt(bytes2);
+    if (this.consumed + this.reserved + requested > this.maximum) {
+      throw new ModkitError({
+        code: "x3.vfs/read-byte-budget-exceeded",
+        message: "VFS mount exhausted its cumulative read-byte budget",
+        context: {
+          sourceId,
+          requestedBytes: bytes2,
+          consumedBytes: String(this.consumed),
+          reservedBytes: String(this.reserved),
+          maxReadBytes: String(this.maximum)
+        }
+      });
+    }
+    this.reserved += requested;
+    let remaining = requested;
+    return {
+      commit: (bytesRead) => {
+        const committed = BigInt(bytesRead);
+        if (committed < 0n || committed > remaining) {
+          throw new ModkitError({
+            code: "x3.vfs/read-budget-accounting-invalid",
+            message: "VFS provider reported an invalid read-budget commitment",
+            context: {
+              sourceId,
+              committedBytes: bytesRead,
+              reservedBytes: String(remaining)
+            }
+          });
+        }
+        remaining -= committed;
+        this.reserved -= committed;
+        this.consumed += committed;
+      },
+      release: () => {
+        this.reserved -= remaining;
+        remaining = 0n;
+      }
+    };
+  }
+};
+function assertReadRangeLimit(sourceId, length, limits) {
+  if (length <= limits.maxReadRangeBytes)
+    return;
+  throw new ModkitError({
+    code: "x3.vfs/read-range-limit-exceeded",
+    message: "random-access read exceeds the configured per-range limit",
+    context: { sourceId, length, maxReadRangeBytes: limits.maxReadRangeBytes }
+  });
+}
+function assertStreamLimit(sourceId, start, end, limits) {
+  const bytes2 = BigInt(end - start);
+  if (bytes2 <= limits.maxStreamBytes)
+    return;
+  throw new ModkitError({
+    code: "x3.vfs/stream-byte-limit-exceeded",
+    message: "random-access stream exceeds the configured per-stream limit",
+    context: { sourceId, bytes: String(bytes2), maxStreamBytes: String(limits.maxStreamBytes) }
+  });
+}
+function budgetRandomAccessSource(source2, size, limits, budget) {
+  let disposed = false;
+  const assertLive = () => {
+    if (!disposed)
+      return;
+    throw new ModkitError({
+      code: "x3.vfs/source-disposed",
+      message: `source \xAB${source2.id}\xBB disposed`
+    });
+  };
+  const checkedRange = (start, end) => {
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end < start || end > size) {
+      throw new ModkitError({
+        code: "x3.vfs/read-out-of-range",
+        message: `stream [${start}, ${end}) exceeds source \xAB${source2.id}\xBB of size ${size}`,
+        context: { id: source2.id, start, end, size }
+      });
+    }
+  };
+  const wrapped = {
+    id: source2.id,
+    async size(signal) {
+      assertLive();
+      return source2.size(signal);
+    },
+    async readAt(offset, length, signal) {
+      assertLive();
+      throwIfAborted(signal);
+      if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length) || offset < 0 || length < 0 || offset + length > size) {
+        throw rangeError(source2.id, offset, length, size);
+      }
+      assertReadRangeLimit(source2.id, length, limits);
+      const reservation = budget.reserve(length, source2.id);
+      try {
+        const bytes2 = await source2.readAt(offset, length, signal);
+        reservation.commit(bytes2.byteLength);
+        return bytes2;
+      } finally {
+        reservation.release();
+      }
+    },
+    stream(start = 0, end = size, signal) {
+      assertLive();
+      checkedRange(start, end);
+      assertStreamLimit(source2.id, start, end, limits);
+      let position = start;
+      return new ReadableStream({
+        pull: async (controller) => {
+          if (position >= end) {
+            controller.close();
+            return;
+          }
+          const length = Math.min(64 * 1024, end - position);
+          const bytes2 = await wrapped.readAt(position, length, signal);
+          position += bytes2.byteLength;
+          controller.enqueue(bytes2);
+        }
+      });
+    },
+    async dispose() {
+      if (disposed)
+        return;
+      disposed = true;
+      await source2.dispose();
+    }
+  };
+  return wrapped;
+}
+
+// packages/vfs/dist/providers/browser-file/index.js
+function isHandle(input) {
+  return "getFile" in input;
+}
+async function snapshot2(input) {
+  return isHandle(input) ? input.getFile() : input;
+}
+function sourceStream(source2, size, start = 0, end = size, signal) {
+  let position = Math.max(0, start);
+  const stop = Math.min(end, size);
+  return new ReadableStream({
+    async pull(controller) {
+      throwIfAborted(signal);
+      if (position >= stop)
+        return controller.close();
+      const length = Math.min(64 * 1024, stop - position);
+      controller.enqueue(await source2.readAt(position, length, signal));
+      position += length;
+    }
+  });
+}
+function createSnapshotSource(id, file) {
+  let disposed = false;
+  const assertLive = () => {
+    if (!disposed)
+      return;
+    throw new ModkitError({
+      code: "x3.vfs/source-disposed",
+      message: `source \xAB${id}\xBB disposed`
+    });
+  };
+  const source2 = {
+    id,
+    async size(signal) {
+      throwIfAborted(signal);
+      assertLive();
+      return file.size;
+    },
+    async readAt(offset, length, signal) {
+      throwIfAborted(signal);
+      assertLive();
+      if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length) || offset < 0 || length < 0 || offset + length > file.size) {
+        throw rangeError(id, offset, length, file.size);
+      }
+      const bytes2 = new Uint8Array(await file.slice(offset, offset + length).arrayBuffer());
+      if (bytes2.byteLength !== length) {
+        throw new ModkitError({
+          code: "x3.vfs/browser-file-short-read",
+          message: `browser file \xAB${id}\xBB returned ${bytes2.byteLength} bytes for a ${length}-byte range`,
+          context: { offset, length, actual: bytes2.byteLength }
+        });
+      }
+      return bytes2;
+    },
+    stream(start, end, signal) {
+      assertLive();
+      return sourceStream(source2, file.size, start, end, signal);
+    },
+    dispose() {
+      disposed = true;
+    }
+  };
+  return source2;
+}
+var BrowserFileMount = class {
+  rootUri;
+  input;
+  file;
+  limits;
+  id;
+  revision;
+  budget;
+  sources = /* @__PURE__ */ new Set();
+  disposed = false;
+  constructor(rootUri, input, file, limits) {
+    this.rootUri = rootUri;
+    this.input = input;
+    this.file = file;
+    this.limits = limits;
+    this.id = rootUri;
+    this.revision = `provider-token:browser-file-${file.lastModified ?? "unknown"}-${file.size}`;
+    this.budget = new VfsReadBudget(limits.maxReadBytes);
+  }
+  async stat(path, signal) {
+    throwIfAborted(signal);
+    this.assertLive();
+    if (normalizeVfsPath(path) !== "")
+      return void 0;
+    return Object.freeze({
+      path: "",
+      name: this.file.name ?? (isHandle(this.input) ? this.input.name : void 0) ?? "file",
+      kind: "file",
+      size: BigInt(this.file.size),
+      revision: this.revision
+    });
+  }
+  async *list(path, signal) {
+    throwIfAborted(signal);
+    this.assertLive();
+    throw new ModkitError({
+      code: "x3.vfs/not-a-directory",
+      message: `browser-file VFS root \xAB${this.rootUri}\xBB is one file, not a directory`,
+      context: { path: normalizeVfsPath(path) }
+    });
+  }
+  async open(path, signal) {
+    throwIfAborted(signal);
+    this.assertLive();
+    if (normalizeVfsPath(path) !== "") {
+      throw new ModkitError({
+        code: "x3.vfs/file-not-found",
+        message: `browser-file VFS root \xAB${this.rootUri}\xBB has no child path \xAB${path}\xBB`,
+        context: { path }
+      });
+    }
+    const current = await snapshot2(this.input);
+    if (current.size !== this.file.size || current.lastModified !== this.file.lastModified) {
+      throw new ModkitError({
+        code: "x3.vfs/browser-file-revision-changed",
+        message: `browser file \xAB${this.rootUri}\xBB changed after its mount was opened`,
+        context: { revision: this.revision }
+      });
+    }
+    const raw = createSnapshotSource(this.rootUri, current);
+    const source2 = budgetRandomAccessSource(raw, current.size, this.limits, this.budget);
+    this.sources.add(source2);
+    return source2;
+  }
+  async dispose() {
+    if (this.disposed)
+      return;
+    this.disposed = true;
+    await Promise.all([...this.sources].map(async (source2) => source2.dispose()));
+    this.sources.clear();
+  }
+  assertLive() {
+    if (!this.disposed)
+      return;
+    throw new ModkitError({
+      code: "x3.vfs/mount-disposed",
+      message: `browser-file VFS mount \xAB${this.rootUri}\xBB is disposed`
+    });
+  }
+};
+var BrowserFileVfsProvider = class {
+  options;
+  id;
+  scheme = "browser-file";
+  registered = /* @__PURE__ */ new Map();
+  limits;
+  constructor(options = {}) {
+    this.options = options;
+    this.id = options.id ?? "org.modkitx-x3.vfs.browser-file";
+    this.limits = clampVfsLimits(options.limits);
+  }
+  register(uri, input) {
+    if (!uri.startsWith("browser-file:")) {
+      throw new ModkitError({
+        code: "x3.vfs/provider-scheme-mismatch",
+        message: `browser-file provider cannot register URI \xAB${uri}\xBB`,
+        context: { uri }
+      });
+    }
+    this.registered.set(uri, input);
+    return () => {
+      if (this.registered.get(uri) === input)
+        this.registered.delete(uri);
+    };
+  }
+  async open(uri, context) {
+    throwIfAborted(context.signal);
+    if (!uri.startsWith("browser-file:")) {
+      throw new ModkitError({
+        code: "x3.vfs/provider-scheme-mismatch",
+        message: `browser-file provider cannot open URI \xAB${uri}\xBB`,
+        context: { uri }
+      });
+    }
+    const input = this.registered.get(uri) ?? await this.options.resolve?.(uri);
+    if (input === void 0) {
+      throw new ModkitError({
+        code: "x3.vfs/browser-file-unregistered",
+        message: `browser-file source \xAB${uri}\xBB is not registered`,
+        context: { uri }
+      });
+    }
+    const limits = clampVfsLimits(context.limits, this.limits);
+    const file = await snapshot2(input);
+    if (BigInt(file.size) > limits.maxFileBytes) {
+      throw new ModkitError({
+        code: "x3.vfs/file-size-limit-exceeded",
+        message: "browser-file provider encountered a file above its logical size limit",
+        context: { fileBytes: String(file.size), maxFileBytes: String(limits.maxFileBytes) }
+      });
+    }
+    return new BrowserFileMount(uri, input, file, limits);
+  }
+};
+function createBrowserFileVfsProvider(options = {}) {
+  return new BrowserFileVfsProvider(options);
+}
+
+// packages/vfs/dist/providers/http/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var DEFAULT_MAX_REDIRECTS = 5;
+var REDIRECT_STATUSES = /* @__PURE__ */ new Set([301, 302, 303, 307, 308]);
+var unavailable2 = (message, context = {}) => new ModkitError({ code: "x3.vfs/http-range-unavailable", message, context });
+function assertSafeSize(size) {
+  if (size !== void 0 && Number.isSafeInteger(size) && size >= 0)
+    return;
+  throw unavailable2("HTTP range source requires a non-negative safe content length");
+}
+function redirectRefused(message, context = {}) {
+  return new ModkitError({ code: "x3.vfs/http-redirect-refused", message, context });
+}
+function assertAllowedHttpUrl(candidate, allowedOrigins) {
+  let parsed;
+  try {
+    parsed = new URL(candidate);
+  } catch (cause) {
+    throw redirectRefused(`HTTP redirect target \xAB${candidate}\xBB is invalid`, { candidate, cause });
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw redirectRefused(`HTTP redirect target \xAB${candidate}\xBB is not HTTP(S)`, {
+      candidate,
+      protocol: parsed.protocol
+    });
+  }
+  if (allowedOrigins !== void 0 && !allowedOrigins.includes(parsed.origin)) {
+    throw new ModkitError({
+      code: "x3.vfs/http-origin-refused",
+      message: `HTTP provider refuses origin \xAB${parsed.origin}\xBB`,
+      context: { origin: parsed.origin }
+    });
+  }
+  return parsed;
+}
+async function fetchWithCheckedRedirects(url, fetcher, init, allowedOrigins, maxRedirects) {
+  let current = assertAllowedHttpUrl(url, allowedOrigins);
+  let redirects = 0;
+  while (true) {
+    const response2 = await fetcher(current.href, { ...init, redirect: "manual" });
+    if (response2.redirected === true) {
+      throw redirectRefused("HTTP fetch followed a redirect outside the manual redirect policy", {
+        requested: current.href,
+        responseUrl: response2.url
+      });
+    }
+    if (response2.url !== void 0 && response2.url !== "") {
+      const final = assertAllowedHttpUrl(response2.url, allowedOrigins);
+      if (final.href !== current.href) {
+        throw redirectRefused("HTTP fetch returned a different final URL in manual redirect mode", {
+          requested: current.href,
+          responseUrl: final.href
+        });
+      }
+    }
+    if (!REDIRECT_STATUSES.has(response2.status)) {
+      return Object.freeze({ response: response2, url: current.href });
+    }
+    if (redirects >= maxRedirects) {
+      throw redirectRefused(`HTTP redirect chain exceeds the bounded hop limit of ${maxRedirects}`, {
+        url: current.href,
+        maxRedirects
+      });
+    }
+    const location = response2.headers.get("location");
+    if (location === null || location === "") {
+      throw redirectRefused("HTTP redirect response has no Location header", {
+        url: current.href,
+        status: response2.status
+      });
+    }
+    let next;
+    try {
+      next = new URL(location, current);
+    } catch (cause) {
+      throw redirectRefused(`HTTP redirect Location \xAB${location}\xBB is invalid`, {
+        url: current.href,
+        location,
+        cause
+      });
+    }
+    current = assertAllowedHttpUrl(next.href, allowedOrigins);
+    redirects += 1;
+  }
+}
+function sourceStream2(source2, size, start = 0, end = size, signal) {
+  let position = Math.max(0, start);
+  const stop = Math.min(end, size);
+  return new ReadableStream({
+    async pull(controller) {
+      throwIfAborted(signal);
+      if (position >= stop)
+        return controller.close();
+      const length = Math.min(64 * 1024, stop - position);
+      controller.enqueue(await source2.readAt(position, length, signal));
+      position += length;
+    }
+  });
+}
+async function createHttpRangeSource(url, options = {}) {
+  const fetcher = options.fetch ?? globalThis.fetch;
+  if (fetcher === void 0)
+    throw unavailable2("this realm does not provide fetch");
+  const maxRedirects = options.maxRedirects ?? DEFAULT_MAX_REDIRECTS;
+  if (!Number.isSafeInteger(maxRedirects) || maxRedirects < 0) {
+    throw redirectRefused("maxRedirects must be a non-negative safe integer", { maxRedirects });
+  }
+  let resolvedUrl = assertAllowedHttpUrl(url, options.allowedOrigins).href;
+  let size = options.size;
+  if (size === void 0) {
+    throwIfAborted(options.signal);
+    const result = await fetchWithCheckedRedirects(resolvedUrl, fetcher, options.signal === void 0 ? { method: "HEAD" } : { method: "HEAD", signal: options.signal }, options.allowedOrigins, maxRedirects);
+    const head = result.response;
+    resolvedUrl = result.url;
+    const length = head.headers.get("content-length");
+    size = length === null ? void 0 : Number(length);
+    if (!head.ok || head.headers.get("accept-ranges")?.toLowerCase() !== "bytes") {
+      throw unavailable2(`HTTP source \xAB${url}\xBB does not advertise bounded byte ranges`, {
+        status: head.status,
+        contentLength: length,
+        acceptRanges: head.headers.get("accept-ranges")
+      });
+    }
+  }
+  assertSafeSize(size);
+  const sourceSize = size;
+  let disposed = false;
+  const assertLive = () => {
+    if (!disposed)
+      return;
+    throw new ModkitError({
+      code: "x3.vfs/source-disposed",
+      message: `source \xAB${resolvedUrl}\xBB disposed`
+    });
+  };
+  const source2 = {
+    id: resolvedUrl,
+    async size(signal) {
+      throwIfAborted(signal);
+      assertLive();
+      return sourceSize;
+    },
+    async readAt(offset, length, signal) {
+      throwIfAborted(signal);
+      assertLive();
+      if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length) || offset < 0 || length < 0 || offset + length > sourceSize) {
+        throw rangeError(resolvedUrl, offset, length, sourceSize);
+      }
+      if (length === 0)
+        return new Uint8Array();
+      const { response: response2 } = await fetchWithCheckedRedirects(resolvedUrl, fetcher, {
+        headers: { Range: `bytes=${offset}-${offset + length - 1}` },
+        ...signal === void 0 ? {} : { signal }
+      }, options.allowedOrigins, maxRedirects);
+      if (response2.status !== 206) {
+        throw unavailable2(`HTTP source \xAB${resolvedUrl}\xBB ignored a bounded range request`, {
+          status: response2.status,
+          offset,
+          length
+        });
+      }
+      const bytes2 = new Uint8Array(await response2.arrayBuffer());
+      if (bytes2.byteLength !== length) {
+        throw new ModkitError({
+          code: "x3.vfs/http-short-range-response",
+          message: `HTTP source \xAB${resolvedUrl}\xBB returned ${bytes2.byteLength} bytes for a ${length}-byte range`,
+          context: { offset, length, actual: bytes2.byteLength }
+        });
+      }
+      return bytes2;
+    },
+    stream(start, end, signal) {
+      assertLive();
+      return sourceStream2(source2, sourceSize, start, end, signal);
+    },
+    dispose() {
+      disposed = true;
+    }
+  };
+  return source2;
+}
+var HttpMount = class {
+  rootUri;
+  sizeBytes;
+  fetcher;
+  allowedOrigins;
+  maxRedirects;
+  limits;
+  id;
+  revision;
+  budget;
+  sources = /* @__PURE__ */ new Set();
+  disposed = false;
+  constructor(rootUri, sizeBytes, fetcher, allowedOrigins, maxRedirects, limits) {
+    this.rootUri = rootUri;
+    this.sizeBytes = sizeBytes;
+    this.fetcher = fetcher;
+    this.allowedOrigins = allowedOrigins;
+    this.maxRedirects = maxRedirects;
+    this.limits = limits;
+    this.id = rootUri;
+    this.revision = `provider-token:http-${encodeURIComponent(rootUri)}-${sizeBytes}`;
+    this.budget = new VfsReadBudget(limits.maxReadBytes);
+  }
+  async stat(path, signal) {
+    throwIfAborted(signal);
+    this.assertLive();
+    if (normalizeVfsPath(path) !== "")
+      return void 0;
+    const parsed = new URL(this.rootUri);
+    return Object.freeze({
+      path: "",
+      name: decodeURIComponent(parsed.pathname.split("/").filter(Boolean).at(-1) ?? parsed.host),
+      kind: "file",
+      size: BigInt(this.sizeBytes),
+      revision: this.revision
+    });
+  }
+  async *list(path, signal) {
+    throwIfAborted(signal);
+    this.assertLive();
+    throw new ModkitError({
+      code: "x3.vfs/not-a-directory",
+      message: `HTTP VFS root \xAB${this.rootUri}\xBB is one file, not a directory`,
+      context: { path: normalizeVfsPath(path) }
+    });
+  }
+  async open(path, signal) {
+    throwIfAborted(signal);
+    this.assertLive();
+    if (normalizeVfsPath(path) !== "") {
+      throw new ModkitError({
+        code: "x3.vfs/file-not-found",
+        message: `HTTP VFS root \xAB${this.rootUri}\xBB has no child path \xAB${path}\xBB`,
+        context: { path }
+      });
+    }
+    const raw = await createHttpRangeSource(this.rootUri, {
+      size: this.sizeBytes,
+      ...this.fetcher === void 0 ? {} : { fetch: this.fetcher },
+      ...this.allowedOrigins === void 0 ? {} : { allowedOrigins: this.allowedOrigins },
+      ...this.maxRedirects === void 0 ? {} : { maxRedirects: this.maxRedirects },
+      ...signal === void 0 ? {} : { signal }
+    });
+    const source2 = budgetRandomAccessSource(raw, this.sizeBytes, this.limits, this.budget);
+    this.sources.add(source2);
+    return source2;
+  }
+  async dispose() {
+    if (this.disposed)
+      return;
+    this.disposed = true;
+    await Promise.all([...this.sources].map(async (source2) => source2.dispose()));
+    this.sources.clear();
+  }
+  assertLive() {
+    if (!this.disposed)
+      return;
+    throw new ModkitError({
+      code: "x3.vfs/mount-disposed",
+      message: `HTTP VFS mount \xAB${this.rootUri}\xBB is disposed`
+    });
+  }
+};
+var HttpVfsProvider = class {
+  options;
+  id;
+  scheme;
+  limits;
+  constructor(options = {}) {
+    this.options = options;
+    this.id = options.id ?? "org.modkitx-x3.vfs.http";
+    this.scheme = options.scheme ?? "https";
+    this.limits = clampVfsLimits(options.limits);
+  }
+  async open(uri, context) {
+    throwIfAborted(context.signal);
+    let parsed;
+    try {
+      parsed = new URL(uri);
+    } catch (cause) {
+      throw new ModkitError({
+        code: "x3.vfs/uri-invalid",
+        message: `HTTP provider cannot parse source URI \xAB${uri}\xBB`,
+        context: { uri },
+        cause
+      });
+    }
+    if (parsed.protocol !== `${this.scheme}:`) {
+      throw new ModkitError({
+        code: "x3.vfs/provider-scheme-mismatch",
+        message: `HTTP provider cannot open protocol \xAB${parsed.protocol}\xBB`,
+        context: { uri, protocol: parsed.protocol }
+      });
+    }
+    if (this.options.allowedOrigins !== void 0 && !this.options.allowedOrigins.includes(parsed.origin)) {
+      throw new ModkitError({
+        code: "x3.vfs/http-origin-refused",
+        message: `HTTP provider refuses origin \xAB${parsed.origin}\xBB`,
+        context: { origin: parsed.origin }
+      });
+    }
+    const limits = clampVfsLimits(context.limits, this.limits);
+    const probe = await createHttpRangeSource(parsed.href, {
+      ...this.options.fetch === void 0 ? {} : { fetch: this.options.fetch },
+      ...this.options.allowedOrigins === void 0 ? {} : { allowedOrigins: this.options.allowedOrigins },
+      ...this.options.maxRedirects === void 0 ? {} : { maxRedirects: this.options.maxRedirects },
+      ...context.signal === void 0 ? {} : { signal: context.signal }
+    });
+    const size = await probe.size(context.signal);
+    await probe.dispose();
+    if (BigInt(size) > limits.maxFileBytes) {
+      throw new ModkitError({
+        code: "x3.vfs/file-size-limit-exceeded",
+        message: "HTTP provider encountered a file above its logical size limit",
+        context: { fileBytes: String(size), maxFileBytes: String(limits.maxFileBytes) }
+      });
+    }
+    return new HttpMount(probe.id, size, this.options.fetch, this.options.allowedOrigins, this.options.maxRedirects, limits);
+  }
+};
+function createHttpVfsProvider(options = {}) {
+  return new HttpVfsProvider(options);
+}
+
 // packages/host/dist/browser/verified-loader.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// node_modules/.pnpm/es-module-lexer@1.7.0/node_modules/es-module-lexer/dist/lexer.asm.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var e;
+var a;
+var r;
+var i = 2 << 19;
+var s = 1 === new Uint8Array(new Uint16Array([1]).buffer)[0] ? function(e2, a2) {
+  const r2 = e2.length;
+  let i2 = 0;
+  for (; i2 < r2; ) a2[i2] = e2.charCodeAt(i2++);
+} : function(e2, a2) {
+  const r2 = e2.length;
+  let i2 = 0;
+  for (; i2 < r2; ) {
+    const r3 = e2.charCodeAt(i2);
+    a2[i2++] = (255 & r3) << 8 | r3 >>> 8;
+  }
+};
+var f = "xportmportlassforetaourceeferromsyncunctionssertvoyiedelecontininstantybreareturdebuggeawaithrwhileifcatcfinallels";
+var t2;
+var c2;
+var n;
+function parse(k2, l2 = "@") {
+  t2 = k2, c2 = l2;
+  const u2 = 2 * t2.length + (2 << 18);
+  if (u2 > i || !e) {
+    for (; u2 > i; ) i *= 2;
+    a = new ArrayBuffer(i), s(f, new Uint16Array(a, 16, 114)), e = (function(e2, a2, r2) {
+      ;
+      var i2 = new e2.Int8Array(r2), s2 = new e2.Int16Array(r2), f2 = new e2.Int32Array(r2), t3 = new e2.Uint8Array(r2), c3 = new e2.Uint16Array(r2), n2 = 1040;
+      function b2() {
+        var e3 = 0, a3 = 0, r3 = 0, t4 = 0, c4 = 0, b3 = 0, u4 = 0;
+        u4 = n2;
+        n2 = n2 + 10240 | 0;
+        i2[812] = 1;
+        i2[811] = 0;
+        s2[403] = 0;
+        s2[404] = 0;
+        f2[71] = f2[2];
+        i2[813] = 0;
+        f2[70] = 0;
+        i2[810] = 0;
+        f2[72] = u4 + 2048;
+        f2[73] = u4;
+        i2[814] = 0;
+        e3 = (f2[3] | 0) + -2 | 0;
+        f2[74] = e3;
+        a3 = e3 + (f2[68] << 1) | 0;
+        f2[75] = a3;
+        e: while (1) {
+          r3 = e3 + 2 | 0;
+          f2[74] = r3;
+          if (e3 >>> 0 >= a3 >>> 0) {
+            t4 = 18;
+            break;
+          }
+          a: do {
+            switch (s2[r3 >> 1] | 0) {
+              case 9:
+              case 10:
+              case 11:
+              case 12:
+              case 13:
+              case 32:
+                break;
+              case 101: {
+                if ((((s2[404] | 0) == 0 ? H(r3) | 0 : 0) ? (m(e3 + 4 | 0, 16, 10) | 0) == 0 : 0) ? (k3(), (i2[812] | 0) == 0) : 0) {
+                  t4 = 9;
+                  break e;
+                } else t4 = 17;
+                break;
+              }
+              case 105: {
+                if (H(r3) | 0 ? (m(e3 + 4 | 0, 26, 10) | 0) == 0 : 0) {
+                  l3();
+                  t4 = 17;
+                } else t4 = 17;
+                break;
+              }
+              case 59: {
+                t4 = 17;
+                break;
+              }
+              case 47:
+                switch (s2[e3 + 4 >> 1] | 0) {
+                  case 47: {
+                    P();
+                    break a;
+                  }
+                  case 42: {
+                    y(1);
+                    break a;
+                  }
+                  default: {
+                    t4 = 16;
+                    break e;
+                  }
+                }
+              default: {
+                t4 = 16;
+                break e;
+              }
+            }
+          } while (0);
+          if ((t4 | 0) == 17) {
+            t4 = 0;
+            f2[71] = f2[74];
+          }
+          e3 = f2[74] | 0;
+          a3 = f2[75] | 0;
+        }
+        if ((t4 | 0) == 9) {
+          e3 = f2[74] | 0;
+          f2[71] = e3;
+          t4 = 19;
+        } else if ((t4 | 0) == 16) {
+          i2[812] = 0;
+          f2[74] = e3;
+          t4 = 19;
+        } else if ((t4 | 0) == 18) if (!(i2[810] | 0)) {
+          e3 = r3;
+          t4 = 19;
+        } else e3 = 0;
+        do {
+          if ((t4 | 0) == 19) {
+            e: while (1) {
+              a3 = e3 + 2 | 0;
+              f2[74] = a3;
+              if (e3 >>> 0 >= (f2[75] | 0) >>> 0) {
+                t4 = 92;
+                break;
+              }
+              a: do {
+                switch (s2[a3 >> 1] | 0) {
+                  case 9:
+                  case 10:
+                  case 11:
+                  case 12:
+                  case 13:
+                  case 32:
+                    break;
+                  case 101: {
+                    if (((s2[404] | 0) == 0 ? H(a3) | 0 : 0) ? (m(e3 + 4 | 0, 16, 10) | 0) == 0 : 0) {
+                      k3();
+                      t4 = 91;
+                    } else t4 = 91;
+                    break;
+                  }
+                  case 105: {
+                    if (H(a3) | 0 ? (m(e3 + 4 | 0, 26, 10) | 0) == 0 : 0) {
+                      l3();
+                      t4 = 91;
+                    } else t4 = 91;
+                    break;
+                  }
+                  case 99: {
+                    if ((H(a3) | 0 ? (m(e3 + 4 | 0, 36, 8) | 0) == 0 : 0) ? V(s2[e3 + 12 >> 1] | 0) | 0 : 0) {
+                      i2[814] = 1;
+                      t4 = 91;
+                    } else t4 = 91;
+                    break;
+                  }
+                  case 40: {
+                    r3 = f2[72] | 0;
+                    e3 = s2[404] | 0;
+                    t4 = e3 & 65535;
+                    f2[r3 + (t4 << 3) >> 2] = 1;
+                    a3 = f2[71] | 0;
+                    s2[404] = e3 + 1 << 16 >> 16;
+                    f2[r3 + (t4 << 3) + 4 >> 2] = a3;
+                    t4 = 91;
+                    break;
+                  }
+                  case 41: {
+                    a3 = s2[404] | 0;
+                    if (!(a3 << 16 >> 16)) {
+                      t4 = 36;
+                      break e;
+                    }
+                    r3 = a3 + -1 << 16 >> 16;
+                    s2[404] = r3;
+                    t4 = s2[403] | 0;
+                    a3 = t4 & 65535;
+                    if (t4 << 16 >> 16 != 0 ? (f2[(f2[72] | 0) + ((r3 & 65535) << 3) >> 2] | 0) == 5 : 0) {
+                      a3 = f2[(f2[73] | 0) + (a3 + -1 << 2) >> 2] | 0;
+                      r3 = a3 + 4 | 0;
+                      if (!(f2[r3 >> 2] | 0)) f2[r3 >> 2] = (f2[71] | 0) + 2;
+                      f2[a3 + 12 >> 2] = e3 + 4;
+                      s2[403] = t4 + -1 << 16 >> 16;
+                      t4 = 91;
+                    } else t4 = 91;
+                    break;
+                  }
+                  case 123: {
+                    t4 = f2[71] | 0;
+                    r3 = f2[65] | 0;
+                    e3 = t4;
+                    do {
+                      if ((s2[t4 >> 1] | 0) == 41 & (r3 | 0) != 0 ? (f2[r3 + 4 >> 2] | 0) == (t4 | 0) : 0) {
+                        a3 = f2[66] | 0;
+                        f2[65] = a3;
+                        if (!a3) {
+                          f2[61] = 0;
+                          break;
+                        } else {
+                          f2[a3 + 32 >> 2] = 0;
+                          break;
+                        }
+                      }
+                    } while (0);
+                    r3 = f2[72] | 0;
+                    a3 = s2[404] | 0;
+                    t4 = a3 & 65535;
+                    f2[r3 + (t4 << 3) >> 2] = (i2[814] | 0) == 0 ? 2 : 6;
+                    s2[404] = a3 + 1 << 16 >> 16;
+                    f2[r3 + (t4 << 3) + 4 >> 2] = e3;
+                    i2[814] = 0;
+                    t4 = 91;
+                    break;
+                  }
+                  case 125: {
+                    e3 = s2[404] | 0;
+                    if (!(e3 << 16 >> 16)) {
+                      t4 = 49;
+                      break e;
+                    }
+                    r3 = f2[72] | 0;
+                    t4 = e3 + -1 << 16 >> 16;
+                    s2[404] = t4;
+                    if ((f2[r3 + ((t4 & 65535) << 3) >> 2] | 0) == 4) {
+                      h2();
+                      t4 = 91;
+                    } else t4 = 91;
+                    break;
+                  }
+                  case 39: {
+                    v(39);
+                    t4 = 91;
+                    break;
+                  }
+                  case 34: {
+                    v(34);
+                    t4 = 91;
+                    break;
+                  }
+                  case 47:
+                    switch (s2[e3 + 4 >> 1] | 0) {
+                      case 47: {
+                        P();
+                        break a;
+                      }
+                      case 42: {
+                        y(1);
+                        break a;
+                      }
+                      default: {
+                        e3 = f2[71] | 0;
+                        a3 = s2[e3 >> 1] | 0;
+                        r: do {
+                          if (!(U(a3) | 0)) if (a3 << 16 >> 16 == 41) {
+                            r3 = s2[404] | 0;
+                            if (!(D(f2[(f2[72] | 0) + ((r3 & 65535) << 3) + 4 >> 2] | 0) | 0)) t4 = 65;
+                          } else t4 = 64;
+                          else switch (a3 << 16 >> 16) {
+                            case 46:
+                              if (((s2[e3 + -2 >> 1] | 0) + -48 & 65535) < 10) {
+                                t4 = 64;
+                                break r;
+                              } else break r;
+                            case 43:
+                              if ((s2[e3 + -2 >> 1] | 0) == 43) {
+                                t4 = 64;
+                                break r;
+                              } else break r;
+                            case 45:
+                              if ((s2[e3 + -2 >> 1] | 0) == 45) {
+                                t4 = 64;
+                                break r;
+                              } else break r;
+                            default:
+                              break r;
+                          }
+                        } while (0);
+                        if ((t4 | 0) == 64) {
+                          r3 = s2[404] | 0;
+                          t4 = 65;
+                        }
+                        r: do {
+                          if ((t4 | 0) == 65) {
+                            t4 = 0;
+                            if (r3 << 16 >> 16 != 0 ? (c4 = f2[72] | 0, b3 = (r3 & 65535) + -1 | 0, a3 << 16 >> 16 == 102 ? (f2[c4 + (b3 << 3) >> 2] | 0) == 1 : 0) : 0) {
+                              if ((s2[e3 + -2 >> 1] | 0) == 111 ? $(f2[c4 + (b3 << 3) + 4 >> 2] | 0, 44, 3) | 0 : 0) break;
+                            } else t4 = 69;
+                            if ((t4 | 0) == 69 ? (0, a3 << 16 >> 16 == 125) : 0) {
+                              t4 = f2[72] | 0;
+                              r3 = r3 & 65535;
+                              if (p(f2[t4 + (r3 << 3) + 4 >> 2] | 0) | 0) break;
+                              if ((f2[t4 + (r3 << 3) >> 2] | 0) == 6) break;
+                            }
+                            if (!(o2(e3) | 0)) {
+                              switch (a3 << 16 >> 16) {
+                                case 0:
+                                  break r;
+                                case 47: {
+                                  if (i2[813] | 0) break r;
+                                  break;
+                                }
+                                default: {
+                                }
+                              }
+                              t4 = f2[67] | 0;
+                              if ((t4 | 0 ? e3 >>> 0 >= (f2[t4 >> 2] | 0) >>> 0 : 0) ? e3 >>> 0 <= (f2[t4 + 4 >> 2] | 0) >>> 0 : 0) {
+                                g();
+                                i2[813] = 0;
+                                t4 = 91;
+                                break a;
+                              }
+                              r3 = f2[3] | 0;
+                              do {
+                                if (e3 >>> 0 <= r3 >>> 0) break;
+                                e3 = e3 + -2 | 0;
+                                f2[71] = e3;
+                                a3 = s2[e3 >> 1] | 0;
+                              } while (!(E(a3) | 0));
+                              if (F(a3) | 0) {
+                                do {
+                                  if (e3 >>> 0 <= r3 >>> 0) break;
+                                  e3 = e3 + -2 | 0;
+                                  f2[71] = e3;
+                                } while (F(s2[e3 >> 1] | 0) | 0);
+                                if (j(e3) | 0) {
+                                  g();
+                                  i2[813] = 0;
+                                  t4 = 91;
+                                  break a;
+                                }
+                              }
+                              i2[813] = 1;
+                              t4 = 91;
+                              break a;
+                            }
+                          }
+                        } while (0);
+                        g();
+                        i2[813] = 0;
+                        t4 = 91;
+                        break a;
+                      }
+                    }
+                  case 96: {
+                    r3 = f2[72] | 0;
+                    a3 = s2[404] | 0;
+                    t4 = a3 & 65535;
+                    f2[r3 + (t4 << 3) + 4 >> 2] = f2[71];
+                    s2[404] = a3 + 1 << 16 >> 16;
+                    f2[r3 + (t4 << 3) >> 2] = 3;
+                    h2();
+                    t4 = 91;
+                    break;
+                  }
+                  default:
+                    t4 = 91;
+                }
+              } while (0);
+              if ((t4 | 0) == 91) {
+                t4 = 0;
+                f2[71] = f2[74];
+              }
+              e3 = f2[74] | 0;
+            }
+            if ((t4 | 0) == 36) {
+              T();
+              e3 = 0;
+              break;
+            } else if ((t4 | 0) == 49) {
+              T();
+              e3 = 0;
+              break;
+            } else if ((t4 | 0) == 92) {
+              e3 = (i2[810] | 0) == 0 ? (s2[403] | s2[404]) << 16 >> 16 == 0 : 0;
+              break;
+            }
+          }
+        } while (0);
+        n2 = u4;
+        return e3 | 0;
+      }
+      function k3() {
+        var e3 = 0, a3 = 0, r3 = 0, t4 = 0, c4 = 0, n3 = 0, b3 = 0, k4 = 0, l4 = 0, o3 = 0, h3 = 0, d3 = 0, C2 = 0, g2 = 0;
+        k4 = f2[74] | 0;
+        l4 = f2[67] | 0;
+        g2 = k4 + 12 | 0;
+        f2[74] = g2;
+        r3 = w2(1) | 0;
+        e3 = f2[74] | 0;
+        if (!((e3 | 0) == (g2 | 0) ? !(I(r3) | 0) : 0)) C2 = 3;
+        e: do {
+          if ((C2 | 0) == 3) {
+            a: do {
+              switch (r3 << 16 >> 16) {
+                case 123: {
+                  f2[74] = e3 + 2;
+                  e3 = w2(1) | 0;
+                  a3 = f2[74] | 0;
+                  while (1) {
+                    if (W(e3) | 0) {
+                      v(e3);
+                      e3 = (f2[74] | 0) + 2 | 0;
+                      f2[74] = e3;
+                    } else {
+                      q(e3) | 0;
+                      e3 = f2[74] | 0;
+                    }
+                    w2(1) | 0;
+                    e3 = A(a3, e3) | 0;
+                    if (e3 << 16 >> 16 == 44) {
+                      f2[74] = (f2[74] | 0) + 2;
+                      e3 = w2(1) | 0;
+                    }
+                    if (e3 << 16 >> 16 == 125) {
+                      C2 = 15;
+                      break;
+                    }
+                    g2 = a3;
+                    a3 = f2[74] | 0;
+                    if ((a3 | 0) == (g2 | 0)) {
+                      C2 = 12;
+                      break;
+                    }
+                    if (a3 >>> 0 > (f2[75] | 0) >>> 0) {
+                      C2 = 14;
+                      break;
+                    }
+                  }
+                  if ((C2 | 0) == 12) {
+                    T();
+                    break e;
+                  } else if ((C2 | 0) == 14) {
+                    T();
+                    break e;
+                  } else if ((C2 | 0) == 15) {
+                    i2[811] = 1;
+                    f2[74] = (f2[74] | 0) + 2;
+                    break a;
+                  }
+                  break;
+                }
+                case 42: {
+                  f2[74] = e3 + 2;
+                  w2(1) | 0;
+                  g2 = f2[74] | 0;
+                  A(g2, g2) | 0;
+                  break;
+                }
+                default: {
+                  i2[812] = 0;
+                  switch (r3 << 16 >> 16) {
+                    case 100: {
+                      k4 = e3 + 14 | 0;
+                      f2[74] = k4;
+                      switch ((w2(1) | 0) << 16 >> 16) {
+                        case 97: {
+                          a3 = f2[74] | 0;
+                          if ((m(a3 + 2 | 0, 80, 8) | 0) == 0 ? (c4 = a3 + 10 | 0, F(s2[c4 >> 1] | 0) | 0) : 0) {
+                            f2[74] = c4;
+                            w2(0) | 0;
+                            C2 = 22;
+                          }
+                          break;
+                        }
+                        case 102: {
+                          C2 = 22;
+                          break;
+                        }
+                        case 99: {
+                          a3 = f2[74] | 0;
+                          if (((m(a3 + 2 | 0, 36, 8) | 0) == 0 ? (t4 = a3 + 10 | 0, g2 = s2[t4 >> 1] | 0, V(g2) | 0 | g2 << 16 >> 16 == 123) : 0) ? (f2[74] = t4, n3 = w2(1) | 0, n3 << 16 >> 16 != 123) : 0) {
+                            d3 = n3;
+                            C2 = 31;
+                          }
+                          break;
+                        }
+                        default: {
+                        }
+                      }
+                      r: do {
+                        if ((C2 | 0) == 22 ? (b3 = f2[74] | 0, (m(b3 + 2 | 0, 88, 14) | 0) == 0) : 0) {
+                          r3 = b3 + 16 | 0;
+                          a3 = s2[r3 >> 1] | 0;
+                          if (!(V(a3) | 0)) switch (a3 << 16 >> 16) {
+                            case 40:
+                            case 42:
+                              break;
+                            default:
+                              break r;
+                          }
+                          f2[74] = r3;
+                          a3 = w2(1) | 0;
+                          if (a3 << 16 >> 16 == 42) {
+                            f2[74] = (f2[74] | 0) + 2;
+                            a3 = w2(1) | 0;
+                          }
+                          if (a3 << 16 >> 16 != 40) {
+                            d3 = a3;
+                            C2 = 31;
+                          }
+                        }
+                      } while (0);
+                      if ((C2 | 0) == 31 ? (o3 = f2[74] | 0, q(d3) | 0, h3 = f2[74] | 0, h3 >>> 0 > o3 >>> 0) : 0) {
+                        O(e3, k4, o3, h3);
+                        f2[74] = (f2[74] | 0) + -2;
+                        break e;
+                      }
+                      O(e3, k4, 0, 0);
+                      f2[74] = e3 + 12;
+                      break e;
+                    }
+                    case 97: {
+                      f2[74] = e3 + 10;
+                      w2(0) | 0;
+                      e3 = f2[74] | 0;
+                      C2 = 35;
+                      break;
+                    }
+                    case 102: {
+                      C2 = 35;
+                      break;
+                    }
+                    case 99: {
+                      if ((m(e3 + 2 | 0, 36, 8) | 0) == 0 ? (a3 = e3 + 10 | 0, E(s2[a3 >> 1] | 0) | 0) : 0) {
+                        f2[74] = a3;
+                        g2 = w2(1) | 0;
+                        C2 = f2[74] | 0;
+                        q(g2) | 0;
+                        g2 = f2[74] | 0;
+                        O(C2, g2, C2, g2);
+                        f2[74] = (f2[74] | 0) + -2;
+                        break e;
+                      }
+                      e3 = e3 + 4 | 0;
+                      f2[74] = e3;
+                      break;
+                    }
+                    case 108:
+                    case 118:
+                      break;
+                    default:
+                      break e;
+                  }
+                  if ((C2 | 0) == 35) {
+                    f2[74] = e3 + 16;
+                    e3 = w2(1) | 0;
+                    if (e3 << 16 >> 16 == 42) {
+                      f2[74] = (f2[74] | 0) + 2;
+                      e3 = w2(1) | 0;
+                    }
+                    C2 = f2[74] | 0;
+                    q(e3) | 0;
+                    g2 = f2[74] | 0;
+                    O(C2, g2, C2, g2);
+                    f2[74] = (f2[74] | 0) + -2;
+                    break e;
+                  }
+                  f2[74] = e3 + 6;
+                  i2[812] = 0;
+                  r3 = w2(1) | 0;
+                  e3 = f2[74] | 0;
+                  r3 = (q(r3) | 0 | 32) << 16 >> 16 == 123;
+                  t4 = f2[74] | 0;
+                  if (r3) {
+                    f2[74] = t4 + 2;
+                    g2 = w2(1) | 0;
+                    e3 = f2[74] | 0;
+                    q(g2) | 0;
+                  }
+                  r: while (1) {
+                    a3 = f2[74] | 0;
+                    if ((a3 | 0) == (e3 | 0)) break;
+                    O(e3, a3, e3, a3);
+                    a3 = w2(1) | 0;
+                    if (r3) switch (a3 << 16 >> 16) {
+                      case 93:
+                      case 125:
+                        break e;
+                      default: {
+                      }
+                    }
+                    e3 = f2[74] | 0;
+                    if (a3 << 16 >> 16 != 44) {
+                      C2 = 51;
+                      break;
+                    }
+                    f2[74] = e3 + 2;
+                    a3 = w2(1) | 0;
+                    e3 = f2[74] | 0;
+                    switch (a3 << 16 >> 16) {
+                      case 91:
+                      case 123: {
+                        C2 = 51;
+                        break r;
+                      }
+                      default: {
+                      }
+                    }
+                    q(a3) | 0;
+                  }
+                  if ((C2 | 0) == 51) f2[74] = e3 + -2;
+                  if (!r3) break e;
+                  f2[74] = t4 + -2;
+                  break e;
+                }
+              }
+            } while (0);
+            g2 = (w2(1) | 0) << 16 >> 16 == 102;
+            e3 = f2[74] | 0;
+            if (g2 ? (m(e3 + 2 | 0, 74, 6) | 0) == 0 : 0) {
+              f2[74] = e3 + 8;
+              u3(k4, w2(1) | 0, 0);
+              e3 = (l4 | 0) == 0 ? 248 : l4 + 16 | 0;
+              while (1) {
+                e3 = f2[e3 >> 2] | 0;
+                if (!e3) break e;
+                f2[e3 + 12 >> 2] = 0;
+                f2[e3 + 8 >> 2] = 0;
+                e3 = e3 + 16 | 0;
+              }
+            }
+            f2[74] = e3 + -2;
+          }
+        } while (0);
+        return;
+      }
+      function l3() {
+        var e3 = 0, a3 = 0, r3 = 0, t4 = 0, c4 = 0, n3 = 0, b3 = 0;
+        b3 = f2[74] | 0;
+        c4 = b3 + 12 | 0;
+        f2[74] = c4;
+        e3 = w2(1) | 0;
+        t4 = f2[74] | 0;
+        e: do {
+          if (e3 << 16 >> 16 != 46) {
+            if (!(e3 << 16 >> 16 == 115 & t4 >>> 0 > c4 >>> 0)) {
+              if (!(e3 << 16 >> 16 == 100 & t4 >>> 0 > (b3 + 10 | 0) >>> 0)) {
+                t4 = 0;
+                n3 = 28;
+                break;
+              }
+              if (m(t4 + 2 | 0, 66, 8) | 0) {
+                a3 = t4;
+                e3 = 100;
+                t4 = 0;
+                n3 = 59;
+                break;
+              }
+              e3 = t4 + 10 | 0;
+              if (!(V(s2[e3 >> 1] | 0) | 0)) {
+                a3 = t4;
+                e3 = 100;
+                t4 = 0;
+                n3 = 59;
+                break;
+              }
+              f2[74] = e3;
+              e3 = w2(1) | 0;
+              if (e3 << 16 >> 16 == 42) {
+                e3 = 42;
+                t4 = 2;
+                n3 = 61;
+                break;
+              }
+              f2[74] = t4;
+              t4 = 0;
+              n3 = 28;
+              break;
+            }
+            if ((m(t4 + 2 | 0, 56, 10) | 0) == 0 ? (r3 = t4 + 12 | 0, V(s2[r3 >> 1] | 0) | 0) : 0) {
+              f2[74] = r3;
+              e3 = w2(1) | 0;
+              a3 = f2[74] | 0;
+              if ((a3 | 0) != (r3 | 0)) {
+                if (e3 << 16 >> 16 != 102) {
+                  t4 = 1;
+                  n3 = 28;
+                  break;
+                }
+                if (m(a3 + 2 | 0, 74, 6) | 0) {
+                  e3 = 102;
+                  t4 = 1;
+                  n3 = 59;
+                  break;
+                }
+                if (!(E(s2[a3 + 8 >> 1] | 0) | 0)) {
+                  e3 = 102;
+                  t4 = 1;
+                  n3 = 59;
+                  break;
+                }
+              }
+              f2[74] = t4;
+              t4 = 0;
+              n3 = 28;
+            } else {
+              a3 = t4;
+              e3 = 115;
+              t4 = 0;
+              n3 = 59;
+            }
+          } else {
+            f2[74] = t4 + 2;
+            switch ((w2(1) | 0) << 16 >> 16) {
+              case 109: {
+                e3 = f2[74] | 0;
+                if (m(e3 + 2 | 0, 50, 6) | 0) break e;
+                a3 = f2[71] | 0;
+                if (!(G(a3) | 0) ? (s2[a3 >> 1] | 0) == 46 : 0) break e;
+                d2(b3, b3, e3 + 8 | 0, 2);
+                break e;
+              }
+              case 115: {
+                e3 = f2[74] | 0;
+                if (m(e3 + 2 | 0, 56, 10) | 0) break e;
+                a3 = f2[71] | 0;
+                if (!(G(a3) | 0) ? (s2[a3 >> 1] | 0) == 46 : 0) break e;
+                f2[74] = e3 + 12;
+                e3 = w2(1) | 0;
+                t4 = 1;
+                n3 = 28;
+                break e;
+              }
+              case 100: {
+                e3 = f2[74] | 0;
+                if (m(e3 + 2 | 0, 66, 8) | 0) break e;
+                a3 = f2[71] | 0;
+                if (!(G(a3) | 0) ? (s2[a3 >> 1] | 0) == 46 : 0) break e;
+                f2[74] = e3 + 10;
+                e3 = w2(1) | 0;
+                t4 = 2;
+                n3 = 28;
+                break e;
+              }
+              default:
+                break e;
+            }
+          }
+        } while (0);
+        e: do {
+          if ((n3 | 0) == 28) {
+            if (e3 << 16 >> 16 == 40) {
+              r3 = f2[72] | 0;
+              a3 = s2[404] | 0;
+              c4 = a3 & 65535;
+              f2[r3 + (c4 << 3) >> 2] = 5;
+              e3 = f2[74] | 0;
+              s2[404] = a3 + 1 << 16 >> 16;
+              f2[r3 + (c4 << 3) + 4 >> 2] = e3;
+              if ((s2[f2[71] >> 1] | 0) == 46) break;
+              f2[74] = e3 + 2;
+              a3 = w2(1) | 0;
+              d2(b3, f2[74] | 0, 0, e3);
+              if (!t4) e3 = f2[65] | 0;
+              else {
+                e3 = f2[65] | 0;
+                f2[e3 + 28 >> 2] = (t4 | 0) == 1 ? 5 : 7;
+              }
+              c4 = f2[73] | 0;
+              b3 = s2[403] | 0;
+              s2[403] = b3 + 1 << 16 >> 16;
+              f2[c4 + ((b3 & 65535) << 2) >> 2] = e3;
+              switch (a3 << 16 >> 16) {
+                case 39: {
+                  v(39);
+                  break;
+                }
+                case 34: {
+                  v(34);
+                  break;
+                }
+                default: {
+                  f2[74] = (f2[74] | 0) + -2;
+                  break e;
+                }
+              }
+              e3 = (f2[74] | 0) + 2 | 0;
+              f2[74] = e3;
+              switch ((w2(1) | 0) << 16 >> 16) {
+                case 44: {
+                  f2[74] = (f2[74] | 0) + 2;
+                  w2(1) | 0;
+                  c4 = f2[65] | 0;
+                  f2[c4 + 4 >> 2] = e3;
+                  b3 = f2[74] | 0;
+                  f2[c4 + 16 >> 2] = b3;
+                  i2[c4 + 24 >> 0] = 1;
+                  f2[74] = b3 + -2;
+                  break e;
+                }
+                case 41: {
+                  s2[404] = (s2[404] | 0) + -1 << 16 >> 16;
+                  b3 = f2[65] | 0;
+                  f2[b3 + 4 >> 2] = e3;
+                  f2[b3 + 12 >> 2] = (f2[74] | 0) + 2;
+                  i2[b3 + 24 >> 0] = 1;
+                  s2[403] = (s2[403] | 0) + -1 << 16 >> 16;
+                  break e;
+                }
+                default: {
+                  f2[74] = (f2[74] | 0) + -2;
+                  break e;
+                }
+              }
+            }
+            if (!((t4 | 0) == 0 & e3 << 16 >> 16 == 123)) {
+              switch (e3 << 16 >> 16) {
+                case 42:
+                case 39:
+                case 34: {
+                  n3 = 61;
+                  break e;
+                }
+                default: {
+                }
+              }
+              a3 = f2[74] | 0;
+              n3 = 59;
+              break;
+            }
+            e3 = f2[74] | 0;
+            if (s2[404] | 0) {
+              f2[74] = e3 + -2;
+              break;
+            }
+            while (1) {
+              if (e3 >>> 0 >= (f2[75] | 0) >>> 0) break;
+              e3 = w2(1) | 0;
+              if (!(W(e3) | 0)) {
+                if (e3 << 16 >> 16 == 125) {
+                  n3 = 49;
+                  break;
+                }
+              } else v(e3);
+              e3 = (f2[74] | 0) + 2 | 0;
+              f2[74] = e3;
+            }
+            if ((n3 | 0) == 49) f2[74] = (f2[74] | 0) + 2;
+            c4 = (w2(1) | 0) << 16 >> 16 == 102;
+            e3 = f2[74] | 0;
+            if (c4 ? m(e3 + 2 | 0, 74, 6) | 0 : 0) {
+              T();
+              break;
+            }
+            f2[74] = e3 + 8;
+            e3 = w2(1) | 0;
+            if (W(e3) | 0) {
+              u3(b3, e3, 0);
+              break;
+            } else {
+              T();
+              break;
+            }
+          }
+        } while (0);
+        if ((n3 | 0) == 59) if ((a3 | 0) == (c4 | 0)) f2[74] = b3 + 10;
+        else n3 = 61;
+        do {
+          if ((n3 | 0) == 61) {
+            if (!((e3 << 16 >> 16 == 42 | (t4 | 0) != 2) & (s2[404] | 0) == 0)) {
+              f2[74] = (f2[74] | 0) + -2;
+              break;
+            }
+            e3 = f2[75] | 0;
+            a3 = f2[74] | 0;
+            while (1) {
+              if (a3 >>> 0 >= e3 >>> 0) {
+                n3 = 68;
+                break;
+              }
+              r3 = s2[a3 >> 1] | 0;
+              if (W(r3) | 0) {
+                n3 = 66;
+                break;
+              }
+              n3 = a3 + 2 | 0;
+              f2[74] = n3;
+              a3 = n3;
+            }
+            if ((n3 | 0) == 66) {
+              u3(b3, r3, t4);
+              break;
+            } else if ((n3 | 0) == 68) {
+              T();
+              break;
+            }
+          }
+        } while (0);
+        return;
+      }
+      function u3(e3, a3, r3) {
+        e3 = e3 | 0;
+        a3 = a3 | 0;
+        r3 = r3 | 0;
+        var i3 = 0, t4 = 0;
+        i3 = (f2[74] | 0) + 2 | 0;
+        switch (a3 << 16 >> 16) {
+          case 39: {
+            v(39);
+            t4 = 5;
+            break;
+          }
+          case 34: {
+            v(34);
+            t4 = 5;
+            break;
+          }
+          default:
+            T();
+        }
+        do {
+          if ((t4 | 0) == 5) {
+            d2(e3, i3, f2[74] | 0, 1);
+            if ((r3 | 0) > 0) f2[(f2[65] | 0) + 28 >> 2] = (r3 | 0) == 1 ? 4 : 6;
+            f2[74] = (f2[74] | 0) + 2;
+            a3 = w2(0) | 0;
+            r3 = a3 << 16 >> 16 == 97;
+            if (r3) {
+              i3 = f2[74] | 0;
+              if (m(i3 + 2 | 0, 102, 10) | 0) t4 = 13;
+            } else {
+              i3 = f2[74] | 0;
+              if (!(((a3 << 16 >> 16 == 119 ? (s2[i3 + 2 >> 1] | 0) == 105 : 0) ? (s2[i3 + 4 >> 1] | 0) == 116 : 0) ? (s2[i3 + 6 >> 1] | 0) == 104 : 0)) t4 = 13;
+            }
+            if ((t4 | 0) == 13) {
+              f2[74] = i3 + -2;
+              break;
+            }
+            f2[74] = i3 + ((r3 ? 6 : 4) << 1);
+            if ((w2(1) | 0) << 16 >> 16 != 123) {
+              f2[74] = i3;
+              break;
+            }
+            r3 = f2[74] | 0;
+            a3 = r3;
+            e: while (1) {
+              f2[74] = a3 + 2;
+              a3 = w2(1) | 0;
+              switch (a3 << 16 >> 16) {
+                case 39: {
+                  v(39);
+                  f2[74] = (f2[74] | 0) + 2;
+                  a3 = w2(1) | 0;
+                  break;
+                }
+                case 34: {
+                  v(34);
+                  f2[74] = (f2[74] | 0) + 2;
+                  a3 = w2(1) | 0;
+                  break;
+                }
+                default:
+                  a3 = q(a3) | 0;
+              }
+              if (a3 << 16 >> 16 != 58) {
+                t4 = 22;
+                break;
+              }
+              f2[74] = (f2[74] | 0) + 2;
+              switch ((w2(1) | 0) << 16 >> 16) {
+                case 39: {
+                  v(39);
+                  break;
+                }
+                case 34: {
+                  v(34);
+                  break;
+                }
+                default: {
+                  t4 = 26;
+                  break e;
+                }
+              }
+              f2[74] = (f2[74] | 0) + 2;
+              switch ((w2(1) | 0) << 16 >> 16) {
+                case 125: {
+                  t4 = 31;
+                  break e;
+                }
+                case 44:
+                  break;
+                default: {
+                  t4 = 30;
+                  break e;
+                }
+              }
+              f2[74] = (f2[74] | 0) + 2;
+              if ((w2(1) | 0) << 16 >> 16 == 125) {
+                t4 = 31;
+                break;
+              }
+              a3 = f2[74] | 0;
+            }
+            if ((t4 | 0) == 22) {
+              f2[74] = i3;
+              break;
+            } else if ((t4 | 0) == 26) {
+              f2[74] = i3;
+              break;
+            } else if ((t4 | 0) == 30) {
+              f2[74] = i3;
+              break;
+            } else if ((t4 | 0) == 31) {
+              t4 = f2[65] | 0;
+              f2[t4 + 16 >> 2] = r3;
+              f2[t4 + 12 >> 2] = (f2[74] | 0) + 2;
+              break;
+            }
+          }
+        } while (0);
+        return;
+      }
+      function o2(e3) {
+        e3 = e3 | 0;
+        e: do {
+          switch (s2[e3 >> 1] | 0) {
+            case 100:
+              switch (s2[e3 + -2 >> 1] | 0) {
+                case 105: {
+                  e3 = $(e3 + -4 | 0, 112, 2) | 0;
+                  break e;
+                }
+                case 108: {
+                  e3 = $(e3 + -4 | 0, 116, 3) | 0;
+                  break e;
+                }
+                default: {
+                  e3 = 0;
+                  break e;
+                }
+              }
+            case 101:
+              switch (s2[e3 + -2 >> 1] | 0) {
+                case 115:
+                  switch (s2[e3 + -4 >> 1] | 0) {
+                    case 108: {
+                      e3 = B(e3 + -6 | 0, 101) | 0;
+                      break e;
+                    }
+                    case 97: {
+                      e3 = B(e3 + -6 | 0, 99) | 0;
+                      break e;
+                    }
+                    default: {
+                      e3 = 0;
+                      break e;
+                    }
+                  }
+                case 116: {
+                  e3 = $(e3 + -4 | 0, 122, 4) | 0;
+                  break e;
+                }
+                case 117: {
+                  e3 = $(e3 + -4 | 0, 130, 6) | 0;
+                  break e;
+                }
+                default: {
+                  e3 = 0;
+                  break e;
+                }
+              }
+            case 102: {
+              if ((s2[e3 + -2 >> 1] | 0) == 111 ? (s2[e3 + -4 >> 1] | 0) == 101 : 0) switch (s2[e3 + -6 >> 1] | 0) {
+                case 99: {
+                  e3 = $(e3 + -8 | 0, 142, 6) | 0;
+                  break e;
+                }
+                case 112: {
+                  e3 = $(e3 + -8 | 0, 154, 2) | 0;
+                  break e;
+                }
+                default: {
+                  e3 = 0;
+                  break e;
+                }
+              }
+              else e3 = 0;
+              break;
+            }
+            case 107: {
+              e3 = $(e3 + -2 | 0, 158, 4) | 0;
+              break;
+            }
+            case 110: {
+              e3 = e3 + -2 | 0;
+              if (B(e3, 105) | 0) e3 = 1;
+              else e3 = $(e3, 166, 5) | 0;
+              break;
+            }
+            case 111: {
+              e3 = B(e3 + -2 | 0, 100) | 0;
+              break;
+            }
+            case 114: {
+              e3 = $(e3 + -2 | 0, 176, 7) | 0;
+              break;
+            }
+            case 116: {
+              e3 = $(e3 + -2 | 0, 190, 4) | 0;
+              break;
+            }
+            case 119:
+              switch (s2[e3 + -2 >> 1] | 0) {
+                case 101: {
+                  e3 = B(e3 + -4 | 0, 110) | 0;
+                  break e;
+                }
+                case 111: {
+                  e3 = $(e3 + -4 | 0, 198, 3) | 0;
+                  break e;
+                }
+                default: {
+                  e3 = 0;
+                  break e;
+                }
+              }
+            default:
+              e3 = 0;
+          }
+        } while (0);
+        return e3 | 0;
+      }
+      function h2() {
+        var e3 = 0, a3 = 0, r3 = 0, i3 = 0;
+        a3 = f2[75] | 0;
+        r3 = f2[74] | 0;
+        e: while (1) {
+          e3 = r3 + 2 | 0;
+          if (r3 >>> 0 >= a3 >>> 0) {
+            a3 = 10;
+            break;
+          }
+          switch (s2[e3 >> 1] | 0) {
+            case 96: {
+              a3 = 7;
+              break e;
+            }
+            case 36: {
+              if ((s2[r3 + 4 >> 1] | 0) == 123) {
+                a3 = 6;
+                break e;
+              }
+              break;
+            }
+            case 92: {
+              e3 = r3 + 4 | 0;
+              break;
+            }
+            default: {
+            }
+          }
+          r3 = e3;
+        }
+        if ((a3 | 0) == 6) {
+          e3 = r3 + 4 | 0;
+          f2[74] = e3;
+          a3 = f2[72] | 0;
+          i3 = s2[404] | 0;
+          r3 = i3 & 65535;
+          f2[a3 + (r3 << 3) >> 2] = 4;
+          s2[404] = i3 + 1 << 16 >> 16;
+          f2[a3 + (r3 << 3) + 4 >> 2] = e3;
+        } else if ((a3 | 0) == 7) {
+          f2[74] = e3;
+          r3 = f2[72] | 0;
+          i3 = (s2[404] | 0) + -1 << 16 >> 16;
+          s2[404] = i3;
+          if ((f2[r3 + ((i3 & 65535) << 3) >> 2] | 0) != 3) T();
+        } else if ((a3 | 0) == 10) {
+          f2[74] = e3;
+          T();
+        }
+        return;
+      }
+      function w2(e3) {
+        e3 = e3 | 0;
+        var a3 = 0, r3 = 0, i3 = 0;
+        r3 = f2[74] | 0;
+        e: do {
+          a3 = s2[r3 >> 1] | 0;
+          a: do {
+            if (a3 << 16 >> 16 != 47) if (e3) if (V(a3) | 0) break;
+            else break e;
+            else if (F(a3) | 0) break;
+            else break e;
+            else switch (s2[r3 + 2 >> 1] | 0) {
+              case 47: {
+                P();
+                break a;
+              }
+              case 42: {
+                y(e3);
+                break a;
+              }
+              default: {
+                a3 = 47;
+                break e;
+              }
+            }
+          } while (0);
+          i3 = f2[74] | 0;
+          r3 = i3 + 2 | 0;
+          f2[74] = r3;
+        } while (i3 >>> 0 < (f2[75] | 0) >>> 0);
+        return a3 | 0;
+      }
+      function d2(e3, a3, r3, s3) {
+        e3 = e3 | 0;
+        a3 = a3 | 0;
+        r3 = r3 | 0;
+        s3 = s3 | 0;
+        var t4 = 0, c4 = 0;
+        c4 = f2[69] | 0;
+        f2[69] = c4 + 36;
+        t4 = f2[65] | 0;
+        f2[((t4 | 0) == 0 ? 244 : t4 + 32 | 0) >> 2] = c4;
+        f2[66] = t4;
+        f2[65] = c4;
+        f2[c4 + 8 >> 2] = e3;
+        if (2 == (s3 | 0)) {
+          e3 = 3;
+          t4 = r3;
+        } else {
+          t4 = 1 == (s3 | 0);
+          e3 = t4 ? 1 : 2;
+          t4 = t4 ? r3 + 2 | 0 : 0;
+        }
+        f2[c4 + 12 >> 2] = t4;
+        f2[c4 + 28 >> 2] = e3;
+        f2[c4 >> 2] = a3;
+        f2[c4 + 4 >> 2] = r3;
+        f2[c4 + 16 >> 2] = 0;
+        f2[c4 + 20 >> 2] = s3;
+        a3 = 1 == (s3 | 0);
+        i2[c4 + 24 >> 0] = a3 & 1;
+        f2[c4 + 32 >> 2] = 0;
+        if (a3 | 2 == (s3 | 0)) i2[811] = 1;
+        return;
+      }
+      function v(e3) {
+        e3 = e3 | 0;
+        var a3 = 0, r3 = 0, i3 = 0, t4 = 0;
+        t4 = f2[75] | 0;
+        a3 = f2[74] | 0;
+        while (1) {
+          i3 = a3 + 2 | 0;
+          if (a3 >>> 0 >= t4 >>> 0) {
+            a3 = 9;
+            break;
+          }
+          r3 = s2[i3 >> 1] | 0;
+          if (r3 << 16 >> 16 == e3 << 16 >> 16) {
+            a3 = 10;
+            break;
+          }
+          if (r3 << 16 >> 16 == 92) {
+            r3 = a3 + 4 | 0;
+            if ((s2[r3 >> 1] | 0) == 13) {
+              a3 = a3 + 6 | 0;
+              a3 = (s2[a3 >> 1] | 0) == 10 ? a3 : r3;
+            } else a3 = r3;
+          } else if (Z(r3) | 0) {
+            a3 = 9;
+            break;
+          } else a3 = i3;
+        }
+        if ((a3 | 0) == 9) {
+          f2[74] = i3;
+          T();
+        } else if ((a3 | 0) == 10) f2[74] = i3;
+        return;
+      }
+      function A(e3, a3) {
+        e3 = e3 | 0;
+        a3 = a3 | 0;
+        var r3 = 0, i3 = 0, t4 = 0, c4 = 0;
+        r3 = f2[74] | 0;
+        i3 = s2[r3 >> 1] | 0;
+        c4 = (e3 | 0) == (a3 | 0);
+        t4 = c4 ? 0 : e3;
+        c4 = c4 ? 0 : a3;
+        if (i3 << 16 >> 16 == 97) {
+          f2[74] = r3 + 4;
+          r3 = w2(1) | 0;
+          e3 = f2[74] | 0;
+          if (W(r3) | 0) {
+            v(r3);
+            a3 = (f2[74] | 0) + 2 | 0;
+            f2[74] = a3;
+          } else {
+            q(r3) | 0;
+            a3 = f2[74] | 0;
+          }
+          i3 = w2(1) | 0;
+          r3 = f2[74] | 0;
+        }
+        if ((r3 | 0) != (e3 | 0)) O(e3, a3, t4, c4);
+        return i3 | 0;
+      }
+      function C() {
+        var e3 = 0, a3 = 0, r3 = 0;
+        r3 = f2[75] | 0;
+        a3 = f2[74] | 0;
+        e: while (1) {
+          e3 = a3 + 2 | 0;
+          if (a3 >>> 0 >= r3 >>> 0) {
+            a3 = 6;
+            break;
+          }
+          switch (s2[e3 >> 1] | 0) {
+            case 13:
+            case 10: {
+              a3 = 6;
+              break e;
+            }
+            case 93: {
+              a3 = 7;
+              break e;
+            }
+            case 92: {
+              e3 = a3 + 4 | 0;
+              break;
+            }
+            default: {
+            }
+          }
+          a3 = e3;
+        }
+        if ((a3 | 0) == 6) {
+          f2[74] = e3;
+          T();
+          e3 = 0;
+        } else if ((a3 | 0) == 7) {
+          f2[74] = e3;
+          e3 = 93;
+        }
+        return e3 | 0;
+      }
+      function g() {
+        var e3 = 0, a3 = 0, r3 = 0;
+        e: while (1) {
+          e3 = f2[74] | 0;
+          a3 = e3 + 2 | 0;
+          f2[74] = a3;
+          if (e3 >>> 0 >= (f2[75] | 0) >>> 0) {
+            r3 = 7;
+            break;
+          }
+          switch (s2[a3 >> 1] | 0) {
+            case 13:
+            case 10: {
+              r3 = 7;
+              break e;
+            }
+            case 47:
+              break e;
+            case 91: {
+              C() | 0;
+              break;
+            }
+            case 92: {
+              f2[74] = e3 + 4;
+              break;
+            }
+            default: {
+            }
+          }
+        }
+        if ((r3 | 0) == 7) T();
+        return;
+      }
+      function p(e3) {
+        e3 = e3 | 0;
+        switch (s2[e3 >> 1] | 0) {
+          case 62: {
+            e3 = (s2[e3 + -2 >> 1] | 0) == 61;
+            break;
+          }
+          case 41:
+          case 59: {
+            e3 = 1;
+            break;
+          }
+          case 104: {
+            e3 = $(e3 + -2 | 0, 218, 4) | 0;
+            break;
+          }
+          case 121: {
+            e3 = $(e3 + -2 | 0, 226, 6) | 0;
+            break;
+          }
+          case 101: {
+            e3 = $(e3 + -2 | 0, 238, 3) | 0;
+            break;
+          }
+          default:
+            e3 = 0;
+        }
+        return e3 | 0;
+      }
+      function y(e3) {
+        e3 = e3 | 0;
+        var a3 = 0, r3 = 0, i3 = 0, t4 = 0, c4 = 0;
+        t4 = (f2[74] | 0) + 2 | 0;
+        f2[74] = t4;
+        r3 = f2[75] | 0;
+        while (1) {
+          a3 = t4 + 2 | 0;
+          if (t4 >>> 0 >= r3 >>> 0) break;
+          i3 = s2[a3 >> 1] | 0;
+          if (!e3 ? Z(i3) | 0 : 0) break;
+          if (i3 << 16 >> 16 == 42 ? (s2[t4 + 4 >> 1] | 0) == 47 : 0) {
+            c4 = 8;
+            break;
+          }
+          t4 = a3;
+        }
+        if ((c4 | 0) == 8) {
+          f2[74] = a3;
+          a3 = t4 + 4 | 0;
+        }
+        f2[74] = a3;
+        return;
+      }
+      function m(e3, a3, r3) {
+        e3 = e3 | 0;
+        a3 = a3 | 0;
+        r3 = r3 | 0;
+        var s3 = 0, f3 = 0;
+        e: do {
+          if (!r3) e3 = 0;
+          else {
+            while (1) {
+              s3 = i2[e3 >> 0] | 0;
+              f3 = i2[a3 >> 0] | 0;
+              if (s3 << 24 >> 24 != f3 << 24 >> 24) break;
+              r3 = r3 + -1 | 0;
+              if (!r3) {
+                e3 = 0;
+                break e;
+              } else {
+                e3 = e3 + 1 | 0;
+                a3 = a3 + 1 | 0;
+              }
+            }
+            e3 = (s3 & 255) - (f3 & 255) | 0;
+          }
+        } while (0);
+        return e3 | 0;
+      }
+      function I(e3) {
+        e3 = e3 | 0;
+        e: do {
+          switch (e3 << 16 >> 16) {
+            case 38:
+            case 37:
+            case 33: {
+              e3 = 1;
+              break;
+            }
+            default:
+              if ((e3 & -8) << 16 >> 16 == 40 | (e3 + -58 & 65535) < 6) e3 = 1;
+              else {
+                switch (e3 << 16 >> 16) {
+                  case 91:
+                  case 93:
+                  case 94: {
+                    e3 = 1;
+                    break e;
+                  }
+                  default: {
+                  }
+                }
+                e3 = (e3 + -123 & 65535) < 4;
+              }
+          }
+        } while (0);
+        return e3 | 0;
+      }
+      function U(e3) {
+        e3 = e3 | 0;
+        e: do {
+          switch (e3 << 16 >> 16) {
+            case 38:
+            case 37:
+            case 33:
+              break;
+            default:
+              if (!((e3 + -58 & 65535) < 6 | (e3 + -40 & 65535) < 7 & e3 << 16 >> 16 != 41)) {
+                switch (e3 << 16 >> 16) {
+                  case 91:
+                  case 94:
+                    break e;
+                  default: {
+                  }
+                }
+                return e3 << 16 >> 16 != 125 & (e3 + -123 & 65535) < 4 | 0;
+              }
+          }
+        } while (0);
+        return 1;
+      }
+      function x(e3) {
+        e3 = e3 | 0;
+        var a3 = 0;
+        a3 = s2[e3 >> 1] | 0;
+        e: do {
+          if ((a3 + -9 & 65535) >= 5) {
+            switch (a3 << 16 >> 16) {
+              case 160:
+              case 32: {
+                a3 = 1;
+                break e;
+              }
+              default: {
+              }
+            }
+            if (I(a3) | 0) return a3 << 16 >> 16 != 46 | (G(e3) | 0) | 0;
+            else a3 = 0;
+          } else a3 = 1;
+        } while (0);
+        return a3 | 0;
+      }
+      function S(e3) {
+        e3 = e3 | 0;
+        var a3 = 0, r3 = 0, i3 = 0, t4 = 0;
+        r3 = n2;
+        n2 = n2 + 16 | 0;
+        i3 = r3;
+        f2[i3 >> 2] = 0;
+        f2[68] = e3;
+        a3 = f2[3] | 0;
+        t4 = a3 + (e3 << 1) | 0;
+        e3 = t4 + 2 | 0;
+        s2[t4 >> 1] = 0;
+        f2[i3 >> 2] = e3;
+        f2[69] = e3;
+        f2[61] = 0;
+        f2[65] = 0;
+        f2[63] = 0;
+        f2[62] = 0;
+        f2[67] = 0;
+        f2[64] = 0;
+        n2 = r3;
+        return a3 | 0;
+      }
+      function O(e3, a3, r3, s3) {
+        e3 = e3 | 0;
+        a3 = a3 | 0;
+        r3 = r3 | 0;
+        s3 = s3 | 0;
+        var t4 = 0, c4 = 0;
+        t4 = f2[69] | 0;
+        f2[69] = t4 + 20;
+        c4 = f2[67] | 0;
+        f2[((c4 | 0) == 0 ? 248 : c4 + 16 | 0) >> 2] = t4;
+        f2[67] = t4;
+        f2[t4 >> 2] = e3;
+        f2[t4 + 4 >> 2] = a3;
+        f2[t4 + 8 >> 2] = r3;
+        f2[t4 + 12 >> 2] = s3;
+        f2[t4 + 16 >> 2] = 0;
+        i2[811] = 1;
+        return;
+      }
+      function $(e3, a3, r3) {
+        e3 = e3 | 0;
+        a3 = a3 | 0;
+        r3 = r3 | 0;
+        var i3 = 0, s3 = 0;
+        i3 = e3 + (0 - r3 << 1) | 0;
+        s3 = i3 + 2 | 0;
+        e3 = f2[3] | 0;
+        if (s3 >>> 0 >= e3 >>> 0 ? (m(s3, a3, r3 << 1) | 0) == 0 : 0) if ((s3 | 0) == (e3 | 0)) e3 = 1;
+        else e3 = x(i3) | 0;
+        else e3 = 0;
+        return e3 | 0;
+      }
+      function j(e3) {
+        e3 = e3 | 0;
+        switch (s2[e3 >> 1] | 0) {
+          case 107: {
+            e3 = $(e3 + -2 | 0, 158, 4) | 0;
+            break;
+          }
+          case 101: {
+            if ((s2[e3 + -2 >> 1] | 0) == 117) e3 = $(e3 + -4 | 0, 130, 6) | 0;
+            else e3 = 0;
+            break;
+          }
+          default:
+            e3 = 0;
+        }
+        return e3 | 0;
+      }
+      function B(e3, a3) {
+        e3 = e3 | 0;
+        a3 = a3 | 0;
+        var r3 = 0;
+        r3 = f2[3] | 0;
+        if (r3 >>> 0 <= e3 >>> 0 ? (s2[e3 >> 1] | 0) == a3 << 16 >> 16 : 0) if ((r3 | 0) == (e3 | 0)) r3 = 1;
+        else r3 = E(s2[e3 + -2 >> 1] | 0) | 0;
+        else r3 = 0;
+        return r3 | 0;
+      }
+      function E(e3) {
+        e3 = e3 | 0;
+        e: do {
+          if ((e3 + -9 & 65535) < 5) e3 = 1;
+          else {
+            switch (e3 << 16 >> 16) {
+              case 32:
+              case 160: {
+                e3 = 1;
+                break e;
+              }
+              default: {
+              }
+            }
+            e3 = e3 << 16 >> 16 != 46 & (I(e3) | 0);
+          }
+        } while (0);
+        return e3 | 0;
+      }
+      function P() {
+        var e3 = 0, a3 = 0, r3 = 0;
+        e3 = f2[75] | 0;
+        r3 = f2[74] | 0;
+        e: while (1) {
+          a3 = r3 + 2 | 0;
+          if (r3 >>> 0 >= e3 >>> 0) break;
+          switch (s2[a3 >> 1] | 0) {
+            case 13:
+            case 10:
+              break e;
+            default:
+              r3 = a3;
+          }
+        }
+        f2[74] = a3;
+        return;
+      }
+      function q(e3) {
+        e3 = e3 | 0;
+        while (1) {
+          if (V(e3) | 0) break;
+          if (I(e3) | 0) break;
+          e3 = (f2[74] | 0) + 2 | 0;
+          f2[74] = e3;
+          e3 = s2[e3 >> 1] | 0;
+          if (!(e3 << 16 >> 16)) {
+            e3 = 0;
+            break;
+          }
+        }
+        return e3 | 0;
+      }
+      function z() {
+        var e3 = 0;
+        e3 = f2[(f2[63] | 0) + 20 >> 2] | 0;
+        switch (e3 | 0) {
+          case 1: {
+            e3 = -1;
+            break;
+          }
+          case 2: {
+            e3 = -2;
+            break;
+          }
+          default:
+            e3 = e3 - (f2[3] | 0) >> 1;
+        }
+        return e3 | 0;
+      }
+      function D(e3) {
+        e3 = e3 | 0;
+        if (!($(e3, 204, 5) | 0) ? !($(e3, 44, 3) | 0) : 0) e3 = $(e3, 214, 2) | 0;
+        else e3 = 1;
+        return e3 | 0;
+      }
+      function F(e3) {
+        e3 = e3 | 0;
+        switch (e3 << 16 >> 16) {
+          case 160:
+          case 32:
+          case 12:
+          case 11:
+          case 9: {
+            e3 = 1;
+            break;
+          }
+          default:
+            e3 = 0;
+        }
+        return e3 | 0;
+      }
+      function G(e3) {
+        e3 = e3 | 0;
+        if ((s2[e3 >> 1] | 0) == 46 ? (s2[e3 + -2 >> 1] | 0) == 46 : 0) e3 = (s2[e3 + -4 >> 1] | 0) == 46;
+        else e3 = 0;
+        return e3 | 0;
+      }
+      function H(e3) {
+        e3 = e3 | 0;
+        if ((f2[3] | 0) == (e3 | 0)) e3 = 1;
+        else e3 = x(e3 + -2 | 0) | 0;
+        return e3 | 0;
+      }
+      function J() {
+        var e3 = 0;
+        e3 = f2[(f2[64] | 0) + 12 >> 2] | 0;
+        if (!e3) e3 = -1;
+        else e3 = e3 - (f2[3] | 0) >> 1;
+        return e3 | 0;
+      }
+      function K() {
+        var e3 = 0;
+        e3 = f2[(f2[63] | 0) + 12 >> 2] | 0;
+        if (!e3) e3 = -1;
+        else e3 = e3 - (f2[3] | 0) >> 1;
+        return e3 | 0;
+      }
+      function L() {
+        var e3 = 0;
+        e3 = f2[(f2[64] | 0) + 8 >> 2] | 0;
+        if (!e3) e3 = -1;
+        else e3 = e3 - (f2[3] | 0) >> 1;
+        return e3 | 0;
+      }
+      function M() {
+        var e3 = 0;
+        e3 = f2[(f2[63] | 0) + 16 >> 2] | 0;
+        if (!e3) e3 = -1;
+        else e3 = e3 - (f2[3] | 0) >> 1;
+        return e3 | 0;
+      }
+      function N() {
+        var e3 = 0;
+        e3 = f2[(f2[63] | 0) + 4 >> 2] | 0;
+        if (!e3) e3 = -1;
+        else e3 = e3 - (f2[3] | 0) >> 1;
+        return e3 | 0;
+      }
+      function Q() {
+        var e3 = 0;
+        e3 = f2[63] | 0;
+        e3 = f2[((e3 | 0) == 0 ? 244 : e3 + 32 | 0) >> 2] | 0;
+        f2[63] = e3;
+        return (e3 | 0) != 0 | 0;
+      }
+      function R() {
+        var e3 = 0;
+        e3 = f2[64] | 0;
+        e3 = f2[((e3 | 0) == 0 ? 248 : e3 + 16 | 0) >> 2] | 0;
+        f2[64] = e3;
+        return (e3 | 0) != 0 | 0;
+      }
+      function T() {
+        i2[810] = 1;
+        f2[70] = (f2[74] | 0) - (f2[3] | 0) >> 1;
+        f2[74] = (f2[75] | 0) + 2;
+        return;
+      }
+      function V(e3) {
+        e3 = e3 | 0;
+        return (e3 | 128) << 16 >> 16 == 160 | (e3 + -9 & 65535) < 5 | 0;
+      }
+      function W(e3) {
+        e3 = e3 | 0;
+        return e3 << 16 >> 16 == 39 | e3 << 16 >> 16 == 34 | 0;
+      }
+      function X() {
+        return (f2[(f2[63] | 0) + 8 >> 2] | 0) - (f2[3] | 0) >> 1 | 0;
+      }
+      function Y() {
+        return (f2[(f2[64] | 0) + 4 >> 2] | 0) - (f2[3] | 0) >> 1 | 0;
+      }
+      function Z(e3) {
+        e3 = e3 | 0;
+        return e3 << 16 >> 16 == 13 | e3 << 16 >> 16 == 10 | 0;
+      }
+      function _() {
+        return (f2[f2[63] >> 2] | 0) - (f2[3] | 0) >> 1 | 0;
+      }
+      function ee() {
+        return (f2[f2[64] >> 2] | 0) - (f2[3] | 0) >> 1 | 0;
+      }
+      function ae() {
+        return t3[(f2[63] | 0) + 24 >> 0] | 0 | 0;
+      }
+      function re(e3) {
+        e3 = e3 | 0;
+        f2[3] = e3;
+        return;
+      }
+      function ie() {
+        return f2[(f2[63] | 0) + 28 >> 2] | 0;
+      }
+      function se() {
+        return (i2[811] | 0) != 0 | 0;
+      }
+      function fe() {
+        return (i2[812] | 0) != 0 | 0;
+      }
+      function te() {
+        return f2[70] | 0;
+      }
+      function ce(e3) {
+        e3 = e3 | 0;
+        n2 = e3 + 992 + 15 & -16;
+        return 992;
+      }
+      return { su: ce, ai: M, e: te, ee: Y, ele: J, els: L, es: ee, f: fe, id: z, ie: N, ip: ae, is: _, it: ie, ms: se, p: b2, re: R, ri: Q, sa: S, se: K, ses: re, ss: X };
+    })("undefined" != typeof self ? self : global, {}, a), r = e.su(i - (2 << 17));
+  }
+  const h = t2.length + 1;
+  e.ses(r), e.sa(h - 1), s(t2, new Uint16Array(a, r, h)), e.p() || (n = e.e(), o());
+  const w = [], d = [];
+  for (; e.ri(); ) {
+    const a2 = e.is(), r2 = e.ie(), i2 = e.ai(), s2 = e.id(), f2 = e.ss(), c3 = e.se(), n2 = e.it();
+    let k3;
+    e.ip() && (k3 = b(-1 === s2 ? a2 : a2 + 1, t2.charCodeAt(-1 === s2 ? a2 - 1 : a2))), w.push({ t: n2, n: k3, s: a2, e: r2, ss: f2, se: c3, d: s2, a: i2 });
+  }
+  for (; e.re(); ) {
+    const a2 = e.es(), r2 = e.ee(), i2 = e.els(), s2 = e.ele(), f2 = t2.charCodeAt(a2), c3 = i2 >= 0 ? t2.charCodeAt(i2) : -1;
+    d.push({ s: a2, e: r2, ls: i2, le: s2, n: 34 === f2 || 39 === f2 ? b(a2 + 1, f2) : t2.slice(a2, r2), ln: i2 < 0 ? void 0 : 34 === c3 || 39 === c3 ? b(i2 + 1, c3) : t2.slice(i2, s2) });
+  }
+  return [w, d, !!e.f(), !!e.ms()];
+}
+function b(e2, a2) {
+  n = e2;
+  let r2 = "", i2 = n;
+  for (; ; ) {
+    n >= t2.length && o();
+    const e3 = t2.charCodeAt(n);
+    if (e3 === a2) break;
+    92 === e3 ? (r2 += t2.slice(i2, n), r2 += k(), i2 = n) : (8232 === e3 || 8233 === e3 || u(e3) && o(), ++n);
+  }
+  return r2 += t2.slice(i2, n++), r2;
+}
+function k() {
+  let e2 = t2.charCodeAt(++n);
+  switch (++n, e2) {
+    case 110:
+      return "\n";
+    case 114:
+      return "\r";
+    case 120:
+      return String.fromCharCode(l(2));
+    case 117:
+      return (function() {
+        const e3 = t2.charCodeAt(n);
+        let a2;
+        123 === e3 ? (++n, a2 = l(t2.indexOf("}", n) - n), ++n, a2 > 1114111 && o()) : a2 = l(4);
+        return a2 <= 65535 ? String.fromCharCode(a2) : (a2 -= 65536, String.fromCharCode(55296 + (a2 >> 10), 56320 + (1023 & a2)));
+      })();
+    case 116:
+      return "	";
+    case 98:
+      return "\b";
+    case 118:
+      return "\v";
+    case 102:
+      return "\f";
+    case 13:
+      10 === t2.charCodeAt(n) && ++n;
+    case 10:
+      return "";
+    case 56:
+    case 57:
+      o();
+    default:
+      if (e2 >= 48 && e2 <= 55) {
+        let a2 = t2.substr(n - 1, 3).match(/^[0-7]+/)[0], r2 = parseInt(a2, 8);
+        return r2 > 255 && (a2 = a2.slice(0, -1), r2 = parseInt(a2, 8)), n += a2.length - 1, e2 = t2.charCodeAt(n), "0" === a2 && 56 !== e2 && 57 !== e2 || o(), String.fromCharCode(r2);
+      }
+      return u(e2) ? "" : String.fromCharCode(e2);
+  }
+}
+function l(e2) {
+  const a2 = n;
+  let r2 = 0, i2 = 0;
+  for (let a3 = 0; a3 < e2; ++a3, ++n) {
+    let e3, s2 = t2.charCodeAt(n);
+    if (95 !== s2) {
+      if (s2 >= 97) e3 = s2 - 97 + 10;
+      else if (s2 >= 65) e3 = s2 - 65 + 10;
+      else {
+        if (!(s2 >= 48 && s2 <= 57)) break;
+        e3 = s2 - 48;
+      }
+      if (e3 >= 16) break;
+      i2 = s2, r2 = 16 * r2 + e3;
+    } else 95 !== i2 && 0 !== a3 || o(), i2 = s2;
+  }
+  return 95 !== i2 && n - a2 === e2 || o(), r2;
+}
+function u(e2) {
+  return 13 === e2 || 10 === e2;
+}
+function o() {
+  throw Object.assign(Error(`Parse error ${c2}:${t2.slice(0, n).split("\n").length}:${n - t2.lastIndexOf("\n", n - 1)}`), { idx: n });
+}
+
+// packages/host/dist/browser/verified-loader.js
 var DEFAULT_MAX_FILES = 256;
 var DEFAULT_MAX_TOTAL_BYTES = 32 * 1024 * 1024;
 function refused(message, context) {
@@ -33175,23 +36090,53 @@ function refused(message, context) {
     ...context === void 0 ? {} : { context }
   });
 }
-function scanModuleSpecifiers(source) {
-  const stripped = source.replace(/\/\*[\s\S]*?\*\//gu, " ").replace(/(^|[^:])\/\/[^\n]*/gu, "$1");
-  if (/\bimport\s*\(\s*[^'")\s]/u.test(stripped)) {
-    throw refused("dynamic import with a non-literal specifier cannot be verified before evaluation");
+var STATIC_IMPORT = 1;
+var DYNAMIC_IMPORT = 2;
+var IMPORT_META = 3;
+function scanModuleImports(source2) {
+  let imports;
+  try {
+    ;
+    [imports] = parse(source2);
+  } catch (cause) {
+    throw refused("module syntax cannot be parsed safely before evaluation", { cause });
   }
-  const specifiers = [];
-  const pattern = /\b(?:import|export)\s*(?:[^'"();]*?\bfrom\s+)?(['"])([^'"\n]+)\1|\bimport\s*\(\s*(['"])([^'"\n]+)\3\s*\)/gu;
-  for (const match of stripped.matchAll(pattern)) {
-    const specifier = match[2] ?? match[4];
-    if (specifier !== void 0)
-      specifiers.push(specifier);
+  const result = [];
+  for (const item of imports) {
+    if (item.t === IMPORT_META)
+      continue;
+    if (item.t !== STATIC_IMPORT && item.t !== DYNAMIC_IMPORT) {
+      throw refused("source/defer phase imports are outside the verified JavaScript subset", {
+        importType: item.t
+      });
+    }
+    if (item.n === void 0) {
+      throw refused("dynamic import with a non-literal specifier cannot be verified before evaluation");
+    }
+    if (item.t === STATIC_IMPORT) {
+      result.push(Object.freeze({ specifier: item.n, start: item.s, end: item.e }));
+      continue;
+    }
+    const raw = source2.slice(item.s, item.e);
+    const quote = raw[0];
+    if (quote !== "'" && quote !== '"' || raw.at(-1) !== quote || item.a !== -1) {
+      throw refused("only a single quoted literal is allowed in dynamic import before evaluation");
+    }
+    result.push(Object.freeze({ specifier: item.n, start: item.s + 1, end: item.e - 1 }));
   }
-  return specifiers;
+  return Object.freeze(result);
 }
 var isRelative = (specifier) => specifier.startsWith("./") || specifier.startsWith("../") || specifier.startsWith("/");
 async function loadVerifiedModuleGraph(entrypoint, options) {
-  const root = options.artifactRoot.endsWith("/") ? options.artifactRoot : `${options.artifactRoot}/`;
+  const rootContext = (candidate) => ({
+    root: candidate.artifactRoot.endsWith("/") ? candidate.artifactRoot : `${candidate.artifactRoot}/`,
+    fileDigests: candidate.fileDigests
+  });
+  const initial = {
+    root: options.artifactRoot.endsWith("/") ? options.artifactRoot : `${options.artifactRoot}/`,
+    ...options.fileDigests === void 0 ? {} : { fileDigests: options.fileDigests },
+    ...options.entrypointDigest === void 0 ? {} : { entrypointDigest: options.entrypointDigest }
+  };
   const maxFiles = options.maxFiles ?? DEFAULT_MAX_FILES;
   const maxTotalBytes = options.maxTotalBytes ?? DEFAULT_MAX_TOTAL_BYTES;
   const verified = [];
@@ -33200,24 +36145,24 @@ async function loadVerifiedModuleGraph(entrypoint, options) {
   const visiting = /* @__PURE__ */ new Set();
   let totalBytes = 0;
   let files = 0;
-  const relativePath = (href) => {
-    if (!href.startsWith(root)) {
+  const relativePath = (href, context) => {
+    if (!href.startsWith(context.root)) {
       throw refused(`module ${href} escapes the artifact root`, { href });
     }
-    return decodeURIComponent(href.slice(root.length));
+    return decodeURIComponent(href.slice(context.root.length));
   };
-  const entryHref = new URL(entrypoint, root).href;
-  const entryRelative = relativePath(entryHref);
-  async function build(href) {
+  const entryHref = new URL(entrypoint, initial.root).href;
+  const entryRelative = relativePath(entryHref, initial);
+  async function build(href, context) {
     const existing = built.get(href);
     if (existing !== void 0)
       return existing;
     if (visiting.has(href)) {
-      throw refused(`import cycle at ${relativePath(href)}; an immutable module graph cannot represent it`);
+      throw refused(`import cycle at ${relativePath(href, context)}; an immutable module graph cannot represent it`);
     }
     visiting.add(href);
-    const relative = relativePath(href);
-    if (options.fileDigests === void 0 && href !== entryHref) {
+    const relative = relativePath(href, context);
+    if (context.fileDigests === void 0 && href !== entryHref) {
       throw new ModkitError({
         code: "x3.host/artifact-not-pinned",
         message: `the inventory carries no per-file digests, so ${relative} cannot be verified before evaluation`,
@@ -33232,8 +36177,8 @@ async function loadVerifiedModuleGraph(entrypoint, options) {
     if (totalBytes > maxTotalBytes) {
       throw refused(`artifact exceeds the loader ceiling of ${maxTotalBytes} bytes`);
     }
-    const expected = options.fileDigests === void 0 ? options.entrypointDigest : options.fileDigests[relative];
-    if (options.fileDigests !== void 0 && expected === void 0) {
+    const expected = context.fileDigests === void 0 ? context.entrypointDigest : context.fileDigests[relative];
+    if (context.fileDigests !== void 0 && expected === void 0) {
       throw refused(`${relative} is not part of the inventoried artifact`, { relative });
     }
     if (expected !== void 0 && await options.digest(bytes2) !== expected) {
@@ -33243,29 +36188,42 @@ async function loadVerifiedModuleGraph(entrypoint, options) {
         context: { relative }
       });
     }
-    let source = new TextDecoder().decode(bytes2);
-    for (const specifier of scanModuleSpecifiers(source)) {
+    let source2 = new TextDecoder().decode(bytes2);
+    const replacements = [];
+    for (const scanned of scanModuleImports(source2)) {
+      const specifier = scanned.specifier;
       let target;
       if (isRelative(specifier)) {
-        target = await build(new URL(specifier, href).href);
+        target = await build(new URL(specifier, href).href, context);
       } else {
         const mapped = options.resolveBare?.(specifier);
         if (mapped === void 0) {
           throw refused(`bare specifier \xAB${specifier}\xBB is not in the host module map (dependencies load unverified only through the map, SB-1)`, { specifier });
         }
-        unverified.add(specifier);
-        target = mapped;
+        const pinned = options.resolvePinned?.(mapped);
+        if (pinned === void 0) {
+          unverified.add(specifier);
+          target = mapped;
+        } else {
+          target = await build(new URL(mapped).href, rootContext(pinned));
+        }
       }
-      source = source.split(`'${specifier}'`).join(`'${target}'`);
-      source = source.split(`"${specifier}"`).join(`"${target}"`);
+      replacements.push({
+        start: scanned.start - 1,
+        end: scanned.end + 1,
+        value: JSON.stringify(target)
+      });
     }
-    const url2 = options.createModuleUrl(source);
+    for (const replacement of replacements.reverse()) {
+      source2 = `${source2.slice(0, replacement.start)}${replacement.value}${source2.slice(replacement.end)}`;
+    }
+    const url2 = options.createModuleUrl(source2);
     built.set(href, url2);
     visiting.delete(href);
     verified.push(relative);
     return url2;
   }
-  const url = await build(entryHref);
+  const url = await build(entryHref, initial);
   void entryRelative;
   return Object.freeze({
     url,
@@ -33339,9 +36297,9 @@ function codecAdapter(bound, watch) {
   return {
     async probe(request, signal) {
       const { realm, remote } = await bound;
-      const source = realm.endpoint.expose(request.source, ABI_ARTIFACT_SOURCE);
+      const source2 = realm.endpoint.expose(request.source, ABI_ARTIFACT_SOURCE);
       try {
-        const outcome = await watch(realm, () => remote.call("probe", [{ source, plan: request.plan }], signal === void 0 ? {} : { signal }));
+        const outcome = await watch(realm, () => remote.call("probe", [{ source: source2, plan: request.plan }], signal === void 0 ? {} : { signal }));
         if (outcome.kind !== "value") {
           throw new ModkitError({
             code: "x3.host/rpc-bad-return",
@@ -33350,19 +36308,19 @@ function codecAdapter(bound, watch) {
         }
         return outcome.value;
       } finally {
-        await source.release();
+        await source2.release();
       }
     },
-    async planInput(source, evidence2, signal) {
+    async planInput(source2, evidence2, signal) {
       const { realm, remote } = await bound;
       if (remote.has !== void 0 && !remote.has.includes("planInput")) {
-        return source.kind === "namespace" ? { originKind: "namespace", requirements: [] } : {
+        return source2.kind === "namespace" ? { originKind: "namespace", requirements: [] } : {
           originKind: "single",
           candidate: { bindingId: "content", role: "content", ownership: "owned" },
           requirements: []
         };
       }
-      const exposedSource = realm.endpoint.expose(source, ABI_ARTIFACT_SOURCE);
+      const exposedSource = realm.endpoint.expose(source2, ABI_ARTIFACT_SOURCE);
       try {
         const outcome = await watch(realm, () => remote.call("planInput", [exposedSource, evidence2], signal === void 0 ? {} : { signal }));
         if (outcome.kind !== "value") {
@@ -33510,8 +36468,8 @@ function createBrowserWorkerBackend(options) {
       generation,
       surfaces,
       limits,
-      onFailure: (failure) => {
-        const code = "code" in failure ? failure.code : "peer-failure";
+      onFailure: (failure2) => {
+        const code = "code" in failure2 ? failure2.code : "peer-failure";
         void terminate(`protocol failure: ${String(code)}`);
       },
       onDiagnostic: report2
@@ -33678,12 +36636,16 @@ function runBrowserWorkerBootstrap(init) {
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function browserLoaderHooks(options) {
   const minted = [];
+  const pinnedRoots = (options.verifiedModuleRoots ?? []).map((root) => ({
+    ...root,
+    artifactRoot: root.artifactRoot.endsWith("/") ? root.artifactRoot : `${root.artifactRoot}/`
+  })).sort((left, right) => right.artifactRoot.length - left.artifactRoot.length);
   return {
     fetchBytes: async (url, signal) => {
-      const response = await options.fetch(url, signal === void 0 ? {} : { signal });
-      if (!response.ok)
-        throw new Error(`fetch ${url} failed with status ${response.status}`);
-      return new Uint8Array(await response.arrayBuffer());
+      const response2 = await options.fetch(url, signal === void 0 ? {} : { signal });
+      if (!response2.ok)
+        throw new Error(`fetch ${url} failed with status ${response2.status}`);
+      return new Uint8Array(await response2.arrayBuffer());
     },
     digest: async (bytes2) => {
       const hash = new Uint8Array(await options.subtle.digest("SHA-256", bytes2));
@@ -33692,12 +36654,13 @@ function browserLoaderHooks(options) {
         hex += byte.toString(16).padStart(2, "0");
       return `sha256:${hex}`;
     },
-    createModuleUrl: (source) => {
-      const url = options.objectUrls.createObjectURL(new options.Blob([source], { type: "text/javascript" }));
+    createModuleUrl: (source2) => {
+      const url = options.objectUrls.createObjectURL(new options.Blob([source2], { type: "text/javascript" }));
       minted.push(url);
       return url;
     },
     resolveBare: (specifier) => options.moduleMap?.[specifier],
+    resolvePinned: (url) => pinnedRoots.find((root) => url.startsWith(root.artifactRoot)),
     revokeAll: () => {
       for (const url of minted.splice(0))
         options.objectUrls.revokeObjectURL(url);
@@ -33831,12 +36794,12 @@ function spliceBytes(original, range, replacement) {
   out.set(original.subarray(start + length), start + replacement.byteLength);
   return out;
 }
-function spliceUtf16(original, offset, length, text2) {
+function spliceUtf16(original, offset, length, text3) {
   const decoded = new TextDecoder("utf-8", { fatal: true }).decode(original);
   if (offset < 0 || length < 0 || offset + length > decoded.length) {
     throw editingError("x3.host/edit-range-invalid", "UTF-16 range lies outside the source");
   }
-  return new TextEncoder().encode(decoded.slice(0, offset) + text2 + decoded.slice(offset + length));
+  return new TextEncoder().encode(decoded.slice(0, offset) + text3 + decoded.slice(offset + length));
 }
 async function replacedBytes(edit, original, payloads, maxPayloadBytes, signal) {
   const replacement = await payloadBytes(edit.payload, payloads, maxPayloadBytes, signal);
@@ -33870,7 +36833,7 @@ var BROWSER_EDITING_BACKEND_CAPABILITY = Object.freeze({
   supportsRename: false
 });
 var DEFAULT_MAX_PAYLOAD_BYTES = 64 * 1024 * 1024;
-var defaultRevisionOf = (snapshot2) => `provider-token:${snapshot2.size}-${snapshot2.lastModified ?? 0}`;
+var defaultRevisionOf = (snapshot3) => `provider-token:${snapshot3.size}-${snapshot3.lastModified ?? 0}`;
 function bindingIdOf(expected) {
   const ids = Object.keys(expected.bindings);
   if (ids.length !== 1 || ids[0] === void 0) {
@@ -33878,7 +36841,7 @@ function bindingIdOf(expected) {
   }
   return ids[0];
 }
-function revisionFor(bindingId2, source, token, namespaceRevision) {
+function revisionFor(bindingId2, source2, token, namespaceRevision) {
   const revision = revisionId(token);
   return Object.freeze({
     bindings: Object.freeze({ [bindingId2]: revision }),
@@ -33886,29 +36849,29 @@ function revisionFor(bindingId2, source, token, namespaceRevision) {
     compositionFingerprint: canonicalJsonStringify({
       topology: "single",
       bindingId: bindingId2,
-      source: { id: source.id, uri: source.uri },
+      source: { id: source2.id, uri: source2.uri },
       revision
     })
   });
 }
-async function readAll(snapshot2) {
-  return new Uint8Array(await snapshot2.slice(0, snapshot2.size).arrayBuffer());
+async function readAll(snapshot3) {
+  return new Uint8Array(await snapshot3.slice(0, snapshot3.size).arrayBuffer());
 }
 function createBrowserEditingBackend(options) {
   const backendId = options.backendId ?? BROWSER_EDITING_BACKEND_CAPABILITY.backendId;
   const maxPayloadBytes = options.maxPayloadBytes ?? DEFAULT_MAX_PAYLOAD_BYTES;
   const revisionOf = options.revisionOf ?? defaultRevisionOf;
   const preImages = /* @__PURE__ */ new Map();
-  const handle = (source) => {
-    const found = options.handleFor(source.id);
+  const handle = (source2) => {
+    const found = options.handleFor(source2.id);
     if (found === void 0) {
-      throw editingError("x3.host/edit-source-not-writable", `\xAB${source.uri}\xBB has no writable handle in this host`, { sourceId: source.id });
+      throw editingError("x3.host/edit-source-not-writable", `\xAB${source2.uri}\xBB has no writable handle in this host`, { sourceId: source2.id });
     }
     return found;
   };
-  const liveRevision = async (file, bindingId2, source, namespaceRevision) => {
-    const snapshot2 = await file.getFile();
-    return revisionFor(bindingId2, source, revisionOf(snapshot2), namespaceRevision);
+  const liveRevision = async (file, bindingId2, source2, namespaceRevision) => {
+    const snapshot3 = await file.getFile();
+    return revisionFor(bindingId2, source2, revisionOf(snapshot3), namespaceRevision);
   };
   const backend = {
     profile: Object.freeze({ ...BROWSER_EDITING_BACKEND_CAPABILITY, backendId }),
@@ -33988,7 +36951,9 @@ var EXTENSION_ROOT_FAILURE_CODES = Object.freeze({
   coordinateConflict: "x3.host/extension-coordinate-conflict",
   identityMismatch: "x3.host/extension-identity-mismatch",
   permissionRequired: "x3.host/extension-root-permission-required",
-  tooLarge: "x3.host/extension-root-too-large"
+  tooLarge: "x3.host/extension-root-too-large",
+  moduleMapInvalid: "x3.host/extension-module-map-invalid",
+  moduleMapConflict: "x3.host/extension-module-map-conflict"
 });
 var USER_EXTENSION_ORIGIN = "installed";
 var USER_EXTENSION_ARTIFACT_ORIGIN = "https://user-extension.invalid/";
@@ -34084,9 +37049,9 @@ async function readAll2(handle) {
   return new Uint8Array(await file.slice(0, file.size).arrayBuffer());
 }
 function parseJson(bytes2, path) {
-  const text2 = new TextDecoder().decode(bytes2);
+  const text3 = new TextDecoder().decode(bytes2);
   try {
-    return JSON.parse(text2);
+    return JSON.parse(text3);
   } catch (error) {
     throw refuse2(
       EXTENSION_ROOT_FAILURE_CODES.unreadable,
@@ -34094,6 +37059,81 @@ function parseJson(bytes2, path) {
       { path }
     );
   }
+}
+var PACKAGE_NAME = /^(?:@[A-Za-z0-9._~-]+\/[A-Za-z0-9._~-]+|[A-Za-z0-9._~-]+)$/u;
+function moduleMapFromPackage(packageJson, artifactRoot, fileDigests) {
+  if (typeof packageJson !== "object" || packageJson === null) return Object.freeze({});
+  const candidate = packageJson;
+  if (candidate.exports === void 0) return Object.freeze({});
+  if (typeof candidate.name !== "string" || !PACKAGE_NAME.test(candidate.name)) {
+    throw refuse2(
+      EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+      "package.json with exports must declare a bounded bare package name",
+      { field: "name" }
+    );
+  }
+  const declared = typeof candidate.exports === "string" ? [[".", candidate.exports]] : typeof candidate.exports === "object" && candidate.exports !== null ? Object.entries(candidate.exports) : [];
+  if (declared.length === 0 && candidate.exports !== void 0) {
+    throw refuse2(
+      EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+      "package.json exports must be a relative string or a subpath-to-file object",
+      { field: "exports" }
+    );
+  }
+  const map = /* @__PURE__ */ new Map();
+  for (const [subpath, target] of declared) {
+    if (subpath !== "." && !subpath.startsWith("./") || typeof target !== "string") {
+      throw refuse2(
+        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+        `package export \xAB${subpath}\xBB must map directly to one relative file`,
+        { subpath }
+      );
+    }
+    if (!target.startsWith("./") || target.includes("\\") || target.includes("?") || target.includes("#") || target.slice(2).split("/").some((part) => part === "" || part === "." || part === "..")) {
+      throw refuse2(
+        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+        `package export \xAB${subpath}\xBB escapes or does not name a bounded relative file`,
+        { subpath, target }
+      );
+    }
+    const subpathStars = [...subpath.matchAll(/\*/gu)].length;
+    const targetStars = [...target.matchAll(/\*/gu)].length;
+    if (subpathStars !== targetStars || subpathStars > 1) {
+      throw refuse2(
+        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+        `package export \xAB${subpath}\xBB must use at most one matching wildcard`,
+        { subpath, target }
+      );
+    }
+    const targetRelative = target.slice(2);
+    const targets = targetStars === 0 ? [[subpath, targetRelative]] : Object.keys(fileDigests).map((path) => {
+      const [prefix = "", suffix = ""] = targetRelative.split("*");
+      if (!path.startsWith(prefix) || !path.endsWith(suffix)) return void 0;
+      const capture = path.slice(prefix.length, path.length - suffix.length);
+      if (capture === "") return void 0;
+      return [subpath.replace("*", capture), path];
+    }).filter((entry2) => entry2 !== void 0);
+    if (targets.length === 0 || targets.some(([, relative]) => fileDigests[relative] === void 0)) {
+      throw refuse2(
+        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+        `package export \xAB${subpath}\xBB targets no inventoried file`,
+        { subpath, target }
+      );
+    }
+    for (const [resolvedSubpath, relative] of targets) {
+      const specifier = resolvedSubpath === "." ? candidate.name : `${candidate.name}/${resolvedSubpath.slice(2)}`;
+      const url = new URL(relative, artifactRoot).href;
+      if (map.has(specifier) && map.get(specifier) !== url) {
+        throw refuse2(
+          EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+          `package exports declare duplicate specifier \xAB${specifier}\xBB`,
+          { specifier }
+        );
+      }
+      map.set(specifier, url);
+    }
+  }
+  return Object.freeze(Object.fromEntries(map));
 }
 async function readGrantedRoot(request, options) {
   const label = request.handle.name === "" ? request.id : request.handle.name;
@@ -34148,8 +37188,11 @@ async function readGrantedRoot(request, options) {
     }
   }
   const artifactRoot = userExtensionArtifactRoot(request.id);
+  const moduleMap = moduleMapFromPackage(containers.packageJson, artifactRoot, fileDigests);
   return {
     files: handles,
+    moduleMap,
+    verifiedModuleRoot: Object.freeze({ artifactRoot, fileDigests: Object.freeze(fileDigests) }),
     input: {
       source: `user-folder/${label}`,
       containers,
@@ -34220,21 +37263,26 @@ async function loadUserExtensionRoots(requests, options) {
   const rootIds = [];
   const served = /* @__PURE__ */ new Map();
   const claimed = new Set(options.claimed ?? []);
+  const moduleMaps = /* @__PURE__ */ new Map();
+  const verifiedRoots = /* @__PURE__ */ new Map();
+  const specifierOwner = /* @__PURE__ */ new Map();
+  const conflictedRoots = /* @__PURE__ */ new Set();
+  const reportedConflicts = /* @__PURE__ */ new Set();
   for (const request of requests) {
     options.signal?.throwIfAborted();
     const label = request.handle.name === "" ? request.id : request.handle.name;
-    const fail2 = (code, message) => {
+    const fail4 = (code, message) => {
       failures.push({ root: label, rootId: request.id, code, message });
     };
     let permission;
     try {
       permission = await queryUserExtensionPermission(request.handle);
     } catch (error) {
-      fail2(EXTENSION_ROOT_FAILURE_CODES.unreadable, messageOf(error));
+      fail4(EXTENSION_ROOT_FAILURE_CODES.unreadable, messageOf(error));
       continue;
     }
     if (permission !== "granted") {
-      fail2(
+      fail4(
         EXTENSION_ROOT_FAILURE_CODES.permissionRequired,
         `this page no longer holds read access to \xAB${label}\xBB; grant it again to load this extension`
       );
@@ -34244,26 +37292,26 @@ async function loadUserExtensionRoots(requests, options) {
     try {
       read = await readGrantedRoot(request, options);
     } catch (error) {
-      fail2(codeOf(error), messageOf(error));
+      fail4(codeOf(error), messageOf(error));
       continue;
     }
     const coordinate2 = extensionCoordinate(read.input);
     if (coordinate2 === void 0) {
-      fail2(
+      fail4(
         EXTENSION_ROOT_FAILURE_CODES.notAnExtension,
         "no authored container: the folder has neither package.json#modkit nor modkit.extension.json"
       );
       continue;
     }
     if (claimed.has(coordinate2)) {
-      fail2(
+      fail4(
         EXTENSION_ROOT_FAILURE_CODES.coordinateConflict,
         `\xAB${coordinate2}\xBB is already loaded from another root; this one is ignored`
       );
       continue;
     }
     if (request.expectedId !== void 0 && request.expectedId !== coordinate2) {
-      fail2(
+      fail4(
         EXTENSION_ROOT_FAILURE_CODES.identityMismatch,
         `recorded as \xAB${request.expectedId}\xBB but the folder declares \xAB${coordinate2}\xBB`
       );
@@ -34274,12 +37322,49 @@ async function loadUserExtensionRoots(requests, options) {
     rootIds.push(request.id);
     inputs.push(read.input);
     served.set(request.id, read.files);
+    moduleMaps.set(request.id, read.moduleMap);
+    verifiedRoots.set(request.id, read.verifiedModuleRoot);
+    for (const specifier of Object.keys(read.moduleMap)) {
+      const existing = specifierOwner.get(specifier);
+      if (existing === void 0) {
+        specifierOwner.set(specifier, request.id);
+        continue;
+      }
+      conflictedRoots.add(existing);
+      conflictedRoots.add(request.id);
+      for (const owner of [existing, request.id]) {
+        const key3 = `${owner}\0${specifier}`;
+        if (reportedConflicts.has(key3)) continue;
+        reportedConflicts.add(key3);
+        failures.push({
+          root: owner,
+          rootId: owner,
+          code: EXTENSION_ROOT_FAILURE_CODES.moduleMapConflict,
+          message: `bare module specifier \xAB${specifier}\xBB is exported by more than one extension root; every claimant is refused`
+        });
+      }
+    }
+  }
+  const kept = rootIds.map((rootId, index) => ({ rootId, index })).filter(({ rootId }) => !conflictedRoots.has(rootId));
+  const moduleMapEntries = /* @__PURE__ */ new Map();
+  const moduleMapOwnerEntries = /* @__PURE__ */ new Map();
+  const keptVerifiedRoots = [];
+  for (const { rootId } of kept) {
+    for (const [specifier, url] of Object.entries(moduleMaps.get(rootId) ?? {})) {
+      moduleMapEntries.set(specifier, url);
+      moduleMapOwnerEntries.set(specifier, rootId);
+    }
+    const verified = verifiedRoots.get(rootId);
+    if (verified !== void 0) keptVerifiedRoots.push(Object.freeze({ ...verified, rootId }));
   }
   return Object.freeze({
-    inputs: Object.freeze(inputs),
+    inputs: Object.freeze(kept.map(({ index }) => inputs[index])),
     failures: Object.freeze(failures),
-    coordinates: Object.freeze(coordinates),
-    rootIds: Object.freeze(rootIds),
+    coordinates: Object.freeze(kept.map(({ index }) => coordinates[index])),
+    rootIds: Object.freeze(kept.map(({ rootId }) => rootId)),
+    moduleMap: Object.freeze(Object.fromEntries(moduleMapEntries)),
+    moduleMapOwners: Object.freeze(Object.fromEntries(moduleMapOwnerEntries)),
+    verifiedModuleRoots: Object.freeze(keptVerifiedRoots),
     serve: createUserExtensionFetch(served)
   });
 }
@@ -34288,6 +37373,9 @@ var NO_USER_EXTENSION_ROOTS = Object.freeze({
   failures: Object.freeze([]),
   coordinates: Object.freeze([]),
   rootIds: Object.freeze([]),
+  moduleMap: Object.freeze({}),
+  moduleMapOwners: Object.freeze({}),
+  verifiedModuleRoots: Object.freeze([]),
   serve: async (url) => notFound(url)
 });
 
@@ -34362,8 +37450,8 @@ async function sourceFromAuthority(authorization, signal) {
   if (access.handleOf(entry2.id) !== authorization.fileHandle) {
     throw new TypeError(`the browser file handle for \xAB${entry2.id}\xBB changed after authorization`);
   }
-  const snapshot2 = await access.snapshotOf(entry2.id, signal);
-  const size = snapshot2?.size ?? access.sizeOf(entry2.id);
+  const snapshot3 = await access.snapshotOf(entry2.id, signal);
+  const size = snapshot3?.size ?? access.sizeOf(entry2.id);
   if (size === void 0) throw new TypeError(`authorized handle \xAB${entry2.id}\xBB has no file size`);
   if (!Number.isSafeInteger(size) || size < 0 || BigInt(size) > request.budget.maxInputBytes) {
     throw new RangeError(`authorized handle \xAB${entry2.id}\xBB exceeds the command input budget`);
@@ -34373,7 +37461,7 @@ async function sourceFromAuthority(authorization, signal) {
     throw new TypeError(`authorized handle \xAB${entry2.id}\xBB changed while its bytes were read`);
   }
   const uri = `memory://modkit-pwa-command/${encodeURIComponent(entry2.id)}`;
-  const token = snapshot2 === void 0 ? `size:${size}` : `${snapshot2.size}:${snapshot2.lastModified}`;
+  const token = snapshot3 === void 0 ? `size:${size}` : `${snapshot3.size}:${snapshot3.lastModified}`;
   return {
     kind: "bytes",
     ref: { id: uri, uri },
@@ -34404,10 +37492,10 @@ function createWebCommandProtocol(services, options = {}) {
       if (authorization === void 0) {
         throw new TypeError(`subject reference \xAB${ref2}\xBB is not authorized in this PWA realm`);
       }
-      const source = await sourceFromAuthority(authorization, signal);
+      const source2 = await sourceFromAuthority(authorization, signal);
       const result = await services.open({
         ...authorization.request,
-        source,
+        source: source2,
         path: authorization.entry.name,
         ...signal === void 0 ? {} : { signal }
       });
@@ -34506,6 +37594,34 @@ function settle(request) {
     );
   });
 }
+async function probeExistingDatabase(factory, databaseName) {
+  const request = factory.open(databaseName);
+  let abortedInitialCreation = false;
+  return new Promise((resolve, reject) => {
+    request.onupgradeneeded = () => {
+      abortedInitialCreation = true;
+      try {
+        request.transaction?.abort();
+      } catch (error) {
+        reject(error);
+      }
+    };
+    request.onsuccess = () => {
+      request.result.close();
+      resolve(!abortedInitialCreation);
+    };
+    request.onerror = (event) => {
+      if (abortedInitialCreation) {
+        event.preventDefault();
+        resolve(false);
+        return;
+      }
+      reject(
+        request.error instanceof Error ? request.error : new Error(`IndexedDB existence probe failed: ${String(request.error)}`)
+      );
+    };
+  });
+}
 function toRecord(value2) {
   if (typeof value2 !== "object" || value2 === null) return void 0;
   const candidate = value2;
@@ -34523,16 +37639,25 @@ function toRecord(value2) {
   };
 }
 var byAddedAt = (left, right) => left.addedAt === right.addedAt ? left.id < right.id ? -1 : left.id > right.id ? 1 : 0 : left.addedAt - right.addedAt;
-function createIndexedDbExtensionStore(factory, databaseName = USER_EXTENSION_DATABASE, storeName = USER_EXTENSION_STORE) {
+function createIndexedDbExtensionStore(factory, databaseName = USER_EXTENSION_DATABASE, storeName = USER_EXTENSION_STORE, options = {}) {
+  let knownToExist = false;
+  const exists = async () => {
+    if (knownToExist) return true;
+    const found = options.databaseExists !== void 0 ? await options.databaseExists(databaseName) : factory.databases !== void 0 ? (await factory.databases()).some((database) => database.name === databaseName) : await probeExistingDatabase(factory, databaseName);
+    if (found) knownToExist = true;
+    return found;
+  };
   const open = async () => {
     const request = factory.open(databaseName, 1);
     request.onupgradeneeded = () => {
-      const database = request.result;
-      if (!database.objectStoreNames.contains(storeName)) {
-        database.createObjectStore(storeName, { keyPath: "id" });
+      const database2 = request.result;
+      if (!database2.objectStoreNames.contains(storeName)) {
+        database2.createObjectStore(storeName, { keyPath: "id" });
       }
     };
-    return settle(request);
+    const database = await settle(request);
+    knownToExist = true;
+    return database;
   };
   const withStore = async (mode, body) => {
     const database = await open();
@@ -34545,19 +37670,2228 @@ function createIndexedDbExtensionStore(factory, databaseName = USER_EXTENSION_DA
   return {
     location: `indexedDB[${databaseName}/${storeName}]`,
     async list() {
+      if (!await exists()) return Object.freeze([]);
       const rows = await withStore("readonly", (store) => settle(store.getAll()));
       const records = [];
       for (const row of rows) {
-        const record = toRecord(row);
-        if (record !== void 0) records.push(record);
+        const record3 = toRecord(row);
+        if (record3 !== void 0) records.push(record3);
       }
       return Object.freeze(records.sort(byAddedAt));
     },
-    async add(record) {
-      await withStore("readwrite", (store) => settle(store.put(record)));
+    async add(record3) {
+      await withStore("readwrite", (store) => settle(store.put(record3)));
     },
     async remove(id) {
+      if (!await exists()) return;
       await withStore("readwrite", (store) => settle(store.delete(id)));
+    }
+  };
+}
+
+// apps/web/src/browser-extension-manager.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/extension-manager/src/browser.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/extension-manager/src/providers-browser.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/vfs/dist/providers/memory/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function relativeToRoot(root, path) {
+  if (root === "")
+    return path;
+  if (path === root)
+    return "";
+  return path.startsWith(`${root}/`) ? path.slice(root.length + 1) : void 0;
+}
+function nameOf(path) {
+  const parts = path.split("/");
+  return parts.at(-1) ?? path;
+}
+function entryNode(path, kind, entry2) {
+  return Object.freeze({
+    path,
+    name: nameOf(path),
+    kind,
+    ...entry2 === void 0 ? {} : { size: BigInt(entry2.bytes.byteLength) }
+  });
+}
+var MemoryMount = class {
+  rootUri;
+  root;
+  entries;
+  limits;
+  id;
+  revision;
+  disposed = false;
+  readBudget;
+  constructor(rootUri, root, entries, limits, revision) {
+    this.rootUri = rootUri;
+    this.root = root;
+    this.entries = entries;
+    this.limits = limits;
+    this.id = rootUri;
+    this.revision = revision;
+    this.readBudget = new VfsReadBudget(limits.maxReadBytes);
+  }
+  async stat(path, signal) {
+    throwIfAborted(signal);
+    this.assertLive();
+    const relative = normalizeVfsPath(path);
+    assertVfsPathBudget(relative, this.limits);
+    const absolute = this.absolute(relative);
+    const file = this.entries.get(absolute);
+    if (file !== void 0)
+      return entryNode(relative, "file", file);
+    const prefix = absolute === "" ? "" : `${absolute}/`;
+    for (const key3 of this.entries.keys()) {
+      if (key3.startsWith(prefix))
+        return entryNode(relative, "directory");
+    }
+    return void 0;
+  }
+  async *list(path, signal) {
+    throwIfAborted(signal);
+    this.assertLive();
+    const relative = normalizeVfsPath(path);
+    assertVfsPathBudget(relative, this.limits);
+    const absolute = this.absolute(relative);
+    if (this.entries.has(absolute)) {
+      throw new ModkitError({
+        code: "x3.vfs/not-a-directory",
+        message: `memory VFS path \xAB${relative}\xBB is not a directory`,
+        context: { path: relative }
+      });
+    }
+    const prefix = absolute === "" ? "" : `${absolute}/`;
+    const children = /* @__PURE__ */ new Map();
+    for (const entry2 of this.entries.values()) {
+      throwIfAborted(signal);
+      if (!entry2.path.startsWith(prefix))
+        continue;
+      const remainder = entry2.path.slice(prefix.length);
+      const slash = remainder.indexOf("/");
+      const childName = slash === -1 ? remainder : remainder.slice(0, slash);
+      if (childName === "")
+        continue;
+      const childPath = relative === "" ? childName : `${relative}/${childName}`;
+      const exact = slash === -1 ? entry2 : void 0;
+      if (!children.has(childPath) || exact !== void 0)
+        children.set(childPath, exact);
+    }
+    if (children.size > this.limits.maxEntries) {
+      throw new ModkitError({
+        code: "x3.vfs/memory-entry-budget-exceeded",
+        message: "memory provider exceeded its configured entry boundary",
+        context: { entries: children.size, maxEntries: this.limits.maxEntries }
+      });
+    }
+    for (const [childPath, entry2] of [...children.entries()].sort(([a2], [b2]) => a2.localeCompare(b2))) {
+      throwIfAborted(signal);
+      yield entryNode(childPath, entry2 === void 0 ? "directory" : "file", entry2);
+    }
+  }
+  async open(path, signal) {
+    throwIfAborted(signal);
+    this.assertLive();
+    const relative = normalizeVfsPath(path);
+    assertVfsPathBudget(relative, this.limits);
+    const entry2 = this.entries.get(this.absolute(relative));
+    if (entry2 === void 0) {
+      throw new ModkitError({
+        code: "x3.vfs/file-not-found",
+        message: `memory VFS file \xAB${relative}\xBB does not exist`,
+        context: { path: relative, rootUri: this.rootUri }
+      });
+    }
+    const source2 = createMemorySource(`${this.rootUri}#${encodeURIComponent(relative)}`, entry2.bytes);
+    return budgetRandomAccessSource(source2, entry2.bytes.byteLength, this.limits, this.readBudget);
+  }
+  dispose() {
+    this.disposed = true;
+  }
+  absolute(path) {
+    if (this.root === "")
+      return path;
+    return path === "" ? this.root : `${this.root}/${path}`;
+  }
+  assertLive() {
+    if (!this.disposed)
+      return;
+    throw new ModkitError({
+      code: "x3.vfs/mount-disposed",
+      message: `memory VFS mount \xAB${this.rootUri}\xBB is disposed`
+    });
+  }
+};
+var MemoryVfsProvider = class {
+  id;
+  scheme = "memory";
+  authority;
+  revision;
+  entries;
+  limits;
+  constructor(options = {}) {
+    this.id = options.id ?? "org.modkitx-x3.vfs.memory";
+    this.authority = options.authority;
+    this.limits = clampVfsLimits(options.limits);
+    const entries = /* @__PURE__ */ new Map();
+    let totalBytes = 0n;
+    for (const [path, bytes2] of Object.entries(options.entries ?? {})) {
+      const normalized = normalizeVfsPath(path);
+      assertVfsPathBudget(normalized, this.limits);
+      if (normalized === "") {
+        throw new ModkitError({
+          code: "x3.vfs/path-invalid",
+          message: "memory provider entries require non-empty paths",
+          context: { path }
+        });
+      }
+      const copy = bytes2.slice();
+      if (BigInt(copy.byteLength) > this.limits.maxFileBytes) {
+        throw new ModkitError({
+          code: "x3.vfs/file-size-limit-exceeded",
+          message: "memory provider encountered a file above its logical size limit",
+          context: {
+            path: normalized,
+            fileBytes: String(copy.byteLength),
+            maxFileBytes: String(this.limits.maxFileBytes)
+          }
+        });
+      }
+      totalBytes += BigInt(copy.byteLength);
+      entries.set(normalized, { path: normalized, bytes: copy });
+    }
+    if (entries.size > this.limits.maxEntries) {
+      throw new ModkitError({
+        code: "x3.vfs/memory-entry-budget-exceeded",
+        message: "memory provider exceeded its configured entry boundary",
+        context: { entries: entries.size, maxEntries: this.limits.maxEntries }
+      });
+    }
+    if (totalBytes > this.limits.maxMaterializedBytes) {
+      throw new ModkitError({
+        code: "x3.vfs/memory-byte-budget-exceeded",
+        message: "memory provider exceeded its materialized-byte boundary",
+        context: {
+          bytes: String(totalBytes),
+          maxMaterializedBytes: String(this.limits.maxMaterializedBytes)
+        }
+      });
+    }
+    this.entries = entries;
+    this.revision = options.revision ?? `provider-token:memory-${this.id}-${entries.size}-${totalBytes}`;
+  }
+  async open(uri, context) {
+    throwIfAborted(context.signal);
+    let parsed;
+    try {
+      parsed = new URL(uri);
+    } catch (cause) {
+      throw new ModkitError({
+        code: "x3.vfs/uri-invalid",
+        message: `memory provider cannot parse source URI \xAB${uri}\xBB`,
+        context: { uri },
+        cause
+      });
+    }
+    if (parsed.protocol !== "memory:") {
+      throw new ModkitError({
+        code: "x3.vfs/provider-scheme-mismatch",
+        message: `memory provider cannot open protocol \xAB${parsed.protocol}\xBB`,
+        context: { uri, protocol: parsed.protocol }
+      });
+    }
+    if (this.authority !== void 0 && parsed.host !== this.authority) {
+      throw new ModkitError({
+        code: "x3.vfs/memory-authority-refused",
+        message: `memory provider \xAB${this.id}\xBB refuses authority \xAB${parsed.host}\xBB`,
+        context: { expected: this.authority, actual: parsed.host }
+      });
+    }
+    const root = normalizeVfsPath(decodeURIComponent(parsed.pathname));
+    const limits = clampVfsLimits(context.limits, this.limits);
+    assertVfsPathBudget(root, limits);
+    let entries = 0;
+    let bytes2 = 0n;
+    for (const entry2 of this.entries.values()) {
+      if (relativeToRoot(root, entry2.path) === void 0)
+        continue;
+      entries += 1;
+      bytes2 += BigInt(entry2.bytes.byteLength);
+    }
+    if (entries === 0) {
+      throw new ModkitError({
+        code: "x3.vfs/memory-root-not-found",
+        message: `memory provider root \xAB${root}\xBB has no entries`,
+        context: { root, uri }
+      });
+    }
+    if (entries > limits.maxEntries) {
+      throw new ModkitError({
+        code: "x3.vfs/memory-entry-budget-exceeded",
+        message: "memory provider exceeded its configured entry boundary",
+        context: { entries, maxEntries: limits.maxEntries }
+      });
+    }
+    if (bytes2 > limits.maxMaterializedBytes) {
+      throw new ModkitError({
+        code: "x3.vfs/memory-byte-budget-exceeded",
+        message: "memory provider exceeded its materialized-byte boundary",
+        context: {
+          bytes: String(bytes2),
+          maxMaterializedBytes: String(limits.maxMaterializedBytes)
+        }
+      });
+    }
+    return new MemoryMount(uri, root, this.entries, limits, this.revision);
+  }
+};
+function createMemoryVfsProvider(options = {}) {
+  return new MemoryVfsProvider(options);
+}
+
+// packages/extension-manager/src/vfs.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/extension-manager/src/schema.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var EXTENSION_ID = /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/i;
+var ExtensionManagerError = class extends Error {
+  constructor(code, message, context = {}, cause) {
+    super(message, cause === void 0 ? void 0 : { cause });
+    this.name = "ExtensionManagerError";
+    this.code = code;
+    this.context = Object.freeze({ ...context });
+  }
+};
+function fail2(code, message, context) {
+  throw new ExtensionManagerError(code, message, context);
+}
+function object2(value2, label) {
+  if (value2 === null || typeof value2 !== "object" || Array.isArray(value2)) {
+    fail2("extension-manager/schema-invalid", `${label} must be an object`);
+  }
+  return value2;
+}
+function text(value2, label) {
+  if (typeof value2 !== "string" || value2.trim() === "") {
+    fail2("extension-manager/schema-invalid", `${label} must be a non-empty string`);
+  }
+  return value2.trim();
+}
+function optionalText(value2, label) {
+  return value2 === void 0 ? void 0 : text(value2, label);
+}
+function normalizeRepositoryManifest(value2) {
+  const input = object2(value2, "repository manifest");
+  if (input.schemaVersion !== 1) {
+    fail2("extension-manager/schema-version-unsupported", "repository schemaVersion must be 1");
+  }
+  if (!Array.isArray(input.extensions)) {
+    fail2("extension-manager/schema-invalid", "repository extensions must be a list");
+  }
+  const ids = /* @__PURE__ */ new Set();
+  const extensions = input.extensions.map((raw, index) => {
+    const entry2 = object2(raw, `extensions[${index}]`);
+    const id = optionalText(entry2.id, `extensions[${index}].id`);
+    if (id !== void 0 && !EXTENSION_ID.test(id)) {
+      fail2("extension-manager/extension-id-invalid", `invalid extension id \xAB${id}\xBB`);
+    }
+    if (id !== void 0 && ids.has(id)) {
+      fail2("extension-manager/extension-duplicate", `extension \xAB${id}\xBB is duplicated`);
+    }
+    if (id !== void 0) ids.add(id);
+    const path = optionalText(entry2.path, `extensions[${index}].path`);
+    let files;
+    if (entry2.files !== void 0) {
+      const rawFiles = object2(entry2.files, `extensions[${index}].files`);
+      files = Object.freeze(
+        Object.fromEntries(
+          Object.entries(rawFiles).map(([name, encoded]) => [
+            text(name, `extensions[${index}].files key`),
+            text(encoded, `extensions[${index}].files.${name}`)
+          ])
+        )
+      );
+    }
+    if (path === void 0 && files === void 0) {
+      fail2(
+        "extension-manager/schema-invalid",
+        `extensions[${index}] must declare path or embedded files`
+      );
+    }
+    return Object.freeze({
+      ...id === void 0 ? {} : { id },
+      ...path === void 0 ? {} : { path },
+      ...files === void 0 ? {} : { files },
+      enabled: entry2.enabled !== false
+    });
+  });
+  return Object.freeze({
+    schemaVersion: 1,
+    extensions: Object.freeze(extensions)
+  });
+}
+
+// packages/extension-manager/src/vfs.js
+var decoder = new TextDecoder("utf-8", { fatal: true });
+function createExtensionVfs(providers) {
+  const vfs = new VirtualFileSystem();
+  const protocols = [];
+  for (const provider of providers) {
+    vfs.registerProvider(provider);
+    protocols.push(provider.scheme);
+  }
+  return Object.freeze({ vfs, protocols: Object.freeze(protocols.sort()) });
+}
+async function readMountBytes(mount, path = "", signal) {
+  const source2 = await mount.open(normalizeVfsPath(path), signal);
+  try {
+    return await collectStream(source2.stream(0, void 0, signal), signal);
+  } finally {
+    await source2.dispose();
+  }
+}
+
+// packages/extension-manager/src/providers-browser.js
+function createBrowserExtensionVfs(options = {}) {
+  const browser = createBrowserFileVfsProvider({
+    ...options.resolve === void 0 ? {} : { resolve: options.resolve },
+    ...options.limits === void 0 ? {} : { limits: options.limits }
+  });
+  for (const [uri, input] of Object.entries(options.files ?? {})) browser.register(uri, input);
+  return createExtensionVfs([
+    createMemoryVfsProvider({
+      ...options.memoryEntries === void 0 ? {} : { entries: options.memoryEntries },
+      ...options.limits === void 0 ? {} : { limits: options.limits }
+    }),
+    createHttpVfsProvider({
+      scheme: "http",
+      ...options.fetch === void 0 ? {} : { fetch: options.fetch },
+      ...options.allowedOrigins === void 0 ? {} : { allowedOrigins: options.allowedOrigins },
+      ...options.limits === void 0 ? {} : { limits: options.limits }
+    }),
+    createHttpVfsProvider({
+      scheme: "https",
+      ...options.fetch === void 0 ? {} : { fetch: options.fetch },
+      ...options.allowedOrigins === void 0 ? {} : { allowedOrigins: options.allowedOrigins },
+      ...options.limits === void 0 ? {} : { limits: options.limits }
+    }),
+    browser
+  ]);
+}
+
+// packages/extension-manager/src/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/extension-manager/src/catalog.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var COORDINATE = /^[a-z0-9]+(?:[.-][a-z0-9]+)*\/[a-z0-9]+(?:[.-][a-z0-9]+)*$/u;
+var SEMVER2 = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z.-]+))?$/u;
+var INTEGRITY = /^sha256:[0-9a-f]{64}$/u;
+var BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u;
+var DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
+var CHANNELS = /* @__PURE__ */ new Set(["stable", "preview", "development"]);
+var SOURCE_KINDS = /* @__PURE__ */ new Set(["repository", "bundle"]);
+var TRUST_MODES = /* @__PURE__ */ new Set(["local-user", "signed"]);
+var LOCAL_SOURCE_PROTOCOLS = /* @__PURE__ */ new Set(["file:", "memory:", "browser-file:", "rapid+file:"]);
+var textEncoder = new TextEncoder();
+function record(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+}
+function deepFreeze4(value2) {
+  if (!record(value2) && !Array.isArray(value2)) return value2;
+  for (const child of Object.values(value2)) deepFreeze4(child);
+  return Object.freeze(value2);
+}
+function jsonClone(value2) {
+  if (Array.isArray(value2)) return value2.map(jsonClone);
+  if (!record(value2)) return value2;
+  return Object.fromEntries(Object.entries(value2).map(([key3, child]) => [key3, jsonClone(child)]));
+}
+function sortedJson(value2) {
+  if (Array.isArray(value2)) return value2.map(sortedJson);
+  if (!record(value2)) return value2;
+  return Object.fromEntries(
+    Object.keys(value2).sort().map((key3) => [key3, sortedJson(value2[key3])])
+  );
+}
+function issue(issues, path, message) {
+  issues.push(Object.freeze({ path, message }));
+}
+function checkKeys(value2, allowed2, path, issues) {
+  for (const key3 of Object.keys(value2)) {
+    if (!allowed2.has(key3)) issue(issues, path === "" ? key3 : `${path}.${key3}`, "is not allowed");
+  }
+}
+function nonEmptyText(value2, path, issues) {
+  if (typeof value2 !== "string" || value2.length === 0) {
+    issue(issues, path, "must be a non-empty string");
+    return false;
+  }
+  return true;
+}
+function signature(value2, path, issues) {
+  if (!record(value2)) {
+    issue(issues, path, "must be an object");
+    return;
+  }
+  checkKeys(value2, /* @__PURE__ */ new Set(["algorithm", "keyId", "value"]), path, issues);
+  if (value2.algorithm !== "Ed25519") issue(issues, `${path}.algorithm`, "must be Ed25519");
+  nonEmptyText(value2.keyId, `${path}.keyId`, issues);
+  if (!nonEmptyText(value2.value, `${path}.value`, issues) || !BASE64.test(value2.value)) {
+    issue(issues, `${path}.value`, "must be canonical base64");
+  }
+}
+function isRemoteCatalogUri(uri) {
+  if (typeof uri !== "string") return false;
+  if (uri.startsWith("//") || uri.startsWith("\\\\")) return true;
+  try {
+    const parsed = new URL(uri);
+    const protocol = parsed.protocol;
+    if (protocol === "file:" || protocol === "rapid+file:") {
+      return parsed.host !== "" || parsed.pathname.startsWith("//");
+    }
+    return !LOCAL_SOURCE_PROTOCOLS.has(protocol);
+  } catch {
+    return false;
+  }
+}
+function source(value2, path, issues) {
+  if (!record(value2)) {
+    issue(issues, path, "must be an object");
+    return false;
+  }
+  checkKeys(value2, /* @__PURE__ */ new Set(["kind", "uri", "integrity", "bytes", "trust"]), path, issues);
+  if (!SOURCE_KINDS.has(value2.kind)) {
+    issue(issues, `${path}.kind`, "must be repository or bundle");
+  }
+  nonEmptyText(value2.uri, `${path}.uri`, issues);
+  if (value2.integrity !== void 0 && !INTEGRITY.test(value2.integrity)) {
+    issue(issues, `${path}.integrity`, "must be sha256:<64 lowercase hex characters>");
+  }
+  if (value2.bytes !== void 0 && (!Number.isSafeInteger(value2.bytes) || value2.bytes < 0)) {
+    issue(issues, `${path}.bytes`, "must be a non-negative safe integer");
+  }
+  if (!record(value2.trust)) {
+    issue(issues, `${path}.trust`, "must be an object");
+  } else {
+    checkKeys(value2.trust, /* @__PURE__ */ new Set(["mode", "signature"]), `${path}.trust`, issues);
+    if (!TRUST_MODES.has(value2.trust.mode)) {
+      issue(issues, `${path}.trust.mode`, "must be local-user or signed");
+    }
+    if (value2.trust.signature !== void 0) {
+      signature(value2.trust.signature, `${path}.trust.signature`, issues);
+    }
+  }
+  const remote = isRemoteCatalogUri(value2.uri);
+  if (remote && value2.trust?.mode !== "signed") {
+    issue(issues, `${path}.trust.mode`, "remote sources must use signed trust");
+  }
+  if (remote && !INTEGRITY.test(value2.integrity ?? "")) {
+    issue(issues, `${path}.integrity`, "remote sources require sha256 integrity");
+  }
+  return remote;
+}
+function catalogVersion(value2, path, issues) {
+  if (!record(value2)) {
+    issue(issues, path, "must be an object");
+    return false;
+  }
+  checkKeys(
+    value2,
+    /* @__PURE__ */ new Set(["version", "channel", "source", "extensions", "hostApi", "platforms"]),
+    path,
+    issues
+  );
+  if (typeof value2.version !== "string" || !SEMVER2.test(value2.version)) {
+    issue(issues, `${path}.version`, "must be a semantic version");
+  }
+  if (!CHANNELS.has(value2.channel)) {
+    issue(issues, `${path}.channel`, "must be stable, preview or development");
+  }
+  const remote = source(value2.source, `${path}.source`, issues);
+  if (!Array.isArray(value2.extensions) || value2.extensions.length === 0) {
+    issue(issues, `${path}.extensions`, "must contain at least one extension coordinate");
+  } else {
+    const ids = /* @__PURE__ */ new Set();
+    value2.extensions.forEach((id, index) => {
+      const idPath = `${path}.extensions[${index}]`;
+      if (typeof id !== "string" || !COORDINATE.test(id)) {
+        issue(issues, idPath, "must be a publisher/id coordinate");
+      } else if (ids.has(id)) issue(issues, idPath, "is duplicated");
+      else ids.add(id);
+    });
+  }
+  if (value2.hostApi !== void 0) nonEmptyText(value2.hostApi, `${path}.hostApi`, issues);
+  if (value2.platforms !== void 0) {
+    if (!Array.isArray(value2.platforms)) issue(issues, `${path}.platforms`, "must be an array");
+    else
+      value2.platforms.forEach(
+        (platform, index) => nonEmptyText(platform, `${path}.platforms[${index}]`, issues)
+      );
+  }
+  return remote;
+}
+function catalogPackage(value2, path, issues) {
+  if (!record(value2)) {
+    issue(issues, path, "must be an object");
+    return false;
+  }
+  checkKeys(
+    value2,
+    /* @__PURE__ */ new Set(["id", "publisher", "displayName", "summary", "license", "homepage", "versions"]),
+    path,
+    issues
+  );
+  if (typeof value2.id !== "string" || !COORDINATE.test(value2.id)) {
+    issue(issues, `${path}.id`, "must be a publisher/id coordinate");
+  }
+  for (const field of ["publisher", "displayName", "summary"]) {
+    nonEmptyText(value2[field], `${path}.${field}`, issues);
+  }
+  if (value2.license !== void 0) nonEmptyText(value2.license, `${path}.license`, issues);
+  if (value2.homepage !== void 0) {
+    if (nonEmptyText(value2.homepage, `${path}.homepage`, issues)) {
+      try {
+        const parsed = new URL(value2.homepage);
+        if (parsed.protocol === "") throw new Error("URI has no protocol");
+      } catch {
+        issue(issues, `${path}.homepage`, "must be an absolute URI");
+      }
+    }
+  }
+  if (!Array.isArray(value2.versions) || value2.versions.length === 0) {
+    issue(issues, `${path}.versions`, "must contain at least one version");
+    return false;
+  }
+  const versions = /* @__PURE__ */ new Set();
+  let remote = false;
+  value2.versions.forEach((version, index) => {
+    const versionPath = `${path}.versions[${index}]`;
+    const versionRemote = catalogVersion(version, versionPath, issues);
+    remote = versionRemote || remote;
+    if (record(version) && typeof version.version === "string") {
+      if (versions.has(version.version)) issue(issues, `${versionPath}.version`, "is duplicated");
+      else versions.add(version.version);
+    }
+  });
+  return remote;
+}
+function validateExtensionCatalog(value2) {
+  const issues = [];
+  if (!record(value2)) {
+    issue(issues, "catalog", "must be an object");
+    return Object.freeze(issues);
+  }
+  checkKeys(
+    value2,
+    /* @__PURE__ */ new Set(["$schema", "schemaVersion", "registryId", "generatedAt", "packages", "signature"]),
+    "",
+    issues
+  );
+  if (value2.$schema !== void 0) nonEmptyText(value2.$schema, "$schema", issues);
+  if (value2.schemaVersion !== 1) issue(issues, "schemaVersion", "must be 1");
+  if (typeof value2.registryId !== "string" || !COORDINATE.test(value2.registryId)) {
+    issue(issues, "registryId", "must be a publisher/id coordinate");
+  }
+  if (typeof value2.generatedAt !== "string" || value2.generatedAt.length === 0 || !DATE_TIME.test(value2.generatedAt) || Number.isNaN(Date.parse(value2.generatedAt))) {
+    issue(issues, "generatedAt", "must be an ISO date-time");
+  }
+  if (value2.signature !== void 0) signature(value2.signature, "signature", issues);
+  if (!Array.isArray(value2.packages)) {
+    issue(issues, "packages", "must be an array");
+    return Object.freeze(issues);
+  }
+  const ids = /* @__PURE__ */ new Set();
+  let remote = false;
+  value2.packages.forEach((item, index) => {
+    const path = `packages[${index}]`;
+    const packageRemote = catalogPackage(item, path, issues);
+    remote = packageRemote || remote;
+    if (record(item) && typeof item.id === "string") {
+      if (ids.has(item.id)) issue(issues, `${path}.id`, "is duplicated");
+      else ids.add(item.id);
+    }
+  });
+  if (remote && !record(value2.signature)) {
+    issue(issues, "signature", "catalogs with remote sources must be signed");
+  }
+  return Object.freeze(issues);
+}
+function parseExtensionCatalog(value2) {
+  const issues = validateExtensionCatalog(value2);
+  if (issues.length > 0) {
+    throw new ExtensionManagerError(
+      "extension-manager/catalog-invalid",
+      `extension catalog is invalid (${issues[0].path}: ${issues[0].message})`,
+      { issues }
+    );
+  }
+  return deepFreeze4(jsonClone(value2));
+}
+function extensionCatalogSigningBytes(value2) {
+  const issues = validateExtensionCatalog(value2);
+  const signingIssues = issues.filter(
+    (item) => item.path !== "signature" || item.message !== "catalogs with remote sources must be signed"
+  );
+  if (signingIssues.length > 0) {
+    throw new ExtensionManagerError(
+      "extension-manager/catalog-invalid",
+      `extension catalog is invalid (${signingIssues[0].path}: ${signingIssues[0].message})`,
+      { issues: signingIssues }
+    );
+  }
+  const catalog = deepFreeze4(jsonClone(value2));
+  const unsigned = Object.fromEntries(
+    Object.entries(catalog).filter(([key3]) => key3 !== "signature")
+  );
+  return textEncoder.encode(`${JSON.stringify(sortedJson(unsigned))}
+`);
+}
+function semverParts(value2) {
+  const match = SEMVER2.exec(value2);
+  if (match === null) return void 0;
+  return {
+    numbers: [Number(match[1]), Number(match[2]), Number(match[3])],
+    prerelease: match[4]?.split(".")
+  };
+}
+function compareCatalogVersions(left, right) {
+  const leftParts = semverParts(left);
+  const rightParts = semverParts(right);
+  if (leftParts === void 0 || rightParts === void 0) {
+    throw new ExtensionManagerError(
+      "extension-manager/version-invalid",
+      "catalog version comparison requires semantic versions",
+      { left, right }
+    );
+  }
+  for (let index = 0; index < 3; index += 1) {
+    if (leftParts.numbers[index] !== rightParts.numbers[index]) {
+      return leftParts.numbers[index] < rightParts.numbers[index] ? -1 : 1;
+    }
+  }
+  if (leftParts.prerelease === void 0) return rightParts.prerelease === void 0 ? 0 : 1;
+  if (rightParts.prerelease === void 0) return -1;
+  const length = Math.max(leftParts.prerelease.length, rightParts.prerelease.length);
+  for (let index = 0; index < length; index += 1) {
+    const leftId = leftParts.prerelease[index];
+    const rightId = rightParts.prerelease[index];
+    if (leftId === void 0) return -1;
+    if (rightId === void 0) return 1;
+    if (leftId === rightId) continue;
+    const leftNumeric = /^[0-9]+$/u.test(leftId);
+    const rightNumeric = /^[0-9]+$/u.test(rightId);
+    if (leftNumeric && rightNumeric) return Number(leftId) < Number(rightId) ? -1 : 1;
+    if (leftNumeric !== rightNumeric) return leftNumeric ? -1 : 1;
+    return leftId < rightId ? -1 : 1;
+  }
+  return 0;
+}
+
+// packages/extension-manager/src/client.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var ALL_CHANNELS = Object.freeze(["stable", "preview", "development"]);
+var SHA256_INTEGRITY = /^sha256:[0-9a-f]{64}$/u;
+function record2(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+}
+function fail3(code, message, context = {}) {
+  throw new ExtensionManagerError(code, message, context);
+}
+function requirePort(port, name, methods) {
+  if (!record2(port)) fail3("extension-manager/port-invalid", `${name} must be an object`, { name });
+  for (const method of methods) {
+    if (typeof port[method] !== "function") {
+      fail3("extension-manager/port-invalid", `${name}.${method} must be a function`, {
+        name,
+        method
+      });
+    }
+  }
+  return port;
+}
+function catalogEnvelope(value2, label) {
+  if (value2 === void 0) return void 0;
+  if (record2(value2) && Object.hasOwn(value2, "catalog")) {
+    if (value2.signatureVerified !== void 0 && typeof value2.signatureVerified !== "boolean") {
+      fail3("extension-manager/catalog-source-invalid", `${label}.signatureVerified must be boolean`);
+    }
+    return Object.freeze({
+      catalog: parseExtensionCatalog(value2.catalog),
+      source: typeof value2.source === "string" ? value2.source : label,
+      signatureVerified: value2.signatureVerified === true
+    });
+  }
+  return Object.freeze({
+    catalog: parseExtensionCatalog(value2),
+    source: label,
+    signatureVerified: false
+  });
+}
+function publisherFrom(id) {
+  const slash = id.indexOf("/");
+  return slash < 1 ? "unknown" : id.slice(0, slash);
+}
+function selectedVersion(item, channels, requested) {
+  if (requested !== void 0) {
+    return item.versions.find((version) => version.version === requested);
+  }
+  return item.versions.filter((version) => channels.has(version.channel)).sort((left, right) => compareCatalogVersions(left.version, right.version)).at(-1);
+}
+function sourceWithCatalogBase(source2, catalogSource) {
+  let uri = source2.uri;
+  try {
+    const catalogUrl = new URL(catalogSource);
+    if (catalogUrl.protocol === "http:" || catalogUrl.protocol === "https:") {
+      uri = new URL(uri, catalogUrl).href;
+    }
+  } catch {
+  }
+  return Object.freeze({ ...source2, uri });
+}
+function isHttpTransport(uri) {
+  try {
+    const protocol = new URL(uri).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+function candidateOf(state, item, channels, requested) {
+  const version = selectedVersion(item, channels, requested);
+  if (version === void 0) return void 0;
+  const source2 = sourceWithCatalogBase(version.source, state.source);
+  const remote = isRemoteCatalogUri(source2.uri);
+  const catalogRemote = isRemoteCatalogUri(state.source);
+  const catalogSigned = state.catalog.signature !== void 0 && state.signatureVerified;
+  const remoteCatalogTransportAllowed = !catalogRemote || isHttpTransport(source2.uri);
+  const trusted = remoteCatalogTransportAllowed && (!catalogRemote || catalogSigned) && (!catalogRemote && !remote && source2.trust.mode === "local-user" || source2.trust.mode === "signed" && catalogSigned && (!(catalogRemote || remote) || SHA256_INTEGRITY.test(source2.integrity ?? "")));
+  return Object.freeze({
+    id: item.id,
+    displayName: item.displayName,
+    publisher: item.publisher,
+    version: version.version,
+    channel: version.channel,
+    summary: item.summary,
+    extensions: version.extensions,
+    source: source2,
+    catalogId: state.catalog.registryId,
+    catalogSource: state.source,
+    catalogSignature: state.catalog.signature,
+    signatureVerified: state.signatureVerified,
+    remote,
+    trusted
+  });
+}
+function candidatesOf(state, channels) {
+  if (state === void 0) return Object.freeze([]);
+  return Object.freeze(
+    state.catalog.packages.map((item) => candidateOf(state, item, channels)).filter((candidate) => candidate !== void 0)
+  );
+}
+function installedRecords(value2) {
+  if (!Array.isArray(value2)) {
+    fail3("extension-manager/artifact-store-invalid", "ArtifactStore.list() must return an array");
+  }
+  const ids = /* @__PURE__ */ new Set();
+  return Object.freeze(
+    value2.map((entry2, index) => {
+      if (!record2(entry2) || typeof entry2.id !== "string" || typeof entry2.version !== "string" || !Array.isArray(entry2.roots) || entry2.roots.length === 0) {
+        fail3(
+          "extension-manager/artifact-store-invalid",
+          `ArtifactStore.list()[${index}] must contain id, version and roots`
+        );
+      }
+      const rootIds = /* @__PURE__ */ new Set();
+      entry2.roots.forEach((root, rootIndex) => {
+        if (!record2(root) || !Object.hasOwn(root, "root") || typeof root.expectedId !== "string") {
+          fail3(
+            "extension-manager/artifact-store-invalid",
+            `ArtifactStore.list()[${index}].roots[${rootIndex}] must contain root and expectedId`
+          );
+        }
+        if (rootIds.has(root.expectedId)) {
+          fail3(
+            "extension-manager/artifact-store-invalid",
+            `ArtifactStore.list()[${index}] contains duplicate root \xAB${root.expectedId}\xBB`
+          );
+        }
+        rootIds.add(root.expectedId);
+      });
+      if (ids.has(entry2.id)) {
+        fail3(
+          "extension-manager/artifact-store-invalid",
+          `ArtifactStore.list() contains duplicate id \xAB${entry2.id}\xBB`
+        );
+      }
+      ids.add(entry2.id);
+      return entry2;
+    })
+  );
+}
+function enablementRecords(value2) {
+  if (!Array.isArray(value2)) {
+    fail3(
+      "extension-manager/enablement-store-invalid",
+      "EnablementStore.list() must return an array"
+    );
+  }
+  const enabled = /* @__PURE__ */ new Map();
+  value2.forEach((entry2, index) => {
+    if (!record2(entry2) || typeof entry2.id !== "string" || typeof entry2.enabled !== "boolean") {
+      fail3(
+        "extension-manager/enablement-store-invalid",
+        `EnablementStore.list()[${index}] must contain id and enabled`
+      );
+    }
+    if (enabled.has(entry2.id)) {
+      fail3(
+        "extension-manager/enablement-store-invalid",
+        `EnablementStore.list() contains duplicate id \xAB${entry2.id}\xBB`
+      );
+    }
+    enabled.set(entry2.id, entry2.enabled);
+  });
+  return enabled;
+}
+function assertInstallable(candidate) {
+  if (!candidate.trusted) {
+    fail3(
+      "extension-manager/artifact-untrusted",
+      `extension \xAB${candidate.id}\xBB is not signed by a trusted catalog`,
+      { id: candidate.id, source: candidate.source.uri }
+    );
+  }
+  if (candidate.remote) {
+    if (candidate.source.trust.mode !== "signed" || typeof candidate.source.integrity !== "string" || !candidate.signatureVerified || candidate.catalogSignature === void 0) {
+      fail3(
+        "extension-manager/remote-artifact-refused",
+        `remote extension \xAB${candidate.id}\xBB requires a verified signature and sha256 integrity`,
+        { id: candidate.id, source: candidate.source.uri }
+      );
+    }
+  }
+}
+function validateAcquired(candidate, acquired) {
+  if (!record2(acquired) || !Object.hasOwn(acquired, "artifact")) {
+    fail3(
+      "extension-manager/acquirer-invalid",
+      "ArtifactAcquirer.acquire() must return an artifact record",
+      { id: candidate.id }
+    );
+  }
+  const expected = candidate.source.integrity;
+  if (expected !== void 0 && acquired.integrity !== expected) {
+    fail3(
+      "extension-manager/integrity-mismatch",
+      `artifact for \xAB${candidate.id}\xBB does not match ${expected}`,
+      { id: candidate.id, expected, actual: acquired.integrity }
+    );
+  }
+  return acquired;
+}
+function validateInstalled(candidate, installed) {
+  const [validated] = installedRecords([installed]);
+  if (validated.id !== candidate.id || validated.version !== candidate.version) {
+    fail3(
+      "extension-manager/artifact-store-invalid",
+      "ArtifactStore.install() returned a different extension identity",
+      {
+        expectedId: candidate.id,
+        expectedVersion: candidate.version,
+        actual: installed
+      }
+    );
+  }
+  const expectedRoots = [...candidate.extensions].sort();
+  const actualRoots = validated.roots.map((root) => root.expectedId).sort();
+  if (actualRoots.length !== expectedRoots.length || actualRoots.some((id, index) => id !== expectedRoots[index])) {
+    fail3(
+      "extension-manager/artifact-store-invalid",
+      "ArtifactStore.install() did not return every extension root in the catalog package",
+      { id: candidate.id, expectedRoots, actualRoots }
+    );
+  }
+}
+function createExtensionManagerClient(options) {
+  if (!record2(options)) fail3("extension-manager/options-invalid", "options must be an object");
+  const catalogSource = requirePort(options.catalogSource, "CatalogSource", ["cached", "refresh"]);
+  const artifactAcquirer = requirePort(options.artifactAcquirer, "ArtifactAcquirer", ["acquire"]);
+  const artifactStore = requirePort(options.artifactStore, "ArtifactStore", [
+    "list",
+    "install",
+    "remove"
+  ]);
+  const enablementStore = requirePort(options.enablementStore, "EnablementStore", [
+    "list",
+    "setEnabled",
+    "remove"
+  ]);
+  const channels = new Set(options.channels ?? ALL_CHANNELS);
+  for (const channel of channels) {
+    if (!ALL_CHANNELS.includes(channel)) {
+      fail3("extension-manager/channel-invalid", `unsupported catalog channel \xAB${channel}\xBB`);
+    }
+  }
+  let mutationTail = Promise.resolve();
+  const mutate = (operation) => {
+    const result = mutationTail.then(operation, operation);
+    mutationTail = result.then(
+      () => void 0,
+      () => void 0
+    );
+    return result;
+  };
+  let cachedStatePromise;
+  const cachedState = () => {
+    cachedStatePromise ??= Promise.resolve(catalogSource.cached()).then(
+      (value2) => catalogEnvelope(value2, "cached catalog")
+    );
+    return cachedStatePromise;
+  };
+  const catalogCandidate = async (id, requestedVersion) => {
+    const state = await cachedState();
+    const item = state?.catalog.packages.find((candidate2) => candidate2.id === id);
+    if (item === void 0) {
+      fail3("extension-manager/catalog-entry-missing", `extension \xAB${id}\xBB is not in the catalog`, {
+        id
+      });
+    }
+    const candidate = candidateOf(state, item, channels, requestedVersion);
+    if (candidate === void 0) {
+      fail3(
+        "extension-manager/catalog-version-missing",
+        requestedVersion === void 0 ? `extension \xAB${id}\xBB has no version in the selected channels` : `extension \xAB${id}\xBB has no version \xAB${requestedVersion}\xBB`,
+        { id, requestedVersion }
+      );
+    }
+    return candidate;
+  };
+  const acquireAndInstall = async (candidate) => {
+    assertInstallable(candidate);
+    const acquired = validateAcquired(candidate, await artifactAcquirer.acquire(candidate));
+    const installed = await artifactStore.install(
+      Object.freeze({
+        entry: candidate,
+        artifact: acquired.artifact,
+        ...acquired.integrity === void 0 ? {} : { integrity: acquired.integrity }
+      })
+    );
+    validateInstalled(candidate, installed);
+    return installed;
+  };
+  return Object.freeze({
+    async snapshot() {
+      const [state, installedValue, enablementValue] = await Promise.all([
+        cachedState(),
+        artifactStore.list(),
+        enablementStore.list()
+      ]);
+      const available = candidatesOf(state, channels);
+      const installed = installedRecords(installedValue);
+      const enablement = enablementRecords(enablementValue);
+      const availableById = new Map(available.map((entry2) => [entry2.id, entry2]));
+      const installedById = new Map(installed.map((entry2) => [entry2.id, entry2]));
+      const ids = [.../* @__PURE__ */ new Set([...availableById.keys(), ...installedById.keys()])].sort();
+      return Object.freeze({
+        entries: Object.freeze(
+          ids.map((id) => {
+            const offered = availableById.get(id);
+            const present = installedById.get(id);
+            const availableVersion = offered?.version ?? present?.version ?? "unknown";
+            return Object.freeze({
+              id,
+              displayName: offered?.displayName ?? present?.displayName ?? id,
+              publisher: offered?.publisher ?? present?.publisher ?? publisherFrom(id),
+              availableVersion,
+              ...present === void 0 ? {} : { installedVersion: present.version },
+              enabled: present !== void 0 && (enablement.get(id) ?? (typeof present.enabled === "boolean" && present.enabled)),
+              updateAvailable: present !== void 0 && offered !== void 0 && compareCatalogVersions(offered.version, present.version) > 0,
+              source: offered?.source.uri ?? present?.source ?? "local",
+              trusted: offered?.trusted ?? present?.trusted ?? false
+            });
+          })
+        )
+      });
+    },
+    refresh() {
+      return mutate(async () => {
+        const refreshed = catalogEnvelope(await catalogSource.refresh(), "refreshed catalog");
+        if (refreshed === void 0) {
+          fail3(
+            "extension-manager/catalog-refresh-empty",
+            "CatalogSource.refresh() returned no catalog"
+          );
+        }
+        cachedStatePromise = Promise.resolve(refreshed);
+      });
+    },
+    install(id, version) {
+      return mutate(async () => {
+        const installed = installedRecords(await artifactStore.list()).find(
+          (entry2) => entry2.id === id
+        );
+        if (installed !== void 0) {
+          fail3(
+            "extension-manager/artifact-already-installed",
+            `extension \xAB${id}\xBB is already installed`,
+            { id, version: installed.version }
+          );
+        }
+        const candidate = await catalogCandidate(id, version);
+        await enablementStore.setEnabled(id, false);
+        try {
+          await acquireAndInstall(candidate);
+          await enablementStore.setEnabled(id, true);
+        } catch (error) {
+          let artifactError;
+          let enablementError;
+          try {
+            await artifactStore.remove(id);
+          } catch (cause) {
+            artifactError = cause;
+          }
+          try {
+            await enablementStore.setEnabled(id, false);
+            if (artifactError === void 0) await enablementStore.remove(id);
+          } catch (cause) {
+            enablementError = cause;
+          }
+          if (artifactError !== void 0 || enablementError !== void 0) {
+            fail3(
+              "extension-manager/install-compensation-failed",
+              `extension \xAB${id}\xBB failed installation and could not be removed`,
+              { id, error, artifactError, enablementError }
+            );
+          }
+          throw error;
+        }
+      });
+    },
+    update(id) {
+      return mutate(async () => {
+        const installed = installedRecords(await artifactStore.list()).find(
+          (entry2) => entry2.id === id
+        );
+        if (installed === void 0) {
+          fail3("extension-manager/artifact-not-installed", `extension \xAB${id}\xBB is not installed`, {
+            id
+          });
+        }
+        const candidate = await catalogCandidate(id);
+        if (compareCatalogVersions(candidate.version, installed.version) <= 0) return;
+        const wasEnabled = enablementRecords(await enablementStore.list()).get(id) === true;
+        await enablementStore.setEnabled(id, false);
+        await acquireAndInstall(candidate);
+        if (wasEnabled) await enablementStore.setEnabled(id, true);
+      });
+    },
+    remove(id) {
+      return mutate(async () => {
+        await artifactStore.remove(id);
+        await enablementStore.remove(id);
+      });
+    },
+    setEnabled(id, enabled) {
+      return mutate(async () => {
+        if (typeof enabled !== "boolean") {
+          fail3("extension-manager/enablement-invalid", "enabled must be boolean", { id, enabled });
+        }
+        const installed = installedRecords(await artifactStore.list()).some(
+          (entry2) => entry2.id === id
+        );
+        if (!installed) {
+          fail3("extension-manager/artifact-not-installed", `extension \xAB${id}\xBB is not installed`, {
+            id
+          });
+        }
+        await enablementStore.setEnabled(id, enabled);
+      });
+    }
+  });
+}
+
+// apps/web/src/managed-extension-roots.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var MANAGED_EXTENSION_BUNDLE_FAILURE_CODES = Object.freeze({
+  unavailable: "x3.host/managed-extension-package-unavailable",
+  invalid: "x3.host/managed-extension-package-invalid",
+  pathOnly: "x3.host/managed-extension-path-only-bundle",
+  identityMissing: "x3.host/managed-extension-identity-missing",
+  filePathInvalid: "x3.host/managed-extension-file-path-invalid",
+  base64Invalid: "x3.host/managed-extension-base64-invalid"
+});
+var messageOf2 = (error) => error instanceof Error ? error.message : String(error);
+function failure(record3, code, message, suffix = "") {
+  return {
+    root: record3.id,
+    rootId: `${record3.id}${suffix}`,
+    code,
+    message
+  };
+}
+function isNormalizedRepositoryManifest(value2) {
+  if (typeof value2 !== "object" || value2 === null) return false;
+  const candidate = value2;
+  return candidate.schemaVersion === 1 && Array.isArray(candidate.extensions);
+}
+function decodeBase64(encoded, path) {
+  if (encoded.length % 4 !== 0 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(encoded)) {
+    throw new Error(`${path} is not canonical base64`);
+  }
+  let binary;
+  try {
+    binary = atob(encoded);
+  } catch (error) {
+    throw new Error(`${path} is not valid base64: ${messageOf2(error)}`);
+  }
+  const bytes2 = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes2[index] = binary.charCodeAt(index);
+  }
+  return bytes2;
+}
+function validateFilePath(path) {
+  const parts = path.split("/");
+  if (path === "" || path.startsWith("/") || path.endsWith("/") || path.includes("\\") || parts.some((part) => part === "" || part === "." || part === "..")) {
+    throw new Error(`embedded file path \xAB${path}\xBB is not a safe relative POSIX path`);
+  }
+}
+function memoryFileHandle(name, path, files) {
+  return {
+    kind: "file",
+    name,
+    async getFile() {
+      const bytes2 = files.get(path);
+      if (bytes2 === void 0) throw new Error(`embedded file disappeared: ${path}`);
+      return {
+        name,
+        size: bytes2.byteLength,
+        lastModified: 0,
+        slice(start, end) {
+          const part = bytes2.slice(start, end);
+          return {
+            async arrayBuffer() {
+              const buffer = new ArrayBuffer(part.byteLength);
+              new Uint8Array(buffer).set(part);
+              return buffer;
+            }
+          };
+        }
+      };
+    }
+  };
+}
+function memoryDirectoryHandle(name, files, prefix = "") {
+  const scope = prefix === "" ? "" : `${prefix}/`;
+  const base = {
+    kind: "directory",
+    name,
+    entries: async function* () {
+      const children = /* @__PURE__ */ new Map();
+      for (const path of files.keys()) {
+        if (!path.startsWith(scope)) continue;
+        const rest = path.slice(scope.length);
+        const slash = rest.indexOf("/");
+        const childName = slash === -1 ? rest : rest.slice(0, slash);
+        if (childName === "") continue;
+        children.set(childName, slash === -1 ? "file" : "directory");
+      }
+      const ordered = [...children].sort(
+        ([left], [right]) => left < right ? -1 : left > right ? 1 : 0
+      );
+      for (const [childName, kind] of ordered) {
+        const childPath = `${scope}${childName}`;
+        yield [
+          childName,
+          kind === "file" ? memoryFileHandle(childName, childPath, files) : memoryDirectoryHandle(childName, files, childPath)
+        ];
+      }
+    }
+  };
+  return { ...base, queryPermission: async () => "granted" };
+}
+function embeddedHandle(name, encodedFiles) {
+  const files = /* @__PURE__ */ new Map();
+  const entries = Object.entries(encodedFiles).sort(
+    ([left], [right]) => left < right ? -1 : left > right ? 1 : 0
+  );
+  for (const [path, encoded] of entries) {
+    validateFilePath(path);
+    files.set(path, decodeBase64(encoded, path));
+  }
+  return memoryDirectoryHandle(name, files);
+}
+function inspectPortableExtensionBundle(bytes2) {
+  const text3 = new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
+  const normalized = normalizeRepositoryManifest(JSON.parse(text3));
+  if (!isNormalizedRepositoryManifest(normalized)) {
+    throw new Error("repository normalizer returned an unsupported document");
+  }
+  const roots = [];
+  for (const [index, entry2] of normalized.extensions.entries()) {
+    if (!entry2.enabled) continue;
+    if (entry2.files === void 0) {
+      throw new Error(
+        `repository entry ${String(index)} is path-only; browser packages require files`
+      );
+    }
+    if (entry2.id === void 0) {
+      throw new Error(`repository entry ${String(index)} has no expected extension id`);
+    }
+    embeddedHandle(entry2.id, entry2.files);
+    roots.push(entry2.id);
+  }
+  if (roots.length === 0) throw new Error("portable browser package contains no enabled roots");
+  if (new Set(roots).size !== roots.length) {
+    throw new Error("portable browser package contains duplicate root ids");
+  }
+  return Object.freeze(roots);
+}
+async function loadManagedExtensionRoots(storage, options) {
+  const records = await storage.list();
+  const requests = [];
+  const failures = [];
+  for (const record3 of records) {
+    options.signal?.throwIfAborted();
+    if (!record3.enabled) continue;
+    const response2 = await storage.open(record3.id);
+    if (response2 === void 0) {
+      failures.push(
+        failure(
+          record3,
+          MANAGED_EXTENSION_BUNDLE_FAILURE_CODES.unavailable,
+          `enabled package ${record3.id}@${record3.version} is absent or failed its stored digest`
+        )
+      );
+      continue;
+    }
+    let document;
+    try {
+      const bytes2 = await response2.arrayBuffer();
+      const text3 = new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
+      document = JSON.parse(text3);
+    } catch (error) {
+      failures.push(
+        failure(
+          record3,
+          MANAGED_EXTENSION_BUNDLE_FAILURE_CODES.invalid,
+          `package is not a UTF-8 JSON modkit.repository.json: ${messageOf2(error)}`
+        )
+      );
+      continue;
+    }
+    let manifest;
+    try {
+      const normalized = normalizeRepositoryManifest(document);
+      if (!isNormalizedRepositoryManifest(normalized)) {
+        throw new Error("repository normalizer returned an unsupported document");
+      }
+      manifest = normalized;
+    } catch (error) {
+      failures.push(
+        failure(
+          record3,
+          MANAGED_EXTENSION_BUNDLE_FAILURE_CODES.invalid,
+          `invalid modkit.repository.json: ${messageOf2(error)}`
+        )
+      );
+      continue;
+    }
+    for (const [index, entry2] of manifest.extensions.entries()) {
+      options.signal?.throwIfAborted();
+      if (!entry2.enabled) continue;
+      const suffix = `#${String(index)}`;
+      if (entry2.files === void 0) {
+        failures.push(
+          failure(
+            record3,
+            MANAGED_EXTENSION_BUNDLE_FAILURE_CODES.pathOnly,
+            `repository entry ${String(index)} declares only path \xAB${entry2.path ?? ""}\xBB; a browser package must embed extensions[].files as base64`,
+            suffix
+          )
+        );
+        continue;
+      }
+      if (entry2.id === void 0) {
+        failures.push(
+          failure(
+            record3,
+            MANAGED_EXTENSION_BUNDLE_FAILURE_CODES.identityMissing,
+            `repository entry ${String(index)} has no id; downloaded browser roots require expectedId`,
+            suffix
+          )
+        );
+        continue;
+      }
+      try {
+        requests.push({
+          record: record3,
+          id: `${record3.id}@${record3.digest}#${String(index)}`,
+          expectedId: entry2.id,
+          handle: embeddedHandle(`${record3.id}/${entry2.id}`, entry2.files)
+        });
+      } catch (error) {
+        const code = /base64/u.test(messageOf2(error)) ? MANAGED_EXTENSION_BUNDLE_FAILURE_CODES.base64Invalid : MANAGED_EXTENSION_BUNDLE_FAILURE_CODES.filePathInvalid;
+        failures.push(failure(record3, code, messageOf2(error), suffix));
+      }
+    }
+  }
+  const loaded = await loadUserExtensionRoots(
+    requests.map((request) => ({
+      id: request.id,
+      expectedId: request.expectedId,
+      handle: request.handle
+    })),
+    {
+      subtle: options.subtle,
+      ...options.claimed === void 0 ? {} : { claimed: options.claimed },
+      ...options.maxFiles === void 0 ? {} : { maxFiles: options.maxFiles },
+      ...options.maxTotalBytes === void 0 ? {} : { maxTotalBytes: options.maxTotalBytes },
+      ...options.signal === void 0 ? {} : { signal: options.signal }
+    }
+  );
+  const sources = new Map(requests.map((request) => [request.id, request.record]));
+  const inputs = loaded.inputs.map((input, index) => {
+    const rootId = loaded.rootIds[index];
+    const record3 = rootId === void 0 ? void 0 : sources.get(rootId);
+    return record3 === void 0 ? input : Object.freeze({ ...input, source: `managed-package/${record3.id}@${record3.version}` });
+  });
+  return Object.freeze({
+    inputs: Object.freeze(inputs),
+    failures: Object.freeze([...failures, ...loaded.failures]),
+    coordinates: loaded.coordinates,
+    rootIds: loaded.rootIds,
+    moduleMap: loaded.moduleMap,
+    moduleMapOwners: loaded.moduleMapOwners,
+    verifiedModuleRoots: loaded.verifiedModuleRoots,
+    serve: loaded.serve
+  });
+}
+function combineLoadedExtensionRoots(...roots) {
+  if (roots.length === 0) return NO_USER_EXTENSION_ROOTS;
+  const claims = /* @__PURE__ */ new Map();
+  for (const root of roots) {
+    for (const specifier of Object.keys(root.moduleMap)) {
+      const owner = root.moduleMapOwners[specifier];
+      if (owner === void 0) continue;
+      const owners = claims.get(specifier) ?? /* @__PURE__ */ new Set();
+      owners.add(owner);
+      claims.set(specifier, owners);
+    }
+  }
+  const conflictedRoots = /* @__PURE__ */ new Set();
+  const collisionFailures = [];
+  for (const [specifier, owners] of claims) {
+    if (owners.size < 2) continue;
+    for (const owner of owners) {
+      conflictedRoots.add(owner);
+      collisionFailures.push({
+        root: owner,
+        rootId: owner,
+        code: "x3.host/extension-module-map-conflict",
+        message: `bare module specifier \xAB${specifier}\xBB is exported by more than one extension root; every claimant is refused`
+      });
+    }
+  }
+  const moduleMapEntries = /* @__PURE__ */ new Map();
+  const moduleMapOwnerEntries = /* @__PURE__ */ new Map();
+  for (const root of roots) {
+    for (const [specifier, url] of Object.entries(root.moduleMap)) {
+      const owner = root.moduleMapOwners[specifier];
+      if (owner === void 0 || conflictedRoots.has(owner)) continue;
+      moduleMapEntries.set(specifier, url);
+      moduleMapOwnerEntries.set(specifier, owner);
+    }
+  }
+  const kept = roots.flatMap(
+    (root) => root.rootIds.flatMap((rootId, index) => {
+      const input = root.inputs[index];
+      const coordinate2 = root.coordinates[index];
+      return conflictedRoots.has(rootId) || input === void 0 || coordinate2 === void 0 ? [] : [{ rootId, input, coordinate: coordinate2 }];
+    })
+  );
+  return Object.freeze({
+    inputs: Object.freeze(kept.map(({ input }) => input)),
+    failures: Object.freeze([...roots.flatMap((root) => root.failures), ...collisionFailures]),
+    coordinates: Object.freeze(kept.map(({ coordinate: coordinate2 }) => coordinate2)),
+    rootIds: Object.freeze(kept.map(({ rootId }) => rootId)),
+    moduleMap: Object.freeze(Object.fromEntries(moduleMapEntries)),
+    moduleMapOwners: Object.freeze(Object.fromEntries(moduleMapOwnerEntries)),
+    verifiedModuleRoots: Object.freeze(
+      roots.flatMap((root) => root.verifiedModuleRoots).filter((root) => !conflictedRoots.has(root.rootId))
+    ),
+    serve: (async (url, init) => {
+      let last;
+      for (const root of roots) {
+        const response2 = await root.serve(url, init);
+        if (response2.ok || response2.status !== 404) return response2;
+        last = response2;
+      }
+      return last ?? {
+        ok: false,
+        status: 404,
+        arrayBuffer: () => Promise.reject(new Error(`404 ${url}`))
+      };
+    })
+  });
+}
+
+// apps/web/src/managed-extension-storage.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var MANAGED_EXTENSION_DATABASE = "org.modkitx.app.web/managed-extensions";
+var MANAGED_EXTENSION_METADATA_STORE = "installations";
+var MANAGED_EXTENSION_CACHE = "org.modkitx.app.web/extension-packages-v1";
+function settle2(request) {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(
+      request.error instanceof Error ? request.error : new Error(`IndexedDB request failed: ${String(request.error)}`)
+    );
+  });
+}
+function transactionCompletion(transaction) {
+  if (!("oncomplete" in transaction)) return void 0;
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    const failed2 = () => reject(
+      transaction.error instanceof Error ? transaction.error : new Error(`IndexedDB transaction failed: ${String(transaction.error)}`)
+    );
+    transaction.onabort = failed2;
+    transaction.onerror = failed2;
+  });
+}
+async function probeExistingDatabase2(factory, databaseName) {
+  const request = factory.open(databaseName);
+  let abortedInitialCreation = false;
+  return new Promise((resolve, reject) => {
+    request.onupgradeneeded = () => {
+      abortedInitialCreation = true;
+      try {
+        request.transaction?.abort();
+      } catch (error) {
+        reject(error);
+      }
+    };
+    request.onsuccess = () => {
+      request.result.close();
+      resolve(!abortedInitialCreation);
+    };
+    request.onerror = (event) => {
+      if (abortedInitialCreation) {
+        event.preventDefault();
+        resolve(false);
+        return;
+      }
+      reject(
+        request.error instanceof Error ? request.error : new Error(`IndexedDB existence probe failed: ${String(request.error)}`)
+      );
+    };
+  });
+}
+var DIGEST_PATTERN = /^[a-f0-9]{64}$/u;
+function nonEmpty3(value2) {
+  return typeof value2 === "string" && value2.trim() !== "";
+}
+function isSettingsValue(value2, seen) {
+  if (value2 === null || typeof value2 === "boolean" || typeof value2 === "string" || typeof value2 === "number" && Number.isFinite(value2)) {
+    return true;
+  }
+  if (typeof value2 !== "object") return false;
+  if (seen.has(value2)) return false;
+  seen.add(value2);
+  try {
+    if (Array.isArray(value2)) return value2.every((entry2) => isSettingsValue(entry2, seen));
+    const prototype = Object.getPrototypeOf(value2);
+    if (prototype !== Object.prototype && prototype !== null) return false;
+    return Object.values(value2).every((entry2) => isSettingsValue(entry2, seen));
+  } finally {
+    seen.delete(value2);
+  }
+}
+function normalizeSettings(value2) {
+  if (!isSettingsValue(value2, /* @__PURE__ */ new Set()) || Array.isArray(value2) || value2 === null) return void 0;
+  return Object.freeze(structuredClone(value2));
+}
+function toInstalledRecord(value2) {
+  if (typeof value2 !== "object" || value2 === null) return void 0;
+  const candidate = value2;
+  if (!nonEmpty3(candidate.id) || !nonEmpty3(candidate.version)) return void 0;
+  if (typeof candidate.digest !== "string" || !DIGEST_PATTERN.test(candidate.digest)) {
+    return void 0;
+  }
+  if (!nonEmpty3(candidate.sourceUrl) || !nonEmpty3(candidate.cacheKey)) return void 0;
+  if (typeof candidate.installedAt !== "number" || !Number.isFinite(candidate.installedAt)) {
+    return void 0;
+  }
+  if (typeof candidate.enabled !== "boolean") return void 0;
+  const settings = normalizeSettings(candidate.settings);
+  if (settings === void 0) return void 0;
+  let roots;
+  if (candidate.roots !== void 0) {
+    if (!Array.isArray(candidate.roots)) return void 0;
+    const normalized = candidate.roots.map(
+      (root) => typeof root === "object" && root !== null && nonEmpty3(root.expectedId) ? { expectedId: root.expectedId } : void 0
+    ).filter((root) => root !== void 0);
+    if (normalized.length !== candidate.roots.length || normalized.length === 0) return void 0;
+    roots = Object.freeze(normalized);
+  }
+  return Object.freeze({
+    id: candidate.id,
+    version: candidate.version,
+    digest: candidate.digest,
+    sourceUrl: candidate.sourceUrl,
+    cacheKey: candidate.cacheKey,
+    installedAt: candidate.installedAt,
+    enabled: candidate.enabled,
+    ...typeof candidate.displayName === "string" ? { displayName: candidate.displayName } : {},
+    ...typeof candidate.publisher === "string" ? { publisher: candidate.publisher } : {},
+    ...typeof candidate.trusted === "boolean" ? { trusted: candidate.trusted } : {},
+    ...roots === void 0 ? {} : { roots },
+    settings
+  });
+}
+var byIdentity = (left, right) => left.id.localeCompare(right.id, "en");
+function createIndexedDbManagedExtensionMetadataStore(factory, databaseName = MANAGED_EXTENSION_DATABASE, storeName = MANAGED_EXTENSION_METADATA_STORE, options = {}) {
+  let knownToExist = false;
+  const exists = async () => {
+    if (knownToExist) return true;
+    const found = options.databaseExists !== void 0 ? await options.databaseExists(databaseName) : factory.databases !== void 0 ? (await factory.databases()).some((database) => database.name === databaseName) : await probeExistingDatabase2(factory, databaseName);
+    if (found) knownToExist = true;
+    return found;
+  };
+  const open = async () => {
+    const request = factory.open(databaseName, 1);
+    request.onupgradeneeded = () => {
+      const database2 = request.result;
+      if (!database2.objectStoreNames.contains(storeName)) {
+        database2.createObjectStore(storeName, { keyPath: "id" });
+      }
+    };
+    const database = await settle2(request);
+    knownToExist = true;
+    return database;
+  };
+  const withStore = async (mode, body) => {
+    const database = await open();
+    const transaction = database.transaction(storeName, mode);
+    const completed = transactionCompletion(transaction);
+    try {
+      const result = await body(transaction.objectStore(storeName));
+      await completed;
+      return result;
+    } catch (error) {
+      await completed?.catch(() => void 0);
+      throw error;
+    } finally {
+      database.close();
+    }
+  };
+  return {
+    location: `indexedDB[${databaseName}/${storeName}]`,
+    async list() {
+      if (!await exists()) return Object.freeze([]);
+      const rows = await withStore("readonly", (store) => settle2(store.getAll()));
+      const records = rows.map(toInstalledRecord).filter((record3) => record3 !== void 0).sort(byIdentity);
+      return Object.freeze(records);
+    },
+    async put(record3) {
+      await withStore("readwrite", (store) => settle2(store.put(record3)));
+    },
+    async remove(id) {
+      await withStore("readwrite", (store) => settle2(store.delete(id)));
+    }
+  };
+}
+function createCacheStorageExtensionResponseCache(storage, cacheName = MANAGED_EXTENSION_CACHE) {
+  let createdThisRuntime = false;
+  const exists = async () => createdThisRuntime || storage.has !== void 0 && await storage.has(cacheName);
+  return {
+    location: `cacheStorage[${cacheName}]`,
+    async match(cacheKey2) {
+      if (!await exists()) return void 0;
+      return (await storage.open(cacheName)).match(cacheKey2);
+    },
+    async put(cacheKey2, response2) {
+      const cache = await storage.open(cacheName);
+      createdThisRuntime = true;
+      await cache.put(cacheKey2, response2);
+    },
+    async remove(cacheKey2) {
+      if (!await exists()) return false;
+      return (await storage.open(cacheName)).delete(cacheKey2);
+    }
+  };
+}
+function validateInstallRequest(request) {
+  if (!nonEmpty3(request.id)) throw new Error("extension id must be a non-empty string");
+  if (!nonEmpty3(request.version)) throw new Error("extension version must be a non-empty string");
+  if (!nonEmpty3(request.sourceUrl))
+    throw new Error("extension sourceUrl must be a non-empty string");
+  const digest = request.digest.toLowerCase();
+  if (!DIGEST_PATTERN.test(digest)) {
+    throw new Error("extension digest must be a 64-character SHA-256 hex string");
+  }
+  if (request.settings !== void 0 && normalizeSettings(request.settings) === void 0) {
+    throw new Error("extension settings must be a JSON object");
+  }
+  return { ...request, digest };
+}
+function cacheKey(request) {
+  const id = encodeURIComponent(request.id);
+  const version = encodeURIComponent(request.version);
+  return `https://extension-cache.modkit.invalid/${id}/${version}/${request.digest}`;
+}
+async function defaultSha256(bytes2) {
+  if (globalThis.crypto?.subtle === void 0) {
+    throw new Error("Web Crypto SHA-256 is unavailable; inject BrowserSha256 for this environment");
+  }
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes2);
+  return [...new Uint8Array(digest)].map((value2) => value2.toString(16).padStart(2, "0")).join("");
+}
+async function responseMatches(response2, expected, sha2563) {
+  const actual = (await sha2563(await response2.clone().arrayBuffer())).toLowerCase();
+  return actual === expected;
+}
+function findById(records, id) {
+  return records.find((record3) => record3.id === id);
+}
+function createBrowserExtensionStorage(options) {
+  const sha2563 = options.sha256 ?? defaultSha256;
+  const now = options.now ?? Date.now;
+  const verifiedCachedResponse = async (record3) => {
+    const response2 = await options.responses.match(record3.cacheKey);
+    if (response2 === void 0) return void 0;
+    if (await responseMatches(response2, record3.digest, sha2563)) return response2;
+    await options.responses.remove(record3.cacheKey);
+    return void 0;
+  };
+  return {
+    metadataLocation: options.metadata.location,
+    responseLocation: options.responses.location,
+    list: () => options.metadata.list(),
+    async install(unchecked) {
+      const request = validateInstallRequest(unchecked);
+      const records = await options.metadata.list();
+      const previous = findById(records, request.id);
+      const key3 = cacheKey(request);
+      const pinned = Object.freeze({
+        id: request.id,
+        version: request.version,
+        digest: request.digest,
+        sourceUrl: request.sourceUrl,
+        cacheKey: key3,
+        installedAt: now(),
+        enabled: request.enabled ?? previous?.enabled ?? true,
+        settings: normalizeSettings(request.settings ?? previous?.settings ?? {}) ?? Object.freeze({})
+      });
+      let response2 = await options.responses.match(key3);
+      let wroteResponse = false;
+      if (response2 === void 0 || !await responseMatches(response2, request.digest, sha2563)) {
+        if (response2 !== void 0) await options.responses.remove(key3);
+        response2 = await options.artifacts.acquire(request);
+        if (!response2.ok) {
+          throw new Error(`extension package request failed with HTTP ${String(response2.status)}`);
+        }
+        if (!await responseMatches(response2, request.digest, sha2563)) {
+          throw new Error(`extension package digest does not match ${request.digest}`);
+        }
+        await options.responses.put(key3, response2);
+        wroteResponse = true;
+      }
+      try {
+        await options.metadata.put(pinned);
+      } catch (error) {
+        if (wroteResponse) await options.responses.remove(key3);
+        throw error;
+      }
+      if (previous !== void 0 && previous.cacheKey !== key3) {
+        await options.responses.remove(previous.cacheKey);
+      }
+      return pinned;
+    },
+    async installVerified(unchecked) {
+      const request = validateInstallRequest({
+        id: unchecked.id,
+        version: unchecked.version,
+        digest: unchecked.digest,
+        sourceUrl: unchecked.sourceUrl
+      });
+      if (unchecked.roots.length === 0) {
+        throw new Error("verified extension package must contain at least one root");
+      }
+      const expectedIds = /* @__PURE__ */ new Set();
+      for (const root of unchecked.roots) {
+        if (!nonEmpty3(root.expectedId) || expectedIds.has(root.expectedId)) {
+          throw new Error("verified extension roots require unique non-empty expectedId values");
+        }
+        expectedIds.add(root.expectedId);
+      }
+      const records = await options.metadata.list();
+      const previous = findById(records, request.id);
+      const key3 = cacheKey(request);
+      const pinned = Object.freeze({
+        id: request.id,
+        version: request.version,
+        digest: request.digest,
+        sourceUrl: request.sourceUrl,
+        cacheKey: key3,
+        installedAt: now(),
+        // A new package is inert until the common manager commits EnablementStore=true. Updates
+        // preserve the temporarily disabled state established before replacement.
+        enabled: previous?.enabled ?? false,
+        ...unchecked.displayName === void 0 ? previous?.displayName === void 0 ? {} : { displayName: previous.displayName } : { displayName: unchecked.displayName },
+        ...unchecked.publisher === void 0 ? previous?.publisher === void 0 ? {} : { publisher: previous.publisher } : { publisher: unchecked.publisher },
+        ...unchecked.trusted === void 0 ? {} : { trusted: unchecked.trusted },
+        roots: Object.freeze(unchecked.roots.map((root) => Object.freeze({ ...root }))),
+        settings: previous?.settings ?? Object.freeze({})
+      });
+      const bytes2 = unchecked.bytes.slice();
+      if ((await sha2563(bytes2.buffer)).toLowerCase() !== request.digest) {
+        throw new Error(`extension package digest does not match ${request.digest}`);
+      }
+      const previousResponse = await options.responses.match(key3);
+      let wroteResponse = false;
+      if (previousResponse === void 0 || !await responseMatches(previousResponse, request.digest, sha2563)) {
+        if (previousResponse !== void 0) await options.responses.remove(key3);
+        await options.responses.put(key3, new Response(bytes2));
+        wroteResponse = true;
+      }
+      try {
+        await options.metadata.put(pinned);
+      } catch (error) {
+        if (wroteResponse) await options.responses.remove(key3);
+        throw error;
+      }
+      if (previous !== void 0 && previous.cacheKey !== key3) {
+        await options.responses.remove(previous.cacheKey);
+      }
+      return pinned;
+    },
+    async remove(id) {
+      const record3 = findById(await options.metadata.list(), id);
+      if (record3 === void 0) return;
+      await options.metadata.remove(id);
+      await options.responses.remove(record3.cacheKey);
+    },
+    async enable(id, enabled) {
+      const record3 = findById(await options.metadata.list(), id);
+      if (record3 === void 0) throw new Error(`extension ${id} is not installed`);
+      const updated = Object.freeze({ ...record3, enabled });
+      await options.metadata.put(updated);
+      return updated;
+    },
+    async updateSettings(id, settings) {
+      const record3 = findById(await options.metadata.list(), id);
+      if (record3 === void 0) throw new Error(`extension ${id} is not installed`);
+      const normalized = normalizeSettings(settings);
+      if (normalized === void 0) throw new Error("extension settings must be a JSON object");
+      const updated = Object.freeze({ ...record3, settings: normalized });
+      await options.metadata.put(updated);
+      return updated;
+    },
+    async open(id) {
+      const record3 = findById(await options.metadata.list(), id);
+      if (record3 === void 0 || !record3.enabled) return void 0;
+      return verifiedCachedResponse(record3);
+    }
+  };
+}
+
+// apps/web/src/browser-extension-manager.ts
+var BROWSER_EXTENSION_CATALOG_CACHE = "org.modkitx.app.web/extension-catalog-v1";
+var BROWSER_EXTENSION_MUTATION_LOCK = "org.modkitx.app.web/extension-manager-mutation-v1";
+var BROWSER_EXTENSION_LOCK_UNAVAILABLE = "extension-manager/browser-mutation-lock-unavailable";
+var DEFAULT_BROWSER_CATALOG_MAX_BYTES = 2 * 1024 * 1024;
+var DEFAULT_BROWSER_ARTIFACT_MAX_BYTES = 64 * 1024 * 1024;
+var BrowserExtensionMutationLockUnavailableError = class extends Error {
+  code = BROWSER_EXTENSION_LOCK_UNAVAILABLE;
+  constructor() {
+    super(
+      "browser extension mutations require Web Locks; this browser can only inspect installed extensions"
+    );
+    this.name = "BrowserExtensionMutationLockUnavailableError";
+  }
+};
+var strictDecoder = new TextDecoder("utf-8", { fatal: true });
+function positiveLimit3(value2, fallback, name) {
+  const selected = value2 ?? fallback;
+  if (!Number.isSafeInteger(selected) || selected <= 0) {
+    throw new Error(`${name} must be a positive safe integer`);
+  }
+  return selected;
+}
+function memoryCacheStorage() {
+  const caches = /* @__PURE__ */ new Map();
+  return {
+    async has(name) {
+      return caches.has(name);
+    },
+    async open(name) {
+      let rows = caches.get(name);
+      if (rows === void 0) {
+        rows = /* @__PURE__ */ new Map();
+        caches.set(name, rows);
+      }
+      return {
+        match: async (request) => rows?.get(request)?.clone(),
+        put: async (request, response2) => {
+          rows?.set(request, response2.clone());
+        },
+        delete: async (request) => rows?.delete(request) ?? false
+      };
+    }
+  };
+}
+function platformLockManager() {
+  const candidate = globalThis.navigator?.locks;
+  return candidate !== void 0 && typeof candidate.request === "function" ? candidate : void 0;
+}
+function canonicalBase64(value2) {
+  if (value2.length % 4 !== 0 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(value2)) {
+    return void 0;
+  }
+  try {
+    const binary = atob(value2);
+    const bytes2 = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes2[index] = binary.charCodeAt(index);
+    return bytes2;
+  } catch {
+    return void 0;
+  }
+}
+function cryptoKey(value2) {
+  return typeof value2 === "object" && value2 !== null && "type" in value2 && "algorithm" in value2 && "usages" in value2;
+}
+async function importTrustedKey(subtle, value2) {
+  if (cryptoKey(value2)) return value2;
+  if (value2 instanceof Uint8Array) {
+    const bytes2 = new Uint8Array(value2.byteLength);
+    bytes2.set(value2);
+    return subtle.importKey("raw", bytes2, { name: "Ed25519" }, false, ["verify"]);
+  }
+  return subtle.importKey("jwk", value2, { name: "Ed25519" }, false, ["verify"]);
+}
+async function verifyCatalog(catalog, keys, subtle) {
+  const signature2 = catalog.signature;
+  if (signature2 === void 0 || signature2.algorithm !== "Ed25519") return false;
+  const encoded = canonicalBase64(signature2.value);
+  const trusted = keys[signature2.keyId];
+  if (encoded === void 0 || trusted === void 0) return false;
+  try {
+    const key3 = await importTrustedKey(subtle, trusted);
+    const signatureBytes = new Uint8Array(encoded.byteLength);
+    signatureBytes.set(encoded);
+    const signing = extensionCatalogSigningBytes(catalog);
+    const signingBytes = new Uint8Array(signing.byteLength);
+    signingBytes.set(signing);
+    return subtle.verify("Ed25519", key3, signatureBytes, signingBytes);
+  } catch {
+    return false;
+  }
+}
+function response(bytes2) {
+  const copy = new Uint8Array(bytes2.byteLength);
+  copy.set(bytes2);
+  return new Response(copy, { headers: { "content-type": "application/json; charset=utf-8" } });
+}
+function parseJson2(bytes2, label) {
+  try {
+    return JSON.parse(strictDecoder.decode(bytes2));
+  } catch (error) {
+    throw new Error(
+      `${label} is not valid UTF-8 JSON: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+async function sha2562(subtle, bytes2) {
+  const copy = new Uint8Array(bytes2.byteLength);
+  copy.set(bytes2);
+  const digest = new Uint8Array(await subtle.digest("SHA-256", copy));
+  return `sha256:${[...digest].map((value2) => value2.toString(16).padStart(2, "0")).join("")}`;
+}
+function commonRecord(record3) {
+  const roots = record3.roots ?? [{ expectedId: record3.id }];
+  return Object.freeze({
+    id: record3.id,
+    version: record3.version,
+    ...record3.displayName === void 0 ? {} : { displayName: record3.displayName },
+    ...record3.publisher === void 0 ? {} : { publisher: record3.publisher },
+    source: record3.sourceUrl,
+    trusted: record3.trusted ?? false,
+    enabled: record3.enabled,
+    roots: Object.freeze(
+      roots.map(
+        (root) => Object.freeze({
+          root: Object.freeze({ packageId: record3.id, expectedId: root.expectedId }),
+          expectedId: root.expectedId
+        })
+      )
+    )
+  });
+}
+function createBrowserExtensionManager(options) {
+  const subtle = options.crypto ?? globalThis.crypto?.subtle;
+  if (subtle === void 0)
+    throw new Error("WebCrypto is required for browser extension management");
+  const maxCatalogBytes = positiveLimit3(
+    options.maxCatalogBytes,
+    DEFAULT_BROWSER_CATALOG_MAX_BYTES,
+    "maxCatalogBytes"
+  );
+  const maxArtifactBytes = positiveLimit3(
+    options.maxArtifactBytes,
+    DEFAULT_BROWSER_ARTIFACT_MAX_BYTES,
+    "maxArtifactBytes"
+  );
+  const maximumVfsBytes = Math.max(maxCatalogBytes, maxArtifactBytes);
+  const created = createBrowserExtensionVfs({
+    limits: {
+      maxMaterializedBytes: BigInt(maximumVfsBytes),
+      maxFileBytes: BigInt(maximumVfsBytes),
+      maxReadBytes: BigInt(maximumVfsBytes),
+      maxReadRangeBytes: Math.min(maximumVfsBytes, 16 * 1024 * 1024),
+      maxStreamBytes: BigInt(maximumVfsBytes)
+    },
+    ...options.memoryEntries === void 0 ? {} : { memoryEntries: options.memoryEntries },
+    ...options.browserFiles === void 0 ? {} : { files: options.browserFiles },
+    ...options.resolveBrowserFile === void 0 ? {} : { resolve: options.resolveBrowserFile },
+    ...options.fetch === void 0 ? {} : { fetch: options.fetch },
+    // Browser extension downloads are deny-by-default. A product build must opt each registry/CDN
+    // origin in explicitly; VFS then checks the initial URL, every redirect hop and the final URL.
+    allowedOrigins: options.allowedOrigins ?? []
+  });
+  const cacheStorage = options.cacheStorage ?? memoryCacheStorage();
+  const metadata = createIndexedDbManagedExtensionMetadataStore(options.indexedDB);
+  const responses = createCacheStorageExtensionResponseCache(cacheStorage);
+  const storage = createBrowserExtensionStorage({
+    metadata,
+    responses,
+    artifacts: {
+      acquire: () => Promise.reject(new Error("common extension manager owns browser artifact acquisition"))
+    },
+    sha256: async (bytes2) => (await sha2562(subtle, new Uint8Array(bytes2))).slice("sha256:".length)
+  });
+  const readUri = async (uri, limit) => {
+    const mount = await created.vfs.openMount(uri, {
+      limits: {
+        maxMaterializedBytes: BigInt(limit),
+        maxFileBytes: BigInt(limit),
+        maxReadBytes: BigInt(limit),
+        maxStreamBytes: BigInt(limit)
+      }
+    });
+    try {
+      const bytes2 = await readMountBytes(mount);
+      if (bytes2.byteLength > limit) {
+        throw new Error(`extension source exceeds the ${String(limit)} byte browser limit`);
+      }
+      return bytes2;
+    } finally {
+      await mount.dispose();
+    }
+  };
+  const registry = options.registry;
+  const catalogCacheKey = registry?.cacheKey ?? `https://extension-cache.modkit.invalid/catalog/${encodeURIComponent(registry?.catalogUri ?? "offline")}`;
+  let catalogCacheCreatedThisRuntime = false;
+  const catalogCacheExists = async () => catalogCacheCreatedThisRuntime || cacheStorage.has !== void 0 && await cacheStorage.has(BROWSER_EXTENSION_CATALOG_CACHE);
+  const cachedCatalogSource = {
+    async cached() {
+      if (registry === void 0) return void 0;
+      if (!await catalogCacheExists()) return void 0;
+      const cache = await cacheStorage.open(BROWSER_EXTENSION_CATALOG_CACHE);
+      const cached = await cache.match(catalogCacheKey);
+      if (cached === void 0) return void 0;
+      const bytes2 = new Uint8Array(await cached.arrayBuffer());
+      if (bytes2.byteLength > maxCatalogBytes) return void 0;
+      const catalog = parseExtensionCatalog(parseJson2(bytes2, "cached extension catalog"));
+      return {
+        catalog,
+        source: registry.catalogUri,
+        signatureVerified: await verifyCatalog(catalog, registry.trustedPublicKeys, subtle)
+      };
+    },
+    async refresh() {
+      if (registry === void 0) return void 0;
+      const bytes2 = await readUri(registry.catalogUri, maxCatalogBytes);
+      const catalog = parseExtensionCatalog(parseJson2(bytes2, "extension catalog"));
+      const signatureVerified = await verifyCatalog(catalog, registry.trustedPublicKeys, subtle);
+      if (signatureVerified) {
+        const cache = await cacheStorage.open(BROWSER_EXTENSION_CATALOG_CACHE);
+        catalogCacheCreatedThisRuntime = true;
+        await cache.put(catalogCacheKey, response(bytes2));
+      }
+      return { catalog, source: registry.catalogUri, signatureVerified };
+    }
+  };
+  const catalogSource = options.catalogSource ?? cachedCatalogSource;
+  const artifactAcquirer = {
+    async acquire(entry2) {
+      if (entry2.source.bytes !== void 0 && entry2.source.bytes > maxArtifactBytes) {
+        throw new Error(
+          `extension ${entry2.id} declares ${String(entry2.source.bytes)} bytes above the ${String(maxArtifactBytes)} byte browser limit`
+        );
+      }
+      const bytes2 = await readUri(entry2.source.uri, maxArtifactBytes);
+      const integrity = await sha2562(subtle, bytes2);
+      const artifact = Object.freeze({ bytes: bytes2, integrity });
+      return Object.freeze({ artifact, integrity });
+    }
+  };
+  const artifactStore = {
+    async list() {
+      return Object.freeze((await storage.list()).map(commonRecord));
+    },
+    async install(request) {
+      const artifact = request.artifact;
+      if (!(artifact.bytes instanceof Uint8Array) || typeof artifact.integrity !== "string") {
+        throw new Error("browser ArtifactStore requires verified in-memory bytes");
+      }
+      const roots = inspectPortableExtensionBundle(artifact.bytes);
+      const declaredRoots = [...request.entry.extensions].sort();
+      const portableRoots = [...roots].sort();
+      if (portableRoots.length !== declaredRoots.length || portableRoots.some((root, index) => root !== declaredRoots[index])) {
+        throw new Error(
+          `portable package roots do not match catalog entry: expected [${declaredRoots.join(", ")}], got [${portableRoots.join(", ")}]`
+        );
+      }
+      const digest = artifact.integrity.slice("sha256:".length);
+      const stored = await storage.installVerified({
+        id: request.entry.id,
+        version: request.entry.version,
+        digest,
+        sourceUrl: request.entry.source.uri,
+        bytes: artifact.bytes,
+        roots: roots.map((expectedId) => ({ expectedId })),
+        displayName: request.entry.displayName,
+        publisher: request.entry.publisher,
+        trusted: request.entry.trusted
+      });
+      return commonRecord(stored);
+    },
+    remove: (id) => storage.remove(id)
+  };
+  const pendingEnablement = /* @__PURE__ */ new Map();
+  const enablementStore = {
+    async list() {
+      const installed = await storage.list();
+      const installedIds = new Set(installed.map((record3) => record3.id));
+      return Object.freeze([
+        ...installed.map((record3) => Object.freeze({ id: record3.id, enabled: record3.enabled })),
+        ...[...pendingEnablement].filter(([id]) => !installedIds.has(id)).map(([id, enabled]) => Object.freeze({ id, enabled }))
+      ]);
+    },
+    async setEnabled(id, enabled) {
+      const installed = (await storage.list()).some((record3) => record3.id === id);
+      if (!installed) {
+        pendingEnablement.set(id, enabled);
+        return;
+      }
+      await storage.enable(id, enabled);
+      pendingEnablement.delete(id);
+    },
+    // The common client removes the artifact first; enablement shares that same IndexedDB record.
+    remove: (id) => {
+      pendingEnablement.delete(id);
+      return Promise.resolve();
+    }
+  };
+  const localClient = createExtensionManagerClient({
+    catalogSource,
+    artifactAcquirer,
+    artifactStore,
+    enablementStore
+  });
+  const locks = options.locks === void 0 ? platformLockManager() : options.locks ?? void 0;
+  const mutateAcrossTabs = (operation) => {
+    if (locks === void 0) {
+      return Promise.reject(new BrowserExtensionMutationLockUnavailableError());
+    }
+    return Promise.resolve().then(
+      () => locks.request(BROWSER_EXTENSION_MUTATION_LOCK, { mode: "exclusive" }, operation)
+    );
+  };
+  const client = Object.freeze({
+    snapshot: () => localClient.snapshot(),
+    refresh: () => mutateAcrossTabs(() => localClient.refresh()),
+    install: (id, version) => mutateAcrossTabs(() => localClient.install(id, version)),
+    update: (id) => mutateAcrossTabs(() => localClient.update(id)),
+    remove: (id) => mutateAcrossTabs(() => localClient.remove(id)),
+    setEnabled: (id, enabled) => mutateAcrossTabs(() => localClient.setEnabled(id, enabled))
+  });
+  return Object.freeze({
+    client,
+    storage,
+    catalogLocation: registry?.catalogUri ?? "offline cache (no extension registry configured)",
+    protocols: created.protocols,
+    dispose: async () => {
+      await created.vfs.dispose();
+    }
+  });
+}
+
+// apps/web/src/managed-extensions-controller.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+function pageRow(entry2) {
+  const installed = entry2.installedVersion !== void 0;
+  return Object.freeze({
+    id: entry2.id,
+    name: entry2.displayName,
+    available: entry2.availableVersion !== "unknown",
+    installed,
+    enabled: installed && entry2.enabled,
+    updateAvailable: entry2.updateAvailable,
+    trusted: entry2.trusted,
+    trustReason: entry2.trusted ? `Trust policy accepted ${entry2.publisher} from ${entry2.source}.` : `The common extension manager did not verify ${entry2.publisher} from ${entry2.source}.`,
+    ...entry2.availableVersion === "unknown" ? {} : { availableVersion: entry2.availableVersion },
+    ...entry2.installedVersion === void 0 ? {} : { installedVersion: entry2.installedVersion }
+  });
+}
+function createManagedExtensionsController(options) {
+  let catalogLoaded = false;
+  let current = Object.freeze({
+    catalogLoaded,
+    catalogLocation: options.catalogLocation,
+    rows: Object.freeze([])
+  });
+  const readSnapshot = async () => {
+    const shared = await options.client.snapshot();
+    current = Object.freeze({
+      catalogLoaded,
+      catalogLocation: options.catalogLocation,
+      rows: Object.freeze(shared.entries.map(pageRow))
+    });
+    return current;
+  };
+  return {
+    snapshot: () => current,
+    refreshInstalled: readSnapshot,
+    async refreshCatalog() {
+      await options.client.refresh();
+      catalogLoaded = true;
+      return readSnapshot();
+    },
+    async install(id) {
+      await options.client.install(id);
+      return readSnapshot();
+    },
+    async update(id) {
+      await options.client.update(id);
+      return readSnapshot();
+    },
+    async remove(id) {
+      await options.client.remove(id);
+      return readSnapshot();
+    },
+    async enable(id, enabled) {
+      await options.client.setEnabled(id, enabled);
+      return readSnapshot();
     }
   };
 }
@@ -34683,9 +40017,7 @@ var WEB_WORKER_MODULE_MAP = Object.freeze({
   "@modkitx-x3/codec-kit": "vendor/codec-kit/index.js",
   "@modkitx-x3/codec-kit/text": "vendor/codec-kit/text/index.js",
   "@modkitx-x3/core": "vendor/core/index.js",
-  "@modkitx-x3/sdk": "vendor/sdk/index.js",
-  "modkit-extension-x3-blizzard-mpq/fresh-writer": "vendor/blizzard-mpq/fresh-writer.js",
-  "modkit-extension-x3-blizzard-mpq/native-preserving": "vendor/blizzard-mpq/native-preserving.js"
+  "@modkitx-x3/sdk": "vendor/sdk/index.js"
 });
 var WEB_WORKER_ENTRY = "worker-entry.js";
 function resolveModuleMap(baseUrl, map = WEB_WORKER_MODULE_MAP) {
@@ -34702,23 +40034,41 @@ async function createWebSubjectServices(options) {
   const catalogInputs = [
     ...catalogToExtensionInputs(options.catalog, options.baseUrl),
     ...(options.additionalCatalogs ?? []).flatMap(
-      (source) => catalogToExtensionInputs(source.catalog, source.baseUrl, "installed")
+      (source2) => catalogToExtensionInputs(source2.catalog, source2.baseUrl, "installed")
     )
   ];
   const user = options.userExtensions ?? NO_USER_EXTENSION_ROOTS;
+  const protectedPlatformModuleMap = resolveModuleMap(options.baseUrl);
+  const suppliedModuleMap = options.moduleMap ?? protectedPlatformModuleMap;
+  const platformConflictedRoots = /* @__PURE__ */ new Set();
+  const platformModuleConflicts = [];
+  for (const specifier of Object.keys(user.moduleMap)) {
+    if (!Object.hasOwn(protectedPlatformModuleMap, specifier)) continue;
+    const owner = user.moduleMapOwners[specifier];
+    if (owner === void 0 || platformConflictedRoots.has(owner)) continue;
+    platformConflictedRoots.add(owner);
+    platformModuleConflicts.push({
+      root: owner,
+      rootId: owner,
+      code: "x3.host/extension-module-map-conflict",
+      message: `extension root exports protected platform specifier \xAB${specifier}\xBB and is refused`
+    });
+  }
   const claimed = /* @__PURE__ */ new Set();
   for (const input of catalogInputs) {
     const coordinate2 = extensionCoordinate(input);
     if (coordinate2 !== void 0) claimed.add(coordinate2);
   }
   const userInputs = [];
-  const userExtensionConflicts = [];
+  const userExtensionConflicts = [...platformModuleConflicts];
   for (const [index, input] of user.inputs.entries()) {
+    const rootId = user.rootIds[index] ?? input.source;
+    if (platformConflictedRoots.has(rootId)) continue;
     const coordinate2 = user.coordinates[index] ?? extensionCoordinate(input);
     if (coordinate2 !== void 0 && claimed.has(coordinate2)) {
       userExtensionConflicts.push({
         root: input.source,
-        rootId: user.rootIds[index] ?? input.source,
+        rootId,
         code: "x3.host/extension-coordinate-conflict",
         message: `\xAB${coordinate2}\xBB is already loaded from another root; this one is ignored`
       });
@@ -34731,12 +40081,26 @@ async function createWebSubjectServices(options) {
   const definitions = options.serviceDefinitions === false ? void 0 : options.serviceDefinitions === void 0 || options.serviceDefinitions === "bundled" ? createBundledServiceDefinitionRegistry() : options.serviceDefinitions;
   const pageFetch = options.dom.fetch;
   const fetch = (url, init) => isUserExtensionUrl(url) ? user.serve(url, init) : pageFetch(url, init);
+  const moduleMapEntries = new Map(Object.entries(suppliedModuleMap));
+  for (const specifier of Object.keys(user.moduleMap)) {
+    if (!Object.hasOwn(protectedPlatformModuleMap, specifier)) moduleMapEntries.delete(specifier);
+  }
+  for (const [specifier, url] of Object.entries(user.moduleMap)) {
+    const owner = user.moduleMapOwners[specifier];
+    if (owner === void 0 || platformConflictedRoots.has(owner)) continue;
+    moduleMapEntries.set(specifier, url);
+  }
+  const moduleMap = Object.freeze(Object.fromEntries(moduleMapEntries));
+  const verifiedModuleRoots = user.verifiedModuleRoots.filter(
+    (root) => !platformConflictedRoots.has(root.rootId)
+  );
   const loaderHooks = browserLoaderHooks({
     fetch,
     subtle: options.dom.subtle,
     Blob: options.dom.Blob,
     objectUrls: options.dom.objectUrls,
-    moduleMap: options.moduleMap ?? resolveModuleMap(options.baseUrl)
+    moduleMap,
+    verifiedModuleRoots
   });
   const executionBackends = createExecutionBackendRegistry([
     createBrowserWorkerBackend({
@@ -34785,7 +40149,7 @@ async function createWebSubjectServices(options) {
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var WEB_SOURCE_SCHEME = "file-picker://";
 var sourceUriFor = (entryId) => `${WEB_SOURCE_SCHEME}${encodeURIComponent(entryId)}`;
-var sourceRevisionToken = (snapshot2) => `provider-token:${snapshot2.size}-${snapshot2.lastModified}`;
+var sourceRevisionToken = (snapshot3) => `provider-token:${snapshot3.size}-${snapshot3.lastModified}`;
 var report = (state, editable, sentence) => Object.freeze({ state, editable, sentence });
 var describe5 = (error) => error instanceof Error ? error.message : String(error);
 async function describeEditability(access, entryId, name = entryId) {
@@ -34958,7 +40322,7 @@ function webEditEvidence(inventory, descriptor, selectedWriter) {
     registry = codecFidelityEvidenceRecords(inventory, {
       codecId: descriptor.identity.codecId,
       formatId: descriptor.identity.formatId
-    }).reduce((current, record) => current.with(record), registry);
+    }).reduce((current, record3) => current.with(record3), registry);
   }
   if (selectedWriter !== void 0) {
     const writerRecord = serviceProviderFidelityEvidenceRecord(inventory, {
@@ -34974,7 +40338,7 @@ function createWebEditingArm(options) {
     handleFor: options.handleFor,
     // The same token the shell pins its sources with, passed explicitly so the two are visibly
     // one function rather than two that happen to agree today.
-    revisionOf: (snapshot2) => sourceRevisionToken({ size: snapshot2.size, lastModified: snapshot2.lastModified ?? 0 }),
+    revisionOf: (snapshot3) => sourceRevisionToken({ size: snapshot3.size, lastModified: snapshot3.lastModified ?? 0 }),
     ...options.maxPayloadBytes === void 0 ? {} : { maxPayloadBytes: options.maxPayloadBytes }
   });
   const speaking = (base, request) => {
@@ -35175,8 +40539,8 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/ui/dist/media/encoded.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-async function collectEncodedMedia(source, maximumBytes, signal) {
-  const descriptor = await source.descriptor();
+async function collectEncodedMedia(source2, maximumBytes, signal) {
+  const descriptor = await source2.descriptor();
   if (descriptor.bytes > BigInt(maximumBytes) || descriptor.bytes > BigInt(Number.MAX_SAFE_INTEGER)) {
     throw new RangeError(`encoded media exceeds the stage budget: ${descriptor.bytes} bytes`);
   }
@@ -35186,7 +40550,7 @@ async function collectEncodedMedia(source, maximumBytes, signal) {
   while (offset < total) {
     if (signal?.aborted)
       throw new DOMException("operation cancelled", "AbortError");
-    const chunk = await source.read(BigInt(offset), Math.min(1024 * 1024, total - offset), signal);
+    const chunk = await source2.read(BigInt(offset), Math.min(1024 * 1024, total - offset), signal);
     if (chunk.byteLength === 0 || chunk.byteLength > total - offset) {
       throw new RangeError("encoded media ended outside its declared size");
     }
@@ -35224,8 +40588,8 @@ function computePeaks(channelData, buckets) {
   }
   return peaks;
 }
-async function loadWaveform(source, signal) {
-  const encoded = await source.encoded(void 0, signal);
+async function loadWaveform(source2, signal) {
+  const encoded = await source2.encoded(void 0, signal);
   const media = await collectEncodedMedia(encoded, AUDIO_MAXIMUM_BYTES, signal);
   const AudioContextCtor = globalThis.AudioContext ?? globalThis.webkitAudioContext;
   if (AudioContextCtor === void 0)
@@ -35349,8 +40713,8 @@ var MAX_MATERIALIZED_BYTES = 16 * 1024 * 1024;
 var MAX_MATERIALIZED_LINE_BYTES = 1024 * 1024;
 var BoundedTextModel = class {
   source;
-  constructor(source) {
-    this.source = source;
+  constructor(source2) {
+    this.source = source2;
   }
   async load(signal) {
     const info = await this.source.info();
@@ -35564,15 +40928,15 @@ function factField(fact2) {
     ...fact2.knowledgeTarget === void 0 ? {} : { knowledgeTarget: fact2.knowledgeTarget }
   };
 }
-async function loadSubjectCardSections(source, options = {}) {
+async function loadSubjectCardSections(source2, options = {}) {
   const groupLimit = cardLoadLimit(options.groupLimit ?? 32, "groupLimit");
   const factsPerGroup = cardLoadLimit(options.factsPerGroup ?? 256, "factsPerGroup");
   const relationLimit = cardLoadLimit(options.relationLimit ?? 256, "relationLimit");
   const pageSize = cardLoadLimit(options.pageSize ?? 64, "pageSize");
-  const summary = await source.summary(options.signal);
+  const summary = await source2.summary(options.signal);
   const [groups, relations] = await Promise.all([
-    loadCardPages((cursor3, limit) => source.groups({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal), groupLimit, pageSize),
-    loadCardPages((cursor3, limit) => source.relations({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal), relationLimit, pageSize)
+    loadCardPages((cursor3, limit) => source2.groups({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal), groupLimit, pageSize),
+    loadCardPages((cursor3, limit) => source2.relations({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal), relationLimit, pageSize)
   ]);
   const notes = [];
   if (groups.capped || groups.items.length < summary.groupCount)
@@ -35596,7 +40960,7 @@ async function loadSubjectCardSections(source, options = {}) {
   ];
   const factGroups = await Promise.all(groups.items.map(async (group) => ({
     group,
-    page: await loadCardPages((cursor3, limit) => source.facts(group.id, { ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal), factsPerGroup, pageSize)
+    page: await loadCardPages((cursor3, limit) => source2.facts(group.id, { ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal), factsPerGroup, pageSize)
   })));
   for (const { group, page } of factGroups) {
     sections.push({
@@ -35805,13 +41169,13 @@ function createSubjectCard(document, options) {
     knowledge.textContent = "Description is not available yet.";
   };
   const directSource = (hit) => {
-    for (const source of hit.entry.sources) {
-      if (source.url === void 0)
+    for (const source2 of hit.entry.sources) {
+      if (source2.url === void 0)
         continue;
       try {
-        const url = new URL(source.url);
+        const url = new URL(source2.url);
         if (url.protocol === "https:")
-          return { title: source.title, url };
+          return { title: source2.title, url };
       } catch {
       }
     }
@@ -35823,16 +41187,16 @@ function createSubjectCard(document, options) {
     const summary = document.createElement("span");
     summary.textContent = safeViewerText(hit.entry.summary, 512);
     knowledge.append(summary);
-    const source = directSource(hit);
-    if (source === void 0)
+    const source2 = directSource(hit);
+    if (source2 === void 0)
       return;
     knowledge.append(document.createTextNode(" "));
     const link = document.createElement("a");
-    link.href = source.url.href;
+    link.href = source2.url.href;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     link.referrerPolicy = "no-referrer";
-    link.textContent = safeViewerText(source.title, 160);
+    link.textContent = safeViewerText(source2.title, 160);
     knowledge.append(link);
   };
   const inspectKnowledge = (target) => {
@@ -36036,17 +41400,17 @@ var subjectCardViewer = defineViewerModule({
 
 // packages/ui/dist/calculations/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-function positiveLimit3(value2, label) {
+function positiveLimit4(value2, label) {
   if (!Number.isSafeInteger(value2) || value2 <= 0)
     throw new RangeError(`${label} must be positive`);
   return value2;
 }
-async function loadPages(source, maximum, pageSize, signal) {
+async function loadPages(source2, maximum, pageSize, signal) {
   const items = [];
   let cursor3;
   const seen = /* @__PURE__ */ new Set();
   while (items.length < maximum) {
-    const page = await source.calculations({
+    const page = await source2.calculations({
       ...cursor3 === void 0 ? {} : { cursor: cursor3 },
       limit: Math.min(pageSize, maximum - items.length)
     }, signal);
@@ -36060,12 +41424,12 @@ async function loadPages(source, maximum, pageSize, signal) {
   }
   return { items: Object.freeze(items), capped: cursor3 !== void 0 };
 }
-async function loadSubjectCalculations(source, options = {}) {
-  const maximum = positiveLimit3(options.maximum ?? 512, "maximum");
-  const pageSize = positiveLimit3(options.pageSize ?? 64, "pageSize");
+async function loadSubjectCalculations(source2, options = {}) {
+  const maximum = positiveLimit4(options.maximum ?? 512, "maximum");
+  const pageSize = positiveLimit4(options.pageSize ?? 64, "pageSize");
   const [summary, page] = await Promise.all([
-    source.summary(options.signal),
-    loadPages(source, maximum, pageSize, options.signal)
+    source2.summary(options.signal),
+    loadPages(source2, maximum, pageSize, options.signal)
   ]);
   return Object.freeze({ summary, calculations: page.items, capped: page.capped });
 }
@@ -36078,39 +41442,39 @@ function displayValue(value2) {
     return String(value2);
   return JSON.stringify(value2);
 }
-function text(document, part, value2) {
+function text2(document, part, value2) {
   const node = document.createElement("span");
   setPart(node, part);
   node.textContent = safeViewerText(value2, 2048);
   return node;
 }
-function createSubjectCalculationsView(document, snapshot2) {
+function createSubjectCalculationsView(document, snapshot3) {
   const root = document.createElement("article");
   root.className = "modkit-calculations";
   root.setAttribute("aria-label", "Subject calculations");
   setPart(root, "calculations");
   const summary = document.createElement("p");
   setPart(summary, "calculations.summary");
-  const visible = snapshot2.calculations.length;
-  summary.textContent = safeViewerText(`${visible} of ${snapshot2.summary.totalCalculations} calculations \xB7 ${snapshot2.capped ? "capped by the viewer" : snapshot2.summary.completeness}${snapshot2.summary.reason === void 0 ? "" : ` \xB7 ${snapshot2.summary.reason}`}`, 1024);
-  if (snapshot2.capped || snapshot2.summary.completeness !== "complete")
+  const visible = snapshot3.calculations.length;
+  summary.textContent = safeViewerText(`${visible} of ${snapshot3.summary.totalCalculations} calculations \xB7 ${snapshot3.capped ? "capped by the viewer" : snapshot3.summary.completeness}${snapshot3.summary.reason === void 0 ? "" : ` \xB7 ${snapshot3.summary.reason}`}`, 1024);
+  if (snapshot3.capped || snapshot3.summary.completeness !== "complete")
     setState(summary, ["degraded"]);
   root.append(summary);
   const list = document.createElement("div");
   setPart(list, "calculations.list");
   root.append(list);
-  for (const calculation of snapshot2.calculations) {
+  for (const calculation of snapshot3.calculations) {
     const item = document.createElement("section");
     setPart(item, "calculations.item");
     item.dataset["status"] = calculation.status;
     const heading = document.createElement("h3");
     setPart(heading, "calculations.heading");
     heading.textContent = safeViewerText(calculation.label, 256);
-    const result = text(document, "calculations.result", `${displayValue(calculation.value)}${calculation.unit === void 0 ? "" : ` ${calculation.unit}`} \xB7 ${calculation.status}`);
-    const formula = text(document, "calculations.formula", `${calculation.formula.name} ${calculation.formula.version}: ${calculation.formula.expression}`);
+    const result = text2(document, "calculations.result", `${displayValue(calculation.value)}${calculation.unit === void 0 ? "" : ` ${calculation.unit}`} \xB7 ${calculation.status}`);
+    const formula = text2(document, "calculations.formula", `${calculation.formula.name} ${calculation.formula.version}: ${calculation.formula.expression}`);
     item.append(heading, result, formula);
     if (calculation.provenance.length > 0) {
-      item.append(text(document, "calculations.formula", `Sources: ${calculation.provenance.map((origin) => origin.label).join(" \xB7 ")}`));
+      item.append(text2(document, "calculations.formula", `Sources: ${calculation.provenance.map((origin) => origin.label).join(" \xB7 ")}`));
     }
     if (calculation.inputs.length > 0) {
       const inputs = document.createElement("dl");
@@ -36139,7 +41503,7 @@ function createSubjectCalculationsView(document, snapshot2) {
     }
     list.append(item);
   }
-  if (snapshot2.calculations.length === 0) {
+  if (snapshot3.calculations.length === 0) {
     const empty = document.createElement("p");
     setPart(empty, "viewer.empty");
     empty.textContent = "This subject publishes no calculations.";
@@ -36157,10 +41521,10 @@ var subjectCalculationsViewer = defineViewerModule({
       if (lease === void 0)
         throw new TypeError("subject calculations binding is unavailable");
       scope.lease(lease);
-      const snapshot2 = await loadSubjectCalculations(lease.value, {
+      const snapshot3 = await loadSubjectCalculations(lease.value, {
         signal: scope.signal
       });
-      const view = createSubjectCalculationsView(root.ownerDocument, snapshot2);
+      const view = createSubjectCalculationsView(root.ownerDocument, snapshot3);
       root.append(view.root);
       scope.cleanup(() => view.destroy());
       root.dataset["revision"] = args.descriptor.revision;
@@ -36185,11 +41549,11 @@ var TEXT_DATA_SOURCE = Object.freeze({
 function defineEditorModule(module) {
   return Object.freeze(module);
 }
-async function loadText(source, maximum, signal) {
-  const info = await source.info();
+async function loadText(source2, maximum, signal) {
+  const info = await source2.info();
   if (info.bytes > BigInt(maximum))
     throw new RangeError("editor source exceeds bounded text budget");
-  const slice = await source.slice({
+  const slice = await source2.slice({
     kind: "from-line",
     line: 0,
     lineCount: info.lines === "unknown" ? Number.MAX_SAFE_INTEGER : Math.max(1, info.lines),
@@ -36199,14 +41563,14 @@ async function loadText(source, maximum, signal) {
     throw new RangeError("editor source requires a streaming editor");
   return slice.text;
 }
-function defaultChangeSet(text2, targets) {
+function defaultChangeSet(text3, targets) {
   return {
     targets,
     edits: targets.map((target) => ({
       operation: "replace",
       targetId: target.targetId,
       source: target.ownerSource,
-      payload: { kind: "text", text: text2 },
+      payload: { kind: "text", text: text3 },
       label: "Edit text"
     })),
     provenance: { actor: "user" }
@@ -36355,7 +41719,7 @@ var textEditor = createTextEditorModule();
 
 // packages/ui/dist/graph/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-function positiveLimit4(value2, label) {
+function positiveLimit5(value2, label) {
   if (!Number.isSafeInteger(value2) || value2 <= 0)
     throw new RangeError(`${label} must be positive`);
   return value2;
@@ -36390,16 +41754,16 @@ async function loadPages2(read, maximum, pageSize, signal) {
 function loadedCountReason(nodeCount, totalNodes, edgeCount, totalEdges) {
   return `loaded ${nodeCount.toLocaleString("en-US")} of ${totalNodes.toLocaleString("en-US")} nodes and ${edgeCount.toLocaleString("en-US")} of ${totalEdges.toLocaleString("en-US")} edges`;
 }
-async function loadRelationGraphOptions(source, options) {
-  const nodeLimit = positiveLimit4(options.nodeLimit ?? 500, "nodeLimit");
-  const edgeLimit = positiveLimit4(options.edgeLimit ?? 5e3, "edgeLimit");
-  const pageSize = positiveLimit4(options.pageSize ?? 250, "pageSize");
+async function loadRelationGraphOptions(source2, options) {
+  const nodeLimit = positiveLimit5(options.nodeLimit ?? 500, "nodeLimit");
+  const edgeLimit = positiveLimit5(options.edgeLimit ?? 5e3, "edgeLimit");
+  const pageSize = positiveLimit5(options.pageSize ?? 250, "pageSize");
   options.signal?.throwIfAborted();
-  const summary = await source.summary(options.signal);
+  const summary = await source2.summary(options.signal);
   options.signal?.throwIfAborted();
   const [nodeLoad, edgeLoad] = await Promise.all([
-    loadPages2((cursor3, limit) => source.nodes({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal), nodeLimit, pageSize, options.signal),
-    loadPages2((cursor3, limit) => source.edges({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal), edgeLimit, pageSize, options.signal)
+    loadPages2((cursor3, limit) => source2.nodes({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal), nodeLimit, pageSize, options.signal),
+    loadPages2((cursor3, limit) => source2.edges({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal), edgeLimit, pageSize, options.signal)
   ]);
   options.signal?.throwIfAborted();
   const consumerCapped = nodeLoad.completeness === "capped" || edgeLoad.completeness === "capped" || nodeLoad.items.length >= nodeLimit && nodeLoad.items.length < summary.totalNodes || edgeLoad.items.length >= edgeLimit && edgeLoad.items.length < summary.totalEdges;
@@ -36972,8 +42336,8 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var HEX_WINDOW_BYTES = 4096;
 var HexWindowModel = class {
   source;
-  constructor(source) {
-    this.source = source;
+  constructor(source2) {
+    this.source = source2;
   }
   async read(offset, signal) {
     if (offset < 0n)
@@ -37080,8 +42444,8 @@ var hexEditor = {
     if (lease === void 0)
       throw new TypeError("hex editor binding is unavailable");
     scope.lease(lease);
-    const source = lease.value;
-    const model = new HexWindowModel(source);
+    const source2 = lease.value;
+    const model = new HexWindowModel(source2);
     const toolbar = element(root, "div", { part: "hex.toolbar", role: "toolbar" });
     toolbar.setAttribute("aria-label", "Hex editing");
     const offsetInput = element(toolbar, "input", { part: "hex.offset-input" });
@@ -37180,14 +42544,14 @@ var hexEditor = {
               event.preventDefault();
           });
           cell.addEventListener("blur", () => {
-            const text2 = (cell.textContent ?? "").trim();
-            if (!HEX_BYTE.test(text2)) {
+            const text3 = (cell.textContent ?? "").trim();
+            if (!HEX_BYTE.test(text3)) {
               const key3 = absolute.toString(10);
               const known = pending.get(key3)?.after ?? value2;
               setByte(absolute, value2, known);
               return;
             }
-            setByte(absolute, value2, Number.parseInt(text2, 16));
+            setByte(absolute, value2, Number.parseInt(text3, 16));
           });
         }
         const ascii = element(line, "span", { part: "hex.ascii" });
@@ -37208,8 +42572,8 @@ var hexEditor = {
             }
           });
           glyph.addEventListener("blur", () => {
-            const text2 = glyph.textContent ?? "";
-            const code = text2.length === 1 ? text2.charCodeAt(0) : Number.NaN;
+            const text3 = glyph.textContent ?? "";
+            const code = text3.length === 1 ? text3.charCodeAt(0) : Number.NaN;
             if (Number.isNaN(code) || code < 32 || code > 126) {
               const known = pending.get(absolute.toString(10))?.after ?? value2;
               setByte(absolute, value2, known);
@@ -37294,11 +42658,11 @@ var hexEditor = {
 // packages/ui/dist/image/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var IMAGE_MAXIMUM_BYTES = 64 * 1024 * 1024;
-async function loadBitmap(source, signal) {
-  const info = await source.info(signal);
+async function loadBitmap(source2, signal) {
+  const info = await source2.info(signal);
   const decodedBytes = info.width * info.height * 4;
-  if (info.decodedAccess && source.readRegion !== void 0 && Number.isSafeInteger(decodedBytes) && decodedBytes <= IMAGE_MAXIMUM_BYTES) {
-    const region = await source.readRegion({
+  if (info.decodedAccess && source2.readRegion !== void 0 && Number.isSafeInteger(decodedBytes) && decodedBytes <= IMAGE_MAXIMUM_BYTES) {
+    const region = await source2.readRegion({
       x: 0,
       y: 0,
       width: info.width,
@@ -37316,7 +42680,7 @@ async function loadBitmap(source, signal) {
     const bitmap2 = await createImageBitmap(new ImageData(pixels, region.width, region.height));
     return { bitmap: bitmap2, bytes: region.pixels.byteLength };
   }
-  const encoded = await source.encoded(signal);
+  const encoded = await source2.encoded(signal);
   const media = await collectEncodedMedia(encoded, IMAGE_MAXIMUM_BYTES, signal);
   const bitmap = await createImageBitmap(new Blob([media.bytes], { type: media.mediaType }));
   return { bitmap, bytes: media.bytes.byteLength };
@@ -37492,9 +42856,9 @@ function renderMetadata(root, descriptor) {
     const row = element(list, "div", { part: "metadata.row" });
     element(row, "dt", { text: trait.id, part: "metadata.label" });
     const value2 = element(row, "dd", { part: "metadata.value" });
-    const text2 = traitValue(trait);
-    setViewerText(value2, text2, 4096);
-    value2.title = text2;
+    const text3 = traitValue(trait);
+    setViewerText(value2, text3, 4096);
+    value2.title = text3;
   }
 }
 var metadataPanel = defineViewerModule({
@@ -37858,20 +43222,20 @@ async function readModelFacets(sources, slot, scope, signal) {
       continue;
     scope.lease(lease);
     const readout = FACET_READOUT[contract];
-    const source = lease.value;
-    const info = await source.info(signal);
+    const source2 = lease.value;
+    const info = await source2.info(signal);
     const value2 = info[readout?.key ?? ""];
     if (typeof value2 === "number")
       parts.push(`${value2} ${readout?.label ?? contract}`);
   }
   return parts;
 }
-async function loadModelStage(source, signal) {
-  const info = await source.info(signal);
+async function loadModelStage(source2, signal) {
+  const info = await source2.info(signal);
   const primitiveIds = [];
   let cursor3;
   do {
-    const page = await source.meshes({
+    const page = await source2.meshes({
       limit: Math.min(256, MODEL_MAXIMUM_PRIMITIVES - primitiveIds.length),
       ...cursor3 === void 0 ? {} : { cursor: cursor3 }
     }, signal);
@@ -37885,7 +43249,7 @@ async function loadModelStage(source, signal) {
     cursor3 = primitiveIds.length >= MODEL_MAXIMUM_PRIMITIVES ? void 0 : page.nextCursor;
   } while (cursor3 !== void 0);
   const primitiveId = primitiveIds[0];
-  const primitive = primitiveId === void 0 || source.primitive === void 0 ? void 0 : await source.primitive(primitiveId, { maxBytes: MODEL_MAXIMUM_PRIMITIVE_BYTES }, signal);
+  const primitive = primitiveId === void 0 || source2.primitive === void 0 ? void 0 : await source2.primitive(primitiveId, { maxBytes: MODEL_MAXIMUM_PRIMITIVE_BYTES }, signal);
   return {
     info,
     primitiveIds: Object.freeze(primitiveIds),
@@ -37893,8 +43257,8 @@ async function loadModelStage(source, signal) {
   };
 }
 function short(value2) {
-  const text2 = String(value2 ?? "").trim();
-  return text2.length <= 160 ? text2 : `${text2.slice(0, 157)}\u2026`;
+  const text3 = String(value2 ?? "").trim();
+  return text3.length <= 160 ? text3 : `${text3.slice(0, 157)}\u2026`;
 }
 function facetItem(contract, value2) {
   if (contract === "common.view/model-resource-refs-source") {
@@ -37938,8 +43302,8 @@ async function readModelFacetDetails(sources, slot, scope, signal) {
       continue;
     scope.lease(lease);
     const method = methods[contract];
-    const source = lease.value;
-    const page = await source[method]?.({ limit: MODEL_FACET_DETAIL_LIMIT }, signal);
+    const source2 = lease.value;
+    const page = await source2[method]?.({ limit: MODEL_FACET_DETAIL_LIMIT }, signal);
     if (page === void 0)
       continue;
     details.push(Object.freeze({
@@ -37996,7 +43360,7 @@ function drawPrimitive(canvas, primitive, basis, distanceScale) {
     offsetX + flat[vertex * 2] * scale,
     offsetY - flat[vertex * 2 + 1] * scale
   ];
-  const indices = primitive.indices ?? Uint32Array.from({ length: positions.length / 3 }, (_, i) => i);
+  const indices = primitive.indices ?? Uint32Array.from({ length: positions.length / 3 }, (_, i2) => i2);
   const vertexCount = positions.length / 3;
   if (indices.some((index) => index >= vertexCount)) {
     throw new RangeError("model primitive index is outside the position buffer");
@@ -38006,21 +43370,21 @@ function drawPrimitive(canvas, primitive, basis, distanceScale) {
   context.fillStyle = stroke;
   context.lineWidth = 1;
   const edge = (from, to) => {
-    const a = point(from);
-    const b = point(to);
+    const a2 = point(from);
+    const b2 = point(to);
     context.beginPath();
-    context.moveTo(a[0], a[1]);
-    context.lineTo(b[0], b[1]);
+    context.moveTo(a2[0], a2[1]);
+    context.lineTo(b2[0], b2[1]);
     context.stroke();
   };
   const triangle = (first, second, third) => {
-    const a = point(first);
-    const b = point(second);
-    const c2 = point(third);
+    const a2 = point(first);
+    const b2 = point(second);
+    const c3 = point(third);
     context.beginPath();
-    context.moveTo(a[0], a[1]);
-    context.lineTo(b[0], b[1]);
-    context.lineTo(c2[0], c2[1]);
+    context.moveTo(a2[0], a2[1]);
+    context.lineTo(b2[0], b2[1]);
+    context.lineTo(c3[0], c3[1]);
     context.closePath();
     context.stroke();
   };
@@ -38176,8 +43540,8 @@ function normalizeNamespacePath(value2) {
 var NamespaceModel = class {
   source;
   #identities = /* @__PURE__ */ new Map();
-  constructor(source) {
-    this.source = source;
+  constructor(source2) {
+    this.source = source2;
   }
   async list(prefix, cursor3, signal) {
     const normalized = normalizeNamespacePath(prefix);
@@ -38204,8 +43568,8 @@ var namespaceViewer = defineViewerModule({
     if (lease === void 0)
       throw new TypeError("namespace binding is unavailable");
     scope.lease(lease);
-    const source = lease.value;
-    const model = new NamespaceModel(source);
+    const source2 = lease.value;
+    const model = new NamespaceModel(source2);
     const list = element(root, "ul", { part: "namespace.list" });
     list.setAttribute("role", "group");
     const renderPrefix = async (prefix, parent) => {
@@ -38239,7 +43603,7 @@ var namespaceViewer = defineViewerModule({
             nested.hidden = !nested.hidden;
             return;
           }
-          const opened = await source.openEntry(entry2.id, scope.signal);
+          const opened = await source2.openEntry(entry2.id, scope.signal);
           try {
             root.dispatchEvent(new CustomEvent("modkit-open-source", {
               bubbles: true,
@@ -38301,8 +43665,8 @@ var TABLE_KNOWLEDGE_LOADING = "Loading description\u2026";
 var LazyTableModel = class {
   source;
   #cursor;
-  constructor(source) {
-    this.source = source;
+  constructor(source2) {
+    this.source = source2;
   }
   shape() {
     return this.source.shape();
@@ -38365,13 +43729,13 @@ var tableViewer = defineViewerModule({
       setViewerText(knowledge, TABLE_KNOWLEDGE_MISSING);
     };
     const directSource = (hit) => {
-      for (const source of hit.entry.sources) {
-        if (source.url === void 0)
+      for (const source2 of hit.entry.sources) {
+        if (source2.url === void 0)
           continue;
         try {
-          const url = new URL(source.url);
+          const url = new URL(source2.url);
           if (url.protocol === "https:")
-            return { title: source.title, url };
+            return { title: source2.title, url };
         } catch {
         }
       }
@@ -38383,16 +43747,16 @@ var tableViewer = defineViewerModule({
       const summary = knowledge.ownerDocument.createElement("span");
       setViewerText(summary, hit.entry.summary, TABLE_KNOWLEDGE_SUMMARY_CHARACTERS);
       knowledge.append(summary);
-      const source = directSource(hit);
-      if (source === void 0)
+      const source2 = directSource(hit);
+      if (source2 === void 0)
         return;
       knowledge.append(knowledge.ownerDocument.createTextNode(" "));
       const link = knowledge.ownerDocument.createElement("a");
-      link.href = source.url.href;
+      link.href = source2.url.href;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
       link.referrerPolicy = "no-referrer";
-      setViewerText(link, source.title, TABLE_KNOWLEDGE_SOURCE_TITLE_CHARACTERS);
+      setViewerText(link, source2.title, TABLE_KNOWLEDGE_SOURCE_TITLE_CHARACTERS);
       knowledge.append(link);
     };
     const inspectCell = (coord) => {
@@ -38488,8 +43852,8 @@ var VIRTUAL_TEXT_PAGE_BYTES = 64 * 1024;
 var VirtualTextModel = class {
   source;
   #cursor;
-  constructor(source) {
-    this.source = source;
+  constructor(source2) {
+    this.source = source2;
   }
   async first(line = 0, signal) {
     const page = await this.source.slice({ kind: "from-line", line, lineCount: 200, maxBytes: VIRTUAL_TEXT_PAGE_BYTES }, signal);
@@ -38527,8 +43891,8 @@ var virtualTextViewer = defineViewerModule({
         more.disabled = true;
         return;
       }
-      const text2 = append ? `${viewport.textContent ?? ""}${page.text}` : page.text;
-      setViewerText(viewport, text2, 2 * VIRTUAL_TEXT_PAGE_BYTES);
+      const text3 = append ? `${viewport.textContent ?? ""}${page.text}` : page.text;
+      setViewerText(viewport, text3, 2 * VIRTUAL_TEXT_PAGE_BYTES);
       more.disabled = page.complete;
       viewport.dataset["fromLine"] = String(page.fromLine);
     };
@@ -38546,8 +43910,8 @@ var virtualTextViewer = defineViewerModule({
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var TransportModel = class {
   source;
-  constructor(source) {
-    this.source = source;
+  constructor(source2) {
+    this.source = source2;
   }
   snapshot(signal) {
     return this.source.snapshot(signal);
@@ -38572,9 +43936,9 @@ var transportViewer = defineViewerModule({
       part: "transport.controls"
     });
     let descriptor = args.descriptor;
-    let snapshot2;
+    let snapshot3;
     const render2 = (value2) => {
-      snapshot2 = value2;
+      snapshot3 = value2;
       controls.replaceChildren();
       setViewerText(status, `${value2.state} \xB7 ${value2.positionMs} / ${value2.durationMs} ms`);
       const commands = [
@@ -38626,7 +43990,7 @@ var transportViewer = defineViewerModule({
     return createViewerMount(root, scope, args, (update) => {
       descriptor = update.descriptor;
       root.dataset["revision"] = descriptor.revision;
-      render2(snapshot2);
+      render2(snapshot3);
     });
   }
 });
@@ -38636,8 +44000,8 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var LazyTreeModel = class {
   source;
   #facts = /* @__PURE__ */ new Map();
-  constructor(source) {
-    this.source = source;
+  constructor(source2) {
+    this.source = source2;
   }
   root() {
     return this.source.root();
@@ -38724,10 +44088,10 @@ var vectorViewer = defineViewerModule({
     scope.lease(lease);
     setState(stage, ["loading"]);
     try {
-      const source = lease.value;
+      const source2 = lease.value;
       const [info, document] = await Promise.all([
-        source.info(scope.signal),
-        source.document(scope.signal)
+        source2.info(scope.signal),
+        source2.document(scope.signal)
       ]);
       if (document.profile !== "uvg.secure-static.v1") {
         throw new TypeError(`unsupported vector security profile ${document.profile}`);
@@ -38774,10 +44138,10 @@ var videoViewer = defineViewerModule({
     scope.lease(lease);
     setState(stage, ["loading"]);
     try {
-      const source = lease.value;
+      const source2 = lease.value;
       const [info, encoded] = await Promise.all([
-        source.info(scope.signal),
-        source.encoded(scope.signal)
+        source2.info(scope.signal),
+        source2.encoded(scope.signal)
       ]);
       const media = await collectEncodedMedia(encoded, VIDEO_MAXIMUM_BYTES, scope.signal);
       const objectUrl = URL.createObjectURL(new Blob([media.bytes], { type: media.mediaType }));
@@ -38803,21 +44167,21 @@ var videoViewer = defineViewerModule({
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var WORLD_VIEWER_MAX_LAYERS = 16;
 var WORLD_VIEWER_MAX_ITEMS_PER_LAYER = 1024;
-function positiveLimit5(value2, label) {
+function positiveLimit6(value2, label) {
   if (!Number.isSafeInteger(value2) || value2 <= 0) {
     throw new TypeError(`${label} must be a positive safe integer`);
   }
   return value2;
 }
-async function inspectCandidateWorld(source, options) {
-  const maxLayers = positiveLimit5(options.maxLayers, "maxLayers");
-  const maxItemsPerLayer = positiveLimit5(options.maxItemsPerLayer, "maxItemsPerLayer");
+async function inspectCandidateWorld(source2, options) {
+  const maxLayers = positiveLimit6(options.maxLayers, "maxLayers");
+  const maxItemsPerLayer = positiveLimit6(options.maxItemsPerLayer, "maxItemsPerLayer");
   options.signal?.throwIfAborted();
-  const info = await source.info(options.signal);
-  if (source.contract !== info.contract || source.major !== info.major || source.snapshotId !== info.snapshotId || info.maturity !== "publisher-candidate") {
+  const info = await source2.info(options.signal);
+  if (source2.contract !== info.contract || source2.major !== info.major || source2.snapshotId !== info.snapshotId || info.maturity !== "publisher-candidate") {
     throw new TypeError("world candidate identity changed between source and info");
   }
-  const layerPage = await source.page({ facet: "layers", limit: maxLayers }, options.signal);
+  const layerPage = await source2.page({ facet: "layers", limit: maxLayers }, options.signal);
   const layers = layerPage.items.filter((item) => item.facet === "layers");
   if (layers.length !== layerPage.items.length) {
     throw new TypeError("world layers page contains a non-layer item");
@@ -38825,7 +44189,7 @@ async function inspectCandidateWorld(source, options) {
   const inspected = await Promise.all(layers.map(async (layer) => {
     options.signal?.throwIfAborted();
     const lod = layer.lods.includes("sampled") ? "sampled" : layer.lods[0];
-    const page = await source.page({
+    const page = await source2.page({
       facet: layer.kind,
       layerId: layer.layerId,
       ...lod === void 0 ? {} : { lod },
@@ -38834,9 +44198,9 @@ async function inspectCandidateWorld(source, options) {
     return Object.freeze({ layer, page });
   }));
   return Object.freeze({
-    contract: source.contract,
-    major: source.major,
-    snapshotId: source.snapshotId,
+    contract: source2.contract,
+    major: source2.major,
+    snapshotId: source2.snapshotId,
     info,
     layers: Object.freeze(inspected),
     ...layerPage.nextCursor === void 0 ? {} : { nextLayerCursor: layerPage.nextCursor }
@@ -39118,14 +44482,14 @@ function archiveStage(context) {
         slot,
         "common.view/namespace-entry-source"
       );
-      const source = lease?.value;
+      const source2 = lease?.value;
       const paths = /* @__PURE__ */ new Map();
       const pathFor = async (entryId) => {
         const known = paths.get(entryId);
-        if (known !== void 0 || source === void 0) return known;
+        if (known !== void 0 || source2 === void 0) return known;
         let cursor3;
         for (let page = 0; page < ARCHIVE_LISTING_PAGES; page += 1) {
-          const listed = await source.list(
+          const listed = await source2.list(
             "",
             { limit: 200, ...cursor3 === void 0 ? {} : { cursor: cursor3 } },
             args.signal
@@ -39176,11 +44540,11 @@ function archiveStage(context) {
               return;
             }
             const bytes2 = result.output.value.slice(0, ARCHIVE_ENTRY_PREVIEW_BYTES);
-            const text2 = previewText(bytes2);
-            setViewerText(body, text2 ?? hexDump(bytes2), ARCHIVE_ENTRY_PREVIEW_BYTES * 4);
+            const text3 = previewText(bytes2);
+            setViewerText(body, text3 ?? hexDump(bytes2), ARCHIVE_ENTRY_PREVIEW_BYTES * 4);
             setViewerText(
               status,
-              `${path} \xB7 ${result.output.value.length} bytes \xB7 shown as ${text2 === void 0 ? "hex" : "text"}`
+              `${path} \xB7 ${result.output.value.length} bytes \xB7 shown as ${text3 === void 0 ? "hex" : "text"}`
             );
             picked = { entryId, path };
             openAsSubject.disabled = context.openNestedEntry === void 0;
@@ -39371,8 +44735,13 @@ export {
   requestUserExtensionPermission,
   loadUserExtensionRoots,
   catalogCoordinates,
+  resolveModuleMap,
   createWebSubjectServices,
   createIndexedDbExtensionStore,
+  loadManagedExtensionRoots,
+  combineLoadedExtensionRoots,
+  createBrowserExtensionManager,
+  createManagedExtensionsController,
   probeWebFacilities,
   createWebTopology,
   mountWebWorkbench,

@@ -55,17 +55,36 @@ import {
   type ExplorerEntry,
   type PreviewResolver,
 } from '@modkitx-x3/ui/explorer'
-import { createSettingsUi, type SettingsDocument } from '@modkitx-x3/ui/settings'
+import {
+  createSettingsUi,
+  readAppThemeChoices,
+  type SettingsDocument,
+} from '@modkitx-x3/ui/settings'
 import { createUiLocalizer, resolveUiLocale } from '@modkitx-x3/ui/localization'
 import { element, setPart, setState, setViewerText } from '@modkitx-x3/ui/viewer'
 
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import { createWebTopology, mountWebWorkbench, probeWebFacilities } from './index.js'
-import { createWebSubjectServices, type WebSubjectServices } from './subjects.js'
+import {
+  catalogCoordinates,
+  createWebSubjectServices,
+  resolveModuleMap,
+  type WebSubjectServices,
+} from './subjects.js'
 import { prepareWebMapPreview } from './map-preview.js'
 import type { WebCommandSubjectLease } from './commands.js'
 import { createIndexedDbExtensionStore, type IdbFactoryLike } from './extension-store.js'
 import { mountExtensionsUi } from './extensions-ui.js'
+import { createManagedExtensionsController } from './managed-extensions-controller.js'
+import { createBrowserExtensionManager } from './browser-extension-manager.js'
+import type {
+  BrowserCacheStorageLike,
+  ManagedExtensionIdbFactoryLike,
+} from './managed-extension-storage.js'
+import {
+  combineLoadedExtensionRoots,
+  loadManagedExtensionRoots,
+} from './managed-extension-roots.js'
 import {
   createDirectoryAccess,
   createSingleFileAccess,
@@ -93,12 +112,7 @@ import {
   type WebSessionDiagnostic,
   type WebSessionRecovery,
 } from './session-recovery.js'
-import {
-  applyAppearance,
-  createWebSettingsStore,
-  EXTENSIONS_READ_ONLY_REASON,
-  WEB_THEMES,
-} from './settings.js'
+import { applyAppearance, createWebSettingsStore, EXTENSIONS_READ_ONLY_REASON } from './settings.js'
 import {
   createWebPreviewStages,
   stageIdOf,
@@ -226,6 +240,7 @@ async function fetchServed(baseUrl: URL, path: string): Promise<WebFileLike | un
 
 async function boot(): Promise<void> {
   const probe = probeWebFacilities()
+  const appThemes = readAppThemeChoices(document)
   const baseUrl = new URL('./', document.baseURI)
   const pageUrl = new URL(window.location.href)
   const locale = resolveUiLocale(pageUrl.searchParams.get('lang') ?? navigator.languages)
@@ -248,9 +263,29 @@ async function boot(): Promise<void> {
    */
   // the structural shape takes a plain `Event`; the platform types it as `IDBVersionChangeEvent`
   const extensionStore = createIndexedDbExtensionStore(indexedDB as unknown as IdbFactoryLike)
+  const managedRuntime = createBrowserExtensionManager({
+    indexedDB: indexedDB as unknown as ManagedExtensionIdbFactoryLike,
+    ...(typeof caches === 'undefined'
+      ? {}
+      : { cacheStorage: caches as unknown as BrowserCacheStorageLike }),
+    // No registry is configured in the generic PWA build. Product builds inject registry config
+    // through the exported factory; this offline default performs no network at boot or refresh.
+  })
+  const managedStorage = managedRuntime.storage
+  const managedExtensions = createManagedExtensionsController({
+    client: managedRuntime.client,
+    catalogLocation: managedRuntime.catalogLocation,
+  })
   const subtle = {
     digest: (algorithm: string, data: Uint8Array) =>
       crypto.subtle.digest(algorithm, data as Uint8Array<ArrayBuffer>),
+  }
+  const managedRoots = await loadManagedExtensionRoots(managedStorage, {
+    subtle,
+    claimed: catalogCoordinates(WEB_EXTENSION_CATALOG),
+  })
+  for (const failure of managedRoots.failures) {
+    bootDiagnostics.push(`${failure.code}: ${failure.message}`)
   }
   /*
    * Filled once the host exists. The panel renders — and therefore asks for conflicts — during
@@ -263,6 +298,8 @@ async function boot(): Promise<void> {
   const extensionsUi = mountExtensionsUi(document, {
     store: extensionStore,
     catalog: WEB_EXTENSION_CATALOG,
+    managedExtensions,
+    additionalClaimedCoordinates: managedRoots.coordinates,
     subtle,
     pickDirectory: async () => {
       const picker = (window as unknown as { showDirectoryPicker?: () => Promise<unknown> })
@@ -285,10 +322,17 @@ async function boot(): Promise<void> {
     bootDiagnostics.push(`${failure.code}: ${failure.message}`)
   }
 
+  const loadedExtensionRoots = combineLoadedExtensionRoots(managedRoots, extensionsUi.current())
   const services: WebSubjectServices = await createWebSubjectServices({
     baseUrl,
     catalog: WEB_EXTENSION_CATALOG,
-    userExtensions: extensionsUi.current(),
+    // Downloaded packages precede user-picked folders. Both already passed the same root loader,
+    // and the combined serve function is the one synthetic fetch used by the worker verifier.
+    userExtensions: loadedExtensionRoots,
+    moduleMap: Object.freeze({
+      ...resolveModuleMap(baseUrl),
+      ...loadedExtensionRoots.moduleMap,
+    }),
     identity: identity(),
     probe,
     dom: {
@@ -310,7 +354,11 @@ async function boot(): Promise<void> {
       console.info(`[worker] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`)
     },
   })
-  window.addEventListener('pagehide', () => void services.dispose(), { once: true })
+  window.addEventListener(
+    'pagehide',
+    () => void Promise.all([services.dispose(), managedRuntime.dispose()]),
+    { once: true },
+  )
 
   host.services = services
   // conflicts are only knowable once both lists are in one inventory; the panel re-reads them
@@ -992,7 +1040,7 @@ async function boot(): Promise<void> {
   const store = createWebSettingsStore(window.localStorage)
   const settingsUi = createSettingsUi(document, {
     store,
-    themes: WEB_THEMES,
+    themes: appThemes,
     onAppearance(appearance: SettingsDocument['appearance']) {
       applyAppearance(document.documentElement, appearance)
     },
@@ -1451,7 +1499,7 @@ async function selfTest(parts: SelfTestParts): Promise<void> {
     log(`selftest: editing probe FAILED ${describe(error)}`)
   }
 
-  for (const theme of WEB_THEMES) {
+  for (const theme of readAppThemeChoices(document)) {
     document.documentElement.setAttribute('data-mk-theme', theme.id)
     const accent = getComputedStyle(document.documentElement)
       .getPropertyValue('--mk-color-accent')

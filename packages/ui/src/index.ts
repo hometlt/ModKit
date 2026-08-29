@@ -192,6 +192,8 @@ export {
 } from './explorer/editors.js'
 export {
   createSettingsUi,
+  readAppThemeChoices,
+  APP_THEME_DOM_ID,
   createMemorySettingsStore,
   DEFAULT_SETTINGS,
   enabledExtensions,
@@ -201,6 +203,8 @@ export {
   SETTINGS_SCHEMA_VERSION,
   withRecent,
   type AppearanceSettings,
+  type AppThemeChoice,
+  type AppThemeDocumentLike,
   type Density,
   type ExtensionSetting,
   type NormalizedSettings,

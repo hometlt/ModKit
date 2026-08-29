@@ -30,7 +30,7 @@ Run `pnpm --filter @modkitx-x3/ui tokens:emit` first if `packages/ui/styles/modk
 ## Catalog snapshot
 
 `src/catalog-snapshot.json` is generated at build time from
-`../modkitx/docs/MK3/uk-a/component-catalog.md` in a sibling checkout. When that checkout is
+`../references/modkit-docs/MK3/uk-a/component-catalog.md`. When that checkout is
 absent the snapshot records the reason and the gallery says so. It never invents rows.
 
 ## Findings this harness has already caught

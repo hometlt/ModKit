@@ -15,23 +15,19 @@
  */
 import { build } from 'esbuild'
 import { createServer } from 'node:http'
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, extname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { externalRepositoryRoot } from '../../../scripts/lib/external-extension-roots.mjs'
+
+import {
+  appThemeStylesheets,
+  renderAppThemeDomData,
+  resolveAppThemes,
+} from '../../../scripts/lib/app-themes.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
 const repoRoot = resolve(appRoot, '..', '..')
-const blizzardRoot = externalRepositoryRoot(repoRoot, 'blizzard')
 const outIndex = process.argv.indexOf('--out')
 const requestedOut = outIndex === -1 ? undefined : process.argv[outIndex + 1]
 if (outIndex !== -1 && (requestedOut === undefined || requestedOut.startsWith('--'))) {
@@ -39,6 +35,8 @@ if (outIndex !== -1 && (requestedOut === undefined || requestedOut.startsWith('-
   process.exit(1)
 }
 const dist = requestedOut === undefined ? join(appRoot, 'dist-app') : resolve(requestedOut)
+const appThemes = resolveAppThemes({ repositoryRoot: repoRoot })
+const themeStylesheets = appThemeStylesheets(appThemes)
 
 /**
  * URL catalogs are trusted by origin, and the trust decision belongs to whoever deploys this
@@ -135,14 +133,6 @@ await build({
     ),
     'vendor/core/index': join(repoRoot, 'packages', 'core', 'dist', 'index.js'),
     'vendor/sdk/index': join(repoRoot, 'packages', 'sdk', 'dist', 'index.js'),
-    'vendor/blizzard-mpq/fresh-writer': join(blizzardRoot, 'mpq', 'src', 'mpq', 'fresh-writer.js'),
-    'vendor/blizzard-mpq/native-preserving': join(
-      blizzardRoot,
-      'mpq',
-      'src',
-      'mpq',
-      'native-preserving.js',
-    ),
   },
   outdir: dist,
   bundle: true,
@@ -182,22 +172,38 @@ if (!existsSync(stylesheet)) {
   process.exit(1)
 }
 cpSync(stylesheet, join(dist, 'modkit-ui.css'))
-// Installable themes (assets/themes/<id>/theme.css) and the self-hosted fonts they reference ship
-// beside the app; the page links every theme and applies one by stamping data-mk-theme.
-const themesRoot = join(repoRoot, 'assets', 'themes')
-const themeIds = readdirSync(themesRoot)
-  .filter(id => existsSync(join(themesRoot, id, 'theme.css')))
-  .sort()
-for (const id of themeIds) cpSync(join(themesRoot, id, 'theme.css'), join(dist, `theme-${id}.css`))
+// Themes are build inputs, not runtime product knowledge. The core manifest and the optional
+// MODKIT_APP_THEME_ROOTS manifests resolve to one validated set shared with the Electron build.
+for (const theme of themeStylesheets) {
+  cpSync(theme.sourcePath, join(dist, theme.stylesheet.slice('./'.length)))
+}
 cpSync(join(repoRoot, 'assets', 'fonts'), join(dist, 'fonts'), { recursive: true })
 const indexHtml = readFileSync(join(appRoot, 'index.html'), 'utf8').replace(
   '<link rel="stylesheet" href="./app.css" />',
   `<link rel="stylesheet" href="./app.css" />
-${themeIds.map(id => `    <link rel="stylesheet" href="./theme-${id}.css" />`).join('\n')}`,
+${themeStylesheets
+  .map(theme => `    <link rel="stylesheet" href="${theme.stylesheet}" />`)
+  .join('\n')}
+${renderAppThemeDomData(appThemes)}`,
 )
 writeFileSync(join(dist, 'index.html'), indexHtml)
 cpSync(join(appRoot, 'app.css'), join(dist, 'app.css'))
 cpSync(join(appRoot, 'public'), dist, { recursive: true })
+
+// The source worker is generic. A build writes the exact copied theme files into its cache list.
+const serviceWorkerPath = join(dist, 'service-worker.js')
+const serviceWorkerMarker = '  // MODKIT_APP_THEME_CACHE'
+const serviceWorker = readFileSync(serviceWorkerPath, 'utf8')
+if (serviceWorker.split(serviceWorkerMarker).length !== 2) {
+  throw new Error(`service worker must contain exactly one ${serviceWorkerMarker.trim()} marker`)
+}
+writeFileSync(
+  serviceWorkerPath,
+  serviceWorker.replace(
+    serviceWorkerMarker,
+    themeStylesheets.map(theme => `  '${theme.stylesheet}',`).join('\n'),
+  ),
+)
 
 // ---------------------------------------------------------------- icons
 /*

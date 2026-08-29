@@ -43,7 +43,16 @@ import {
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const fixtureDir = join(repoRoot, 'vendor', 'multiverse-specs', 'specs', 'model', 'fixtures')
-const legacyOracle = join(repoRoot, '..', 'modkitx', 'packages', 'world', 'dist', 'index.js')
+const legacyOracle = join(
+  repoRoot,
+  '..',
+  'references',
+  'modkitmk2',
+  'packages',
+  'world',
+  'dist',
+  'index.js',
+)
 
 /** The workspace's own Ajv build: the engine the sealed validator used, at the version it used. */
 const ajvBuild = join(

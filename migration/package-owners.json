@@ -2,7 +2,7 @@
   "$comment": "Block 12 items 12-16: source -> final owner matrix. One row per legacy publication unit, exactly one final owner each, machine-checked by scripts/migration/check-package-owners.mjs. Owner vocabulary is the canonical catalogue of 2.3 rule 1 plus the three legitimate non-package destinations: an extension family, Multiverse, or dropped.",
   "schemaVersion": "package-owner-matrix-1",
   "canonicalUnits": {
-    "$comment": "2.3 rule 1: eight publication units, of which the bootstrap runtime closure is four. `realisedAs` records how each unit exists today; see decisions[] for why runtime and lsp are subpath units rather than directories.",
+    "$comment": "2.3 rule 1: eight publication units, of which the bootstrap runtime closure is four. `realisedAs` records how each unit exists today; see decisions[] for why runtime and lsp are subpath units rather than directories. The extension manager is an optional application control-plane package listed only in currentPackages, not a ninth platform unit.",
     "units": [
       {
         "unit": "core",
@@ -78,6 +78,10 @@
     {
       "directory": "packages/ui",
       "unit": "ui"
+    },
+    {
+      "directory": "packages/extension-manager",
+      "unit": "extension-manager"
     },
     {
       "directory": "packages/testkit",

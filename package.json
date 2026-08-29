@@ -3,13 +3,15 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "MK3 clean-core lab (BRIEF-12); not a release; owner decision pending",
+  "description": "Modkit core workspace: protocol-neutral host, SDK, VFS and applications",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
     "typecheck": "tsc -b && tsc -p tsconfig.tooling.json",
     "test": "vitest run --no-file-parallelism",
+    "test:fast": "pnpm --filter @modkitx/extension-manager test && vitest run --config vitest.fast.config.ts",
+    "check:fast": "pnpm typecheck && pnpm test:fast",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -74,6 +76,7 @@
     "@modkitx-x3/testkit": "workspace:*",
     "@modkitx-x3/ui": "workspace:*",
     "@modkitx-x3/vfs": "workspace:*",
+    "@modkitx/extension-manager": "workspace:*",
     "@types/node": "^22.5.0",
     "esbuild": "^0.28.2",
     "eslint": "^9.9.0",

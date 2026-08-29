@@ -27,6 +27,7 @@
     "dist-app:check": "node scripts/build-extension.mjs --check"
   },
   "dependencies": {
+    "@modkitx/extension-manager": "workspace:*",
     "@modkitx-x3/core": "workspace:*",
     "@modkitx-x3/host": "workspace:*",
     "@modkitx-x3/sdk": "workspace:*",
@@ -63,6 +64,30 @@
       {
         "command": "modkit.exportDiagnostics",
         "title": "Modkit: Export Diagnostics…"
+      },
+      {
+        "command": "modkit.extensions.disable",
+        "title": "Modkit: Disable Extension…"
+      },
+      {
+        "command": "modkit.extensions.enable",
+        "title": "Modkit: Enable Extension…"
+      },
+      {
+        "command": "modkit.extensions.install",
+        "title": "Modkit: Install Extension…"
+      },
+      {
+        "command": "modkit.extensions.refresh",
+        "title": "Modkit: Refresh Extension Catalog"
+      },
+      {
+        "command": "modkit.extensions.remove",
+        "title": "Modkit: Remove Extension…"
+      },
+      {
+        "command": "modkit.extensions.update",
+        "title": "Modkit: Update Extension…"
       },
       {
         "command": "modkit.game.launchActiveMap",
@@ -131,6 +156,11 @@
           },
           "markdownDescription": "Contribution ids to switch off, one level below `modkit.extensions`: an extension may ship several codecs and you may want only some of them. A disabled contribution stays in the inventory and loses activation, so a file only it could read opens as raw bytes with the diagnostic `x3.host/contribution-disabled` — and the switch is still there to turn it back on. Takes effect when the window reloads.",
           "type": "array"
+        },
+        "modkit.extensionRegistry": {
+          "default": "",
+          "markdownDescription": "Catalog file or HTTPS URL used by the extension manager. Opening the Extensions view reads only its local cache; the registry is contacted only by `Modkit: Refresh Extension Catalog`. `MODKIT_EXTENSION_REGISTRY` is used when this setting is empty. Remote catalogs also require an Ed25519 key map in `MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS`; remote artifact origins stay blocked unless listed in `MODKIT_EXTENSION_ALLOWED_ORIGINS`.",
+          "type": "string"
         },
         "modkit.extensions": {
           "default": [],
@@ -272,6 +302,12 @@
     "onCommand:modkit.browseContainer",
     "onCommand:modkit.explainResolution",
     "onCommand:modkit.exportDiagnostics",
+    "onCommand:modkit.extensions.disable",
+    "onCommand:modkit.extensions.enable",
+    "onCommand:modkit.extensions.install",
+    "onCommand:modkit.extensions.refresh",
+    "onCommand:modkit.extensions.remove",
+    "onCommand:modkit.extensions.update",
     "onCommand:modkit.game.launchActiveMap",
     "onCommand:modkit.materializeContainerEntry",
     "onCommand:modkit.navigateResource",

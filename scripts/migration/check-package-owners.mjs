@@ -39,6 +39,8 @@ const fail = message => problems.push(message)
 
 /** The eight units of §2.3 rule 1, in canonical order. */
 const CANONICAL_UNITS = ['core', 'sdk', 'vfs', 'host', 'ui', 'runtime', 'testkit', 'lsp']
+/** Optional application control planes may be packages without joining the platform-unit closure. */
+const OPTIONAL_PACKAGE_UNITS = ['extension-manager']
 /** The bootstrap runtime closure of §2.3 rule 1. */
 const BOOTSTRAP = ['core', 'sdk', 'vfs', 'host']
 
@@ -111,8 +113,10 @@ if (onDisk.join(',') !== declaredDirectories.join(',')) {
   )
 }
 for (const entry of matrix.currentPackages ?? []) {
-  if (!CANONICAL_UNITS.includes(entry.unit)) {
-    fail(`${entry.directory}: unit ${entry.unit} is not in the canonical catalogue`)
+  if (![...CANONICAL_UNITS, ...OPTIONAL_PACKAGE_UNITS].includes(entry.unit)) {
+    fail(
+      `${entry.directory}: unit ${entry.unit} is neither canonical nor an optional control plane`,
+    )
   }
 }
 

@@ -7,9 +7,28 @@ const shellSource = readFileSync(join(import.meta.dirname, '..', 'src', 'shell.t
 const embedSource = readFileSync(join(import.meta.dirname, '..', 'src', 'embed.ts'), 'utf8')
 
 describe('PWA command lifecycle wiring', () => {
-  it('binds the workbench command realm to pagehide exactly once', () => {
-    expect(shellSource).toContain(
-      "window.addEventListener('pagehide', () => void services.dispose(), { once: true })",
+  it('wires the legacy folder store into the shell reload that uses its non-creating list path', () => {
+    expect(shellSource).toMatch(
+      /const extensionStore = createIndexedDbExtensionStore\(indexedDB as unknown as IdbFactoryLike\)/u,
+    )
+    expect(shellSource).toMatch(/mountExtensionsUi\(document,\s*\{\s*store: extensionStore,/u)
+    expect(shellSource.indexOf('await extensionsUi.reload()')).toBeGreaterThan(
+      shellSource.indexOf('store: extensionStore'),
+    )
+  })
+
+  it('disposes both page-scoped runtimes from one one-shot pagehide listener', () => {
+    expect(shellSource.match(/window\.addEventListener\(\s*['"]pagehide['"]/gu)).toHaveLength(1)
+
+    const lifecycle = shellSource.match(
+      /window\.addEventListener\(\s*['"]pagehide['"],(?<handler>[\s\S]*?)\{\s*once:\s*true\s*\},?\s*\)/u,
+    )
+    expect(lifecycle).not.toBeNull()
+    const handler = lifecycle?.groups?.handler ?? ''
+    expect(handler.match(/services\.dispose\(\)/gu)).toHaveLength(1)
+    expect(handler.match(/managedRuntime\.dispose\(\)/gu)).toHaveLength(1)
+    expect(handler).toMatch(
+      /void\s+Promise\.all\(\s*\[\s*services\.dispose\(\),\s*managedRuntime\.dispose\(\)\s*\]\s*\)/u,
     )
   })
 

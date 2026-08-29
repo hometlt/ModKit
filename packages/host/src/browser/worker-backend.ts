@@ -75,7 +75,13 @@ export interface BrowserWorkerBackendOptions {
   /** Fetch/digest/mint hooks of the verified loader (the app binds fetch/WebCrypto/blob URLs). */
   readonly loader: Pick<
     VerifiedLoaderOptions,
-    'fetchBytes' | 'digest' | 'createModuleUrl' | 'resolveBare' | 'maxFiles' | 'maxTotalBytes'
+    | 'fetchBytes'
+    | 'digest'
+    | 'createModuleUrl'
+    | 'resolveBare'
+    | 'resolvePinned'
+    | 'maxFiles'
+    | 'maxTotalBytes'
   >
   readonly policy?: BrowserWorkerPolicy
   readonly foreignSurfaces?:

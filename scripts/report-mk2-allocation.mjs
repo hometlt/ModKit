@@ -28,7 +28,7 @@ const argValue = flag => {
   return index === -1 ? undefined : args[index + 1]
 }
 const x3Root = resolve(fileURLToPath(new URL('..', import.meta.url)))
-const mk2Root = resolve(argValue('--mk2-root') ?? join(x3Root, '..', 'modkitx'))
+const mk2Root = resolve(argValue('--mk2-root') ?? join(x3Root, '..', 'references', 'modkitmk2'))
 const outPath = argValue('--out')
 const jsonPath = argValue('--json')
 const quiet = args.includes('--quiet')
