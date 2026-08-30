@@ -102,6 +102,31 @@ workspace; подробное руководство разработчика х
 которые меняют общую сборку, остаются в полном последовательном `pnpm check`
 перед коммитом или выпуском.
 
+## Отладочный запуск из VS Code
+
+Откройте корень `modkit-core`, выберите **Run and Debug** и нужную конфигурацию `Modkit Core:*`.
+Готовые профили запускают automation-host, server, CLI, MCP stdio server, PWA в Chrome, Electron,
+VS Code Extension Host и Node-композиции Web/Electron/VS Code. Для составных приложений VS Code
+предложит выбрать набор расширений; CLI по умолчанию выполняет безопасный `host-profile`, а MCP
+получает корень workspace и common plain-text extension через переменные запуска.
+
+Те же Node-профили доступны из терминала после `pnpm build`:
+
+```powershell
+pnpm debug:automation -- --set structured-text
+pnpm debug:server -- --set full-codecs
+pnpm debug:web:composition -- --set media
+pnpm debug:electron:adapter -- --set models-and-archives
+pnpm debug:vscode:adapter -- --set documents
+pnpm debug:cli -- host-profile --json
+pnpm debug:mcp
+pnpm debug:pwa -- --set structured-text --port 4173
+```
+
+Adapter-профили оставляют `globalThis.modkitDebug` в Debug Console и работают до остановки сессии.
+Профили **Electron App (real window)** и **VS Code Extension (Extension Host)** запускают настоящие
+оболочки, поэтому подходят для проверки UI, IPC и lifecycle, а не только состава Host.
+
 ## Границы этой версии
 
 - Публичный релиз и публикация пакетов выполняются владельцем отдельно после личного тестирования.

@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Modkit X3: Build",
+      "label": "Modkit Core: Build",
       "type": "shell",
       "command": "pnpm build",
       "options": { "cwd": "${workspaceFolder}" },
@@ -10,11 +10,11 @@
       "group": "build"
     },
     {
-      "label": "Modkit X3: PWA Server",
+      "label": "Modkit Core: PWA Server",
       "type": "shell",
       "command": "node scripts/debug/pwa-server.mjs --set ${input:extensionSet} --port 4173",
       "options": { "cwd": "${workspaceFolder}" },
-      "dependsOn": "Modkit X3: Build",
+      "dependsOn": "Modkit Core: Build",
       "dependsOrder": "sequence",
       "isBackground": true,
       "problemMatcher": {
@@ -31,27 +31,27 @@
       }
     },
     {
-      "label": "Modkit X3: Build Electron Shell",
+      "label": "Modkit Core: Build Electron Shell",
       "type": "shell",
       "command": "node apps/electron/scripts/build-app.mjs",
       "options": { "cwd": "${workspaceFolder}" },
-      "dependsOn": "Modkit X3: Build",
+      "dependsOn": "Modkit Core: Build",
       "dependsOrder": "sequence",
       "problemMatcher": [],
       "group": "build"
     },
     {
-      "label": "Modkit X3: Build VS Code Extension",
+      "label": "Modkit Core: Build VS Code Extension",
       "type": "shell",
       "command": "node apps/modkit-vscode/scripts/build-extension.mjs",
       "options": { "cwd": "${workspaceFolder}" },
-      "dependsOn": "Modkit X3: Build",
+      "dependsOn": "Modkit Core: Build",
       "dependsOrder": "sequence",
       "problemMatcher": [],
       "group": "build"
     },
     {
-      "label": "Modkit X3: Application Matrix",
+      "label": "Modkit Core: Application Matrix",
       "type": "shell",
       "command": "pnpm apps:check",
       "options": { "cwd": "${workspaceFolder}" },
@@ -59,7 +59,7 @@
       "group": "test"
     },
     {
-      "label": "Modkit X3: Full Check",
+      "label": "Modkit Core: Full Check",
       "type": "shell",
       "command": "pnpm check",
       "options": { "cwd": "${workspaceFolder}" },

@@ -2,25 +2,67 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Modkit X3: Headless",
+      "name": "Modkit Core: Automation Host Adapter",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/debug/app-runner.mjs",
-      "args": ["--app", "headless", "--set", "${input:extensionSet}", "--stay-open"],
+      "args": ["--app", "automation", "--set", "${input:extensionSet}", "--stay-open"],
       "cwd": "${workspaceFolder}",
-      "preLaunchTask": "Modkit X3: Build",
+      "preLaunchTask": "Modkit Core: Build",
       "console": "integratedTerminal",
       "sourceMaps": true,
       "outFiles": ["${workspaceFolder}/**/dist/**/*.js"],
       "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
     },
     {
-      "name": "Modkit X3: PWA (Chrome)",
+      "name": "Modkit Core: Server Adapter",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/debug/app-runner.mjs",
+      "args": ["--app", "server", "--set", "${input:extensionSet}", "--stay-open"],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Modkit Core: Build",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/**/dist/**/*.js"],
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
+    },
+    {
+      "name": "Modkit Core: CLI",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/modkit-cli/dist/main.js",
+      "args": ["${input:cliAction}", "--json"],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Modkit Core: Build",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/apps/modkit-cli/dist/**/*.js"],
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
+    },
+    {
+      "name": "Modkit Core: MCP Server (stdio)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/modkit-mcp/dist/main.js",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Modkit Core: Build",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/apps/modkit-mcp/dist/**/*.js"],
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"],
+      "env": {
+        "MODKIT_MCP_ROOTS": "${workspaceFolder}",
+        "MODKIT_MCP_EXTENSIONS": "${workspaceFolder}/extensions/common/plain-text"
+      }
+    },
+    {
+      "name": "Modkit Core: PWA (Chrome)",
       "type": "pwa-chrome",
       "request": "launch",
       "url": "http://127.0.0.1:4173/",
       "webRoot": "${workspaceFolder}",
-      "preLaunchTask": "Modkit X3: PWA Server",
+      "preLaunchTask": "Modkit Core: PWA Server",
       "sourceMaps": true,
       "sourceMapPathOverrides": {
         "webpack:///*": "${webRoot}/*",
@@ -28,60 +70,60 @@
       }
     },
     {
-      "name": "Modkit X3: Electron Adapter",
+      "name": "Modkit Core: Electron Adapter",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/debug/app-runner.mjs",
       "args": ["--app", "electron", "--set", "${input:extensionSet}", "--stay-open"],
       "cwd": "${workspaceFolder}",
-      "preLaunchTask": "Modkit X3: Build",
+      "preLaunchTask": "Modkit Core: Build",
       "console": "integratedTerminal",
       "sourceMaps": true,
       "outFiles": ["${workspaceFolder}/**/dist/**/*.js"],
       "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
     },
     {
-      "name": "Modkit X3: VS Code Adapter",
+      "name": "Modkit Core: VS Code Adapter",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/debug/app-runner.mjs",
       "args": ["--app", "vscode", "--set", "${input:extensionSet}", "--stay-open"],
       "cwd": "${workspaceFolder}",
-      "preLaunchTask": "Modkit X3: Build",
+      "preLaunchTask": "Modkit Core: Build",
       "console": "integratedTerminal",
       "sourceMaps": true,
       "outFiles": ["${workspaceFolder}/**/dist/**/*.js"],
       "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
     },
     {
-      "name": "Modkit X3: Electron App (real window)",
+      "name": "Modkit Core: Electron App (real window)",
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "${workspaceFolder}/apps/electron/node_modules/electron/dist/electron.exe",
       "runtimeArgs": ["${workspaceFolder}/apps/electron/electron/main.cjs"],
       "cwd": "${workspaceFolder}",
-      "preLaunchTask": "Modkit X3: Build Electron Shell",
+      "preLaunchTask": "Modkit Core: Build Electron Shell",
       "console": "internalConsole",
       "sourceMaps": true,
       "outFiles": ["${workspaceFolder}/apps/electron/dist*/**/*.js"],
       "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
     },
     {
-      "name": "Modkit X3: VS Code Extension (Extension Host)",
+      "name": "Modkit Core: VS Code Extension (Extension Host)",
       "type": "extensionHost",
       "request": "launch",
       "args": ["--extensionDevelopmentPath=${workspaceFolder}/apps/modkit-vscode"],
-      "preLaunchTask": "Modkit X3: Build VS Code Extension",
+      "preLaunchTask": "Modkit Core: Build VS Code Extension",
       "outFiles": ["${workspaceFolder}/apps/modkit-vscode/dist-app/**/*.cjs"]
     },
     {
-      "name": "Modkit X3: Web Composition (Node)",
+      "name": "Modkit Core: Web Composition (Node)",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/debug/app-runner.mjs",
       "args": ["--app", "web", "--set", "${input:extensionSet}", "--stay-open"],
       "cwd": "${workspaceFolder}",
-      "preLaunchTask": "Modkit X3: Build",
+      "preLaunchTask": "Modkit Core: Build",
       "console": "integratedTerminal",
       "sourceMaps": true,
       "outFiles": ["${workspaceFolder}/**/dist/**/*.js"],
@@ -89,6 +131,13 @@
     }
   ],
   "inputs": [
+    {
+      "id": "cliAction",
+      "type": "pickString",
+      "description": "Side-effect-free CLI command to debug",
+      "default": "host-profile",
+      "options": ["host-profile", "commands"]
+    },
     {
       "id": "extensionSet",
       "type": "pickString",

@@ -34,10 +34,16 @@ const extensions = await Promise.all(
 
 async function createApplication(name) {
   switch (name) {
+    case 'automation':
     case 'headless': {
       const { createAutomationHost } = await import('../../apps/automation-host/dist/index.js')
       const host = await createAutomationHost(extensions)
       return { application: host, realms: { main: host.composition } }
+    }
+    case 'server': {
+      const { createServerApp } = await import('../../apps/server/dist/index.js')
+      const app = await createServerApp(extensions)
+      return { application: app, realms: { main: app.composition } }
     }
     case 'electron': {
       const { createElectronApp } = await import('../../apps/electron/dist/index.js')

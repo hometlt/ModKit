@@ -57,36 +57,67 @@ function waitForReady(child: ChildProcessWithoutNullStreams): Promise<string> {
 describe('VS Code debug launchers', () => {
   it('keeps launch configurations and tasks connected to every application adapter', () => {
     const launch = json('.vscode/launch.json') as {
-      configurations: readonly { readonly name: string; readonly preLaunchTask?: string }[]
+      configurations: readonly {
+        readonly name: string
+        readonly preLaunchTask?: string
+        readonly program?: string
+      }[]
     }
     const tasks = json('.vscode/tasks.json') as {
       tasks: readonly { readonly label: string }[]
     }
     expect(launch.configurations.map(configuration => configuration.name)).toEqual([
-      'Modkit X3: Headless',
-      'Modkit X3: PWA (Chrome)',
-      'Modkit X3: Electron Adapter',
-      'Modkit X3: VS Code Adapter',
+      'Modkit Core: Automation Host Adapter',
+      'Modkit Core: Server Adapter',
+      'Modkit Core: CLI',
+      'Modkit Core: MCP Server (stdio)',
+      'Modkit Core: PWA (Chrome)',
+      'Modkit Core: Electron Adapter',
+      'Modkit Core: VS Code Adapter',
       // The adapters above compose topologies headlessly. These two launch the real shells, which
       // is a different thing to debug — a window and an extension host, not a Node process.
-      'Modkit X3: Electron App (real window)',
-      'Modkit X3: VS Code Extension (Extension Host)',
-      'Modkit X3: Web Composition (Node)',
+      'Modkit Core: Electron App (real window)',
+      'Modkit Core: VS Code Extension (Extension Host)',
+      'Modkit Core: Web Composition (Node)',
     ])
     const labels = new Set(tasks.tasks.map(task => task.label))
     for (const configuration of launch.configurations) {
       expect(labels.has(configuration.preLaunchTask ?? '')).toBe(true)
+      if (configuration.program !== undefined) {
+        expect(configuration.program.startsWith('${workspaceFolder}/')).toBe(true)
+        expect(
+          readFileSync(join(root, configuration.program.slice('${workspaceFolder}/'.length))),
+        ).not.toHaveLength(0)
+      }
     }
   })
 
-  it('starts a selected real extension set in the headless debug runner', () => {
-    const output = execFileSync(
-      process.execPath,
-      ['scripts/debug/app-runner.mjs', '--app', 'headless', '--set', 'models-and-archives'],
-      { cwd: root, encoding: 'utf8' },
-    )
-    expect(output).toContain('headless/models-and-archives ready')
-    expect(output).toContain("'headless'")
+  it('starts selected extension sets in the automation and server debug runners', () => {
+    for (const application of ['automation', 'server']) {
+      const output = execFileSync(
+        process.execPath,
+        ['scripts/debug/app-runner.mjs', '--app', application, '--set', 'models-and-archives'],
+        { cwd: root, encoding: 'utf8' },
+      )
+      expect(output).toContain(`${application}/models-and-archives ready`)
+      expect(output).toContain(`'${application}'`)
+    }
+  })
+
+  it('publishes one root debug script for every Node application kind', () => {
+    const rootPackage = json('package.json') as {
+      readonly scripts: Readonly<Record<string, string>>
+    }
+    expect(rootPackage.scripts).toMatchObject({
+      'debug:automation': expect.stringContaining('--app automation'),
+      'debug:server': expect.stringContaining('--app server'),
+      'debug:web:composition': expect.stringContaining('--app web'),
+      'debug:electron:adapter': expect.stringContaining('--app electron'),
+      'debug:vscode:adapter': expect.stringContaining('--app vscode'),
+      'debug:cli': expect.stringContaining('apps/modkit-cli/dist/main.js'),
+      'debug:mcp': expect.stringContaining('apps/modkit-mcp/dist/main.js'),
+      'debug:pwa': expect.stringContaining('scripts/debug/pwa-server.mjs'),
+    })
   })
 
   it('serves a hydrated extension inventory through the PWA debug server', async () => {
