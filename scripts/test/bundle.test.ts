@@ -124,7 +124,7 @@ describe('single-file production dist', () => {
     expect(APP_EXTENSION_SETS['full-codecs']).toContain('rendering-3d')
 
     const manifest = JSON.parse(
-      readFileSync(bundlePath('extensions/common/rendering-3d/package.json'), 'utf8'),
+      readFileSync(bundlePath('extensions/common/rendering/rendering-3d/package.json'), 'utf8'),
     ) as {
       dependencies?: Record<string, string>
       optionalDependencies?: Record<string, string>
@@ -137,7 +137,10 @@ describe('single-file production dist', () => {
     }
     expect(declared).not.toHaveProperty('three')
     for (const entry of ['browser.js', 'headless.js', 'linked.js']) {
-      const source = readFileSync(bundlePath('extensions/common/rendering-3d/src', entry), 'utf8')
+      const source = readFileSync(
+        bundlePath('extensions/common/rendering/rendering-3d/src', entry),
+        'utf8',
+      )
       expect(importSpecifiers(source)).not.toContain('three')
     }
   })

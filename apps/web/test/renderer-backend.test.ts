@@ -16,7 +16,15 @@ import {
 } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const browserModule = join(repoRoot, 'extensions', 'common', 'rendering-3d', 'src', 'browser.js')
+const browserModule = join(
+  repoRoot,
+  'extensions',
+  'common',
+  'rendering',
+  'rendering-3d',
+  'src',
+  'browser.js',
+)
 const fixtureRoot = join(repoRoot, 'packages', 'testkit', 'test', 'fixtures', 'mk2-synthetic')
 const chromeCandidates = [
   process.env['CHROME_PATH'],

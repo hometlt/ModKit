@@ -182,7 +182,7 @@ describe('disabling a contribution (the settings-page seam)', () => {
 })
 
 describe('the format writer is preferred over the raw byte splicer (Path B reaches products)', () => {
-  const textDir = join(repoRoot, 'extensions', 'common', 'text-json')
+  const textDir = join(repoRoot, 'extensions', 'common', 'data', 'text-json')
 
   it('a JSON subject validates through its own writer: corruption refused, a real edit commits', async () => {
     const heard: string[] = []

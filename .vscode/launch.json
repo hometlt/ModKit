@@ -53,7 +53,7 @@
       "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"],
       "env": {
         "MODKIT_MCP_ROOTS": "${workspaceFolder}",
-        "MODKIT_MCP_EXTENSIONS": "${workspaceFolder}/extensions/common/plain-text"
+        "MODKIT_MCP_EXTENSIONS": "${workspaceFolder}/extensions/common/data/plain-text"
       }
     },
     {

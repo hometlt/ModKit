@@ -762,7 +762,7 @@
         },
         {
           "name": "modkitx:metadata-source",
-          "value": "extensions/common/rendering-3d/package.json"
+          "value": "extensions/common/rendering/rendering-3d/package.json"
         }
       ],
       "purl": "pkg:npm/modkit-extension-x3-rendering-3d@1.0.0",
@@ -834,7 +834,7 @@
         },
         {
           "name": "modkitx:metadata-source",
-          "value": "extensions/common/text-json/package.json"
+          "value": "extensions/common/data/text-json/package.json"
         }
       ],
       "purl": "pkg:npm/modkit-extension-x3-text-json@1.0.0",
@@ -858,7 +858,7 @@
         },
         {
           "name": "modkitx:metadata-source",
-          "value": "extensions/common/text-toml/package.json"
+          "value": "extensions/common/data/text-toml/package.json"
         }
       ],
       "purl": "pkg:npm/modkit-extension-x3-text-toml@1.0.0",
@@ -882,7 +882,7 @@
         },
         {
           "name": "modkitx:metadata-source",
-          "value": "extensions/common/text-xml/package.json"
+          "value": "extensions/common/data/text-xml/package.json"
         }
       ],
       "purl": "pkg:npm/modkit-extension-x3-text-xml@1.0.0",
@@ -906,7 +906,7 @@
         },
         {
           "name": "modkitx:metadata-source",
-          "value": "extensions/common/text-yaml/package.json"
+          "value": "extensions/common/data/text-yaml/package.json"
         }
       ],
       "purl": "pkg:npm/modkit-extension-x3-text-yaml@1.0.0",
@@ -930,7 +930,7 @@
         },
         {
           "name": "modkitx:metadata-source",
-          "value": "extensions/common/ui-monaco/package.json"
+          "value": "extensions/common/ui/monaco/package.json"
         }
       ],
       "purl": "pkg:npm/modkit-extension-x3-ui-monaco@1.0.0",

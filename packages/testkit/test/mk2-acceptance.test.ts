@@ -191,7 +191,7 @@ describe('MK2 → MK3 conversion acceptance (OPUS-MK2-01 task B, OPUS-MK2-02 tas
     const outcomes = await runMk2Acceptance(corpus, { repoRoot, mk2Root })
     console.log(`\n${formatMk2AcceptanceTable(tally, outcomes)}\n`)
 
-    // Block 11 slice 11A moved plain text into product-owned `extensions/common/plain-text` and
+    // Block 11 slice 11A moved plain text into product-owned `extensions/common/data/plain-text` and
     // slice 11B moved ODT, ODS and ODP into `extensions/common/documents`, block 12 moved RTF there,
     // and the Warzone slices moved IMG, LEV, PIE, WRF, WZ and game.map into
     // `extensions/opensource/warzone-2100`. The converter-owned tally therefore drops by eleven

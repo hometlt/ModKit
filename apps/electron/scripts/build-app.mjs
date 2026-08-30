@@ -65,7 +65,7 @@ if (codecInputs.length > 0) {
 // `MonacoEnvironment`. Bundled separately because a worker is its own entry point.
 const monacoRoot = resolve(
   repoRoot,
-  'extensions/common/ui-monaco/node_modules/monaco-editor/esm/vs',
+  'extensions/common/ui/monaco/node_modules/monaco-editor/esm/vs',
 )
 const workerEntries = {
   'editor.worker': join(monacoRoot, 'editor', 'editor.worker.js'),

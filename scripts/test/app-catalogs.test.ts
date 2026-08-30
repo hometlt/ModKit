@@ -4,7 +4,6 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
   renameSync,
   rmSync,
@@ -14,6 +13,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
+import { authoredExtensionRootsRelativeTo } from '../lib/authored-extension-roots.mjs'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 const emitter = join(repoRoot, 'scripts', 'emit-app-catalogs.mjs')
@@ -27,10 +27,8 @@ function fixtureRoot() {
   const root = mkdtempSync(join(tmpdir(), 'x3-app-catalogs-'))
   temporaryRoots.push(root)
   const common = join(repoRoot, 'extensions', 'common')
-  for (const entry of readdirSync(common, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue
-    const source = join(common, entry.name)
-    const destination = join(root, 'extensions', 'common', entry.name)
+  for (const { directory: source, relativePath } of authoredExtensionRootsRelativeTo(common)) {
+    const destination = join(root, 'extensions', 'common', ...relativePath.split('/'))
     mkdirSync(destination, { recursive: true })
     cpSync(join(source, 'package.json'), join(destination, 'package.json'))
     if (existsSync(join(source, 'contributions'))) {
@@ -59,7 +57,7 @@ describe('deterministic Electron app catalog emission', () => {
     const generated = join(root, 'apps', 'electron', 'generated')
     const bundled = readFileSync(join(generated, 'bundled-catalog.cjs'), 'utf8')
     expect(bundled).toContain("  'archives',")
-    expect(bundled).toContain("  'text-json',")
+    expect(bundled).toContain("  'data/text-json',")
     expect(bundled).toContain("  'video',")
     expect(bundled).not.toContain('ui-monaco')
     expect(bundled).not.toContain('ui-graph-3d')
@@ -147,14 +145,14 @@ describe('deterministic Electron app catalog emission', () => {
   it('finds a codec root below grouping directories but ignores grouping package.json files', () => {
     const root = fixtureRoot()
     const common = join(root, 'extensions', 'common')
-    const group = join(common, 'data')
+    const group = join(common, 'data', 'group')
     mkdirSync(group, { recursive: true })
     writeFileSync(
       join(group, 'package.json'),
       `${JSON.stringify({ name: 'grouping-only', private: true }, undefined, 2)}\n`,
       'utf8',
     )
-    renameSync(join(common, 'text-json'), join(group, 'text-json'))
+    renameSync(join(common, 'data', 'text-json'), join(group, 'text-json'))
 
     const emitted = run(root)
     expect(emitted.status, emitted.stderr).toBe(0)
@@ -162,8 +160,8 @@ describe('deterministic Electron app catalog emission', () => {
       join(root, 'apps', 'electron', 'generated', 'bundled-catalog.cjs'),
       'utf8',
     )
-    expect(bundled).toContain("  'data/text-json',")
-    expect(bundled).not.toContain("  'text-json',")
-    expect(bundled).not.toContain("  'data',")
+    expect(bundled).toContain("  'data/group/text-json',")
+    expect(bundled).not.toContain("  'data/text-json',")
+    expect(bundled).not.toContain("  'data/group',")
   })
 })

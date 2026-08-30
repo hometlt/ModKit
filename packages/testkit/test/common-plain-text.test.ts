@@ -1,5 +1,5 @@
 /**
- * Block 11 slice 11A — plain text in its final home, `extensions/common/plain-text`.
+ * Block 11 slice 11A — plain text in its final home, `extensions/common/data/plain-text`.
  *
  * The MK2 route decoded strict UTF-8 and rejected everything else. The relocated codec keeps the
  * contribution identity `org.modkitx/txt`, stays read-only, and proves the three things the plan
@@ -26,7 +26,7 @@ import {
 } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const extensionRoot = join(repoRoot, 'extensions', 'common', 'plain-text')
+const extensionRoot = join(repoRoot, 'extensions', 'common', 'data', 'plain-text')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 
 const budget: ResourceBudget = {

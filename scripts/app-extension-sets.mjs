@@ -51,6 +51,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     ]),
   }),
   'plain-text': Object.freeze({
+    path: Object.freeze(['common', 'data', 'plain-text']),
     coordinate: 'org.modkitx/plain-text',
     contributions: Object.freeze(['org.modkitx/txt', 'org.modkitx/plain-text-writer']),
   }),
@@ -95,6 +96,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     ]),
   }),
   'rendering-3d': Object.freeze({
+    path: Object.freeze(['common', 'rendering', 'rendering-3d']),
     coordinate: 'org.modkitx/rendering-3d',
     contributions: Object.freeze([
       'org.modkitx/browser-webgl-renderer',
@@ -102,6 +104,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     ]),
   }),
   'text-delimited': Object.freeze({
+    path: Object.freeze(['common', 'data', 'text-delimited']),
     coordinate: 'org.modkitx/text-delimited',
     contributions: Object.freeze([
       'org.modkitx/csv-syntax-contract',
@@ -115,6 +118,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     ]),
   }),
   'text-ini': Object.freeze({
+    path: Object.freeze(['common', 'data', 'text-ini']),
     coordinate: 'org.modkitx/text-ini',
     contributions: Object.freeze([
       'org.modkitx/ini-syntax-contract',
@@ -124,6 +128,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     ]),
   }),
   'text-json': Object.freeze({
+    path: Object.freeze(['common', 'data', 'text-json']),
     coordinate: 'org.modkitx/text-json',
     contributions: Object.freeze([
       'org.modkitx/json-syntax-contract',
@@ -136,6 +141,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     ]),
   }),
   'text-toml': Object.freeze({
+    path: Object.freeze(['common', 'data', 'text-toml']),
     coordinate: 'org.modkitx/text-toml',
     contributions: Object.freeze([
       'org.modkitx/text-toml',
@@ -145,6 +151,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     ]),
   }),
   'text-xml': Object.freeze({
+    path: Object.freeze(['common', 'data', 'text-xml']),
     coordinate: 'org.modkitx/text-xml',
     contributions: Object.freeze([
       'org.modkitx/text-xml',
@@ -154,6 +161,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     ]),
   }),
   'text-yaml': Object.freeze({
+    path: Object.freeze(['common', 'data', 'text-yaml']),
     coordinate: 'org.modkitx/text-yaml',
     contributions: Object.freeze([
       'org.modkitx/text-yaml',
@@ -178,6 +186,7 @@ export const READY_APP_EXTENSIONS = Object.freeze({
     ]),
   }),
   'ui-monaco': Object.freeze({
+    path: Object.freeze(['common', 'ui', 'monaco']),
     coordinate: 'org.modkitx/ui-monaco',
     contributions: Object.freeze(['org.modkitx.ui-monaco/code-stage']),
   }),

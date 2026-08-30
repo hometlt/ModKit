@@ -2,15 +2,15 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
+import { authoredExtensionRootsRelativeTo } from '../lib/authored-extension-roots.mjs'
 
 const repoRoot = resolve(import.meta.dirname, '..', '..')
 const commonRoot = join(repoRoot, 'extensions', 'common')
 
 describe('hand-authored linked extension entries', () => {
-  const extensions = readdirSync(commonRoot, { withFileTypes: true })
-    .filter(entry => entry.isDirectory())
-    .map(entry => entry.name)
-    .filter(name => existsSync(join(commonRoot, name, 'contributions')))
+  const extensions = authoredExtensionRootsRelativeTo(commonRoot)
+    .filter(({ directory }) => existsSync(join(directory, 'contributions')))
+    .map(({ relativePath }) => relativePath)
     .sort()
 
   it.each(extensions)('%s mentions every contribution manifest', extension => {

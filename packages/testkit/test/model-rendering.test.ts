@@ -172,8 +172,9 @@ describe('decoded model to headless PNG vertical', () => {
       createCodec(context: ContributionContext): Codec
     }
     const { renderHeadless } = (await import(
-      pathToFileURL(join(repoRoot, 'extensions', 'common', 'rendering-3d', 'src', 'headless.js'))
-        .href
+      pathToFileURL(
+        join(repoRoot, 'extensions', 'common', 'rendering', 'rendering-3d', 'src', 'headless.js'),
+      ).href
     )) as {
       renderHeadless(request: Record<string, unknown>): Promise<{
         width: number
@@ -183,7 +184,9 @@ describe('decoded model to headless PNG vertical', () => {
       }>
     }
     const { encodeRgbaPng } = (await import(
-      pathToFileURL(join(repoRoot, 'extensions', 'common', 'rendering-3d', 'src', 'png.js')).href
+      pathToFileURL(
+        join(repoRoot, 'extensions', 'common', 'rendering', 'rendering-3d', 'src', 'png.js'),
+      ).href
     )) as {
       encodeRgbaPng(frame: { width: number; height: number; rgba: Uint8Array }): Promise<Uint8Array>
     }

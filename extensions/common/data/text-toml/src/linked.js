@@ -9,7 +9,7 @@ import * as codec from './formats/toml/codec.js'
 import * as provider from './formats/toml/provider.js'
 
 export const textToml = defineLinkedExtension({
-  source: 'linked:extensions/common/text-toml',
+  source: 'linked:extensions/common/data/text-toml',
   packageJson,
   contributions: [
     { path: 'contributions/codec-toml.json', manifest: codecManifest },

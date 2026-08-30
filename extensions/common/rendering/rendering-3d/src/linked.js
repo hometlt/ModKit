@@ -7,7 +7,7 @@ import * as browser from './browser.js'
 import * as headless from './headless.js'
 
 export const rendering3d = defineLinkedExtension({
-  source: 'linked:extensions/common/rendering-3d',
+  source: 'linked:extensions/common/rendering/rendering-3d',
   packageJson,
   contributions: [
     { path: 'contributions/provider-browser.json', manifest: browserManifest },

@@ -41,7 +41,7 @@ import {
 } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const textJsonDir = join(repoRoot, 'extensions', 'common', 'text-json')
+const textJsonDir = join(repoRoot, 'extensions', 'common', 'data', 'text-json')
 const documentsDir = join(repoRoot, 'extensions', 'common', 'documents')
 const archivesDir = join(repoRoot, 'extensions', 'common', 'archives')
 

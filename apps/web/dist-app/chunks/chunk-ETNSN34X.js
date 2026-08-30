@@ -30720,7 +30720,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         "src/txt/codec.js"
       ],
       name: "plain-text",
-      source: "extensions/common/plain-text"
+      source: "extensions/common/data/plain-text"
     },
     {
       artifact: {
@@ -31475,7 +31475,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         "test/fixtures/csv-rfc4180-parity.json"
       ],
       name: "text-delimited",
-      source: "extensions/common/text-delimited"
+      source: "extensions/common/data/text-delimited"
     },
     {
       artifact: {
@@ -31891,7 +31891,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         "test/fixtures/ini-sc2-parity.json"
       ],
       name: "text-ini",
-      source: "extensions/common/text-ini"
+      source: "extensions/common/data/text-ini"
     },
     {
       artifact: {

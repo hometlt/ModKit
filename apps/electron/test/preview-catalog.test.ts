@@ -33,7 +33,7 @@ interface ViewerManifest {
 function viewerManifests(): readonly ViewerManifest[] {
   const directories = [
     join(repositoryRoot, 'packages', 'ui', 'contributions'),
-    join(repositoryRoot, 'extensions', 'common', 'ui-monaco', 'contributions'),
+    join(repositoryRoot, 'extensions', 'common', 'ui', 'monaco', 'contributions'),
   ]
   return directories.flatMap(directory =>
     readdirSync(directory)

@@ -125,7 +125,7 @@
     },
     {
       "package": "@modkitx/data-processing",
-      "owner": "extensions/common/text-delimited",
+      "owner": "extensions/common/data/text-delimited",
       "state": "ported",
       "note": "plus text-json/text-ini/text-toml/text-yaml; one legacy package fanned out to the delimited and structured-text families"
     },
@@ -212,7 +212,7 @@
     },
     {
       "package": "@modkitx/rendering-3d",
-      "owner": "extensions/common/rendering-3d",
+      "owner": "extensions/common/rendering/rendering-3d",
       "state": "ported",
       "note": "renderer providers are contributions; sdk/renderer holds the contracts they implement"
     },

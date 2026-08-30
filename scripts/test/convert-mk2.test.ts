@@ -460,7 +460,7 @@ describe('MK2 → MK3 converter (OPUS-MK2-01 task A, OPUS-MK2-02 tasks D/D2/E)',
       }
     }
     // Block 8 moved 18 valid contributions into domain-owned roots, block 11 slice 11A moved plain
-    // text into extensions/common/plain-text, and slice 11B moved the OpenDocument trio into
+    // text into extensions/common/data/plain-text, and slice 11B moved the OpenDocument trio into
     // extensions/common/documents. Keep the remaining converted staging tree ratcheted while
     // PIE plus the five WZ-family codecs moved to the final opensource/warzone-2100 owner. The
     // staging floor therefore drops by six while check-mk2-ports keeps the global floor at 169.

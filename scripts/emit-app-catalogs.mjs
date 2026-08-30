@@ -208,7 +208,7 @@ function viewerContributions(root) {
     },
     {
       extensionId: 'org.modkitx/ui-monaco',
-      directory: join(root, 'extensions', 'common', 'ui-monaco', 'contributions'),
+      directory: join(root, 'extensions', 'common', 'ui', 'monaco', 'contributions'),
     },
   ]
   const contributions = new Map()
@@ -373,8 +373,8 @@ ${entries}
  * app failed to build with "No matching export". A second forgotten name would do the same.
  */
 const EXTERNAL_STAGE_MODULES = Object.freeze({
-  monacoEditor: '../../../extensions/common/ui-monaco/src/index.js',
-  monacoViewer: '../../../extensions/common/ui-monaco/src/index.js',
+  monacoEditor: '../../../extensions/common/ui/monaco/src/index.js',
+  monacoViewer: '../../../extensions/common/ui/monaco/src/index.js',
 })
 
 function renderViewerCatalog(root) {

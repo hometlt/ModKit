@@ -10,7 +10,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { loadExtensionRoots } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const textJsonDir = join(repoRoot, 'extensions', 'common', 'text-json')
+const textJsonDir = join(repoRoot, 'extensions', 'common', 'data', 'text-json')
 const imagesDir = join(repoRoot, 'extensions', 'common', 'images')
 
 const scratch = mkdtempSync(join(tmpdir(), 'x3-extension-roots-'))

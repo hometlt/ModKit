@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { proves } from '@modkitx-x3/testkit'
+import { authoredExtensionRootsRelativeTo } from '../lib/authored-extension-roots.mjs'
 
 const repoRoot = join(import.meta.dirname, '..', '..')
 const commonRoot = join(repoRoot, 'extensions', 'common')
@@ -37,10 +38,11 @@ function readJson<T>(...parts: readonly string[]): T {
 /** The live list of codec contributions shipped under `extensions/common/**`. */
 function commonCodecContributions(): ReadonlyMap<string, string> {
   const found = new Map<string, string>()
-  for (const family of readdirSync(commonRoot)) {
+  for (const { directory, relativePath } of authoredExtensionRootsRelativeTo(commonRoot)) {
+    const family = relativePath.split('/').at(-1) ?? relativePath
     let files: readonly string[]
     try {
-      files = readdirSync(join(commonRoot, family, 'contributions'))
+      files = readdirSync(join(directory, 'contributions'))
     } catch {
       continue
     }
@@ -49,7 +51,7 @@ function commonCodecContributions(): ReadonlyMap<string, string> {
       const manifest = readJson<{ contract?: { id?: string }; id?: string }>(
         'extensions',
         'common',
-        family,
+        ...relativePath.split('/'),
         'contributions',
         file,
       )

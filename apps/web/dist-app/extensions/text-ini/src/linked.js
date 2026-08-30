@@ -9,7 +9,7 @@ import * as codec from './formats/ini/codec.js'
 import * as provider from './formats/ini/provider.js'
 
 export const textIni = defineLinkedExtension({
-  source: 'linked:extensions/common/text-ini',
+  source: 'linked:extensions/common/data/text-ini',
   packageJson,
   contributions: [
     { path: 'contributions/codec-ini.json', manifest: codecManifest },

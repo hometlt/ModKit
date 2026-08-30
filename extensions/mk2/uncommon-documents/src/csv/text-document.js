@@ -1,5 +1,5 @@
 // Shared by the hand-ported text document entrypoints still staged here. Plain text left this
-// package in block 11 slice 11A; its final home is extensions/common/plain-text. RTF left in
+// package in block 11 slice 11A; its final home is extensions/common/data/plain-text. RTF left in
 // slice 12-2 for extensions/common/documents, and its reader went with it — what stays here is a
 // generated port-pending stub, because a retired route that still carries a full implementation is
 // not retired, it is duplicated.

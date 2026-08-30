@@ -7,7 +7,7 @@ import * as codec from './txt/codec.js'
 import * as writer from './editing/text-writer.js'
 
 export const plainText = defineLinkedExtension({
-  source: 'linked:extensions/common/plain-text',
+  source: 'linked:extensions/common/data/plain-text',
   packageJson,
   contributions: [
     { path: 'contributions/codec-txt.json', manifest: codecManifest },

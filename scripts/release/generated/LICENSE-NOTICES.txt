@@ -628,7 +628,7 @@ Metadata: apps/web/dist-app/extensions/plain-text/package.json
 
 modkit-extension-x3-rendering-3d@1.0.0
 License: MIT
-Metadata: extensions/common/rendering-3d/package.json
+Metadata: extensions/common/rendering/rendering-3d/package.json
 
 ---
 
@@ -646,31 +646,31 @@ Metadata: apps/web/dist-app/extensions/text-ini/package.json
 
 modkit-extension-x3-text-json@1.0.0
 License: MIT
-Metadata: extensions/common/text-json/package.json
+Metadata: extensions/common/data/text-json/package.json
 
 ---
 
 modkit-extension-x3-text-toml@1.0.0
 License: MIT
-Metadata: extensions/common/text-toml/package.json
+Metadata: extensions/common/data/text-toml/package.json
 
 ---
 
 modkit-extension-x3-text-xml@1.0.0
 License: MIT
-Metadata: extensions/common/text-xml/package.json
+Metadata: extensions/common/data/text-xml/package.json
 
 ---
 
 modkit-extension-x3-text-yaml@1.0.0
 License: MIT
-Metadata: extensions/common/text-yaml/package.json
+Metadata: extensions/common/data/text-yaml/package.json
 
 ---
 
 modkit-extension-x3-ui-monaco@1.0.0
 License: MIT
-Metadata: extensions/common/ui-monaco/package.json
+Metadata: extensions/common/ui/monaco/package.json
 
 ---
 

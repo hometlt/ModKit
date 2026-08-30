@@ -66,6 +66,18 @@ importers:
         specifier: workspace:*
         version: link:../../packages/sdk
 
+  apps/cli:
+    dependencies:
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+
   apps/electron:
     dependencies:
       '@modkitx-x3/core':
@@ -87,18 +99,6 @@ importers:
       electron:
         specifier: ^43.4.0
         version: 43.4.0
-
-  apps/cli:
-    dependencies:
-      '@modkitx-x3/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
 
   apps/mcp:
     dependencies:
@@ -125,6 +125,18 @@ importers:
         specifier: 2.0.0
         version: 2.0.0
 
+  apps/server:
+    dependencies:
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+
   apps/vscode:
     dependencies:
       '@modkitx-x3/core':
@@ -149,18 +161,6 @@ importers:
       '@vscode/test-electron':
         specifier: ^3.1.0
         version: 3.1.0
-
-  apps/server:
-    dependencies:
-      '@modkitx-x3/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
 
   apps/web:
     dependencies:
@@ -198,18 +198,6 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/sdk
 
-  packages/codec-kit:
-    dependencies:
-      '@modkitx-x3/core':
-        specifier: workspace:*
-        version: link:../core
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../sdk
-
   extensions/common/archives:
     dependencies:
       '@modkitx-x3/codec-kit':
@@ -242,6 +230,120 @@ importers:
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../../packages/host
+
+  extensions/common/data/plain-text:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../../../packages/codec-kit
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../../packages/sdk
+
+  extensions/common/data/text-delimited:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../../../packages/codec-kit
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../../packages/sdk
+
+  extensions/common/data/text-ini:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../../../packages/codec-kit
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../../packages/sdk
+
+  extensions/common/data/text-json:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../../../packages/codec-kit
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../../packages/sdk
+      jsonc-parser:
+        specifier: ^3.3.1
+        version: 3.3.1
+
+  extensions/common/data/text-toml:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../../../packages/codec-kit
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../../packages/sdk
+      smol-toml:
+        specifier: ^1.8.0
+        version: 1.8.0
+
+  extensions/common/data/text-xml:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../../../packages/codec-kit
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../../packages/sdk
+      '@rgrove/parse-xml':
+        specifier: ^4.2.3
+        version: 4.2.3
+
+  extensions/common/data/text-yaml:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../../../packages/codec-kit
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../../../packages/host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../../../../packages/sdk
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.0
 
   extensions/common/documents:
     dependencies:
@@ -279,130 +381,16 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/sdk
 
-  extensions/common/plain-text:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../../packages/sdk
-
-  extensions/common/rendering-3d:
+  extensions/common/rendering/rendering-3d:
     dependencies:
       '@modkitx-x3/host':
         specifier: workspace:*
-        version: link:../../../packages/host
+        version: link:../../../../packages/host
       '@modkitx-x3/sdk':
         specifier: workspace:*
-        version: link:../../../packages/sdk
+        version: link:../../../../packages/sdk
 
-  extensions/common/text-delimited:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-      '@modkitx-x3/core':
-        specifier: workspace:*
-        version: link:../../../packages/core
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../../packages/sdk
-
-  extensions/common/text-ini:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-      '@modkitx-x3/core':
-        specifier: workspace:*
-        version: link:../../../packages/core
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../../packages/sdk
-
-  extensions/common/text-json:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-      '@modkitx-x3/core':
-        specifier: workspace:*
-        version: link:../../../packages/core
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../../packages/sdk
-      jsonc-parser:
-        specifier: ^3.3.1
-        version: 3.3.1
-
-  extensions/common/text-toml:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-      '@modkitx-x3/core':
-        specifier: workspace:*
-        version: link:../../../packages/core
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../../packages/sdk
-      smol-toml:
-        specifier: ^1.8.0
-        version: 1.8.0
-
-  extensions/common/text-xml:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-      '@modkitx-x3/core':
-        specifier: workspace:*
-        version: link:../../../packages/core
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../../packages/sdk
-      '@rgrove/parse-xml':
-        specifier: ^4.2.3
-        version: 4.2.3
-
-  extensions/common/text-yaml:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-      '@modkitx-x3/core':
-        specifier: workspace:*
-        version: link:../../../packages/core
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../../packages/sdk
-      yaml:
-        specifier: ^2.9.0
-        version: 2.9.0
-
-  extensions/common/ui-monaco:
+  extensions/common/ui/monaco:
     dependencies:
       monaco-editor:
         specifier: ^0.56.0
@@ -636,6 +624,18 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/codec-kit
 
+  packages/codec-kit:
+    dependencies:
+      '@modkitx-x3/core':
+        specifier: workspace:*
+        version: link:../core
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+
   packages/core: {}
 
   packages/extension-manager:
@@ -698,6 +698,12 @@ importers:
       '@modkitx-x3/sdk':
         specifier: workspace:*
         version: link:../sdk
+
+  packages/ui-graph-3d:
+    dependencies:
+      three:
+        specifier: ^0.180.0
+        version: 0.180.0
 
   packages/vfs:
     dependencies:
@@ -1923,6 +1929,9 @@ packages:
   supports-color@7.2.0:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
     engines: {node: '>=8'}
+
+  three@0.180.0:
+    resolution: {integrity: sha512-o+qycAMZrh+TsE01GqWUxUIKR1AL0S8pq7zDkYOQw8GqfX8b8VoCKYUoHbhiX5j+7hr8XsuHDVU6+gkQJQKg9w==}
 
   tinybench@2.9.0:
     resolution: {integrity: sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg==}
@@ -3154,6 +3163,8 @@ snapshots:
   supports-color@7.2.0:
     dependencies:
       has-flag: 4.0.0
+
+  three@0.180.0: {}
 
   tinybench@2.9.0: {}
 

@@ -59,11 +59,11 @@ const budget: ResourceBudget = {
  * This list is the experiment: drop a family and the collision it takes part in stops existing.
  */
 const FAMILIES = [
-  ['common', 'plain-text'],
-  ['common', 'text-xml'],
-  ['common', 'text-json'],
-  ['common', 'text-ini'],
-  ['common', 'text-delimited'],
+  ['common', 'data', 'plain-text'],
+  ['common', 'data', 'text-xml'],
+  ['common', 'data', 'text-json'],
+  ['common', 'data', 'text-ini'],
+  ['common', 'data', 'text-delimited'],
   ['common', 'archives'],
   ['common', 'documents'],
   ['blizzard', 'starcraft2'],

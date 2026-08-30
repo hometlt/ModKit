@@ -148,7 +148,7 @@ function directoryHandle(
 }
 
 const imagesRoot = join(repositoryRoot, 'extensions', 'common', 'images')
-const textIniRoot = join(repositoryRoot, 'extensions', 'common', 'text-ini')
+const textIniRoot = join(repositoryRoot, 'extensions', 'common', 'data', 'text-ini')
 
 const request = (
   id: string,

@@ -103,7 +103,7 @@ function memorySource(name: string, text: string): ArtifactByteSource {
 
 async function openJsonDescriptor(): Promise<Record<string, unknown>> {
   const roots = await loadExtensionRoots(
-    [join(repositoryRoot, 'extensions', 'common', 'text-json')],
+    [join(repositoryRoot, 'extensions', 'common', 'data', 'text-json')],
     {
       origin: 'bundled',
     },

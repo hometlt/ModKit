@@ -672,7 +672,7 @@ describe('node worker backend — verified multi-file loading through module hoo
 describe('node worker backend — a real bundled extension codec runs in the worker', () => {
   it('text-json: inventoried through loadExtensionDirectory, its multi-file entrypoint and workspace dependencies load, probe detects JSON', async () => {
     const extensionDir = fileURLToPath(
-      new URL('../../../extensions/common/text-json/', import.meta.url),
+      new URL('../../../extensions/common/data/text-json/', import.meta.url),
     )
     const loaded = await loadExtensionDirectory(extensionDir)
     const artifact = loaded.artifact
@@ -719,7 +719,7 @@ describe('node worker backend — a real bundled extension codec runs in the wor
 describe('node worker backend — a real codec opens a session with a host-resolved provider', () => {
   it('text-json open(): contracts.resolve crosses to the host, the provider is proxied by its definition surface, parse/dataSource run on the host', async () => {
     const extensionDir = fileURLToPath(
-      new URL('../../../extensions/common/text-json/', import.meta.url),
+      new URL('../../../extensions/common/data/text-json/', import.meta.url),
     )
     const loaded = await loadExtensionDirectory(extensionDir)
     const artifact = loaded.artifact
@@ -839,7 +839,7 @@ describe('node worker backend — a real codec opens a session with a host-resol
 describe('node worker backend — provider in one worker, codec in another, the host bridges them (S1b product path)', () => {
   it('text-json: the provider module leases through createProvider in worker B; the codec in worker A resolves it through the host; parse/dataSource cross two boundaries', async () => {
     const extensionDir = fileURLToPath(
-      new URL('../../../extensions/common/text-json/', import.meta.url),
+      new URL('../../../extensions/common/data/text-json/', import.meta.url),
     )
     const loaded = await loadExtensionDirectory(extensionDir)
     const artifact = loaded.artifact

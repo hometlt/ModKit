@@ -6,20 +6,13 @@
  * reporting is asserted against the real loader and a real temporary directory, because "reported"
  * is a property of `loadExtensionRoots`' answer travelling all the way into the host's report.
  */
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 import { proves } from '@modkitx-x3/testkit'
+import { authoredExtensionRootsRelativeTo } from '../../../scripts/lib/authored-extension-roots.mjs'
 import {
   configuredExtensionRoots,
   dedupeRoots,
@@ -30,31 +23,6 @@ import {
   type DirectoryProbe,
 } from '../src/extension-roots.js'
 
-/** The real filesystem, as the probe shape — for the one assertion that reads the repository. */
-const nodeProbe: DirectoryProbe = {
-  readDirectory: path => {
-    try {
-      return readdirSync(path)
-    } catch {
-      return undefined
-    }
-  },
-  isFile: path => {
-    try {
-      return statSync(path).isFile()
-    } catch {
-      return false
-    }
-  },
-  readJson: path => {
-    try {
-      return JSON.parse(readFileSync(path, 'utf8')) as unknown
-    } catch {
-      return undefined
-    }
-  },
-  join: (...parts) => join(...parts),
-}
 import { createVsCodeCommandOpener, createVsCodeSubjectHost } from '../src/host.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
@@ -228,7 +196,7 @@ describe('a root that is not an extension', () => {
       catalogCandidates: [],
       configuredExtensions: [
         {
-          path: join(repositoryRoot, 'extensions', 'common', 'text-json'),
+          path: join(repositoryRoot, 'extensions', 'common', 'data', 'text-json'),
           id: 'acme/not-this-one',
         },
       ],
@@ -241,7 +209,7 @@ describe('a root that is not an extension', () => {
 })
 
 describe('managed extension roots', () => {
-  const root = join(repositoryRoot, 'extensions', 'common', 'text-json')
+  const root = join(repositoryRoot, 'extensions', 'common', 'data', 'text-json')
   const coordinate = 'org.modkitx/text-json'
 
   it('composes enabled manager roots directly without a modkit.extensions entry', async () => {
@@ -463,10 +431,10 @@ describe('the generated catalog decides what this build ships', () => {
       }[]
     }
     const common = join(import.meta.dirname, '..', '..', '..', 'extensions', 'common')
-    const onDisk = readdirSync(common)
-      .filter(name => looksLikeExtensionDirectory(join(common, name), nodeProbe))
-      .sort()
-    expect(emitted.roots.map(root => root.name)).toEqual(onDisk)
+    const onDisk = authoredExtensionRootsRelativeTo(common).map(
+      ({ relativePath }) => `common/${relativePath}`,
+    )
+    expect(emitted.roots.map(root => root.directory)).toEqual(onDisk)
     for (const root of emitted.roots) {
       const loaded = await loadExtensionDirectory(
         join(import.meta.dirname, '..', '..', '..', 'extensions', root.directory),

@@ -14,7 +14,7 @@ import * as tsvCodec from './families/delimited/entrypoints/tsv-codec.js'
 import * as tsvProvider from './families/delimited/entrypoints/tsv-provider.js'
 
 export const textDelimited = defineLinkedExtension({
-  source: 'linked:extensions/common/text-delimited',
+  source: 'linked:extensions/common/data/text-delimited',
   packageJson,
   contributions: [
     { path: 'contributions/codec-csv.json', manifest: csvCodecManifest },

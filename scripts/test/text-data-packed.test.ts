@@ -144,7 +144,7 @@ describe('13B packed text extension boundaries', () => {
       const tarballs = new Map(
         groups.map(group => [
           group.packageName,
-          pack(join(repoRoot, 'extensions', 'common', group.directory)),
+          pack(join(repoRoot, 'extensions', 'common', 'data', group.directory)),
         ]),
       )
 

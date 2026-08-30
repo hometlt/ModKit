@@ -3436,6 +3436,1491 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
+        artifactDigest: 'sha256:aa86b282e2ec62853e9cfa78720e8442c0cd8ccb0516f657c210d4ebb8d0a11e',
+        fileDigests: {
+          'README.md': 'sha256:2339ff16b1e58e37bcf7c7e44011a171e635b9aeb526be03152b5e994ba25fc7',
+          'contributions/codec-txt.json':
+            'sha256:68d7d7e69156cb6657a835cc57839c1ef585429de339eb8bcc55b8e2708b001a',
+          'contributions/writer-plain-text.json':
+            'sha256:6750d3b1234259c5f12112dec432d62f2645afa0d70f316a96062bde50343531',
+          'package.json': 'sha256:5f6873b70904d7afa58cb8b23a3bfc49724cbcd0d4bd0e0af209e0525b68c6a9',
+          'src/editing/text-writer.js':
+            'sha256:fc211a3b193ee86413d779899771c0cb93c89517ea50ae22773b1ec2ed023b9d',
+          'src/index.js': 'sha256:4490f78940b58ce6125c3f02a429c6e502a4f8cbb6ebbb01d0693fb06eed5b04',
+          'src/linked.js':
+            'sha256:dbb22dad8b1a7ea7ff072151da0284f78e3022f33102dc3fe1f6609d56ca636b',
+          'src/txt/codec.js':
+            'sha256:9b31a57ee8e440462b7ca91979d8bb12c6d277ef823c408604e7aa587c5bbb73',
+        },
+        inventoryRecordId:
+          'artifact:sha256:aa86b282e2ec62853e9cfa78720e8442c0cd8ccb0516f657c210d4ebb8d0a11e',
+      },
+      artifactRoot: 'extensions/plain-text/',
+      containers: {
+        packageJson: {
+          dependencies: {
+            '@modkitx-x3/codec-kit': 'workspace:*',
+          },
+          description: 'Isolated MK3 plain-text codec and its separate text writer.',
+          exports: {
+            '.': './src/index.js',
+            './editing/text-writer': './src/editing/text-writer.js',
+            './linked': './src/linked.js',
+            './package.json': './package.json',
+            './txt/codec': './src/txt/codec.js',
+          },
+          files: ['contributions', 'src', 'README.md'],
+          license: 'MIT',
+          modkit: {
+            contributionManifests: ['./contributions/*.json'],
+            id: 'plain-text',
+            publisher: 'org.modkitx',
+            schemaVersion: 1,
+          },
+          name: 'modkit-extension-x3-plain-text',
+          peerDependencies: {
+            '@modkitx-x3/host': 'workspace:*',
+            '@modkitx-x3/sdk': 'workspace:*',
+          },
+          peerDependenciesMeta: {
+            '@modkitx-x3/host': {
+              optional: true,
+            },
+            '@modkitx-x3/sdk': {
+              optional: true,
+            },
+          },
+          type: 'module',
+          version: '1.0.0',
+        },
+      },
+      documentDigests: [
+        [
+          'contributions/codec-txt.json',
+          'sha256:68d7d7e69156cb6657a835cc57839c1ef585429de339eb8bcc55b8e2708b001a',
+        ],
+        [
+          'contributions/writer-plain-text.json',
+          'sha256:6750d3b1234259c5f12112dec432d62f2645afa0d70f316a96062bde50343531',
+        ],
+      ],
+      documents: [
+        [
+          'contributions/codec-txt.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Plain Text Document',
+            id: 'org.modkitx/txt',
+            limitations: [
+              'The codec is read-only: editing plain text is the separate org.modkitx/plain-text-writer contribution, and no operation here mutates a source.',
+              'UTF-16 is accepted only with a byte-order mark, and a UTF-16 document publishes the paragraph outline and the raw bytes but not the lazy text source, whose line index is only true for UTF-8.',
+              'A .txt inside a StarCraft II container or under LocalizedData/ is left to the game codec that owns the path; the generic route reports a decisive minimum there.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/txt/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/txt/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'txt',
+                  label: 'Plain Text Document',
+                  mediaType: 'text/plain',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['txt'],
+                mediaTypes: ['text/plain'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'search',
+                  id: 'asset.search',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 8192,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 8192,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/text-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.document/flow-metadata',
+                  id: 'flow-metadata',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['semantic'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'document.flow',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.text',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.binary',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+              ],
+            },
+            status: 'supported',
+          },
+        ],
+        [
+          'contributions/writer-plain-text.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'Plain text writer',
+            id: 'org.modkitx/plain-text-writer',
+            runtimeVariants: [
+              {
+                entrypoint: './src/editing/text-writer.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              provides: [
+                {
+                  contract: 'common.edit/writer',
+                  facet: {
+                    fidelityEvidenceId: 'plain-text-writer-v1',
+                    formatId: 'txt',
+                    minimumRoundTrip: 'byte-identical',
+                    mutationMode: 'mutate',
+                    providerId: 'org.modkitx/plain-text-writer',
+                    representationId: 'source',
+                  },
+                  major: 1,
+                  offerId: 'plain-text-source',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
+      ],
+      files: [
+        'README.md',
+        'contributions/codec-txt.json',
+        'contributions/writer-plain-text.json',
+        'package.json',
+        'src/editing/text-writer.js',
+        'src/index.js',
+        'src/linked.js',
+        'src/txt/codec.js',
+      ],
+      name: 'plain-text',
+      source: 'extensions/common/data/plain-text',
+    },
+    {
+      artifact: {
+        artifactDigest: 'sha256:34007b2288074d9b43b3e9db1552fc5656baa8962afdaa335bd620ae7d06e384',
+        fileDigests: {
+          'README.md': 'sha256:32b16af9cd40d5a69ccc3a44c7d74e40703c44ff0ac7f61a8f1289f093506a0d',
+          'contributions/codec-csv.json':
+            'sha256:e822428283b261aff304e476b7941ad4118565da7e78d4298ab24e8c5ba10fbc',
+          'contributions/codec-tsv.json':
+            'sha256:6a58d5a73fd73c61884ba4f01ca6391e37f069a27ed8cc1848d046f2a9ff61d0',
+          'contributions/contract-csv-syntax.json':
+            'sha256:7073ab778c132e4a14e89c08bfe29289c81bac1c6d30f9e44ef0a70431e6beb8',
+          'contributions/contract-tsv-syntax.json':
+            'sha256:2f4bd11489e72d4ba207b6a79dd7680651b2ff93f25b8acde057ce5ccbf0976c',
+          'contributions/provider-csv-default.json':
+            'sha256:51dce1699a464ede2fe08da370490985c2c6f97d1162aee16c2767e875f87ede',
+          'contributions/provider-tsv-default.json':
+            'sha256:5520bc14a0ff8d688706a5821cef953670e5936827138dc75d21829d28e81c8c',
+          'contributions/writer-delimited.json':
+            'sha256:21e1441bcc2c6e5b81ad048edfafb8bc3ec77551fe183a0d03de96c28f6833ad',
+          'package.json': 'sha256:68ec3aa1b3b013e056a4ed693051ead781fb8c4dc1d39da9e3f2b730587d146b',
+          'src/editing/text-writer.js':
+            'sha256:dce962c640c433456183054d03940ab874d4970da6cf41a1fae289269873d561',
+          'src/families/delimited/codec.js':
+            'sha256:8ce0696b57a7094d17468051804a030296494d4d9af15380b8a6d706252a8e42',
+          'src/families/delimited/detect.js':
+            'sha256:1ec144c35a3f4de38a845c3b76ec66f00d93eaf9e1447a8a8160413fe7a2e324',
+          'src/families/delimited/entrypoints/csv-codec.js':
+            'sha256:6243da640aa7c418bc29546d9eaca189633e2dbb8e90ef03e5fba2cc1f7db599',
+          'src/families/delimited/entrypoints/csv-provider.js':
+            'sha256:2451a0448076baa0e4ec6b68096c93930da3e65fb491e8d1bd0dd1fa7c278e4c',
+          'src/families/delimited/entrypoints/tsv-codec.js':
+            'sha256:67f2b243742588a0edf6308fee4e922dd46f29c863b245ace2c80bd896f91bb1',
+          'src/families/delimited/entrypoints/tsv-provider.js':
+            'sha256:28c244d41cde12d2aa9978a4b49521f55bbd93464db5b2aa43c9802379f49445',
+          'src/families/delimited/profiles/csv.js':
+            'sha256:14053295163a70a5e08e42d66493a58d628a942caabbcde1937653783a96522a',
+          'src/families/delimited/profiles/tsv.js':
+            'sha256:ceab7ba8a62c4bbaee2bca71fe1650013ee1c7f0c97bae1b83ee1949aeb8ee6d',
+          'src/families/delimited/provider.js':
+            'sha256:3aad857e5b32b3823fbbc674daf201c8628a5fdb33192853b742ad1478096287',
+          'src/formats/csv/codec.js':
+            'sha256:a30bd6adc8faf7f0d574866eb79173e0462d4e433368b7f2d15b67d0440de875',
+          'src/formats/csv/provider.js':
+            'sha256:851839259a7cc2c297bb2d6de8b91b81819bc79dbfff3a0119605fc9918ea099',
+          'src/formats/index.js':
+            'sha256:9cd30c3d83e23764bed3378f2ff03b7e5843c5af3a88b4cd31c89daa7757857d',
+          'src/formats/tsv/codec.js':
+            'sha256:2900ba21b6e5fc6846573ebcfa9352c963c04204d62d4909c31b869b0b34d201',
+          'src/formats/tsv/provider.js':
+            'sha256:ef9f2ba7cbc1220ffa936cdf773fea9a089f6ca19bd002f044885b48cc41549a',
+          'src/index.js': 'sha256:4d3c1f65a922238a9b5cd20832700b890e95abd3e1485f07bd472d9a074227d2',
+          'src/linked.js':
+            'sha256:08acec9c2c0c086da98e4f106833311c5dc4eaf11cbb9b9d8a5fd7d09475281e',
+          'test/fixtures/csv-rfc4180-parity.json':
+            'sha256:518c4096fdf96326de1c0a83acab3674a66a2ccfa7f9b7279760e97fbb712ef5',
+        },
+        inventoryRecordId:
+          'artifact:sha256:34007b2288074d9b43b3e9db1552fc5656baa8962afdaa335bd620ae7d06e384',
+      },
+      artifactRoot: 'extensions/text-delimited/',
+      containers: {
+        packageJson: {
+          dependencies: {
+            '@modkitx-x3/codec-kit': 'workspace:*',
+          },
+          description: 'Independent MK3 CSV and TSV codecs and syntax providers.',
+          exports: {
+            '.': './src/index.js',
+            './formats': './src/formats/index.js',
+            './formats/csv/codec': './src/families/delimited/entrypoints/csv-codec.js',
+            './formats/csv/provider': './src/families/delimited/entrypoints/csv-provider.js',
+            './formats/tsv/codec': './src/families/delimited/entrypoints/tsv-codec.js',
+            './formats/tsv/provider': './src/families/delimited/entrypoints/tsv-provider.js',
+            './linked': './src/linked.js',
+            './package.json': './package.json',
+          },
+          files: ['contributions', 'src', 'README.md'],
+          license: 'MIT',
+          modkit: {
+            contributionManifests: ['./contributions/*.json'],
+            id: 'text-delimited',
+            publisher: 'org.modkitx',
+            schemaVersion: 1,
+          },
+          name: 'modkit-extension-x3-text-delimited',
+          peerDependencies: {
+            '@modkitx-x3/core': 'workspace:*',
+            '@modkitx-x3/host': 'workspace:*',
+            '@modkitx-x3/sdk': 'workspace:*',
+          },
+          peerDependenciesMeta: {
+            '@modkitx-x3/core': {
+              optional: true,
+            },
+            '@modkitx-x3/host': {
+              optional: true,
+            },
+            '@modkitx-x3/sdk': {
+              optional: true,
+            },
+          },
+          type: 'module',
+          version: '1.0.0',
+        },
+      },
+      documentDigests: [
+        [
+          'contributions/codec-csv.json',
+          'sha256:e822428283b261aff304e476b7941ad4118565da7e78d4298ab24e8c5ba10fbc',
+        ],
+        [
+          'contributions/codec-tsv.json',
+          'sha256:6a58d5a73fd73c61884ba4f01ca6391e37f069a27ed8cc1848d046f2a9ff61d0',
+        ],
+        [
+          'contributions/contract-csv-syntax.json',
+          'sha256:7073ab778c132e4a14e89c08bfe29289c81bac1c6d30f9e44ef0a70431e6beb8',
+        ],
+        [
+          'contributions/contract-tsv-syntax.json',
+          'sha256:2f4bd11489e72d4ba207b6a79dd7680651b2ff93f25b8acde057ce5ccbf0976c',
+        ],
+        [
+          'contributions/provider-csv-default.json',
+          'sha256:51dce1699a464ede2fe08da370490985c2c6f97d1162aee16c2767e875f87ede',
+        ],
+        [
+          'contributions/provider-tsv-default.json',
+          'sha256:5520bc14a0ff8d688706a5821cef953670e5936827138dc75d21829d28e81c8c',
+        ],
+        [
+          'contributions/writer-delimited.json',
+          'sha256:21e1441bcc2c6e5b81ad048edfafb8bc3ec77551fe183a0d03de96c28f6833ad',
+        ],
+      ],
+      documents: [
+        [
+          'contributions/codec-csv.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'CSV text data',
+            id: 'org.modkitx/text-csv',
+            runtimeVariants: [
+              {
+                entrypoint: './src/families/delimited/entrypoints/csv-codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/families/delimited/entrypoints/csv-codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored'],
+              budgets: {
+                maxDepth: 256,
+                maxDiagnostics: 10000,
+                maxInputBytes: '1073741824',
+                maxNodes: 1000000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'csv',
+                  label: 'CSV',
+                  mediaType: 'text/csv',
+                },
+              ],
+              implementationTier: {
+                claimed: 2,
+              },
+              match: {
+                extensions: ['csv'],
+                mediaTypes: ['text/csv'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'search',
+                  id: 'asset.search',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'parse',
+                  id: 'data.parse',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'serialize',
+                  id: 'data.serialize',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'scan',
+                  id: 'data.scan',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 8192,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 8192,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/table-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/text-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.text-data/csv-document',
+                  id: 'syntax-document',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              requires: [
+                {
+                  contract: 'common.text-data/csv-syntax',
+                  major: 1,
+                  range: '^1.0.0',
+                },
+              ],
+              roles: ['semantic'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'table.cells',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.text',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.binary',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+              ],
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-tsv.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'TSV text data',
+            id: 'org.modkitx/text-tsv',
+            runtimeVariants: [
+              {
+                entrypoint: './src/families/delimited/entrypoints/tsv-codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/families/delimited/entrypoints/tsv-codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored'],
+              budgets: {
+                maxDepth: 256,
+                maxDiagnostics: 10000,
+                maxInputBytes: '1073741824',
+                maxNodes: 1000000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'tsv',
+                  label: 'TSV',
+                  mediaType: 'text/tab-separated-values',
+                },
+              ],
+              implementationTier: {
+                claimed: 2,
+              },
+              match: {
+                extensions: ['tsv', 'tab'],
+                mediaTypes: ['text/tab-separated-values'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'search',
+                  id: 'asset.search',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'parse',
+                  id: 'data.parse',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'serialize',
+                  id: 'data.serialize',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'scan',
+                  id: 'data.scan',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 8192,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 8192,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/table-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/text-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.text-data/tsv-document',
+                  id: 'syntax-document',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              requires: [
+                {
+                  contract: 'common.text-data/tsv-syntax',
+                  major: 1,
+                  range: '^1.0.0',
+                },
+              ],
+              roles: ['semantic'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'table.cells',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.text',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.binary',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+              ],
+            },
+          },
+        ],
+        [
+          'contributions/contract-csv-syntax.json',
+          {
+            contract: {
+              id: 'org.modkitx/contract-definition',
+              major: 1,
+            },
+            displayName: 'CSV syntax service contract',
+            id: 'org.modkitx/csv-syntax-contract',
+            schemaVersion: 1,
+            spec: {
+              conformanceProfile: 'common.text-data/csv-syntax-v1',
+              contract: 'common.text-data/csv-syntax',
+              kind: 'service',
+              major: 1,
+              matching: {
+                major: 1,
+                profile: 'org.modkitx/facetless-matcher',
+              },
+              offerFacet: {
+                presence: 'forbidden',
+              },
+              requestFacet: {
+                presence: 'forbidden',
+              },
+              schemaVersion: 1,
+              surface: {
+                fields: ['contract'],
+                methods: {
+                  dataSource: {
+                    kind: 'lease',
+                    result: {
+                      contract: 'common.view/table-data-source',
+                      major: 1,
+                    },
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                    wrapper: 'lease',
+                  },
+                  parse: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                  serialize: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        [
+          'contributions/contract-tsv-syntax.json',
+          {
+            contract: {
+              id: 'org.modkitx/contract-definition',
+              major: 1,
+            },
+            displayName: 'TSV syntax service contract',
+            id: 'org.modkitx/tsv-syntax-contract',
+            schemaVersion: 1,
+            spec: {
+              conformanceProfile: 'common.text-data/tsv-syntax-v1',
+              contract: 'common.text-data/tsv-syntax',
+              kind: 'service',
+              major: 1,
+              matching: {
+                major: 1,
+                profile: 'org.modkitx/facetless-matcher',
+              },
+              offerFacet: {
+                presence: 'forbidden',
+              },
+              requestFacet: {
+                presence: 'forbidden',
+              },
+              schemaVersion: 1,
+              surface: {
+                fields: ['contract'],
+                methods: {
+                  dataSource: {
+                    kind: 'lease',
+                    result: {
+                      contract: 'common.view/table-data-source',
+                      major: 1,
+                    },
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                    wrapper: 'lease',
+                  },
+                  parse: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                  serialize: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        [
+          'contributions/provider-csv-default.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'csv syntax provider',
+            id: 'org.modkitx/csv-syntax-default',
+            runtimeVariants: [
+              {
+                entrypoint: './src/families/delimited/entrypoints/csv-provider.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/families/delimited/entrypoints/csv-provider.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              outputs: [
+                {
+                  id: 'table.cells',
+                  presence: 'will-expose',
+                  representation: 'runtime',
+                },
+              ],
+              provides: [
+                {
+                  contract: 'common.text-data/csv-syntax',
+                  major: 1,
+                  offerId: 'csv-syntax-default-v1',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
+        [
+          'contributions/provider-tsv-default.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'tsv syntax provider',
+            id: 'org.modkitx/tsv-syntax-default',
+            runtimeVariants: [
+              {
+                entrypoint: './src/families/delimited/entrypoints/tsv-provider.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/families/delimited/entrypoints/tsv-provider.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              outputs: [
+                {
+                  id: 'table.cells',
+                  presence: 'will-expose',
+                  representation: 'runtime',
+                },
+              ],
+              provides: [
+                {
+                  contract: 'common.text-data/tsv-syntax',
+                  major: 1,
+                  offerId: 'tsv-syntax-default-v1',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
+        [
+          'contributions/writer-delimited.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'CSV and TSV text writer',
+            id: 'org.modkitx/text-delimited-writer',
+            runtimeVariants: [
+              {
+                entrypoint: './src/editing/text-writer.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              provides: [
+                {
+                  contract: 'common.edit/writer',
+                  facet: {
+                    fidelityEvidenceId: 'text-delimited-text-writer-v1',
+                    formatId: 'csv',
+                    minimumRoundTrip: 'byte-identical',
+                    mutationMode: 'mutate',
+                    providerId: 'org.modkitx/text-delimited-writer',
+                    representationId: 'source',
+                  },
+                  major: 1,
+                  offerId: 'csv-source',
+                  version: '1.0.0',
+                },
+                {
+                  contract: 'common.edit/writer',
+                  facet: {
+                    fidelityEvidenceId: 'text-delimited-text-writer-v1',
+                    formatId: 'tsv',
+                    minimumRoundTrip: 'byte-identical',
+                    mutationMode: 'mutate',
+                    providerId: 'org.modkitx/text-delimited-writer',
+                    representationId: 'source',
+                  },
+                  major: 1,
+                  offerId: 'tsv-source',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
+      ],
+      files: [
+        'README.md',
+        'contributions/codec-csv.json',
+        'contributions/codec-tsv.json',
+        'contributions/contract-csv-syntax.json',
+        'contributions/contract-tsv-syntax.json',
+        'contributions/provider-csv-default.json',
+        'contributions/provider-tsv-default.json',
+        'contributions/writer-delimited.json',
+        'package.json',
+        'src/editing/text-writer.js',
+        'src/families/delimited/codec.js',
+        'src/families/delimited/detect.js',
+        'src/families/delimited/entrypoints/csv-codec.js',
+        'src/families/delimited/entrypoints/csv-provider.js',
+        'src/families/delimited/entrypoints/tsv-codec.js',
+        'src/families/delimited/entrypoints/tsv-provider.js',
+        'src/families/delimited/profiles/csv.js',
+        'src/families/delimited/profiles/tsv.js',
+        'src/families/delimited/provider.js',
+        'src/formats/csv/codec.js',
+        'src/formats/csv/provider.js',
+        'src/formats/index.js',
+        'src/formats/tsv/codec.js',
+        'src/formats/tsv/provider.js',
+        'src/index.js',
+        'src/linked.js',
+        'test/fixtures/csv-rfc4180-parity.json',
+      ],
+      name: 'text-delimited',
+      source: 'extensions/common/data/text-delimited',
+    },
+    {
+      artifact: {
+        artifactDigest: 'sha256:0674985c9dca6293d5b0a9e7128e6f66f3137803528f9a0acab0b0f389dffe33',
+        fileDigests: {
+          'README.md': 'sha256:9519219eb63529bab5e470614ac5a8c5506507cb35e567d4686f73c13023e546',
+          'contributions/codec-ini.json':
+            'sha256:a049d4e8c41e3954c685ae048a37fe88295486ab93dda96cd81e648e301d9624',
+          'contributions/contract-ini-syntax.json':
+            'sha256:aafe6ff6e6465a0ac49865cd594ff360ed796e29dc803668bfd8f83cdd0f9973',
+          'contributions/provider-ini-default.json':
+            'sha256:92fad791e38fa9cc4d22907ef846b88bbba25e237c156285954688ff417f8893',
+          'contributions/writer-ini.json':
+            'sha256:d278dfffae415d855276a46335e7668f6ecdf465cc4c3e73b672dc39850abfaf',
+          'package.json': 'sha256:210d7fb01b46f161c2b5bb8ceb6b1b5a5db17727e5b776ad42e9d4d1891dfadb',
+          'src/editing/text-writer.js':
+            'sha256:2c0fe6dd7b60302cc6ba2e91d995a257e875b81a6af1bda8d23869ead9d7a56c',
+          'src/formats/index.js':
+            'sha256:a4d3cbdd7e162f66732f3c2dc857e4538c5f2a9794a610d144a1baaf6b6da75f',
+          'src/formats/ini/codec.js':
+            'sha256:bc28ceb31c5dd6606d6fe302cf8ffa0b42bcd85ed4f9ca9c95d9a60120e5cef8',
+          'src/formats/ini/definition.js':
+            'sha256:818494714eab867402779285234d227938d606a8737e50d4318ee6aa0cff6c45',
+          'src/formats/ini/provider.js':
+            'sha256:90b04036cffdcb990e1f90e09882377d206081ba02e45cea85e93545422599da',
+          'src/index.js': 'sha256:4490f78940b58ce6125c3f02a429c6e502a4f8cbb6ebbb01d0693fb06eed5b04',
+          'src/linked.js':
+            'sha256:9c19ba5d020308ec3c0fec0a7bdb3b49b7a3d0ffe1c46c09956ad86d9d2c4fc6',
+          'test/fixtures/ini-sc2-parity.json':
+            'sha256:205a176ec39d8c1adeebd8f9419ff9c9b8e2e2d45f4387541adc7e96c2090df9',
+        },
+        inventoryRecordId:
+          'artifact:sha256:0674985c9dca6293d5b0a9e7128e6f66f3137803528f9a0acab0b0f389dffe33',
+      },
+      artifactRoot: 'extensions/text-ini/',
+      containers: {
+        packageJson: {
+          dependencies: {
+            '@modkitx-x3/codec-kit': 'workspace:*',
+          },
+          description: 'Independent dependency-free MK3 INI codec and syntax provider.',
+          exports: {
+            '.': './src/index.js',
+            './formats': './src/formats/index.js',
+            './formats/ini/codec': './src/formats/ini/codec.js',
+            './formats/ini/provider': './src/formats/ini/provider.js',
+            './linked': './src/linked.js',
+            './package.json': './package.json',
+          },
+          files: ['contributions', 'src', 'README.md'],
+          license: 'MIT',
+          modkit: {
+            contributionManifests: ['./contributions/*.json'],
+            id: 'text-ini',
+            publisher: 'org.modkitx',
+            schemaVersion: 1,
+          },
+          name: 'modkit-extension-x3-text-ini',
+          peerDependencies: {
+            '@modkitx-x3/core': 'workspace:*',
+            '@modkitx-x3/host': 'workspace:*',
+            '@modkitx-x3/sdk': 'workspace:*',
+          },
+          peerDependenciesMeta: {
+            '@modkitx-x3/core': {
+              optional: true,
+            },
+            '@modkitx-x3/host': {
+              optional: true,
+            },
+            '@modkitx-x3/sdk': {
+              optional: true,
+            },
+          },
+          type: 'module',
+          version: '1.0.0',
+        },
+      },
+      documentDigests: [
+        [
+          'contributions/codec-ini.json',
+          'sha256:a049d4e8c41e3954c685ae048a37fe88295486ab93dda96cd81e648e301d9624',
+        ],
+        [
+          'contributions/contract-ini-syntax.json',
+          'sha256:aafe6ff6e6465a0ac49865cd594ff360ed796e29dc803668bfd8f83cdd0f9973',
+        ],
+        [
+          'contributions/provider-ini-default.json',
+          'sha256:92fad791e38fa9cc4d22907ef846b88bbba25e237c156285954688ff417f8893',
+        ],
+        [
+          'contributions/writer-ini.json',
+          'sha256:d278dfffae415d855276a46335e7668f6ecdf465cc4c3e73b672dc39850abfaf',
+        ],
+      ],
+      documents: [
+        [
+          'contributions/codec-ini.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'INI text data',
+            id: 'org.modkitx/text-ini',
+            runtimeVariants: [
+              {
+                entrypoint: './src/formats/ini/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/formats/ini/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored'],
+              budgets: {
+                maxDepth: 256,
+                maxDiagnostics: 10000,
+                maxInputBytes: '1073741824',
+                maxNodes: 1000000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'ini',
+                  label: 'INI',
+                  mediaType: 'text/plain',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['ini', 'cfg', 'conf'],
+                mediaTypes: ['text/plain'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'search',
+                  id: 'asset.search',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'parse',
+                  id: 'data.parse',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'serialize',
+                  id: 'data.serialize',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 8192,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 8192,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/text-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.text-data/ini-document',
+                  id: 'syntax-document',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              requires: [
+                {
+                  contract: 'common.text-data/ini-syntax',
+                  major: 1,
+                  range: '^1.0.0',
+                },
+              ],
+              roles: ['semantic'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.text',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.binary',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+              ],
+            },
+          },
+        ],
+        [
+          'contributions/contract-ini-syntax.json',
+          {
+            contract: {
+              id: 'org.modkitx/contract-definition',
+              major: 1,
+            },
+            displayName: 'INI syntax service contract',
+            id: 'org.modkitx/ini-syntax-contract',
+            schemaVersion: 1,
+            spec: {
+              conformanceProfile: 'common.text-data/ini-syntax-v1',
+              contract: 'common.text-data/ini-syntax',
+              kind: 'service',
+              major: 1,
+              matching: {
+                major: 1,
+                profile: 'org.modkitx/facetless-matcher',
+              },
+              offerFacet: {
+                presence: 'forbidden',
+              },
+              requestFacet: {
+                presence: 'forbidden',
+              },
+              schemaVersion: 1,
+              surface: {
+                fields: ['contract'],
+                methods: {
+                  dataSource: {
+                    kind: 'lease',
+                    result: {
+                      contract: 'common.view/tree-data-source',
+                      major: 1,
+                    },
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                    wrapper: 'lease',
+                  },
+                  parse: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                  serialize: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        [
+          'contributions/provider-ini-default.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'ini syntax provider',
+            id: 'org.modkitx/ini-syntax-default',
+            runtimeVariants: [
+              {
+                entrypoint: './src/formats/ini/provider.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/formats/ini/provider.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              outputs: [
+                {
+                  id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'runtime',
+                },
+              ],
+              provides: [
+                {
+                  contract: 'common.text-data/ini-syntax',
+                  major: 1,
+                  offerId: 'ini-syntax-default-v1',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
+        [
+          'contributions/writer-ini.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'INI text writer',
+            id: 'org.modkitx/text-ini-writer',
+            runtimeVariants: [
+              {
+                entrypoint: './src/editing/text-writer.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              provides: [
+                {
+                  contract: 'common.edit/writer',
+                  facet: {
+                    fidelityEvidenceId: 'text-ini-text-writer-v1',
+                    formatId: 'ini',
+                    minimumRoundTrip: 'byte-identical',
+                    mutationMode: 'mutate',
+                    providerId: 'org.modkitx/text-ini-writer',
+                    representationId: 'source',
+                  },
+                  major: 1,
+                  offerId: 'ini-source',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
+      ],
+      files: [
+        'README.md',
+        'contributions/codec-ini.json',
+        'contributions/contract-ini-syntax.json',
+        'contributions/provider-ini-default.json',
+        'contributions/writer-ini.json',
+        'package.json',
+        'src/editing/text-writer.js',
+        'src/formats/index.js',
+        'src/formats/ini/codec.js',
+        'src/formats/ini/definition.js',
+        'src/formats/ini/provider.js',
+        'src/index.js',
+        'src/linked.js',
+        'test/fixtures/ini-sc2-parity.json',
+      ],
+      name: 'text-ini',
+      source: 'extensions/common/data/text-ini',
+    },
+    {
+      artifact: {
         artifactDigest: 'sha256:9cec2312db6904fbe6f5f0009e818db44d9868c4a8f8781ca61cc4c3be9b5303',
         fileDigests: {
           'README.md': 'sha256:0b52b220a83c866101dce41b648816401ca4c387f9341560bb69a06df252d1de',
@@ -8744,1491 +10229,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       ],
       name: 'models',
       source: 'extensions/common/models',
-    },
-    {
-      artifact: {
-        artifactDigest: 'sha256:807ba8ca5de278d8f12c520bc46cfcd57ba98a89a73be838964f97871b24c272',
-        fileDigests: {
-          'README.md': 'sha256:2339ff16b1e58e37bcf7c7e44011a171e635b9aeb526be03152b5e994ba25fc7',
-          'contributions/codec-txt.json':
-            'sha256:68d7d7e69156cb6657a835cc57839c1ef585429de339eb8bcc55b8e2708b001a',
-          'contributions/writer-plain-text.json':
-            'sha256:6750d3b1234259c5f12112dec432d62f2645afa0d70f316a96062bde50343531',
-          'package.json': 'sha256:5f6873b70904d7afa58cb8b23a3bfc49724cbcd0d4bd0e0af209e0525b68c6a9',
-          'src/editing/text-writer.js':
-            'sha256:fc211a3b193ee86413d779899771c0cb93c89517ea50ae22773b1ec2ed023b9d',
-          'src/index.js': 'sha256:4490f78940b58ce6125c3f02a429c6e502a4f8cbb6ebbb01d0693fb06eed5b04',
-          'src/linked.js':
-            'sha256:4388973facceccd5e22b12c9925a4d825c49db7f02b9bc5409a1d480f1d5a399',
-          'src/txt/codec.js':
-            'sha256:9b31a57ee8e440462b7ca91979d8bb12c6d277ef823c408604e7aa587c5bbb73',
-        },
-        inventoryRecordId:
-          'artifact:sha256:807ba8ca5de278d8f12c520bc46cfcd57ba98a89a73be838964f97871b24c272',
-      },
-      artifactRoot: 'extensions/plain-text/',
-      containers: {
-        packageJson: {
-          dependencies: {
-            '@modkitx-x3/codec-kit': 'workspace:*',
-          },
-          description: 'Isolated MK3 plain-text codec and its separate text writer.',
-          exports: {
-            '.': './src/index.js',
-            './editing/text-writer': './src/editing/text-writer.js',
-            './linked': './src/linked.js',
-            './package.json': './package.json',
-            './txt/codec': './src/txt/codec.js',
-          },
-          files: ['contributions', 'src', 'README.md'],
-          license: 'MIT',
-          modkit: {
-            contributionManifests: ['./contributions/*.json'],
-            id: 'plain-text',
-            publisher: 'org.modkitx',
-            schemaVersion: 1,
-          },
-          name: 'modkit-extension-x3-plain-text',
-          peerDependencies: {
-            '@modkitx-x3/host': 'workspace:*',
-            '@modkitx-x3/sdk': 'workspace:*',
-          },
-          peerDependenciesMeta: {
-            '@modkitx-x3/host': {
-              optional: true,
-            },
-            '@modkitx-x3/sdk': {
-              optional: true,
-            },
-          },
-          type: 'module',
-          version: '1.0.0',
-        },
-      },
-      documentDigests: [
-        [
-          'contributions/codec-txt.json',
-          'sha256:68d7d7e69156cb6657a835cc57839c1ef585429de339eb8bcc55b8e2708b001a',
-        ],
-        [
-          'contributions/writer-plain-text.json',
-          'sha256:6750d3b1234259c5f12112dec432d62f2645afa0d70f316a96062bde50343531',
-        ],
-      ],
-      documents: [
-        [
-          'contributions/codec-txt.json',
-          {
-            contract: {
-              id: 'org.modkitx/codec-contribution',
-              major: 1,
-            },
-            displayName: 'Plain Text Document',
-            id: 'org.modkitx/txt',
-            limitations: [
-              'The codec is read-only: editing plain text is the separate org.modkitx/plain-text-writer contribution, and no operation here mutates a source.',
-              'UTF-16 is accepted only with a byte-order mark, and a UTF-16 document publishes the paragraph outline and the raw bytes but not the lazy text source, whose line index is only true for UTF-8.',
-              'A .txt inside a StarCraft II container or under LocalizedData/ is left to the game codec that owns the path; the generic route reports a decisive minimum there.',
-            ],
-            runtimeVariants: [
-              {
-                entrypoint: './src/txt/codec.js',
-                executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['node'],
-                },
-                variantId: 'trusted-node',
-              },
-              {
-                entrypoint: './src/txt/codec.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              artifactStages: ['authored'],
-              budgets: {
-                maxDepth: 64,
-                maxDiagnostics: 1000,
-                maxInputBytes: '1073741824',
-                maxNodes: 100000,
-                maxScalarBytes: 104857600,
-              },
-              formatRefs: [
-                {
-                  formatId: 'txt',
-                  label: 'Plain Text Document',
-                  mediaType: 'text/plain',
-                },
-              ],
-              implementationTier: {
-                claimed: 1,
-              },
-              match: {
-                extensions: ['txt'],
-                mediaTypes: ['text/plain'],
-              },
-              openIntents: ['probe', 'inspect', 'full', 'export'],
-              operations: [
-                {
-                  handlerId: 'inspect',
-                  id: 'view.inspect',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'validate',
-                  id: 'asset.validate',
-                  mutatesSource: false,
-                  outputKinds: ['none'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'search',
-                  id: 'asset.search',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'export-raw',
-                  id: 'export.raw',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-              ],
-              probe: {
-                kind: 'bytes',
-                maxBytes: 8192,
-                ranges: [
-                  {
-                    from: 'start',
-                    length: 8192,
-                  },
-                ],
-              },
-              publishesDataSources: [
-                {
-                  contract: 'common.view/tree-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/text-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/byte-range-source',
-                  major: 1,
-                },
-              ],
-              representations: [
-                {
-                  contract: 'common.document/flow-metadata',
-                  id: 'flow-metadata',
-                  lossy: false,
-                  major: 1,
-                  stage: 'authored',
-                },
-              ],
-              roles: ['semantic'],
-              sourceTopology: 'single',
-              traitDeclarations: [
-                {
-                  id: 'document.flow',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-                {
-                  id: 'structure.hierarchy',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-                {
-                  id: 'content.text',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-                {
-                  id: 'content.binary',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-              ],
-            },
-            status: 'supported',
-          },
-        ],
-        [
-          'contributions/writer-plain-text.json',
-          {
-            contract: {
-              id: 'org.modkitx/service-provider-contribution',
-              major: 1,
-            },
-            displayName: 'Plain text writer',
-            id: 'org.modkitx/plain-text-writer',
-            runtimeVariants: [
-              {
-                entrypoint: './src/editing/text-writer.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: [],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              lifecycleScope: 'session',
-              provides: [
-                {
-                  contract: 'common.edit/writer',
-                  facet: {
-                    fidelityEvidenceId: 'plain-text-writer-v1',
-                    formatId: 'txt',
-                    minimumRoundTrip: 'byte-identical',
-                    mutationMode: 'mutate',
-                    providerId: 'org.modkitx/plain-text-writer',
-                    representationId: 'source',
-                  },
-                  major: 1,
-                  offerId: 'plain-text-source',
-                  version: '1.0.0',
-                },
-              ],
-            },
-          },
-        ],
-      ],
-      files: [
-        'README.md',
-        'contributions/codec-txt.json',
-        'contributions/writer-plain-text.json',
-        'package.json',
-        'src/editing/text-writer.js',
-        'src/index.js',
-        'src/linked.js',
-        'src/txt/codec.js',
-      ],
-      name: 'plain-text',
-      source: 'extensions/common/plain-text',
-    },
-    {
-      artifact: {
-        artifactDigest: 'sha256:f4a5f31469d2fec57d9f5d7cb38ecb60c2b8892517e5a385179d408ea99255ee',
-        fileDigests: {
-          'README.md': 'sha256:32b16af9cd40d5a69ccc3a44c7d74e40703c44ff0ac7f61a8f1289f093506a0d',
-          'contributions/codec-csv.json':
-            'sha256:e822428283b261aff304e476b7941ad4118565da7e78d4298ab24e8c5ba10fbc',
-          'contributions/codec-tsv.json':
-            'sha256:6a58d5a73fd73c61884ba4f01ca6391e37f069a27ed8cc1848d046f2a9ff61d0',
-          'contributions/contract-csv-syntax.json':
-            'sha256:7073ab778c132e4a14e89c08bfe29289c81bac1c6d30f9e44ef0a70431e6beb8',
-          'contributions/contract-tsv-syntax.json':
-            'sha256:2f4bd11489e72d4ba207b6a79dd7680651b2ff93f25b8acde057ce5ccbf0976c',
-          'contributions/provider-csv-default.json':
-            'sha256:51dce1699a464ede2fe08da370490985c2c6f97d1162aee16c2767e875f87ede',
-          'contributions/provider-tsv-default.json':
-            'sha256:5520bc14a0ff8d688706a5821cef953670e5936827138dc75d21829d28e81c8c',
-          'contributions/writer-delimited.json':
-            'sha256:21e1441bcc2c6e5b81ad048edfafb8bc3ec77551fe183a0d03de96c28f6833ad',
-          'package.json': 'sha256:68ec3aa1b3b013e056a4ed693051ead781fb8c4dc1d39da9e3f2b730587d146b',
-          'src/editing/text-writer.js':
-            'sha256:dce962c640c433456183054d03940ab874d4970da6cf41a1fae289269873d561',
-          'src/families/delimited/codec.js':
-            'sha256:8ce0696b57a7094d17468051804a030296494d4d9af15380b8a6d706252a8e42',
-          'src/families/delimited/detect.js':
-            'sha256:1ec144c35a3f4de38a845c3b76ec66f00d93eaf9e1447a8a8160413fe7a2e324',
-          'src/families/delimited/entrypoints/csv-codec.js':
-            'sha256:6243da640aa7c418bc29546d9eaca189633e2dbb8e90ef03e5fba2cc1f7db599',
-          'src/families/delimited/entrypoints/csv-provider.js':
-            'sha256:2451a0448076baa0e4ec6b68096c93930da3e65fb491e8d1bd0dd1fa7c278e4c',
-          'src/families/delimited/entrypoints/tsv-codec.js':
-            'sha256:67f2b243742588a0edf6308fee4e922dd46f29c863b245ace2c80bd896f91bb1',
-          'src/families/delimited/entrypoints/tsv-provider.js':
-            'sha256:28c244d41cde12d2aa9978a4b49521f55bbd93464db5b2aa43c9802379f49445',
-          'src/families/delimited/profiles/csv.js':
-            'sha256:14053295163a70a5e08e42d66493a58d628a942caabbcde1937653783a96522a',
-          'src/families/delimited/profiles/tsv.js':
-            'sha256:ceab7ba8a62c4bbaee2bca71fe1650013ee1c7f0c97bae1b83ee1949aeb8ee6d',
-          'src/families/delimited/provider.js':
-            'sha256:3aad857e5b32b3823fbbc674daf201c8628a5fdb33192853b742ad1478096287',
-          'src/formats/csv/codec.js':
-            'sha256:a30bd6adc8faf7f0d574866eb79173e0462d4e433368b7f2d15b67d0440de875',
-          'src/formats/csv/provider.js':
-            'sha256:851839259a7cc2c297bb2d6de8b91b81819bc79dbfff3a0119605fc9918ea099',
-          'src/formats/index.js':
-            'sha256:9cd30c3d83e23764bed3378f2ff03b7e5843c5af3a88b4cd31c89daa7757857d',
-          'src/formats/tsv/codec.js':
-            'sha256:2900ba21b6e5fc6846573ebcfa9352c963c04204d62d4909c31b869b0b34d201',
-          'src/formats/tsv/provider.js':
-            'sha256:ef9f2ba7cbc1220ffa936cdf773fea9a089f6ca19bd002f044885b48cc41549a',
-          'src/index.js': 'sha256:4d3c1f65a922238a9b5cd20832700b890e95abd3e1485f07bd472d9a074227d2',
-          'src/linked.js':
-            'sha256:3f43f38801e699efcbd279df1502774e27f84dc360ed58ce3797409ae6411718',
-          'test/fixtures/csv-rfc4180-parity.json':
-            'sha256:518c4096fdf96326de1c0a83acab3674a66a2ccfa7f9b7279760e97fbb712ef5',
-        },
-        inventoryRecordId:
-          'artifact:sha256:f4a5f31469d2fec57d9f5d7cb38ecb60c2b8892517e5a385179d408ea99255ee',
-      },
-      artifactRoot: 'extensions/text-delimited/',
-      containers: {
-        packageJson: {
-          dependencies: {
-            '@modkitx-x3/codec-kit': 'workspace:*',
-          },
-          description: 'Independent MK3 CSV and TSV codecs and syntax providers.',
-          exports: {
-            '.': './src/index.js',
-            './formats': './src/formats/index.js',
-            './formats/csv/codec': './src/families/delimited/entrypoints/csv-codec.js',
-            './formats/csv/provider': './src/families/delimited/entrypoints/csv-provider.js',
-            './formats/tsv/codec': './src/families/delimited/entrypoints/tsv-codec.js',
-            './formats/tsv/provider': './src/families/delimited/entrypoints/tsv-provider.js',
-            './linked': './src/linked.js',
-            './package.json': './package.json',
-          },
-          files: ['contributions', 'src', 'README.md'],
-          license: 'MIT',
-          modkit: {
-            contributionManifests: ['./contributions/*.json'],
-            id: 'text-delimited',
-            publisher: 'org.modkitx',
-            schemaVersion: 1,
-          },
-          name: 'modkit-extension-x3-text-delimited',
-          peerDependencies: {
-            '@modkitx-x3/core': 'workspace:*',
-            '@modkitx-x3/host': 'workspace:*',
-            '@modkitx-x3/sdk': 'workspace:*',
-          },
-          peerDependenciesMeta: {
-            '@modkitx-x3/core': {
-              optional: true,
-            },
-            '@modkitx-x3/host': {
-              optional: true,
-            },
-            '@modkitx-x3/sdk': {
-              optional: true,
-            },
-          },
-          type: 'module',
-          version: '1.0.0',
-        },
-      },
-      documentDigests: [
-        [
-          'contributions/codec-csv.json',
-          'sha256:e822428283b261aff304e476b7941ad4118565da7e78d4298ab24e8c5ba10fbc',
-        ],
-        [
-          'contributions/codec-tsv.json',
-          'sha256:6a58d5a73fd73c61884ba4f01ca6391e37f069a27ed8cc1848d046f2a9ff61d0',
-        ],
-        [
-          'contributions/contract-csv-syntax.json',
-          'sha256:7073ab778c132e4a14e89c08bfe29289c81bac1c6d30f9e44ef0a70431e6beb8',
-        ],
-        [
-          'contributions/contract-tsv-syntax.json',
-          'sha256:2f4bd11489e72d4ba207b6a79dd7680651b2ff93f25b8acde057ce5ccbf0976c',
-        ],
-        [
-          'contributions/provider-csv-default.json',
-          'sha256:51dce1699a464ede2fe08da370490985c2c6f97d1162aee16c2767e875f87ede',
-        ],
-        [
-          'contributions/provider-tsv-default.json',
-          'sha256:5520bc14a0ff8d688706a5821cef953670e5936827138dc75d21829d28e81c8c',
-        ],
-        [
-          'contributions/writer-delimited.json',
-          'sha256:21e1441bcc2c6e5b81ad048edfafb8bc3ec77551fe183a0d03de96c28f6833ad',
-        ],
-      ],
-      documents: [
-        [
-          'contributions/codec-csv.json',
-          {
-            contract: {
-              id: 'org.modkitx/codec-contribution',
-              major: 1,
-            },
-            displayName: 'CSV text data',
-            id: 'org.modkitx/text-csv',
-            runtimeVariants: [
-              {
-                entrypoint: './src/families/delimited/entrypoints/csv-codec.js',
-                executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['node'],
-                },
-                variantId: 'trusted-node',
-              },
-              {
-                entrypoint: './src/families/delimited/entrypoints/csv-codec.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              artifactStages: ['authored'],
-              budgets: {
-                maxDepth: 256,
-                maxDiagnostics: 10000,
-                maxInputBytes: '1073741824',
-                maxNodes: 1000000,
-                maxScalarBytes: 104857600,
-              },
-              formatRefs: [
-                {
-                  formatId: 'csv',
-                  label: 'CSV',
-                  mediaType: 'text/csv',
-                },
-              ],
-              implementationTier: {
-                claimed: 2,
-              },
-              match: {
-                extensions: ['csv'],
-                mediaTypes: ['text/csv'],
-              },
-              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
-              operations: [
-                {
-                  handlerId: 'inspect',
-                  id: 'view.inspect',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'validate',
-                  id: 'asset.validate',
-                  mutatesSource: false,
-                  outputKinds: ['none'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'search',
-                  id: 'asset.search',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'export-raw',
-                  id: 'export.raw',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'parse',
-                  id: 'data.parse',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'serialize',
-                  id: 'data.serialize',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'scan',
-                  id: 'data.scan',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-              ],
-              probe: {
-                kind: 'bytes',
-                maxBytes: 8192,
-                ranges: [
-                  {
-                    from: 'start',
-                    length: 8192,
-                  },
-                ],
-              },
-              publishesDataSources: [
-                {
-                  contract: 'common.view/table-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/text-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/byte-range-source',
-                  major: 1,
-                },
-              ],
-              representations: [
-                {
-                  contract: 'common.text-data/csv-document',
-                  id: 'syntax-document',
-                  lossy: false,
-                  major: 1,
-                  stage: 'authored',
-                },
-              ],
-              requires: [
-                {
-                  contract: 'common.text-data/csv-syntax',
-                  major: 1,
-                  range: '^1.0.0',
-                },
-              ],
-              roles: ['semantic'],
-              sourceTopology: 'single',
-              traitDeclarations: [
-                {
-                  id: 'table.cells',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-                {
-                  id: 'content.text',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-                {
-                  id: 'content.binary',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-              ],
-            },
-            status: 'partial',
-          },
-        ],
-        [
-          'contributions/codec-tsv.json',
-          {
-            contract: {
-              id: 'org.modkitx/codec-contribution',
-              major: 1,
-            },
-            displayName: 'TSV text data',
-            id: 'org.modkitx/text-tsv',
-            runtimeVariants: [
-              {
-                entrypoint: './src/families/delimited/entrypoints/tsv-codec.js',
-                executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['node'],
-                },
-                variantId: 'trusted-node',
-              },
-              {
-                entrypoint: './src/families/delimited/entrypoints/tsv-codec.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              artifactStages: ['authored'],
-              budgets: {
-                maxDepth: 256,
-                maxDiagnostics: 10000,
-                maxInputBytes: '1073741824',
-                maxNodes: 1000000,
-                maxScalarBytes: 104857600,
-              },
-              formatRefs: [
-                {
-                  formatId: 'tsv',
-                  label: 'TSV',
-                  mediaType: 'text/tab-separated-values',
-                },
-              ],
-              implementationTier: {
-                claimed: 2,
-              },
-              match: {
-                extensions: ['tsv', 'tab'],
-                mediaTypes: ['text/tab-separated-values'],
-              },
-              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
-              operations: [
-                {
-                  handlerId: 'inspect',
-                  id: 'view.inspect',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'validate',
-                  id: 'asset.validate',
-                  mutatesSource: false,
-                  outputKinds: ['none'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'search',
-                  id: 'asset.search',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'export-raw',
-                  id: 'export.raw',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'parse',
-                  id: 'data.parse',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'serialize',
-                  id: 'data.serialize',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'scan',
-                  id: 'data.scan',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-              ],
-              probe: {
-                kind: 'bytes',
-                maxBytes: 8192,
-                ranges: [
-                  {
-                    from: 'start',
-                    length: 8192,
-                  },
-                ],
-              },
-              publishesDataSources: [
-                {
-                  contract: 'common.view/table-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/text-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/byte-range-source',
-                  major: 1,
-                },
-              ],
-              representations: [
-                {
-                  contract: 'common.text-data/tsv-document',
-                  id: 'syntax-document',
-                  lossy: false,
-                  major: 1,
-                  stage: 'authored',
-                },
-              ],
-              requires: [
-                {
-                  contract: 'common.text-data/tsv-syntax',
-                  major: 1,
-                  range: '^1.0.0',
-                },
-              ],
-              roles: ['semantic'],
-              sourceTopology: 'single',
-              traitDeclarations: [
-                {
-                  id: 'table.cells',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-                {
-                  id: 'content.text',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-                {
-                  id: 'content.binary',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-              ],
-            },
-          },
-        ],
-        [
-          'contributions/contract-csv-syntax.json',
-          {
-            contract: {
-              id: 'org.modkitx/contract-definition',
-              major: 1,
-            },
-            displayName: 'CSV syntax service contract',
-            id: 'org.modkitx/csv-syntax-contract',
-            schemaVersion: 1,
-            spec: {
-              conformanceProfile: 'common.text-data/csv-syntax-v1',
-              contract: 'common.text-data/csv-syntax',
-              kind: 'service',
-              major: 1,
-              matching: {
-                major: 1,
-                profile: 'org.modkitx/facetless-matcher',
-              },
-              offerFacet: {
-                presence: 'forbidden',
-              },
-              requestFacet: {
-                presence: 'forbidden',
-              },
-              schemaVersion: 1,
-              surface: {
-                fields: ['contract'],
-                methods: {
-                  dataSource: {
-                    kind: 'lease',
-                    result: {
-                      contract: 'common.view/table-data-source',
-                      major: 1,
-                    },
-                    signal: {
-                      arg: 0,
-                      key: 'signal',
-                    },
-                    wrapper: 'lease',
-                  },
-                  parse: {
-                    kind: 'value',
-                    signal: {
-                      arg: 0,
-                      key: 'signal',
-                    },
-                  },
-                  serialize: {
-                    kind: 'value',
-                    signal: {
-                      arg: 0,
-                      key: 'signal',
-                    },
-                  },
-                },
-              },
-            },
-          },
-        ],
-        [
-          'contributions/contract-tsv-syntax.json',
-          {
-            contract: {
-              id: 'org.modkitx/contract-definition',
-              major: 1,
-            },
-            displayName: 'TSV syntax service contract',
-            id: 'org.modkitx/tsv-syntax-contract',
-            schemaVersion: 1,
-            spec: {
-              conformanceProfile: 'common.text-data/tsv-syntax-v1',
-              contract: 'common.text-data/tsv-syntax',
-              kind: 'service',
-              major: 1,
-              matching: {
-                major: 1,
-                profile: 'org.modkitx/facetless-matcher',
-              },
-              offerFacet: {
-                presence: 'forbidden',
-              },
-              requestFacet: {
-                presence: 'forbidden',
-              },
-              schemaVersion: 1,
-              surface: {
-                fields: ['contract'],
-                methods: {
-                  dataSource: {
-                    kind: 'lease',
-                    result: {
-                      contract: 'common.view/table-data-source',
-                      major: 1,
-                    },
-                    signal: {
-                      arg: 0,
-                      key: 'signal',
-                    },
-                    wrapper: 'lease',
-                  },
-                  parse: {
-                    kind: 'value',
-                    signal: {
-                      arg: 0,
-                      key: 'signal',
-                    },
-                  },
-                  serialize: {
-                    kind: 'value',
-                    signal: {
-                      arg: 0,
-                      key: 'signal',
-                    },
-                  },
-                },
-              },
-            },
-          },
-        ],
-        [
-          'contributions/provider-csv-default.json',
-          {
-            contract: {
-              id: 'org.modkitx/service-provider-contribution',
-              major: 1,
-            },
-            displayName: 'csv syntax provider',
-            id: 'org.modkitx/csv-syntax-default',
-            runtimeVariants: [
-              {
-                entrypoint: './src/families/delimited/entrypoints/csv-provider.js',
-                executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: [],
-                target: {
-                  environments: ['node'],
-                },
-                variantId: 'trusted-node',
-              },
-              {
-                entrypoint: './src/families/delimited/entrypoints/csv-provider.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: [],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              lifecycleScope: 'session',
-              outputs: [
-                {
-                  id: 'table.cells',
-                  presence: 'will-expose',
-                  representation: 'runtime',
-                },
-              ],
-              provides: [
-                {
-                  contract: 'common.text-data/csv-syntax',
-                  major: 1,
-                  offerId: 'csv-syntax-default-v1',
-                  version: '1.0.0',
-                },
-              ],
-            },
-          },
-        ],
-        [
-          'contributions/provider-tsv-default.json',
-          {
-            contract: {
-              id: 'org.modkitx/service-provider-contribution',
-              major: 1,
-            },
-            displayName: 'tsv syntax provider',
-            id: 'org.modkitx/tsv-syntax-default',
-            runtimeVariants: [
-              {
-                entrypoint: './src/families/delimited/entrypoints/tsv-provider.js',
-                executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: [],
-                target: {
-                  environments: ['node'],
-                },
-                variantId: 'trusted-node',
-              },
-              {
-                entrypoint: './src/families/delimited/entrypoints/tsv-provider.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: [],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              lifecycleScope: 'session',
-              outputs: [
-                {
-                  id: 'table.cells',
-                  presence: 'will-expose',
-                  representation: 'runtime',
-                },
-              ],
-              provides: [
-                {
-                  contract: 'common.text-data/tsv-syntax',
-                  major: 1,
-                  offerId: 'tsv-syntax-default-v1',
-                  version: '1.0.0',
-                },
-              ],
-            },
-          },
-        ],
-        [
-          'contributions/writer-delimited.json',
-          {
-            contract: {
-              id: 'org.modkitx/service-provider-contribution',
-              major: 1,
-            },
-            displayName: 'CSV and TSV text writer',
-            id: 'org.modkitx/text-delimited-writer',
-            runtimeVariants: [
-              {
-                entrypoint: './src/editing/text-writer.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: [],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              lifecycleScope: 'session',
-              provides: [
-                {
-                  contract: 'common.edit/writer',
-                  facet: {
-                    fidelityEvidenceId: 'text-delimited-text-writer-v1',
-                    formatId: 'csv',
-                    minimumRoundTrip: 'byte-identical',
-                    mutationMode: 'mutate',
-                    providerId: 'org.modkitx/text-delimited-writer',
-                    representationId: 'source',
-                  },
-                  major: 1,
-                  offerId: 'csv-source',
-                  version: '1.0.0',
-                },
-                {
-                  contract: 'common.edit/writer',
-                  facet: {
-                    fidelityEvidenceId: 'text-delimited-text-writer-v1',
-                    formatId: 'tsv',
-                    minimumRoundTrip: 'byte-identical',
-                    mutationMode: 'mutate',
-                    providerId: 'org.modkitx/text-delimited-writer',
-                    representationId: 'source',
-                  },
-                  major: 1,
-                  offerId: 'tsv-source',
-                  version: '1.0.0',
-                },
-              ],
-            },
-          },
-        ],
-      ],
-      files: [
-        'README.md',
-        'contributions/codec-csv.json',
-        'contributions/codec-tsv.json',
-        'contributions/contract-csv-syntax.json',
-        'contributions/contract-tsv-syntax.json',
-        'contributions/provider-csv-default.json',
-        'contributions/provider-tsv-default.json',
-        'contributions/writer-delimited.json',
-        'package.json',
-        'src/editing/text-writer.js',
-        'src/families/delimited/codec.js',
-        'src/families/delimited/detect.js',
-        'src/families/delimited/entrypoints/csv-codec.js',
-        'src/families/delimited/entrypoints/csv-provider.js',
-        'src/families/delimited/entrypoints/tsv-codec.js',
-        'src/families/delimited/entrypoints/tsv-provider.js',
-        'src/families/delimited/profiles/csv.js',
-        'src/families/delimited/profiles/tsv.js',
-        'src/families/delimited/provider.js',
-        'src/formats/csv/codec.js',
-        'src/formats/csv/provider.js',
-        'src/formats/index.js',
-        'src/formats/tsv/codec.js',
-        'src/formats/tsv/provider.js',
-        'src/index.js',
-        'src/linked.js',
-        'test/fixtures/csv-rfc4180-parity.json',
-      ],
-      name: 'text-delimited',
-      source: 'extensions/common/text-delimited',
-    },
-    {
-      artifact: {
-        artifactDigest: 'sha256:26361aa2a389951e818001e9afd9c13a02f2e5f740cb5dc0cd9038bd01ab8ab9',
-        fileDigests: {
-          'README.md': 'sha256:9519219eb63529bab5e470614ac5a8c5506507cb35e567d4686f73c13023e546',
-          'contributions/codec-ini.json':
-            'sha256:a049d4e8c41e3954c685ae048a37fe88295486ab93dda96cd81e648e301d9624',
-          'contributions/contract-ini-syntax.json':
-            'sha256:aafe6ff6e6465a0ac49865cd594ff360ed796e29dc803668bfd8f83cdd0f9973',
-          'contributions/provider-ini-default.json':
-            'sha256:92fad791e38fa9cc4d22907ef846b88bbba25e237c156285954688ff417f8893',
-          'contributions/writer-ini.json':
-            'sha256:d278dfffae415d855276a46335e7668f6ecdf465cc4c3e73b672dc39850abfaf',
-          'package.json': 'sha256:210d7fb01b46f161c2b5bb8ceb6b1b5a5db17727e5b776ad42e9d4d1891dfadb',
-          'src/editing/text-writer.js':
-            'sha256:2c0fe6dd7b60302cc6ba2e91d995a257e875b81a6af1bda8d23869ead9d7a56c',
-          'src/formats/index.js':
-            'sha256:a4d3cbdd7e162f66732f3c2dc857e4538c5f2a9794a610d144a1baaf6b6da75f',
-          'src/formats/ini/codec.js':
-            'sha256:bc28ceb31c5dd6606d6fe302cf8ffa0b42bcd85ed4f9ca9c95d9a60120e5cef8',
-          'src/formats/ini/definition.js':
-            'sha256:818494714eab867402779285234d227938d606a8737e50d4318ee6aa0cff6c45',
-          'src/formats/ini/provider.js':
-            'sha256:90b04036cffdcb990e1f90e09882377d206081ba02e45cea85e93545422599da',
-          'src/index.js': 'sha256:4490f78940b58ce6125c3f02a429c6e502a4f8cbb6ebbb01d0693fb06eed5b04',
-          'src/linked.js':
-            'sha256:c5354e35509972b4d540502ad903927febdf2b426663cbf118b9637e7490cd81',
-          'test/fixtures/ini-sc2-parity.json':
-            'sha256:205a176ec39d8c1adeebd8f9419ff9c9b8e2e2d45f4387541adc7e96c2090df9',
-        },
-        inventoryRecordId:
-          'artifact:sha256:26361aa2a389951e818001e9afd9c13a02f2e5f740cb5dc0cd9038bd01ab8ab9',
-      },
-      artifactRoot: 'extensions/text-ini/',
-      containers: {
-        packageJson: {
-          dependencies: {
-            '@modkitx-x3/codec-kit': 'workspace:*',
-          },
-          description: 'Independent dependency-free MK3 INI codec and syntax provider.',
-          exports: {
-            '.': './src/index.js',
-            './formats': './src/formats/index.js',
-            './formats/ini/codec': './src/formats/ini/codec.js',
-            './formats/ini/provider': './src/formats/ini/provider.js',
-            './linked': './src/linked.js',
-            './package.json': './package.json',
-          },
-          files: ['contributions', 'src', 'README.md'],
-          license: 'MIT',
-          modkit: {
-            contributionManifests: ['./contributions/*.json'],
-            id: 'text-ini',
-            publisher: 'org.modkitx',
-            schemaVersion: 1,
-          },
-          name: 'modkit-extension-x3-text-ini',
-          peerDependencies: {
-            '@modkitx-x3/core': 'workspace:*',
-            '@modkitx-x3/host': 'workspace:*',
-            '@modkitx-x3/sdk': 'workspace:*',
-          },
-          peerDependenciesMeta: {
-            '@modkitx-x3/core': {
-              optional: true,
-            },
-            '@modkitx-x3/host': {
-              optional: true,
-            },
-            '@modkitx-x3/sdk': {
-              optional: true,
-            },
-          },
-          type: 'module',
-          version: '1.0.0',
-        },
-      },
-      documentDigests: [
-        [
-          'contributions/codec-ini.json',
-          'sha256:a049d4e8c41e3954c685ae048a37fe88295486ab93dda96cd81e648e301d9624',
-        ],
-        [
-          'contributions/contract-ini-syntax.json',
-          'sha256:aafe6ff6e6465a0ac49865cd594ff360ed796e29dc803668bfd8f83cdd0f9973',
-        ],
-        [
-          'contributions/provider-ini-default.json',
-          'sha256:92fad791e38fa9cc4d22907ef846b88bbba25e237c156285954688ff417f8893',
-        ],
-        [
-          'contributions/writer-ini.json',
-          'sha256:d278dfffae415d855276a46335e7668f6ecdf465cc4c3e73b672dc39850abfaf',
-        ],
-      ],
-      documents: [
-        [
-          'contributions/codec-ini.json',
-          {
-            contract: {
-              id: 'org.modkitx/codec-contribution',
-              major: 1,
-            },
-            displayName: 'INI text data',
-            id: 'org.modkitx/text-ini',
-            runtimeVariants: [
-              {
-                entrypoint: './src/formats/ini/codec.js',
-                executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['node'],
-                },
-                variantId: 'trusted-node',
-              },
-              {
-                entrypoint: './src/formats/ini/codec.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              artifactStages: ['authored'],
-              budgets: {
-                maxDepth: 256,
-                maxDiagnostics: 10000,
-                maxInputBytes: '1073741824',
-                maxNodes: 1000000,
-                maxScalarBytes: 104857600,
-              },
-              formatRefs: [
-                {
-                  formatId: 'ini',
-                  label: 'INI',
-                  mediaType: 'text/plain',
-                },
-              ],
-              implementationTier: {
-                claimed: 1,
-              },
-              match: {
-                extensions: ['ini', 'cfg', 'conf'],
-                mediaTypes: ['text/plain'],
-              },
-              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
-              operations: [
-                {
-                  handlerId: 'inspect',
-                  id: 'view.inspect',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'validate',
-                  id: 'asset.validate',
-                  mutatesSource: false,
-                  outputKinds: ['none'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'search',
-                  id: 'asset.search',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'export-raw',
-                  id: 'export.raw',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'parse',
-                  id: 'data.parse',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'serialize',
-                  id: 'data.serialize',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-              ],
-              probe: {
-                kind: 'bytes',
-                maxBytes: 8192,
-                ranges: [
-                  {
-                    from: 'start',
-                    length: 8192,
-                  },
-                ],
-              },
-              publishesDataSources: [
-                {
-                  contract: 'common.view/tree-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/text-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/byte-range-source',
-                  major: 1,
-                },
-              ],
-              representations: [
-                {
-                  contract: 'common.text-data/ini-document',
-                  id: 'syntax-document',
-                  lossy: false,
-                  major: 1,
-                  stage: 'authored',
-                },
-              ],
-              requires: [
-                {
-                  contract: 'common.text-data/ini-syntax',
-                  major: 1,
-                  range: '^1.0.0',
-                },
-              ],
-              roles: ['semantic'],
-              sourceTopology: 'single',
-              traitDeclarations: [
-                {
-                  id: 'structure.hierarchy',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-                {
-                  id: 'content.text',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-                {
-                  id: 'content.binary',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-              ],
-            },
-          },
-        ],
-        [
-          'contributions/contract-ini-syntax.json',
-          {
-            contract: {
-              id: 'org.modkitx/contract-definition',
-              major: 1,
-            },
-            displayName: 'INI syntax service contract',
-            id: 'org.modkitx/ini-syntax-contract',
-            schemaVersion: 1,
-            spec: {
-              conformanceProfile: 'common.text-data/ini-syntax-v1',
-              contract: 'common.text-data/ini-syntax',
-              kind: 'service',
-              major: 1,
-              matching: {
-                major: 1,
-                profile: 'org.modkitx/facetless-matcher',
-              },
-              offerFacet: {
-                presence: 'forbidden',
-              },
-              requestFacet: {
-                presence: 'forbidden',
-              },
-              schemaVersion: 1,
-              surface: {
-                fields: ['contract'],
-                methods: {
-                  dataSource: {
-                    kind: 'lease',
-                    result: {
-                      contract: 'common.view/tree-data-source',
-                      major: 1,
-                    },
-                    signal: {
-                      arg: 0,
-                      key: 'signal',
-                    },
-                    wrapper: 'lease',
-                  },
-                  parse: {
-                    kind: 'value',
-                    signal: {
-                      arg: 0,
-                      key: 'signal',
-                    },
-                  },
-                  serialize: {
-                    kind: 'value',
-                    signal: {
-                      arg: 0,
-                      key: 'signal',
-                    },
-                  },
-                },
-              },
-            },
-          },
-        ],
-        [
-          'contributions/provider-ini-default.json',
-          {
-            contract: {
-              id: 'org.modkitx/service-provider-contribution',
-              major: 1,
-            },
-            displayName: 'ini syntax provider',
-            id: 'org.modkitx/ini-syntax-default',
-            runtimeVariants: [
-              {
-                entrypoint: './src/formats/ini/provider.js',
-                executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: [],
-                target: {
-                  environments: ['node'],
-                },
-                variantId: 'trusted-node',
-              },
-              {
-                entrypoint: './src/formats/ini/provider.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: [],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              lifecycleScope: 'session',
-              outputs: [
-                {
-                  id: 'structure.hierarchy',
-                  presence: 'will-expose',
-                  representation: 'runtime',
-                },
-              ],
-              provides: [
-                {
-                  contract: 'common.text-data/ini-syntax',
-                  major: 1,
-                  offerId: 'ini-syntax-default-v1',
-                  version: '1.0.0',
-                },
-              ],
-            },
-          },
-        ],
-        [
-          'contributions/writer-ini.json',
-          {
-            contract: {
-              id: 'org.modkitx/service-provider-contribution',
-              major: 1,
-            },
-            displayName: 'INI text writer',
-            id: 'org.modkitx/text-ini-writer',
-            runtimeVariants: [
-              {
-                entrypoint: './src/editing/text-writer.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: [],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              lifecycleScope: 'session',
-              provides: [
-                {
-                  contract: 'common.edit/writer',
-                  facet: {
-                    fidelityEvidenceId: 'text-ini-text-writer-v1',
-                    formatId: 'ini',
-                    minimumRoundTrip: 'byte-identical',
-                    mutationMode: 'mutate',
-                    providerId: 'org.modkitx/text-ini-writer',
-                    representationId: 'source',
-                  },
-                  major: 1,
-                  offerId: 'ini-source',
-                  version: '1.0.0',
-                },
-              ],
-            },
-          },
-        ],
-      ],
-      files: [
-        'README.md',
-        'contributions/codec-ini.json',
-        'contributions/contract-ini-syntax.json',
-        'contributions/provider-ini-default.json',
-        'contributions/writer-ini.json',
-        'package.json',
-        'src/editing/text-writer.js',
-        'src/formats/index.js',
-        'src/formats/ini/codec.js',
-        'src/formats/ini/definition.js',
-        'src/formats/ini/provider.js',
-        'src/index.js',
-        'src/linked.js',
-        'test/fixtures/ini-sc2-parity.json',
-      ],
-      name: 'text-ini',
-      source: 'extensions/common/text-ini',
     },
     {
       artifact: {

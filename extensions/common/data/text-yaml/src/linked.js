@@ -9,7 +9,7 @@ import * as codec from './formats/yaml/codec.js'
 import * as provider from './formats/yaml/provider.js'
 
 export const textYaml = defineLinkedExtension({
-  source: 'linked:extensions/common/text-yaml',
+  source: 'linked:extensions/common/data/text-yaml',
   packageJson,
   contributions: [
     { path: 'contributions/codec-yaml.json', manifest: codecManifest },

@@ -43,12 +43,13 @@
  *   node scripts/emit-vscode-catalog.mjs --check   # compare, exit 1 on drift
  */
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
-import { dirname, join, relative, resolve } from 'node:path'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { format, resolveConfig } from 'prettier'
-import { READY_APP_EXTENSIONS } from './app-extension-sets.mjs'
+import { extensionDirectory, READY_APP_EXTENSIONS } from './app-extension-sets.mjs'
+import { authoredExtensionRootsRelativeTo } from './lib/authored-extension-roots.mjs'
 import { extensionArtifactDigest } from './lib/extension-artifact-digest.mjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -66,17 +67,6 @@ const check = process.argv.includes('--check')
  */
 const CATALOG_DIRECTORY = Object.freeze(['common'])
 
-/** The product's own test for an extension root, so emitting cannot disagree with activation. */
-function looksLikeExtensionDirectory(path) {
-  if (existsSync(join(path, 'modkit.extension.json'))) return true
-  try {
-    const manifest = JSON.parse(readFileSync(join(path, 'package.json'), 'utf8'))
-    return typeof manifest === 'object' && manifest !== null && 'modkit' in manifest
-  } catch {
-    return false
-  }
-}
-
 /**
  * One canonical host artifact identity per extension root.
  *
@@ -86,18 +76,20 @@ function looksLikeExtensionDirectory(path) {
  */
 
 const catalogRoot = join(repoRoot, 'extensions', ...CATALOG_DIRECTORY)
-const roots = readdirSync(catalogRoot)
-  .sort()
-  .map(name => join(catalogRoot, name))
-  .filter(path => statSync(path).isDirectory() && looksLikeExtensionDirectory(path))
-  .map(absolute => {
-    const name = relative(catalogRoot, absolute).replaceAll('\\', '/')
+const declaredByRelativePath = new Map(
+  Object.keys(READY_APP_EXTENSIONS)
+    .filter(name => READY_APP_EXTENSIONS[name].repository === undefined)
+    .map(name => [extensionDirectory(name).slice(CATALOG_DIRECTORY.length).join('/'), name]),
+)
+const roots = authoredExtensionRootsRelativeTo(catalogRoot).map(
+  ({ directory: absolute, relativePath }) => {
+    const name = declaredByRelativePath.get(relativePath) ?? relativePath
     const entry = READY_APP_EXTENSIONS[name]
     const declared = entry !== undefined
     return {
       name,
       // Relative to `extensions/`, so the same record resolves in a checkout and in `dist-app`.
-      directory: [...CATALOG_DIRECTORY, name].join('/'),
+      directory: [...CATALOG_DIRECTORY, relativePath].join('/'),
       /*
        * `declared` is the conformance matrix's opinion, not this catalog's: a root the product
        * ships that `READY_APP_EXTENSIONS` does not know is shipped anyway, and saying so is more
@@ -108,7 +100,8 @@ const roots = readdirSync(catalogRoot)
       ...(declared ? { contributions: [...entry.contributions].sort() } : {}),
       digest: extensionArtifactDigest(absolute),
     }
-  })
+  },
+)
 
 const document = {
   $comment:

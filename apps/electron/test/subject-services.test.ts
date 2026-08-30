@@ -34,7 +34,7 @@ describe('Electron host-owned subject services', () => {
   it('loads a generated bundled input and opens JSON in the worker realm: portable variant, worker-brokered, provider proxied through the host', async () => {
     const backendDiagnostics: Diagnostic[] = []
     const services = await createElectronSubjectServices(
-      [join(repositoryRoot, 'extensions', 'common', 'text-json')],
+      [join(repositoryRoot, 'extensions', 'common', 'data', 'text-json')],
       { onDiagnostic: diagnostic => void backendDiagnostics.push(diagnostic) },
     )
     expect(services.application.main.inventory.extensions).toHaveLength(1)

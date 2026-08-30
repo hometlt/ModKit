@@ -380,7 +380,15 @@ describe('Emperor XBF depth', () => {
         const primitive = await source.primitive(primitiveId, { maxBytes: 1_000_000 })
         const { renderHeadless } = (await import(
           pathToFileURL(
-            join(repoRoot, 'extensions', 'common', 'rendering-3d', 'src', 'headless.js'),
+            join(
+              repoRoot,
+              'extensions',
+              'common',
+              'rendering',
+              'rendering-3d',
+              'src',
+              'headless.js',
+            ),
           ).href
         )) as {
           renderHeadless(request: Record<string, unknown>): Promise<{

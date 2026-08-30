@@ -14,7 +14,7 @@ import * as jsoncCodec from './families/json/entrypoints/jsonc-codec.js'
 import * as jsoncProvider from './families/json/entrypoints/jsonc-provider.js'
 
 export const textJson = defineLinkedExtension({
-  source: 'linked:extensions/common/text-json',
+  source: 'linked:extensions/common/data/text-json',
   packageJson,
   contributions: [
     { path: 'contributions/codec-json.json', manifest: jsonCodecManifest },

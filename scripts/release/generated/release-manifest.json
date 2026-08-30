@@ -116,7 +116,7 @@
             "org.modkitx/txt"
           ],
           "coordinate": "org.modkitx/plain-text",
-          "root": "extensions/common/plain-text",
+          "root": "extensions/common/data/plain-text",
           "sourceDigest": "sha256:807ba8ca5de278d8f12c520bc46cfcd57ba98a89a73be838964f97871b24c272"
         },
         {
@@ -125,7 +125,7 @@
             "org.modkitx/headless-renderer"
           ],
           "coordinate": "org.modkitx/rendering-3d",
-          "root": "extensions/common/rendering-3d",
+          "root": "extensions/common/rendering/rendering-3d",
           "sourceDigest": "sha256:458389d579ee37d16ed41dba2d7cddce47d8cfc82c400b6dd2686f14d0aac5d4"
         },
         {
@@ -139,7 +139,7 @@
             "org.modkitx/tsv-syntax-default"
           ],
           "coordinate": "org.modkitx/text-delimited",
-          "root": "extensions/common/text-delimited",
+          "root": "extensions/common/data/text-delimited",
           "sourceDigest": "sha256:f4a5f31469d2fec57d9f5d7cb38ecb60c2b8892517e5a385179d408ea99255ee"
         },
         {
@@ -150,7 +150,7 @@
             "org.modkitx/text-ini-writer"
           ],
           "coordinate": "org.modkitx/text-ini",
-          "root": "extensions/common/text-ini",
+          "root": "extensions/common/data/text-ini",
           "sourceDigest": "sha256:26361aa2a389951e818001e9afd9c13a02f2e5f740cb5dc0cd9038bd01ab8ab9"
         },
         {
@@ -164,7 +164,7 @@
             "org.modkitx/text-jsonc"
           ],
           "coordinate": "org.modkitx/text-json",
-          "root": "extensions/common/text-json",
+          "root": "extensions/common/data/text-json",
           "sourceDigest": "sha256:fad29b816143e013ee88edf6b837d1653e29e72f959f6e5a180b56c4eee01cae"
         },
         {
@@ -175,7 +175,7 @@
             "org.modkitx/toml-syntax-default"
           ],
           "coordinate": "org.modkitx/text-toml",
-          "root": "extensions/common/text-toml",
+          "root": "extensions/common/data/text-toml",
           "sourceDigest": "sha256:496bc18160112680664ff640366d79097e376e5ec4f0992e3a7d5bff4afc57f5"
         },
         {
@@ -186,7 +186,7 @@
             "org.modkitx/xml-syntax-default"
           ],
           "coordinate": "org.modkitx/text-xml",
-          "root": "extensions/common/text-xml",
+          "root": "extensions/common/data/text-xml",
           "sourceDigest": "sha256:f8dd4c45c06607342e3ecc75d327ecc8992760967d08e8fb43d575da95f55018"
         },
         {
@@ -197,7 +197,7 @@
             "org.modkitx/yaml-syntax-default"
           ],
           "coordinate": "org.modkitx/text-yaml",
-          "root": "extensions/common/text-yaml",
+          "root": "extensions/common/data/text-yaml",
           "sourceDigest": "sha256:5b7c5257d47df46bd52b36a8e6698abce385f943f2554be6f4f08507d7f93e5d"
         },
         {
@@ -205,7 +205,7 @@
             "org.modkitx.ui-monaco/code-stage"
           ],
           "coordinate": "org.modkitx/ui-monaco",
-          "root": "extensions/common/ui-monaco",
+          "root": "extensions/common/ui/monaco",
           "sourceDigest": "sha256:21510b4beb7a48cfccac6c7d8ef99568365e353fdbd594e776b4b2a9dab66ce2"
         },
         {
@@ -294,15 +294,15 @@
       "extensions/common/documents",
       "extensions/common/images",
       "extensions/common/models",
-      "extensions/common/plain-text",
-      "extensions/common/rendering-3d",
-      "extensions/common/text-delimited",
-      "extensions/common/text-ini",
-      "extensions/common/text-json",
-      "extensions/common/text-toml",
-      "extensions/common/text-xml",
-      "extensions/common/text-yaml",
-      "extensions/common/ui-monaco",
+      "extensions/common/data/plain-text",
+      "extensions/common/rendering/rendering-3d",
+      "extensions/common/data/text-delimited",
+      "extensions/common/data/text-ini",
+      "extensions/common/data/text-json",
+      "extensions/common/data/text-toml",
+      "extensions/common/data/text-xml",
+      "extensions/common/data/text-yaml",
+      "extensions/common/ui/monaco",
       "extensions/common/uv-materializer",
       "extensions/common/vector",
       "extensions/common/video"

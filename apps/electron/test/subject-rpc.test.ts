@@ -105,7 +105,7 @@ async function rpcPair(open: ElectronSubjectOpener): Promise<{
 describe('Electron subject RPC — the production pair without the binary', () => {
   it('opens JSON end to end: snapshot over the wire, session attached as a capability, tree pages and search pulled through surfaces, dispose cascades', async () => {
     const services = await createElectronSubjectServices([
-      join(repositoryRoot, 'extensions', 'common', 'text-json'),
+      join(repositoryRoot, 'extensions', 'common', 'data', 'text-json'),
     ])
     const opener: ElectronSubjectOpener = async (path, signal) => {
       const result = await services.open({

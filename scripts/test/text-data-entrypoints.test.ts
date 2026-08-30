@@ -14,7 +14,7 @@ afterEach(() => {
 })
 
 function contribution(root: string, packageName: string, kind: 'codec' | 'provider') {
-  const extension = join(root, 'extensions', 'common', packageName)
+  const extension = join(root, 'extensions', 'common', 'data', packageName)
   const contributions = join(extension, 'contributions')
   const implementation = join(extension, 'src', 'moved-family')
   mkdirSync(contributions, { recursive: true })
@@ -44,8 +44,8 @@ describe('text-data contribution entrypoint discovery', () => {
     contribution(root, 'original-name', 'codec')
     contribution(root, 'original-name', 'provider')
     renameSync(
-      join(root, 'extensions', 'common', 'original-name'),
-      join(root, 'extensions', 'common', 'renamed-extension'),
+      join(root, 'extensions', 'common', 'data', 'original-name'),
+      join(root, 'extensions', 'common', 'data', 'renamed-extension'),
     )
 
     const result = discoverTextDataEntrypoints(root, ['json'])
@@ -59,9 +59,9 @@ describe('text-data contribution entrypoint discovery', () => {
     expect(
       relativeEntrypointSpecifier(
         join(checkout, 'examples', 'gallery', 'src', 'generated.ts'),
-        join(checkout, 'extensions', 'common', 'text-json', 'codec.js'),
+        join(checkout, 'extensions', 'common', 'data', 'text-json', 'codec.js'),
       ),
-    ).toBe('../../../extensions/common/text-json/codec.js')
+    ).toBe('../../../extensions/common/data/text-json/codec.js')
 
     const tracked = readFileSync(
       join(
@@ -76,6 +76,6 @@ describe('text-data contribution entrypoint discovery', () => {
       'utf8',
     )
     expect(tracked).not.toMatch(/[A-Za-z]:[\\/]/u)
-    expect(tracked).toContain("from '../../../extensions/common/text-json/")
+    expect(tracked).toContain("from '../../../extensions/common/data/text-json/")
   })
 })

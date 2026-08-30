@@ -9,7 +9,7 @@ import * as codec from './formats/xml/codec.js'
 import * as provider from './formats/xml/provider.js'
 
 export const textXml = defineLinkedExtension({
-  source: 'linked:extensions/common/text-xml',
+  source: 'linked:extensions/common/data/text-xml',
   packageJson,
   contributions: [
     { path: 'contributions/codec-xml.json', manifest: codecManifest },

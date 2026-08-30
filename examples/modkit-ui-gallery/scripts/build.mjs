@@ -144,7 +144,7 @@ await build({
 // does not resolve from `absWorkingDir`. Point at the files and say so plainly if they move.
 const monacoRoot = resolve(
   repoRoot,
-  'extensions/common/ui-monaco/node_modules/monaco-editor/esm/vs',
+  'extensions/common/ui/monaco/node_modules/monaco-editor/esm/vs',
 )
 const workerEntries = {
   'editor.worker': join(monacoRoot, 'editor', 'editor.worker.js'),

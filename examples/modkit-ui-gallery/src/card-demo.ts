@@ -6,7 +6,7 @@
  * gets a different list and the same renderer.
  */
 import { createRelationGraph, createSubjectCard, type CardSection } from '@modkitx-x3/ui'
-import { threeGraphRenderer } from '../../../extensions/common/ui-graph-3d/src/index.js'
+import { threeGraphRenderer } from '../../../packages/ui-graph-3d/src/index.js'
 
 const STATS: readonly (readonly [string, string, string?])[] = [
   ['Acceleration', '1000'],

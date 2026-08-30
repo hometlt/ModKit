@@ -30,7 +30,7 @@ import {
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const imagesDir = join(repoRoot, 'extensions', 'common', 'images')
-const textJsonDir = join(repoRoot, 'extensions', 'common', 'text-json')
+const textJsonDir = join(repoRoot, 'extensions', 'common', 'data', 'text-json')
 const png = join(repoRoot, 'apps', 'web', 'public', 'favicon-32.png')
 
 const HOST = 'org.example.app/host'

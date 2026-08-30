@@ -23,7 +23,7 @@ const { softwareRenderer } = (await import(
   pathToFileURL(join(repoRoot, 'examples', 'extensions', 'software-renderer', 'src', 'linked.js'))
     .href
 )) as { readonly softwareRenderer: LinkedExtension }
-const renderingRoot = join(repoRoot, 'extensions', 'common', 'rendering-3d')
+const renderingRoot = join(repoRoot, 'extensions', 'common', 'rendering', 'rendering-3d')
 const { rendering3d } = (await import(
   pathToFileURL(join(renderingRoot, 'src', 'linked.js')).href
 )) as { readonly rendering3d: LinkedExtension }
