@@ -31,10 +31,10 @@
       "testedSurface": "compiled CLI launched as a separate Node process with real files",
       "evidenceLevel": "current-source-live-process",
       "verification": [
-        "pnpm exec vitest run apps/modkit-cli/test/cli.test.ts --maxWorkers=1",
+        "pnpm exec vitest run apps/cli/test/cli.test.ts --maxWorkers=1",
         "pnpm apps:check"
       ],
-      "evidence": ["apps/modkit-cli/test/cli.test.ts", "scripts/check-app-contract-matrix.mjs"],
+      "evidence": ["apps/cli/test/cli.test.ts", "scripts/check-app-contract-matrix.mjs"],
       "notClaimed": ["a system-wide installer or shell integration"]
     },
     {
@@ -98,14 +98,14 @@
       "evidenceLevel": "recorded-live-editor-and-current-source-contracts",
       "verification": [
         "pnpm --filter @modkitx-x3/modkit-vscode smoke:vscode",
-        "pnpm exec vitest run apps/modkit-vscode/test/subject-rpc.test.ts apps/modkit-vscode/test/topology.test.ts --maxWorkers=1",
+        "pnpm exec vitest run apps/vscode/test/subject-rpc.test.ts apps/vscode/test/topology.test.ts --maxWorkers=1",
         "pnpm apps:check"
       ],
       "evidence": [
         "reports/vscode-smoke/receipt.json",
         "reports/vscode-smoke/logs/suite-results.json",
-        "apps/modkit-vscode/test/subject-rpc.test.ts",
-        "apps/modkit-vscode/test/topology.test.ts",
+        "apps/vscode/test/subject-rpc.test.ts",
+        "apps/vscode/test/topology.test.ts",
         "scripts/check-app-contract-matrix.mjs"
       ],
       "notClaimed": [

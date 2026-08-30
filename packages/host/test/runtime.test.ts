@@ -23,7 +23,7 @@ import type { ExecutionProfile, RuntimeEnvironment } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { counterRuntime } = (await import(
-  pathToFileURL(join(repoRoot, 'extensions', '_reference', 'counter-runtime', 'src', 'linked.js'))
+  pathToFileURL(join(repoRoot, 'examples', 'extensions', 'counter-runtime', 'src', 'linked.js'))
     .href
 )) as { readonly counterRuntime: LinkedExtension }
 

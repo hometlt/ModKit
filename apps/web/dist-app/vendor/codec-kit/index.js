@@ -13,7 +13,7 @@ import {
 } from "../../chunks/chunk-BKHLBCDQ.js";
 import "../../chunks/chunk-YLVDSGH3.js";
 
-// extensions/codec-kit/codec-kit/src/index.js
+// packages/codec-kit/src/index.js
 var INSPECTION_OPERATIONS = Object.freeze([
   Object.freeze({
     id: "view.inspect",

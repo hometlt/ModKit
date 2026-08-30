@@ -48,7 +48,6 @@
         "blizzard-models",
         "blizzard-mpq",
         "blizzard-starcraft2",
-        "blizzard-starcraft2-game",
         "images",
         "models",
         "rendering-3d",
@@ -271,7 +270,7 @@
     "ratchet": "pnpm bundle:check",
     "entryCount": 74,
     "entries": [
-      "apps/modkit-cli/dist/main.js",
+      "apps/cli/dist/main.js",
       "packages/core/dist/index.js",
       "packages/host/dist/browser/index.js",
       "packages/host/dist/browser/worker-entry.js",

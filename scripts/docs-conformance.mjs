@@ -53,13 +53,13 @@ function codeBlocks(markdown) {
 /** Every README this repository ships for extension authors. */
 function documents() {
   const found = []
-  const referenceRoot = path.join(repoRoot, 'extensions', '_reference')
+  const referenceRoot = path.join(repoRoot, 'examples', 'extensions')
   for (const entry of readdirSync(referenceRoot, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue
     const readme = path.join(referenceRoot, entry.name, 'README.md')
     try {
       found.push({
-        label: `extensions/_reference/${entry.name}/README.md`,
+        label: `examples/extensions/${entry.name}/README.md`,
         source: readFileSync(readme, 'utf8'),
       })
     } catch {
@@ -74,11 +74,8 @@ function documents() {
    */
   try {
     found.push({
-      label: 'extensions/codec-kit/codec-kit/README.md',
-      source: readFileSync(
-        path.join(repoRoot, 'extensions', 'codec-kit', 'codec-kit', 'README.md'),
-        'utf8',
-      ),
+      label: 'packages/codec-kit/README.md',
+      source: readFileSync(path.join(repoRoot, 'packages', 'codec-kit', 'README.md'), 'utf8'),
     })
   } catch {
     // absent is a different problem from wrong
@@ -160,15 +157,11 @@ const IMPORT = /import\s*\{([^}]*)\}\s*from\s*'([^']+)'/gu
  */
 function resolveSpecifier(specifier) {
   if (specifier === '@modkitx-x3/codec-kit') {
-    return pathToFileURL(
-      path.join(repoRoot, 'extensions', 'codec-kit', 'codec-kit', 'src', 'index.js'),
-    ).href
+    return pathToFileURL(path.join(repoRoot, 'packages', 'codec-kit', 'src', 'index.js')).href
   }
   if (specifier.startsWith('@modkitx-x3/codec-kit/')) {
     const rest = specifier.slice('@modkitx-x3/codec-kit/'.length)
-    return pathToFileURL(
-      path.join(repoRoot, 'extensions', 'codec-kit', 'codec-kit', 'src', rest, 'index.js'),
-    ).href
+    return pathToFileURL(path.join(repoRoot, 'packages', 'codec-kit', 'src', rest, 'index.js')).href
   }
   return specifier
 }
@@ -226,7 +219,7 @@ for (const document of [...documents(), scaffold]) {
  * crossing it to run a check.
  */
 const codecKit = await import(
-  pathToFileURL(path.join(repoRoot, 'extensions', 'codec-kit', 'codec-kit', 'src', 'index.js')).href
+  pathToFileURL(path.join(repoRoot, 'packages', 'codec-kit', 'src', 'index.js')).href
 )
 if (typeof codecKit.createInspectionCodec !== 'function') {
   fail('codec-kit no longer exports createInspectionCodec, which every scaffolded codec imports')

@@ -5,8 +5,8 @@
   "capabilityCount": 90,
   "operations": {
     "block9/archive-entry-as-subject": {
-      "inspect": "apps/modkit-vscode/test/containers.test.ts",
-      "read": "apps/modkit-vscode/test/containers.test.ts"
+      "inspect": "apps/vscode/test/containers.test.ts",
+      "read": "apps/vscode/test/containers.test.ts"
     },
     "block9/casc-mpq-texture-chain": {
       "inspect": "scripts/test/parity-coverage.test.ts"
@@ -276,8 +276,8 @@
       "read": "extensions/opensource/warzone-2100/test/wz-codec.test.ts"
     },
     "platform/tools/ga-priority": {
-      "materialize": "apps/modkit-cli/test/cli.test.ts",
-      "read": "apps/modkit-cli/test/cli.test.ts"
+      "materialize": "apps/cli/test/cli.test.ts",
+      "read": "apps/cli/test/cli.test.ts"
     },
     "uv/uvm/live-projection": {
       "inspect": "scripts/test/parity-coverage.test.ts"
@@ -321,7 +321,7 @@
     {
       "capabilityId": "block9/archive-entry-as-subject",
       "operation": "inspect",
-      "test": "apps/modkit-vscode/test/containers.test.ts",
+      "test": "apps/vscode/test/containers.test.ts",
       "note": "a W3D inside a BIG opens as its own subject in the VS Code composition"
     },
     {
@@ -340,7 +340,7 @@
     {
       "capabilityId": "block9/archive-entry-as-subject",
       "operation": "read",
-      "test": "apps/modkit-vscode/test/containers.test.ts",
+      "test": "apps/vscode/test/containers.test.ts",
       "note": "a container member is read through the open container in the VS Code composition"
     },
     {
@@ -902,13 +902,13 @@
     {
       "capabilityId": "format/sc2-map/open-inspect",
       "operation": "read",
-      "test": "apps/modkit-cli/test/cli.test.ts",
+      "test": "apps/cli/test/cli.test.ts",
       "note": "the CLI opens the pinned packed SC2Map through an explicit linked extension root"
     },
     {
       "capabilityId": "format/sc2-map/open-inspect",
       "operation": "read",
-      "test": "apps/modkit-vscode/test/extension-roots.test.ts",
+      "test": "apps/vscode/test/extension-roots.test.ts",
       "note": "VS Code opens the pinned packed SC2Map through configured-extension and workspace roots"
     },
     {
@@ -1335,13 +1335,13 @@
     {
       "capabilityId": "platform/tools/ga-priority",
       "operation": "materialize",
-      "test": "apps/modkit-cli/test/cli.test.ts",
+      "test": "apps/cli/test/cli.test.ts",
       "note": "the shared subject.convert operation exports deterministic decoded rgba8 bytes from a PNG"
     },
     {
       "capabilityId": "platform/tools/ga-priority",
       "operation": "read",
-      "test": "apps/modkit-cli/test/cli.test.ts",
+      "test": "apps/cli/test/cli.test.ts",
       "note": "the CLI validates positive Galaxy source through subject.validate and emits the stable command receipt"
     },
     {

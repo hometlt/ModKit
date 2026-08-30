@@ -242,7 +242,7 @@ describe('single-file production dist', () => {
     expect(existsSync(baseline) ? readFileSync(baseline, 'utf8') : undefined).toBe(before)
     const hashes = JSON.parse(first) as Record<string, string>
     expect(Object.keys(hashes).sort()).toEqual(
-      [...PUBLISHED_ENTRIES, 'apps/modkit-cli/dist/main.js'].sort(),
+      [...PUBLISHED_ENTRIES, 'apps/cli/dist/main.js'].sort(),
     )
   })
 })

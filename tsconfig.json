@@ -17,10 +17,10 @@
       "path": "packages/ui"
     },
     {
-      "path": "apps/modkit-cli"
+      "path": "apps/cli"
     },
     {
-      "path": "apps/modkit-mcp"
+      "path": "apps/mcp"
     },
     {
       "path": "apps/server"
@@ -35,7 +35,7 @@
       "path": "apps/electron"
     },
     {
-      "path": "apps/modkit-vscode"
+      "path": "apps/vscode"
     },
     {
       "path": "packages/testkit"

@@ -49,7 +49,7 @@ async function bundleCjs(name: string, source: string): Promise<string> {
 }
 
 /**
- * The worker bootstrap as its own ES module, mirroring `apps/modkit-vscode/scripts/build-extension`.
+ * The worker bootstrap as its own ES module, mirroring `apps/vscode/scripts/build-extension`.
  *
  * A worker thread is its own entry point and the bootstrap verifies artifact bytes against the
  * inventory digests, so it is never reached through the consumer's bundle.

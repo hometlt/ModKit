@@ -40,10 +40,7 @@ import {
   createElectronSubjectServices,
   type ElectronSubjectServices,
 } from '../../apps/electron/src/index.js'
-import {
-  createVsCodeCommandOpener,
-  createVsCodeSubjectHost,
-} from '../../apps/modkit-vscode/src/host.js'
+import { createVsCodeCommandOpener, createVsCodeSubjectHost } from '../../apps/vscode/src/host.js'
 import {
   EXTENSION_ROOT_FAILURE_CODES,
   loadUserExtensionRoots,
@@ -300,7 +297,7 @@ beforeAll(async () => {
     join(repoRoot, 'packages', 'sdk'),
     join(repoRoot, 'packages', 'vfs'),
     join(repoRoot, 'packages', 'host'),
-    join(repoRoot, 'extensions', 'codec-kit', 'codec-kit'),
+    join(repoRoot, 'packages', 'codec-kit'),
   ]
   const tarballs = publicPackages.map(directory => pack(directory, publicTarballs))
 

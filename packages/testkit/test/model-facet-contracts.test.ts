@@ -484,7 +484,7 @@ describe('every migrated model codec emits a portable projection receipt', () =>
 
   it('drops an ambient URI on the way to the portable form', async () => {
     const { createProjectionReceipt, projectionReceiptMetadataGroup } = (await import(
-      pathToFileURL(join(repoRoot, 'extensions', 'codec-kit', 'codec-kit', 'src', 'index.js')).href
+      pathToFileURL(join(repoRoot, 'packages', 'codec-kit', 'src', 'index.js')).href
     )) as {
       createProjectionReceipt(input: unknown): ProjectionReceipt
       projectionReceiptMetadataGroup(
@@ -518,7 +518,7 @@ describe('every migrated model codec emits a portable projection receipt', () =>
 
   it('refuses a receipt with no plane, no evidence or an invented plane state', async () => {
     const { createProjectionReceipt } = (await import(
-      pathToFileURL(join(repoRoot, 'extensions', 'codec-kit', 'codec-kit', 'src', 'index.js')).href
+      pathToFileURL(join(repoRoot, 'packages', 'codec-kit', 'src', 'index.js')).href
     )) as { createProjectionReceipt(input: unknown): ProjectionReceipt }
     const base = {
       adapter: { id: 'org.example/thing', version: '1.0.0' },

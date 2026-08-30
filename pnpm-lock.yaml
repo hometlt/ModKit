@@ -88,7 +88,7 @@ importers:
         specifier: ^43.4.0
         version: 43.4.0
 
-  apps/modkit-cli:
+  apps/cli:
     dependencies:
       '@modkitx-x3/core':
         specifier: workspace:*
@@ -100,7 +100,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/sdk
 
-  apps/modkit-mcp:
+  apps/mcp:
     dependencies:
       '@modelcontextprotocol/server':
         specifier: 2.0.0
@@ -125,7 +125,7 @@ importers:
         specifier: 2.0.0
         version: 2.0.0
 
-  apps/modkit-vscode:
+  apps/vscode:
     dependencies:
       '@modkitx-x3/core':
         specifier: workspace:*
@@ -180,7 +180,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/extension-manager
 
-  extensions/_reference/counter-runtime:
+  examples/extensions/counter-runtime:
     dependencies:
       '@modkitx-x3/host':
         specifier: workspace:*
@@ -189,7 +189,7 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/sdk
 
-  extensions/_reference/software-renderer:
+  examples/extensions/software-renderer:
     dependencies:
       '@modkitx-x3/host':
         specifier: workspace:*
@@ -198,23 +198,23 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/sdk
 
-  extensions/codec-kit/codec-kit:
+  packages/codec-kit:
     dependencies:
       '@modkitx-x3/core':
         specifier: workspace:*
-        version: link:../../../packages/core
+        version: link:../core
       '@modkitx-x3/host':
         specifier: workspace:*
-        version: link:../../../packages/host
+        version: link:../host
       '@modkitx-x3/sdk':
         specifier: workspace:*
-        version: link:../../../packages/sdk
+        version: link:../sdk
 
   extensions/common/archives:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../../packages/host
@@ -226,7 +226,7 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../../packages/host
@@ -238,7 +238,7 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../../packages/host
@@ -247,7 +247,7 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../../packages/host
@@ -259,7 +259,7 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../../packages/host
@@ -271,7 +271,7 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../../packages/host
@@ -283,7 +283,7 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../../packages/host
@@ -304,7 +304,7 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/core':
         specifier: workspace:*
         version: link:../../../packages/core
@@ -319,7 +319,7 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/core':
         specifier: workspace:*
         version: link:../../../packages/core
@@ -334,7 +334,7 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/core':
         specifier: workspace:*
         version: link:../../../packages/core
@@ -352,7 +352,7 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/core':
         specifier: workspace:*
         version: link:../../../packages/core
@@ -370,7 +370,7 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/core':
         specifier: workspace:*
         version: link:../../../packages/core
@@ -388,7 +388,7 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/core':
         specifier: workspace:*
         version: link:../../../packages/core
@@ -412,7 +412,7 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../../packages/host
@@ -424,7 +424,7 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../../packages/host
@@ -436,7 +436,7 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../../packages/host
@@ -448,193 +448,193 @@ importers:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/ea/big:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/ea/emperor:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/ea/models:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/ea/sage:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/ea/tiberian-sun:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/ea/westwood:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/adobe-flash:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/annihilation-gas-powered:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/audiokinetic-wwise:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/blizzard-common-formats:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/blizzard-diablo:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/blizzard-warcraft-3:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/cavedog-total-annihilation:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/epic-games-unreal-engine:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/firelight-fmod:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/microsoft-age-series:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/microsoft-halo-wars:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/new-world-computing-heroes-3:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/new-world-computing-heroes-4:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/opensource-spring:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/petroglyph-glyphx:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/rad-game-tools-video:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/realitypump-earth-2150:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/realitypump-earth2160:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/relic-essence:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/relic-models:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/stainless-steel-studios-empire-earth:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/ubisoft-heroes-6:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/uncommon-documents:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/mk2/unity-engine:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   extensions/opensource/spring:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../codec-kit/codec-kit
+        version: link:../../../packages/codec-kit
 
   packages/core: {}
 

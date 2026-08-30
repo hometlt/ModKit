@@ -298,7 +298,7 @@
     },
     {
       "package": "@modkitx/xml",
-      "owner": "extensions/codec-kit",
+      "owner": "packages/codec-kit",
       "state": "demoted",
       "note": "owner decision 2026-08-24: demoted from the package catalog to an extension-side library. Consumers are codecs only; the platform -X-> extensions guard holds the boundary and the user-visible XML codec stays in common/text-xml."
     }

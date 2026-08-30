@@ -50,7 +50,8 @@ import { resolvedDescriptorWire } from './fixtures/descriptor.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { starcraft2Game } = (await import(
-  pathToFileURL(join(repoRoot, '..', 'modkit-blizzard', 'starcraft2-game', 'src', 'linked.js')).href
+  pathToFileURL(join(repoRoot, '..', 'modkit-blizzard', 'starcraft2', 'src', 'game', 'linked.js'))
+    .href
 )) as { readonly starcraft2Game: LinkedExtension }
 const { warzone2100 } = (await import(
   pathToFileURL(join(repoRoot, '..', 'modkit-warzone', 'src', 'linked.js')).href
@@ -709,7 +710,7 @@ async function compositionWithTrackedDataRelease(release: () => void): Promise<H
     supports: backend.supports,
     async activate(context: ExecutionBackendActivation) {
       const lease = await backend.activate(context)
-      const tracksDataProvider = context.entrypoint.href.includes('/src/data-provider.js')
+      const tracksDataProvider = context.entrypoint.href.endsWith('/data-provider.js')
       return Object.freeze({
         module: lease.module,
         async release() {

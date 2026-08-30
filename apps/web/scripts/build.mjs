@@ -114,18 +114,10 @@ await build({
 await build({
   entryPoints: {
     'worker-entry': join(repoRoot, 'packages', 'host', 'dist', 'browser', 'worker-entry.js'),
-    'vendor/codec-kit/index': join(
-      repoRoot,
-      'extensions',
-      'codec-kit',
-      'codec-kit',
-      'src',
-      'index.js',
-    ),
+    'vendor/codec-kit/index': join(repoRoot, 'packages', 'codec-kit', 'src', 'index.js'),
     'vendor/codec-kit/text/index': join(
       repoRoot,
-      'extensions',
-      'codec-kit',
+      'packages',
       'codec-kit',
       'src',
       'text',

@@ -16,7 +16,7 @@ describe('StarCraft II real-corpus source boundaries', () => {
     for (const file of files) {
       const source = await readFile(join(testDirectory, file), 'utf8')
       expect(source, `${file} directly imports a StarCraft II provider implementation`).not.toMatch(
-        /starcraft2-game[\s\S]{0,160}src[\s\S]{0,160}(?:workspace-provider|data-provider|map-provider|provider)\.js/u,
+        /starcraft2[\s\S]{0,160}src[\s\S]{0,160}game[\s\S]{0,160}(?:workspace-provider|data-provider|map-provider|provider)\.js/u,
       )
       expect(source, `${file} reads an unpacked installation Maps child`).not.toMatch(
         /['"]Maps(?:\/|['"])/u,

@@ -56,11 +56,7 @@ async function runScaffold(id: string): Promise<string> {
    */
   const linkDir = join(scratch, 'node_modules', '@modkitx-x3')
   await mkdir(linkDir, { recursive: true })
-  await symlink(
-    join(repoRoot, 'extensions', 'codec-kit', 'codec-kit'),
-    join(linkDir, 'codec-kit'),
-    'junction',
-  )
+  await symlink(join(repoRoot, 'packages', 'codec-kit'), join(linkDir, 'codec-kit'), 'junction')
   return scratch
 }
 

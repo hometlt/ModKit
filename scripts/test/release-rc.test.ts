@@ -115,7 +115,7 @@ function fixture() {
       },
     ],
   })
-  json(join(root, 'apps', 'modkit-vscode', 'generated', 'bundled-catalog.json'), {
+  json(join(root, 'apps', 'vscode', 'generated', 'bundled-catalog.json'), {
     schemaVersion: 1,
     roots: [
       {
@@ -158,7 +158,7 @@ function fixture() {
     'GPL-2.0-or-later',
   )
 
-  const catalogPath = join(root, 'apps', 'modkit-vscode', 'generated', 'bundled-catalog.json')
+  const catalogPath = join(root, 'apps', 'vscode', 'generated', 'bundled-catalog.json')
   const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'))
   catalog.roots[0].digest = canonicalExtensionDigest(root, 'extensions/common/images')
   json(catalogPath, catalog)
@@ -182,17 +182,17 @@ function fixture() {
   for (const app of [
     ['automation-host', '@modkitx-x3/automation-host'],
     ['electron', '@modkitx-x3/electron-app'],
-    ['modkit-cli', '@modkitx-x3/modkit-cli'],
-    ['modkit-vscode', 'modkitx.modkit'],
+    ['cli', '@modkitx-x3/modkit-cli'],
+    ['vscode', 'modkitx.modkit'],
     ['server', '@modkitx-x3/server'],
     ['web', '@modkitx-x3/web-app'],
   ] as const) {
     json(join(root, 'apps', app[0], 'package.json'), packageMetadata(app[1], undefined, true))
   }
-  text(join(root, 'apps', 'modkit-cli', 'dist', 'main.js'), 'export const main = true\n')
-  const cliBytes = readFileSync(join(root, 'apps', 'modkit-cli', 'dist', 'main.js'))
+  text(join(root, 'apps', 'cli', 'dist', 'main.js'), 'export const main = true\n')
+  const cliBytes = readFileSync(join(root, 'apps', 'cli', 'dist', 'main.js'))
   json(join(root, 'scripts', 'bundle-hashes.json'), {
-    'apps/modkit-cli/dist/main.js': createHash('sha256').update(cliBytes).digest('hex'),
+    'apps/cli/dist/main.js': createHash('sha256').update(cliBytes).digest('hex'),
   })
   json(join(root, 'package.json'), packageMetadata('@modkitx-x3/workspace-root', undefined, true))
   text(join(root, 'pnpm-lock.yaml'), "lockfileVersion: '9.0'\n")
@@ -283,7 +283,7 @@ describe('focused local RC artifacts', () => {
     delete metadata.license
     metadata.private = true
     json(packagePath, metadata)
-    const catalogPath = join(root, 'apps', 'modkit-vscode', 'generated', 'bundled-catalog.json')
+    const catalogPath = join(root, 'apps', 'vscode', 'generated', 'bundled-catalog.json')
     const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'))
     catalog.roots[0].digest = canonicalExtensionDigest(root, 'extensions/common/images')
     json(catalogPath, catalog)
@@ -301,7 +301,7 @@ describe('focused local RC artifacts', () => {
     )
 
     const { parent, root } = fixture()
-    const catalogPath = join(root, 'apps', 'modkit-vscode', 'generated', 'bundled-catalog.json')
+    const catalogPath = join(root, 'apps', 'vscode', 'generated', 'bundled-catalog.json')
     const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'))
     catalog.roots[0].digest = 'sha256:stale'
     json(catalogPath, catalog)
@@ -325,7 +325,7 @@ describe('focused local RC artifacts', () => {
       expect(bytes).not.toContain('extensions/opensource/spring')
     }
 
-    const catalogPath = join(root, 'apps', 'modkit-vscode', 'generated', 'bundled-catalog.json')
+    const catalogPath = join(root, 'apps', 'vscode', 'generated', 'bundled-catalog.json')
     const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'))
     catalog.roots.push({ name: 'sage', directory: 'ea/sage', digest: 'sha256:bad' })
     json(catalogPath, catalog)
@@ -376,12 +376,10 @@ describe('focused local RC artifacts', () => {
       ]),
     )
 
-    const cliPath = join(root, 'apps', 'modkit-cli', 'dist', 'main.js')
+    const cliPath = join(root, 'apps', 'cli', 'dist', 'main.js')
     text(cliPath, 'export const main = "v2"\n')
     json(join(root, 'scripts', 'bundle-hashes.json'), {
-      'apps/modkit-cli/dist/main.js': createHash('sha256')
-        .update(readFileSync(cliPath))
-        .digest('hex'),
+      'apps/cli/dist/main.js': createHash('sha256').update(readFileSync(cliPath)).digest('hex'),
     })
     const secondRc = join(parent, 'rc-2')
     buildRc({ repoRoot: root, outDir: secondRc, signingKeyPath: privatePath })

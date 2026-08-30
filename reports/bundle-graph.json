@@ -8,7 +8,7 @@
   },
   "entries": [
     {
-      "entry": "apps/modkit-cli/dist/main.js",
+      "entry": "apps/cli/dist/main.js",
       "surface": "modkit-cli/main",
       "modules": 4,
       "bytes": 31609,

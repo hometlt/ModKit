@@ -114,8 +114,8 @@ describe('VS Code debug launchers', () => {
       'debug:web:composition': expect.stringContaining('--app web'),
       'debug:electron:adapter': expect.stringContaining('--app electron'),
       'debug:vscode:adapter': expect.stringContaining('--app vscode'),
-      'debug:cli': expect.stringContaining('apps/modkit-cli/dist/main.js'),
-      'debug:mcp': expect.stringContaining('apps/modkit-mcp/dist/main.js'),
+      'debug:cli': expect.stringContaining('apps/cli/dist/main.js'),
+      'debug:mcp': expect.stringContaining('apps/mcp/dist/main.js'),
       'debug:pwa': expect.stringContaining('scripts/debug/pwa-server.mjs'),
     })
   })

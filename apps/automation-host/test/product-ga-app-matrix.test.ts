@@ -20,7 +20,7 @@ import type { ArtifactByteSource, ResourceBudget } from '@modkitx-x3/sdk'
 import { createAutomationHost } from '../src/index.js'
 import { createElectronSubjectServices } from '../../electron/src/index.js'
 import { createServerApp } from '../../server/src/index.js'
-import { createVsCodeCommandOpener, createVsCodeSubjectHost } from '../../modkit-vscode/src/host.js'
+import { createVsCodeCommandOpener, createVsCodeSubjectHost } from '../../vscode/src/host.js'
 import { WEB_EXTENSION_CATALOG } from '../../web/generated/extension-catalog.js'
 import { createWebSubjectServices } from '../../web/src/subjects.js'
 import {
@@ -37,7 +37,7 @@ import {
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
 const subject = join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png')
 const images = join(repositoryRoot, 'extensions', 'common', 'images')
-const cli = join(repositoryRoot, 'apps', 'modkit-cli', 'dist', 'main.js')
+const cli = join(repositoryRoot, 'apps', 'cli', 'dist', 'main.js')
 const matrix = JSON.parse(
   readFileSync(join(import.meta.dirname, 'product-ga-app-matrix.json'), 'utf8'),
 ) as {

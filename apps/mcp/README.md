@@ -16,7 +16,6 @@ pnpm mcp:start -- `
   --root 'C:\FILES\SC2Files\Games and programs files' `
   --extension 'C:\FILES\SC2Files\coding\modkit-core\extensions\common\images' `
   --extension 'C:\FILES\SC2Files\coding\modkit-blizzard\starcraft2' `
-  --extension 'C:\FILES\SC2Files\coding\modkit-blizzard\starcraft2-game' `
   --extension 'C:\FILES\SC2Files\coding\modkit-warzone'
 ```
 
@@ -28,7 +27,7 @@ The equivalent Windows environment fallback uses semicolon-separated absolute pa
 
 ```powershell
 $env:MODKIT_MCP_ROOTS = 'C:\FILES\SC2Files\Games and programs files'
-$env:MODKIT_MCP_EXTENSIONS = 'C:\FILES\SC2Files\coding\modkit-core\extensions\common\images;C:\FILES\SC2Files\coding\modkit-blizzard\starcraft2;C:\FILES\SC2Files\coding\modkit-blizzard\starcraft2-game;C:\FILES\SC2Files\coding\modkit-warzone'
+$env:MODKIT_MCP_EXTENSIONS = 'C:\FILES\SC2Files\coding\modkit-core\extensions\common\images;C:\FILES\SC2Files\coding\modkit-blizzard\starcraft2;C:\FILES\SC2Files\coding\modkit-warzone'
 pnpm mcp:start
 ```
 

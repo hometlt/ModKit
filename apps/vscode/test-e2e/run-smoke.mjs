@@ -179,7 +179,7 @@ const LEGACY_ROOTS = [
 const FOCUSED_ROOTS = [
   join(repoRoot, '..', 'modkit-blizzard', 'models'),
   join(repoRoot, '..', 'modkit-blizzard', 'starcraft2'),
-  join(repoRoot, '..', 'modkit-blizzard', 'starcraft2-game'),
+  join(repoRoot, '..', 'modkit-blizzard', 'starcraft2'),
   join(repoRoot, '..', 'modkit-warzone'),
 ]
 const CONFIGURED_ROOTS = focusedGa ? FOCUSED_ROOTS : LEGACY_ROOTS
@@ -596,14 +596,14 @@ async function main() {
           diagnosticsChannel: (() => {
             let source = ''
             try {
-              source = readFileSync(join(repoRoot, 'apps/modkit-vscode/src/webview.ts'), 'utf8')
+              source = readFileSync(join(repoRoot, 'apps/vscode/src/webview.ts'), 'utf8')
             } catch {
               source = ''
             }
             const handler = /onDiagnostic:\s*diagnostic\s*=>\s*\{([^}]*)\}/.exec(source)?.[1] ?? ''
             return {
               claimKind: 'source inspection, not runtime observation',
-              site: 'apps/modkit-vscode/src/webview.ts — connectSubjectRpc({ onDiagnostic })',
+              site: 'apps/vscode/src/webview.ts — connectSubjectRpc({ onDiagnostic })',
               emitsToExtensionHost: /bridge\.emit/.test(handler),
               writesVisibleStatusLine: /\bsay\(/.test(handler),
               note:
@@ -627,7 +627,7 @@ async function main() {
                 read('apps/electron/test/subject-open-smoke.test.ts'),
               ),
               usedByVsCodeArchiveStage: /openNestedSubject/.test(
-                read('apps/modkit-vscode/src/archive-stage.ts'),
+                read('apps/vscode/src/archive-stage.ts'),
               ),
               note:
                 'the VS Code archive stage reads an entry’s bytes into a hex pane; it never opens the ' +

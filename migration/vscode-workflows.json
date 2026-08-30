@@ -29,7 +29,7 @@
         "legacy/vscode/command/modkit.browseRawFiles"
       ],
       "evidence": [
-        "apps/modkit-vscode/test/containers.test.ts",
+        "apps/vscode/test/containers.test.ts",
         "scripts/test/command-fixtures-hosts.test.ts"
       ],
       "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -41,7 +41,7 @@
       "replacementWorkflowId": "platform/presentation/common-plan",
       "sourceUnitIds": ["legacy/vscode/command/modkit.showRelationGraph"],
       "evidence": [
-        "apps/modkit-vscode/test/view-policy.test.ts",
+        "apps/vscode/test/view-policy.test.ts",
         "packages/ui/test/relation-graph-source.test.ts"
       ],
       "reason": "The relation graph is a generic data source and a plan-eligible VS Code stage rather than an app-owned command implementation."
@@ -65,7 +65,7 @@
       "replacementWorkflowId": "game/starcraft-2/discover-open",
       "sourceUnitIds": ["legacy/cli/modkit/install"],
       "evidence": [
-        "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+        "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
         "extensions/opensource/warzone-2100/test/installation-provider.test.ts"
       ],
       "reason": "Focused games use auto-discovery plus environment and settings overrides; legacy data provisioning is not a Product GA command."
@@ -76,7 +76,7 @@
       "gapId": null,
       "replacementWorkflowId": "platform/apps/priority-workflows",
       "sourceUnitIds": ["legacy/cli/modkit/lsp"],
-      "evidence": ["apps/modkit-vscode/test/language-session.test.ts"],
+      "evidence": ["apps/vscode/test/language-session.test.ts"],
       "reason": "The focused VS Code profile uses the neutral language controller directly; a standalone stdio LSP remains an optional later tool."
     },
     {
@@ -85,7 +85,7 @@
       "gapId": null,
       "replacementWorkflowId": "platform/tools/ga-priority",
       "sourceUnitIds": ["legacy/cli/modkit/check"],
-      "evidence": ["apps/modkit-cli/test/cli.test.ts"],
+      "evidence": ["apps/cli/test/cli.test.ts"],
       "reason": "project.validate checks every focused project file through subject.validate, emits deterministic per-file protocol receipts and fails closed on unclaimed inputs."
     },
     {
@@ -103,7 +103,7 @@
       "gapId": null,
       "replacementWorkflowId": "platform/tools/ga-priority",
       "sourceUnitIds": ["legacy/cli/modkit/texture"],
-      "evidence": ["apps/modkit-cli/test/cli.test.ts"],
+      "evidence": ["apps/cli/test/cli.test.ts"],
       "reason": "The shared CLI runs subject.convert for a PNG and exports deterministic decoded rgba8 bytes with a machine-readable receipt."
     },
     {
@@ -135,7 +135,7 @@
         "legacy/vscode/custom-editor/modkit.versionPreview"
       ],
       "evidence": [
-        "apps/modkit-vscode/test-e2e/suite/index.cjs",
+        "apps/vscode/test-e2e/suite/index.cjs",
         "reports/vscode-focused-ga-smoke/receipt.json"
       ],
       "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -168,8 +168,8 @@
         "legacy/vscode/language/xml"
       ],
       "evidence": [
-        "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-        "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+        "apps/vscode/test/sc2-authoring-workflows.test.ts",
+        "apps/vscode/test/game-launch-workflow.test.ts",
         "packages/host/test/game-launch.test.ts"
       ],
       "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -187,8 +187,8 @@
         "legacy/vscode/command/modkit.casc.materialize"
       ],
       "evidence": [
-        "apps/modkit-vscode/test/containers.test.ts",
-        "apps/modkit-vscode/test/workbench-workflows.test.ts"
+        "apps/vscode/test/containers.test.ts",
+        "apps/vscode/test/workbench-workflows.test.ts"
       ],
       "reason": "The generic VS Code container workbench provides deterministic search and refresh plus bounded materialization through the shared VFS without app-owned cache semantics."
     },
@@ -203,7 +203,7 @@
         "legacy/vscode/command/modkit.openLogsFolder",
         "legacy/vscode/command/modkit.showLog"
       ],
-      "evidence": ["apps/modkit-vscode/test/workbench-workflows.test.ts"],
+      "evidence": ["apps/vscode/test/workbench-workflows.test.ts"],
       "reason": "VS Code now keeps a bounded readable diagnostics journal and exposes native show and export commands instead of relying on an unreadable OutputChannel."
     },
     {
@@ -239,8 +239,8 @@
         "legacy/vscode/configuration/modkit.xsdPath"
       ],
       "evidence": [
-        "apps/modkit-vscode/test/settings.test.ts",
-        "apps/modkit-vscode/test/priority-settings.test.ts"
+        "apps/vscode/test/settings.test.ts",
+        "apps/vscode/test/priority-settings.test.ts"
       ],
       "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
     },
@@ -257,7 +257,7 @@
         "legacy/vscode/command/modkit.modTree.showDeps"
       ],
       "evidence": [
-        "apps/modkit-vscode/test/workbench-workflows.test.ts",
+        "apps/vscode/test/workbench-workflows.test.ts",
         "packages/ui/test/relation-graph-source.test.ts"
       ],
       "reason": "Native navigation and relation refresh commands operate over the generic relation source and presentation stages that replace the focused MOD tree controls."
@@ -282,9 +282,9 @@
         "legacy/vscode/command/modkit.unloadMod"
       ],
       "evidence": [
-        "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+        "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
         "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-        "apps/modkit-vscode/test/workbench-workflows.test.ts",
+        "apps/vscode/test/workbench-workflows.test.ts",
         "reports/vscode-smoke/lifecycle-receipt.json"
       ],
       "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -303,8 +303,8 @@
         "legacy/vscode/view/modkit/sc2layoutMainView"
       ],
       "evidence": [
-        "apps/modkit-vscode/test/view-policy.test.ts",
-        "apps/modkit-vscode/test/workbench-workflows.test.ts"
+        "apps/vscode/test/view-policy.test.ts",
+        "apps/vscode/test/workbench-workflows.test.ts"
       ],
       "reason": "All six focused legacy views have one accepted mapping to the native explorer, generic Host and Extensions views, or shared presentation stages."
     }
@@ -628,7 +628,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode",
+        "owner": "apps/vscode",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "reason": "The real VS Code E5 workflow proves the focused previews and positive conversion; unrelated viewer facts remain explicitly post-release."
@@ -659,7 +659,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode and extensions/blizzard",
+        "owner": "apps/vscode and extensions/blizzard",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "reason": "The exact Galaxy, SC2 authoring, strings and layout facts map to shared services, and explicit map launch uses the safe game-provider contract."
@@ -689,7 +689,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode and packages/host",
+        "owner": "apps/vscode and packages/host",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "reason": "The generic VFS now covers archive opening, search, refresh and bounded materialization while legacy cache-management utilities remain post-release."
@@ -711,7 +711,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode",
+        "owner": "apps/vscode",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "reason": "Resolution explanation and the bounded readable and exportable diagnostics journal replace the focused diagnostic and log commands."
@@ -727,7 +727,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode and packages/ui",
+        "owner": "apps/vscode and packages/ui",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "reason": "Every focused installation, source, launch, diagnostics and renderer setting has an explicit generic setting, provider option, host policy or workflow mapping; the extension registry is an explicit catalog source whose network refresh requires a user command."
@@ -750,7 +750,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode and packages/ui",
+        "owner": "apps/vscode and packages/ui",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "reason": "Generic native navigation, relation refresh and presentation stages replace the focused MOD tree controls and relation actions."
@@ -796,7 +796,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode and packages/host",
+        "owner": "apps/vscode and packages/host",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/recovery",
         "reason": "Generic provider discovery, installed-game selection, persisted content-source configuration, extension install/update/remove and enable/disable commands, unload, permission handling and recovery form one accepted lifecycle."
@@ -812,7 +812,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode and packages/ui",
+        "owner": "apps/vscode and packages/ui",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "reason": "All six focused legacy views map exactly once to the native explorer, generic Host and Extensions views, or shared presentation stages."
@@ -829,7 +829,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-cli",
+        "owner": "apps/cli",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "reason": "project.validate checks every focused project file through the shared runtime and emits a deterministic machine-readable receipt."
@@ -863,7 +863,7 @@
         "disposition": "post-release",
         "migrationState": "deferred-post-ga",
         "releaseTrack": "post-ga",
-        "owner": "apps/modkit-cli and packages/host",
+        "owner": "apps/cli and packages/host",
         "targetState": "deferred-post-ga",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "reason": "The focused VS Code profile uses the neutral language controller; standalone stdio LSP packaging stays post-release."
@@ -880,7 +880,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-cli and extensions/blizzard/galaxy-language",
+        "owner": "apps/cli and extensions/blizzard/galaxy-language",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "reason": "The shared CLI validates positive Galaxy source and returns the stable common command protocol receipt."
@@ -897,7 +897,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-cli and extensions/common/images",
+        "owner": "apps/cli and extensions/common/images",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "reason": "The shared CLI performs positive PNG conversion and exports deterministic rgba8 bytes through subject.convert."

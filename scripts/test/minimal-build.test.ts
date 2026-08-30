@@ -74,7 +74,7 @@ const expectNone = (text: string, except: readonly string[] = []): void => {
 describe('minimal builds stay minimal', () => {
   it('keeps production web and VS Code graphs on explicit UI surface imports', () => {
     const rootImports: string[] = []
-    for (const appRoot of ['apps/web/src', 'apps/modkit-vscode/src']) {
+    for (const appRoot of ['apps/web/src', 'apps/vscode/src']) {
       for (const file of productionSources(resolve(repoRoot, appRoot))) {
         const lines = readFileSync(file, 'utf8').split('\n')
         lines.forEach((line, index) => {

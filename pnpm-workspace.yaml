@@ -8,12 +8,12 @@ packages:
   - 'packages/vfs'
   - 'packages/host'
   - 'packages/extension-manager'
+  - 'packages/codec-kit'
   - 'packages/ui'
   - 'packages/testkit'
   - 'apps/*'
   # Optional reference extensions are workspace-linked for conformance tests only. They are not
   # dependencies of core/sdk/vfs/host and therefore do not enter the bootstrap import closure.
-  - 'extensions/codec-kit/*'
   - 'extensions/common/archives'
   - 'extensions/common/audio'
   - 'extensions/common/containers'
@@ -34,8 +34,8 @@ packages:
   - 'extensions/common/ui-monaco'
   - 'extensions/ea/*'
   - 'extensions/opensource/spring'
-  - 'extensions/_reference/counter-runtime'
-  - 'extensions/_reference/software-renderer'
+  - 'examples/extensions/counter-runtime'
+  - 'examples/extensions/software-renderer'
   # MK2 → MK3 converted staging area (scripts/convert-mk2.mjs). Workspace membership exists so
   # the generated modules can import `@modkitx-x3/codec-kit` by package name instead of by path;
   # none of these is a bootstrap dependency either.

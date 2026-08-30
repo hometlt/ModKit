@@ -171,10 +171,10 @@ for (const pkg of BUNDLED_PACKAGES) {
 
 // The CLI is an application: its own modules are inlined, lab packages stay external so the
 // external-extension proof still resolves them from the installed tarballs.
-const cliMain = join(root, 'apps', 'modkit-cli', 'dist', 'main.js')
-if (existsSync(join(root, 'apps', 'modkit-cli', 'src', 'main.ts'))) {
-  const contents = await bundleEntry(join(root, 'apps', 'modkit-cli', 'src', 'main.ts'), cliMain)
-  hashes['apps/modkit-cli/dist/main.js'] = createHash('sha256').update(contents).digest('hex')
+const cliMain = join(root, 'apps', 'cli', 'dist', 'main.js')
+if (existsSync(join(root, 'apps', 'cli', 'src', 'main.ts'))) {
+  const contents = await bundleEntry(join(root, 'apps', 'cli', 'src', 'main.ts'), cliMain)
+  hashes['apps/cli/dist/main.js'] = createHash('sha256').update(contents).digest('hex')
   if (!check) writeFileSync(cliMain, contents)
   bundled += 1
 }

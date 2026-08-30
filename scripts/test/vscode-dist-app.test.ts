@@ -4,18 +4,18 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const root = join(import.meta.dirname, '..', '..')
-const app = join(root, 'apps', 'modkit-vscode')
+const app = join(root, 'apps', 'vscode')
 
 describe('VS Code generated release artifact', () => {
   it('keeps dist-app generated while every release entry point rebuilds it', () => {
-    const tracked = execFileSync('git', ['ls-files', '--', 'apps/modkit-vscode/dist-app'], {
+    const tracked = execFileSync('git', ['ls-files', '--', 'apps/vscode/dist-app'], {
       cwd: root,
       encoding: 'utf8',
     }).trim()
     expect(tracked).toBe('')
 
     const ignore = readFileSync(join(root, '.gitignore'), 'utf8')
-    expect(ignore.split(/\r?\n/u)).toContain('apps/modkit-vscode/dist-app/')
+    expect(ignore.split(/\r?\n/u)).toContain('apps/vscode/dist-app/')
 
     const manifest = JSON.parse(readFileSync(join(app, 'package.json'), 'utf8')) as {
       main: string

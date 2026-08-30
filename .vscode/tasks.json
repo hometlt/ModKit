@@ -43,7 +43,7 @@
     {
       "label": "Modkit Core: Build VS Code Extension",
       "type": "shell",
-      "command": "node apps/modkit-vscode/scripts/build-extension.mjs",
+      "command": "node apps/vscode/scripts/build-extension.mjs",
       "options": { "cwd": "${workspaceFolder}" },
       "dependsOn": "Modkit Core: Build",
       "dependsOrder": "sequence",

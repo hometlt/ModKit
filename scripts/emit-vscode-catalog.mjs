@@ -39,7 +39,7 @@
  * was emitted" — and one hash per root answers it in twenty lines instead of four thousand.
  *
  * Usage:
- *   node scripts/emit-vscode-catalog.mjs           # write apps/modkit-vscode/generated/…
+ *   node scripts/emit-vscode-catalog.mjs           # write apps/vscode/generated/…
  *   node scripts/emit-vscode-catalog.mjs --check   # compare, exit 1 on drift
  */
 
@@ -52,7 +52,7 @@ import { READY_APP_EXTENSIONS } from './app-extension-sets.mjs'
 import { extensionArtifactDigest } from './lib/extension-artifact-digest.mjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const outputDir = join(repoRoot, 'apps', 'modkit-vscode', 'generated')
+const outputDir = join(repoRoot, 'apps', 'vscode', 'generated')
 const outputPath = join(outputDir, 'bundled-catalog.json')
 const check = process.argv.includes('--check')
 
@@ -138,7 +138,7 @@ if (check) {
   }
   if (existing !== rendered) {
     process.stderr.write(
-      'vscode catalog is stale: apps/modkit-vscode/generated/bundled-catalog.json\n' +
+      'vscode catalog is stale: apps/vscode/generated/bundled-catalog.json\n' +
         '  run `pnpm catalogs:emit` and review the diff\n',
     )
     process.exit(1)

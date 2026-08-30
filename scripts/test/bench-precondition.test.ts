@@ -111,7 +111,7 @@ describe('benchmark production-bundle precondition', () => {
   it('treats an unpinned CLI target as a configuration error', () => {
     const { root, manifestPath } = createBundledFixture('unpinned-cli')
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, string>
-    delete manifest['apps/modkit-cli/dist/main.js']
+    delete manifest['apps/cli/dist/main.js']
     writeFileSync(manifestPath, JSON.stringify(manifest), 'utf8')
 
     const result = checkBenchBundlePrecondition({ root })
@@ -119,7 +119,7 @@ describe('benchmark production-bundle precondition', () => {
     expect(result.issues).toContainEqual(
       expect.objectContaining({
         kind: 'entry-unpinned',
-        entry: 'apps/modkit-cli/dist/main.js',
+        entry: 'apps/cli/dist/main.js',
       }),
     )
   })
@@ -138,7 +138,7 @@ describe('benchmark production-bundle precondition', () => {
 
   it('prints no timings and exits 2 when a gated run is inconclusive', async () => {
     const { root } = createBundledFixture('gate')
-    rmSync(join(root, 'apps/modkit-cli/dist/main.js'))
+    rmSync(join(root, 'apps/cli/dist/main.js'))
 
     const { status, stdout, stderr } = await runBench(root, '--gate')
     expect(status).toBe(2)

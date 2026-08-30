@@ -51,7 +51,7 @@ async function createApplication(name) {
       return { application: app, realms: { main: app.main, renderer: app.renderer } }
     }
     case 'vscode': {
-      const { createVsCodeDesktopApp } = await import('../../apps/modkit-vscode/dist/index.js')
+      const { createVsCodeDesktopApp } = await import('../../apps/vscode/dist/index.js')
       const app = await createVsCodeDesktopApp(extensions)
       return {
         application: app,

@@ -126,7 +126,7 @@
   "build": {
     "command": "pnpm --filter @modkitx-x3/modkit-vscode ext:build",
     "exitCode": 0,
-    "output": "\n    packages/host/dist/node/index.js:8589:15:\n      8589 │   const base = import.meta.url;\n           ╵                ~~~~~~~~~~~\n\n  You need to set the output format to \"esm\" for \"import.meta\" to work correctly.\n\nbuilt ${X3_ROOT}\\apps\\modkit-vscode\\dist-app",
+    "output": "\n    packages/host/dist/node/index.js:8589:15:\n      8589 │   const base = import.meta.url;\n           ╵                ~~~~~~~~~~~\n\n  You need to set the output format to \"esm\" for \"import.meta\" to work correctly.\n\nbuilt ${X3_ROOT}\\apps\\vscode\\dist-app",
     "distAppCheck": {
       "command": "pnpm --filter @modkitx-x3/modkit-vscode dist-app:check",
       "exitCode": 0,
@@ -414,7 +414,7 @@
   "diagnosticCodeUnderTest": "x3.host/companion-unavailable",
   "diagnosticsChannel": {
     "claimKind": "source inspection, not runtime observation",
-    "site": "apps/modkit-vscode/src/webview.ts — connectSubjectRpc({ onDiagnostic })",
+    "site": "apps/vscode/src/webview.ts — connectSubjectRpc({ onDiagnostic })",
     "emitsToExtensionHost": false,
     "writesVisibleStatusLine": true,
     "note": "the handler calls bridge.emit only, so a subject diagnostic reaches the extension host’s output channel and is never drawn on the page’s status bar — invisible to the user, and unreadable to any observer, because an OutputChannel has no read API"

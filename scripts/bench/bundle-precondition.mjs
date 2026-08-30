@@ -13,7 +13,7 @@ export const BUNDLED_ROOT_CLOSURE_ENTRIES = Object.freeze([
 /** Every bundled artifact timed by scripts/bench.mjs. */
 export const BENCH_BUNDLE_ENTRIES = Object.freeze([
   ...BUNDLED_ROOT_CLOSURE_ENTRIES,
-  'apps/modkit-cli/dist/main.js',
+  'apps/cli/dist/main.js',
 ])
 
 function sha256(contents) {

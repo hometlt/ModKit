@@ -112,8 +112,8 @@ function cliNetStats(argv) {
   return pairedStats({ timeOnce, n: CLI_N, warmup: WARMUP })
 }
 
-const cliMain = join(root, 'apps', 'modkit-cli', 'dist', 'main.js')
-const fixture = join(root, 'apps', 'modkit-cli', 'test', 'fixtures', 'valid-extension')
+const cliMain = join(root, 'apps', 'cli', 'dist', 'main.js')
+const fixture = join(root, 'apps', 'cli', 'test', 'fixtures', 'valid-extension')
 
 /** The three scenarios the policy keeps, with their budgets (BRIEF-12 §6). */
 const scenarios = [

@@ -249,13 +249,6 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/sc2-strings',
       'org.modkitx/sc2-triggers',
       'org.modkitx.blizzard/sc2-workspace-copy-writer',
-    ]),
-  }),
-  'blizzard-starcraft2-game': Object.freeze({
-    repository: 'blizzard',
-    path: Object.freeze(['starcraft2-game']),
-    coordinate: 'org.modkitx.blizzard/starcraft2-game',
-    contributions: Object.freeze([
       'org.modkitx.blizzard/sc2-data-knowledge',
       'org.modkitx.blizzard/sc2-data-schema-knowledge',
       'org.modkitx.blizzard/starcraft2-data',
@@ -404,7 +397,6 @@ export const APP_EXTENSION_SETS = Object.freeze({
   'blizzard-models': Object.freeze(['blizzard-models']),
   'blizzard-mpq': Object.freeze(['blizzard-mpq']),
   'blizzard-starcraft2': Object.freeze(['blizzard-starcraft2']),
-  'blizzard-starcraft2-game': Object.freeze(['blizzard-starcraft2-game']),
   'opensource-warzone-2100': Object.freeze(['opensource-warzone-2100']),
   'mk2-extended': mk2Extended,
 })

@@ -29,9 +29,9 @@ const [{ createServerApp }, { createAutomationHost }, electron, vscode, web, cli
     import('../apps/server/dist/index.js'),
     import('../apps/automation-host/dist/index.js'),
     import('../apps/electron/dist/index.js'),
-    import('../apps/modkit-vscode/dist/index.js'),
+    import('../apps/vscode/dist/index.js'),
     import('../apps/web/dist/index.js'),
-    import('../apps/modkit-cli/dist/profile.js'),
+    import('../apps/cli/dist/profile.js'),
   ])
 const [{ loadExtensionDirectory }, { inventoryHasErrors, offersFromInventory, resolveProvider }] =
   await Promise.all([
@@ -451,7 +451,7 @@ if (/\@modkitx-x3\/ui|\bDocument\b|\bHTMLElement\b/.test(`${serverSource}\n${aut
   throw new Error('apps:check: headless composition imports viewer/workbench concerns')
 }
 
-execFileSync(process.execPath, ['apps/modkit-vscode/scripts/generate-contributes.mjs', '--check'], {
+execFileSync(process.execPath, ['apps/vscode/scripts/generate-contributes.mjs', '--check'], {
   cwd: root,
   stdio: 'inherit',
 })

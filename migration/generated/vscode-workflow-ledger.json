@@ -4,10 +4,10 @@
   "generator": "scripts/migration/emit-vscode-workflow-ledger.mjs",
   "inputs": {
     "sourceInventorySha256": "efc7c81a2686d55e40734ac4cf1b3bc0bf0de5a9d33b0609291ec1c6480a11cd",
-    "decisionsSha256": "a1c96dff71d77e79008ac4419d07aee32b63da2cf853ba1a0f75bf3dcf6e4d55",
+    "decisionsSha256": "7ebca7475ad21b951b092cea9297fad2cd209d96ac818f51646d498dea230a69",
     "vscodeManifestSha256": "e71f2a2abb57adeb1b6ee3f10bddb9db18d3b7402bb0cf29857a20facb9de1d3",
-    "vscodeExtensionSourceSha256": "9ca458aeff1ac35f64854336b9f57f09c29b0c6113a4e8e6c779eefcb9d7f837",
-    "vscodeCatalogSha256": "cd353dc4a9070e6b20a8832982b83d8220890f33ce9859bfc8bb70029d462076",
+    "vscodeExtensionSourceSha256": "b08c181a65d90659103c6595431e436cc137d05088630500ac76e8e231b2cfc1",
+    "vscodeCatalogSha256": "155210b93d9c6a6ef2890fcb87e5f414972896bf0d312b00bd27ab95e0d39597",
     "vscodePublicationInventorySha256": "15a59d6ff3932cf1d43eb7ae05b8117c4a4ed60828d11acaefabdd2fc09ff901",
     "sharedCommandTargetsSha256": "90b0fa05560139670ebb3050207428349f118f8b4cc8cbde956ebaf30b27d09a"
   },
@@ -584,7 +584,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-cli",
+        "owner": "apps/cli",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "reason": "project.validate checks every focused project file through the shared runtime and emits a deterministic machine-readable receipt."
@@ -618,7 +618,7 @@
         "disposition": "post-release",
         "migrationState": "deferred-post-ga",
         "releaseTrack": "post-ga",
-        "owner": "apps/modkit-cli and packages/host",
+        "owner": "apps/cli and packages/host",
         "targetState": "deferred-post-ga",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "reason": "The focused VS Code profile uses the neutral language controller; standalone stdio LSP packaging stays post-release."
@@ -635,7 +635,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-cli and extensions/blizzard/galaxy-language",
+        "owner": "apps/cli and extensions/blizzard/galaxy-language",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "reason": "The shared CLI validates positive Galaxy source and returns the stable common command protocol receipt."
@@ -652,7 +652,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-cli and extensions/common/images",
+        "owner": "apps/cli and extensions/common/images",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "reason": "The shared CLI performs positive PNG conversion and exports deterministic rgba8 bytes through subject.convert."
@@ -669,7 +669,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode",
+        "owner": "apps/vscode",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "reason": "The real VS Code E5 workflow proves the focused previews and positive conversion; unrelated viewer facts remain explicitly post-release."
@@ -690,7 +690,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode and extensions/blizzard",
+        "owner": "apps/vscode and extensions/blizzard",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "reason": "The exact Galaxy, SC2 authoring, strings and layout facts map to shared services, and explicit map launch uses the safe game-provider contract."
@@ -712,7 +712,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode and packages/host",
+        "owner": "apps/vscode and packages/host",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "reason": "The generic VFS now covers archive opening, search, refresh and bounded materialization while legacy cache-management utilities remain post-release."
@@ -735,7 +735,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode",
+        "owner": "apps/vscode",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "reason": "Resolution explanation and the bounded readable and exportable diagnostics journal replace the focused diagnostic and log commands."
@@ -757,7 +757,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode and packages/ui",
+        "owner": "apps/vscode and packages/ui",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "reason": "Every focused installation, source, launch, diagnostics and renderer setting has an explicit generic setting, provider option, host policy or workflow mapping; the extension registry is an explicit catalog source whose network refresh requires a user command."
@@ -774,7 +774,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode and packages/ui",
+        "owner": "apps/vscode and packages/ui",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "reason": "Generic native navigation, relation refresh and presentation stages replace the focused MOD tree controls and relation actions."
@@ -808,7 +808,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode and packages/host",
+        "owner": "apps/vscode and packages/host",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/recovery",
         "reason": "Generic provider discovery, installed-game selection, persisted content-source configuration, extension install/update/remove and enable/disable commands, unload, permission handling and recovery form one accepted lifecycle."
@@ -835,7 +835,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/modkit-vscode and packages/ui",
+        "owner": "apps/vscode and packages/ui",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "reason": "All six focused legacy views map exactly once to the native explorer, generic Host and Extensions views, or shared presentation stages."
@@ -862,7 +862,7 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
-        "evidence": ["apps/modkit-cli/test/cli.test.ts"],
+        "evidence": ["apps/cli/test/cli.test.ts"],
         "reason": "project.validate checks every focused project file through subject.validate, emits deterministic per-file protocol receipts and fails closed on unclaimed inputs."
       }
     },
@@ -883,7 +883,7 @@
         "replacementWorkflowId": "game/starcraft-2/discover-open",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts"
         ],
         "reason": "Focused games use auto-discovery plus environment and settings overrides; legacy data provisioning is not a Product GA command."
@@ -905,7 +905,7 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
-        "evidence": ["apps/modkit-vscode/test/language-session.test.ts"],
+        "evidence": ["apps/vscode/test/language-session.test.ts"],
         "reason": "The focused VS Code profile uses the neutral language controller directly; a standalone stdio LSP remains an optional later tool."
       }
     },
@@ -965,7 +965,7 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
-        "evidence": ["apps/modkit-cli/test/cli.test.ts"],
+        "evidence": ["apps/cli/test/cli.test.ts"],
         "reason": "The shared CLI runs subject.convert for a PNG and exports deterministic decoded rgba8 bytes with a machine-readable receipt."
       }
     },
@@ -985,7 +985,7 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
-        "evidence": ["apps/modkit-cli/test/cli.test.ts"],
+        "evidence": ["apps/cli/test/cli.test.ts"],
         "reason": "The shared CLI runs subject.convert for a PNG and exports deterministic decoded rgba8 bytes with a machine-readable receipt."
       }
     },
@@ -1005,7 +1005,7 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
-        "evidence": ["apps/modkit-cli/test/cli.test.ts"],
+        "evidence": ["apps/cli/test/cli.test.ts"],
         "reason": "The shared CLI runs subject.convert for a PNG and exports deterministic decoded rgba8 bytes with a machine-readable receipt."
       }
     },
@@ -1026,9 +1026,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -1051,9 +1051,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -1076,8 +1076,8 @@
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/containers.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "The generic VS Code container workbench provides deterministic search and refresh plus bounded materialization through the shared VFS without app-owned cache semantics."
       }
@@ -1099,8 +1099,8 @@
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/containers.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "The generic VS Code container workbench provides deterministic search and refresh plus bounded materialization through the shared VFS without app-owned cache semantics."
       }
@@ -1122,7 +1122,7 @@
         "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
+          "apps/vscode/test/containers.test.ts",
           "scripts/test/command-fixtures-hosts.test.ts"
         ],
         "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -1145,7 +1145,7 @@
         "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
+          "apps/vscode/test/containers.test.ts",
           "scripts/test/command-fixtures-hosts.test.ts"
         ],
         "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -1168,7 +1168,7 @@
         "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
+          "apps/vscode/test/containers.test.ts",
           "scripts/test/command-fixtures-hosts.test.ts"
         ],
         "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -1191,9 +1191,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -1216,9 +1216,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -1241,9 +1241,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -1266,8 +1266,8 @@
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/containers.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "The generic VS Code container workbench provides deterministic search and refresh plus bounded materialization through the shared VFS without app-owned cache semantics."
       }
@@ -1289,8 +1289,8 @@
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/containers.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "The generic VS Code container workbench provides deterministic search and refresh plus bounded materialization through the shared VFS without app-owned cache semantics."
       }
@@ -1312,7 +1312,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -1335,7 +1335,7 @@
         "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
+          "apps/vscode/test/containers.test.ts",
           "scripts/test/command-fixtures-hosts.test.ts"
         ],
         "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -1398,8 +1398,8 @@
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/containers.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "The generic VS Code container workbench provides deterministic search and refresh plus bounded materialization through the shared VFS without app-owned cache semantics."
       }
@@ -1461,9 +1461,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -1486,7 +1486,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -1509,7 +1509,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -1532,7 +1532,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -1555,7 +1555,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -1578,9 +1578,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -1622,7 +1622,7 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
-        "evidence": ["apps/modkit-vscode/test/workbench-workflows.test.ts"],
+        "evidence": ["apps/vscode/test/workbench-workflows.test.ts"],
         "reason": "VS Code now keeps a bounded readable diagnostics journal and exposes native show and export commands instead of relying on an unreadable OutputChannel."
       }
     },
@@ -1643,9 +1643,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -1668,8 +1668,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -1692,8 +1692,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -1716,7 +1716,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -1739,8 +1739,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -1763,7 +1763,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "packages/ui/test/relation-graph-source.test.ts"
         ],
         "reason": "Native navigation and relation refresh commands operate over the generic relation source and presentation stages that replace the focused MOD tree controls."
@@ -1786,7 +1786,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "packages/ui/test/relation-graph-source.test.ts"
         ],
         "reason": "Native navigation and relation refresh commands operate over the generic relation source and presentation stages that replace the focused MOD tree controls."
@@ -1809,7 +1809,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "packages/ui/test/relation-graph-source.test.ts"
         ],
         "reason": "Native navigation and relation refresh commands operate over the generic relation source and presentation stages that replace the focused MOD tree controls."
@@ -1832,7 +1832,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "packages/ui/test/relation-graph-source.test.ts"
         ],
         "reason": "Native navigation and relation refresh commands operate over the generic relation source and presentation stages that replace the focused MOD tree controls."
@@ -1855,7 +1855,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "packages/ui/test/relation-graph-source.test.ts"
         ],
         "reason": "Native navigation and relation refresh commands operate over the generic relation source and presentation stages that replace the focused MOD tree controls."
@@ -1878,7 +1878,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -1901,8 +1901,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -1924,7 +1924,7 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
-        "evidence": ["apps/modkit-vscode/test/workbench-workflows.test.ts"],
+        "evidence": ["apps/vscode/test/workbench-workflows.test.ts"],
         "reason": "VS Code now keeps a bounded readable diagnostics journal and exposes native show and export commands instead of relying on an unreadable OutputChannel."
       }
     },
@@ -1944,7 +1944,7 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
-        "evidence": ["apps/modkit-vscode/test/workbench-workflows.test.ts"],
+        "evidence": ["apps/vscode/test/workbench-workflows.test.ts"],
         "reason": "VS Code now keeps a bounded readable diagnostics journal and exposes native show and export commands instead of relying on an unreadable OutputChannel."
       }
     },
@@ -1965,8 +1965,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -1989,7 +1989,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -2012,7 +2012,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -2035,7 +2035,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -2058,7 +2058,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -2104,9 +2104,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -2129,9 +2129,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -2154,9 +2154,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -2179,8 +2179,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -2202,7 +2202,7 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
-        "evidence": ["apps/modkit-vscode/test/workbench-workflows.test.ts"],
+        "evidence": ["apps/vscode/test/workbench-workflows.test.ts"],
         "reason": "VS Code now keeps a bounded readable diagnostics journal and exposes native show and export commands instead of relying on an unreadable OutputChannel."
       }
     },
@@ -2223,8 +2223,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -2247,7 +2247,7 @@
         "replacementWorkflowId": "platform/presentation/common-plan",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/view-policy.test.ts",
+          "apps/vscode/test/view-policy.test.ts",
           "packages/ui/test/relation-graph-source.test.ts"
         ],
         "reason": "The relation graph is a generic data source and a plan-eligible VS Code stage rather than an app-owned command implementation."
@@ -2270,8 +2270,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -2294,8 +2294,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -2318,8 +2318,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -2342,9 +2342,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -2407,8 +2407,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -2431,8 +2431,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -2455,8 +2455,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -2479,8 +2479,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -2503,8 +2503,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2526,8 +2526,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2549,8 +2549,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2672,8 +2672,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2755,8 +2755,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2778,8 +2778,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2821,8 +2821,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2844,8 +2844,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2867,8 +2867,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2890,8 +2890,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2913,8 +2913,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2936,8 +2936,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2959,8 +2959,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2982,8 +2982,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3005,8 +3005,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3028,8 +3028,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3051,8 +3051,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3074,8 +3074,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3097,8 +3097,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3120,8 +3120,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3143,8 +3143,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3506,8 +3506,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3529,8 +3529,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3852,8 +3852,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3895,8 +3895,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/settings.test.ts",
-          "apps/modkit-vscode/test/priority-settings.test.ts"
+          "apps/vscode/test/settings.test.ts",
+          "apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3941,8 +3941,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -4008,8 +4008,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -4035,8 +4035,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -4062,8 +4062,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -4089,8 +4089,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -4179,8 +4179,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -4226,8 +4226,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/view-policy.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/view-policy.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "All six focused legacy views have one accepted mapping to the native explorer, generic Host and Extensions views, or shared presentation stages."
       }
@@ -4252,8 +4252,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/view-policy.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/view-policy.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "All six focused legacy views have one accepted mapping to the native explorer, generic Host and Extensions views, or shared presentation stages."
       }
@@ -4278,8 +4278,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/view-policy.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/view-policy.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "All six focused legacy views have one accepted mapping to the native explorer, generic Host and Extensions views, or shared presentation stages."
       }
@@ -4304,8 +4304,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/view-policy.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/view-policy.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "All six focused legacy views have one accepted mapping to the native explorer, generic Host and Extensions views, or shared presentation stages."
       }
@@ -4330,8 +4330,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/view-policy.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/view-policy.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "All six focused legacy views have one accepted mapping to the native explorer, generic Host and Extensions views, or shared presentation stages."
       }
@@ -4353,7 +4353,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -4376,7 +4376,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -4399,7 +4399,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -4422,7 +4422,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -4445,7 +4445,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -4468,7 +4468,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -4491,7 +4491,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -4514,7 +4514,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -4557,7 +4557,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -4580,7 +4580,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -4603,8 +4603,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -4627,8 +4627,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -4671,8 +4671,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -4695,8 +4695,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -4719,8 +4719,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -4763,8 +4763,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -4790,7 +4790,7 @@
         "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
+          "apps/vscode/test/containers.test.ts",
           "scripts/test/command-fixtures-hosts.test.ts"
         ],
         "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -4816,7 +4816,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "packages/ui/test/relation-graph-source.test.ts"
         ],
         "reason": "Native navigation and relation refresh commands operate over the generic relation source and presentation stages that replace the focused MOD tree controls."
@@ -4842,7 +4842,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "packages/ui/test/relation-graph-source.test.ts"
         ],
         "reason": "Native navigation and relation refresh commands operate over the generic relation source and presentation stages that replace the focused MOD tree controls."
@@ -4868,7 +4868,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "packages/ui/test/relation-graph-source.test.ts"
         ],
         "reason": "Native navigation and relation refresh commands operate over the generic relation source and presentation stages that replace the focused MOD tree controls."
@@ -4894,7 +4894,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "packages/ui/test/relation-graph-source.test.ts"
         ],
         "reason": "Native navigation and relation refresh commands operate over the generic relation source and presentation stages that replace the focused MOD tree controls."
@@ -4920,8 +4920,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -4947,9 +4947,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -4975,7 +4975,7 @@
         "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
+          "apps/vscode/test/containers.test.ts",
           "scripts/test/command-fixtures-hosts.test.ts"
         ],
         "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -5001,7 +5001,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5027,7 +5027,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5053,7 +5053,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5079,7 +5079,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5105,7 +5105,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5131,8 +5131,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -5158,7 +5158,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5184,7 +5184,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5210,7 +5210,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5236,7 +5236,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5262,8 +5262,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -5289,8 +5289,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -5316,8 +5316,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -5343,8 +5343,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -5370,7 +5370,7 @@
         "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
+          "apps/vscode/test/containers.test.ts",
           "scripts/test/command-fixtures-hosts.test.ts"
         ],
         "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -5396,7 +5396,7 @@
         "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
+          "apps/vscode/test/containers.test.ts",
           "scripts/test/command-fixtures-hosts.test.ts"
         ],
         "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -5422,7 +5422,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5448,7 +5448,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5474,7 +5474,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5500,7 +5500,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5526,7 +5526,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5552,8 +5552,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -5579,7 +5579,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5605,7 +5605,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5631,7 +5631,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5657,7 +5657,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5683,8 +5683,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -5710,8 +5710,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -5737,8 +5737,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -5764,8 +5764,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -5791,7 +5791,7 @@
         "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
+          "apps/vscode/test/containers.test.ts",
           "scripts/test/command-fixtures-hosts.test.ts"
         ],
         "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -5817,7 +5817,7 @@
         "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
+          "apps/vscode/test/containers.test.ts",
           "scripts/test/command-fixtures-hosts.test.ts"
         ],
         "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -5843,7 +5843,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5869,7 +5869,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5895,7 +5895,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5921,7 +5921,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5947,7 +5947,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5973,7 +5973,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -5999,8 +5999,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -6026,7 +6026,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -6052,7 +6052,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -6078,7 +6078,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -6104,7 +6104,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test-e2e/suite/index.cjs",
+          "apps/vscode/test-e2e/suite/index.cjs",
           "reports/vscode-focused-ga-smoke/receipt.json"
         ],
         "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
@@ -6176,8 +6176,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -6203,7 +6203,7 @@
         "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
+          "apps/vscode/test/containers.test.ts",
           "scripts/test/command-fixtures-hosts.test.ts"
         ],
         "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -6229,7 +6229,7 @@
         "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
+          "apps/vscode/test/containers.test.ts",
           "scripts/test/command-fixtures-hosts.test.ts"
         ],
         "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -6255,7 +6255,7 @@
         "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
+          "apps/vscode/test/containers.test.ts",
           "scripts/test/command-fixtures-hosts.test.ts"
         ],
         "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -6281,7 +6281,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "packages/ui/test/relation-graph-source.test.ts"
         ],
         "reason": "Native navigation and relation refresh commands operate over the generic relation source and presentation stages that replace the focused MOD tree controls."
@@ -6307,9 +6307,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -6335,9 +6335,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -6363,9 +6363,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -6391,9 +6391,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -6419,9 +6419,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -6447,9 +6447,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -6475,9 +6475,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -6503,9 +6503,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -6531,8 +6531,8 @@
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/containers.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "The generic VS Code container workbench provides deterministic search and refresh plus bounded materialization through the shared VFS without app-owned cache semantics."
       }
@@ -6557,8 +6557,8 @@
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/containers.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "The generic VS Code container workbench provides deterministic search and refresh plus bounded materialization through the shared VFS without app-owned cache semantics."
       }
@@ -6583,7 +6583,7 @@
         "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
+          "apps/vscode/test/containers.test.ts",
           "scripts/test/command-fixtures-hosts.test.ts"
         ],
         "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -6609,7 +6609,7 @@
         "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
+          "apps/vscode/test/containers.test.ts",
           "scripts/test/command-fixtures-hosts.test.ts"
         ],
         "reason": "The generic container filesystem, browse command and entry-as-subject flow replace the focused archive opening paths."
@@ -6635,9 +6635,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -6663,9 +6663,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -6691,8 +6691,8 @@
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/containers.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "The generic VS Code container workbench provides deterministic search and refresh plus bounded materialization through the shared VFS without app-owned cache semantics."
       }
@@ -6717,8 +6717,8 @@
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/containers.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/containers.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "The generic VS Code container workbench provides deterministic search and refresh plus bounded materialization through the shared VFS without app-owned cache semantics."
       }
@@ -6743,9 +6743,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -6771,9 +6771,9 @@
         "replacementWorkflowId": "platform/apps/recovery",
         "gapId": null,
         "evidence": [
-          "extensions/blizzard/starcraft2-game/test/installation-candidates.test.ts",
+          "extensions/blizzard/starcraft2/test/installation-candidates.test.ts",
           "extensions/opensource/warzone-2100/test/installation-provider.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "reports/vscode-smoke/lifecycle-receipt.json"
         ],
         "reason": "The generic provider inventory drives installed-game selection, persisted content-source configuration, validation and unload on top of the proved permission and recovery lifecycle."
@@ -6799,7 +6799,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "packages/ui/test/relation-graph-source.test.ts"
         ],
         "reason": "Native navigation and relation refresh commands operate over the generic relation source and presentation stages that replace the focused MOD tree controls."
@@ -6825,7 +6825,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "packages/ui/test/relation-graph-source.test.ts"
         ],
         "reason": "Native navigation and relation refresh commands operate over the generic relation source and presentation stages that replace the focused MOD tree controls."
@@ -6851,7 +6851,7 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/workbench-workflows.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts",
           "packages/ui/test/relation-graph-source.test.ts"
         ],
         "reason": "Native navigation and relation refresh commands operate over the generic relation source and presentation stages that replace the focused MOD tree controls."
@@ -6902,7 +6902,7 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
-        "evidence": ["apps/modkit-vscode/test/workbench-workflows.test.ts"],
+        "evidence": ["apps/vscode/test/workbench-workflows.test.ts"],
         "reason": "VS Code now keeps a bounded readable diagnostics journal and exposes native show and export commands instead of relying on an unreadable OutputChannel."
       }
     },
@@ -6926,8 +6926,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -6953,8 +6953,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -6980,8 +6980,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/sc2-authoring-workflows.test.ts",
-          "apps/modkit-vscode/test/game-launch-workflow.test.ts",
+          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "apps/vscode/test/game-launch-workflow.test.ts",
           "packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
@@ -7004,8 +7004,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/view-policy.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/view-policy.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "All six focused legacy views have one accepted mapping to the native explorer, generic Host and Extensions views, or shared presentation stages."
       }
@@ -7027,8 +7027,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/view-policy.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/view-policy.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "All six focused legacy views have one accepted mapping to the native explorer, generic Host and Extensions views, or shared presentation stages."
       }
@@ -7050,8 +7050,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/view-policy.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/view-policy.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "All six focused legacy views have one accepted mapping to the native explorer, generic Host and Extensions views, or shared presentation stages."
       }
@@ -7073,8 +7073,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/view-policy.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/view-policy.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "All six focused legacy views have one accepted mapping to the native explorer, generic Host and Extensions views, or shared presentation stages."
       }
@@ -7096,8 +7096,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/view-policy.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/view-policy.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "All six focused legacy views have one accepted mapping to the native explorer, generic Host and Extensions views, or shared presentation stages."
       }
@@ -7119,8 +7119,8 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/modkit-vscode/test/view-policy.test.ts",
-          "apps/modkit-vscode/test/workbench-workflows.test.ts"
+          "apps/vscode/test/view-policy.test.ts",
+          "apps/vscode/test/workbench-workflows.test.ts"
         ],
         "reason": "All six focused legacy views have one accepted mapping to the native explorer, generic Host and Extensions views, or shared presentation stages."
       }

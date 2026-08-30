@@ -111,10 +111,10 @@ class FakeWorker implements BrowserWorkerLike {
 /** Node module map: bare specifiers → file: URLs of the real sources / built packages. */
 const nodeModuleMap = {
   '@modkitx-x3/codec-kit': pathToFileURL(
-    join(repositoryRoot, 'extensions', 'codec-kit', 'codec-kit', 'src', 'index.js'),
+    join(repositoryRoot, 'packages', 'codec-kit', 'src', 'index.js'),
   ).href,
   '@modkitx-x3/codec-kit/text': pathToFileURL(
-    join(repositoryRoot, 'extensions', 'codec-kit', 'codec-kit', 'src', 'text', 'index.js'),
+    join(repositoryRoot, 'packages', 'codec-kit', 'src', 'text', 'index.js'),
   ).href,
   '@modkitx-x3/core': pathToFileURL(join(repositoryRoot, 'packages', 'core', 'dist', 'index.js'))
     .href,

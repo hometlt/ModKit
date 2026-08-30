@@ -9,9 +9,9 @@ const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 const emitter = join(repoRoot, 'scripts', 'migration', 'emit-vscode-workflow-ledger.mjs')
 const inventory = join(repoRoot, 'migration', 'generated', 'source-inventory.json')
 const decisions = join(repoRoot, 'migration', 'vscode-workflows.json')
-const manifest = join(repoRoot, 'apps', 'modkit-vscode', 'package.json')
-const extensionSource = join(repoRoot, 'apps', 'modkit-vscode', 'src', 'extension.ts')
-const publicationInventory = join(repoRoot, 'apps', 'modkit-vscode', 'publication-artifact.v1.json')
+const manifest = join(repoRoot, 'apps', 'vscode', 'package.json')
+const extensionSource = join(repoRoot, 'apps', 'vscode', 'src', 'extension.ts')
+const publicationInventory = join(repoRoot, 'apps', 'vscode', 'publication-artifact.v1.json')
 const targets = join(repoRoot, 'packages', 'host', 'src', 'commands', 'subject-command-targets.ts')
 const pwaCommands = join(repoRoot, 'apps', 'web', 'src', 'commands.ts')
 const committedLedger = join(repoRoot, 'migration', 'generated', 'vscode-workflow-ledger.json')
@@ -665,7 +665,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       disposition: 'post-release',
       migrationState: 'deferred-post-ga',
       releaseTrack: 'post-ga',
-      owner: 'apps/modkit-vscode',
+      owner: 'apps/vscode',
       targetState: 'deferred-post-ga',
       replacementWorkflowId: 'platform/apps/priority-workflows',
       reason: 'This deliberately disagrees with exact already-equivalent facts in the test input.',

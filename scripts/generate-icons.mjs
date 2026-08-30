@@ -47,7 +47,7 @@ const PNG_TARGETS = [
   { size: 256, maskable: false, out: 'apps/electron/media/icon-256.png' },
   { size: 512, maskable: false, out: 'apps/electron/media/icon-512.png' },
   // VS Code marketplace.
-  { size: 128, maskable: false, out: 'apps/modkit-vscode/media/icon-128.png' },
+  { size: 128, maskable: false, out: 'apps/vscode/media/icon-128.png' },
   // Website and gallery favicons.
   { size: 32, maskable: false, out: 'apps/web/public/favicon-32.png' },
   { size: 180, maskable: false, out: 'apps/web/public/apple-touch-icon.png' },

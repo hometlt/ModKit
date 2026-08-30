@@ -20,7 +20,7 @@ import {
 import { launchNodeGameResource, loadExtensionDirectory } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const extensionRoot = join(repoRoot, '..', 'modkit-blizzard', 'starcraft2-game')
+const extensionRoot = join(repoRoot, '..', 'modkit-blizzard', 'starcraft2')
 const GAME_ID = 'org.modkitx/starcraft-2'
 const REALM = 'org.modkitx.test/game-launch'
 const topology = createHostTopology({

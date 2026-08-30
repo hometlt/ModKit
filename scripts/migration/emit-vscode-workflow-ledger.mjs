@@ -44,18 +44,17 @@ const decisionsPath = path.resolve(
   argValue('--decisions') ?? path.join(repoRoot, 'migration/vscode-workflows.json'),
 )
 const manifestPath = path.resolve(
-  argValue('--manifest') ?? path.join(repoRoot, 'apps/modkit-vscode/package.json'),
+  argValue('--manifest') ?? path.join(repoRoot, 'apps/vscode/package.json'),
 )
 const extensionSourcePath = path.resolve(
-  argValue('--extension-source') ?? path.join(repoRoot, 'apps/modkit-vscode/src/extension.ts'),
+  argValue('--extension-source') ?? path.join(repoRoot, 'apps/vscode/src/extension.ts'),
 )
 const vscodeCatalogPath = path.resolve(
-  argValue('--vscode-catalog') ??
-    path.join(repoRoot, 'apps/modkit-vscode/generated/bundled-catalog.json'),
+  argValue('--vscode-catalog') ?? path.join(repoRoot, 'apps/vscode/generated/bundled-catalog.json'),
 )
 const publicationInventoryPath = path.resolve(
   argValue('--publication-inventory') ??
-    path.join(repoRoot, 'apps/modkit-vscode/publication-artifact.v1.json'),
+    path.join(repoRoot, 'apps/vscode/publication-artifact.v1.json'),
 )
 const targetsPath = path.resolve(
   argValue('--targets') ??
@@ -638,7 +637,7 @@ function readRegisteredCommands(source, file) {
     if (!specifier.startsWith('.')) continue
     const relativeModule = specifier.replace(/\.js$/u, '.ts')
     const localCandidate = path.resolve(path.dirname(file), relativeModule)
-    const canonicalCandidate = path.resolve(repoRoot, 'apps/modkit-vscode/src', relativeModule)
+    const canonicalCandidate = path.resolve(repoRoot, 'apps/vscode/src', relativeModule)
     const modulePath = existsSync(localCandidate)
       ? localCandidate
       : existsSync(canonicalCandidate)

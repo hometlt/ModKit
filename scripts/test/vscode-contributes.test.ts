@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
-const appRoot = join(repoRoot, 'apps', 'modkit-vscode')
+const appRoot = join(repoRoot, 'apps', 'vscode')
 const generator = join(appRoot, 'scripts', 'generate-contributes.mjs')
 const authority = join(appRoot, 'bundled-contributes.v1.json')
 const generated = join(appRoot, 'contributes.generated.json')

@@ -5,7 +5,7 @@ import packageJson from '../package.json' with { type: 'json' }
 import * as provider from './provider.js'
 
 export const counterRuntime = defineLinkedExtension({
-  source: 'linked:extensions/_reference/counter-runtime',
+  source: 'linked:examples/extensions/counter-runtime',
   packageJson,
   contributions: [{ path: 'contributions/provider-counter.json', manifest: providerManifest }],
   modules: { './src/provider.js': provider },

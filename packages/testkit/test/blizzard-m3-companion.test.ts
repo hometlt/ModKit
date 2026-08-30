@@ -499,7 +499,8 @@ describe('the installed StarCraft II M3', () => {
           pathToFileURL(
             join(
               externalRepositoryRoot(repoRoot, 'blizzard'),
-              'starcraft2-game',
+              'starcraft2',
+              'game',
               'src',
               'workspace-provider.js',
             ),

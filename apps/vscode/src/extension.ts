@@ -560,7 +560,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   }
 
   const extensionRoot = context.extensionUri.fsPath
-  // In a checkout the extension lives at `<repo>/apps/modkit-vscode`; in a packaged build it
+  // In a checkout the extension lives at `<repo>/apps/vscode`; in a packaged build it
   // carries its own copy of the catalog and the checkout guess simply does not exist.
   const repositoryRoot = resolve(extensionRoot, '..', '..')
 

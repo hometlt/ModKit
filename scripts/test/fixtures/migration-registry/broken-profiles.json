@@ -112,7 +112,7 @@
     "ratchet": "pnpm bundle:check",
     "entryCount": 65,
     "entries": [
-      "apps/modkit-cli/dist/main.js",
+      "apps/cli/dist/main.js",
       "packages/core/dist/index.js",
       "packages/host/dist/browser/index.js",
       "packages/host/dist/browser/worker-entry.js",

@@ -128,7 +128,6 @@ const budget: ResourceBudget = {
 describe('installed StarCraft II CASC product path', () => {
   it('discovers the install, resolves dependencies and opens a real semantic map through CASC', async () => {
     const directories = [
-      ['blizzard', 'starcraft2-game'],
       ['blizzard', 'starcraft2'],
       ['blizzard', 'casc'],
       ['blizzard', 'models'],

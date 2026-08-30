@@ -20,7 +20,7 @@ import { sceneRendererContractSuite } from './scene-renderer-contract.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { softwareRenderer } = (await import(
-  pathToFileURL(join(repoRoot, 'extensions', '_reference', 'software-renderer', 'src', 'linked.js'))
+  pathToFileURL(join(repoRoot, 'examples', 'extensions', 'software-renderer', 'src', 'linked.js'))
     .href
 )) as { readonly softwareRenderer: LinkedExtension }
 const renderingRoot = join(repoRoot, 'extensions', 'common', 'rendering-3d')
@@ -28,9 +28,8 @@ const { rendering3d } = (await import(
   pathToFileURL(join(renderingRoot, 'src', 'linked.js')).href
 )) as { readonly rendering3d: LinkedExtension }
 const referenceModule = (await import(
-  pathToFileURL(
-    join(repoRoot, 'extensions', '_reference', 'software-renderer', 'src', 'provider.js'),
-  ).href
+  pathToFileURL(join(repoRoot, 'examples', 'extensions', 'software-renderer', 'src', 'provider.js'))
+    .href
 )) as RendererModule
 const headlessModule = (await import(
   pathToFileURL(join(renderingRoot, 'src', 'headless.js')).href

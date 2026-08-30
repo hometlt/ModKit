@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY, prepareWebMapPreview } from '../src/map-preview.js'
 import { MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY as ELECTRON_CATALOG_POLICY } from '../../electron/src/map-preview.js'
-import { MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY as VSCODE_CATALOG_POLICY } from '../../modkit-vscode/src/map-preview.js'
+import { MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY as VSCODE_CATALOG_POLICY } from '../../vscode/src/map-preview.js'
 
 const budget = {
   maxInputBytes: 64n * 1024n * 1024n,

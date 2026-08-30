@@ -32,7 +32,7 @@ import {
 import { drainModelProjection } from '@modkitx-x3/testkit'
 import { createCodecPreview } from '@modkitx-x3/ui/explorer'
 import { createWebPreviewStages, stageIdOf } from '../src/views.js'
-import { STAGE_ORDER as VSCODE_STAGE_ORDER } from '../../modkit-vscode/src/view-policy.js'
+import { STAGE_ORDER as VSCODE_STAGE_ORDER } from '../../vscode/src/view-policy.js'
 import { createCandidateWorldSceneLease } from '../../../packages/host/src/maps/world-source.js'
 import { resolvedDescriptorWire } from '../../../packages/host/test/fixtures/descriptor.js'
 import { externalRepositoryRoot } from '../../../scripts/lib/external-extension-roots.mjs'
@@ -619,7 +619,7 @@ describe('PWA / VS Code resolved presentation conformance', () => {
         return {
           bytes: encoder.encode('synthetic SC2Map workspace'),
           snapshot: await analyzeWorld(
-            join(blizzardRoot, 'starcraft2-game', 'src', 'map-provider.js'),
+            join(blizzardRoot, 'starcraft2', 'src', 'game', 'map-provider.js'),
             'analyzeStarcraft2MapWorkspace',
             sc2WorldRequest(),
           ),
@@ -786,10 +786,7 @@ describe('PWA / VS Code resolved presentation conformance', () => {
 
   it('keeps presentation routing generic in both UI hosts', () => {
     const pwa = readFileSync(new URL('../src/shell.ts', import.meta.url), 'utf8')
-    const vscode = readFileSync(
-      join(repositoryRoot, 'apps', 'modkit-vscode', 'src', 'host.ts'),
-      'utf8',
-    )
+    const vscode = readFileSync(join(repositoryRoot, 'apps', 'vscode', 'src', 'host.ts'), 'utf8')
     for (const source of [pwa, vscode]) {
       expect(source).toContain('resolveCommonPresentationPlan')
       expect(source).not.toMatch(/if\s*\([^)]*(?:starcraft|warzone|\.m3|\.pie)/iu)

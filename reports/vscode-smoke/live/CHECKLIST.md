@@ -23,7 +23,7 @@ anecdote; a checklist without it cannot be compared with the next one.
 | Field                                                                                         | Value |
 | --------------------------------------------------------------------------------------------- | ----- |
 | X3 commit (`git rev-parse HEAD`)                                                              |       |
-| Extension version (`apps/modkit-vscode/package.json`)                                         |       |
+| Extension version (`apps/vscode/package.json`)                                                |       |
 | VS Code version and commit (Help → About)                                                     |       |
 | OS and build                                                                                  |       |
 | Date, and who ran it                                                                          |       |

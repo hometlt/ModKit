@@ -140,7 +140,7 @@ describe('13B packed text extension boundaries', () => {
       const platform = ['core', 'sdk', 'vfs', 'host'].map(name =>
         pack(join(repoRoot, 'packages', name)),
       )
-      const codecKit = pack(join(repoRoot, 'extensions', 'codec-kit', 'codec-kit'))
+      const codecKit = pack(join(repoRoot, 'packages', 'codec-kit'))
       const tarballs = new Map(
         groups.map(group => [
           group.packageName,

@@ -14,7 +14,7 @@ import {
 } from "../../../chunks/chunk-BKHLBCDQ.js";
 import "../../../chunks/chunk-YLVDSGH3.js";
 
-// extensions/codec-kit/codec-kit/src/text/codec-runtime.js
+// packages/codec-kit/src/text/codec-runtime.js
 var BASE_OPERATIONS = Object.freeze([
   {
     id: "view.inspect",
@@ -289,7 +289,7 @@ function createTextCodec(definition, context) {
   });
 }
 
-// extensions/codec-kit/codec-kit/src/text/text.js
+// packages/codec-kit/src/text/text.js
 function decodeInput(input) {
   if (typeof input.text === "string") {
     return {
@@ -419,7 +419,7 @@ function lease(value) {
   });
 }
 
-// extensions/codec-kit/codec-kit/src/text/tree-data-source.js
+// packages/codec-kit/src/text/tree-data-source.js
 function treeDataSource(document) {
   const nodes = /* @__PURE__ */ new Map();
   const root = { id: "root", hasChildren: true };
@@ -461,7 +461,7 @@ function treeDataSource(document) {
   };
 }
 
-// extensions/codec-kit/codec-kit/src/text/provider-runtime.js
+// packages/codec-kit/src/text/provider-runtime.js
 function decode(request) {
   try {
     return { decoded: decodeInput(request.input) };
@@ -528,7 +528,7 @@ function createSelectedProvider(definition, selection, factory = createTextSynta
   return factory(definition);
 }
 
-// extensions/codec-kit/codec-kit/src/text/scalars.js
+// packages/codec-kit/src/text/scalars.js
 function scalar(value, raw = JSON.stringify(value)) {
   if (value === null) return { kind: "null", raw: "null" };
   if (typeof value === "boolean") return { kind: "boolean", value, raw: String(value) };

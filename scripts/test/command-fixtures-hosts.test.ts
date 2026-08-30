@@ -41,7 +41,7 @@ import { createAutomationHost } from '../../apps/automation-host/src/index.js'
 import { createElectronSubjectServices } from '../../apps/electron/src/index.js'
 
 const repoRoot = join(fileURLToPath(new URL('..', import.meta.url)), '..')
-const cliEntry = join(repoRoot, 'apps', 'modkit-cli', 'dist', 'main.js')
+const cliEntry = join(repoRoot, 'apps', 'cli', 'dist', 'main.js')
 const extensionRoots = COMMAND_FIXTURE_EXTENSIONS.map(part => join(repoRoot, 'extensions', ...part))
 
 const workspace = mkdtempSync(join(tmpdir(), 'x3-command-fixtures-'))

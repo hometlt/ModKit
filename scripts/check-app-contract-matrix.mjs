@@ -3,8 +3,8 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
-const cliMain = join(root, 'apps', 'modkit-cli', 'dist', 'main.js')
-const counterRoot = join(root, 'extensions', '_reference', 'counter-runtime')
+const cliMain = join(root, 'apps', 'cli', 'dist', 'main.js')
+const counterRoot = join(root, 'examples', 'extensions', 'counter-runtime')
 
 const UNKNOWN_COMMAND = 'org.modkitx.contract-matrix/not-installed'
 const RUNTIME_ID = 'reference.counter'
@@ -109,8 +109,8 @@ export async function checkAppContractMatrix() {
       import('../apps/electron/dist/index.js'),
       import('../apps/web/dist/index.js'),
       import('../apps/web/dist/commands.js'),
-      import('../apps/modkit-cli/dist/profile.js'),
-      import('../apps/modkit-vscode/dist/host.js'),
+      import('../apps/cli/dist/profile.js'),
+      import('../apps/vscode/dist/host.js'),
       import('../packages/host/dist/index.js'),
       import('../packages/host/dist/runtime/index.js'),
       import('../packages/host/dist/node/index.js'),
@@ -262,7 +262,7 @@ export async function checkAppContractMatrix() {
       fs.readFile(join(root, 'apps', 'electron', 'electron', 'main.cjs'), 'utf8'),
     ),
     import('node:fs/promises').then(fs =>
-      fs.readFile(join(root, 'apps', 'modkit-vscode', 'src', 'extension.ts'), 'utf8'),
+      fs.readFile(join(root, 'apps', 'vscode', 'src', 'extension.ts'), 'utf8'),
     ),
   ])
   if (!/commandEndpoint\s*\.execute\(request/u.test(electronMain)) {

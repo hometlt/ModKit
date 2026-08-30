@@ -73,7 +73,6 @@ interface Sc2PlayableCatalogBridgeModule {
 
 async function createServices() {
   const directories = [
-    ['blizzard', 'starcraft2-game'],
     ['blizzard', 'starcraft2'],
     ['blizzard', 'casc'],
   ]

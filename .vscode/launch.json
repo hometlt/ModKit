@@ -31,25 +31,25 @@
       "name": "Modkit Core: CLI",
       "type": "node",
       "request": "launch",
-      "program": "${workspaceFolder}/apps/modkit-cli/dist/main.js",
+      "program": "${workspaceFolder}/apps/cli/dist/main.js",
       "args": ["${input:cliAction}", "--json"],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "Modkit Core: Build",
       "console": "integratedTerminal",
       "sourceMaps": true,
-      "outFiles": ["${workspaceFolder}/apps/modkit-cli/dist/**/*.js"],
+      "outFiles": ["${workspaceFolder}/apps/cli/dist/**/*.js"],
       "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
     },
     {
       "name": "Modkit Core: MCP Server (stdio)",
       "type": "node",
       "request": "launch",
-      "program": "${workspaceFolder}/apps/modkit-mcp/dist/main.js",
+      "program": "${workspaceFolder}/apps/mcp/dist/main.js",
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "Modkit Core: Build",
       "console": "integratedTerminal",
       "sourceMaps": true,
-      "outFiles": ["${workspaceFolder}/apps/modkit-mcp/dist/**/*.js"],
+      "outFiles": ["${workspaceFolder}/apps/mcp/dist/**/*.js"],
       "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"],
       "env": {
         "MODKIT_MCP_ROOTS": "${workspaceFolder}",
@@ -112,9 +112,9 @@
       "name": "Modkit Core: VS Code Extension (Extension Host)",
       "type": "extensionHost",
       "request": "launch",
-      "args": ["--extensionDevelopmentPath=${workspaceFolder}/apps/modkit-vscode"],
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}/apps/vscode"],
       "preLaunchTask": "Modkit Core: Build VS Code Extension",
-      "outFiles": ["${workspaceFolder}/apps/modkit-vscode/dist-app/**/*.cjs"]
+      "outFiles": ["${workspaceFolder}/apps/vscode/dist-app/**/*.cjs"]
     },
     {
       "name": "Modkit Core: Web Composition (Node)",

@@ -154,9 +154,7 @@ describe('buildInventory (S1 acceptance)', () => {
   })
 
   it('loads a real directory through the node adapter (data-only)', async () => {
-    const fixturesDir = fileURLToPath(
-      new URL('../../../apps/modkit-cli/test/fixtures', import.meta.url),
-    )
+    const fixturesDir = fileURLToPath(new URL('../../../apps/cli/test/fixtures', import.meta.url))
     const loaded = await loadExtensionDirectory(join(fixturesDir, 'valid-extension'))
     const inventory = await buildInventory([loaded], registry)
     expect(inventory.extensions).toHaveLength(1)

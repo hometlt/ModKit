@@ -664,9 +664,9 @@ capabilities:
       opaquePreservation: 'not-applicable'
       nativeExport: 'not-applicable'
       operations:
-        inspect: 'apps/modkit-vscode/test/containers.test.ts'
+        inspect: 'apps/vscode/test/containers.test.ts'
         validate: null
-        read: 'apps/modkit-vscode/test/containers.test.ts'
+        read: 'apps/vscode/test/containers.test.ts'
         materialize: null
     knownLoss: []
     receipts:
@@ -679,7 +679,7 @@ capabilities:
       tests:
         - 'packages/host/test/nested-subject-blizzard.test.ts'
         - 'apps/electron/test/subject-open-smoke.test.ts'
-        - 'apps/modkit-vscode/test/containers.test.ts'
+        - 'apps/vscode/test/containers.test.ts'
         - 'apps/web/test/nested-subject.test.ts'
         - 'scripts/test/command-fixtures-hosts.test.ts'
       reports:
@@ -10633,8 +10633,8 @@ capabilities:
       commits: []
       tests:
         - 'apps/electron/test/subject-open-smoke.test.ts'
-        - 'apps/modkit-cli/test/cli.test.ts'
-        - 'apps/modkit-vscode/test/extension-roots.test.ts'
+        - 'apps/cli/test/cli.test.ts'
+        - 'apps/vscode/test/extension-roots.test.ts'
         - 'apps/web/test/extension-roots.test.ts'
         - 'packages/testkit/test/sc2-casc-real.test.ts'
       reports: []
@@ -16472,7 +16472,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/blizzard/starcraft2-game'
+    owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
     dependsOn:
       - 'format/casc/open-inspect'
@@ -17072,8 +17072,8 @@ capabilities:
     closedBy:
       commits: []
       tests:
-        - 'apps/modkit-mcp/test/skill-routing.test.ts'
-        - 'apps/modkit-mcp/corpus/real-subjects.test.ts'
+        - 'apps/mcp/test/skill-routing.test.ts'
+        - 'apps/mcp/corpus/real-subjects.test.ts'
       reports:
         - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#83-скиллы'
   - capabilityId: 'platform/ai/inspection-skill-sc2'
@@ -17148,8 +17148,8 @@ capabilities:
     closedBy:
       commits: []
       tests:
-        - 'apps/modkit-mcp/test/skill-routing.test.ts'
-        - 'apps/modkit-mcp/corpus/real-subjects.test.ts'
+        - 'apps/mcp/test/skill-routing.test.ts'
+        - 'apps/mcp/corpus/real-subjects.test.ts'
       reports:
         - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#83-скиллы'
   - capabilityId: 'platform/ai/inspection-skill-warzone'
@@ -17222,8 +17222,8 @@ capabilities:
     closedBy:
       commits: []
       tests:
-        - 'apps/modkit-mcp/test/skill-routing.test.ts'
-        - 'apps/modkit-mcp/corpus/real-subjects.test.ts'
+        - 'apps/mcp/test/skill-routing.test.ts'
+        - 'apps/mcp/corpus/real-subjects.test.ts'
       reports:
         - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#83-скиллы'
   - capabilityId: 'platform/ai/modkit-mcp'
@@ -17231,7 +17231,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'apps/modkit-mcp'
+    owner: 'apps/mcp'
     plannedBlock: 21
     dependsOn:
       - 'game/starcraft-2/discover-open'
@@ -17310,9 +17310,9 @@ capabilities:
     closedBy:
       commits: []
       tests:
-        - 'apps/modkit-mcp/test/server.test.ts'
-        - 'apps/modkit-mcp/test/skill-routing.test.ts'
-        - 'apps/modkit-mcp/corpus/real-subjects.test.ts'
+        - 'apps/mcp/test/server.test.ts'
+        - 'apps/mcp/test/skill-routing.test.ts'
+        - 'apps/mcp/corpus/real-subjects.test.ts'
       reports:
         - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#82-mcp'
   - capabilityId: 'platform/apps/command-runtime-session-conformance'
@@ -17442,10 +17442,10 @@ capabilities:
         - 'scripts/check-app-contract-matrix.mjs'
         - 'scripts/migration/check-profiles.mjs'
         - 'scripts/test/minimal-build.test.ts'
-        - 'apps/modkit-vscode/test/priority-settings.test.ts'
-        - 'apps/modkit-vscode/test/workbench-workflows.test.ts'
-        - 'apps/modkit-vscode/test/sc2-authoring-workflows.test.ts'
-        - 'apps/modkit-vscode/test/game-launch-workflow.test.ts'
+        - 'apps/vscode/test/priority-settings.test.ts'
+        - 'apps/vscode/test/workbench-workflows.test.ts'
+        - 'apps/vscode/test/sc2-authoring-workflows.test.ts'
+        - 'apps/vscode/test/game-launch-workflow.test.ts'
       reports:
         - 'reports/vscode-focused-ga-smoke/receipt.json'
   - capabilityId: 'platform/apps/recovery'
@@ -17509,7 +17509,7 @@ capabilities:
       tests:
         - 'packages/host/test/extension-artifact-store.test.ts'
         - 'packages/host/test/command-runtime.test.ts'
-        - 'apps/modkit-cli/test/cli.test.ts'
+        - 'apps/cli/test/cli.test.ts'
         - 'scripts/test/app-recovery-conformance.test.ts'
         - 'apps/web/test/session-recovery.test.ts'
         - 'apps/web/test/boot.test.ts'
@@ -17638,7 +17638,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'packages/sdk, packages/host, extensions/blizzard/starcraft2-game and extensions/opensource/warzone-2100'
+    owner: 'packages/sdk, packages/host, extensions/blizzard/starcraft2 and extensions/opensource/warzone-2100'
     plannedBlock: 20
     dependsOn: []
     sourceUnitIds: []
@@ -17700,8 +17700,8 @@ capabilities:
         - 'packages/sdk/test/knowledge.test.ts'
         - 'packages/host/test/knowledge.test.ts'
         - 'packages/ui/test/card-knowledge.test.ts'
-        - 'extensions/blizzard/starcraft2-game/test/knowledge-pack.test.ts'
-        - 'extensions/blizzard/starcraft2-game/test/schema-knowledge-pack.test.ts'
+        - 'extensions/blizzard/starcraft2/test/knowledge-pack.test.ts'
+        - 'extensions/blizzard/starcraft2/test/schema-knowledge-pack.test.ts'
         - 'extensions/opensource/warzone-2100/test/legacy-knowledge-pack.test.ts'
         - 'extensions/opensource/warzone-2100/test/modern-knowledge-pack.test.ts'
       reports:
@@ -17711,7 +17711,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'packages/sdk, packages/host, apps/modkit-vscode, extensions/blizzard and extensions/opensource/warzone-2100'
+    owner: 'packages/sdk, packages/host, apps/vscode, extensions/blizzard and extensions/opensource/warzone-2100'
     plannedBlock: 20
     dependsOn:
       - 'platform/knowledge/knowledge-pack'
@@ -17783,7 +17783,7 @@ capabilities:
       commits: []
       tests:
         - 'packages/host/test/language.test.ts'
-        - 'apps/modkit-vscode/test/language-session.test.ts'
+        - 'apps/vscode/test/language-session.test.ts'
         - 'extensions/blizzard/galaxy-language/test/semantic-provider.test.ts'
         - 'extensions/blizzard/starcraft2/test/sc2-data-language.test.ts'
         - 'extensions/blizzard/starcraft2/test/sc2-layout-language.test.ts'
@@ -17930,7 +17930,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'packages/sdk, packages/ui, extensions/blizzard/starcraft2-game and extensions/opensource/warzone-2100'
+    owner: 'packages/sdk, packages/ui, extensions/blizzard/starcraft2 and extensions/opensource/warzone-2100'
     plannedBlock: 20
     dependsOn:
       - 'platform/presentation/common-plan'
@@ -17994,12 +17994,12 @@ capabilities:
       tests:
         - 'packages/ui/test/relation-graph-source.test.ts'
         - 'packages/ui/test/browser-e2e.test.ts'
-        - 'extensions/blizzard/starcraft2-game/test/full-data-schema.test.ts'
-        - 'extensions/blizzard/starcraft2-game/test/subject-facts.test.ts'
+        - 'extensions/blizzard/starcraft2/test/full-data-schema.test.ts'
+        - 'extensions/blizzard/starcraft2/test/subject-facts.test.ts'
         - 'extensions/opensource/warzone-2100/test/wz-legacy-semantics.test.ts'
         - 'extensions/opensource/warzone-2100/test/wz-codec.test.ts'
-        - 'apps/modkit-mcp/test/server.test.ts'
-        - 'apps/modkit-mcp/corpus/real-subjects.test.ts'
+        - 'apps/mcp/test/server.test.ts'
+        - 'apps/mcp/corpus/real-subjects.test.ts'
       reports:
         - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#6-карточки-графы-и-шаблоны'
   - capabilityId: 'platform/presentation/subject-calculations'
@@ -18007,7 +18007,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'packages/sdk, packages/ui, extensions/blizzard/starcraft2-game and extensions/opensource/warzone-2100'
+    owner: 'packages/sdk, packages/ui, extensions/blizzard/starcraft2 and extensions/opensource/warzone-2100'
     plannedBlock: 20
     dependsOn:
       - 'platform/knowledge/knowledge-pack'
@@ -18068,12 +18068,12 @@ capabilities:
       commits: []
       tests:
         - 'packages/ui/test/browser-e2e.test.ts'
-        - 'extensions/blizzard/starcraft2-game/test/unit-weapon-dps.test.ts'
-        - 'extensions/blizzard/starcraft2-game/test/resolved-data-subject-services.test.ts'
+        - 'extensions/blizzard/starcraft2/test/unit-weapon-dps.test.ts'
+        - 'extensions/blizzard/starcraft2/test/resolved-data-subject-services.test.ts'
         - 'extensions/opensource/warzone-2100/test/wz-legacy-semantics.test.ts'
         - 'extensions/opensource/warzone-2100/test/wz-codec.test.ts'
-        - 'apps/modkit-mcp/test/server.test.ts'
-        - 'apps/modkit-mcp/corpus/real-subjects.test.ts'
+        - 'apps/mcp/test/server.test.ts'
+        - 'apps/mcp/corpus/real-subjects.test.ts'
       reports:
         - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#6-карточки-графы-и-шаблоны'
   - capabilityId: 'platform/presentation/subject-card'
@@ -18081,7 +18081,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'packages/sdk, packages/ui, extensions/blizzard/starcraft2-game and extensions/opensource/warzone-2100'
+    owner: 'packages/sdk, packages/ui, extensions/blizzard/starcraft2 and extensions/opensource/warzone-2100'
     plannedBlock: 20
     dependsOn:
       - 'platform/knowledge/knowledge-pack'
@@ -18148,12 +18148,12 @@ capabilities:
       commits: []
       tests:
         - 'packages/ui/test/browser-e2e.test.ts'
-        - 'extensions/blizzard/starcraft2-game/test/subject-facts.test.ts'
-        - 'extensions/blizzard/starcraft2-game/test/full-data-schema.test.ts'
+        - 'extensions/blizzard/starcraft2/test/subject-facts.test.ts'
+        - 'extensions/blizzard/starcraft2/test/full-data-schema.test.ts'
         - 'extensions/opensource/warzone-2100/test/wz-legacy-semantics.test.ts'
         - 'extensions/opensource/warzone-2100/test/wz-codec.test.ts'
-        - 'apps/modkit-mcp/test/server.test.ts'
-        - 'apps/modkit-mcp/corpus/real-subjects.test.ts'
+        - 'apps/mcp/test/server.test.ts'
+        - 'apps/mcp/corpus/real-subjects.test.ts'
       reports:
         - 'docs/MK3/plans/PLAN_MK3_SC2_WARZONE_PARITY_KNOWLEDGE_AI_MCP_2026-08-28.md#6-карточки-графы-и-шаблоны'
   - capabilityId: 'platform/release/authenticode-signing'
@@ -18522,10 +18522,10 @@ capabilities:
         - '906c5e1'
         - '5ed86af'
       tests:
-        - 'apps/modkit-cli/test/cli.test.ts'
+        - 'apps/cli/test/cli.test.ts'
         - 'packages/host/test/language.test.ts'
         - 'scripts/test/command-fixtures-hosts.test.ts'
-        - 'apps/modkit-vscode/test/workbench-workflows.test.ts'
+        - 'apps/vscode/test/workbench-workflows.test.ts'
       reports: []
   - capabilityId: 'proof/red-alert2-map/decode'
     userScenario: 'Открыть карту Red Alert 2 и увидеть её слои как доказательство post-GA глубины TS/RA2.'
@@ -20287,7 +20287,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/blizzard/starcraft2-game'
+    owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 19
     dependsOn:
       - 'game/starcraft-2/discover-open'
@@ -20350,7 +20350,7 @@ capabilities:
         - 'b72b7f8'
         - 'a1247f4'
       tests:
-        - 'apps/modkit-vscode/test/runtime-debug.test.ts'
+        - 'apps/vscode/test/runtime-debug.test.ts'
         - 'packages/testkit/test/sc2-runtime-catalog-real.test.ts'
         - 'packages/testkit/test/sc2-runtime-playable.test.ts'
       reports:
@@ -20360,7 +20360,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/blizzard/starcraft2-game'
+    owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
     dependsOn:
       - 'game/starcraft-2/discover-open'
@@ -20440,7 +20440,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/blizzard/starcraft2-game'
+    owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
     dependsOn:
       - 'game/starcraft-2/discover-open'
@@ -20578,7 +20578,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/blizzard/starcraft2-game'
+    owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
     dependsOn:
       - 'game/starcraft-2/discover-open'
@@ -20644,7 +20644,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/blizzard/starcraft2-game'
+    owner: 'extensions/blizzard/starcraft2'
     plannedBlock: 15
     dependsOn:
       - 'game/starcraft-2/discover-open'

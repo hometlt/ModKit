@@ -100,10 +100,7 @@ describe('Block 20 supported OS and host matrix', () => {
     expect(byId.get('electron')?.evidenceLevel).toBe('current-source-headless-composition')
     expect(byId.get('electron')?.notClaimed).toContain('a launched packaged Electron GUI')
 
-    const cliTest = readFileSync(
-      resolve(repositoryRoot, 'apps/modkit-cli/test/cli.test.ts'),
-      'utf8',
-    )
+    const cliTest = readFileSync(resolve(repositoryRoot, 'apps/cli/test/cli.test.ts'), 'utf8')
     const pwaTest = readFileSync(resolve(repositoryRoot, 'apps/web/test/boot.test.ts'), 'utf8')
     const electronTest = readFileSync(
       resolve(repositoryRoot, 'apps/electron/test/subject-open-smoke.test.ts'),

@@ -33,7 +33,8 @@ import { createResourceSession } from '../src/resource-session.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { starcraft2Game } = (await import(
-  pathToFileURL(join(repoRoot, '..', 'modkit-blizzard', 'starcraft2-game', 'src', 'linked.js')).href
+  pathToFileURL(join(repoRoot, '..', 'modkit-blizzard', 'starcraft2', 'src', 'game', 'linked.js'))
+    .href
 )) as { readonly starcraft2Game: LinkedExtension }
 
 const GAME_ID = 'org.modkitx/starcraft-2'

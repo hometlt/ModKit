@@ -42,7 +42,7 @@
         },
         {
           "name": "modkitx:metadata-source",
-          "value": "extensions/codec-kit/codec-kit/package.json"
+          "value": "packages/codec-kit/package.json"
         }
       ],
       "purl": "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
@@ -138,7 +138,7 @@
         },
         {
           "name": "modkitx:metadata-source",
-          "value": "apps/modkit-cli/package.json"
+          "value": "apps/cli/package.json"
         }
       ],
       "purl": "pkg:npm/%40modkitx-x3/modkit-cli@0.1.0",
@@ -162,7 +162,7 @@
         },
         {
           "name": "modkitx:metadata-source",
-          "value": "apps/modkit-vscode/package.json"
+          "value": "apps/vscode/package.json"
         }
       ],
       "purl": "pkg:npm/%40modkitx-x3/modkit-vscode@0.1.0",

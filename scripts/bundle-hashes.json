@@ -72,5 +72,5 @@
   "packages/ui/dist/explorer/index.js": "e814855324bbcb64f3db6d1a0a94ae35eb2a9f86a338054a8611c4824d7d1335",
   "packages/ui/dist/hex-editor/index.js": "443b6d3e96cc3b414331f0db7c53117139f5b7df53aaae0186da571f6e2ca522",
   "packages/ui/dist/media/encoded.js": "8ca2b8d5766aaed002079f9fa014b3add300755ab0740af81f8108bcdd2955c8",
-  "apps/modkit-cli/dist/main.js": "10e509ebecc35c05ea0c94ea27f55a491cd0f21a7b96c3d8a9e3403f725319ba"
+  "apps/cli/dist/main.js": "26ed244d3c90ecb29480749265d401c0d1a0fd633c412ac19e04e0c0f3414ae5"
 }

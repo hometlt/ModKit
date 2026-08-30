@@ -6,8 +6,8 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:35bcddc575774eea6430c72c4f757dc1261ac8fee142fd33bf0df72384a4dd39",
-      "size": 40004096
+      "sha256": "sha256:129461f52298f55e0b84ac5ff9d1e5ccbe771730d7c39fc0f663037643bee319",
+      "size": 40062464
     },
     {
       "catalog": [
@@ -126,7 +126,7 @@
           ],
           "coordinate": "org.modkitx/rendering-3d",
           "root": "extensions/common/rendering-3d",
-          "sourceDigest": "sha256:2d84a65e1f592133f70a6034ef92b8f03db940ecaa1c2625b49e4a9dd39cec93"
+          "sourceDigest": "sha256:458389d579ee37d16ed41dba2d7cddce47d8cfc82c400b6dd2686f14d0aac5d4"
         },
         {
           "contributions": [
@@ -248,7 +248,7 @@
       "file": "artifacts/modkitx-common.tar",
       "id": "common",
       "kind": "common-extension-bundle",
-      "sha256": "sha256:6427a8829bb795aacfd78722aa0c2cac943aa3b8f128444d4310b7e154c5d57d",
+      "sha256": "sha256:dcb5e18f18c6c04c6f0e4647f0978230bed9d64d99f0d5cd8c58e48d6e89c518",
       "size": 1726976
     }
   ],
@@ -266,8 +266,8 @@
         "sha256": "sha256:b19154cb59ad53aec8941a8b77cb8165f824c8150fdd96fd2c038ebebf631a39"
       },
       {
-        "path": "apps/modkit-vscode/generated/bundled-catalog.json",
-        "sha256": "sha256:cd353dc4a9070e6b20a8832982b83d8220890f33ce9859bfc8bb70029d462076"
+        "path": "apps/vscode/generated/bundled-catalog.json",
+        "sha256": "sha256:155210b93d9c6a6ef2890fcb87e5f414972896bf0d312b00bd27ab95e0d39597"
       },
       {
         "path": "apps/web/generated/extension-catalog.js",
@@ -275,15 +275,15 @@
       },
       {
         "path": "migration/product-profiles.json",
-        "sha256": "sha256:f3f1642981931901cc22f905bf7b7121a35632998318b5b3a820dc8b7207a256"
+        "sha256": "sha256:8d9b5c48ceb631db76cf6b46b867660981218dc03704cdb40f666d323440752e"
       },
       {
         "path": "scripts/app-extension-sets.mjs",
-        "sha256": "sha256:0bb3ac41358d7c8be4d06fca011b52908a4b0c25a26430aa60ff1353fd49a702"
+        "sha256": "sha256:b44c54c929bb1a2b3146eb3af63ad95776939469ed9596c1afd09f89ab56ca0c"
       },
       {
         "path": "scripts/bundle-hashes.json",
-        "sha256": "sha256:b849c77fe058cd5eb028d64e1b7a4d971e2869572649f66dcb47fda94f96681d"
+        "sha256": "sha256:f5fb62badb07255891fbbb08e1721ceccd2686eda4c2190457775024813b5f6a"
       }
     ],
     "closure": "mk3-ga",
@@ -345,14 +345,6 @@
             "path": "starcraft2",
             "repository": "blizzard",
             "sibling": "modkit-blizzard"
-          },
-          {
-            "coordinate": "org.modkitx.blizzard/starcraft2-game",
-            "environment": "MODKIT_BLIZZARD_ROOT",
-            "family": "blizzard-starcraft2-game",
-            "path": "starcraft2-game",
-            "repository": "blizzard",
-            "sibling": "modkit-blizzard"
           }
         ],
         "id": "sc2-mod-studio",
@@ -377,7 +369,7 @@
   },
   "licenseNotices": {
     "file": "LICENSE-NOTICES.txt",
-    "sha256": "sha256:1a4f1811b0022f09f3a6aa943aa7c2289ce5609d2b172e27d8ce6df558659e36"
+    "sha256": "sha256:a4ec01b5280c22615eb375099fbf842f1fac0a28c8ee55ad6202f34c8b10d763"
   },
   "release": {
     "authenticode": false,
@@ -398,7 +390,7 @@
   "sbom": {
     "file": "sbom.cdx.json",
     "format": "CycloneDX-1.5",
-    "sha256": "sha256:8008ecd216f91bb82290622a5c50c8ce800ea86f8f24247de7c500273e30578f"
+    "sha256": "sha256:d0240b733e398e3bfdf4c6e4235ca6fbb07ec966ae71eecdd05025774f6adb4a"
   },
   "schemaVersion": "release-manifest-1",
   "signing": {

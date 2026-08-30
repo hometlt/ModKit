@@ -49,16 +49,16 @@ const WORKSPACE_SCAN_SKIPPED_DIRECTORY_NAMES = new Set([
 const APP_PACKAGE_PATHS = Object.freeze([
   'apps/automation-host',
   'apps/electron',
-  'apps/modkit-cli',
-  'apps/modkit-vscode',
+  'apps/cli',
+  'apps/vscode',
   'apps/server',
   'apps/web',
 ])
 const APP_PAYLOADS = Object.freeze({
   'apps/automation-host': Object.freeze(['dist']),
   'apps/electron': Object.freeze(['dist', 'dist-app', 'electron', 'generated', 'media']),
-  'apps/modkit-cli': Object.freeze(['dist']),
-  'apps/modkit-vscode': Object.freeze([
+  'apps/cli': Object.freeze(['dist']),
+  'apps/vscode': Object.freeze([
     'bundled-contributes.v1.json',
     'contributes.generated.json',
     'dist-app',
@@ -359,13 +359,7 @@ function externalProfileExtensions(profile) {
 
 function releaseComposition(repoRoot) {
   const profilesPath = join(repoRoot, 'migration', 'product-profiles.json')
-  const vscodeCatalogPath = join(
-    repoRoot,
-    'apps',
-    'modkit-vscode',
-    'generated',
-    'bundled-catalog.json',
-  )
+  const vscodeCatalogPath = join(repoRoot, 'apps', 'vscode', 'generated', 'bundled-catalog.json')
   const profiles = readJson(profilesPath)
   const vscodeCatalog = readJson(vscodeCatalogPath)
   if (profiles.schemaVersion !== 'product-profiles-1' || !Array.isArray(profiles.presets)) {
@@ -429,7 +423,7 @@ function releaseComposition(repoRoot) {
     releaseVersion: applicationVersions[0],
     catalogSources: [
       'apps/electron/generated/bundled-catalog.cjs',
-      'apps/modkit-vscode/generated/bundled-catalog.json',
+      'apps/vscode/generated/bundled-catalog.json',
       'apps/web/generated/extension-catalog.js',
       'migration/product-profiles.json',
       'scripts/app-extension-sets.mjs',
@@ -863,7 +857,7 @@ function artifactDescriptor(artifact, bytes, catalog) {
 
 function artifactDefinitions(repoRoot, composition) {
   const vscodeCatalog = readJson(
-    join(repoRoot, 'apps', 'modkit-vscode', 'generated', 'bundled-catalog.json'),
+    join(repoRoot, 'apps', 'vscode', 'generated', 'bundled-catalog.json'),
   )
   const existingCatalog = new Map(
     vscodeCatalog.roots.map(root => [`extensions/${root.directory}`, root]),

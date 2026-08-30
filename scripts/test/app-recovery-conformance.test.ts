@@ -46,15 +46,15 @@ import {
 import type { ActivationTicket } from '../../packages/host/src/security/gate.js'
 import { createAutomationHost, type AutomationHost } from '../../apps/automation-host/src/index.js'
 import { createElectronApp, type ElectronApp } from '../../apps/electron/src/index.js'
-import { runCommand } from '../../apps/modkit-cli/src/commands.js'
-import { createModkitCliSubjectServices } from '../../apps/modkit-cli/src/profile.js'
+import { runCommand } from '../../apps/cli/src/commands.js'
+import { createModkitCliSubjectServices } from '../../apps/cli/src/profile.js'
 import {
   createVsCodeDesktopTopology,
   VSCODE_DESKTOP_EXTENSION_REALM,
   VSCODE_DESKTOP_WORKER_REALM,
   VSCODE_WORKER_POLICY,
-} from '../../apps/modkit-vscode/src/index.js'
-import { createVsCodeCommandOpener } from '../../apps/modkit-vscode/src/host.js'
+} from '../../apps/vscode/src/index.js'
+import { createVsCodeCommandOpener } from '../../apps/vscode/src/host.js'
 import { createServerApp, type ServerApp } from '../../apps/server/src/index.js'
 import { createWebCommandProtocol } from '../../apps/web/src/commands.js'
 import { createWebApp, type WebApp } from '../../apps/web/src/index.js'

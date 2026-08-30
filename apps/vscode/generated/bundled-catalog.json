@@ -128,7 +128,7 @@
       "declared": true,
       "coordinate": "org.modkitx/rendering-3d",
       "contributions": ["org.modkitx/browser-webgl-renderer", "org.modkitx/headless-renderer"],
-      "digest": "sha256:2d84a65e1f592133f70a6034ef92b8f03db940ecaa1c2625b49e4a9dd39cec93"
+      "digest": "sha256:458389d579ee37d16ed41dba2d7cddce47d8cfc82c400b6dd2686f14d0aac5d4"
     },
     {
       "name": "text-delimited",
