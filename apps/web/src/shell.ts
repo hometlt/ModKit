@@ -60,8 +60,8 @@ import {
   readAppThemeChoices,
   type SettingsDocument,
 } from '@modkitx-x3/ui/settings'
-import { createUiLocalizer, resolveUiLocale } from '@modkitx-x3/ui/localization'
 import { element, setPart, setState, setViewerText } from '@modkitx-x3/ui/viewer'
+import type { UiMessageKey } from '@modkitx-x3/ui/localization'
 
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import { createWebTopology, mountWebWorkbench, probeWebFacilities } from './index.js'
@@ -114,23 +114,20 @@ import {
   type WebSessionRecovery,
 } from './session-recovery.js'
 import { applyAppearance, createWebSettingsStore, EXTENSIONS_READ_ONLY_REASON } from './settings.js'
-import {
-  createWebPreviewStages,
-  stageIdOf,
-  WEB_EDITING_NOTICE,
-  WEB_PREVIEW_FALLBACK,
-} from './views.js'
+import { createWebPreviewFallback, createWebPreviewStages, stageIdOf } from './views.js'
+import { createWebLocalizer } from './localization.js'
 
 /** Served resources the app offers as a starting point when no folder can be granted. */
-const SAMPLES: readonly { readonly path: string; readonly label: string }[] = Object.freeze([
-  { path: './favicon-32.png', label: 'favicon-32.png — PNG image' },
-  { path: './samples/sample.csv', label: 'sample.csv — delimited table' },
-  { path: './samples/sample.ini', label: 'sample.ini — INI tree' },
-  { path: './samples/sample.svg', label: 'sample.svg — vector scene' },
-  { path: './samples/sample.md', label: 'sample.md — markdown document' },
-  { path: './samples/sample.mp3', label: 'sample.mp3 — one second of MP3 silence' },
-  { path: './samples/sample.zip', label: 'sample.zip — container namespace' },
-])
+const SAMPLES: readonly { readonly path: string; readonly labelKey: UiMessageKey }[] =
+  Object.freeze([
+    { path: './favicon-32.png', labelKey: 'web.sample.png' },
+    { path: './samples/sample.csv', labelKey: 'web.sample.csv' },
+    { path: './samples/sample.ini', labelKey: 'web.sample.ini' },
+    { path: './samples/sample.svg', labelKey: 'web.sample.svg' },
+    { path: './samples/sample.md', labelKey: 'web.sample.md' },
+    { path: './samples/sample.mp3', labelKey: 'web.sample.mp3' },
+    { path: './samples/sample.zip', labelKey: 'web.sample.zip' },
+  ])
 
 const describe = (error: unknown): string =>
   error instanceof Error ? error.message : String(error)
@@ -246,14 +243,21 @@ async function boot(): Promise<void> {
   let settingsDocument = (await settingsStore.read()).document
   const baseUrl = new URL('./', document.baseURI)
   const pageUrl = new URL(window.location.href)
-  const locale = resolveUiLocale(pageUrl.searchParams.get('lang') ?? navigator.languages)
-  const localizer = createUiLocalizer(locale)
+  const localizer = createWebLocalizer(pageUrl.searchParams.get('lang') ?? navigator.languages)
+  const locale = localizer.locale
   const t = localizer.text
   document.documentElement.lang = locale
   document.title = t('app.title')
   const booting = document.querySelector('.booting')
   if (booting !== null) setViewerText(booting, t('app.starting'))
   const capability = describeFileCapability(window)
+  const capabilityNotice = t(
+    capability.directories
+      ? 'web.capability.folder'
+      : capability.filePicker
+        ? 'web.capability.file'
+        : 'web.capability.input',
+  )
   const bootDiagnostics: string[] = []
   const bootSessionDiagnostics: WebSessionDiagnostic[] = []
   const recoveryHost: { current?: WebSessionRecovery } = {}
@@ -308,6 +312,7 @@ async function boot(): Promise<void> {
    */
   const host: { services?: WebSubjectServices } = {}
   const extensionsUi = mountExtensionsUi(document, {
+    localizer,
     store: extensionStore,
     catalog: WEB_EXTENSION_CATALOG,
     managedExtensions,
@@ -423,6 +428,7 @@ async function boot(): Promise<void> {
       worker: services.worker,
     },
     t('app.title'),
+    localizer,
   )
 
   const statusLine = document.createElement('output')
@@ -519,6 +525,7 @@ async function boot(): Promise<void> {
   }
 
   const editPanel = createEditPanel({
+    localizer,
     portsFor: descriptor => {
       const entryId = entryIdOf(descriptor)
       return entryId === undefined ? undefined : subjectEditors.get(entryId)
@@ -539,7 +546,7 @@ async function boot(): Promise<void> {
     },
   })
 
-  const inspector: Inspector = createInspector(document, { editPanel })
+  const inspector: Inspector = createInspector(document, { editPanel, localizer })
   workbench.setPanel(inspector.root)
   let inspecting: string | undefined
   const inspect = (entryId: string | undefined): void => {
@@ -577,6 +584,7 @@ async function boot(): Promise<void> {
   let focused: string | undefined
 
   const editing = createWebEditingArm({
+    localizer,
     inventory: services.main.inventory,
     handleFor: sourceId => writableHandles.get(sourceId),
     onNotice(message) {
@@ -589,13 +597,13 @@ async function boot(): Promise<void> {
      * `requestPermission`. Asking on load is both refused by the browser and rude.
      */
     async ensureWriteAccess(entryId) {
-      const current = await describeEditability(access, entryId)
+      const current = await describeEditability(access, entryId, entryId, localizer)
       if (current.state === 'granted' || current.state === 'no-permission-surface') return 'granted'
       if (current.state !== 'prompt') {
         noteEditing(current.sentence)
         return 'denied'
       }
-      const asked = await requestWriteAccess(access)
+      const asked = await requestWriteAccess(access, localizer)
       noteEditing(asked.sentence)
       return asked.state === 'granted' ? 'granted' : asked.state === 'denied' ? 'denied' : 'prompt'
     },
@@ -608,6 +616,7 @@ async function boot(): Promise<void> {
     `x3-nested:${containerKey}#${entryPath}`
 
   const stages = createWebPreviewStages({
+    localizer,
     operationsFor: descriptor => operationSessions.get(descriptorKey(descriptor)),
     /*
      * The web half of `block9/archive-entry-as-subject` (block 13 slice B).
@@ -621,7 +630,7 @@ async function boot(): Promise<void> {
     async openNestedEntry(descriptor, entryId, entryPath) {
       const key = descriptorKey(descriptor)
       const parent = assetSessions.get(key)
-      if (parent === undefined) return 'The session that opened this container is no longer held.'
+      if (parent === undefined) return t('web.archive.sessionGone')
       const nested = await openNestedSubject({
         parent,
         entryId,
@@ -637,7 +646,7 @@ async function boot(): Promise<void> {
         },
       })
       if (nested.result.state !== 'opened') {
-        return `${entryPath} — no codec claimed it inside this container (${nested.result.reason}).`
+        return t('web.status.noNestedCodec', { name: entryPath, reason: nested.result.reason })
       }
       /*
        * The bytes the tab's hex and text stages read. Taken from the same extraction the preview
@@ -667,7 +676,7 @@ async function boot(): Promise<void> {
   const previewBase = {
     supported: services.supportedExtensions,
     stages,
-    fallback: WEB_PREVIEW_FALLBACK,
+    fallback: createWebPreviewFallback(localizer),
     async openSession(entry: ExplorerEntry, bytes: Uint8Array, signal?: AbortSignal) {
       openCount += 1
       /*
@@ -707,7 +716,7 @@ async function boot(): Promise<void> {
           ...(signal === undefined ? {} : { signal }),
         }))
       if (ordinary.state === 'unresolved') {
-        say(`${entry.name} — no codec claimed it (${ordinary.reason}); showing the raw bytes.`)
+        say(t('web.status.noCodec', { name: entry.name, reason: ordinary.reason }))
         return undefined
       }
       let mapPreview = await prepareWebMapPreview({
@@ -715,18 +724,21 @@ async function boot(): Promise<void> {
         opened: ordinary,
         grant,
         budgets: budget,
+        localizer,
         ...(signal === undefined ? {} : { signal }),
       })
       if (mapPreview.state === 'selection-required') {
         const choice = window.prompt(
-          `Choose a map for the World view by entering its id:\n\n${mapPreview.candidates
-            .map(
-              candidate =>
-                `${candidate.candidateId} — ${candidate.displayName}${
-                  candidate.sourcePath === undefined ? '' : ` (${candidate.sourcePath})`
-                }`,
-            )
-            .join('\n')}`,
+          t('web.map.choose', {
+            candidates: mapPreview.candidates
+              .map(
+                candidate =>
+                  `${candidate.candidateId} — ${candidate.displayName}${
+                    candidate.sourcePath === undefined ? '' : ` (${candidate.sourcePath})`
+                  }`,
+              )
+              .join('\n'),
+          }),
           '',
         )
         const selected = mapPreview.candidates.find(
@@ -739,21 +751,20 @@ async function boot(): Promise<void> {
             grant,
             budgets: budget,
             selectionId: selected.candidateId,
+            localizer,
             ...(signal === undefined ? {} : { signal }),
           })
         }
       }
       const result = mapPreview.opened
       if (mapPreview.state === 'permission-required') {
-        say(
-          `${entry.name} — map preview needs installation resources the browser cannot search; ` +
-            'the ordinary archive view remains open.',
-        )
+        say(t('web.map.permissionRequired', { name: entry.name }))
       } else if (mapPreview.state === 'selection-required') {
         say(
-          `${entry.name} — map preview needs a choice (${mapPreview.candidates
-            .map(candidate => candidate.displayName)
-            .join(', ')}); the ordinary archive view remains open.`,
+          t('web.map.selectionRequired', {
+            name: entry.name,
+            candidates: mapPreview.candidates.map(candidate => candidate.displayName).join(', '),
+          }),
         )
       }
       const boundary = result.diagnostics.some(
@@ -803,7 +814,9 @@ async function boot(): Promise<void> {
             request: { intent: 'full', grant, budget },
           })
         } catch (error) {
-          say(`${entry.name} — shared commands unavailable: ${String(error)}`)
+          say(
+            t('web.status.sharedCommandsUnavailable', { name: entry.name, reason: String(error) }),
+          )
         }
       }
       operationSessions.set(key, operations)
@@ -891,7 +904,7 @@ async function boot(): Promise<void> {
   const preview: PreviewResolver = {
     supported: codecPreview.supported,
     async open(container, entry, bytes, signal) {
-      const decision = await describeEditability(access, entry.id, entry.name)
+      const decision = await describeEditability(access, entry.id, entry.name, localizer)
       /*
        * A pinned revision is part of being editable: without the handle snapshot this tab read
        * before its bytes, the backend would compute a revision the plan never expected and every
@@ -910,6 +923,7 @@ async function boot(): Promise<void> {
 
   // ---------------------------------------------------------------- editors + explorer
   const editors: EditorArea = createEditorArea(document, {
+    localizer,
     preview,
     async confirmClose(entry) {
       /*
@@ -917,7 +931,7 @@ async function boot(): Promise<void> {
        * to press it for a tab that is closing. Offering a button that would do nothing is worse
        * than offering two that do what they say.
        */
-      return window.confirm(`${entry.name} has unsaved changes. Close the tab and discard them?`)
+      return window.confirm(t('web.status.unsavedClose', { name: entry.name }))
         ? 'discard'
         : 'cancel'
     },
@@ -990,6 +1004,7 @@ async function boot(): Promise<void> {
   })
 
   const explorer = createExplorer(document, {
+    localizer,
     preview,
     // The tree browses; the editor area owns what is open, so opening is delegated to it.
     onOpen(entry) {
@@ -998,7 +1013,7 @@ async function boot(): Promise<void> {
     async openFolder() {
       const handle = await pickDirectory()
       if (handle === undefined) {
-        say(capability.notice)
+        say(capabilityNotice)
         return undefined
       }
       access = createDirectoryAccess(handle, { onNotice: say })
@@ -1059,7 +1074,7 @@ async function boot(): Promise<void> {
    */
   toolbarAction(t('action.enableEditing'), t('action.enableEditingTitle'), () => {
     void (async () => {
-      const asked = await requestWriteAccess(access)
+      const asked = await requestWriteAccess(access, localizer)
       say(asked.sentence)
       noteEditing(asked.sentence)
     })()
@@ -1088,6 +1103,7 @@ async function boot(): Promise<void> {
 
   // ---------------------------------------------------------------- settings
   const settingsUi = createSettingsUi(document, {
+    localizer,
     store: settingsStore,
     themes: appThemes,
     onAppearance(appearance: SettingsDocument['appearance']) {
@@ -1151,8 +1167,8 @@ async function boot(): Promise<void> {
       sharedMemory: t(probe.sharedMemory ? 'common.yes' : 'common.no'),
     }),
   })
-  element(sidebar, 'p', { part: 'settings.description', text: capability.notice })
-  element(sidebar, 'p', { part: 'settings.description', text: WEB_EDITING_NOTICE })
+  element(sidebar, 'p', { part: 'settings.description', text: capabilityNotice })
+  element(sidebar, 'p', { part: 'settings.description', text: t('web.editing.notice') })
   /*
    * The live half of that notice: which of the two the file in front of you is, and what the last
    * save actually did. `noteEditing` writes here, so the claim on screen is about this session and
@@ -1169,7 +1185,7 @@ async function boot(): Promise<void> {
   for (const sample of SAMPLES) {
     const button = element(sampleList, 'button', {
       part: 'explorer.action',
-      text: sample.label,
+      text: t(sample.labelKey),
     }) as HTMLButtonElement
     button.type = 'button'
     button.addEventListener('click', () => {
@@ -1579,6 +1595,8 @@ boot()
     node.replaceChildren()
     const failure = document.createElement('p')
     failure.className = 'booting'
-    failure.textContent = `Boot failed: ${describe(error)}`
+    failure.textContent = createWebLocalizer(navigator.languages).text('web.status.bootFailed', {
+      reason: describe(error),
+    })
     node.append(failure)
   })

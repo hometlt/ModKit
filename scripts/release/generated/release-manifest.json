@@ -6,8 +6,8 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:505c8075724d4ae6cc33632d671cc125c960947e655091f7ce2cfe80236fbf93",
-      "size": 48066560
+      "sha256": "sha256:691d5098a9d57d1ab4b27b61de7d66b928f1a87cbacea4a99085cef66a6b0b8d",
+      "size": 50132480
     },
     {
       "catalog": [
@@ -248,7 +248,7 @@
       },
       {
         "path": "scripts/bundle-hashes.json",
-        "sha256": "sha256:03fb6347f087f7ebe171cb110f381b8464ec469ca4c076c2604794c427aaa2c3"
+        "sha256": "sha256:4bd57ca9351623b33fc9bfdced6bca508ef9ca1aad0ff497bb40a6d9772415cb"
       }
     ],
     "closure": "mk3-ga",
@@ -295,7 +295,7 @@
   "sbom": {
     "file": "sbom.cdx.json",
     "format": "CycloneDX-1.5",
-    "sha256": "sha256:d23dba7d1c7c697911067c594d8bc7c6f4bcbd63910a3d5f49e15619b4bf75b8"
+    "sha256": "sha256:8b698f909eb6247e887d759469a6e390a80feb5f4528d97d313e44d2bd34e94a"
   },
   "schemaVersion": "release-manifest-1",
   "signing": {

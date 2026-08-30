@@ -32,6 +32,7 @@ import {
   setViewerText,
   ViewerMountScope,
 } from '@modkitx-x3/ui/viewer'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
 import type { AnyDescriptor, AssetEditPlan, OperationOutput, ViewerModule } from '@modkitx-x3/sdk'
 
 import {
@@ -53,6 +54,7 @@ export interface EditPanelPorts {
 }
 
 export interface EditPanelOptions {
+  readonly localizer?: UiLocalizer
   /**
    * The editing surface this tab holds, or `undefined` when this page will not write the subject.
    * In a browser that is a property of the file, not of the build — see `./editing.ts`.
@@ -71,6 +73,31 @@ export interface EditPanelOptions {
   onStatus?(status: EditApplyStatus): void
 }
 
+const EDIT_FORM_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  'png-set-text': 'pngText',
+  'mp3-set-text-frame': 'id3Text',
+  'jpeg-set-comment': 'jpegComment',
+  'jpeg-remove-segment': 'jpegRemove',
+  'zip-add-entry': 'archiveAdd',
+  'zip-remove-entry': 'archiveRemove',
+  'zip-rename-entry': 'archiveRename',
+  'zip-replace-entry': 'archiveReplace',
+})
+
+const EDIT_FIELD_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  keyword: 'keyword',
+  key: 'key',
+  value: 'value',
+  text: 'text',
+  frameId: 'frameId',
+  marker: 'marker',
+  segmentIndex: 'segmentIndex',
+  path: 'entryPath',
+  contents: 'contents',
+  from: 'from',
+  to: 'to',
+})
+
 /**
  * What the panel says about the view behind it once a change has been committed.
  *
@@ -82,25 +109,27 @@ export const REOPENED_NOTE = 'the tab was reopened, so this view is not stale'
 export const NOT_REOPENED_NOTE = 'the tab could not be reopened, so a view of it may be stale'
 
 export function createEditPanel(options: EditPanelOptions): ViewerModule {
+  const localizer = options.localizer ?? DEFAULT_UI_LOCALIZER
+  const text = localizer.text
   return defineViewerModule({
     abiVersion: 1,
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
-      const root = createSurface(args.container, 'Edit')
+      const root = createSurface(args.container, text('web.inspector.edit'))
       const descriptor = args.descriptor
       const ports = options.portsFor(descriptor)
       const offer = editOffer(descriptor, { editable: ports !== undefined })
 
       const form = element(root, 'div', { part: 'form' })
       const chooser = element(form, 'div', { part: 'form.row' })
-      element(chooser, 'label', { part: 'form.label', text: 'Operation' })
+      element(chooser, 'label', { part: 'form.label', text: text('edit.operation') })
       const picker = element(chooser, 'select', { part: 'form.select' })
       if (!(picker instanceof HTMLSelectElement)) throw new TypeError('no select element')
-      picker.setAttribute('aria-label', 'Mutating operation')
+      picker.setAttribute('aria-label', text('edit.mutatingOperation'))
       const summary = element(form, 'p', { part: 'form.description' })
       const pane = element(form, 'div', { part: 'form.control' })
       const actions = element(form, 'div', { part: 'form.actions' })
-      const apply = element(actions, 'button', { part: 'form.button', text: 'Apply' })
+      const apply = element(actions, 'button', { part: 'form.button', text: text('edit.apply') })
       apply.setAttribute('type', 'button')
       const status = element(form, 'output', { part: 'form.status' })
       // A bare container: every line inside it is a `form.description`, and a part that wrapped
@@ -117,12 +146,18 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
         notes.replaceChildren()
         const previous = options.lastOutcome(descriptor)
         if (previous !== undefined) {
-          element(notes, 'div', { part: 'form.description', text: `Last change: ${previous}` })
+          element(notes, 'div', {
+            part: 'form.description',
+            text: text('edit.lastChange', { change: previous }),
+          })
         }
         for (const item of offer.unsupported) {
           element(notes, 'div', {
             part: 'form.description',
-            text: `${item.operationId}: not available in this host yet — ${item.reason}`,
+            text: text('web.edit.unsupported', {
+              operation: item.operationId,
+              reason: item.reason,
+            }),
           })
         }
       }
@@ -137,21 +172,25 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
         pane.replaceChildren()
         const chosen = selectedForm()
         if (chosen === undefined) {
-          setViewerText(summary, 'This subject declares no mutating operation this host can drive.')
+          setViewerText(summary, text('edit.status.noneDrivable'))
           apply.setAttribute('disabled', '')
           return
         }
         apply.removeAttribute('disabled')
-        setViewerText(summary, `${chosen.summary} (${chosen.operationId} → ${chosen.handlerId})`)
+        const formKey = EDIT_FORM_KEYS[chosen.id]
+        const formSummary = formKey === undefined ? chosen.summary : text(`edit.summary.${formKey}`)
+        setViewerText(summary, `${formSummary} (${chosen.operationId} → ${chosen.handlerId})`)
         for (const item of chosen.fields) {
           const row = element(pane, 'div', { part: 'form.row' })
-          element(row, 'label', { part: 'form.label', text: item.label })
+          const fieldKey = EDIT_FIELD_KEYS[item.name]
+          const fieldLabel = fieldKey === undefined ? item.label : text(`edit.field.${fieldKey}`)
+          element(row, 'label', { part: 'form.label', text: fieldLabel })
           const input = element(row, 'input', { part: 'form.input' })
           if (!(input instanceof HTMLInputElement)) continue
           input.type = 'text'
           input.name = item.name
           input.value = item.initial
-          input.setAttribute('aria-label', item.label)
+          input.setAttribute('aria-label', fieldLabel)
           if (item.hint !== undefined) input.title = item.hint
           inputs.set(item.name, input)
           if (item.hint !== undefined) {
@@ -163,7 +202,7 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
       const run = async (): Promise<void> => {
         const chosen = selectedForm()
         if (chosen === undefined || ports === undefined) {
-          say('this page holds no editing surface for the file, so nothing can be applied', true)
+          say(text('edit.sessionUnavailable'), true)
           return
         }
         const values = new Map<string, string>()
@@ -173,11 +212,18 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
         try {
           input = chosen.build(values)
         } catch (error) {
-          say(`cannot apply: ${error instanceof Error ? error.message : String(error)}`, true)
+          say(
+            text('edit.applyFailed', {
+              reason: error instanceof Error ? error.message : String(error),
+            }),
+            true,
+          )
           return
         }
 
-        say(`${chosen.label}: invoking ${chosen.handlerId}…`, false)
+        const formKey = EDIT_FORM_KEYS[chosen.id]
+        const formLabel = formKey === undefined ? chosen.label : text(`edit.operation.${formKey}`)
+        say(text('web.edit.invoking', { operation: formLabel, handler: chosen.handlerId }), false)
         let result
         try {
           result = await args.operations.invoke(chosen.handlerId, input, { signal: scope.signal })
@@ -185,7 +231,9 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
           // A codec that refuses before producing a plan rejects the call; its own words are the
           // only useful answer, so they are shown rather than a generic failure.
           say(
-            `refused by the codec: ${error instanceof Error ? error.message : String(error)}`,
+            text('web.edit.codecRefused', {
+              reason: error instanceof Error ? error.message : String(error),
+            }),
             true,
           )
           return
@@ -203,7 +251,9 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
           plan = ports.planFromOperation(result.output)
         } catch (error) {
           say(
-            `the host refused the plan: ${error instanceof Error ? error.message : String(error)}`,
+            text('web.edit.hostRefused', {
+              reason: error instanceof Error ? error.message : String(error),
+            }),
             true,
           )
           return
@@ -214,7 +264,7 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
           say(applied.message, true)
           return
         }
-        const outcome = `${chosen.label} — ${applied.message}${fidelityNote(plan)}`
+        const outcome = `${formLabel} — ${applied.message}${fidelityNote(plan)}`
         /*
          * Recorded *before* the reopen, because the reopen unmounts this panel and the one that
          * replaces it is where the user reads what just happened. The claim about the reopen is
@@ -223,13 +273,13 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
          * stage.
          */
         options.recordOutcome(descriptor, `${outcome}; ${REOPENED_NOTE}`)
-        say(`${outcome}; reopening the file to show it as it now is`, false)
+        say(text('web.edit.appliedReopening', { outcome }), false)
         if (scope.signal.aborted) return
         const reopened = await options.reopen(descriptor)
         if (!reopened) {
           options.recordOutcome(descriptor, `${outcome}; ${NOT_REOPENED_NOTE}`)
           if (!scope.signal.aborted) {
-            say(`${outcome}; the tab could not be reopened, so this view is stale`, true)
+            say(text('web.edit.appliedReopenFailed', { outcome }), true)
           }
         }
       }
@@ -246,7 +296,10 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
       })
 
       for (const item of offer.forms) {
-        const option = element(picker, 'option', { text: item.label })
+        const formKey = EDIT_FORM_KEYS[item.id]
+        const option = element(picker, 'option', {
+          text: formKey === undefined ? item.label : text(`edit.operation.${formKey}`),
+        })
         option.setAttribute('value', item.id)
       }
       picker.addEventListener('change', drawFields)
@@ -257,12 +310,15 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
         setState(root, ['degraded'])
         say(
           offer.unsupported.length === 0
-            ? 'nothing here can change this file'
-            : `${offer.unsupported.length} of ${declared} mutating operation(s) declared, none drivable here`,
+            ? text('edit.status.noneDrivable')
+            : text('web.edit.noneDrivableCount', {
+                unsupported: offer.unsupported.length,
+                declared,
+              }),
           false,
         )
       } else {
-        say(`${offer.forms.length} form(s) over ${declared} mutating operation(s)`, false)
+        say(text('web.edit.formsAvailable', { forms: offer.forms.length, declared }), false)
       }
 
       return {

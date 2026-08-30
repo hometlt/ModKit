@@ -9,6 +9,9 @@ import {
   setViewerText,
   ViewerMountScope,
 } from '../viewer/index.js'
+import { type UiLocalizationOptions, type UiLocalizer } from '../localization/index.js'
+import { PANELS_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 function renderDiagnostics(root: HTMLElement, descriptor: AnyDescriptor): void {
   root.replaceChildren()
@@ -42,26 +45,35 @@ function renderDiagnostics(root: HTMLElement, descriptor: AnyDescriptor): void {
   }
 }
 
-export const diagnosticsPanel: ViewerModule = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal)
-    const root = createSurface(args.container, 'Diagnostics')
-    renderDiagnostics(root, args.descriptor)
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      renderDiagnostics(root, descriptor)
-    })
-  },
-})
+export function createDiagnosticsPanel(options: UiLocalizationOptions = {}): ViewerModule {
+  const localizer = withEnglishUiFallback(options.localizer, PANELS_FALLBACK_MESSAGES)
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal)
+      const root = createSurface(args.container, localizer.text('panels.diagnostics'))
+      renderDiagnostics(root, args.descriptor)
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        renderDiagnostics(root, descriptor)
+      })
+    },
+  })
+}
+
+export const diagnosticsPanel: ViewerModule = createDiagnosticsPanel()
 
 function renderToolbar(
   root: HTMLElement,
   descriptor: AnyDescriptor,
   operations: Parameters<typeof invokeOperation>[1],
   signal: AbortSignal,
+  localizer: UiLocalizer,
 ): void {
   root.replaceChildren()
-  const status = element(root, 'output', { text: 'Ready', part: 'operations.status' })
+  const status = element(root, 'output', {
+    text: localizer.text('panels.ready'),
+    part: 'operations.status',
+  })
   for (const operation of descriptor.operations) {
     /*
      * This toolbar invokes with a `null` input, and a mutating operation's input is a record —
@@ -93,12 +105,17 @@ function renderToolbar(
       invokeOperation(descriptor, operations, operation.id, null, {
         signal,
         onProgress: (completed, total, message) =>
-          setViewerText(status, `${message ?? 'Working'}: ${completed}/${total ?? '?'}`),
+          setViewerText(
+            status,
+            `${message ?? localizer.text('panels.working')}: ${completed}/${total ?? '?'}`,
+          ),
       })
         .then(result =>
           setViewerText(
             status,
-            result.state === 'ok' ? `${operation.id}: complete` : result.reason,
+            result.state === 'ok'
+              ? localizer.text('panels.operationComplete', { operation: operation.id })
+              : result.reason,
           ),
         )
         .catch((error: unknown) =>
@@ -114,14 +131,19 @@ function renderToolbar(
   }
 }
 
-export const operationToolbar: ViewerModule = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal)
-    const root = createSurface(args.container, 'Operations')
-    renderToolbar(root, args.descriptor, args.operations, scope.signal)
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      renderToolbar(root, descriptor, args.operations, scope.signal)
-    })
-  },
-})
+export function createOperationToolbar(options: UiLocalizationOptions = {}): ViewerModule {
+  const localizer = withEnglishUiFallback(options.localizer, PANELS_FALLBACK_MESSAGES)
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal)
+      const root = createSurface(args.container, localizer.text('panels.operations'))
+      renderToolbar(root, args.descriptor, args.operations, scope.signal, localizer)
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        renderToolbar(root, descriptor, args.operations, scope.signal, localizer)
+      })
+    },
+  })
+}
+
+export const operationToolbar: ViewerModule = createOperationToolbar()

@@ -12,6 +12,7 @@ import {
   electronMapPreviewSelectionRequest,
   parseElectronMapPreviewSelectionRequest,
 } from '../src/map-preview-selection.js'
+import { createElectronLocalizer } from '../src/localization.js'
 
 const budget = {
   maxInputBytes: 64n * 1024n * 1024n,
@@ -69,9 +70,33 @@ describe('Electron map preview binding', () => {
     expect(result.state).toBe('selection-required')
     expect(result.candidates).toHaveLength(39)
     expect(result.candidates[0]).toMatchObject({ kind: 'map-preview-selection' })
+    expect(
+      result.opened.diagnostics.find(item => item.code === 'x3.app/map-preview-selection-required')
+        ?.message,
+    ).toContain('Map preview needs an explicit selection')
     expect(result.opened.session).toBe(ordinary.session)
     expect(dispose).not.toHaveBeenCalled()
     expect(resolveResourcePlan).not.toHaveBeenCalled()
+  })
+
+  it('uses the selected Electron locale for host-owned map diagnostics', async () => {
+    const result = await prepareElectronMapPreview({
+      services: {} as never,
+      opened: opened(async () => undefined),
+      grant: { id: 'electron-map-locale', classes: ['read-source'] },
+      budgets: budget,
+      localizer: createElectronLocalizer('ru-RU'),
+      coordinate: async () => ({
+        state: 'selection-required',
+        candidates: [{ candidateId: 'map:one', displayName: 'One' }],
+        diagnostics: [],
+      }),
+    })
+
+    expect(
+      result.opened.diagnostics.find(item => item.code === 'x3.app/map-preview-selection-required')
+        ?.message,
+    ).toContain('нужно явно выбрать вариант')
   })
 
   it('carries a chosen candidate into the second open and releases the first session first', async () => {
@@ -102,6 +127,8 @@ describe('Electron map preview binding', () => {
   it('wires the coordinator and continuation parser into Electron main', () => {
     const source = readFileSync(join(import.meta.dirname, '..', 'electron', 'main.cjs'), 'utf8')
     expect(source).toContain('prepareElectronMapPreview({')
+    expect(source).toContain('createElectronLocalizer(app.getLocale())')
+    expect(source).toContain('localizer,')
     expect(source).toContain('createNodeMapPreviewResourcePlanResolver({')
     expect(source).toContain('resourcePlanResolver: mapPreviewResourcePlanResolver')
     expect(source).toContain(

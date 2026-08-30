@@ -34,9 +34,10 @@ import {
   type SettingsStore,
 } from '@modkitx-x3/ui'
 import { applyDensity, applyTheme } from '@modkitx-x3/ui/tokens'
+import type { UiLocalizer } from '@modkitx-x3/ui/localization'
 import type { OperationSession } from '@modkitx-x3/sdk'
 
-import { PREVIEW_FALLBACK } from '../generated/viewer-catalog.js'
+import { createPreviewFallback } from '../generated/viewer-catalog.js'
 import { editOffer, editSelfTestLine } from './edit-operations.js'
 import { createEditPanel } from './edit-panel.js'
 import {
@@ -50,6 +51,7 @@ import { createInspectorDock, type InspectorSubject } from './inspector.js'
 import { createElectronReadOnlyStages, createElectronStages } from './stages.js'
 import { preferredStage, selfTestCodecLine, selfTestLine } from './view-policy.js'
 import { continueElectronMapPreviewSelection } from './map-preview-selection.js'
+import { createElectronLocalizer } from './localization.js'
 
 /**
  * Hand Monaco its language workers. Monaco reads this the first time an editor asks for one, which
@@ -156,7 +158,7 @@ const windowBridge = (
  * click on Close would start a window drag instead of firing. Labels are glyphs with real
  * `aria-label`s — a screen reader must not read "✕".
  */
-function createTitleBar(document: Document, title: string): HTMLElement {
+function createTitleBar(document: Document, title: string, localizer: UiLocalizer): HTMLElement {
   const bar = document.createElement('header')
   bar.dataset['mkPart'] = 'titlebar'
 
@@ -184,9 +186,9 @@ function createTitleBar(document: Document, title: string): HTMLElement {
     controls.append(node)
   }
 
-  button('—', 'Minimise', 'minimize')
-  button('▢', 'Maximise or restore', 'toggle-maximize')
-  button('✕', 'Close', 'close')
+  button('—', localizer.text('electron.window.minimize'), 'minimize')
+  button('▢', localizer.text('electron.window.maximize'), 'toggle-maximize')
+  button('✕', localizer.text('electron.window.close'), 'close')
 
   windowBridge?.onState(state => {
     bar.dataset['mkState'] = state.maximized ? 'active' : ''
@@ -294,6 +296,8 @@ async function boot(): Promise<void> {
   // Bound locally: the narrowing above does not reach the nested helpers declared later.
   const bridge = broker
   const extensions = extensionsBridge
+  const localizer = createElectronLocalizer(globalThis.navigator?.languages)
+  document.documentElement.lang = localizer.locale
   const appThemes = readAppThemeChoices(document)
   const { port: subjectPort, session: subjectSession } = await acquireSubjectPort(subjects)
   const subjectClient = await connectElectronSubjectClient({
@@ -314,7 +318,7 @@ async function boot(): Promise<void> {
   body.className = 'modkit-body'
   const footer = document.createElement('footer')
   footer.className = 'modkit-footer'
-  const titleBar = createTitleBar(document, 'Modkit MK3')
+  const titleBar = createTitleBar(document, localizer.text('app.title'), localizer)
   shell.append(titleBar, body, footer)
   requireRoot().replaceChildren(shell)
 
@@ -362,16 +366,17 @@ async function boot(): Promise<void> {
     return record.operations
   }
 
-  const stages = createElectronStages({ operationsFor })
+  const stages = createElectronStages({ operationsFor, localizer })
   const imageEditingStages = createElectronStages({
     operationsFor,
+    localizer,
     imageEditing: true,
     onImageCommitted: async descriptor => {
       const record = subjectsByDescriptor.get(descriptorKey(descriptor))
       return record === undefined ? false : reopenSubject(record.path)
     },
   })
-  const readOnlyStages = createElectronReadOnlyStages({ operationsFor })
+  const readOnlyStages = createElectronReadOnlyStages({ operationsFor, localizer })
 
   /**
    * Everything one opened subject needs before a stage list can even be chosen.
@@ -450,20 +455,22 @@ async function boot(): Promise<void> {
       const candidates = mapPreviewCandidates(result.snapshot.candidates)
       if (candidates.length > 0) {
         const choice = window.prompt(
-          `Choose a map for the World view by entering its id:\n\n${candidates
-            .map(
-              candidate =>
-                `${candidate.candidateId} — ${candidate.displayName}${
-                  candidate.sourcePath === undefined ? '' : ` (${candidate.sourcePath})`
-                }`,
-            )
-            .join('\n')}`,
+          localizer.text('electron.map.choose', {
+            choices: candidates
+              .map(
+                candidate =>
+                  `${candidate.candidateId} — ${candidate.displayName}${
+                    candidate.sourcePath === undefined ? '' : ` (${candidate.sourcePath})`
+                  }`,
+              )
+              .join('\n'),
+          }),
           '',
         )
         if (choice !== null && choice.trim().length > 0) {
           const selected = candidates.find(candidate => candidate.candidateId === choice.trim())
           if (selected === undefined) {
-            setFooter(entry.id, 'Map preview selection was not one of the offered ids.', true)
+            setFooter(entry.id, localizer.text('electron.status.mapSelectionInvalid'), true)
           } else {
             const firstSession = result.session
             result = await continueElectronMapPreviewSelection({
@@ -479,7 +486,7 @@ async function boot(): Promise<void> {
     if (result.state === 'unresolved') {
       const detail =
         result.snapshot.diagnostics[0]?.message ??
-        `${result.snapshot.reason}; using the explicit text/hex fallback`
+        localizer.text('electron.status.rawFallback', { reason: result.snapshot.reason })
       setFooter(entry.id, detail, result.snapshot.reason !== 'no-candidate')
       subjectsByPath.delete(entry.id)
       /*
@@ -501,9 +508,9 @@ async function boot(): Promise<void> {
     const boundary = snapshot.diagnostics.some(
       item => item.code === 'x3.host/full-process-authority',
     )
-      ? ' · full process authority'
+      ? ` · ${localizer.text('electron.status.fullAuthority')}`
       : snapshot.diagnostics.some(item => item.code === 'x3.host/worker-shared-process')
-        ? ' · worker'
+        ? ` · ${localizer.text('electron.status.workerAuthority')}`
         : ''
     setFooter(
       entry.id,
@@ -525,6 +532,7 @@ async function boot(): Promise<void> {
       const arm = await subjectClient.edit(snapshot.sessionId)
       ports = await createRendererEditorPorts({
         arm,
+        localizer,
         onStatus: status => setFooter(entry.id, status.message, status.failed),
         onDirty: dirty => editors.markDirty(entry.id, dirty),
       })
@@ -534,7 +542,7 @@ async function boot(): Promise<void> {
       // main says why in a snapshot diagnostic; the wire error is the generic refusal.
       const stated = snapshot.diagnostics.find(item => item.code === 'x3.app/subject-not-editable')
       const because = stated?.message ?? (error instanceof Error ? error.message : String(error))
-      readOnlyNotes.set(entry.id, `read-only: ${because}`)
+      readOnlyNotes.set(entry.id, localizer.text('electron.status.readOnly', { reason: because }))
       console.log(`[editing] ${entry.id} is read-only here: ${because}`)
     }
 
@@ -587,7 +595,7 @@ async function boot(): Promise<void> {
     createCodecPreview({
       supported: profile.supportedExtensions,
       stages: availableStages,
-      fallback: PREVIEW_FALLBACK,
+      fallback: createPreviewFallback(localizer),
       async openSession(entry) {
         return pendingOpens.get(entry.id)?.session
       },
@@ -706,6 +714,7 @@ async function boot(): Promise<void> {
   }
 
   const editPanel = createEditPanel({
+    localizer,
     portsFor: descriptor => {
       const record = recordFor(descriptor)
       return record === undefined ? undefined : portsByPath.get(record.path)
@@ -725,7 +734,7 @@ async function boot(): Promise<void> {
     },
   })
 
-  const inspector = createInspectorDock(document, { editPanel })
+  const inspector = createInspectorDock(document, { editPanel, localizer })
   const inspectorSubject = (path: string | undefined): InspectorSubject | undefined => {
     const record = path === undefined ? undefined : subjectsByPath.get(path)
     if (record === undefined) return undefined
@@ -746,6 +755,7 @@ async function boot(): Promise<void> {
 
   // ---------------------------------------------------------------- editors
   const editors: EditorArea = createEditorArea(document, {
+    localizer,
     preview,
     async read(entry, signal) {
       if (access === undefined) throw new Error('no folder is open')
@@ -773,6 +783,7 @@ async function boot(): Promise<void> {
 
   // ---------------------------------------------------------------- explorer
   const explorer = createExplorer(document, {
+    localizer,
     preview,
     // The desktop app uses the native menu; a second row of buttons would duplicate it.
     showToolbar: false,
@@ -834,6 +845,7 @@ async function boot(): Promise<void> {
   // ---------------------------------------------------------------- settings
   const store = settingsStore(settingsBridge)
   const extensionsSettings = createExtensionsSettingsGroups({
+    localizer,
     store,
     report: () => extensions.report(),
     browse: () => extensions.browse(),
@@ -849,6 +861,7 @@ async function boot(): Promise<void> {
   })
 
   const settingsUi = createSettingsUi(document, {
+    localizer,
     store,
     themes: appThemes,
     onAppearance(appearance: SettingsDocument['appearance']) {
@@ -894,8 +907,10 @@ async function boot(): Promise<void> {
     surface = next
     body.replaceChildren(next === 'settings' ? settingsUi.root : workspace)
     setFooter(
-      next === 'workspace' ? '' : 'Settings',
-      next === 'workspace' ? 'Ready' : `${store.location} · realm ${profile.renderer.realmId}`,
+      next === 'workspace' ? '' : localizer.text('electron.status.settings'),
+      next === 'workspace'
+        ? localizer.text('electron.status.ready')
+        : `${store.location} · realm ${profile.renderer.realmId}`,
     )
     if (next === 'settings') {
       if (groupId !== undefined) settingsUi.showGroup(groupId)
@@ -993,11 +1008,17 @@ async function boot(): Promise<void> {
         access = accessFor(granted.root)
         await explorer.setAccess(access)
         if (granted.entry !== undefined) await editors.open(granted.entry)
-        else setFooter(granted.root, 'folder')
+        else setFooter(granted.root, localizer.text('electron.status.folder'))
         await remember(entry)
       } catch (error) {
         // A recent path can be deleted or on an unplugged drive; say so instead of failing silently.
-        setFooter(entry.path, `unavailable: ${error instanceof Error ? error.message : ''}`, true)
+        setFooter(
+          entry.path,
+          localizer.text('electron.status.unavailable', {
+            reason: error instanceof Error ? error.message : '',
+          }),
+          true,
+        )
       }
     })()
   })
@@ -1029,7 +1050,7 @@ async function boot(): Promise<void> {
    */
   const menuBar = document.createElement('nav')
   menuBar.dataset['mkPart'] = 'titlebar.menu'
-  menuBar.setAttribute('aria-label', 'Application menu')
+  menuBar.setAttribute('aria-label', localizer.text('electron.menu.application'))
 
   let openMenu: HTMLElement | undefined
   const closeMenu = (): void => {
@@ -1089,10 +1110,16 @@ async function boot(): Promise<void> {
         }
         if ('recent' in item) {
           const list = recentCache
-          if (list.length === 0) entry('No recent items', () => undefined, false)
+          if (list.length === 0) {
+            entry(localizer.text('electron.menu.noRecent'), () => undefined, false)
+          }
           for (const recent of list) {
-            entry(`${recent.kind === 'file' ? 'File' : 'Folder'} — ${recent.path}`, () =>
-              commands['open-recent']?.(recent),
+            entry(
+              localizer.text(
+                recent.kind === 'file' ? 'electron.menu.recentFile' : 'electron.menu.recentFolder',
+                { path: recent.path },
+              ),
+              () => commands['open-recent']?.(recent),
             )
           }
           continue
@@ -1108,21 +1135,29 @@ async function boot(): Promise<void> {
     menuBar.append(trigger)
   }
 
-  addMenu('File', [
-    { label: 'Open Folder…', command: 'open-folder', hint: 'Ctrl+K' },
-    { label: 'Open File…', command: 'open-file', hint: 'Ctrl+O' },
+  addMenu(localizer.text('electron.menu.file'), [
+    { label: localizer.text('electron.menu.openFolder'), command: 'open-folder', hint: 'Ctrl+K' },
+    { label: localizer.text('electron.menu.openFile'), command: 'open-file', hint: 'Ctrl+O' },
     { separator: true },
     { recent: true },
     { separator: true },
-    { label: 'Clear Recent', command: 'clear-recent' },
+    { label: localizer.text('electron.menu.clearRecent'), command: 'clear-recent' },
     { separator: true },
-    { label: 'Set as Default App…', command: 'default-app' },
-    { label: 'Settings', command: 'settings', hint: 'Ctrl+,' },
-    { label: 'Extensions & Contributions…', command: 'extensions', hint: 'Ctrl+Shift+X' },
+    { label: localizer.text('electron.menu.defaultApp'), command: 'default-app' },
+    { label: localizer.text('electron.menu.settings'), command: 'settings', hint: 'Ctrl+,' },
+    {
+      label: localizer.text('electron.menu.extensions'),
+      command: 'extensions',
+      hint: 'Ctrl+Shift+X',
+    },
   ])
-  addMenu('View', [
-    { label: 'Split Editor', command: 'split', hint: 'Ctrl+Backslash' },
-    { label: 'Toggle Inspector', command: 'inspector' },
+  addMenu(localizer.text('electron.menu.view'), [
+    {
+      label: localizer.text('electron.menu.splitEditor'),
+      command: 'split',
+      hint: 'Ctrl+Backslash',
+    },
+    { label: localizer.text('electron.menu.toggleInspector'), command: 'inspector' },
   ])
 
   titleBar.prepend(menuBar)
@@ -1150,7 +1185,7 @@ async function boot(): Promise<void> {
   recentCache = (await store.read()).document.recent
   await menu?.setRecent(recentCache)
 
-  setFooter('', 'Ready')
+  setFooter('', localizer.text('electron.status.ready'))
 
   // Opened by double-click once this build is registered for the type.
   const initial = await host.initialFile()
@@ -2034,10 +2069,8 @@ async function imageEditingProbe(options: {
 
     const canvas = inFocusedTab('[data-mk-part="image.canvas"]')
     const swatch = inFocusedTab('[data-mk-part="imageedit.swatch"]')
-    const fill = inFocusedTab('[data-mk-part="imageedit.tool"][title="Flood fill"]')
-    const apply = inFocusedTab(
-      '[data-mk-part="imageedit.action"][title="Commit the edited pixels"]',
-    )
+    const fill = inFocusedTab('[data-mk-part="imageedit.tool"][data-tool-id="fill"]')
+    const apply = inFocusedTab('[data-mk-part="imageedit.action"][data-action-id="apply"]')
     if (
       !(canvas instanceof HTMLCanvasElement) ||
       !(swatch instanceof HTMLInputElement) ||
@@ -2433,6 +2466,9 @@ async function editOperationProbes(options: {
 boot().catch((error: unknown) => {
   const failure = document.createElement('p')
   failure.className = 'bad'
-  failure.textContent = `Boot failed: ${error instanceof Error ? error.message : String(error)}`
+  failure.textContent = createElectronLocalizer(globalThis.navigator?.languages).text(
+    'electron.error.boot',
+    { reason: error instanceof Error ? error.message : String(error) },
+  )
   requireRoot().replaceChildren(failure)
 })

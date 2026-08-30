@@ -28,6 +28,7 @@ import { basename, isAbsolute, join, relative, resolve } from 'node:path'
 import type { Diagnostic } from '@modkitx-x3/core'
 import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
 import type { MapPreviewResourcePlanResolver } from '@modkitx-x3/host/maps'
+import type { UiLocalizer } from '@modkitx-x3/ui/localization'
 import {
   codecFidelityEvidenceRecords,
   createEvidenceRegistry,
@@ -430,6 +431,8 @@ export interface VsCodeServeOptions {
   readonly budget?: ResourceBudget
   /** Trusted desktop resolver for opaque installation/dependency roots declared by map providers. */
   readonly mapPreviewResourcePlanResolver?: MapPreviewResourcePlanResolver
+  /** Localizes host-owned diagnostics before they cross into VS Code's Problems UI. */
+  readonly localizer?: UiLocalizer
   /** Confirm discarding unsaved work; a webview iframe cannot show a modal of its own. */
   readonly confirmClose?: (message: string, savable: boolean) => Promise<CloseAnswer>
   /** Native custom-document dirty state, emitted only for the provider's opened path. */
@@ -710,6 +713,7 @@ function serveVsCode(
             opened: result,
             grant: request.grant,
             budgets: request.budget,
+            ...(options.localizer === undefined ? {} : { localizer: options.localizer }),
             ...(mapSelection === undefined ? {} : { selectionId: mapSelection.selectionId }),
             ...(options.mapPreviewResourcePlanResolver === undefined
               ? {}

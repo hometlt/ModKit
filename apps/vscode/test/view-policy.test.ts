@@ -191,9 +191,10 @@ describe('VS Code view policy', () => {
       'vector',
       'video',
       'world',
+      'localization',
     ])
     expect(source).not.toMatch(/from '@modkitx-x3\/ui'/u)
-    expect(source).toContain('module: relationGraphViewer')
+    expect(source).toContain('module: createRelationGraphViewer({ localizer: context.localizer })')
     expect(source).not.toContain('@modkitx-x3/ui/monaco')
     expect(source).not.toContain('@modkitx-x3/ui/settings')
     expect(source).not.toContain('@modkitx-x3/ui/workbench')

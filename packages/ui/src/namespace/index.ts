@@ -8,6 +8,9 @@ import {
   unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
+import { type UiLocalizationOptions, type UiLocalizer } from '../localization/index.js'
+import { NAMESPACE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export function normalizeNamespacePath(value: string): string {
   if (value.includes('\\') || value.startsWith('/') || value.includes('\0')) {
@@ -42,78 +45,83 @@ export class NamespaceModel {
   }
 }
 
-export const namespaceViewer: ViewerModule = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal)
-    const root = createSurface(args.container, 'Namespace tree')
-    root.setAttribute('role', 'tree')
-    const lease = await unknownSourceLease(
-      args.sources,
-      args.slot,
-      'common.view/namespace-entry-source',
-    )
-    if (lease === undefined) throw new TypeError('namespace binding is unavailable')
-    scope.lease(lease)
-    const source = lease.value as NamespaceEntrySource
-    const model = new NamespaceModel(source)
-    const list = element(root, 'ul', { part: 'namespace.list' })
-    list.setAttribute('role', 'group')
+export function createNamespaceViewer(options: UiLocalizationOptions = {}): ViewerModule {
+  const localizer = withEnglishUiFallback(options.localizer, NAMESPACE_FALLBACK_MESSAGES)
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal)
+      const root = createSurface(args.container, localizer.text('viewer.namespace'))
+      root.setAttribute('role', 'tree')
+      const lease = await unknownSourceLease(
+        args.sources,
+        args.slot,
+        'common.view/namespace-entry-source',
+      )
+      if (lease === undefined) throw new TypeError('namespace binding is unavailable')
+      scope.lease(lease)
+      const source = lease.value as NamespaceEntrySource
+      const model = new NamespaceModel(source)
+      const list = element(root, 'ul', { part: 'namespace.list' })
+      list.setAttribute('role', 'group')
 
-    const renderPrefix = async (prefix: string, parent: HTMLElement) => {
-      const page = await model.list(prefix, undefined, scope.signal)
-      const seen = new Set<string>()
-      for (const entry of page.items) {
-        if (seen.has(entry.id)) throw new TypeError(`duplicate namespace entry id: ${entry.id}`)
-        seen.add(entry.id)
-        const item = element(parent, 'li', { part: 'namespace.item' })
-        item.setAttribute('role', 'treeitem')
-        item.dataset['entryId'] = entry.id
-        item.dataset['revision'] = entry.revision
-        const button = element(item, 'button', {
-          text: entry.name,
-          part: 'namespace.label',
-        }) as HTMLButtonElement
-        button.type = 'button'
-        const detail = describeEntry(entry)
-        if (detail !== '') {
-          setViewerText(element(item, 'span', { part: 'namespace.detail' }), detail)
-        }
-        const activate = async () => {
-          if (entry.kind === 'directory') {
-            let nested = item.querySelector(':scope > ul') as HTMLElement | null
-            if (nested === null) {
-              nested = element(item, 'ul', { part: 'namespace.children' })
-              nested.setAttribute('role', 'group')
-              await renderPrefix(entry.path, nested)
+      const renderPrefix = async (prefix: string, parent: HTMLElement) => {
+        const page = await model.list(prefix, undefined, scope.signal)
+        const seen = new Set<string>()
+        for (const entry of page.items) {
+          if (seen.has(entry.id)) throw new TypeError(`duplicate namespace entry id: ${entry.id}`)
+          seen.add(entry.id)
+          const item = element(parent, 'li', { part: 'namespace.item' })
+          item.setAttribute('role', 'treeitem')
+          item.dataset['entryId'] = entry.id
+          item.dataset['revision'] = entry.revision
+          const button = element(item, 'button', {
+            text: entry.name,
+            part: 'namespace.label',
+          }) as HTMLButtonElement
+          button.type = 'button'
+          const detail = describeEntry(entry, localizer)
+          if (detail !== '') {
+            setViewerText(element(item, 'span', { part: 'namespace.detail' }), detail)
+          }
+          const activate = async () => {
+            if (entry.kind === 'directory') {
+              let nested = item.querySelector(':scope > ul') as HTMLElement | null
+              if (nested === null) {
+                nested = element(item, 'ul', { part: 'namespace.children' })
+                nested.setAttribute('role', 'group')
+                await renderPrefix(entry.path, nested)
+              }
+              nested.hidden = !nested.hidden
+              return
             }
-            nested.hidden = !nested.hidden
-            return
+            const opened = await source.openEntry(entry.id, scope.signal)
+            try {
+              root.dispatchEvent(
+                new CustomEvent('modkit-open-source', {
+                  bubbles: true,
+                  detail: { source: opened.value, entryId: entry.id, revision: entry.revision },
+                }),
+              )
+            } finally {
+              await opened.release()
+            }
           }
-          const opened = await source.openEntry(entry.id, scope.signal)
-          try {
-            root.dispatchEvent(
-              new CustomEvent('modkit-open-source', {
-                bubbles: true,
-                detail: { source: opened.value, entryId: entry.id, revision: entry.revision },
-              }),
-            )
-          } finally {
-            await opened.release()
-          }
+          button.addEventListener('click', activate)
+          scope.cleanup(() => button.removeEventListener('click', activate))
+          setViewerText(button, entry.name)
         }
-        button.addEventListener('click', activate)
-        scope.cleanup(() => button.removeEventListener('click', activate))
-        setViewerText(button, entry.name)
       }
-    }
 
-    await renderPrefix('', list)
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset['revision'] = descriptor.revision
-    })
-  },
-})
+      await renderPrefix('', list)
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        root.dataset['revision'] = descriptor.revision
+      })
+    },
+  })
+}
+
+export const namespaceViewer: ViewerModule = createNamespaceViewer()
 
 export default namespaceViewer /** Bytes as a container listing shows them: exact under 1 KiB, one decimal above. */
 function formatEntryBytes(value: bigint): string {
@@ -136,7 +144,7 @@ function formatEntryBytes(value: bigint): string {
  * neither means much alone — "deflate" without a ratio says nothing about what was saved, and a
  * stored size without the method looks like a contradiction of the real size.
  */
-function describeEntry(entry: NamespaceEntry): string {
+function describeEntry(entry: NamespaceEntry, localizer: UiLocalizer): string {
   if (entry.kind === 'directory') return ''
   const parts: string[] = []
   if (entry.size !== undefined) parts.push(formatEntryBytes(entry.size))
@@ -147,7 +155,7 @@ function describeEntry(entry: NamespaceEntry): string {
         : `${entry.compression} ${formatEntryBytes(entry.storedSize)}`,
     )
   } else if (entry.storedSize !== undefined) {
-    parts.push(`stored ${formatEntryBytes(entry.storedSize)}`)
+    parts.push(localizer.text('viewer.storedSize', { size: formatEntryBytes(entry.storedSize) }))
   }
   if (entry.modifiedAt !== undefined) {
     // the container's stamp carries no zone, so it is read and shown as UTC rather than silently

@@ -28,6 +28,7 @@ import {
   type SubjectCard,
 } from '@modkitx-x3/ui/card'
 import { element, type PartName } from '@modkitx-x3/ui/viewer'
+import { contributionContractLabel, type UiLocalizer } from '@modkitx-x3/ui/localization'
 import type { BrowserSubtleCryptoLike } from '@modkitx-x3/host/browser'
 import {
   containerCoordinate,
@@ -43,6 +44,7 @@ import type { ManagedExtensionsController } from './managed-extensions-controlle
 import { catalogCoordinates, type WebExtensionCatalog } from './subjects.js'
 import type { WebExtensionSubjectCatalog, WebExtensionSubjectEntry } from './extension-subjects.js'
 import { webExtensionSubjectCardBundle } from './extension-subjects.js'
+import { createWebLocalizer } from './localization.js'
 
 // ---------------------------------------------------------------------------------------------
 // the one sentence
@@ -59,6 +61,67 @@ export const USER_EXTENSION_PROVENANCE_NOTE =
   'Bundled extensions carry digests this app recorded when it was built. Folders you added carry ' +
   'digests this page computed itself just now — a measurement of the bytes it read, not a claim ' +
   'about who wrote them.'
+
+function extensionCopy(localizer: UiLocalizer) {
+  return {
+    title: localizer.text('extensions.title'),
+    subjects: localizer.text('extensions.subjects'),
+    subjectsDescription: localizer.text('web.extensions.subjectsDescription'),
+    emptySubjects: localizer.text('extensions.emptySubjects'),
+    downloadable: localizer.text('extensions.downloadable'),
+    downloadableDescription: localizer.text('web.extensions.downloadableDescription'),
+    checkAvailable: localizer.text('extensions.checkCatalog'),
+    addFolder: localizer.text('extensions.addFolder'),
+    grantAccess: localizer.text('extensions.grantAccess'),
+    enable: localizer.text('common.enable'),
+    disable: localizer.text('common.disable'),
+    enableContribution: localizer.text('extensions.action.enableContribution'),
+    disableContribution: localizer.text('extensions.action.disableContribution'),
+    enableExtension: localizer.text('extensions.action.enableExtension'),
+    disableExtension: localizer.text('extensions.action.disableExtension'),
+    install: localizer.text('common.install'),
+    update: localizer.text('common.update'),
+    remove: localizer.text('common.remove'),
+    enabled: localizer.text('common.enabled'),
+    disabled: localizer.text('common.disabled'),
+    notInstalled: localizer.text('common.notInstalled'),
+    notInCatalog: localizer.text('web.extensions.notInCatalog'),
+    updateAvailable: localizer.text('web.extensions.updateAvailable'),
+    trusted: localizer.text('web.extensions.trusted'),
+    notTrusted: localizer.text('web.extensions.notTrusted'),
+    emptyFolders: localizer.text('extensions.emptyFolders'),
+    catalogEmpty: localizer.text('web.extensions.catalogEmpty'),
+    noDownloaded: localizer.text('web.extensions.noDownloaded'),
+    packageDisabled: localizer.text('web.extensions.packageDisabled'),
+    reloadPending: localizer.text('web.extensions.reloadPending'),
+    removedPending: localizer.text('web.extensions.removedPending'),
+    trustSentence: localizer.text('web.extensions.trustSentence'),
+    provenanceNote: localizer.text('web.extensions.provenanceNote'),
+    remembered: (location: string) => localizer.text('web.extensions.remembered', { location }),
+    added: (name: string, coordinate?: string) =>
+      localizer.text('web.extensions.added', {
+        name,
+        coordinate: coordinate === undefined ? '' : ` (${coordinate})`,
+      }),
+    actionFailed: (reason: string) => localizer.text('web.extensions.actionFailed', { reason }),
+    addFailed: (reason: string) => localizer.text('web.extensions.addFailed', { reason }),
+    removeFailed: (reason: string) => localizer.text('web.extensions.removeFailed', { reason }),
+    accessFailed: (reason: string) => localizer.text('web.extensions.accessFailed', { reason }),
+    accessGranted: (name: string) => localizer.text('web.extensions.accessGranted', { name }),
+    accessDenied: (name: string, state: string) =>
+      localizer.text('web.extensions.accessDenied', { name, state }),
+    catalogChecked: (location: string) =>
+      localizer.text('web.extensions.catalogChecked', { location }),
+    catalogLoaded: (location: string) =>
+      localizer.text('web.extensions.catalogLoaded', { location }),
+    catalogNotContacted: (location: string) =>
+      localizer.text('web.extensions.catalogNotContacted', { location }),
+    installedStatus: (name: string) => localizer.text('web.extensions.installedStatus', { name }),
+    updatedStatus: (name: string) => localizer.text('web.extensions.updatedStatus', { name }),
+    removedStatus: (name: string) => localizer.text('web.extensions.removedStatus', { name }),
+    cardFailed: (reason: string) => localizer.text('web.extensions.cardFailed', { reason }),
+  } as const
+}
 
 // ---------------------------------------------------------------------------------------------
 // view model
@@ -90,18 +153,21 @@ export interface ExtensionListInput {
   readonly extraFailures?: readonly UserExtensionRootFailure[]
 }
 
-const bundledProvenance = (root: string): string =>
-  `Bundled with this build, served from ${root}; its digests were recorded when the app was built.`
+const bundledProvenance = (root: string, localizer: UiLocalizer): string =>
+  localizer.text('web.extensions.bundledProvenance', { root })
 
-const userProvenance = (label: string): string =>
-  `Folder you granted («${label}»); its digests were computed by this page from the bytes it just read.`
+const userProvenance = (label: string, localizer: UiLocalizer): string =>
+  localizer.text('web.extensions.userProvenance', { label })
 
 /**
  * The rows the panel shows: bundled first (this host's own floor), then the folders the user
  * added, then every folder that did not load — with its code and message unedited, because a
  * user who picked the wrong folder needs the reason, not a shrug.
  */
-export function describeExtensionList(input: ExtensionListInput): readonly ExtensionRow[] {
+export function describeExtensionList(
+  input: ExtensionListInput,
+  localizer: UiLocalizer = createWebLocalizer('en'),
+): readonly ExtensionRow[] {
   const rows: ExtensionRow[] = []
   for (const entry of input.catalog.extensions) {
     const coordinate = containerCoordinate(entry.containers)
@@ -110,7 +176,7 @@ export function describeExtensionList(input: ExtensionListInput): readonly Exten
       state: 'loaded',
       label: entry.name,
       ...(coordinate === undefined ? {} : { coordinate }),
-      provenance: bundledProvenance(entry.artifactRoot),
+      provenance: bundledProvenance(entry.artifactRoot, localizer),
     })
   }
   const labels = new Map((input.stored ?? []).map(record => [record.id, record.label]))
@@ -124,7 +190,7 @@ export function describeExtensionList(input: ExtensionListInput): readonly Exten
       ...(rootId === undefined ? {} : { rootId }),
       label,
       ...(coordinate === undefined ? {} : { coordinate }),
-      provenance: userProvenance(label),
+      provenance: userProvenance(label, localizer),
     })
   }
   for (const failure of [...input.loaded.failures, ...(input.extraFailures ?? [])]) {
@@ -139,7 +205,7 @@ export function describeExtensionList(input: ExtensionListInput): readonly Exten
           : 'failed',
       rootId: failure.rootId,
       label,
-      provenance: userProvenance(label),
+      provenance: userProvenance(label, localizer),
       code: failure.code,
       detail: failure.message,
     })
@@ -151,6 +217,8 @@ export function describeExtensionList(input: ExtensionListInput): readonly Exten
 // mounting
 
 export interface ExtensionsUiOptions {
+  /** Host-selected locale; omitted hosts follow the browser's BCP-47 preference list. */
+  readonly localizer?: UiLocalizer
   readonly store: UserExtensionStore
   readonly catalog: WebExtensionCatalog
   /** Optional catalog-backed package manager. Its catalog is read only after a visible action. */
@@ -219,6 +287,8 @@ export function mountExtensionsUi(
   const root = documentRef.createElement('section')
   root.className = 'web-extensions-view'
   const newId = options.newId ?? defaultId
+  const localizer = options.localizer ?? createWebLocalizer(globalThis.navigator?.languages)
+  const copy = extensionCopy(localizer)
 
   let stored: readonly StoredUserExtension[] = []
   let loaded: LoadedUserExtensionRoots = {
@@ -301,10 +371,10 @@ export function mountExtensionsUi(
           ...(coordinate === undefined ? {} : { coordinate }),
           handle,
         })
-        status = `Added «${handle.name}»${coordinate === undefined ? '' : ` (${coordinate})`}.`
+        status = copy.added(handle.name, coordinate)
         await changed()
       } catch (error) {
-        status = `Could not add that folder: ${describe(error)}`
+        status = copy.addFailed(describe(error))
         render()
       }
     })()
@@ -314,10 +384,10 @@ export function mountExtensionsUi(
     void (async () => {
       try {
         await options.store.remove(rootId)
-        status = 'Removed. The extension is gone from the list; reload to rebuild the host.'
+        status = copy.removedPending
         await changed()
       } catch (error) {
-        status = `Could not remove it: ${describe(error)}`
+        status = copy.removeFailed(describe(error))
         render()
       }
     })()
@@ -336,11 +406,11 @@ export function mountExtensionsUi(
         const state = await requestUserExtensionPermission(record.handle)
         status =
           state === 'granted'
-            ? `Access to «${record.label}» granted again.`
-            : `Access to «${record.label}» was not granted (${state}).`
+            ? copy.accessGranted(record.label)
+            : copy.accessDenied(record.label, state)
         await changed()
       } catch (error) {
-        status = `Could not ask for access: ${describe(error)}`
+        status = copy.accessFailed(describe(error))
         render()
       }
     })()
@@ -352,7 +422,7 @@ export function mountExtensionsUi(
         await action()
         status = success
       } catch (error) {
-        status = `Extension action failed: ${describe(error)}`
+        status = copy.actionFailed(describe(error))
       }
       render()
     })()
@@ -362,9 +432,9 @@ export function mountExtensionsUi(
     void (async () => {
       try {
         await action()
-        status = `${success} Reload the page to rebuild the running host.`
+        status = `${success} ${copy.reloadPending}`
       } catch (error) {
-        status = `Extension action failed: ${describe(error)}`
+        status = copy.actionFailed(describe(error))
       }
       render()
     })()
@@ -380,12 +450,10 @@ export function mountExtensionsUi(
     const catalog = options.extensionSubjects?.()
     if (catalog === undefined) return undefined
 
-    element(root, 'h3', { text: 'Installed extension subjects' })
+    element(root, 'h3', { text: copy.subjects })
     element(root, 'p', {
       part: 'settings.description',
-      text:
-        'These cards come from validated extension and contribution JSON. Contract rows are ' +
-        'visual groups named by the exact declared contract id and major.',
+      text: copy.subjectsDescription,
     })
     const list = element(root, 'div', { part: 'settings.list' })
     for (const entry of catalog.entries) {
@@ -395,7 +463,7 @@ export function mountExtensionsUi(
       const summary = documentRef.createElement('summary')
       const state = documentRef.createElement('span')
       state.textContent = extension.enabled ? '●' : '○'
-      state.setAttribute('aria-label', extension.enabled ? 'enabled' : 'disabled')
+      state.setAttribute('aria-label', extension.enabled ? copy.enabled : copy.disabled)
       const label = documentRef.createElement('span')
       label.dataset['mkPart'] = 'settings.label'
       label.textContent = extension.displayName
@@ -405,17 +473,17 @@ export function mountExtensionsUi(
       summary.append(state, documentRef.createTextNode(' '), label)
       item.append(summary)
       if (options.setExtensionEnabled !== undefined) {
-        button(item, 'settings.add', entry.configuredEnabled ? 'Disable' : 'Enable', () =>
+        button(item, 'settings.add', entry.configuredEnabled ? copy.disable : copy.enable, () =>
           subjectAction(
             () => options.setExtensionEnabled?.(entry.id, !entry.configuredEnabled),
-            `${entry.configuredEnabled ? 'Disabled' : 'Enabled'} ${extension.displayName}.`,
+            `${entry.configuredEnabled ? copy.disabled : copy.enabled} ${extension.displayName}.`,
           ),
         )
       }
       if (entry.configuredEnabled && !extension.enabled) {
         element(item, 'span', {
           part: 'settings.description',
-          text: 'The extension is enabled directly, but its distribution package is disabled.',
+          text: copy.packageDisabled,
         })
       }
 
@@ -424,7 +492,10 @@ export function mountExtensionsUi(
         contract.open = true
         contract.dataset['mkPart'] = 'settings.row'
         const contractSummary = documentRef.createElement('summary')
-        contractSummary.textContent = group.key
+        contractSummary.textContent = contributionContractLabel(localizer, group.key)
+        contractSummary.title = localizer.text('extensions.tooltip.exactContract', {
+          contract: group.key,
+        })
         contract.append(contractSummary)
         for (const contribution of group.contributions) {
           const row = element(contract, 'div', { part: 'settings.extension' })
@@ -434,17 +505,17 @@ export function mountExtensionsUi(
           openContribution.textContent = `${contribution.effectiveEnabled ? '●' : '○'} ${contribution.displayName}`
           openContribution.setAttribute(
             'aria-label',
-            `${contribution.displayName}, ${contribution.effectiveEnabled ? 'enabled' : 'disabled'}`,
+            `${contribution.displayName}, ${contribution.effectiveEnabled ? copy.enabled : copy.disabled}`,
           )
           openContribution.addEventListener('click', () =>
             selectSubject(entry, contribution.subjectId),
           )
           row.append(openContribution)
           if (options.setContributionEnabled !== undefined) {
-            button(row, 'settings.add', contribution.enabled ? 'Disable' : 'Enable', () =>
+            button(row, 'settings.add', contribution.enabled ? copy.disable : copy.enable, () =>
               subjectAction(
                 () => options.setContributionEnabled?.(contribution.id, !contribution.enabled),
-                `${contribution.enabled ? 'Disabled' : 'Enabled'} ${contribution.displayName}.`,
+                `${contribution.enabled ? copy.disabled : copy.enabled} ${contribution.displayName}.`,
               ),
             )
           }
@@ -456,7 +527,7 @@ export function mountExtensionsUi(
     if (catalog.entries.length === 0) {
       element(list, 'p', {
         part: 'settings.description',
-        text: 'The running host has no inventoried extension subjects.',
+        text: copy.emptySubjects,
       })
     }
     const cardHost = documentRef.createElement('div')
@@ -481,7 +552,9 @@ export function mountExtensionsUi(
         )
         const active = documents.get(requestedSubjectId)
         if (active === undefined) throw new Error(`unknown extension subject ${requestedSubjectId}`)
-        const sections = await loadSubjectCardSections(subjectFactsSourceFromWire(active))
+        const sections = await loadSubjectCardSections(subjectFactsSourceFromWire(active), {
+          localizer,
+        })
         if (revision !== cardRevision || !host.isConnected) return
         const toolbar = documentRef.createElement('div')
         toolbar.dataset['mkPart'] = 'settings.adder'
@@ -493,11 +566,11 @@ export function mountExtensionsUi(
           button(
             toolbar,
             'settings.add',
-            subject.enabled ? 'Disable contribution' : 'Enable contribution',
+            subject.enabled ? copy.disableContribution : copy.enableContribution,
             () =>
               subjectAction(
                 () => options.setContributionEnabled?.(subject.id, !subject.enabled),
-                `${subject.enabled ? 'Disabled' : 'Enabled'} ${subject.displayName}.`,
+                `${subject.enabled ? copy.disabled : copy.enabled} ${subject.displayName}.`,
               ),
           )
         } else if (
@@ -507,11 +580,11 @@ export function mountExtensionsUi(
           button(
             toolbar,
             'settings.add',
-            entry.configuredEnabled ? 'Disable extension' : 'Enable extension',
+            entry.configuredEnabled ? copy.disableExtension : copy.enableExtension,
             () =>
               subjectAction(
                 () => options.setExtensionEnabled?.(entry.id, !entry.configuredEnabled),
-                `${entry.configuredEnabled ? 'Disabled' : 'Enabled'} ${subject.displayName}.`,
+                `${entry.configuredEnabled ? copy.disabled : copy.enabled} ${subject.displayName}.`,
               ),
           )
         }
@@ -523,6 +596,7 @@ export function mountExtensionsUi(
           }
         }
         activeCard = createSubjectCard(documentRef, {
+          localizer,
           label: active.subject.displayName,
           sections,
           onNavigate: navigate,
@@ -532,7 +606,7 @@ export function mountExtensionsUi(
         if (revision !== cardRevision || !host.isConnected) return
         element(host, 'p', {
           part: 'settings.status',
-          text: `Could not open extension card: ${describe(error)}`,
+          text: copy.cardFailed(describe(error)),
         })
       }
     })()
@@ -542,25 +616,20 @@ export function mountExtensionsUi(
     const controller = options.managedExtensions
     if (controller === undefined) return
     const model = controller.snapshot()
-    element(root, 'h3', { text: 'Downloadable extensions' })
+    element(root, 'h3', { text: copy.downloadable })
     element(root, 'p', {
       part: 'settings.description',
-      text:
-        'The catalog is checked only when you ask. Installing stores verified package bytes; ' +
-        'nothing on this page imports or runs them.',
+      text: copy.downloadableDescription,
     })
     const catalogActions = element(root, 'div', { part: 'settings.adder' })
-    button(catalogActions, 'settings.add', 'Check available extensions', () =>
-      managedAction(
-        () => controller.refreshCatalog(),
-        `Extension catalog checked at ${model.catalogLocation}.`,
-      ),
+    button(catalogActions, 'settings.add', copy.checkAvailable, () =>
+      managedAction(() => controller.refreshCatalog(), copy.catalogChecked(model.catalogLocation)),
     )
     element(catalogActions, 'span', {
       part: 'settings.description',
       text: model.catalogLoaded
-        ? `Catalog loaded from ${model.catalogLocation}.`
-        : `Catalog ${model.catalogLocation} has not been contacted in this session.`,
+        ? copy.catalogLoaded(model.catalogLocation)
+        : copy.catalogNotContacted(model.catalogLocation),
     })
 
     const list = element(root, 'div', { part: 'settings.list' })
@@ -569,10 +638,14 @@ export function mountExtensionsUi(
       const text = element(item, 'div', { part: 'settings.extension-text' })
       element(text, 'div', { part: 'settings.label', text: row.name })
       const states = [
-        row.available ? `Available ${row.availableVersion ?? ''}`.trim() : 'Not in catalog',
-        row.installed ? `Installed ${row.installedVersion ?? ''}`.trim() : 'Not installed',
-        row.installed ? (row.enabled ? 'Enabled' : 'Disabled') : undefined,
-        row.updateAvailable ? 'Update available' : undefined,
+        row.available
+          ? `${localizer.text('extensions.group.available')} ${row.availableVersion ?? ''}`.trim()
+          : copy.notInCatalog,
+        row.installed
+          ? `${localizer.text('extensions.group.installed')} ${row.installedVersion ?? ''}`.trim()
+          : copy.notInstalled,
+        row.installed ? (row.enabled ? copy.enabled : copy.disabled) : undefined,
+        row.updateAvailable ? copy.updateAvailable : undefined,
       ].filter((value): value is string => value !== undefined)
       element(text, 'div', { part: 'settings.description', text: states.join(' · ') })
       if (row.description !== undefined) {
@@ -580,15 +653,12 @@ export function mountExtensionsUi(
       }
       element(text, 'div', {
         part: 'settings.description',
-        text: `${row.trusted ? 'Trusted' : 'Not trusted'}: ${row.trustReason}`,
+        text: `${row.trusted ? copy.trusted : copy.notTrusted}: ${row.trustReason}`,
       })
 
       if (!row.installed && row.available) {
-        const install = button(item, 'settings.add', 'Install', () =>
-          managedAction(
-            () => controller.install(row.id),
-            `Installed ${row.name}. Reload the page to load the changed extension set.`,
-          ),
+        const install = button(item, 'settings.add', copy.install, () =>
+          managedAction(() => controller.install(row.id), copy.installedStatus(row.name)),
         )
         if (!row.trusted) {
           install.setAttribute('disabled', '')
@@ -596,11 +666,8 @@ export function mountExtensionsUi(
         }
       }
       if (row.installed && row.updateAvailable) {
-        const update = button(item, 'settings.add', 'Update', () =>
-          managedAction(
-            () => controller.update(row.id),
-            `Updated ${row.name}. Reload the page to load the changed extension set.`,
-          ),
+        const update = button(item, 'settings.add', copy.update, () =>
+          managedAction(() => controller.update(row.id), copy.updatedStatus(row.name)),
         )
         if (!row.trusted) {
           update.setAttribute('disabled', '')
@@ -608,26 +675,21 @@ export function mountExtensionsUi(
         }
       }
       if (row.installed) {
-        button(item, 'settings.add', row.enabled ? 'Disable' : 'Enable', () =>
+        button(item, 'settings.add', row.enabled ? copy.disable : copy.enable, () =>
           managedAction(
             () => controller.enable(row.id, !row.enabled),
-            `${row.enabled ? 'Disabled' : 'Enabled'} ${row.name}. Reload the page to load the changed extension set.`,
+            `${row.enabled ? copy.disabled : copy.enabled} ${row.name}. ${copy.reloadPending}`,
           ),
         )
-        button(item, 'settings.remove', 'Remove', () =>
-          managedAction(
-            () => controller.remove(row.id),
-            `Removed ${row.name}. Reload the page to load the changed extension set.`,
-          ),
+        button(item, 'settings.remove', copy.remove, () =>
+          managedAction(() => controller.remove(row.id), copy.removedStatus(row.name)),
         )
       }
     }
     if (model.rows.length === 0) {
       element(root, 'p', {
         part: 'settings.description',
-        text: model.catalogLoaded
-          ? 'The catalog contains no extensions.'
-          : 'No downloaded extensions are installed. Check the catalog to see what is available.',
+        text: model.catalogLoaded ? copy.catalogEmpty : copy.noDownloaded,
       })
     }
   }
@@ -637,25 +699,28 @@ export function mountExtensionsUi(
     activeCard?.destroy()
     activeCard = undefined
     root.replaceChildren()
-    element(root, 'h2', { text: 'Extensions' })
-    element(root, 'p', { part: 'settings.description', text: USER_EXTENSION_TRUST_SENTENCE })
-    element(root, 'p', { part: 'settings.description', text: USER_EXTENSION_PROVENANCE_NOTE })
+    element(root, 'h2', { text: copy.title })
+    element(root, 'p', { part: 'settings.description', text: copy.trustSentence })
+    element(root, 'p', { part: 'settings.description', text: copy.provenanceNote })
 
     const adder = element(root, 'div', { part: 'settings.adder' })
-    button(adder, 'settings.add', 'Add a folder…', add)
+    button(adder, 'settings.add', copy.addFolder, add)
     element(adder, 'span', {
       part: 'settings.description',
-      text: `Added folders are remembered in ${options.store.location}.`,
+      text: copy.remembered(options.store.location),
     })
 
     const subjectCardHost = renderExtensionSubjectTree()
 
-    const rows = describeExtensionList({
-      catalog: options.catalog,
-      loaded,
-      stored,
-      ...(options.conflicts === undefined ? {} : { extraFailures: options.conflicts() }),
-    })
+    const rows = describeExtensionList(
+      {
+        catalog: options.catalog,
+        loaded,
+        stored,
+        ...(options.conflicts === undefined ? {} : { extraFailures: options.conflicts() }),
+      },
+      localizer,
+    )
     const list = element(root, 'div', { part: 'settings.list' })
     for (const row of rows) {
       const item = element(list, 'div', { part: 'settings.extension' })
@@ -674,16 +739,16 @@ export function mountExtensionsUi(
       if (row.kind === 'user' && row.rootId !== undefined) {
         const rootId = row.rootId
         if (row.state === 'needs-permission') {
-          button(item, 'settings.add', 'Grant access', () => grant(rootId))
+          button(item, 'settings.add', copy.grantAccess, () => grant(rootId))
         }
-        button(item, 'settings.remove', 'Remove', () => remove(rootId))
+        button(item, 'settings.remove', copy.remove, () => remove(rootId))
       }
     }
 
     if (rows.every(row => row.kind === 'bundled')) {
       element(root, 'p', {
         part: 'settings.description',
-        text: 'No folders added yet.',
+        text: copy.emptyFolders,
       })
     }
     renderManagedExtensions()

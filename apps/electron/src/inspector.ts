@@ -23,6 +23,7 @@ import {
   setViewerText,
   transportViewer,
 } from '@modkitx-x3/ui'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
 import type { OperationSession, ViewerModule } from '@modkitx-x3/sdk'
 
 import { offersEditOperations } from './edit-operations.js'
@@ -48,6 +49,7 @@ export interface InspectorSubject {
 }
 
 export interface InspectorDockOptions {
+  readonly localizer?: UiLocalizer
   /** The app-composed Edit panel; the dock only decides when it may be shown. */
   readonly editPanel: ViewerModule
 }
@@ -66,6 +68,7 @@ export function createInspectorDock(
   document: Document,
   options: InspectorDockOptions,
 ): InspectorDock {
+  const text = (options.localizer ?? DEFAULT_UI_LOCALIZER).text
   /** App-owned binding: policy slot id → the independently authored viewer that fills it. */
   const PANEL_MODULES: Readonly<Record<string, ViewerModule>> = Object.freeze({
     // The shipped toolbar invokes with a `null` input, which no mutating operation accepts; the
@@ -80,7 +83,7 @@ export function createInspectorDock(
 
   const root = document.createElement('aside')
   setPart(root, 'workbench.panel')
-  root.setAttribute('aria-label', 'Inspector')
+  root.setAttribute('aria-label', text('electron.inspector.label'))
 
   const picker = element(root, 'div', { part: 'viewpicker' })
   const modes = element(picker, 'div', { part: 'viewpicker.modes', role: 'tablist' })
@@ -105,12 +108,15 @@ export function createInspectorDock(
     await unmount()
     const subject = current
     if (subject === undefined || active === undefined) {
-      setViewerText(status, subject === undefined ? 'No file focused.' : 'No panel selected.')
+      setViewerText(
+        status,
+        text(subject === undefined ? 'electron.inspector.noFile' : 'electron.inspector.noPanel'),
+      )
       return
     }
     const module = PANEL_MODULES[active]
     if (module === undefined) {
-      setViewerText(status, `no viewer is bound to panel ${active}`)
+      setViewerText(status, text('electron.inspector.noViewer', { panel: active }))
       return
     }
     const policy = PANEL_POLICY.find(item => item.id === active)
@@ -118,7 +124,7 @@ export function createInspectorDock(
     if (run !== generation) return
     if (NEEDS_OPERATIONS.has(active) && operations === undefined) {
       setState(root, ['degraded'])
-      setViewerText(status, `${subject.path}: this host exposes no operation session.`)
+      setViewerText(status, text('electron.inspector.noSession', { path: subject.path }))
       return
     }
     try {
@@ -146,7 +152,7 @@ export function createInspectorDock(
   function drawModes(): void {
     modes.replaceChildren()
     for (const id of offered) {
-      const label = PANEL_POLICY.find(item => item.id === id)?.label ?? id
+      const label = text(`electron.panel.${id}`)
       const button = element(modes, 'button', { part: 'viewpicker.mode', text: label })
       button.setAttribute('type', 'button')
       button.setAttribute('role', 'tab')

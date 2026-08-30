@@ -2,6 +2,9 @@
 
 import type { PermissionGrant } from '@modkitx-x3/sdk'
 import type { GameInstallation, GameLaunchResource } from '@modkitx-x3/sdk/games'
+import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+
+import { createVscodeLocalizer } from './localization.js'
 
 export const VSCODE_GAME_LAUNCH_COMMAND = 'modkit.game.launchActiveMap'
 export const VSCODE_GAME_LAUNCH_GRANT_TTL_MS = 60_000
@@ -29,6 +32,7 @@ export interface ExplicitGameLaunchPorts<Result> {
   readonly confirm: (request: ExplicitGameLaunchConfirmation) => Promise<boolean>
   readonly execute: (request: ExplicitGameLaunchRequest) => Promise<Result>
   readonly now?: () => number
+  readonly localizer?: UiLocalizer
 }
 
 export type ExplicitGameLaunchResult<Result> =
@@ -44,6 +48,7 @@ export async function runExplicitGameLaunch<Result>(
   ports: ExplicitGameLaunchPorts<Result>,
 ): Promise<ExplicitGameLaunchResult<Result>> {
   const resourcePath = input.resourcePath.trim()
+  const localizer = ports.localizer ?? createVscodeLocalizer('en')
   if (resourcePath.length === 0)
     throw new TypeError('game launch requires a non-empty resource path')
   if (
@@ -53,11 +58,12 @@ export async function runExplicitGameLaunch<Result>(
     throw new TypeError('game launch requires a named confirmed installation')
   }
   const confirmed = await ports.confirm({
-    title: `Launch ${input.installation.displayName}?`,
-    detail:
-      `This starts an external game process and opens only this map:\n${resourcePath}\n\n` +
-      `Installation:\n${input.installation.installPath}`,
-    action: 'Launch game',
+    title: localizer.text('vscode.game.launchTitle', { game: input.installation.displayName }),
+    detail: localizer.text('vscode.game.launchDetail', {
+      map: resourcePath,
+      installation: input.installation.installPath,
+    }),
+    action: localizer.text('vscode.game.launchAction'),
   })
   if (!confirmed) return Object.freeze({ state: 'cancelled' as const })
 

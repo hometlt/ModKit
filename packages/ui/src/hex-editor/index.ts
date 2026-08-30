@@ -21,6 +21,9 @@ import {
 } from '../viewer/index.js'
 import { HexWindowModel, HEX_WINDOW_BYTES } from '../hex/index.js'
 import { handleEditorSaveRequest } from '../editor/commands.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { HEX_EDITOR_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 /**
  * The binding this editor reads.
@@ -92,303 +95,333 @@ export function coalesceHexEdits(
   return runs.map(run => ({ offset: run.offset, bytes: new Uint8Array(run.values) }))
 }
 
-export const hexEditor: EditorModule = {
-  abiVersion: 1,
-  async mount(args): Promise<EditorMount> {
-    const scope = new ViewerMountScope(args.signal)
-    const root = createSurface(args.container, 'Hex editor')
-    root.dataset['modkitEditor'] = 'hex'
-    const lease = (await args.sources.get(BYTE_RANGE_SOURCE)) as
-      { value: ByteRangeSource; release(): Promise<void> } | undefined
-    if (lease === undefined) throw new TypeError('hex editor binding is unavailable')
-    scope.lease(lease)
+export interface HexEditorOptions {
+  readonly localizer?: UiLocalizer
+}
 
-    const source = lease.value as ByteRangeSource
-    const model = new HexWindowModel(source)
+export function createHexEditor(options: HexEditorOptions = {}): EditorModule {
+  const localizer = withEnglishUiFallback(options.localizer, HEX_EDITOR_FALLBACK_MESSAGES)
+  return {
+    abiVersion: 1,
+    async mount(args): Promise<EditorMount> {
+      const scope = new ViewerMountScope(args.signal)
+      const root = createSurface(args.container, localizer.text('editor.hex'))
+      root.dataset['modkitEditor'] = 'hex'
+      const lease = (await args.sources.get(BYTE_RANGE_SOURCE)) as
+        { value: ByteRangeSource; release(): Promise<void> } | undefined
+      if (lease === undefined) throw new TypeError('hex editor binding is unavailable')
+      scope.lease(lease)
 
-    const toolbar = element(root, 'div', { part: 'hex.toolbar', role: 'toolbar' })
-    toolbar.setAttribute('aria-label', 'Hex editing')
-    const offsetInput = element(toolbar, 'input', { part: 'hex.offset-input' }) as HTMLInputElement
-    offsetInput.type = 'text'
-    offsetInput.value = '0'
-    offsetInput.setAttribute('aria-label', 'Byte offset')
-    const go = element(toolbar, 'button', { text: 'Go', part: 'hex.go' }) as HTMLButtonElement
-    go.type = 'button'
-    const save = element(toolbar, 'button', {
-      text: 'Save',
-      part: 'operations.button',
-    }) as HTMLButtonElement
-    save.type = 'button'
-    save.dataset['modkitAction'] = 'save'
-    save.disabled = true
-    const revert = element(toolbar, 'button', {
-      text: 'Revert',
-      part: 'operations.button',
-    }) as HTMLButtonElement
-    revert.type = 'button'
-    revert.disabled = true
-    const status = element(toolbar, 'output', { text: 'Ready', part: 'viewer.status' })
+      const source = lease.value as ByteRangeSource
+      const model = new HexWindowModel(source)
 
-    const grid = element(root, 'div', { part: 'hex.content' })
-    grid.setAttribute('role', 'grid')
+      const toolbar = element(root, 'div', { part: 'hex.toolbar', role: 'toolbar' })
+      toolbar.setAttribute('aria-label', localizer.text('viewer.hexEditing'))
+      const offsetInput = element(toolbar, 'input', {
+        part: 'hex.offset-input',
+      }) as HTMLInputElement
+      offsetInput.type = 'text'
+      offsetInput.value = '0'
+      offsetInput.setAttribute('aria-label', localizer.text('viewer.byteOffset'))
+      const go = element(toolbar, 'button', {
+        text: localizer.text('viewer.go'),
+        part: 'hex.go',
+      }) as HTMLButtonElement
+      go.type = 'button'
+      const save = element(toolbar, 'button', {
+        text: localizer.text('viewer.save'),
+        part: 'operations.button',
+      }) as HTMLButtonElement
+      save.type = 'button'
+      save.dataset['modkitAction'] = 'save'
+      save.disabled = true
+      const revert = element(toolbar, 'button', {
+        text: localizer.text('viewer.revert'),
+        part: 'operations.button',
+      }) as HTMLButtonElement
+      revert.type = 'button'
+      revert.disabled = true
+      const status = element(toolbar, 'output', {
+        text: localizer.text('viewer.ready'),
+        part: 'viewer.status',
+      })
 
-    let windowOffset = 0n
-    let original: Uint8Array<ArrayBufferLike> = new Uint8Array()
-    const pending = new Map<string, HexEdit>()
-    /** Live cell elements per offset, so a hex edit can repaint its ASCII twin and vice versa. */
-    const hexCells = new Map<string, HTMLElement>()
-    const asciiCells = new Map<string, HTMLElement>()
+      const grid = element(root, 'div', { part: 'hex.content' })
+      grid.setAttribute('role', 'grid')
 
-    const printable = (value: number): string =>
-      value >= 0x20 && value <= 0x7e ? String.fromCharCode(value) : '.'
+      let windowOffset = 0n
+      let original: Uint8Array<ArrayBufferLike> = new Uint8Array()
+      const pending = new Map<string, HexEdit>()
+      /** Live cell elements per offset, so a hex edit can repaint its ASCII twin and vice versa. */
+      const hexCells = new Map<string, HTMLElement>()
+      const asciiCells = new Map<string, HTMLElement>()
 
-    /**
-     * Announce that the buffer differs from disk.
-     *
-     * The host learns about unsaved work through `propose`, which is what marks the tab. Without
-     * this a byte could sit edited in the grid while the tab still looked saved.
-     */
-    const announce = (): void => {
-      if (pending.size === 0) return
-      const runs = coalesceHexEdits([...pending.values()])
-      void args.edit.propose(hexChangeSet(runs, args.edit.targets))
-    }
+      const printable = (value: number): string =>
+        value >= 0x20 && value <= 0x7e ? String.fromCharCode(value) : '.'
 
-    /** Apply a new value for one offset and keep both columns in step. */
-    const setByte = (absolute: bigint, base: number, next: number): void => {
-      const key = absolute.toString(10)
-      if (next === base) pending.delete(key)
-      else pending.set(key, { offset: absolute, before: base, after: next })
-
-      const hex = hexCells.get(key)
-      if (hex !== undefined) {
-        hex.textContent = next.toString(16).padStart(2, '0')
-        setState(hex, next === base ? [] : ['mutating'])
+      /**
+       * Announce that the buffer differs from disk.
+       *
+       * The host learns about unsaved work through `propose`, which is what marks the tab. Without
+       * this a byte could sit edited in the grid while the tab still looked saved.
+       */
+      const announce = (): void => {
+        if (pending.size === 0) return
+        const runs = coalesceHexEdits([...pending.values()])
+        void args.edit.propose(hexChangeSet(runs, args.edit.targets))
       }
-      const ascii = asciiCells.get(key)
-      if (ascii !== undefined) {
-        ascii.textContent = printable(next)
-        setState(ascii, next === base ? [] : ['mutating'])
+
+      /** Apply a new value for one offset and keep both columns in step. */
+      const setByte = (absolute: bigint, base: number, next: number): void => {
+        const key = absolute.toString(10)
+        if (next === base) pending.delete(key)
+        else pending.set(key, { offset: absolute, before: base, after: next })
+
+        const hex = hexCells.get(key)
+        if (hex !== undefined) {
+          hex.textContent = next.toString(16).padStart(2, '0')
+          setState(hex, next === base ? [] : ['mutating'])
+        }
+        const ascii = asciiCells.get(key)
+        if (ascii !== undefined) {
+          ascii.textContent = printable(next)
+          setState(ascii, next === base ? [] : ['mutating'])
+        }
+        syncDirty()
+        announce()
       }
-      syncDirty()
-      announce()
-    }
 
-    const syncDirty = (): void => {
-      const dirty = pending.size > 0
-      save.disabled = !dirty
-      revert.disabled = !dirty
-      setState(root, dirty ? ['mutating'] : [])
-      setViewerText(status, dirty ? `${pending.size} byte(s) changed` : 'Ready')
-    }
+      const syncDirty = (): void => {
+        const dirty = pending.size > 0
+        save.disabled = !dirty
+        revert.disabled = !dirty
+        setState(root, dirty ? ['mutating'] : [])
+        setViewerText(
+          status,
+          dirty
+            ? localizer.text('editor.bytesChanged', { count: pending.size })
+            : localizer.text('viewer.ready'),
+        )
+      }
 
-    const renderWindow = async (): Promise<void> => {
-      const raw = offsetInput.value.trim()
-      const parsed = /^(?:0x)?[0-9a-f]+$/iu.test(raw) ? BigInt(raw) : 0n
-      const view = await model.read(parsed, scope.signal)
-      windowOffset = view.offset
-      original = view.bytes
-      pending.clear()
-      drawWindow()
-    }
+      const renderWindow = async (): Promise<void> => {
+        const raw = offsetInput.value.trim()
+        const parsed = /^(?:0x)?[0-9a-f]+$/iu.test(raw) ? BigInt(raw) : 0n
+        const view = await model.read(parsed, scope.signal)
+        windowOffset = view.offset
+        original = view.bytes
+        pending.clear()
+        drawWindow()
+      }
 
-    /**
-     * Draw the grid from the bytes this editor already holds.
-     *
-     * Separate from `renderWindow` because after a commit there is nothing left to read: the source
-     * was opened at a revision the commit has just superseded, so asking it again refuses with
-     * "changed on disk while it was open" — and since the Save handler discards its promise, that
-     * refusal surfaced as an unhandled rejection while the grid kept showing pre-save bytes. The
-     * editor knows exactly what it wrote, so it draws that instead of asking.
-     */
-    const drawWindow = (): void => {
-      grid.replaceChildren()
+      /**
+       * Draw the grid from the bytes this editor already holds.
+       *
+       * Separate from `renderWindow` because after a commit there is nothing left to read: the source
+       * was opened at a revision the commit has just superseded, so asking it again refuses with
+       * "changed on disk while it was open" — and since the Save handler discards its promise, that
+       * refusal surfaced as an unhandled rejection while the grid kept showing pre-save bytes. The
+       * editor knows exactly what it wrote, so it draws that instead of asking.
+       */
+      const drawWindow = (): void => {
+        grid.replaceChildren()
 
-      for (let row = 0; row < original.length; row += 16) {
-        const line = element(grid, 'div', { part: 'hex.row' })
-        line.setAttribute('role', 'row')
-        const address = (windowOffset + BigInt(row)).toString(16).padStart(16, '0')
-        element(line, 'span', { text: address, part: 'hex.gutter' })
-        const chunk = original.slice(row, row + 16)
-        for (const [column, value] of [...chunk].entries()) {
-          const absolute = windowOffset + BigInt(row + column)
-          const cell = element(line, 'span', { part: 'hex.cell' }) as HTMLSpanElement
-          cell.setAttribute('role', 'gridcell')
-          cell.contentEditable = 'true'
-          cell.spellcheck = false
-          cell.dataset['offset'] = absolute.toString(10)
-          cell.textContent = value.toString(16).padStart(2, '0')
-          cell.setAttribute('aria-label', `byte at ${absolute}`)
+        for (let row = 0; row < original.length; row += 16) {
+          const line = element(grid, 'div', { part: 'hex.row' })
+          line.setAttribute('role', 'row')
+          const address = (windowOffset + BigInt(row)).toString(16).padStart(16, '0')
+          element(line, 'span', { text: address, part: 'hex.gutter' })
+          const chunk = original.slice(row, row + 16)
+          for (const [column, value] of [...chunk].entries()) {
+            const absolute = windowOffset + BigInt(row + column)
+            const cell = element(line, 'span', { part: 'hex.cell' }) as HTMLSpanElement
+            cell.setAttribute('role', 'gridcell')
+            cell.contentEditable = 'true'
+            cell.spellcheck = false
+            cell.dataset['offset'] = absolute.toString(10)
+            cell.textContent = value.toString(16).padStart(2, '0')
+            cell.setAttribute(
+              'aria-label',
+              localizer.text('viewer.byteAt', { offset: absolute.toString() }),
+            )
 
-          hexCells.set(absolute.toString(10), cell)
+            hexCells.set(absolute.toString(10), cell)
 
+            /*
+             * Reject non-hex keys at the source rather than cleaning up afterwards: a cell that
+             * briefly shows `zz` and then snaps back is worse than one that never accepted `z`.
+             * Navigation, deletion and shortcuts stay allowed.
+             */
+            cell.addEventListener('beforeinput', event => {
+              const data = (event as InputEvent).data
+              if (data === null) return
+              const current = (cell.textContent ?? '').replace(/\s/gu, '')
+              if (!/^[0-9a-f]$/iu.test(data) || current.length >= 2) event.preventDefault()
+            })
+
+            cell.addEventListener('blur', () => {
+              const text = (cell.textContent ?? '').trim()
+              if (!HEX_BYTE.test(text)) {
+                // Restore what the source holds rather than writing a guess.
+                const key = absolute.toString(10)
+                const known = pending.get(key)?.after ?? value
+                setByte(absolute, value, known)
+                return
+              }
+              setByte(absolute, value, Number.parseInt(text, 16))
+            })
+          }
           /*
-           * Reject non-hex keys at the source rather than cleaning up afterwards: a cell that
-           * briefly shows `zz` and then snaps back is worse than one that never accepted `z`.
-           * Navigation, deletion and shortcuts stay allowed.
+           * The ASCII column is editable too, and edits flow both ways: typing a character rewrites
+           * its byte, and editing the byte repaints the character. One value, two views of it.
            */
-          cell.addEventListener('beforeinput', event => {
-            const data = (event as InputEvent).data
-            if (data === null) return
-            const current = (cell.textContent ?? '').replace(/\s/gu, '')
-            if (!/^[0-9a-f]$/iu.test(data) || current.length >= 2) event.preventDefault()
-          })
+          const ascii = element(line, 'span', { part: 'hex.ascii' })
+          for (const [column, value] of [...chunk].entries()) {
+            const absolute = windowOffset + BigInt(row + column)
+            const glyph = element(ascii, 'span') as HTMLSpanElement
+            glyph.contentEditable = 'true'
+            glyph.spellcheck = false
+            glyph.textContent = printable(value)
+            glyph.setAttribute(
+              'aria-label',
+              localizer.text('viewer.characterAt', { offset: absolute.toString() }),
+            )
+            asciiCells.set(absolute.toString(10), glyph)
 
-          cell.addEventListener('blur', () => {
-            const text = (cell.textContent ?? '').trim()
-            if (!HEX_BYTE.test(text)) {
-              // Restore what the source holds rather than writing a guess.
-              const key = absolute.toString(10)
-              const known = pending.get(key)?.after ?? value
-              setByte(absolute, value, known)
-              return
-            }
-            setByte(absolute, value, Number.parseInt(text, 16))
-          })
+            // One printable character per cell; anything else would not map to a single byte.
+            glyph.addEventListener('beforeinput', event => {
+              const data = (event as InputEvent).data
+              if (data === null) return
+              if (data.length !== 1 || data.charCodeAt(0) < 0x20 || data.charCodeAt(0) > 0x7e) {
+                event.preventDefault()
+              }
+            })
+
+            glyph.addEventListener('blur', () => {
+              const text = glyph.textContent ?? ''
+              const code = text.length === 1 ? text.charCodeAt(0) : Number.NaN
+              if (Number.isNaN(code) || code < 0x20 || code > 0x7e) {
+                const known = pending.get(absolute.toString(10))?.after ?? value
+                setByte(absolute, value, known)
+                return
+              }
+              setByte(absolute, value, code)
+            })
+          }
+        }
+        syncDirty()
+      }
+
+      const commit = async (): Promise<boolean> => {
+        if (pending.size === 0) return true
+        const runs = coalesceHexEdits([...pending.values()])
+        const change = hexChangeSet(runs, args.edit.targets)
+        setViewerText(status, localizer.text('editor.validating'))
+        // `ValidationResult` is `{ valid, diagnostics }` (13D); this used to look for a `state` of
+        // `invalid`, which no writer produces — so a refused change went on to be planned and
+        // prepared as if the writer had accepted it
+        const validation = await args.edit.propose(change)
+        if (!validation.valid) {
+          setState(root, ['error'])
+          const first = validation.diagnostics[0]
+          setViewerText(
+            status,
+            first === undefined
+              ? localizer.text('editor.rejectedValidation')
+              : localizer.text('editor.rejectedReason', { reason: first.message }),
+          )
+          return false
+        }
+        const plan = await args.edit.plan(change)
+        const authorization = await args.authorization.request(plan)
+        if (authorization === undefined) {
+          setViewerText(status, localizer.text('editor.notAuthorized'))
+          return false
+        }
+        const prepared = await args.commit.prepare(plan, { grant: authorization.grant })
+        // `ready` is what a CommitCoordinator answers with (13D `PrepareCommitResult`); this used to
+        // look for `prepared`, a state no coordinator produces, so every save reported a failure
+        // after the plan had already been made
+        if (prepared.state !== 'ready') {
+          setState(root, ['error'])
+          setViewerText(
+            status,
+            prepared.state === 'conflict'
+              ? localizer.text('editor.conflictChanged')
+              : localizer.text('editor.prepareRejected', { reason: prepared.reason ?? '' }),
+          )
+          return false
+        }
+        const receipt = await args.commit.commit(prepared.prepared, {
+          grant: authorization.grant,
+        })
+        if (receipt.state !== 'committed') {
+          setState(root, ['error'])
+          setViewerText(
+            status,
+            receipt.state === 'not-applied'
+              ? localizer.text('editor.saveRejectedReason', { reason: receipt.reason ?? '' })
+              : localizer.text('editor.saveState', { state: receipt.state }),
+          )
+          return false
         }
         /*
-         * The ASCII column is editable too, and edits flow both ways: typing a character rewrites
-         * its byte, and editing the byte repaints the character. One value, two views of it.
+         * Fold what was committed into the bytes on screen. Re-reading is not an option (the source
+         * is pinned to the revision this commit superseded), and leaving the grid on the old bytes
+         * would show the file as it no longer is.
          */
-        const ascii = element(line, 'span', { part: 'hex.ascii' })
-        for (const [column, value] of [...chunk].entries()) {
-          const absolute = windowOffset + BigInt(row + column)
-          const glyph = element(ascii, 'span') as HTMLSpanElement
-          glyph.contentEditable = 'true'
-          glyph.spellcheck = false
-          glyph.textContent = printable(value)
-          glyph.setAttribute('aria-label', `character at ${absolute}`)
-          asciiCells.set(absolute.toString(10), glyph)
-
-          // One printable character per cell; anything else would not map to a single byte.
-          glyph.addEventListener('beforeinput', event => {
-            const data = (event as InputEvent).data
-            if (data === null) return
-            if (data.length !== 1 || data.charCodeAt(0) < 0x20 || data.charCodeAt(0) > 0x7e) {
-              event.preventDefault()
-            }
-          })
-
-          glyph.addEventListener('blur', () => {
-            const text = glyph.textContent ?? ''
-            const code = text.length === 1 ? text.charCodeAt(0) : Number.NaN
-            if (Number.isNaN(code) || code < 0x20 || code > 0x7e) {
-              const known = pending.get(absolute.toString(10))?.after ?? value
-              setByte(absolute, value, known)
-              return
-            }
-            setByte(absolute, value, code)
-          })
+        const updated = new Uint8Array(original)
+        for (const run of runs) {
+          const start = Number(run.offset - windowOffset)
+          if (start >= 0 && start + run.bytes.length <= updated.length)
+            updated.set(run.bytes, start)
         }
+        original = updated
+        pending.clear()
+        drawWindow()
+        setState(root, [])
+        /*
+         * The session still holds the revision it opened with, so a second save from this tab is a
+         * conflict by construction. Saying so is better than letting the next Save fail with a word
+         * the user has no way to connect to this one.
+         */
+        setViewerText(status, localizer.text('editor.committedRanges', { count: runs.length }))
+        return true
       }
-      syncDirty()
-    }
 
-    const commit = async (): Promise<boolean> => {
-      if (pending.size === 0) return true
-      const runs = coalesceHexEdits([...pending.values()])
-      const change = hexChangeSet(runs, args.edit.targets)
-      setViewerText(status, 'Validating…')
-      // `ValidationResult` is `{ valid, diagnostics }` (13D); this used to look for a `state` of
-      // `invalid`, which no writer produces — so a refused change went on to be planned and
-      // prepared as if the writer had accepted it
-      const validation = await args.edit.propose(change)
-      if (!validation.valid) {
-        setState(root, ['error'])
-        const first = validation.diagnostics[0]
-        setViewerText(
-          status,
-          first === undefined ? 'Rejected by validation' : `Rejected: ${first.message}`,
-        )
-        return false
-      }
-      const plan = await args.edit.plan(change)
-      const authorization = await args.authorization.request(plan)
-      if (authorization === undefined) {
-        setViewerText(status, 'Not authorised')
-        return false
-      }
-      const prepared = await args.commit.prepare(plan, { grant: authorization.grant })
-      // `ready` is what a CommitCoordinator answers with (13D `PrepareCommitResult`); this used to
-      // look for `prepared`, a state no coordinator produces, so every save reported a failure
-      // after the plan had already been made
-      if (prepared.state !== 'ready') {
-        setState(root, ['error'])
-        setViewerText(
-          status,
-          prepared.state === 'conflict'
-            ? 'Conflict: the source changed'
-            : `Prepare rejected: ${prepared.reason}`,
-        )
-        return false
-      }
-      const receipt = await args.commit.commit(prepared.prepared, {
-        grant: authorization.grant,
+      go.addEventListener('click', () => void renderWindow())
+      revert.addEventListener('click', () => void renderWindow())
+      save.addEventListener('click', () => {
+        // no bare `void`: a rejection here is the one thing the user most needs to be told about
+        commit().catch((error: unknown) => {
+          setState(root, ['error'])
+          setViewerText(
+            status,
+            localizer.text('editor.saveFailed', {
+              reason: error instanceof Error ? error.message : String(error),
+            }),
+          )
+        })
       })
-      if (receipt.state !== 'committed') {
-        setState(root, ['error'])
-        setViewerText(
-          status,
-          receipt.state === 'not-applied'
-            ? `Save rejected: ${receipt.reason}`
-            : `Save ${receipt.state}`,
-        )
-        return false
-      }
-      /*
-       * Fold what was committed into the bytes on screen. Re-reading is not an option (the source
-       * is pinned to the revision this commit superseded), and leaving the grid on the old bytes
-       * would show the file as it no longer is.
-       */
-      const updated = new Uint8Array(original)
-      for (const run of runs) {
-        const start = Number(run.offset - windowOffset)
-        if (start >= 0 && start + run.bytes.length <= updated.length) updated.set(run.bytes, start)
-      }
-      original = updated
-      pending.clear()
-      drawWindow()
-      setState(root, [])
-      /*
-       * The session still holds the revision it opened with, so a second save from this tab is a
-       * conflict by construction. Saying so is better than letting the next Save fail with a word
-       * the user has no way to connect to this one.
-       */
-      setViewerText(
-        status,
-        `Committed ${runs.length} range(s) — reopen the file before editing it again`,
-      )
-      return true
-    }
+      const removeSaveRequest = handleEditorSaveRequest(root, commit)
 
-    go.addEventListener('click', () => void renderWindow())
-    revert.addEventListener('click', () => void renderWindow())
-    save.addEventListener('click', () => {
-      // no bare `void`: a rejection here is the one thing the user most needs to be told about
-      commit().catch((error: unknown) => {
-        setState(root, ['error'])
-        setViewerText(
-          status,
-          `Save failed: ${error instanceof Error ? error.message : String(error)}`,
-        )
-      })
-    })
-    const removeSaveRequest = handleEditorSaveRequest(root, commit)
+      await renderWindow()
 
-    await renderWindow()
-
-    return {
-      async update(next) {
-        root.dataset['revision'] = String(next.revision)
-        await renderWindow()
-      },
-      async unmount() {
-        removeSaveRequest()
-        await scope.close()
-        root.remove()
-      },
-    } as EditorMount
-  },
+      return {
+        async update(next) {
+          root.dataset['revision'] = String(next.revision)
+          await renderWindow()
+        },
+        async unmount() {
+          removeSaveRequest()
+          await scope.close()
+          root.remove()
+        },
+      } as EditorMount
+    },
+  }
 }
+
+export const hexEditor: EditorModule = createHexEditor()
 
 export { HEX_WINDOW_BYTES }

@@ -16,6 +16,9 @@ import {
   unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { CALCULATIONS_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export interface SubjectCalculationsLoadOptions {
   readonly maximum?: number
@@ -74,8 +77,8 @@ export async function loadSubjectCalculations(
   return Object.freeze({ summary, calculations: page.items, capped: page.capped })
 }
 
-function displayValue(value: JsonValue | undefined): string {
-  if (value === undefined) return 'not available'
+function displayValue(value: JsonValue | undefined, localizer: UiLocalizer): string {
+  if (value === undefined) return localizer.text('calculations.notAvailable')
   if (typeof value === 'string') return value
   if (value === null || typeof value === 'number' || typeof value === 'boolean')
     return String(value)
@@ -101,19 +104,26 @@ export interface SubjectCalculationsView {
 export function createSubjectCalculationsView(
   document: Document,
   snapshot: SubjectCalculationsSnapshot,
+  options: { readonly localizer?: UiLocalizer } = {},
 ): SubjectCalculationsView {
+  const localizer = withEnglishUiFallback(options.localizer, CALCULATIONS_FALLBACK_MESSAGES)
   const root = document.createElement('article')
   root.className = 'modkit-calculations'
-  root.setAttribute('aria-label', 'Subject calculations')
+  root.setAttribute('aria-label', localizer.text('calculations.label'))
   setPart(root, 'calculations')
 
   const summary = document.createElement('p')
   setPart(summary, 'calculations.summary')
   const visible = snapshot.calculations.length
   summary.textContent = safeViewerText(
-    `${visible} of ${snapshot.summary.totalCalculations} calculations · ${
-      snapshot.capped ? 'capped by the viewer' : snapshot.summary.completeness
-    }${snapshot.summary.reason === undefined ? '' : ` · ${snapshot.summary.reason}`}`,
+    localizer.text('calculations.progress', {
+      visible,
+      total: snapshot.summary.totalCalculations,
+      state: snapshot.capped
+        ? localizer.text('calculations.capped')
+        : snapshot.summary.completeness,
+      reason: snapshot.summary.reason === undefined ? '' : ` · ${snapshot.summary.reason}`,
+    }),
     1_024,
   )
   if (snapshot.capped || snapshot.summary.completeness !== 'complete')
@@ -135,7 +145,7 @@ export function createSubjectCalculationsView(
     const result = text(
       document,
       'calculations.result',
-      `${displayValue(calculation.value)}${calculation.unit === undefined ? '' : ` ${calculation.unit}`} · ${calculation.status}`,
+      `${displayValue(calculation.value, localizer)}${calculation.unit === undefined ? '' : ` ${calculation.unit}`} · ${calculation.status}`,
     )
     const formula = text(
       document,
@@ -148,7 +158,9 @@ export function createSubjectCalculationsView(
         text(
           document,
           'calculations.formula',
-          `Sources: ${calculation.provenance.map(origin => origin.label).join(' · ')}`,
+          localizer.text('calculations.sources', {
+            sources: calculation.provenance.map(origin => origin.label).join(' · '),
+          }),
         ),
       )
     }
@@ -163,7 +175,7 @@ export function createSubjectCalculationsView(
         label.textContent = safeViewerText(input.label, 256)
         const value = document.createElement('dd')
         value.textContent = safeViewerText(
-          `${displayValue(input.value)}${input.unit === undefined ? '' : ` ${input.unit}`} · ${input.state}${
+          `${displayValue(input.value, localizer)}${input.unit === undefined ? '' : ` ${input.unit}`} · ${input.state}${
             input.provenance.length === 0
               ? ''
               : ` · ${input.provenance.map(origin => origin.label).join(' · ')}`
@@ -192,7 +204,7 @@ export function createSubjectCalculationsView(
   if (snapshot.calculations.length === 0) {
     const empty = document.createElement('p')
     setPart(empty, 'viewer.empty')
-    empty.textContent = 'This subject publishes no calculations.'
+    empty.textContent = localizer.text('calculations.empty')
     list.append(empty)
   }
 
@@ -200,35 +212,46 @@ export function createSubjectCalculationsView(
 }
 
 /** Standard stage adapter over the selected calculations data-source binding. */
-export const subjectCalculationsViewer: ViewerModule = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal)
-    const root = createSurface(args.container, 'Subject calculations')
-    try {
-      const lease = await unknownSourceLease(
-        args.sources,
-        args.slot,
-        'common.view/subject-calculations-source',
-      )
-      if (lease === undefined) throw new TypeError('subject calculations binding is unavailable')
-      scope.lease(lease)
-      const snapshot = await loadSubjectCalculations(lease.value as SubjectCalculationsSource, {
-        signal: scope.signal,
-      })
-      const view = createSubjectCalculationsView(root.ownerDocument, snapshot)
-      root.append(view.root)
-      scope.cleanup(() => view.destroy())
-      root.dataset['revision'] = args.descriptor.revision
-      return createViewerMount(root, scope, args, ({ descriptor }) => {
-        root.dataset['revision'] = descriptor.revision
-      })
-    } catch (error) {
-      await scope.close()
-      root.remove()
-      throw error
-    }
-  },
-})
+export interface SubjectCalculationsViewerOptions {
+  readonly localizer?: UiLocalizer
+}
+
+export function createSubjectCalculationsViewer(
+  options: SubjectCalculationsViewerOptions = {},
+): ViewerModule {
+  const localizer = withEnglishUiFallback(options.localizer, CALCULATIONS_FALLBACK_MESSAGES)
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal)
+      const root = createSurface(args.container, localizer.text('calculations.label'))
+      try {
+        const lease = await unknownSourceLease(
+          args.sources,
+          args.slot,
+          'common.view/subject-calculations-source',
+        )
+        if (lease === undefined) throw new TypeError('subject calculations binding is unavailable')
+        scope.lease(lease)
+        const snapshot = await loadSubjectCalculations(lease.value as SubjectCalculationsSource, {
+          signal: scope.signal,
+        })
+        const view = createSubjectCalculationsView(root.ownerDocument, snapshot, { localizer })
+        root.append(view.root)
+        scope.cleanup(() => view.destroy())
+        root.dataset['revision'] = args.descriptor.revision
+        return createViewerMount(root, scope, args, ({ descriptor }) => {
+          root.dataset['revision'] = descriptor.revision
+        })
+      } catch (error) {
+        await scope.close()
+        root.remove()
+        throw error
+      }
+    },
+  })
+}
+
+export const subjectCalculationsViewer: ViewerModule = createSubjectCalculationsViewer()
 
 export default subjectCalculationsViewer

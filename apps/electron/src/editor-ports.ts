@@ -29,6 +29,7 @@ import type {
   SubjectEditTarget,
   ValidationResult,
 } from '@modkitx-x3/sdk'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
 
 /** The four ports `createCodecPreview` hands an editable stage, plus this host's lease hygiene. */
 export interface RendererEditorPorts {
@@ -67,6 +68,8 @@ const RENDERER_GRANT = Object.freeze({ snapshotId: 'renderer', permissions: [], 
 
 export interface RendererEditorPortsOptions {
   readonly arm: SubjectEditingArm
+  /** Per-host language; omitted for the English-compatible adapter default. */
+  readonly localizer?: UiLocalizer
   /** Reports save progress and refusals to the shell's status line. */
   readonly onStatus?: (status: EditorStatus) => void
   /** Reports uncommitted work so the shell can mark the tab and guard closing. */
@@ -83,55 +86,68 @@ export interface RendererEditorPortsOptions {
  * different thing for the user to do about it. Unknown codes are reported verbatim rather than
  * flattened, so a new reason from the coordinator still reaches the status line.
  */
-const REFUSAL_REASONS: Readonly<Record<string, string>> = Object.freeze({
-  'plan-invalid': 'the change did not describe a valid edit of this file',
-  'permission-missing': 'this session may not write the file',
-  'write-scope-mismatch': 'the edit named a file outside what this session may write',
-  'guarantee-unachievable': 'the host cannot promise this write safely enough',
-  'fidelity-unproven': 'no evidence backs the writer fidelity claim for this change',
-  'confirmation-required': 'a lossy write needs a confirmation this host does not ask for',
-  'payload-unavailable': 'the edited bytes never reached the writer',
-  'stale-revision': 'the file changed on disk after the change was prepared',
-  cancelled: 'the save was cancelled',
+const REFUSAL_REASON_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  'plan-invalid': 'planInvalid',
+  'permission-missing': 'permissionMissing',
+  'write-scope-mismatch': 'writeScopeMismatch',
+  'guarantee-unachievable': 'guaranteeUnachievable',
+  'fidelity-unproven': 'fidelityUnproven',
+  'confirmation-required': 'confirmationRequired',
+  'payload-unavailable': 'payloadUnavailable',
+  'stale-revision': 'staleRevision',
+  cancelled: 'cancelled',
 })
 
 /** `save refused: <plain words> (<code>)`, so a user and a log both get what they need. */
-export function refusalMessage(reason: string): string {
-  const plain = REFUSAL_REASONS[reason]
-  return plain === undefined ? `save refused: ${reason}` : `save refused: ${plain} (${reason})`
+export function refusalMessage(
+  reason: string,
+  localizer: UiLocalizer = DEFAULT_UI_LOCALIZER,
+): string {
+  const reasonKey = REFUSAL_REASON_KEYS[reason]
+  if (reasonKey === undefined) return localizer.text('editor.saveRefused', { reason })
+  return localizer.text('editor.saveRefusedCode', {
+    reason: localizer.text(`editor.refusal.${reasonKey}`),
+    code: reason,
+  })
 }
 
 /** What the shell says about a `prepare` that did not reach `ready`. */
-export function prepareStatus(result: SubjectEditingPrepareResult): EditorStatus | undefined {
+export function prepareStatus(
+  result: SubjectEditingPrepareResult,
+  localizer: UiLocalizer = DEFAULT_UI_LOCALIZER,
+): EditorStatus | undefined {
   if (result.state === 'ready') return undefined
   if (result.state === 'conflict') {
     return {
-      message: `save refused: the file changed on disk while it was open (${result.conflicts.length} conflict(s))`,
+      message: localizer.text('editor.saveConflict', { count: result.conflicts.length }),
       failed: true,
     }
   }
-  return { message: refusalMessage(result.reason), failed: true }
+  return { message: refusalMessage(result.reason, localizer), failed: true }
 }
 
 /** What the shell says about a `commit`. `committed` is the only state that is not a problem. */
-export function commitStatus(result: {
-  readonly state: string
-  readonly reason?: string
-}): EditorStatus {
+export function commitStatus(
+  result: {
+    readonly state: string
+    readonly reason?: string
+  },
+  localizer: UiLocalizer = DEFAULT_UI_LOCALIZER,
+): EditorStatus {
   switch (result.state) {
     case 'committed':
-      return { message: 'saved', failed: false }
+      return { message: localizer.text('editor.saved'), failed: false }
     case 'not-applied':
-      return { message: refusalMessage(result.reason ?? 'unknown'), failed: true }
+      return { message: refusalMessage(result.reason ?? 'unknown', localizer), failed: true }
     case 'rolled-back':
       return {
-        message: 'save failed: the write was rolled back and the file is unchanged',
+        message: localizer.text('editor.rolledBack'),
         failed: true,
       }
     case 'partially-applied':
-      return { message: 'save partially applied: recovery is available', failed: true }
+      return { message: localizer.text('editor.partiallySaved'), failed: true }
     default:
-      return { message: `save ${result.state}`, failed: true }
+      return { message: localizer.text('editor.saveState', { state: result.state }), failed: true }
   }
 }
 
@@ -158,9 +174,10 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 export function normalizeChangeSet(
   change: unknown,
   targets: readonly SubjectEditTarget[],
+  localizer: UiLocalizer = DEFAULT_UI_LOCALIZER,
 ): ChangeSet {
   if (!isRecord(change) || !Array.isArray(change['edits'])) {
-    throw new TypeError('an editor change set must carry an `edits` array')
+    throw new TypeError(localizer.text('editor.changeSetEditsRequired'))
   }
   const authored = change['edits']
   const declared = Array.isArray(change['targets'])
@@ -171,14 +188,14 @@ export function normalizeChangeSet(
   const target = declared[0]
 
   const edits = authored.map((item): SourceEdit => {
-    if (!isRecord(item)) throw new TypeError('an edit must be an object')
+    if (!isRecord(item)) throw new TypeError(localizer.text('editor.editObjectRequired'))
     if (typeof item['operation'] === 'string') return item as unknown as SourceEdit
     if (target === undefined) {
-      throw new TypeError('this subject publishes no edit target, so an edit cannot be placed')
+      throw new TypeError(localizer.text('editor.noEditTarget'))
     }
     const payload = item['payload']
     if (!isRecord(payload) || typeof payload['kind'] !== 'string') {
-      throw new TypeError('a legacy edit must carry an inline or text payload')
+      throw new TypeError(localizer.text('editor.legacyPayloadRequired'))
     }
     const range = item['range']
     return {
@@ -207,6 +224,7 @@ export async function createRendererEditorPorts(
   options: RendererEditorPortsOptions,
 ): Promise<RendererEditorPorts> {
   const { arm } = options
+  const localizer = options.localizer ?? DEFAULT_UI_LOCALIZER
   const state = await arm.state()
   const targets: readonly SubjectEditTarget[] = state.targets
   /** `prepare` answers with an id; the ui carries the object it was given straight back to us. */
@@ -238,9 +256,9 @@ export async function createRendererEditorPorts(
     targets,
     state: () => 'live',
     propose: async (change: ChangeSet): Promise<ValidationResult> =>
-      arm.propose(markPending(normalizeChangeSet(change, targets))),
+      arm.propose(markPending(normalizeChangeSet(change, targets, localizer))),
     plan: async (change: ChangeSet): Promise<AssetEditPlan> =>
-      arm.plan(markPending(normalizeChangeSet(change, targets))),
+      arm.plan(markPending(normalizeChangeSet(change, targets, localizer))),
     dispose: async (): Promise<void> => {
       // Switching stages unmounts the editor, which disposes its edit port. The arm outlives the
       // stage — the tab still holds it — so this releases nothing; `dispose()` below does.
@@ -249,7 +267,7 @@ export async function createRendererEditorPorts(
 
   const prepare = async (plan: AssetEditPlan): Promise<SubjectEditingPrepareResult> => {
     const result = await arm.prepare(plan)
-    const refusal = prepareStatus(result)
+    const refusal = prepareStatus(result, localizer)
     if (refusal !== undefined) report(refusal)
     return result
   }
@@ -258,7 +276,7 @@ export async function createRendererEditorPorts(
     preparedId: string,
   ): Promise<{ state: string; receipt?: CommitReceipt; status: EditorStatus }> => {
     const result = await arm.commit(preparedId)
-    const status = commitStatus(result)
+    const status = commitStatus(result, localizer)
     report(status)
     if (result.state === 'committed') markSaved()
     return result.state === 'not-applied'
@@ -280,7 +298,7 @@ export async function createRendererEditorPorts(
       const preparedId =
         preparedIds.get(prepared) ?? (prepared as { preparedId?: string }).preparedId
       if (preparedId === undefined) {
-        report({ message: 'nothing prepared to save', failed: true })
+        report({ message: localizer.text('editor.nothingPrepared'), failed: true })
         return { state: 'not-applied' }
       }
       // The ui's commit port takes the 13D result shape; the status line was already told.
@@ -290,13 +308,13 @@ export async function createRendererEditorPorts(
         : { state: committed.state, receipt: committed.receipt }
     },
     async undo(): Promise<{ state: string; reason: string }> {
-      const reason = 'this host does not replay commits yet'
-      report({ message: `undo refused: ${reason}`, failed: true })
+      const reason = localizer.text('editor.replayUnsupported')
+      report({ message: localizer.text('editor.undoRefused', { reason }), failed: true })
       return { state: 'not-applied', reason }
     },
     async redo(): Promise<{ state: string; reason: string }> {
-      const reason = 'this host does not replay commits yet'
-      report({ message: `redo refused: ${reason}`, failed: true })
+      const reason = localizer.text('editor.replayUnsupported')
+      report({ message: localizer.text('editor.redoRefused', { reason }), failed: true })
       return { state: 'not-applied', reason }
     },
   }
@@ -305,7 +323,7 @@ export async function createRendererEditorPorts(
     async open(): Promise<never> {
       // staged payloads would need a byte channel of their own; inline payloads cover today's
       // editors, and pretending otherwise would fail at commit instead of here
-      throw new Error('this host does not stage payloads: edits travel inline')
+      throw new Error(localizer.text('editor.inlinePayloadOnly'))
     },
   }
 
@@ -323,14 +341,16 @@ export async function createRendererEditorPorts(
     async save(): Promise<void> {
       const change = pending
       if (change === undefined) {
-        report({ message: 'nothing to save', failed: false })
+        report({ message: localizer.text('editor.nothingToSave'), failed: false })
         return
       }
       const validation = await arm.propose(change)
       if (!validation.valid) {
         const first = validation.diagnostics[0]
         report({
-          message: `save refused: ${first === undefined ? 'the writer rejected the change' : first.message}`,
+          message: localizer.text('editor.saveRefused', {
+            reason: first === undefined ? localizer.text('editor.writerRejected') : first.message,
+          }),
           failed: true,
         })
         return
@@ -344,7 +364,12 @@ export async function createRendererEditorPorts(
       if (prepared.state !== 'ready') {
         // `prepare` already reported it; returning the same words keeps the panel and the status
         // line saying one thing.
-        return prepareStatus(prepared) ?? { message: 'save refused', failed: true }
+        return (
+          prepareStatus(prepared, localizer) ?? {
+            message: localizer.text('editor.saveRefused', { reason: 'unknown' }),
+            failed: true,
+          }
+        )
       }
       return (await commitPrepared(prepared.preparedId)).status
     },

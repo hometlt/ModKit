@@ -460,6 +460,6 @@ describe('generic VS Code runtime controller', () => {
     expect(manifest.activationEvents).toContain('onCommand:modkit.runtime.control')
     expect(
       manifest.contributes.commands.filter(item => item.command.startsWith('modkit.runtime.')),
-    ).toEqual([{ command: 'modkit.runtime.control', title: 'Modkit: Control Runtime Session…' }])
+    ).toEqual([{ command: 'modkit.runtime.control', title: '%command.controlRuntime%' }])
   })
 })

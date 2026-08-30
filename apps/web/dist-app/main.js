@@ -2,6 +2,7 @@ import {
   CONTAINER_EXTRACT_OPERATION_ID,
   DATA_CATALOG_ANALYSIS_CONTRACT,
   DATA_CATALOG_MATCHER_PROFILE,
+  DEFAULT_UI_LOCALIZER,
   EXPLORER_MAXIMUM_BYTES,
   EXTENSION_ROOT_FAILURE_CODES,
   MAP_PREVIEW_PREPARATION_CONTRACT,
@@ -13,9 +14,7 @@ import {
   RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE,
   RESOLVED_MAP_WORKSPACE_CONTRACT,
   ViewerMountScope,
-  WEB_EDITING_NOTICE,
   WEB_EXTENSION_CATALOG,
-  WEB_PREVIEW_FALLBACK,
   WORLD_SCENE_SOURCE_CONTRACT,
   canonicalJsonStringify,
   catalogCoordinates,
@@ -23,6 +22,7 @@ import {
   compareUtf8,
   containerCoordinate,
   contractId,
+  contributionContractLabel,
   createBrowserExtensionManager,
   createCodecPreview,
   createDirectoryAccess,
@@ -35,6 +35,8 @@ import {
   createSurface,
   createWebEditingArm,
   createWebExtensionSubjectCatalog,
+  createWebLocalizer,
+  createWebPreviewFallback,
   createWebPreviewStages,
   createWebSubjectServices,
   createWebTopology,
@@ -82,7 +84,7 @@ import {
   throwIfAborted,
   validateSubjectDescriptorV2,
   webExtensionSubjectCardBundle
-} from "./chunks/chunk-FHDXK6YU.js";
+} from "./chunks/chunk-YBW7WWTE.js";
 import "./chunks/chunk-HVXSZ42C.js";
 
 // packages/ui/dist/settings/index.js
@@ -711,6 +713,68 @@ function serializeSettings(document2) {
   )}
 `;
 }
+var SETTINGS_FALLBACK_MESSAGES = {
+  "common.disabled": "Disabled",
+  "common.enabled": "Enabled",
+  "common.remove": "Remove",
+  "settings.add": "Add",
+  "settings.appearance": "Appearance",
+  "settings.associate": "Associate .{type}",
+  "settings.associationsDescription": "Make this app the default for the formats its codecs can open. Registration is per-user and reversible from the operating system, and nothing is written until you apply it.",
+  "settings.back": "\u2190 Back",
+  "settings.browse": "Browse\u2026",
+  "settings.close": "Close settings (Esc)",
+  "settings.colorTheme": "Color theme",
+  "settings.comfortable": "Comfortable",
+  "settings.compact": "Compact",
+  "settings.defaultApp": "Set as default app",
+  "settings.density": "Density",
+  "settings.densityDescription": "Compact matches VS Code list metrics; comfortable suits touch and larger displays.",
+  "settings.enableExtension": "Enable {id}",
+  "settings.extensionId": "Extension id",
+  "settings.extensionLocation": "Extension location",
+  "settings.extensionPathPlaceholder": "path, package or URL",
+  "settings.extensionRequired": "An extension needs both an id and a location.",
+  "settings.extensions": "Extensions",
+  "settings.extensionsLocationIntro": "Extensions are listed in {location}. Each entry has an id, a location the host loads from, and an enabled state. The same settings are used by desktop, web and headless hosts.",
+  "settings.fileAssociations": "File associations",
+  "settings.groups": "Settings groups",
+  "settings.loadedFrom": "Loaded from {location}",
+  "settings.loadedProblems": "Loaded with {count} problem(s): {problems}",
+  "settings.noCodecs": "No codecs are loaded, so there is nothing to associate.",
+  "settings.noExtensions": "No extensions are configured yet.",
+  "settings.nothingToRegister": "Nothing to register.",
+  "settings.pickFileType": "Pick at least one file type first.",
+  "settings.registerError": "Could not register: {reason}",
+  "settings.saveError": "Could not save: {reason}",
+  "settings.savedTo": "Saved to {location}",
+  "settings.selectAll": "Select all",
+  "settings.selectNone": "Select none",
+  "settings.themeDescription": "Applies immediately and to every viewer surface."
+};
+function createEnglishUiLocalizer(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key, values = {}) {
+      const message = messages[key] ?? key;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value = values[name];
+        return value === void 0 ? `{${name}}` : String(value);
+      });
+    }
+  });
+}
+function withEnglishUiFallback(localizer, messages) {
+  const fallback = createEnglishUiLocalizer(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key, values = {}) {
+      const translated = localizer.text(key, values);
+      return translated === key ? fallback.text(key, values) : translated;
+    }
+  });
+}
 var APP_THEME_DOM_ID = "modkit-app-themes";
 var APP_THEME_ID = /^[a-z][a-z0-9-]{0,63}$/u;
 var APP_THEME_STYLESHEET = /^\.\/(?:modkit-ui|theme-[a-z][a-z0-9-]{0,63})\.css$/u;
@@ -753,18 +817,19 @@ function readAppThemeChoices(document2) {
   );
 }
 function createSettingsUi(document2, options) {
+  const localizer = withEnglishUiFallback(options.localizer, SETTINGS_FALLBACK_MESSAGES);
   const root = document2.createElement("div");
   root.className = "modkit-viewer modkit-settings";
   setPart2(root, "settings");
   const groupList = element2(root, "nav", { part: "settings.groups" });
-  groupList.setAttribute("aria-label", "Settings groups");
+  groupList.setAttribute("aria-label", localizer.text("settings.groups"));
   if (options.onClose !== void 0) {
     const close = element2(groupList, "button", {
       part: "settings.close",
-      text: "\u2190 Back"
+      text: localizer.text("settings.back")
     });
     close.type = "button";
-    close.title = "Close settings (Esc)";
+    close.title = localizer.text("settings.close");
     close.addEventListener("click", () => options.onClose?.());
     root.addEventListener("keydown", (event) => {
       if (event.key === "Escape") options.onClose?.();
@@ -784,9 +849,14 @@ function createSettingsUi(document2, options) {
       await options.store.write(next);
       current = next;
       options.onChange?.(next);
-      say(`Saved to ${options.store.location}`);
+      say(localizer.text("settings.savedTo", { location: options.store.location }));
     } catch (error) {
-      say(`Could not save: ${error instanceof Error ? error.message : String(error)}`, true);
+      say(
+        localizer.text("settings.saveError", {
+          reason: error instanceof Error ? error.message : String(error)
+        }),
+        true
+      );
     }
   };
   const row = (host, label, description) => {
@@ -797,12 +867,16 @@ function createSettingsUi(document2, options) {
   };
   const appearanceGroup = {
     id: "appearance",
-    label: "Appearance",
+    label: localizer.text("settings.appearance"),
     render(host) {
       if (options.themes.length > 0) {
-        const control = row(host, "Color theme", "Applies immediately and to every viewer surface.");
+        const control = row(
+          host,
+          localizer.text("settings.colorTheme"),
+          localizer.text("settings.themeDescription")
+        );
         const select = element2(control, "select", { part: "settings.select" });
-        select.setAttribute("aria-label", "Color theme");
+        select.setAttribute("aria-label", localizer.text("settings.colorTheme"));
         for (const theme of options.themes) {
           const option = document2.createElement("option");
           option.value = theme.id;
@@ -818,17 +892,19 @@ function createSettingsUi(document2, options) {
       }
       const densityControl = row(
         host,
-        "Density",
-        "Compact matches VS Code list metrics; comfortable suits touch and larger displays."
+        localizer.text("settings.density"),
+        localizer.text("settings.densityDescription")
       );
       const density = element2(densityControl, "select", {
         part: "settings.select"
       });
-      density.setAttribute("aria-label", "Density");
+      density.setAttribute("aria-label", localizer.text("settings.density"));
       for (const value of ["compact", "comfortable"]) {
         const option = document2.createElement("option");
         option.value = value;
-        option.textContent = value[0]?.toUpperCase() + value.slice(1);
+        option.textContent = localizer.text(
+          value === "compact" ? "settings.compact" : "settings.comfortable"
+        );
         density.append(option);
       }
       density.value = current.appearance.density;
@@ -844,10 +920,12 @@ function createSettingsUi(document2, options) {
   };
   const extensionsGroup = {
     id: "extensions",
-    label: "Extensions",
+    label: localizer.text("settings.extensions"),
     render(host) {
       const intro = element2(host, "p", { part: "settings.description" });
-      intro.textContent = `Extensions are listed in ${options.store.location}. Each entry is an id, a path the host loads from, and whether it is enabled. The same file is read by the desktop app, the web app and a headless run.`;
+      intro.textContent = localizer.text("settings.extensionsLocationIntro", {
+        location: options.store.location
+      });
       const readOnly = options.extensionsReadOnly;
       if (readOnly !== void 0) {
         element2(host, "p", {
@@ -861,7 +939,7 @@ function createSettingsUi(document2, options) {
         if (current.extensions.length === 0) {
           element2(list, "p", {
             part: "settings.description",
-            text: "No extensions are configured yet."
+            text: localizer.text("settings.noExtensions")
           });
         }
         for (const entry of current.extensions) {
@@ -872,7 +950,10 @@ function createSettingsUi(document2, options) {
             });
             toggle.type = "checkbox";
             toggle.checked = entry.enabled;
-            toggle.setAttribute("aria-label", `Enable ${entry.id}`);
+            toggle.setAttribute(
+              "aria-label",
+              localizer.text("settings.enableExtension", { id: entry.id })
+            );
             toggle.addEventListener("change", () => {
               void persist({
                 ...current,
@@ -884,7 +965,7 @@ function createSettingsUi(document2, options) {
           } else {
             element2(item, "div", {
               part: "settings.description",
-              text: entry.enabled ? "enabled" : "disabled"
+              text: localizer.text(entry.enabled ? "common.enabled" : "common.disabled")
             });
           }
           const text = element2(item, "div", { part: "settings.extension-text" });
@@ -896,7 +977,7 @@ function createSettingsUi(document2, options) {
           if (readOnly === void 0) {
             const remove = element2(item, "button", {
               part: "settings.remove",
-              text: "Remove"
+              text: localizer.text("common.remove")
             });
             remove.type = "button";
             remove.addEventListener("click", () => {
@@ -913,10 +994,10 @@ function createSettingsUi(document2, options) {
       const adder = element2(host, "div", { part: "settings.adder" });
       const id = element2(adder, "input", { part: "settings.input" });
       id.placeholder = "publisher/name";
-      id.setAttribute("aria-label", "Extension id");
+      id.setAttribute("aria-label", localizer.text("settings.extensionId"));
       const path = element2(adder, "input", { part: "settings.input" });
-      path.placeholder = "path, package or URL";
-      path.setAttribute("aria-label", "Extension location");
+      path.placeholder = localizer.text("settings.extensionPathPlaceholder");
+      path.setAttribute("aria-label", localizer.text("settings.extensionLocation"));
       const add = (entry) => {
         void persist({
           ...current,
@@ -925,14 +1006,14 @@ function createSettingsUi(document2, options) {
       };
       const addButton = element2(adder, "button", {
         part: "settings.add",
-        text: "Add"
+        text: localizer.text("settings.add")
       });
       addButton.type = "button";
       addButton.addEventListener("click", () => {
         const entryId = id.value.trim();
         const entryPath = path.value.trim();
         if (entryId === "" || entryPath === "") {
-          say("An extension needs both an id and a location.", true);
+          say(localizer.text("settings.extensionRequired"), true);
           return;
         }
         add({ id: entryId, path: entryPath, enabled: true });
@@ -942,7 +1023,7 @@ function createSettingsUi(document2, options) {
       if (options.browseForExtension !== void 0) {
         const browse = element2(adder, "button", {
           part: "settings.add",
-          text: "Browse\u2026"
+          text: localizer.text("settings.browse")
         });
         browse.type = "button";
         browse.addEventListener("click", () => {
@@ -957,17 +1038,17 @@ function createSettingsUi(document2, options) {
   const registerFileTypes = options.registerFileTypes;
   const associationsGroup = {
     id: "associations",
-    label: "File associations",
+    label: localizer.text("settings.fileAssociations"),
     render(host) {
       const types = [...options.associableTypes ?? []].sort();
       element2(host, "p", {
         part: "settings.description",
-        text: "Make this app the default for the formats its codecs can open. Registration is per-user and reversible from the operating system, and nothing is written until you apply it."
+        text: localizer.text("settings.associationsDescription")
       });
       if (types.length === 0) {
         element2(host, "p", {
           part: "settings.description",
-          text: "No codecs are loaded, so there is nothing to associate."
+          text: localizer.text("settings.noCodecs")
         });
         return;
       }
@@ -978,7 +1059,7 @@ function createSettingsUi(document2, options) {
         const toggle = element2(item, "input", { part: "settings.toggle" });
         toggle.type = "checkbox";
         toggle.checked = true;
-        toggle.setAttribute("aria-label", `Associate .${type}`);
+        toggle.setAttribute("aria-label", localizer.text("settings.associate", { type }));
         toggle.addEventListener("change", () => {
           if (toggle.checked) chosen.add(type);
           else chosen.delete(type);
@@ -989,7 +1070,7 @@ function createSettingsUi(document2, options) {
       const actions = element2(host, "div", { part: "settings.adder" });
       const all = element2(actions, "button", {
         part: "settings.add",
-        text: "Select all"
+        text: localizer.text("settings.selectAll")
       });
       all.type = "button";
       all.addEventListener("click", () => {
@@ -1000,7 +1081,7 @@ function createSettingsUi(document2, options) {
       });
       const none = element2(actions, "button", {
         part: "settings.add",
-        text: "Select none"
+        text: localizer.text("settings.selectNone")
       });
       none.type = "button";
       none.addEventListener("click", () => {
@@ -1011,21 +1092,25 @@ function createSettingsUi(document2, options) {
       });
       const apply = element2(actions, "button", {
         part: "settings.add",
-        text: "Set as default app"
+        text: localizer.text("settings.defaultApp")
       });
       apply.type = "button";
       apply.addEventListener("click", () => {
         void (async () => {
           if (chosen.size === 0) {
-            say("Pick at least one file type first.", true);
+            say(localizer.text("settings.pickFileType"), true);
             return;
           }
           try {
             apply.disabled = true;
-            say(await registerFileTypes?.([...chosen]) ?? "Nothing to register.");
+            say(
+              await registerFileTypes?.([...chosen]) ?? localizer.text("settings.nothingToRegister")
+            );
           } catch (error) {
             say(
-              `Could not register: ${error instanceof Error ? error.message : String(error)}`,
+              localizer.text("settings.registerError", {
+                reason: error instanceof Error ? error.message : String(error)
+              }),
               true
             );
           } finally {
@@ -1099,7 +1184,10 @@ function createSettingsUi(document2, options) {
       current = loaded;
       options.onAppearance?.(loaded.appearance);
       say(
-        problems.length === 0 ? `Loaded from ${options.store.location}` : `Loaded with ${problems.length} problem(s): ${problems.join("; ")}`,
+        problems.length === 0 ? localizer.text("settings.loadedFrom", { location: options.store.location }) : localizer.text("settings.loadedProblems", {
+          count: problems.length,
+          problems: problems.join("; ")
+        }),
         problems.length > 0
       );
       for (const group of groups) await group.reload?.(groupContext);
@@ -1117,113 +1205,6 @@ function createSettingsUi(document2, options) {
     }
   };
   return ui;
-}
-
-// packages/ui/dist/localization/index.js
-var EN_MESSAGES = Object.freeze({
-  "app.title": "Modkit MK3",
-  "app.starting": "Starting Modkit MK3\u2026",
-  "action.openFile": "Open file\u2026",
-  "action.openFileTitle": "Open a single file in a new tab",
-  "action.splitEditor": "Split editor",
-  "action.splitEditorTitle": "Open the next file beside this one",
-  "action.enableEditing": "Enable editing",
-  "action.enableEditingTitle": "Ask this browser for permission to write the file or folder you picked",
-  "action.restartSession": "Restart session",
-  "action.restartSessionTitle": "Reload Modkit after the codec worker stopped",
-  "settings.bundled": "Bundled extensions",
-  "settings.bundledExcluded": "Bundled but not served here",
-  "settings.bundledDescription": "{count} extensions were attested at build time and are served from this origin under extensions/. They are listed read-only because {reason}.",
-  "sidebar.host": "Host",
-  "sidebar.facilities": "Facilities",
-  "sidebar.samples": "Served samples",
-  "sidebar.language": "Language",
-  "sidebar.hostSummary": "{extensions} extensions \xB7 {types} detectable types \xB7 codecs run {profiles} in {realm} \xB7 shared memory {sharedMemory}",
-  "locale.en": "English",
-  "locale.ru": "\u0420\u0443\u0441\u0441\u043A\u0438\u0439",
-  "common.yes": "yes",
-  "common.no": "no",
-  "activity.files": "Files",
-  "activity.explorer": "Explorer",
-  "activity.host": "Host",
-  "activity.hostTitle": "Show or hide the host panel",
-  "activity.info": "Info",
-  "activity.infoTitle": "Show or hide diagnostics and operations",
-  "activity.settings": "Settings",
-  "status.noFileEditable": "No file is open yet, so nothing is editable.",
-  "status.workerUnavailable": "Codec worker stopped \xB7 restart the session to continue",
-  "status.ready": "Ready \xB7 {extensions} extensions \xB7 {notices} boot notice(s)",
-  "confirm.discardAndRestart": "Some tabs have unsaved changes. Restart the session and discard them?",
-  "error.openFile": "Could not open the file: {reason}",
-  "error.drop": "Drop failed: {reason}",
-  "error.fetch": "{path} could not be fetched from this origin."
-});
-var RU_MESSAGES = Object.freeze({
-  "app.title": "Modkit MK3",
-  "app.starting": "\u0417\u0430\u043F\u0443\u0441\u043A Modkit MK3\u2026",
-  "action.openFile": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0444\u0430\u0439\u043B\u2026",
-  "action.openFileTitle": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043E\u0434\u0438\u043D \u0444\u0430\u0439\u043B \u0432 \u043D\u043E\u0432\u043E\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u0435",
-  "action.splitEditor": "\u0420\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440",
-  "action.splitEditorTitle": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u0444\u0430\u0439\u043B \u0440\u044F\u0434\u043E\u043C \u0441 \u0442\u0435\u043A\u0443\u0449\u0438\u043C",
-  "action.enableEditing": "\u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435",
-  "action.enableEditingTitle": "\u0417\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u0443 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430 \u043F\u0440\u0430\u0432\u043E \u0437\u0430\u043F\u0438\u0441\u0438 \u0432 \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u0444\u0430\u0439\u043B \u0438\u043B\u0438 \u043F\u0430\u043F\u043A\u0443",
-  "action.restartSession": "\u041F\u0435\u0440\u0435\u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C \u0441\u0435\u0430\u043D\u0441",
-  "action.restartSessionTitle": "\u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C Modkit \u043F\u043E\u0441\u043B\u0435 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0438 \u0440\u0430\u0431\u043E\u0447\u0435\u0433\u043E \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0430 \u043A\u043E\u0434\u0435\u043A\u043E\u0432",
-  "settings.bundled": "\u0412\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u0435 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
-  "settings.bundledExcluded": "\u0412\u0441\u0442\u0440\u043E\u0435\u043D\u044B, \u043D\u043E \u0437\u0434\u0435\u0441\u044C \u043D\u0435 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u044B",
-  "settings.bundledDescription": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0430\u0442\u0442\u0435\u0441\u0442\u043E\u0432\u0430\u043D\u043E \u043F\u0440\u0438 \u0441\u0431\u043E\u0440\u043A\u0435: {count}. \u041E\u043D\u0438 \u043F\u0443\u0431\u043B\u0438\u043A\u0443\u044E\u0442\u0441\u044F \u0441 \u044D\u0442\u043E\u0433\u043E origin \u0432 extensions/ \u0438 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u043B\u044F \u0447\u0442\u0435\u043D\u0438\u044F: {reason}.",
-  "sidebar.host": "\u0425\u043E\u0441\u0442",
-  "sidebar.facilities": "\u0412\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438",
-  "sidebar.samples": "\u041F\u0440\u0438\u043C\u0435\u0440\u044B \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u0430",
-  "sidebar.language": "\u042F\u0437\u044B\u043A",
-  "sidebar.hostSummary": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439: {extensions} \xB7 \u0440\u0430\u0441\u043F\u043E\u0437\u043D\u0430\u0432\u0430\u0435\u043C\u044B\u0445 \u0442\u0438\u043F\u043E\u0432: {types} \xB7 \u043A\u043E\u0434\u0435\u043A\u0438 \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442 \u043A\u0430\u043A {profiles} \u0432 {realm} \xB7 \u043E\u0431\u0449\u0430\u044F \u043F\u0430\u043C\u044F\u0442\u044C: {sharedMemory}",
-  "locale.en": "English",
-  "locale.ru": "\u0420\u0443\u0441\u0441\u043A\u0438\u0439",
-  "common.yes": "\u0434\u0430",
-  "common.no": "\u043D\u0435\u0442",
-  "activity.files": "\u0424\u0430\u0439\u043B\u044B",
-  "activity.explorer": "\u041F\u0440\u043E\u0432\u043E\u0434\u043D\u0438\u043A",
-  "activity.host": "\u0425\u043E\u0441\u0442",
-  "activity.hostTitle": "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u044C \u043F\u0430\u043D\u0435\u043B\u044C \u0445\u043E\u0441\u0442\u0430",
-  "activity.info": "\u0418\u043D\u0444\u043E",
-  "activity.infoTitle": "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u044C \u0434\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0443 \u0438 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438",
-  "activity.settings": "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438",
-  "status.noFileEditable": "\u0424\u0430\u0439\u043B \u0435\u0449\u0451 \u043D\u0435 \u043E\u0442\u043A\u0440\u044B\u0442 \u2014 \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u043F\u043E\u043A\u0430 \u043D\u0435\u0447\u0435\u0433\u043E.",
-  "status.workerUnavailable": "\u0420\u0430\u0431\u043E\u0447\u0438\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441 \u043A\u043E\u0434\u0435\u043A\u043E\u0432 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \xB7 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u0435 \u0441\u0435\u0430\u043D\u0441, \u0447\u0442\u043E\u0431\u044B \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0438\u0442\u044C",
-  "status.ready": "\u0413\u043E\u0442\u043E\u0432\u043E \xB7 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439: {extensions} \xB7 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 \u0437\u0430\u043F\u0443\u0441\u043A\u0430: {notices}",
-  "confirm.discardAndRestart": "\u0412 \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u0445 \u0432\u043A\u043B\u0430\u0434\u043A\u0430\u0445 \u0435\u0441\u0442\u044C \u043D\u0435\u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F. \u041F\u0435\u0440\u0435\u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C \u0441\u0435\u0430\u043D\u0441 \u0438 \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0438\u0445?",
-  "error.openFile": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u0444\u0430\u0439\u043B: {reason}",
-  "error.drop": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u0438\u043D\u044F\u0442\u044C \u0444\u0430\u0439\u043B: {reason}",
-  "error.fetch": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C {path} \u0441 \u044D\u0442\u043E\u0433\u043E origin."
-});
-var UI_MESSAGES = Object.freeze({
-  en: EN_MESSAGES,
-  ru: RU_MESSAGES
-});
-function resolveUiLocale(requested) {
-  const candidates = requested === void 0 ? [] : typeof requested === "string" ? [requested] : requested;
-  for (const candidate of candidates) {
-    const language = candidate.trim().toLowerCase().split("-")[0];
-    if (language === "ru") return "ru";
-    if (language === "en") return "en";
-  }
-  return "en";
-}
-function createUiLocalizer(locale, overrides = {}) {
-  const catalog = Object.freeze({ ...UI_MESSAGES[locale], ...overrides });
-  const localizer = {
-    locale,
-    text(key, values = {}) {
-      return catalog[key].replace(
-        /\{([a-zA-Z][a-zA-Z0-9]*)\}/gu,
-        (_match, name) => {
-          const value = values[name];
-          return value === void 0 ? `{${name}}` : String(value);
-        }
-      );
-    }
-  };
-  return Object.freeze(localizer);
 }
 
 // packages/host/dist/maps/index.js
@@ -6301,17 +6282,18 @@ var COORDINATOR_LIMITS = Object.freeze({
     maxDiagnostics: 100
   })
 });
-var selectionDiagnostic = () => diagnostic(
+var selectionDiagnostic = (localizer) => diagnostic(
   "information",
   "x3.app/map-preview-selection-required",
-  "Map preview needs an explicit selection; choose one of the returned map-preview candidates to continue."
+  localizer.text("web.map.diagnostic.selectionRequired")
 );
-var permissionDiagnostic = () => diagnostic(
+var permissionDiagnostic = (localizer) => diagnostic(
   "information",
   "x3.app/web-map-preview-permission-required",
-  "This map needs installation resources that the browser cannot search for automatically; grant or select them in a desktop host."
+  localizer.text("web.map.diagnostic.permissionRequired")
 );
 async function prepareWebMapPreview(request) {
+  const localizer = request.localizer ?? createWebLocalizer("en");
   let result;
   try {
     result = await (request.coordinate ?? coordinateMapPreviewAssetSession)({
@@ -6332,8 +6314,8 @@ async function prepareWebMapPreview(request) {
   const diagnostics = Object.freeze([
     ...request.opened.diagnostics,
     ...result.diagnostics,
-    ...result.state === "selection-required" ? [selectionDiagnostic()] : [],
-    ...permissionRequired ? [permissionDiagnostic()] : []
+    ...result.state === "selection-required" ? [selectionDiagnostic(localizer)] : [],
+    ...permissionRequired ? [permissionDiagnostic(localizer)] : []
   ]);
   const candidates = result.state === "selection-required" ? Object.freeze(
     result.candidates.map(
@@ -6353,11 +6335,64 @@ async function prepareWebMapPreview(request) {
 }
 
 // apps/web/src/extensions-ui.ts
-var USER_EXTENSION_TRUST_SENTENCE = "A folder you add here is trusted because you picked it and for no other reason \u2014 nothing is signed and nobody has reviewed it; this page hashes every file as it reads them so that a file changed afterwards is refused instead of run, and user extensions always run in a worker, never on the page.";
-var USER_EXTENSION_PROVENANCE_NOTE = "Bundled extensions carry digests this app recorded when it was built. Folders you added carry digests this page computed itself just now \u2014 a measurement of the bytes it read, not a claim about who wrote them.";
-var bundledProvenance = (root) => `Bundled with this build, served from ${root}; its digests were recorded when the app was built.`;
-var userProvenance = (label) => `Folder you granted (\xAB${label}\xBB); its digests were computed by this page from the bytes it just read.`;
-function describeExtensionList(input) {
+function extensionCopy(localizer) {
+  return {
+    title: localizer.text("extensions.title"),
+    subjects: localizer.text("extensions.subjects"),
+    subjectsDescription: localizer.text("web.extensions.subjectsDescription"),
+    emptySubjects: localizer.text("extensions.emptySubjects"),
+    downloadable: localizer.text("extensions.downloadable"),
+    downloadableDescription: localizer.text("web.extensions.downloadableDescription"),
+    checkAvailable: localizer.text("extensions.checkCatalog"),
+    addFolder: localizer.text("extensions.addFolder"),
+    grantAccess: localizer.text("extensions.grantAccess"),
+    enable: localizer.text("common.enable"),
+    disable: localizer.text("common.disable"),
+    enableContribution: localizer.text("extensions.action.enableContribution"),
+    disableContribution: localizer.text("extensions.action.disableContribution"),
+    enableExtension: localizer.text("extensions.action.enableExtension"),
+    disableExtension: localizer.text("extensions.action.disableExtension"),
+    install: localizer.text("common.install"),
+    update: localizer.text("common.update"),
+    remove: localizer.text("common.remove"),
+    enabled: localizer.text("common.enabled"),
+    disabled: localizer.text("common.disabled"),
+    notInstalled: localizer.text("common.notInstalled"),
+    notInCatalog: localizer.text("web.extensions.notInCatalog"),
+    updateAvailable: localizer.text("web.extensions.updateAvailable"),
+    trusted: localizer.text("web.extensions.trusted"),
+    notTrusted: localizer.text("web.extensions.notTrusted"),
+    emptyFolders: localizer.text("extensions.emptyFolders"),
+    catalogEmpty: localizer.text("web.extensions.catalogEmpty"),
+    noDownloaded: localizer.text("web.extensions.noDownloaded"),
+    packageDisabled: localizer.text("web.extensions.packageDisabled"),
+    reloadPending: localizer.text("web.extensions.reloadPending"),
+    removedPending: localizer.text("web.extensions.removedPending"),
+    trustSentence: localizer.text("web.extensions.trustSentence"),
+    provenanceNote: localizer.text("web.extensions.provenanceNote"),
+    remembered: (location) => localizer.text("web.extensions.remembered", { location }),
+    added: (name, coordinate) => localizer.text("web.extensions.added", {
+      name,
+      coordinate: coordinate === void 0 ? "" : ` (${coordinate})`
+    }),
+    actionFailed: (reason) => localizer.text("web.extensions.actionFailed", { reason }),
+    addFailed: (reason) => localizer.text("web.extensions.addFailed", { reason }),
+    removeFailed: (reason) => localizer.text("web.extensions.removeFailed", { reason }),
+    accessFailed: (reason) => localizer.text("web.extensions.accessFailed", { reason }),
+    accessGranted: (name) => localizer.text("web.extensions.accessGranted", { name }),
+    accessDenied: (name, state) => localizer.text("web.extensions.accessDenied", { name, state }),
+    catalogChecked: (location) => localizer.text("web.extensions.catalogChecked", { location }),
+    catalogLoaded: (location) => localizer.text("web.extensions.catalogLoaded", { location }),
+    catalogNotContacted: (location) => localizer.text("web.extensions.catalogNotContacted", { location }),
+    installedStatus: (name) => localizer.text("web.extensions.installedStatus", { name }),
+    updatedStatus: (name) => localizer.text("web.extensions.updatedStatus", { name }),
+    removedStatus: (name) => localizer.text("web.extensions.removedStatus", { name }),
+    cardFailed: (reason) => localizer.text("web.extensions.cardFailed", { reason })
+  };
+}
+var bundledProvenance = (root, localizer) => localizer.text("web.extensions.bundledProvenance", { root });
+var userProvenance = (label, localizer) => localizer.text("web.extensions.userProvenance", { label });
+function describeExtensionList(input, localizer = createWebLocalizer("en")) {
   const rows = [];
   for (const entry of input.catalog.extensions) {
     const coordinate = containerCoordinate(entry.containers);
@@ -6366,7 +6401,7 @@ function describeExtensionList(input) {
       state: "loaded",
       label: entry.name,
       ...coordinate === void 0 ? {} : { coordinate },
-      provenance: bundledProvenance(entry.artifactRoot)
+      provenance: bundledProvenance(entry.artifactRoot, localizer)
     });
   }
   const labels = new Map((input.stored ?? []).map((record) => [record.id, record.label]));
@@ -6380,7 +6415,7 @@ function describeExtensionList(input) {
       ...rootId === void 0 ? {} : { rootId },
       label,
       ...coordinate === void 0 ? {} : { coordinate },
-      provenance: userProvenance(label)
+      provenance: userProvenance(label, localizer)
     });
   }
   for (const failure of [...input.loaded.failures, ...input.extraFailures ?? []]) {
@@ -6390,7 +6425,7 @@ function describeExtensionList(input) {
       state: failure.code === EXTENSION_ROOT_FAILURE_CODES.permissionRequired ? "needs-permission" : "failed",
       rootId: failure.rootId,
       label,
-      provenance: userProvenance(label),
+      provenance: userProvenance(label, localizer),
       code: failure.code,
       detail: failure.message
     });
@@ -6413,6 +6448,8 @@ function mountExtensionsUi(documentRef, options) {
   const root = documentRef.createElement("section");
   root.className = "web-extensions-view";
   const newId = options.newId ?? defaultId;
+  const localizer = options.localizer ?? createWebLocalizer(globalThis.navigator?.languages);
+  const copy = extensionCopy(localizer);
   let stored = [];
   let loaded = {
     inputs: [],
@@ -6488,10 +6525,10 @@ function mountExtensionsUi(documentRef, options) {
           ...coordinate === void 0 ? {} : { coordinate },
           handle
         });
-        status = `Added \xAB${handle.name}\xBB${coordinate === void 0 ? "" : ` (${coordinate})`}.`;
+        status = copy.added(handle.name, coordinate);
         await changed();
       } catch (error) {
-        status = `Could not add that folder: ${describe(error)}`;
+        status = copy.addFailed(describe(error));
         render();
       }
     })();
@@ -6500,10 +6537,10 @@ function mountExtensionsUi(documentRef, options) {
     void (async () => {
       try {
         await options.store.remove(rootId);
-        status = "Removed. The extension is gone from the list; reload to rebuild the host.";
+        status = copy.removedPending;
         await changed();
       } catch (error) {
-        status = `Could not remove it: ${describe(error)}`;
+        status = copy.removeFailed(describe(error));
         render();
       }
     })();
@@ -6514,10 +6551,10 @@ function mountExtensionsUi(documentRef, options) {
       if (record === void 0) return;
       try {
         const state = await requestUserExtensionPermission(record.handle);
-        status = state === "granted" ? `Access to \xAB${record.label}\xBB granted again.` : `Access to \xAB${record.label}\xBB was not granted (${state}).`;
+        status = state === "granted" ? copy.accessGranted(record.label) : copy.accessDenied(record.label, state);
         await changed();
       } catch (error) {
-        status = `Could not ask for access: ${describe(error)}`;
+        status = copy.accessFailed(describe(error));
         render();
       }
     })();
@@ -6528,7 +6565,7 @@ function mountExtensionsUi(documentRef, options) {
         await action();
         status = success;
       } catch (error) {
-        status = `Extension action failed: ${describe(error)}`;
+        status = copy.actionFailed(describe(error));
       }
       render();
     })();
@@ -6537,9 +6574,9 @@ function mountExtensionsUi(documentRef, options) {
     void (async () => {
       try {
         await action();
-        status = `${success} Reload the page to rebuild the running host.`;
+        status = `${success} ${copy.reloadPending}`;
       } catch (error) {
-        status = `Extension action failed: ${describe(error)}`;
+        status = copy.actionFailed(describe(error));
       }
       render();
     })();
@@ -6552,10 +6589,10 @@ function mountExtensionsUi(documentRef, options) {
   const renderExtensionSubjectTree = () => {
     const catalog = options.extensionSubjects?.();
     if (catalog === void 0) return void 0;
-    element(root, "h3", { text: "Installed extension subjects" });
+    element(root, "h3", { text: copy.subjects });
     element(root, "p", {
       part: "settings.description",
-      text: "These cards come from validated extension and contribution JSON. Contract rows are visual groups named by the exact declared contract id and major."
+      text: copy.subjectsDescription
     });
     const list = element(root, "div", { part: "settings.list" });
     for (const entry of catalog.entries) {
@@ -6565,7 +6602,7 @@ function mountExtensionsUi(documentRef, options) {
       const summary = documentRef.createElement("summary");
       const state = documentRef.createElement("span");
       state.textContent = extension.enabled ? "\u25CF" : "\u25CB";
-      state.setAttribute("aria-label", extension.enabled ? "enabled" : "disabled");
+      state.setAttribute("aria-label", extension.enabled ? copy.enabled : copy.disabled);
       const label = documentRef.createElement("span");
       label.dataset["mkPart"] = "settings.label";
       label.textContent = extension.displayName;
@@ -6578,17 +6615,17 @@ function mountExtensionsUi(documentRef, options) {
         button(
           item,
           "settings.add",
-          entry.configuredEnabled ? "Disable" : "Enable",
+          entry.configuredEnabled ? copy.disable : copy.enable,
           () => subjectAction(
             () => options.setExtensionEnabled?.(entry.id, !entry.configuredEnabled),
-            `${entry.configuredEnabled ? "Disabled" : "Enabled"} ${extension.displayName}.`
+            `${entry.configuredEnabled ? copy.disabled : copy.enabled} ${extension.displayName}.`
           )
         );
       }
       if (entry.configuredEnabled && !extension.enabled) {
         element(item, "span", {
           part: "settings.description",
-          text: "The extension is enabled directly, but its distribution package is disabled."
+          text: copy.packageDisabled
         });
       }
       for (const group of entry.projection.contractGroups) {
@@ -6596,7 +6633,10 @@ function mountExtensionsUi(documentRef, options) {
         contract.open = true;
         contract.dataset["mkPart"] = "settings.row";
         const contractSummary = documentRef.createElement("summary");
-        contractSummary.textContent = group.key;
+        contractSummary.textContent = contributionContractLabel(localizer, group.key);
+        contractSummary.title = localizer.text("extensions.tooltip.exactContract", {
+          contract: group.key
+        });
         contract.append(contractSummary);
         for (const contribution of group.contributions) {
           const row = element(contract, "div", { part: "settings.extension" });
@@ -6606,7 +6646,7 @@ function mountExtensionsUi(documentRef, options) {
           openContribution.textContent = `${contribution.effectiveEnabled ? "\u25CF" : "\u25CB"} ${contribution.displayName}`;
           openContribution.setAttribute(
             "aria-label",
-            `${contribution.displayName}, ${contribution.effectiveEnabled ? "enabled" : "disabled"}`
+            `${contribution.displayName}, ${contribution.effectiveEnabled ? copy.enabled : copy.disabled}`
           );
           openContribution.addEventListener(
             "click",
@@ -6617,10 +6657,10 @@ function mountExtensionsUi(documentRef, options) {
             button(
               row,
               "settings.add",
-              contribution.enabled ? "Disable" : "Enable",
+              contribution.enabled ? copy.disable : copy.enable,
               () => subjectAction(
                 () => options.setContributionEnabled?.(contribution.id, !contribution.enabled),
-                `${contribution.enabled ? "Disabled" : "Enabled"} ${contribution.displayName}.`
+                `${contribution.enabled ? copy.disabled : copy.enabled} ${contribution.displayName}.`
               )
             );
           }
@@ -6632,7 +6672,7 @@ function mountExtensionsUi(documentRef, options) {
     if (catalog.entries.length === 0) {
       element(list, "p", {
         part: "settings.description",
-        text: "The running host has no inventoried extension subjects."
+        text: copy.emptySubjects
       });
     }
     const cardHost = documentRef.createElement("div");
@@ -6655,7 +6695,9 @@ function mountExtensionsUi(documentRef, options) {
         );
         const active = documents.get(requestedSubjectId);
         if (active === void 0) throw new Error(`unknown extension subject ${requestedSubjectId}`);
-        const sections = await loadSubjectCardSections(subjectFactsSourceFromWire(active));
+        const sections = await loadSubjectCardSections(subjectFactsSourceFromWire(active), {
+          localizer
+        });
         if (revision !== cardRevision || !host.isConnected) return;
         const toolbar = documentRef.createElement("div");
         toolbar.dataset["mkPart"] = "settings.adder";
@@ -6664,20 +6706,20 @@ function mountExtensionsUi(documentRef, options) {
           button(
             toolbar,
             "settings.add",
-            subject.enabled ? "Disable contribution" : "Enable contribution",
+            subject.enabled ? copy.disableContribution : copy.enableContribution,
             () => subjectAction(
               () => options.setContributionEnabled?.(subject.id, !subject.enabled),
-              `${subject.enabled ? "Disabled" : "Enabled"} ${subject.displayName}.`
+              `${subject.enabled ? copy.disabled : copy.enabled} ${subject.displayName}.`
             )
           );
         } else if (subject.kind === "org.modkitx/extension" && options.setExtensionEnabled !== void 0) {
           button(
             toolbar,
             "settings.add",
-            entry.configuredEnabled ? "Disable extension" : "Enable extension",
+            entry.configuredEnabled ? copy.disableExtension : copy.enableExtension,
             () => subjectAction(
               () => options.setExtensionEnabled?.(entry.id, !entry.configuredEnabled),
-              `${entry.configuredEnabled ? "Disabled" : "Enabled"} ${subject.displayName}.`
+              `${entry.configuredEnabled ? copy.disabled : copy.enabled} ${subject.displayName}.`
             )
           );
         }
@@ -6689,6 +6731,7 @@ function mountExtensionsUi(documentRef, options) {
           }
         };
         activeCard = createSubjectCard(documentRef, {
+          localizer,
           label: active.subject.displayName,
           sections,
           onNavigate: navigate
@@ -6698,7 +6741,7 @@ function mountExtensionsUi(documentRef, options) {
         if (revision !== cardRevision || !host.isConnected) return;
         element(host, "p", {
           part: "settings.status",
-          text: `Could not open extension card: ${describe(error)}`
+          text: copy.cardFailed(describe(error))
         });
       }
     })();
@@ -6707,24 +6750,21 @@ function mountExtensionsUi(documentRef, options) {
     const controller = options.managedExtensions;
     if (controller === void 0) return;
     const model = controller.snapshot();
-    element(root, "h3", { text: "Downloadable extensions" });
+    element(root, "h3", { text: copy.downloadable });
     element(root, "p", {
       part: "settings.description",
-      text: "The catalog is checked only when you ask. Installing stores verified package bytes; nothing on this page imports or runs them."
+      text: copy.downloadableDescription
     });
     const catalogActions = element(root, "div", { part: "settings.adder" });
     button(
       catalogActions,
       "settings.add",
-      "Check available extensions",
-      () => managedAction(
-        () => controller.refreshCatalog(),
-        `Extension catalog checked at ${model.catalogLocation}.`
-      )
+      copy.checkAvailable,
+      () => managedAction(() => controller.refreshCatalog(), copy.catalogChecked(model.catalogLocation))
     );
     element(catalogActions, "span", {
       part: "settings.description",
-      text: model.catalogLoaded ? `Catalog loaded from ${model.catalogLocation}.` : `Catalog ${model.catalogLocation} has not been contacted in this session.`
+      text: model.catalogLoaded ? copy.catalogLoaded(model.catalogLocation) : copy.catalogNotContacted(model.catalogLocation)
     });
     const list = element(root, "div", { part: "settings.list" });
     for (const row of model.rows) {
@@ -6732,10 +6772,10 @@ function mountExtensionsUi(documentRef, options) {
       const text = element(item, "div", { part: "settings.extension-text" });
       element(text, "div", { part: "settings.label", text: row.name });
       const states = [
-        row.available ? `Available ${row.availableVersion ?? ""}`.trim() : "Not in catalog",
-        row.installed ? `Installed ${row.installedVersion ?? ""}`.trim() : "Not installed",
-        row.installed ? row.enabled ? "Enabled" : "Disabled" : void 0,
-        row.updateAvailable ? "Update available" : void 0
+        row.available ? `${localizer.text("extensions.group.available")} ${row.availableVersion ?? ""}`.trim() : copy.notInCatalog,
+        row.installed ? `${localizer.text("extensions.group.installed")} ${row.installedVersion ?? ""}`.trim() : copy.notInstalled,
+        row.installed ? row.enabled ? copy.enabled : copy.disabled : void 0,
+        row.updateAvailable ? copy.updateAvailable : void 0
       ].filter((value) => value !== void 0);
       element(text, "div", { part: "settings.description", text: states.join(" \xB7 ") });
       if (row.description !== void 0) {
@@ -6743,17 +6783,14 @@ function mountExtensionsUi(documentRef, options) {
       }
       element(text, "div", {
         part: "settings.description",
-        text: `${row.trusted ? "Trusted" : "Not trusted"}: ${row.trustReason}`
+        text: `${row.trusted ? copy.trusted : copy.notTrusted}: ${row.trustReason}`
       });
       if (!row.installed && row.available) {
         const install = button(
           item,
           "settings.add",
-          "Install",
-          () => managedAction(
-            () => controller.install(row.id),
-            `Installed ${row.name}. Reload the page to load the changed extension set.`
-          )
+          copy.install,
+          () => managedAction(() => controller.install(row.id), copy.installedStatus(row.name))
         );
         if (!row.trusted) {
           install.setAttribute("disabled", "");
@@ -6764,11 +6801,8 @@ function mountExtensionsUi(documentRef, options) {
         const update = button(
           item,
           "settings.add",
-          "Update",
-          () => managedAction(
-            () => controller.update(row.id),
-            `Updated ${row.name}. Reload the page to load the changed extension set.`
-          )
+          copy.update,
+          () => managedAction(() => controller.update(row.id), copy.updatedStatus(row.name))
         );
         if (!row.trusted) {
           update.setAttribute("disabled", "");
@@ -6779,27 +6813,24 @@ function mountExtensionsUi(documentRef, options) {
         button(
           item,
           "settings.add",
-          row.enabled ? "Disable" : "Enable",
+          row.enabled ? copy.disable : copy.enable,
           () => managedAction(
             () => controller.enable(row.id, !row.enabled),
-            `${row.enabled ? "Disabled" : "Enabled"} ${row.name}. Reload the page to load the changed extension set.`
+            `${row.enabled ? copy.disabled : copy.enabled} ${row.name}. ${copy.reloadPending}`
           )
         );
         button(
           item,
           "settings.remove",
-          "Remove",
-          () => managedAction(
-            () => controller.remove(row.id),
-            `Removed ${row.name}. Reload the page to load the changed extension set.`
-          )
+          copy.remove,
+          () => managedAction(() => controller.remove(row.id), copy.removedStatus(row.name))
         );
       }
     }
     if (model.rows.length === 0) {
       element(root, "p", {
         part: "settings.description",
-        text: model.catalogLoaded ? "The catalog contains no extensions." : "No downloaded extensions are installed. Check the catalog to see what is available."
+        text: model.catalogLoaded ? copy.catalogEmpty : copy.noDownloaded
       });
     }
   };
@@ -6808,22 +6839,25 @@ function mountExtensionsUi(documentRef, options) {
     activeCard?.destroy();
     activeCard = void 0;
     root.replaceChildren();
-    element(root, "h2", { text: "Extensions" });
-    element(root, "p", { part: "settings.description", text: USER_EXTENSION_TRUST_SENTENCE });
-    element(root, "p", { part: "settings.description", text: USER_EXTENSION_PROVENANCE_NOTE });
+    element(root, "h2", { text: copy.title });
+    element(root, "p", { part: "settings.description", text: copy.trustSentence });
+    element(root, "p", { part: "settings.description", text: copy.provenanceNote });
     const adder = element(root, "div", { part: "settings.adder" });
-    button(adder, "settings.add", "Add a folder\u2026", add);
+    button(adder, "settings.add", copy.addFolder, add);
     element(adder, "span", {
       part: "settings.description",
-      text: `Added folders are remembered in ${options.store.location}.`
+      text: copy.remembered(options.store.location)
     });
     const subjectCardHost = renderExtensionSubjectTree();
-    const rows = describeExtensionList({
-      catalog: options.catalog,
-      loaded,
-      stored,
-      ...options.conflicts === void 0 ? {} : { extraFailures: options.conflicts() }
-    });
+    const rows = describeExtensionList(
+      {
+        catalog: options.catalog,
+        loaded,
+        stored,
+        ...options.conflicts === void 0 ? {} : { extraFailures: options.conflicts() }
+      },
+      localizer
+    );
     const list = element(root, "div", { part: "settings.list" });
     for (const row of rows) {
       const item = element(list, "div", { part: "settings.extension" });
@@ -6842,15 +6876,15 @@ function mountExtensionsUi(documentRef, options) {
       if (row.kind === "user" && row.rootId !== void 0) {
         const rootId = row.rootId;
         if (row.state === "needs-permission") {
-          button(item, "settings.add", "Grant access", () => grant(rootId));
+          button(item, "settings.add", copy.grantAccess, () => grant(rootId));
         }
-        button(item, "settings.remove", "Remove", () => remove(rootId));
+        button(item, "settings.remove", copy.remove, () => remove(rootId));
       }
     }
     if (rows.every((row) => row.kind === "bundled")) {
       element(root, "p", {
         part: "settings.description",
-        text: "No folders added yet."
+        text: copy.emptyFolders
       });
     }
     renderManagedExtensions();
@@ -7183,27 +7217,52 @@ function fidelityNote(plan) {
 var isRejected = (result) => result.state === "rejected";
 
 // apps/web/src/edit-panel.ts
+var EDIT_FORM_KEYS = Object.freeze({
+  "png-set-text": "pngText",
+  "mp3-set-text-frame": "id3Text",
+  "jpeg-set-comment": "jpegComment",
+  "jpeg-remove-segment": "jpegRemove",
+  "zip-add-entry": "archiveAdd",
+  "zip-remove-entry": "archiveRemove",
+  "zip-rename-entry": "archiveRename",
+  "zip-replace-entry": "archiveReplace"
+});
+var EDIT_FIELD_KEYS = Object.freeze({
+  keyword: "keyword",
+  key: "key",
+  value: "value",
+  text: "text",
+  frameId: "frameId",
+  marker: "marker",
+  segmentIndex: "segmentIndex",
+  path: "entryPath",
+  contents: "contents",
+  from: "from",
+  to: "to"
+});
 var REOPENED_NOTE = "the tab was reopened, so this view is not stale";
 var NOT_REOPENED_NOTE = "the tab could not be reopened, so a view of it may be stale";
 function createEditPanel(options) {
+  const localizer = options.localizer ?? DEFAULT_UI_LOCALIZER;
+  const text = localizer.text;
   return defineViewerModule({
     abiVersion: 1,
     async mount(args) {
       const scope = new ViewerMountScope(args.signal);
-      const root = createSurface(args.container, "Edit");
+      const root = createSurface(args.container, text("web.inspector.edit"));
       const descriptor = args.descriptor;
       const ports = options.portsFor(descriptor);
       const offer = editOffer(descriptor, { editable: ports !== void 0 });
       const form = element(root, "div", { part: "form" });
       const chooser = element(form, "div", { part: "form.row" });
-      element(chooser, "label", { part: "form.label", text: "Operation" });
+      element(chooser, "label", { part: "form.label", text: text("edit.operation") });
       const picker = element(chooser, "select", { part: "form.select" });
       if (!(picker instanceof HTMLSelectElement)) throw new TypeError("no select element");
-      picker.setAttribute("aria-label", "Mutating operation");
+      picker.setAttribute("aria-label", text("edit.mutatingOperation"));
       const summary = element(form, "p", { part: "form.description" });
       const pane = element(form, "div", { part: "form.control" });
       const actions = element(form, "div", { part: "form.actions" });
-      const apply = element(actions, "button", { part: "form.button", text: "Apply" });
+      const apply = element(actions, "button", { part: "form.button", text: text("edit.apply") });
       apply.setAttribute("type", "button");
       const status = element(form, "output", { part: "form.status" });
       const notes = element(form, "div");
@@ -7216,12 +7275,18 @@ function createEditPanel(options) {
         notes.replaceChildren();
         const previous = options.lastOutcome(descriptor);
         if (previous !== void 0) {
-          element(notes, "div", { part: "form.description", text: `Last change: ${previous}` });
+          element(notes, "div", {
+            part: "form.description",
+            text: text("edit.lastChange", { change: previous })
+          });
         }
         for (const item of offer.unsupported) {
           element(notes, "div", {
             part: "form.description",
-            text: `${item.operationId}: not available in this host yet \u2014 ${item.reason}`
+            text: text("web.edit.unsupported", {
+              operation: item.operationId,
+              reason: item.reason
+            })
           });
         }
       };
@@ -7232,21 +7297,25 @@ function createEditPanel(options) {
         pane.replaceChildren();
         const chosen = selectedForm();
         if (chosen === void 0) {
-          setViewerText(summary, "This subject declares no mutating operation this host can drive.");
+          setViewerText(summary, text("edit.status.noneDrivable"));
           apply.setAttribute("disabled", "");
           return;
         }
         apply.removeAttribute("disabled");
-        setViewerText(summary, `${chosen.summary} (${chosen.operationId} \u2192 ${chosen.handlerId})`);
+        const formKey = EDIT_FORM_KEYS[chosen.id];
+        const formSummary = formKey === void 0 ? chosen.summary : text(`edit.summary.${formKey}`);
+        setViewerText(summary, `${formSummary} (${chosen.operationId} \u2192 ${chosen.handlerId})`);
         for (const item of chosen.fields) {
           const row = element(pane, "div", { part: "form.row" });
-          element(row, "label", { part: "form.label", text: item.label });
+          const fieldKey = EDIT_FIELD_KEYS[item.name];
+          const fieldLabel = fieldKey === void 0 ? item.label : text(`edit.field.${fieldKey}`);
+          element(row, "label", { part: "form.label", text: fieldLabel });
           const input = element(row, "input", { part: "form.input" });
           if (!(input instanceof HTMLInputElement)) continue;
           input.type = "text";
           input.name = item.name;
           input.value = item.initial;
-          input.setAttribute("aria-label", item.label);
+          input.setAttribute("aria-label", fieldLabel);
           if (item.hint !== void 0) input.title = item.hint;
           inputs.set(item.name, input);
           if (item.hint !== void 0) {
@@ -7257,7 +7326,7 @@ function createEditPanel(options) {
       const run = async () => {
         const chosen = selectedForm();
         if (chosen === void 0 || ports === void 0) {
-          say("this page holds no editing surface for the file, so nothing can be applied", true);
+          say(text("edit.sessionUnavailable"), true);
           return;
         }
         const values = /* @__PURE__ */ new Map();
@@ -7266,16 +7335,25 @@ function createEditPanel(options) {
         try {
           input = chosen.build(values);
         } catch (error) {
-          say(`cannot apply: ${error instanceof Error ? error.message : String(error)}`, true);
+          say(
+            text("edit.applyFailed", {
+              reason: error instanceof Error ? error.message : String(error)
+            }),
+            true
+          );
           return;
         }
-        say(`${chosen.label}: invoking ${chosen.handlerId}\u2026`, false);
+        const formKey = EDIT_FORM_KEYS[chosen.id];
+        const formLabel = formKey === void 0 ? chosen.label : text(`edit.operation.${formKey}`);
+        say(text("web.edit.invoking", { operation: formLabel, handler: chosen.handlerId }), false);
         let result;
         try {
           result = await args.operations.invoke(chosen.handlerId, input, { signal: scope.signal });
         } catch (error) {
           say(
-            `refused by the codec: ${error instanceof Error ? error.message : String(error)}`,
+            text("web.edit.codecRefused", {
+              reason: error instanceof Error ? error.message : String(error)
+            }),
             true
           );
           return;
@@ -7289,7 +7367,9 @@ function createEditPanel(options) {
           plan = ports.planFromOperation(result.output);
         } catch (error) {
           say(
-            `the host refused the plan: ${error instanceof Error ? error.message : String(error)}`,
+            text("web.edit.hostRefused", {
+              reason: error instanceof Error ? error.message : String(error)
+            }),
             true
           );
           return;
@@ -7299,15 +7379,15 @@ function createEditPanel(options) {
           say(applied.message, true);
           return;
         }
-        const outcome = `${chosen.label} \u2014 ${applied.message}${fidelityNote(plan)}`;
+        const outcome = `${formLabel} \u2014 ${applied.message}${fidelityNote(plan)}`;
         options.recordOutcome(descriptor, `${outcome}; ${REOPENED_NOTE}`);
-        say(`${outcome}; reopening the file to show it as it now is`, false);
+        say(text("web.edit.appliedReopening", { outcome }), false);
         if (scope.signal.aborted) return;
         const reopened = await options.reopen(descriptor);
         if (!reopened) {
           options.recordOutcome(descriptor, `${outcome}; ${NOT_REOPENED_NOTE}`);
           if (!scope.signal.aborted) {
-            say(`${outcome}; the tab could not be reopened, so this view is stale`, true);
+            say(text("web.edit.appliedReopenFailed", { outcome }), true);
           }
         }
       };
@@ -7320,7 +7400,10 @@ function createEditPanel(options) {
         });
       });
       for (const item of offer.forms) {
-        const option = element(picker, "option", { text: item.label });
+        const formKey = EDIT_FORM_KEYS[item.id];
+        const option = element(picker, "option", {
+          text: formKey === void 0 ? item.label : text(`edit.operation.${formKey}`)
+        });
         option.setAttribute("value", item.id);
       }
       picker.addEventListener("change", drawFields);
@@ -7330,11 +7413,14 @@ function createEditPanel(options) {
       if (offer.forms.length === 0) {
         setState(root, ["degraded"]);
         say(
-          offer.unsupported.length === 0 ? "nothing here can change this file" : `${offer.unsupported.length} of ${declared} mutating operation(s) declared, none drivable here`,
+          offer.unsupported.length === 0 ? text("edit.status.noneDrivable") : text("web.edit.noneDrivableCount", {
+            unsupported: offer.unsupported.length,
+            declared
+          }),
           false
         );
       } else {
-        say(`${offer.forms.length} form(s) over ${declared} mutating operation(s)`, false);
+        say(text("web.edit.formsAvailable", { forms: offer.forms.length, declared }), false);
       }
       return {
         async update() {
@@ -7867,6 +7953,36 @@ function diagnosticsBySeverity(diagnostics) {
     hint: Object.freeze(values.filter((item) => item.severity === "hint"))
   });
 }
+var PANELS_FALLBACK_MESSAGES = {
+  "panels.diagnostics": "Diagnostics",
+  "panels.operationComplete": "{operation}: complete",
+  "panels.operations": "Operations",
+  "panels.ready": "Ready",
+  "panels.working": "Working"
+};
+function createEnglishUiLocalizer2(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key, values = {}) {
+      const message = messages[key] ?? key;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value = values[name];
+        return value === void 0 ? `{${name}}` : String(value);
+      });
+    }
+  });
+}
+function withEnglishUiFallback2(localizer, messages) {
+  const fallback = createEnglishUiLocalizer2(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key, values = {}) {
+      const translated = localizer.text(key, values);
+      return translated === key ? fallback.text(key, values) : translated;
+    }
+  });
+}
 function renderDiagnostics(root, descriptor) {
   root.replaceChildren();
   const grouped = diagnosticsBySeverity(descriptor.diagnostics);
@@ -7898,20 +8014,27 @@ function renderDiagnostics(root, descriptor) {
     }
   }
 }
-var diagnosticsPanel = defineViewerModule2({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope2(args.signal);
-    const root = createSurface2(args.container, "Diagnostics");
-    renderDiagnostics(root, args.descriptor);
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      renderDiagnostics(root, descriptor);
-    });
-  }
-});
-function renderToolbar(root, descriptor, operations, signal) {
+function createDiagnosticsPanel(options = {}) {
+  const localizer = withEnglishUiFallback2(options.localizer, PANELS_FALLBACK_MESSAGES);
+  return defineViewerModule2({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope2(args.signal);
+      const root = createSurface2(args.container, localizer.text("panels.diagnostics"));
+      renderDiagnostics(root, args.descriptor);
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        renderDiagnostics(root, descriptor);
+      });
+    }
+  });
+}
+var diagnosticsPanel = createDiagnosticsPanel();
+function renderToolbar(root, descriptor, operations, signal, localizer) {
   root.replaceChildren();
-  const status = element3(root, "output", { text: "Ready", part: "operations.status" });
+  const status = element3(root, "output", {
+    text: localizer.text("panels.ready"),
+    part: "operations.status"
+  });
   for (const operation of descriptor.operations) {
     if (operation.mutatesSource === true) continue;
     const button2 = element3(root, "button", {
@@ -7928,11 +8051,14 @@ function renderToolbar(root, descriptor, operations, signal) {
       button2.disabled = true;
       invokeOperation(descriptor, operations, operation.id, null, {
         signal,
-        onProgress: (completed, total, message) => setViewerText3(status, `${message ?? "Working"}: ${completed}/${total ?? "?"}`)
+        onProgress: (completed, total, message) => setViewerText3(
+          status,
+          `${message ?? localizer.text("panels.working")}: ${completed}/${total ?? "?"}`
+        )
       }).then(
         (result) => setViewerText3(
           status,
-          result.state === "ok" ? `${operation.id}: complete` : result.reason
+          result.state === "ok" ? localizer.text("panels.operationComplete", { operation: operation.id }) : result.reason
         )
       ).catch(
         (error) => setViewerText3(
@@ -7945,17 +8071,21 @@ function renderToolbar(root, descriptor, operations, signal) {
     });
   }
 }
-var operationToolbar = defineViewerModule2({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope2(args.signal);
-    const root = createSurface2(args.container, "Operations");
-    renderToolbar(root, args.descriptor, args.operations, scope.signal);
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      renderToolbar(root, descriptor, args.operations, scope.signal);
-    });
-  }
-});
+function createOperationToolbar(options = {}) {
+  const localizer = withEnglishUiFallback2(options.localizer, PANELS_FALLBACK_MESSAGES);
+  return defineViewerModule2({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope2(args.signal);
+      const root = createSurface2(args.container, localizer.text("panels.operations"));
+      renderToolbar(root, args.descriptor, args.operations, scope.signal, localizer);
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        renderToolbar(root, descriptor, args.operations, scope.signal, localizer);
+      });
+    }
+  });
+}
+var operationToolbar = createOperationToolbar();
 
 // apps/web/src/inspector.ts
 var NON_MUTATING_OPERATION_IDS = Object.freeze([
@@ -7992,8 +8122,10 @@ function panelSlot(slotId, kind) {
   };
 }
 function createInspector(document2, options = {}) {
+  const text = (options.localizer ?? DEFAULT_UI_LOCALIZER).text;
   const root = document2.createElement("div");
   root.className = "web-inspector";
+  root.setAttribute("aria-label", text("web.inspector.label"));
   const heading = element(root, "div", { part: "viewer.status" });
   const declined = element(root, "div");
   const toolbarHost = element(root, "div", { part: "viewer.toolbar" });
@@ -8027,19 +8159,26 @@ function createInspector(document2, options = {}) {
     const needInput = declinedNonMutatingOperations(target.descriptor);
     if (needInput.length > 0) {
       lines.push(
-        `${needInput.map((operation) => operation.id).join(", ")}: not in the toolbar \u2014 they take an input it does not collect, so a stage or a panel drives them instead.`
+        text("web.inspector.needInput", {
+          operations: needInput.map((operation) => operation.id).join(", ")
+        })
       );
     }
     const mutating = declaredMutatingOperations(target.descriptor);
     if (mutating.length > 0 && !target.editable) {
       lines.push(
-        `${mutating.map((operation) => operation.id).join(", ")}: no Edit panel \u2014 ` + (target.editNote ?? "this page holds no writable handle for the file.")
+        text("web.inspector.noEdit", {
+          operations: mutating.map((operation) => operation.id).join(", "),
+          reason: target.editNote ?? text("web.inspector.noWritableHandle")
+        })
       );
     }
     const offer = editOffer(target.descriptor, { editable: target.editable });
     if (offer.forms.length === 0) {
       for (const item of offer.unsupported) {
-        lines.push(`${item.operationId}: no form here \u2014 ${item.reason}.`);
+        lines.push(
+          text("web.inspector.noForm", { operation: item.operationId, reason: item.reason })
+        );
       }
     }
     for (const line of lines) element(declined, "p", { part: "form.description", text: line });
@@ -8049,14 +8188,20 @@ function createInspector(document2, options = {}) {
     async show(target) {
       await unmountAll();
       if (target === void 0) {
-        setViewerText(heading, "No file is open.");
+        setViewerText(heading, text("web.inspector.noFile"));
         return;
       }
       const offered = nonMutatingDescriptor(target.descriptor);
       const offer = editOffer(target.descriptor, { editable: target.editable });
       setViewerText(
         heading,
-        `${target.label} \xB7 ${offered.operations.length} non-mutating operation(s) \xB7 ${offer.forms.length} edit form(s) over ${declaredMutatingOperations(target.descriptor).length} mutating operation(s) \xB7 ${target.descriptor.diagnostics.length} diagnostic(s)`
+        text("web.inspector.summary", {
+          label: target.label,
+          read: offered.operations.length,
+          forms: offer.forms.length,
+          write: declaredMutatingOperations(target.descriptor).length,
+          diagnostics: target.descriptor.diagnostics.length
+        })
       );
       drawDeclined(target);
       await mount(
@@ -8920,13 +9065,13 @@ function applyAppearance(root, appearance) {
 
 // apps/web/src/shell.ts
 var SAMPLES = Object.freeze([
-  { path: "./favicon-32.png", label: "favicon-32.png \u2014 PNG image" },
-  { path: "./samples/sample.csv", label: "sample.csv \u2014 delimited table" },
-  { path: "./samples/sample.ini", label: "sample.ini \u2014 INI tree" },
-  { path: "./samples/sample.svg", label: "sample.svg \u2014 vector scene" },
-  { path: "./samples/sample.md", label: "sample.md \u2014 markdown document" },
-  { path: "./samples/sample.mp3", label: "sample.mp3 \u2014 one second of MP3 silence" },
-  { path: "./samples/sample.zip", label: "sample.zip \u2014 container namespace" }
+  { path: "./favicon-32.png", labelKey: "web.sample.png" },
+  { path: "./samples/sample.csv", labelKey: "web.sample.csv" },
+  { path: "./samples/sample.ini", labelKey: "web.sample.ini" },
+  { path: "./samples/sample.svg", labelKey: "web.sample.svg" },
+  { path: "./samples/sample.md", labelKey: "web.sample.md" },
+  { path: "./samples/sample.mp3", labelKey: "web.sample.mp3" },
+  { path: "./samples/sample.zip", labelKey: "web.sample.zip" }
 ]);
 var describe2 = (error) => error instanceof Error ? error.message : String(error);
 function requireRoot() {
@@ -9000,14 +9145,17 @@ async function boot() {
   let settingsDocument = (await settingsStore.read()).document;
   const baseUrl = new URL("./", document.baseURI);
   const pageUrl = new URL(window.location.href);
-  const locale = resolveUiLocale(pageUrl.searchParams.get("lang") ?? navigator.languages);
-  const localizer = createUiLocalizer(locale);
+  const localizer = createWebLocalizer(pageUrl.searchParams.get("lang") ?? navigator.languages);
+  const locale = localizer.locale;
   const t2 = localizer.text;
   document.documentElement.lang = locale;
   document.title = t2("app.title");
   const booting = document.querySelector(".booting");
   if (booting !== null) setViewerText(booting, t2("app.starting"));
   const capability = describeFileCapability(window);
+  const capabilityNotice = t2(
+    capability.directories ? "web.capability.folder" : capability.filePicker ? "web.capability.file" : "web.capability.input"
+  );
   const bootDiagnostics = [];
   const bootSessionDiagnostics = [];
   const recoveryHost = {};
@@ -9043,6 +9191,7 @@ async function boot() {
   );
   const host = {};
   const extensionsUi = mountExtensionsUi(document, {
+    localizer,
     store: extensionStore,
     catalog: WEB_EXTENSION_CATALOG,
     managedExtensions,
@@ -9145,7 +9294,8 @@ async function boot() {
       main: services.main,
       worker: services.worker
     },
-    t2("app.title")
+    t2("app.title"),
+    localizer
   );
   const statusLine = document.createElement("output");
   statusLine.className = "web-status";
@@ -9184,6 +9334,7 @@ async function boot() {
     return true;
   };
   const editPanel = createEditPanel({
+    localizer,
     portsFor: (descriptor) => {
       const entryId = entryIdOf(descriptor);
       return entryId === void 0 ? void 0 : subjectEditors.get(entryId);
@@ -9203,7 +9354,7 @@ async function boot() {
       noteEditing(status.message);
     }
   });
-  const inspector = createInspector(document, { editPanel });
+  const inspector = createInspector(document, { editPanel, localizer });
   workbench.setPanel(inspector.root);
   let inspecting;
   const inspect = (entryId) => {
@@ -9222,6 +9373,7 @@ async function boot() {
   let markDirty = () => void 0;
   let focused;
   const editing = createWebEditingArm({
+    localizer,
     inventory: services.main.inventory,
     handleFor: (sourceId) => writableHandles.get(sourceId),
     onNotice(message) {
@@ -9234,13 +9386,13 @@ async function boot() {
      * `requestPermission`. Asking on load is both refused by the browser and rude.
      */
     async ensureWriteAccess(entryId) {
-      const current = await describeEditability(access, entryId);
+      const current = await describeEditability(access, entryId, entryId, localizer);
       if (current.state === "granted" || current.state === "no-permission-surface") return "granted";
       if (current.state !== "prompt") {
         noteEditing(current.sentence);
         return "denied";
       }
-      const asked = await requestWriteAccess(access);
+      const asked = await requestWriteAccess(access, localizer);
       noteEditing(asked.sentence);
       return asked.state === "granted" ? "granted" : asked.state === "denied" ? "denied" : "prompt";
     }
@@ -9248,6 +9400,7 @@ async function boot() {
   let openCount = 0;
   const nestedEntryId = (containerKey, entryPath) => `x3-nested:${containerKey}#${entryPath}`;
   const stages = createWebPreviewStages({
+    localizer,
     operationsFor: (descriptor) => operationSessions.get(descriptorKey(descriptor)),
     /*
      * The web half of `block9/archive-entry-as-subject` (block 13 slice B).
@@ -9261,7 +9414,7 @@ async function boot() {
     async openNestedEntry(descriptor, entryId, entryPath) {
       const key = descriptorKey(descriptor);
       const parent = assetSessions.get(key);
-      if (parent === void 0) return "The session that opened this container is no longer held.";
+      if (parent === void 0) return t2("web.archive.sessionGone");
       const nested = await openNestedSubject({
         parent,
         entryId,
@@ -9277,7 +9430,7 @@ async function boot() {
         }
       });
       if (nested.result.state !== "opened") {
-        return `${entryPath} \u2014 no codec claimed it inside this container (${nested.result.reason}).`;
+        return t2("web.status.noNestedCodec", { name: entryPath, reason: nested.result.reason });
       }
       const operations = operationSessions.get(key);
       const extract = descriptor.operations.find(
@@ -9298,7 +9451,7 @@ async function boot() {
   const previewBase = {
     supported: services.supportedExtensions,
     stages,
-    fallback: WEB_PREVIEW_FALLBACK,
+    fallback: createWebPreviewFallback(localizer),
     async openSession(entry, bytes, signal) {
       openCount += 1;
       const writable = editability.get(entry.id)?.editable === true;
@@ -9326,7 +9479,7 @@ async function boot() {
         ...signal === void 0 ? {} : { signal }
       });
       if (ordinary.state === "unresolved") {
-        say(`${entry.name} \u2014 no codec claimed it (${ordinary.reason}); showing the raw bytes.`);
+        say(t2("web.status.noCodec", { name: entry.name, reason: ordinary.reason }));
         return void 0;
       }
       let mapPreview = await prepareWebMapPreview({
@@ -9334,15 +9487,16 @@ async function boot() {
         opened: ordinary,
         grant,
         budgets: budget,
+        localizer,
         ...signal === void 0 ? {} : { signal }
       });
       if (mapPreview.state === "selection-required") {
         const choice = window.prompt(
-          `Choose a map for the World view by entering its id:
-
-${mapPreview.candidates.map(
-            (candidate) => `${candidate.candidateId} \u2014 ${candidate.displayName}${candidate.sourcePath === void 0 ? "" : ` (${candidate.sourcePath})`}`
-          ).join("\n")}`,
+          t2("web.map.choose", {
+            candidates: mapPreview.candidates.map(
+              (candidate) => `${candidate.candidateId} \u2014 ${candidate.displayName}${candidate.sourcePath === void 0 ? "" : ` (${candidate.sourcePath})`}`
+            ).join("\n")
+          }),
           ""
         );
         const selected = mapPreview.candidates.find(
@@ -9355,18 +9509,20 @@ ${mapPreview.candidates.map(
             grant,
             budgets: budget,
             selectionId: selected.candidateId,
+            localizer,
             ...signal === void 0 ? {} : { signal }
           });
         }
       }
       const result = mapPreview.opened;
       if (mapPreview.state === "permission-required") {
-        say(
-          `${entry.name} \u2014 map preview needs installation resources the browser cannot search; the ordinary archive view remains open.`
-        );
+        say(t2("web.map.permissionRequired", { name: entry.name }));
       } else if (mapPreview.state === "selection-required") {
         say(
-          `${entry.name} \u2014 map preview needs a choice (${mapPreview.candidates.map((candidate) => candidate.displayName).join(", ")}); the ordinary archive view remains open.`
+          t2("web.map.selectionRequired", {
+            name: entry.name,
+            candidates: mapPreview.candidates.map((candidate) => candidate.displayName).join(", ")
+          })
         );
       }
       const boundary = result.diagnostics.some(
@@ -9396,7 +9552,9 @@ ${mapPreview.candidates.map(
             request: { intent: "full", grant, budget }
           });
         } catch (error) {
-          say(`${entry.name} \u2014 shared commands unavailable: ${String(error)}`);
+          say(
+            t2("web.status.sharedCommandsUnavailable", { name: entry.name, reason: String(error) })
+          );
         }
       }
       operationSessions.set(key, operations);
@@ -9469,7 +9627,7 @@ ${mapPreview.candidates.map(
   const preview = {
     supported: codecPreview.supported,
     async open(container, entry, bytes, signal) {
-      const decision = await describeEditability(access, entry.id, entry.name);
+      const decision = await describeEditability(access, entry.id, entry.name, localizer);
       const source = sourceUriFor(entry.id);
       const handle = access?.handleOf(entry.id);
       const editable = decision.editable && pinnedRevisions.has(entry.id);
@@ -9481,9 +9639,10 @@ ${mapPreview.candidates.map(
     }
   };
   const editors = createEditorArea(document, {
+    localizer,
     preview,
     async confirmClose(entry) {
-      return window.confirm(`${entry.name} has unsaved changes. Close the tab and discard them?`) ? "discard" : "cancel";
+      return window.confirm(t2("web.status.unsavedClose", { name: entry.name })) ? "discard" : "cancel";
     },
     async read(entry, signal) {
       const nested = pendingNested.get(entry.id);
@@ -9528,6 +9687,7 @@ ${mapPreview.candidates.map(
     if (focused !== void 0) editors.markDirty(focused, true);
   });
   const explorer = createExplorer(document, {
+    localizer,
     preview,
     // The tree browses; the editor area owns what is open, so opening is delegated to it.
     onOpen(entry) {
@@ -9536,7 +9696,7 @@ ${mapPreview.candidates.map(
     async openFolder() {
       const handle = await pickDirectory();
       if (handle === void 0) {
-        say(capability.notice);
+        say(capabilityNotice);
         return void 0;
       }
       access = createDirectoryAccess(handle, { onNotice: say });
@@ -9576,7 +9736,7 @@ ${mapPreview.candidates.map(
   toolbarAction(t2("action.splitEditor"), t2("action.splitEditorTitle"), () => editors.split());
   toolbarAction(t2("action.enableEditing"), t2("action.enableEditingTitle"), () => {
     void (async () => {
-      const asked = await requestWriteAccess(access);
+      const asked = await requestWriteAccess(access, localizer);
       say(asked.sentence);
       noteEditing(asked.sentence);
     })();
@@ -9602,6 +9762,7 @@ ${mapPreview.candidates.map(
     void openFile(file).catch((error) => say(t2("error.drop", { reason: describe2(error) })));
   });
   const settingsUi = createSettingsUi(document, {
+    localizer,
     store: settingsStore,
     themes: appThemes,
     onAppearance(appearance) {
@@ -9661,8 +9822,8 @@ ${mapPreview.candidates.map(
       sharedMemory: t2(probe.sharedMemory ? "common.yes" : "common.no")
     })
   });
-  element(sidebar, "p", { part: "settings.description", text: capability.notice });
-  element(sidebar, "p", { part: "settings.description", text: WEB_EDITING_NOTICE });
+  element(sidebar, "p", { part: "settings.description", text: capabilityNotice });
+  element(sidebar, "p", { part: "settings.description", text: t2("web.editing.notice") });
   sidebar.append(editingStatus);
   element(sidebar, "h2", { text: t2("sidebar.facilities") });
   const facilities = element(sidebar, "ul", { part: "settings.list" });
@@ -9674,7 +9835,7 @@ ${mapPreview.candidates.map(
   for (const sample of SAMPLES) {
     const button2 = element(sampleList, "button", {
       part: "explorer.action",
-      text: sample.label
+      text: t2(sample.labelKey)
     });
     button2.type = "button";
     button2.addEventListener("click", () => {
@@ -9997,6 +10158,8 @@ boot().then(registerServiceWorker).catch((error) => {
   node.replaceChildren();
   const failure = document.createElement("p");
   failure.className = "booting";
-  failure.textContent = `Boot failed: ${describe2(error)}`;
+  failure.textContent = createWebLocalizer(navigator.languages).text("web.status.bootFailed", {
+    reason: describe2(error)
+  });
   node.append(failure);
 });

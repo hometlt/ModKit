@@ -64,6 +64,7 @@ import {
   type SubjectEditorPorts,
 } from '@modkitx-x3/host'
 import { createBrowserEditingBackend, type BrowserEditingBackend } from '@modkitx-x3/host/browser'
+import type { UiLocalizer } from '@modkitx-x3/ui/localization'
 
 import {
   isWritableHandle,
@@ -72,6 +73,7 @@ import {
   type WebPermissionState,
   type WebWritableFileHandleLike,
 } from './files.js'
+import { createWebLocalizer } from './localization.js'
 
 /** Scheme the shell mints subject source URIs under. One entry id, one source. */
 export const WEB_SOURCE_SCHEME = 'file-picker://'
@@ -128,15 +130,11 @@ export async function describeEditability(
   access: WebFileAccess | undefined,
   entryId: string,
   name: string = entryId,
+  localizer: UiLocalizer = createWebLocalizer('en'),
 ): Promise<EditabilityReport> {
   const handle = access?.handleOf(entryId)
   if (!isWritableHandle(handle)) {
-    return report(
-      'no-handle',
-      false,
-      `${name} has no writable handle: it arrived through a file input, a drop or a fetch, so this ` +
-        'page can show it but can never save it back. Pick it through "Open file…" or a folder to edit it.',
-    )
+    return report('no-handle', false, localizer.text('web.editability.noHandle', { name }))
   }
   const grant = access?.writeGrant ?? handle
   let state: WebPermissionState | undefined
@@ -146,35 +144,23 @@ export async function describeEditability(
     return report(
       'no-permission-surface',
       true,
-      `${name} has a writable handle, but this browser could not report its write permission ` +
-        `(${describe(error)}); the first save is where it is decided.`,
+      localizer.text('web.editability.queryFailed', { name, reason: describe(error) }),
     )
   }
   if (state === undefined) {
     return report(
       'no-permission-surface',
       true,
-      `${name} has a writable handle, but this browser exposes no permission query, so whether ` +
-        'the write is allowed is decided by the first save.',
+      localizer.text('web.editability.noQuery', { name }),
     )
   }
   if (state === 'denied') {
-    return report(
-      'denied',
-      false,
-      `Write access was denied for ${name}, so its text and hex editors are dropped. This build ` +
-        'will not offer a save it already knows the browser refuses.',
-    )
+    return report('denied', false, localizer.text('web.editability.denied', { name }))
   }
   if (state === 'granted') {
-    return report('granted', true, `${name} can be saved in place: write access is granted.`)
+    return report('granted', true, localizer.text('web.editability.granted', { name }))
   }
-  return report(
-    'prompt',
-    true,
-    `${name} can be saved in place once you allow write access; the browser asks on the first ` +
-      'save, or use "Enable editing" to answer it now.',
-  )
+  return report('prompt', true, localizer.text('web.editability.prompt', { name }))
 }
 
 export interface WriteAccessRequest {
@@ -190,26 +176,23 @@ export interface WriteAccessRequest {
  */
 export async function requestWriteAccess(
   access: WebFileAccess | undefined,
+  localizer: UiLocalizer = createWebLocalizer('en'),
 ): Promise<WriteAccessRequest> {
   const grant = access?.writeGrant
   if (access === undefined) {
-    return { state: 'no-handle', sentence: 'Open a folder or pick a file before enabling editing.' }
+    return { state: 'no-handle', sentence: localizer.text('web.editability.request.noFile') }
   }
   if (grant === undefined) {
     return {
       state: 'no-handle',
-      sentence:
-        `${access.label} has no writable handle: files opened through a drop, a plain file input ` +
-        'or a fetch cannot be written back. Use "Open file…" or a granted folder instead.',
+      sentence: localizer.text('web.editability.request.noHandle', { name: access.label }),
     }
   }
   const ask = grant.requestPermission
   if (ask === undefined) {
     return {
       state: 'no-permission-surface',
-      sentence:
-        `${access.label} cannot be asked for write permission in this browser; a save will try ` +
-        'directly and report what the browser answers.',
+      sentence: localizer.text('web.editability.request.noSurface', { name: access.label }),
     }
   }
   try {
@@ -217,20 +200,25 @@ export async function requestWriteAccess(
     if (state === 'granted') {
       return {
         state: 'granted',
-        sentence: `Write access granted for ${access.label}: the text and hex editors can save.`,
+        sentence: localizer.text('web.editability.request.granted', { name: access.label }),
       }
     }
     return {
       state: state === 'denied' ? 'denied' : 'prompt',
-      sentence:
+      sentence: localizer.text(
         state === 'denied'
-          ? `Write access denied for ${access.label}; files opened from now on show no editor.`
-          : `Write access was not granted for ${access.label}; nothing was changed.`,
+          ? 'web.editability.request.denied'
+          : 'web.editability.request.notGranted',
+        { name: access.label },
+      ),
     }
   } catch (error) {
     return {
       state: 'no-permission-surface',
-      sentence: `Asking for write access to ${access.label} failed: ${describe(error)}`,
+      sentence: localizer.text('web.editability.request.failed', {
+        name: access.label,
+        reason: describe(error),
+      }),
     }
   }
 }
@@ -301,6 +289,7 @@ export function normalizeChangeSet(
   change: unknown,
   targets: readonly SubjectEditTarget[],
   original: Uint8Array,
+  localizer: UiLocalizer = createWebLocalizer('en'),
 ): ChangeSet | undefined {
   if (!isRecord(change)) return undefined
   const declared = change['targets']
@@ -324,7 +313,7 @@ export function normalizeChangeSet(
           length: BigInt(merged.bytes.byteLength),
         },
         payload: { kind: 'inline', bytes: merged.bytes },
-        label: 'Edit bytes',
+        label: localizer.text('web.edit.bytesLabel'),
       },
     ],
     provenance: { actor: 'user' },
@@ -335,28 +324,31 @@ export function normalizeChangeSet(
 // refusal wording
 
 /** A commit rejection in words, so a refused save never reads as a generic failure. */
-export function describeRejection(reason: CommitRejection): string {
+export function describeRejection(
+  reason: CommitRejection,
+  localizer: UiLocalizer = createWebLocalizer('en'),
+): string {
   switch (reason) {
     case 'stale-revision':
-      return 'the file changed on disk after this tab read it'
+      return localizer.text('web.edit.rejection.staleRevision')
     case 'permission-missing':
-      return 'the grant this subject was opened under does not carry write permission'
+      return localizer.text('web.edit.rejection.permissionMissing')
     case 'write-scope-mismatch':
-      return 'the plan names a source outside this subject'
+      return localizer.text('web.edit.rejection.scopeMismatch')
     case 'guarantee-unachievable':
-      return 'this backend cannot promise the guarantee the plan asks for'
+      return localizer.text('web.edit.rejection.guarantee')
     case 'fidelity-unproven':
-      return 'no evidence proves the writer keeps what the plan claims it keeps'
+      return localizer.text('web.edit.rejection.fidelity')
     case 'confirmation-required':
-      return 'a lossy write needs an explicit confirmation this host does not collect'
+      return localizer.text('web.edit.rejection.confirmation')
     case 'payload-unavailable':
-      return 'the edited bytes exceed what this host will hand over inline'
+      return localizer.text('web.edit.rejection.payload')
     case 'source-read-only':
-      return 'the backend behind this source is read-only'
+      return localizer.text('web.edit.rejection.readOnly')
     case 'cancelled':
-      return 'the save was cancelled'
+      return localizer.text('web.edit.rejection.cancelled')
     default:
-      return 'the plan did not describe this subject at its open revision'
+      return localizer.text('web.edit.rejection.unknown')
   }
 }
 
@@ -396,6 +388,8 @@ export function webEditEvidence(
 // the arm
 
 export interface WebEditingArmOptions {
+  /** Host-selected locale; defaults to English for library callers. */
+  readonly localizer?: UiLocalizer
   /** Trusted inventory that selected the codec and attested its artifact coordinates. */
   readonly inventory: Inventory
   /** The writable handle behind a source id; `undefined` means "this host cannot write it". */
@@ -479,6 +473,7 @@ export interface WebEditingArm {
  * one hazard `createRawWriter` documents.
  */
 export function createWebEditingArm(options: WebEditingArmOptions): WebEditingArm {
+  const localizer = options.localizer ?? createWebLocalizer('en')
   const writer = createRawWriter()
   const backend = createBrowserEditingBackend({
     handleFor: options.handleFor,
@@ -510,24 +505,22 @@ export function createWebEditingArm(options: WebEditingArmOptions): WebEditingAr
       targets,
       state: () => base.edit.state(),
       async propose(change) {
-        const normalized = normalizeChangeSet(change, targets, request.bytes)
+        const normalized = normalizeChangeSet(change, targets, request.bytes, localizer)
         if (normalized === undefined) {
-          return refused(
-            'this editor produced a change this host cannot express as a literal replacement',
-          )
+          return refused(localizer.text('web.edit.changeUnsupported'))
         }
         // A proposed change is an unsaved change: the tab is dirty from here until a commit.
         options.onDirty(request.entryId, true)
         const result = await base.edit.propose(normalized)
         if (!result.valid) {
-          notice(firstMessage(result.diagnostics) ?? 'the writer refused the change')
+          notice(firstMessage(result.diagnostics) ?? localizer.text('web.edit.writerRefused'))
         }
         return result
       },
       async plan(change) {
-        const normalized = normalizeChangeSet(change, targets, request.bytes)
+        const normalized = normalizeChangeSet(change, targets, request.bytes, localizer)
         if (normalized === undefined) {
-          throw new TypeError('this host cannot plan the change set this editor produced')
+          throw new TypeError(localizer.text('web.edit.planUnsupported'))
         }
         return base.edit.plan(normalized)
       },
@@ -543,19 +536,20 @@ export function createWebEditingArm(options: WebEditingArmOptions): WebEditingAr
          * user discover it — re-pinning would need the subject reopened at the receipt's revision,
          * which neither the shipped editors nor `createCodecPreview` can ask for today.
          */
-        notice(
-          `${what} — written to the file this tab opened. Reopen it before editing again: this ` +
-            'tab still holds the revision it read.',
-        )
+        notice(localizer.text('web.edit.commit.writtenReopen', { what }))
       } else if (result.state === 'not-applied') {
+        const diagnosticMessage = firstMessage(result.diagnostics)
         notice(
-          `${what} refused — ${describeRejection(result.reason)}` +
-            `${firstMessage(result.diagnostics) === undefined ? '' : ` (${firstMessage(result.diagnostics) ?? ''})`}.`,
+          localizer.text('web.edit.commit.refused', {
+            what,
+            reason: describeRejection(result.reason, localizer),
+            diagnostic: diagnosticMessage === undefined ? '' : ` (${diagnosticMessage})`,
+          }),
         )
       } else if (result.state === 'rolled-back') {
-        notice(`${what} failed and the file was rolled back to what it held before.`)
+        notice(localizer.text('web.edit.commit.rolledBack', { what }))
       } else {
-        notice(`${what} landed only partly; recovery is available in the receipt.`)
+        notice(localizer.text('web.edit.commit.partial', { what }))
       }
       return result
     }
@@ -564,23 +558,33 @@ export function createWebEditingArm(options: WebEditingArmOptions): WebEditingAr
       async prepare(plan, prepareOptions) {
         const result = await base.commit.prepare(plan, prepareOptions)
         if (result.state === 'conflict') {
-          notice(
-            'refused — the file changed on disk after this tab read it, so nothing was ' +
-              'overwritten. Reopen it and redo the edit.',
-          )
+          notice(localizer.text('web.edit.commit.conflict'))
         } else if (result.state === 'rejected') {
-          notice(`refused before writing — ${describeRejection(result.reason)}.`)
+          notice(
+            localizer.text('web.edit.commit.rejected', {
+              reason: describeRejection(result.reason, localizer),
+            }),
+          )
         }
         return result
       },
       async commit(prepared, commitOptions) {
-        return announce(await base.commit.commit(prepared, commitOptions), 'Saved')
+        return announce(
+          await base.commit.commit(prepared, commitOptions),
+          localizer.text('web.edit.action.saved'),
+        )
       },
       async undo(transactionId, undoOptions) {
-        return announce(await base.commit.undo(transactionId, undoOptions), 'Undo')
+        return announce(
+          await base.commit.undo(transactionId, undoOptions),
+          localizer.text('web.edit.action.undo'),
+        )
       },
       async redo(transactionId, redoOptions) {
-        return announce(await base.commit.redo(transactionId, redoOptions), 'Redo')
+        return announce(
+          await base.commit.redo(transactionId, redoOptions),
+          localizer.text('web.edit.action.redo'),
+        )
       },
     }
 
@@ -595,8 +599,8 @@ export function createWebEditingArm(options: WebEditingArmOptions): WebEditingAr
         if (state !== 'granted') {
           notice(
             state === 'denied'
-              ? 'not saved — this browser denied write access to the file.'
-              : `not saved — write access was not granted (${state}).`,
+              ? localizer.text('web.edit.authorization.denied')
+              : localizer.text('web.edit.authorization.notGranted', { state }),
           )
           return undefined
         }
@@ -623,43 +627,53 @@ export function createWebEditingArm(options: WebEditingArmOptions): WebEditingAr
       const authorized = await ports.authorization.request(plan)
       if (authorized === undefined) {
         return {
-          message: `${request.name} was not written: this browser did not grant write access`,
+          message: localizer.text('web.edit.apply.noAccess', { name: request.name }),
           failed: true,
         }
       }
       const prepared = await ports.commit.prepare(plan, { grant: authorized.grant })
       if (prepared.state === 'conflict') {
         return {
-          message:
-            `refused before writing: ${describeRejection('stale-revision')} ` +
-            `(${prepared.conflicts.length} conflict(s))`,
+          message: localizer.text('web.edit.apply.conflict', {
+            reason: describeRejection('stale-revision', localizer),
+            conflicts: prepared.conflicts.length,
+          }),
           failed: true,
         }
       }
       if (prepared.state === 'rejected') {
         return {
-          message: `refused before writing: ${describeRejection(prepared.reason)} (${prepared.reason})`,
+          message: localizer.text('web.edit.apply.rejected', {
+            reason: describeRejection(prepared.reason, localizer),
+            code: prepared.reason,
+          }),
           failed: true,
         }
       }
       const result = await ports.commit.commit(prepared.prepared, { grant: authorized.grant })
       if (result.state === 'committed') {
-        return { message: `applied and written to ${request.name}`, failed: false }
+        return {
+          message: localizer.text('web.edit.apply.committed', { name: request.name }),
+          failed: false,
+        }
       }
       if (result.state === 'not-applied') {
         return {
-          message: `not applied: ${describeRejection(result.reason)} (${result.reason})`,
+          message: localizer.text('web.edit.apply.notApplied', {
+            reason: describeRejection(result.reason, localizer),
+            code: result.reason,
+          }),
           failed: true,
         }
       }
       if (result.state === 'rolled-back') {
         return {
-          message: `not applied: the write failed and ${request.name} was rolled back`,
+          message: localizer.text('web.edit.apply.rolledBack', { name: request.name }),
           failed: true,
         }
       }
       return {
-        message: `${request.name} was only partly written; recovery is in the receipt`,
+        message: localizer.text('web.edit.apply.partial', { name: request.name }),
         failed: true,
       }
     }
@@ -697,12 +711,17 @@ export function createWebEditingArm(options: WebEditingArmOptions): WebEditingAr
             : { maxInlinePayloadBytes: options.maxInlinePayloadBytes }),
         })
       } catch (error) {
-        options.onNotice(`${request.name} cannot be edited here: ${describe(error)}`)
+        options.onNotice(
+          localizer.text('web.edit.cannotEdit', {
+            name: request.name,
+            reason: describe(error),
+          }),
+        )
         return undefined
       }
       const base = editing.editorPorts
       if (base === undefined) {
-        options.onNotice(`${request.name} cannot be edited here: no writer backs this subject.`)
+        options.onNotice(localizer.text('web.edit.noWriter', { name: request.name }))
         return undefined
       }
       const ports = speaking(base, request)

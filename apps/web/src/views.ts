@@ -39,27 +39,28 @@ import {
   type ViewerModule,
   type ViewerMount,
 } from '@modkitx-x3/sdk'
-import { audioViewer } from '@modkitx-x3/ui/audio'
-import { boundedTextViewer } from '@modkitx-x3/ui/code'
-import { subjectCardViewer } from '@modkitx-x3/ui/card'
-import { subjectCalculationsViewer } from '@modkitx-x3/ui/calculations'
-import { textEditor } from '@modkitx-x3/ui/editor'
+import { boundedTextViewer, createBoundedTextViewer } from '@modkitx-x3/ui/code'
 import type { PreviewStage } from '@modkitx-x3/ui/explorer'
-import { relationGraphViewer } from '@modkitx-x3/ui/graph'
 import { gameTemplateViewer } from '@modkitx-x3/ui/template'
-import { hexViewer } from '@modkitx-x3/ui/hex'
-import { hexEditor } from '@modkitx-x3/ui/hex-editor'
-import { imageViewer } from '@modkitx-x3/ui/image'
+import { createHexViewer, hexViewer } from '@modkitx-x3/ui/hex'
+import { createHexEditor } from '@modkitx-x3/ui/hex-editor'
+import { createImageViewer } from '@modkitx-x3/ui/image'
 import { metadataPanel } from '@modkitx-x3/ui/metadata'
-import { MODEL_FACET_CONTRACTS, modelViewer } from '@modkitx-x3/ui/model'
-import { namespaceViewer } from '@modkitx-x3/ui/namespace'
+import { createModelViewer, MODEL_FACET_CONTRACTS } from '@modkitx-x3/ui/model'
+import { createNamespaceViewer } from '@modkitx-x3/ui/namespace'
+import { createRelationGraphViewer } from '@modkitx-x3/ui/graph'
+import { createSubjectCalculationsViewer } from '@modkitx-x3/ui/calculations'
+import { createSubjectCardViewer } from '@modkitx-x3/ui/card'
+import { createTextEditorModule } from '@modkitx-x3/ui/editor'
 import { tableViewer } from '@modkitx-x3/ui/table'
 import { virtualTextViewer } from '@modkitx-x3/ui/text-virtual'
 import { transportViewer } from '@modkitx-x3/ui/transport'
-import { treeViewer } from '@modkitx-x3/ui/tree'
-import { vectorViewer } from '@modkitx-x3/ui/vector'
-import { videoViewer } from '@modkitx-x3/ui/video'
-import { worldViewer } from '@modkitx-x3/ui/world'
+import { createAudioViewer } from '@modkitx-x3/ui/audio'
+import { createTreeViewer } from '@modkitx-x3/ui/tree'
+import { createVectorViewer } from '@modkitx-x3/ui/vector'
+import { createVideoViewer } from '@modkitx-x3/ui/video'
+import { createWorldViewer } from '@modkitx-x3/ui/world'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
 import {
   defineViewerModule,
   element,
@@ -83,6 +84,7 @@ export const ARCHIVE_LISTING_PAGES = 25
  * thing a `ViewerModule` is handed.
  */
 export interface WebViewContext {
+  readonly localizer?: UiLocalizer
   operationsFor(descriptor: AnyDescriptor): OperationSession | undefined
   /**
    * Open one member of this container as a subject of its own (block 13 slice B).
@@ -221,10 +223,15 @@ function compositeStage(parts: readonly CompositePart[]): ViewerModule {
 }
 
 /** Waveform plus the transport bar, when the codec publishes one. */
-const audioStage: ViewerModule = compositeStage([
-  { id: 'audio', module: audioViewer, contract: 'common.view/audio-media-source' },
-  { id: 'transport', module: transportViewer, contract: 'common.view/transport-source' },
-])
+const audioStage = (localizer: UiLocalizer): ViewerModule =>
+  compositeStage([
+    {
+      id: 'audio',
+      module: createAudioViewer({ localizer }),
+      contract: 'common.view/audio-media-source',
+    },
+    { id: 'transport', module: transportViewer, contract: 'common.view/transport-source' },
+  ])
 
 // ---------------------------------------------------------------------------------------------
 // archive / namespace stage
@@ -262,6 +269,8 @@ const hexDump = (bytes: Uint8Array): string => {
  * subject does not declare that contract, it says so instead of showing an empty box.
  */
 function archiveStage(context: WebViewContext): ViewerModule {
+  const localizer = context.localizer ?? DEFAULT_UI_LOCALIZER
+  const text = localizer.text
   return defineViewerModule({
     abiVersion: 1,
     async mount(args) {
@@ -274,7 +283,11 @@ function archiveStage(context: WebViewContext): ViewerModule {
       container.append(treeHost, entryHost)
 
       const slot = partSlot('entries', 'common.view/namespace-entry-source')
-      const tree = await namespaceViewer.mount({ ...args, container: treeHost, slot })
+      const tree = await createNamespaceViewer({ localizer }).mount({
+        ...args,
+        container: treeHost,
+        slot,
+      })
 
       const status = element(entryHost, 'output', { part: 'viewer.status' })
       /*
@@ -286,7 +299,7 @@ function archiveStage(context: WebViewContext): ViewerModule {
       const openAsSubject = entryHost.ownerDocument.createElement('button')
       openAsSubject.className = 'web-archive-open-subject'
       openAsSubject.type = 'button'
-      openAsSubject.textContent = 'Open as subject'
+      openAsSubject.textContent = text('web.archive.openSubject')
       entryHost.append(openAsSubject)
       openAsSubject.disabled = true
       if (context.openNestedEntry === undefined) openAsSubject.hidden = true
@@ -303,9 +316,10 @@ function archiveStage(context: WebViewContext): ViewerModule {
           .catch((error: unknown) => {
             setViewerText(
               status,
-              `opening ${target.path} as a subject failed: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
+              text('web.archive.openFailed', {
+                path: target.path,
+                reason: error instanceof Error ? error.message : String(error),
+              }),
             )
           })
           .finally(() => {
@@ -313,7 +327,7 @@ function archiveStage(context: WebViewContext): ViewerModule {
           })
       })
       const body = element(entryHost, 'pre', { part: 'hex.content' })
-      setViewerText(status, 'Pick an entry in the tree to inspect it.')
+      setViewerText(status, text('web.archive.pick'))
 
       /*
        * A second lease on the same namespace source. Entry ids are opaque by contract — the ZIP
@@ -359,11 +373,8 @@ function archiveStage(context: WebViewContext): ViewerModule {
         const entryId = String(detail.entryId ?? '')
         setViewerText(
           status,
-          `${entryId} → ${reference?.uri ?? 'no source reference'}${
-            extract === undefined
-              ? ' · this subject declares no available container.extract operation, so the bytes ' +
-                'cannot be read in this host yet'
-              : ''
+          `${entryId} → ${reference?.uri ?? text('web.archive.noReference')}${
+            extract === undefined ? ` · ${text('web.archive.noExtract')}` : ''
           }`,
         )
         if (extract === undefined) {
@@ -372,14 +383,14 @@ function archiveStage(context: WebViewContext): ViewerModule {
         }
         const operations = context.operationsFor(args.descriptor)
         if (operations === undefined) {
-          setViewerText(body, 'The session that opened this container is no longer held.')
+          setViewerText(body, text('web.archive.sessionGone'))
           return
         }
         void (async () => {
           try {
             const path = await pathFor(entryId)
             if (path === undefined) {
-              setViewerText(body, `the namespace does not list an entry with id ${entryId}`)
+              setViewerText(body, text('web.archive.unknownEntry', { entry: entryId }))
               return
             }
             // Entry ids are opaque and come from the namespace source that owns this operation.
@@ -391,19 +402,24 @@ function archiveStage(context: WebViewContext): ViewerModule {
               setViewerText(
                 body,
                 result.state === 'ok'
-                  ? `the operation answered ${result.output.kind}, not bytes`
-                  : `rejected: ${result.reason}`,
+                  ? text('web.archive.wrongOutput', { kind: result.output.kind })
+                  : text('web.archive.rejected', { reason: result.reason }),
               )
               return
             }
             const bytes = result.output.value.slice(0, ARCHIVE_ENTRY_PREVIEW_BYTES)
-            const text = previewText(bytes)
-            setViewerText(body, text ?? hexDump(bytes), ARCHIVE_ENTRY_PREVIEW_BYTES * 4)
+            const preview = previewText(bytes)
+            setViewerText(body, preview ?? hexDump(bytes), ARCHIVE_ENTRY_PREVIEW_BYTES * 4)
             setViewerText(
               status,
-              `${path} · ${result.output.value.length} bytes · shown as ${
-                text === undefined ? 'hex' : 'text'
-              }`,
+              text('web.archive.shown', {
+                path,
+                bytes: result.output.value.length,
+                mode:
+                  preview === undefined
+                    ? localizer.text('web.archive.modeHex')
+                    : localizer.text('web.archive.modeText'),
+              }),
             )
             // The bytes above are the preview; this is what turns the same entry into a subject.
             picked = { entryId, path }
@@ -411,7 +427,9 @@ function archiveStage(context: WebViewContext): ViewerModule {
           } catch (error) {
             setViewerText(
               body,
-              `entry read failed: ${error instanceof Error ? error.message : String(error)}`,
+              text('web.archive.readFailed', {
+                reason: error instanceof Error ? error.message : String(error),
+              }),
             )
           }
         })()
@@ -447,82 +465,99 @@ function archiveStage(context: WebViewContext): ViewerModule {
  * rendering of a subject comes up first and hex stays last as the thing that always works.
  */
 export function createWebPreviewStages(context: WebViewContext): readonly PreviewStage[] {
+  const localizer = context.localizer ?? DEFAULT_UI_LOCALIZER
+  const text = localizer.text
   return Object.freeze([
     {
       id: 'image',
-      label: 'Image',
+      label: text('web.view.image'),
       contract: 'common.view/raster-image-source',
-      module: imageViewer,
+      module: createImageViewer({ localizer }),
     },
     {
       id: 'vector',
-      label: 'Vector',
+      label: text('web.view.vector'),
       contract: 'common.view/vector-scene-source',
-      module: vectorViewer,
+      module: createVectorViewer({ localizer }),
     },
     {
       id: 'world',
-      label: 'World',
+      label: text('web.view.world'),
       contract: 'common.view/world-scene-source',
-      module: worldViewer,
+      module: createWorldViewer({ localizer }),
     },
     {
       id: 'model',
-      label: 'Model',
+      label: text('web.view.model'),
       contract: 'common.view/model-scene-source',
-      module: modelViewer,
+      module: createModelViewer({ localizer }),
       // optional, never a selection rule: a codec publishing none of these still gets the stage
       optionalContracts: MODEL_FACET_CONTRACTS,
     },
-    { id: 'audio', label: 'Audio', contract: 'common.view/audio-media-source', module: audioStage },
+    {
+      id: 'audio',
+      label: text('web.view.audio'),
+      contract: 'common.view/audio-media-source',
+      module: audioStage(localizer),
+    },
     {
       id: 'video',
-      label: 'Video',
+      label: text('web.view.video'),
       contract: 'common.view/video-media-source',
-      module: videoViewer,
+      module: createVideoViewer({ localizer }),
     },
     {
       id: 'archive',
-      label: 'Entries',
+      label: text('web.view.archive'),
       contract: 'common.view/namespace-entry-source',
       module: archiveStage(context),
     },
     {
       id: 'template',
-      label: 'Template',
+      label: text('web.view.template'),
       operation: 'view.template',
       module: gameTemplateViewer,
     },
     {
       id: 'card',
-      label: 'Card',
+      label: text('web.view.card'),
       contract: 'common.view/subject-facts-source',
-      module: subjectCardViewer,
+      module: createSubjectCardViewer({ localizer }),
     },
     {
       id: 'calculations',
-      label: 'Calculations',
+      label: text('web.view.calculations'),
       contract: 'common.view/subject-calculations-source',
-      module: subjectCalculationsViewer,
+      module: createSubjectCalculationsViewer({ localizer }),
     },
-    { id: 'table', label: 'Table', contract: 'common.view/table-data-source', module: tableViewer },
-    { id: 'tree', label: 'Tree', contract: 'common.view/tree-data-source', module: treeViewer },
+    {
+      id: 'table',
+      label: text('web.view.table'),
+      contract: 'common.view/table-data-source',
+      module: tableViewer,
+    },
+    {
+      id: 'tree',
+      label: text('web.view.tree'),
+      contract: 'common.view/tree-data-source',
+      module: createTreeViewer({ localizer }),
+    },
     {
       id: 'relations',
-      label: 'Relations',
+      label: text('web.view.relations'),
       contract: 'common.view/relation-graph-source',
-      module: relationGraphViewer,
+      module: createRelationGraphViewer({ localizer }),
     },
     {
       id: 'text',
-      label: 'Text',
+      label: text('web.view.text'),
       contract: 'common.view/text-data-source',
-      module: boundedTextViewer,
+      module: createBoundedTextViewer({ localizer }),
       trait: 'content.text',
     },
     {
       id: 'virtual-text',
-      label: 'Text (streaming)',
+      label: text('web.view.virtualText'),
       contract: 'common.view/text-data-source',
       module: virtualTextViewer,
       trait: 'content.text',
@@ -536,30 +571,35 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
      */
     {
       id: 'metadata',
-      label: 'Metadata',
+      label: text('web.view.metadata'),
       contract: 'common.view/byte-range-source',
       module: metadataPanel,
       appLocal: true,
     },
-    { id: 'hex', label: 'Hex', contract: 'common.view/byte-range-source', module: hexViewer },
+    {
+      id: 'hex',
+      label: text('web.view.hex'),
+      contract: 'common.view/byte-range-source',
+      module: createHexViewer({ localizer }),
+    },
     /*
      * Mounted only for a subject the shell handed `editorPorts` for — a file with a File System
      * Access handle whose write permission the browser has not refused. See the module comment.
      */
     {
       id: 'text-editor',
-      label: 'Text (editor)',
+      label: text('web.view.textEditor'),
       contract: 'common.view/text-data-source',
-      module: textEditor,
+      module: createTextEditorModule({ localizer }),
       trait: 'content.text',
       editable: true,
       appLocal: true,
     },
     {
       id: 'hex-editor',
-      label: 'Hex (editor)',
+      label: text('web.view.hexEditor'),
       contract: 'common.view/byte-range-source',
-      module: hexEditor,
+      module: createHexEditor({ localizer }),
       editable: true,
       appLocal: true,
     },
@@ -568,6 +608,13 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
 
 /** Shown when no codec claims the file at all, so "unknown format" still means "look at it". */
 export const WEB_PREVIEW_FALLBACK = Object.freeze({ text: boundedTextViewer, hex: hexViewer })
+
+export function createWebPreviewFallback(localizer: UiLocalizer) {
+  return Object.freeze({
+    text: createBoundedTextViewer({ localizer }),
+    hex: createHexViewer({ localizer }),
+  })
+}
 
 /** The stage ids that only ever appear when a host supplies editor ports. */
 export const EDITABLE_STAGE_IDS = Object.freeze(['text-editor', 'hex-editor'])

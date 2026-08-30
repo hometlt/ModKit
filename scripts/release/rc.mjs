@@ -47,6 +47,8 @@ const APP_PAYLOADS = Object.freeze({
   'apps/vscode': Object.freeze([
     'bundled-contributes.v1.json',
     'contributes.generated.json',
+    'package.nls.json',
+    'package.nls.ru.json',
     'dist-app',
     'generated',
     'media',

@@ -8,6 +8,9 @@
  */
 import { setPart, setState } from '../parts.js'
 import { safeViewerText } from '../viewer/index.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { SHELL_CHROME_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export interface Crumb {
   readonly id: string
@@ -17,6 +20,7 @@ export interface Crumb {
 }
 
 export interface ShellHeaderOptions {
+  readonly localizer?: UiLocalizer
   readonly crumbs: readonly Crumb[]
   /**
    * Archive paths get deep. Beyond this many segments the middle collapses behind an expander,
@@ -32,13 +36,14 @@ export interface ShellHeader {
 }
 
 export function createShellHeader(document: Document, options: ShellHeaderOptions): ShellHeader {
+  const localizer = withEnglishUiFallback(options.localizer, SHELL_CHROME_FALLBACK_MESSAGES)
   const root = document.createElement('header')
   root.className = 'modkit-shell__header'
   setPart(root, 'shell.header')
 
   const nav = document.createElement('nav')
   nav.className = 'modkit-shell__breadcrumb'
-  nav.setAttribute('aria-label', 'Subject path')
+  nav.setAttribute('aria-label', localizer.text('shell.subjectPath'))
   setPart(nav, 'shell.breadcrumb')
   root.append(nav)
 
@@ -83,7 +88,9 @@ export function createShellHeader(document: Document, options: ShellHeaderOption
         more.type = 'button'
         more.className = 'modkit-shell__crumb'
         more.textContent = '…'
-        more.title = `Show ${crumbs.length - maximum + 1} hidden segment(s)`
+        more.title = localizer.text('shell.hiddenSegments', {
+          count: crumbs.length - maximum + 1,
+        })
         more.setAttribute('aria-label', more.title)
         setPart(more, 'shell.crumb-more')
         more.addEventListener('click', () => {
@@ -156,6 +163,7 @@ export interface ViewMode {
 }
 
 export interface ViewPickerOptions {
+  readonly localizer?: UiLocalizer
   /** Segmented icon buttons, top-left in MK2. */
   readonly modes: readonly ViewMode[]
   readonly activeMode?: string
@@ -172,6 +180,7 @@ export interface ViewPicker {
 }
 
 export function createViewPicker(document: Document, options: ViewPickerOptions): ViewPicker {
+  const localizer = withEnglishUiFallback(options.localizer, SHELL_CHROME_FALLBACK_MESSAGES)
   const root = document.createElement('div')
   root.className = 'modkit-viewpicker'
   setPart(root, 'viewpicker')
@@ -179,7 +188,7 @@ export function createViewPicker(document: Document, options: ViewPickerOptions)
   const modes = document.createElement('div')
   modes.className = 'modkit-viewpicker__modes'
   modes.setAttribute('role', 'group')
-  modes.setAttribute('aria-label', 'View mode')
+  modes.setAttribute('aria-label', localizer.text('shell.viewMode'))
   setPart(modes, 'viewpicker.modes')
   root.append(modes)
 
@@ -212,7 +221,7 @@ export function createViewPicker(document: Document, options: ViewPickerOptions)
   if (options.viewers !== undefined && options.viewers.length > 0) {
     const select = document.createElement('select')
     select.className = 'modkit-viewpicker__select'
-    select.setAttribute('aria-label', 'Viewer')
+    select.setAttribute('aria-label', localizer.text('shell.viewer'))
     setPart(select, 'viewpicker.select')
     for (const viewer of options.viewers) {
       const option = document.createElement('option')

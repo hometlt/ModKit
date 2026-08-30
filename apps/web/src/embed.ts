@@ -103,6 +103,7 @@ import {
   type PreviewStage,
 } from '@modkitx-x3/ui/explorer'
 import { element, setPart, setState, setViewerText } from '@modkitx-x3/ui/viewer'
+import type { UiLocalizer } from '@modkitx-x3/ui/localization'
 
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import {
@@ -126,7 +127,8 @@ import {
   type WebExtensionCatalog,
   type WebSubjectServices,
 } from './subjects.js'
-import { createWebPreviewStages, stageIdOf, WEB_PREVIEW_FALLBACK } from './views.js'
+import { createWebPreviewFallback, createWebPreviewStages, stageIdOf } from './views.js'
+import { createWebLocalizer } from './localization.js'
 
 /** The element name this module registers by default. */
 export const MODKIT_VIEWER_TAG = 'modkit-viewer'
@@ -268,15 +270,16 @@ export function resolveExtensionCatalogUrl(attribute: string, documentBase: stri
 export function extensionCatalogRefusal(
   catalogUrl: string,
   allowedOrigins: readonly string[] = EMBED_EXTENSION_ORIGINS,
+  localizer: UiLocalizer = createWebLocalizer('en'),
 ): string | undefined {
   let url: URL
   try {
     url = new URL(catalogUrl)
   } catch {
-    return `extension-catalog «${catalogUrl}» is not a valid URL.`
+    return localizer.text('web.embed.catalog.invalidUrl', { url: catalogUrl })
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    return `extension-catalog must use http or https; ${url.protocol} is not admitted.`
+    return localizer.text('web.embed.catalog.protocol', { protocol: url.protocol })
   }
   const allowed = new Set(
     allowedOrigins.flatMap(value => {
@@ -288,10 +291,7 @@ export function extensionCatalogRefusal(
     }),
   )
   if (allowed.has(url.origin)) return undefined
-  return (
-    `The extension catalog origin ${url.origin} is not in this embed.js build-time allowlist. ` +
-    'The embedding page cannot add an origin; the deployer must rebuild embed.js with it.'
-  )
+  return localizer.text('web.embed.catalog.origin', { origin: url.origin })
 }
 
 const record = (value: unknown): value is Record<string, unknown> =>
@@ -308,14 +308,17 @@ const pairs = (value: unknown, check: (item: unknown) => boolean): boolean =>
   )
 
 /** Fail-closed structural boundary for a catalog fetched as untyped JSON. */
-export function parseWebExtensionCatalog(value: unknown): WebExtensionCatalog {
+export function parseWebExtensionCatalog(
+  value: unknown,
+  localizer: UiLocalizer = createWebLocalizer('en'),
+): WebExtensionCatalog {
   if (
     !record(value) ||
     value['schemaVersion'] !== 1 ||
     !Array.isArray(value['extensions']) ||
     !Array.isArray(value['excluded'])
   ) {
-    throw new TypeError('extension catalog must be a schemaVersion 1 object with array entries')
+    throw new TypeError(localizer.text('web.embed.catalog.schema'))
   }
   for (const excluded of value['excluded']) {
     if (
@@ -323,7 +326,7 @@ export function parseWebExtensionCatalog(value: unknown): WebExtensionCatalog {
       typeof excluded['name'] !== 'string' ||
       typeof excluded['reason'] !== 'string'
     ) {
-      throw new TypeError('extension catalog exclusions require string name and reason fields')
+      throw new TypeError(localizer.text('web.embed.catalog.exclusion'))
     }
   }
   for (const entry of value['extensions']) {
@@ -342,7 +345,7 @@ export function parseWebExtensionCatalog(value: unknown): WebExtensionCatalog {
       !record(entry['artifact']['fileDigests']) ||
       !Object.values(entry['artifact']['fileDigests']).every(digest)
     ) {
-      throw new TypeError('extension catalog contains a malformed extension entry')
+      throw new TypeError(localizer.text('web.embed.catalog.malformed'))
     }
   }
   return value as unknown as WebExtensionCatalog
@@ -374,19 +377,19 @@ export function resolveAssetBase(
  * Stated up front rather than discovered on the first `new Worker(...)`: the worker script is
  * fetched in same-origin mode, so a cross-origin asset base is not a CORS problem a server can fix.
  */
-export function crossOriginRefusal(assetBase: string, pageOrigin: string): string | undefined {
+export function crossOriginRefusal(
+  assetBase: string,
+  pageOrigin: string,
+  localizer: UiLocalizer = createWebLocalizer('en'),
+): string | undefined {
   let origin: string
   try {
     origin = new URL(assetBase).origin
   } catch {
-    return `asset-base «${assetBase}» is not a URL this page can resolve.`
+    return localizer.text('web.embed.asset.invalidUrl', { base: assetBase })
   }
   if (origin === pageOrigin) return undefined
-  return (
-    `The modkit assets at ${origin} are cross-origin to this page (${pageOrigin}). A module ` +
-    'worker script is fetched in same-origin mode, so no CORS header can make that work: serve ' +
-    'the modkit assets from this origin (copy or reverse-proxy them) and point asset-base there.'
-  )
+  return localizer.text('web.embed.asset.crossOrigin', { origin, pageOrigin })
 }
 
 /** The display / detection name: the `name` attribute, else the basename of `src`. */
@@ -470,6 +473,8 @@ export interface EmbedHost {
   readonly assetBase: string
   readonly services: WebSubjectServices
   readonly stages: readonly PreviewStage[]
+  readonly fallback: ReturnType<typeof createWebPreviewFallback>
+  readonly localizer: UiLocalizer
   readonly styles: EmbedStyles
   /**
    * Live operation sessions by descriptor identity. The container stage asks for one by descriptor
@@ -518,10 +523,12 @@ export function installEmbedHostLifecycle(
 const descriptorKey = (descriptor: AnyDescriptor): string =>
   `${descriptor.subjectUri} :: ${descriptor.revision}`
 
-async function loadStyles(assetBase: string): Promise<EmbedStyles> {
+async function loadStyles(assetBase: string, localizer: UiLocalizer): Promise<EmbedStyles> {
   const response = await fetch(new URL('modkit-ui.css', assetBase).href)
   if (!response.ok) {
-    throw new Error(`modkit-ui.css could not be fetched from ${assetBase} (${response.status})`)
+    throw new Error(
+      localizer.text('web.embed.stylesFetch', { base: assetBase, status: response.status }),
+    )
   }
   const text = `${await response.text()}\n${EMBED_CHROME_CSS}`
   if (typeof CSSStyleSheet !== 'function') return { text }
@@ -541,22 +548,33 @@ async function loadStyles(assetBase: string): Promise<EmbedStyles> {
   }
 }
 
-async function fetchExtensionCatalog(catalogUrl: string): Promise<WebExtensionCatalog> {
+async function fetchExtensionCatalog(
+  catalogUrl: string,
+  localizer: UiLocalizer,
+): Promise<WebExtensionCatalog> {
   let response: Response
   try {
     response = await fetch(catalogUrl, { credentials: 'omit' })
   } catch (error) {
-    throw new Error(`extension catalog ${catalogUrl} could not be fetched: ${describe(error)}`)
+    throw new Error(
+      localizer.text('web.embed.catalogFetch', { url: catalogUrl, reason: describe(error) }),
+    )
   }
   if (!response.ok) {
     throw new Error(
-      `extension catalog ${catalogUrl} could not be fetched (${response.status} ${response.statusText})`,
+      localizer.text('web.embed.catalogHttp', {
+        url: catalogUrl,
+        status: response.status,
+        statusText: response.statusText,
+      }),
     )
   }
   try {
-    return parseWebExtensionCatalog(await response.json())
+    return parseWebExtensionCatalog(await response.json(), localizer)
   } catch (error) {
-    throw new Error(`extension catalog ${catalogUrl} is invalid: ${describe(error)}`)
+    throw new Error(
+      localizer.text('web.embed.catalogInvalid', { url: catalogUrl, reason: describe(error) }),
+    )
   }
 }
 
@@ -564,12 +582,15 @@ async function composeEmbedHost(
   assetBase: string,
   extensionCatalogUrl?: string,
 ): Promise<EmbedHost> {
+  const localizer = createWebLocalizer(
+    globalThis.document?.documentElement.lang || globalThis.navigator?.languages,
+  )
   const additionalCatalogs =
     extensionCatalogUrl === undefined
       ? []
       : [
           {
-            catalog: await fetchExtensionCatalog(extensionCatalogUrl),
+            catalog: await fetchExtensionCatalog(extensionCatalogUrl, localizer),
             baseUrl: extensionCatalogUrl,
           },
         ]
@@ -593,10 +614,19 @@ async function composeEmbedHost(
   })
   const operations = new Map<string, OperationSession>()
   const stages = createWebPreviewStages({
+    localizer,
     operationsFor: descriptor => operations.get(descriptorKey(descriptor)),
   })
-  const styles = await loadStyles(assetBase)
-  return Object.freeze({ assetBase, services, stages, styles, operations })
+  const styles = await loadStyles(assetBase, localizer)
+  return Object.freeze({
+    assetBase,
+    services,
+    stages,
+    fallback: createWebPreviewFallback(localizer),
+    localizer,
+    styles,
+    operations,
+  })
 }
 
 /** The one host for this asset/catalog pair, composed on first use. */
@@ -779,6 +809,9 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
   }
   if (registry.get(tagName) !== undefined) return tagName
   const defaultAssetBase = options.assetBase ?? import.meta.url
+  const localizer = createWebLocalizer(
+    globalThis.document?.documentElement.lang || globalThis.navigator?.languages,
+  )
 
   class ModkitViewerElement extends base {
     static get observedAttributes(): readonly string[] {
@@ -814,7 +847,7 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
       const picker = document.createElement('select')
       picker.className = 'modkit-embed__picker'
       picker.hidden = true
-      picker.setAttribute('aria-label', 'View')
+      picker.setAttribute('aria-label', localizer.text('web.embed.view'))
       setPart(picker, 'viewpicker.select')
       header.append(picker)
       const stage = document.createElement('div')
@@ -974,7 +1007,9 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
         await handle.show(viewId)
         this.#picker.value = handle.activeView
       } catch (error) {
-        this.#fail(`«${viewId}» could not be shown: ${describe(error)}`)
+        this.#fail(
+          localizer.text('web.embed.stageFailed', { view: viewId, reason: describe(error) }),
+        )
       }
     }
 
@@ -999,14 +1034,19 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
          * act on.
          */
         throw new Error(
-          `${target.href} could not be fetched (${describe(error)}). A cross-origin file needs ` +
-            "CORS headers from its own server and an entry for its origin in this page's " +
-            'content-security-policy connect-src.',
+          localizer.text('web.embed.fileFetch', {
+            url: target.href,
+            reason: describe(error),
+          }),
         )
       }
       if (!response.ok) {
         throw new Error(
-          `${target.href} could not be fetched (${response.status} ${response.statusText})`,
+          localizer.text('web.embed.fileHttp', {
+            url: target.href,
+            status: response.status,
+            statusText: response.statusText,
+          }),
         )
       }
       return fileLikeFrom(await response.blob(), name)
@@ -1034,17 +1074,21 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
          * Not a failure. A page that appends the element and assigns `.file` a tick later passes
          * through this state, and so does one that will set `src` when its own data arrives.
          */
-        this.#say('Waiting for a file: set the src attribute or assign the file property.', 'empty')
+        this.#say(localizer.text('web.embed.waiting'), 'empty')
         return
       }
-      this.#say(`Loading ${name}…`, 'loading')
+      this.#say(localizer.text('web.embed.loading', { name }), 'loading')
       try {
         const assetBase = resolveAssetBase(
           this.getAttribute('asset-base') ?? undefined,
           defaultAssetBase,
           this.ownerDocument.baseURI,
         )
-        const refusal = crossOriginRefusal(assetBase, this.ownerDocument.location?.origin ?? '')
+        const refusal = crossOriginRefusal(
+          assetBase,
+          this.ownerDocument.location?.origin ?? '',
+          localizer,
+        )
         if (refusal !== undefined) {
           this.#fail(refusal)
           return
@@ -1059,11 +1103,15 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
             )
           } catch {
             this.#fail(
-              `extension-catalog «${catalogAttribute}» is not a URL this page can resolve.`,
+              localizer.text('web.embed.catalogAttributeInvalid', { url: catalogAttribute }),
             )
             return
           }
-          const catalogRefusal = extensionCatalogRefusal(extensionCatalogUrl)
+          const catalogRefusal = extensionCatalogRefusal(
+            extensionCatalogUrl,
+            EMBED_EXTENSION_ORIGINS,
+            localizer,
+          )
           if (catalogRefusal !== undefined) {
             this.#fail(catalogRefusal)
             return
@@ -1079,7 +1127,11 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
         setViewerText(this.#title, file.name, 300)
         if (file.size > EMBED_MAXIMUM_BYTES) {
           this.#fail(
-            `${name} is ${file.size} bytes; this element reads at most ${EMBED_MAXIMUM_BYTES}.`,
+            localizer.text('web.embed.tooLarge', {
+              name,
+              size: file.size,
+              limit: EMBED_MAXIMUM_BYTES,
+            }),
           )
           return
         }
@@ -1088,7 +1140,7 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
         const snapshot = await access.snapshotOf(entry.id, controller.signal)
         const bytes = await access.read(entry.id, EMBED_MAXIMUM_BYTES, controller.signal)
         if (!current()) return
-        const editability = await describeEditability(access, entry.id, entry.name)
+        const editability = await describeEditability(access, entry.id, entry.name, localizer)
         const writable =
           editability.editable && snapshot !== undefined && isWritableHandle(fileHandle)
         const token =
@@ -1101,6 +1153,7 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
         let editorPorts: SubjectEditorPorts | undefined
         if (writable) {
           const editing = createWebEditingArm({
+            localizer,
             inventory: host.services.main.inventory,
             handleFor: sourceId => writableHandles.get(sourceId),
             onNotice: message => {
@@ -1119,14 +1172,19 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
               else this.removeAttribute('data-mk-dirty')
             },
             async ensureWriteAccess() {
-              const currentAccess = await describeEditability(access, entry.id, entry.name)
+              const currentAccess = await describeEditability(
+                access,
+                entry.id,
+                entry.name,
+                localizer,
+              )
               if (
                 currentAccess.state === 'granted' ||
                 currentAccess.state === 'no-permission-surface'
               )
                 return 'granted'
               if (currentAccess.state !== 'prompt') return 'denied'
-              const asked = await requestWriteAccess(access)
+              const asked = await requestWriteAccess(access, localizer)
               return asked.state === 'granted'
                 ? 'granted'
                 : asked.state === 'denied'
@@ -1147,7 +1205,7 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
         const previewer = createCodecPreview({
           supported: host.services.supportedExtensions,
           stages: preferStage(host.stages, this.getAttribute('view') ?? undefined),
-          fallback: WEB_PREVIEW_FALLBACK,
+          fallback: host.fallback,
           editorPorts: () => editorPorts,
           openSession: async (openedEntry, openedBytes, signal) => {
             const session = await openEmbedSession(
@@ -1195,7 +1253,7 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
           return
         }
         if (handle === undefined) {
-          this.#fail(`${name} could not be shown: no stage matched what the codecs published.`)
+          this.#fail(localizer.text('web.embed.noStage', { name }))
           return
         }
         this.#handle = handle

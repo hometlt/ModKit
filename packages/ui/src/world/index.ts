@@ -22,6 +22,9 @@ import {
   unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { WORLD_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export const WORLD_VIEWER_MAX_LAYERS = 16
 export const WORLD_VIEWER_MAX_ITEMS_PER_LAYER = 1_024
@@ -235,60 +238,75 @@ export function drawCandidateWorld(
 }
 
 /** Common viewer for every world publisher that implements the shared candidate source contract. */
-export const worldViewer: ViewerModule = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal)
-    const root = createSurface(args.container, 'World viewer')
-    const stage = element(root, 'div', { part: 'model' })
-    const readout = element(stage, 'output', { part: 'model.readout' })
-    const canvas = element(stage, 'canvas', { part: 'model.canvas' }) as HTMLCanvasElement
-    canvas.setAttribute('role', 'img')
-    canvas.setAttribute('aria-label', 'Top-down world preview')
+export interface WorldViewerModuleOptions {
+  readonly localizer?: UiLocalizer
+}
 
-    const lease = await unknownSourceLease(args.sources, args.slot, WORLD_SCENE_SOURCE_CONTRACT)
-    if (lease === undefined) throw new TypeError('world binding is unavailable')
-    scope.lease(lease)
+export function createWorldViewer(options: WorldViewerModuleOptions = {}): ViewerModule {
+  const localizer = withEnglishUiFallback(options.localizer, WORLD_FALLBACK_MESSAGES)
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal)
+      const root = createSurface(args.container, localizer.text('viewer.world'))
+      const stage = element(root, 'div', { part: 'model' })
+      const readout = element(stage, 'output', { part: 'model.readout' })
+      const canvas = element(stage, 'canvas', { part: 'model.canvas' }) as HTMLCanvasElement
+      canvas.setAttribute('role', 'img')
+      canvas.setAttribute('aria-label', localizer.text('viewer.worldPreview'))
 
-    setState(stage, ['loading'])
-    try {
-      const model = await inspectCandidateWorld(lease.value as WorldSceneSource, {
-        maxLayers: WORLD_VIEWER_MAX_LAYERS,
-        maxItemsPerLayer: WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
-        signal: scope.signal,
-      })
-      const available = model.layers.filter(layer => layer.page.state === 'available')
-      const itemCount = available.reduce((total, layer) => total + layer.page.items.length, 0)
-      const partial =
-        model.nextLayerCursor !== undefined ||
-        model.layers.some(
-          layer => layer.page.nextCursor !== undefined || layer.layer.state !== 'available',
+      const lease = await unknownSourceLease(args.sources, args.slot, WORLD_SCENE_SOURCE_CONTRACT)
+      if (lease === undefined) throw new TypeError('world binding is unavailable')
+      scope.lease(lease)
+
+      setState(stage, ['loading'])
+      try {
+        const model = await inspectCandidateWorld(lease.value as WorldSceneSource, {
+          maxLayers: WORLD_VIEWER_MAX_LAYERS,
+          maxItemsPerLayer: WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
+          signal: scope.signal,
+        })
+        const available = model.layers.filter(layer => layer.page.state === 'available')
+        const itemCount = available.reduce((total, layer) => total + layer.page.items.length, 0)
+        const partial =
+          model.nextLayerCursor !== undefined ||
+          model.layers.some(
+            layer => layer.page.nextCursor !== undefined || layer.layer.state !== 'available',
+          )
+        setViewerText(
+          readout,
+          localizer.text('viewer.worldSummary', {
+            map: model.info.mapId,
+            layers: available.length,
+            items: itemCount,
+            bounded: partial ? localizer.text('viewer.boundedPreview') : '',
+          }),
         )
-      setViewerText(
-        readout,
-        `${model.info.mapId} · ${available.length} layers · ${itemCount} items` +
-          (partial ? ' · bounded preview' : ''),
-      )
-      drawCandidateWorld(canvas, model)
-      if (itemCount === 0) {
+        drawCandidateWorld(canvas, model)
+        if (itemCount === 0) {
+          canvas.remove()
+          element(stage, 'p', {
+            part: 'viewer.empty',
+            text: localizer.text('viewer.worldEmpty'),
+          })
+        }
+        setState(stage, [])
+      } catch (error) {
+        setState(stage, ['error'])
         canvas.remove()
         element(stage, 'p', {
           part: 'viewer.empty',
-          text: 'World metadata is available; no drawable terrain or objects were published.',
+          text: localizer.text('viewer.worldError', {
+            reason: error instanceof Error ? error.message : String(error),
+          }),
         })
       }
-      setState(stage, [])
-    } catch (error) {
-      setState(stage, ['error'])
-      canvas.remove()
-      element(stage, 'p', {
-        part: 'viewer.empty',
-        text: `The world cannot be rendered: ${error instanceof Error ? error.message : String(error)}`,
-      })
-    }
 
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset['revision'] = descriptor.revision
-    })
-  },
-})
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        root.dataset['revision'] = descriptor.revision
+      })
+    },
+  })
+}
+
+export const worldViewer: ViewerModule = createWorldViewer()

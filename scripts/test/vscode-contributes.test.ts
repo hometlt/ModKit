@@ -43,7 +43,7 @@ describe('generated VS Code contributions', () => {
       authorityDocument.fileSystemSchemes.length
     const result = run()
 
-    expect(expectedActivationEventCount).toBe(28)
+    expect(expectedActivationEventCount).toBe(30)
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
     expect(result.stdout).toContain(`${expectedActivationEventCount} activation events`)

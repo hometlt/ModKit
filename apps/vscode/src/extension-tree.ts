@@ -1,6 +1,11 @@
 /** Presentation-neutral model for the VS Code Extensions tree. */
 import { compareUtf8 } from '@modkitx-x3/core'
 import type { ExtensionManagerEntry } from '@modkitx/extension-manager'
+import {
+  contributionContractLabel,
+  createUiLocalizer,
+  type UiLocalizer,
+} from '@modkitx-x3/ui/localization'
 
 import type { ContributionRow } from './contributions.js'
 
@@ -68,15 +73,16 @@ export interface CreateExtensionTreeOptions {
   readonly contributions: readonly ContributionRow[]
   readonly configuredDisabledContributionIds: readonly string[]
   readonly problems: readonly ExtensionProblemNode[]
+  /** Host-scoped translator; defaults to English for presentation-neutral callers and tests. */
+  readonly localizer?: UiLocalizer
 }
 
 function contributionKey(row: ContributionRow): string {
   return `${row.contract ?? ''}\u0000${row.contractMajor ?? ''}`
 }
 
-function contractLabel(row: ContributionRow): string {
-  if (row.contract === undefined) return 'Invalid contribution manifest'
-  return row.contractMajor === undefined ? row.contract : `${row.contract}@${row.contractMajor}`
+function contractLabel(row: ContributionRow, localizer: UiLocalizer): string {
+  return contributionContractLabel(localizer, row.contract)
 }
 
 function firstContribution(rows: readonly ContributionRow[]): ContributionRow {
@@ -109,6 +115,7 @@ function entryNode(
 export function createExtensionTree(
   options: CreateExtensionTreeOptions,
 ): readonly ExtensionGroupNode[] {
+  const localizer = options.localizer ?? createUiLocalizer('en')
   const contributionsByExtension = new Map<string, ContributionRow[]>()
   for (const contribution of options.contributions) {
     const rows = contributionsByExtension.get(contribution.extension) ?? []
@@ -128,7 +135,7 @@ export function createExtensionTree(
     Object.freeze({
       kind: 'group',
       group: 'available',
-      label: 'Available',
+      label: localizer.text('extensions.group.available'),
       entries: nodes(
         'available',
         entries.filter(entry => entry.installedVersion === undefined),
@@ -137,7 +144,7 @@ export function createExtensionTree(
     Object.freeze({
       kind: 'group',
       group: 'installed',
-      label: 'Installed',
+      label: localizer.text('extensions.group.installed'),
       entries: nodes(
         'installed',
         entries.filter(entry => entry.installedVersion !== undefined),
@@ -146,7 +153,7 @@ export function createExtensionTree(
     Object.freeze({
       kind: 'group',
       group: 'enabled',
-      label: 'Enabled',
+      label: localizer.text('extensions.group.enabled'),
       entries: nodes(
         'enabled',
         entries.filter(entry => entry.enabled),
@@ -155,7 +162,7 @@ export function createExtensionTree(
     Object.freeze({
       kind: 'group',
       group: 'updates',
-      label: 'Updates',
+      label: localizer.text('extensions.group.updates'),
       entries: nodes(
         'updates',
         entries.filter(entry => entry.updateAvailable),
@@ -164,7 +171,7 @@ export function createExtensionTree(
     Object.freeze({
       kind: 'group',
       group: 'problems',
-      label: 'Problems',
+      label: localizer.text('extensions.group.problems'),
       problems: Object.freeze([...options.problems]),
     }),
   ])
@@ -173,6 +180,7 @@ export function createExtensionTree(
 function contractNodes(
   node: ExtensionEntryNode,
   configuredDisabledContributionIds: ReadonlySet<string>,
+  localizer: UiLocalizer,
 ): readonly ContributionContractNode[] {
   const groups = new Map<string, ContributionRow[]>()
   for (const contribution of node.contributions) {
@@ -185,8 +193,8 @@ function contractNodes(
     [...groups.values()]
       .sort((left, right) =>
         compareUtf8(
-          contractLabel(firstContribution(left)),
-          contractLabel(firstContribution(right)),
+          contributionKey(firstContribution(left)),
+          contributionKey(firstContribution(right)),
         ),
       )
       .map(rows => {
@@ -197,7 +205,7 @@ function contractNodes(
           extension: node.entry.id,
           ...(first.contract === undefined ? {} : { contract: first.contract }),
           ...(first.contractMajor === undefined ? {} : { contractMajor: first.contractMajor }),
-          label: contractLabel(first),
+          label: contractLabel(first, localizer),
           contributions: Object.freeze([...rows]),
           extensionEnabled: node.entry.enabled,
           configuredDisabledContributionIds,
@@ -210,12 +218,13 @@ function contractNodes(
 export function extensionTreeChildren(
   node: ExtensionNode,
   configuredDisabledContributionIds: readonly string[],
+  localizer: UiLocalizer = createUiLocalizer('en'),
 ): readonly ExtensionNode[] {
   if (node.kind === 'group')
     return node.group === 'problems' ? (node.problems ?? []) : (node.entries ?? [])
   if (node.kind === 'entry') {
     if (node.contributions.length === 0) return []
-    return contractNodes(node, new Set(configuredDisabledContributionIds))
+    return contractNodes(node, new Set(configuredDisabledContributionIds), localizer)
   }
   if (node.kind === 'contract') {
     return Object.freeze(

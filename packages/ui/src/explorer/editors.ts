@@ -26,8 +26,12 @@ export function fileKindOf(name: string): string {
 import { element, setPart, setState, safeViewerText } from '../viewer/index.js'
 import { requestEditorSave } from '../editor/commands.js'
 import type { ExplorerEntry, PreviewHandle, PreviewResolver } from './index.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { EXPLORER_EDITORS_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export interface EditorAreaOptions {
+  readonly localizer?: UiLocalizer
   readonly preview: PreviewResolver
   /** Produce the bytes for an entry. The host owns caching and limits. */
   read(entry: ExplorerEntry, signal?: AbortSignal): Promise<Uint8Array>
@@ -122,6 +126,7 @@ const formatBytes = (bytes: number): string => {
 }
 
 export function createEditorArea(document: Document, options: EditorAreaOptions): EditorArea {
+  const localizer = withEnglishUiFallback(options.localizer, EXPLORER_EDITORS_FALLBACK_MESSAGES)
   const root = document.createElement('div')
   setPart(root, 'explorer.editors')
 
@@ -203,7 +208,11 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
     const run = new AbortController()
     tab.run = run
     tab.content.replaceChildren()
-    report({ path: tab.entry.id, detail: `Opening ${tab.entry.name}…`, severity: 'busy' })
+    report({
+      path: tab.entry.id,
+      detail: localizer.text('explorer.opening', { name: tab.entry.name }),
+      severity: 'busy',
+    })
 
     try {
       const bytes = await options.read(tab.entry, run.signal)
@@ -214,8 +223,15 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
         return
       }
       if (handle === undefined) {
-        placeholder({ ...group, stage: tab.content }, `Nothing could render “${tab.entry.name}”.`)
-        report({ path: tab.entry.id, detail: 'no viewer', severity: 'error' })
+        placeholder(
+          { ...group, stage: tab.content },
+          localizer.text('explorer.noRendererShort', { name: tab.entry.name }),
+        )
+        report({
+          path: tab.entry.id,
+          detail: localizer.text('explorer.noViewer'),
+          severity: 'error',
+        })
         return
       }
       tab.handle = handle
@@ -230,7 +246,10 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
       if (run.signal.aborted) return
       placeholder(
         { ...group, stage: tab.content },
-        `Could not preview ${tab.entry.name}: ${describe(error)}`,
+        localizer.text('explorer.previewError', {
+          name: tab.entry.name,
+          reason: describe(error),
+        }),
       )
       report({ path: tab.entry.id, detail: describe(error), severity: 'error' })
     }
@@ -268,7 +287,7 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
       } else {
         drawBreadcrumb(group, undefined)
         syncPicker(group)
-        placeholder(group, 'No file open in this group.')
+        placeholder(group, localizer.text('explorer.noFileOpen'))
       }
     }
 
@@ -321,18 +340,18 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
     const others = group.tabs.filter(other => other !== tab)
     const toRight = group.tabs.slice(index + 1)
 
-    item('Close', true, () => void closeTab(group, tab))
-    item('Close Others', others.length > 0, () => {
+    item(localizer.text('explorer.close'), true, () => void closeTab(group, tab))
+    item(localizer.text('explorer.closeOthers'), others.length > 0, () => {
       void (async () => {
         for (const other of [...others]) await closeTab(group, other)
       })()
     })
-    item('Close to the Right', toRight.length > 0, () => {
+    item(localizer.text('explorer.closeRight'), toRight.length > 0, () => {
       void (async () => {
         for (const other of [...toRight]) await closeTab(group, other)
       })()
     })
-    item('Close All', group.tabs.length > 0, () => {
+    item(localizer.text('explorer.closeAll'), group.tabs.length > 0, () => {
       void (async () => {
         for (const other of [...group.tabs]) await closeTab(group, other)
       })()
@@ -376,15 +395,15 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
      * the invariant in one place — the DOM is the only thing that changes.
      */
     const strip = element(groupRoot, 'div', { part: 'explorer.tabstrip', role: 'tablist' })
-    strip.setAttribute('aria-label', 'Open files')
+    strip.setAttribute('aria-label', localizer.text('explorer.openFiles'))
     if (options.chrome?.tabs === false) strip.remove()
 
     const header = element(groupRoot, 'div', { part: 'explorer.header' })
     const breadcrumb = element(header, 'nav', { part: 'explorer.breadcrumb' })
-    breadcrumb.setAttribute('aria-label', 'File path')
+    breadcrumb.setAttribute('aria-label', localizer.text('explorer.filePath'))
     if (options.chrome?.breadcrumb === false) breadcrumb.remove()
     const picker = element(header, 'select', { part: 'explorer.viewpicker' }) as HTMLSelectElement
-    picker.setAttribute('aria-label', 'View')
+    picker.setAttribute('aria-label', localizer.text('explorer.view'))
     picker.disabled = true
 
     const stage = element(groupRoot, 'div', { part: 'explorer.stage' })
@@ -411,7 +430,7 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
     })
 
     groups.push(group)
-    placeholder(group, 'No file open in this group.')
+    placeholder(group, localizer.text('explorer.noFileOpen'))
     return group
   }
 
@@ -478,7 +497,7 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
 
       const close = element(button, 'button', { part: 'explorer.filetab-close', text: '×' })
       close.setAttribute('type', 'button')
-      close.setAttribute('aria-label', `Close ${entry.name}`)
+      close.setAttribute('aria-label', localizer.text('explorer.closeFile', { name: entry.name }))
       close.addEventListener('click', event => {
         event.stopPropagation()
         void closeTab(group, tab)

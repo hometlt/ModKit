@@ -17,6 +17,9 @@
  */
 import { element, setPart, setState } from '../viewer/index.js'
 import type { ImageChannel } from './index.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { IMAGE_EDIT_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export type ImageTool =
   'select' | 'brush' | 'eraser' | 'line' | 'rect' | 'ellipse' | 'fill' | 'gradient' | 'eyedropper'
@@ -46,20 +49,20 @@ type Patch = RectPatch | FullPatch
 /** MK2's depth. Deep enough for a painting session, bounded so a 4K texture cannot exhaust memory. */
 export const IMAGE_UNDO_DEPTH = 100
 
-const TOOLS: readonly { readonly id: ImageTool; readonly label: string; readonly hint: string }[] =
-  Object.freeze([
-    { id: 'select', label: '▭', hint: 'Select a rectangular region' },
-    { id: 'brush', label: '✎', hint: 'Brush' },
-    { id: 'eraser', label: '⌫', hint: 'Erase to transparent' },
-    { id: 'line', label: '╱', hint: 'Line' },
-    { id: 'rect', label: '▬', hint: 'Rectangle' },
-    { id: 'ellipse', label: '◯', hint: 'Ellipse' },
-    { id: 'fill', label: '🪣', hint: 'Flood fill' },
-    { id: 'gradient', label: '▤', hint: 'Linear gradient' },
-    { id: 'eyedropper', label: '⊙', hint: 'Pick a colour' },
-  ])
+const TOOLS: readonly { readonly id: ImageTool; readonly label: string }[] = Object.freeze([
+  { id: 'select', label: '▭' },
+  { id: 'brush', label: '✎' },
+  { id: 'eraser', label: '⌫' },
+  { id: 'line', label: '╱' },
+  { id: 'rect', label: '▬' },
+  { id: 'ellipse', label: '◯' },
+  { id: 'fill', label: '🪣' },
+  { id: 'gradient', label: '▤' },
+  { id: 'eyedropper', label: '⊙' },
+])
 
 export interface ImageEditorOptions {
+  readonly localizer?: UiLocalizer
   /** Starting pixels. The editor copies them; the caller keeps ownership of the original. */
   readonly source: ImageData
   /** Restrict writes to one channel. `rgb` composites normally. */
@@ -104,6 +107,7 @@ function parseColour(colour: string): readonly [number, number, number, number] 
 }
 
 export function createImageEditor(host: HTMLElement, options: ImageEditorOptions): ImageEditor {
+  const localizer = withEnglishUiFallback(options.localizer, IMAGE_EDIT_FALLBACK_MESSAGES)
   const document = host.ownerDocument
   // Own copy: the caller's ImageData may be a decoded view the codec still holds.
   let pixels = new ImageData(
@@ -130,10 +134,10 @@ export function createImageEditor(host: HTMLElement, options: ImageEditorOptions
 
   const root = element(host, 'div', { part: 'imageedit' })
   const tools = element(root, 'div', { part: 'imageedit.tools', role: 'toolbar' })
-  tools.setAttribute('aria-label', 'Image tools')
+  tools.setAttribute('aria-label', localizer.text('imageEdit.tools'))
   const optionsRow = element(root, 'div', { part: 'imageedit.options' })
   const actions = element(root, 'div', { part: 'imageedit.actions', role: 'toolbar' })
-  actions.setAttribute('aria-label', 'Image actions')
+  actions.setAttribute('aria-label', localizer.text('imageEdit.actions'))
   const status = element(root, 'output', { part: 'imageedit.status' })
 
   const state = {
@@ -235,8 +239,9 @@ export function createImageEditor(host: HTMLElement, options: ImageEditorOptions
   for (const spec of TOOLS) {
     const node = element(tools, 'button', { part: 'imageedit.tool', text: spec.label })
     node.setAttribute('type', 'button')
+    node.dataset['toolId'] = spec.id
     node.setAttribute('aria-pressed', String(spec.id === state.tool))
-    node.title = spec.hint
+    node.title = localizer.text(`imageEdit.tool.${spec.id}`)
     node.addEventListener('click', () => {
       state.tool = spec.id
       for (const [id, button] of toolButtons) {
@@ -252,7 +257,7 @@ export function createImageEditor(host: HTMLElement, options: ImageEditorOptions
   const swatch = element(optionsRow, 'input', { part: 'imageedit.swatch' }) as HTMLInputElement
   swatch.type = 'color'
   swatch.value = state.colour
-  swatch.setAttribute('aria-label', 'Tool colour')
+  swatch.setAttribute('aria-label', localizer.text('imageEdit.colour'))
   swatch.addEventListener('input', () => {
     state.colour = swatch.value
   })
@@ -262,29 +267,51 @@ export function createImageEditor(host: HTMLElement, options: ImageEditorOptions
   size.min = '1'
   size.max = '64'
   size.value = '8'
-  size.setAttribute('aria-label', 'Brush size')
+  size.setAttribute('aria-label', localizer.text('imageEdit.brushSize'))
 
-  const action = (label: string, hint: string, run: () => void): HTMLButtonElement => {
+  const action = (
+    id: 'undo' | 'redo' | 'crop' | 'apply',
+    label: string,
+    hint: string,
+    run: () => void,
+  ): HTMLButtonElement => {
     const node = element(actions, 'button', {
       part: 'imageedit.action',
       text: label,
     }) as HTMLButtonElement
     node.type = 'button'
+    node.dataset['actionId'] = id
     node.title = hint
     node.addEventListener('click', run)
     return node
   }
 
-  const undoButton = action('Undo', 'Undo the last edit', () => void editor.undo())
-  const redoButton = action('Redo', 'Redo the last undone edit', () => void editor.redo())
+  const undoButton = action(
+    'undo',
+    localizer.text('viewer.undo'),
+    localizer.text('imageEdit.undoTitle'),
+    () => void editor.undo(),
+  )
+  const redoButton = action(
+    'redo',
+    localizer.text('viewer.redo'),
+    localizer.text('imageEdit.redoTitle'),
+    () => void editor.redo(),
+  )
   const cropButton = action(
-    'Crop',
-    'Crop to the current selection',
+    'crop',
+    localizer.text('imageEdit.crop'),
+    localizer.text('imageEdit.cropTitle'),
     () => void editor.cropToSelection(),
   )
-  const commitButton = action('Apply', 'Commit the edited pixels', () => {
-    void options.onCommit?.(pixels)
-  })
+  const commitButton = action(
+    'apply',
+    localizer.text('edit.apply'),
+    localizer.text('imageEdit.applyTitle'),
+    () => {
+      void options.onCommit?.(pixels)
+    },
+  )
 
   function syncActions(): void {
     undoButton.disabled = undoStack.length === 0
@@ -298,12 +325,21 @@ export function createImageEditor(host: HTMLElement, options: ImageEditorOptions
     const selection = state.selection
     status.textContent = [
       `${width()}×${height()}`,
-      `tool ${state.tool}`,
-      state.channel === 'rgb' ? 'RGB' : `channel ${state.channel.toUpperCase()}`,
+      localizer.text('imageEdit.toolStatus', {
+        tool: localizer.text(`imageEdit.tool.${state.tool}`),
+      }),
+      state.channel === 'rgb'
+        ? 'RGB'
+        : localizer.text('imageEdit.channelStatus', { channel: state.channel.toUpperCase() }),
       selection === undefined
-        ? 'no selection'
-        : `selection ${selection.w}×${selection.h} at ${selection.x},${selection.y}`,
-      `${undoStack.length} undo`,
+        ? localizer.text('imageEdit.noSelection')
+        : localizer.text('imageEdit.selectionStatus', {
+            width: selection.w,
+            height: selection.h,
+            x: selection.x,
+            y: selection.y,
+          }),
+      localizer.text('imageEdit.undoStatus', { count: undoStack.length }),
     ].join(' · ')
   }
 

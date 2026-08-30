@@ -21,6 +21,7 @@ import {
   setViewerText,
   ViewerMountScope,
 } from '@modkitx-x3/ui'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
 import type { NamespaceEntrySource, OperationSession, ViewerModule } from '@modkitx-x3/sdk'
 
 import { mountViewer, type MountedViewer } from './mount.js'
@@ -64,22 +65,24 @@ const bytesOfOutput = (output: unknown): Uint8Array | undefined => {
 }
 
 export interface ArchiveStageOptions {
+  readonly localizer?: UiLocalizer
   /** Resolves the operation session for the subject this stage was mounted for. */
   operationsFor(descriptor: Record<string, unknown>): Promise<OperationSession | undefined>
 }
 
 export function createArchiveStage(options: ArchiveStageOptions): ViewerModule {
+  const text = (options.localizer ?? DEFAULT_UI_LOCALIZER).text
   return defineViewerModule({
     abiVersion: 1,
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
-      const root = createSurface(args.container, 'Archive')
+      const root = createSurface(args.container, text('electron.view.archive'))
       const layout = element(root, 'div', { part: 'archive' })
       const treePane = element(layout, 'div', { part: 'archive.tree' })
       const previewPane = element(layout, 'div', { part: 'archive.preview' })
       const status = element(previewPane, 'output', { part: 'viewer.status' })
       const body = element(previewPane, 'div', { part: 'archive.entries' })
-      setViewerText(status, 'Select an entry to preview it.')
+      setViewerText(status, text('electron.archive.select'))
 
       const descriptor = args.descriptor as unknown as Record<string, unknown>
       const tree = await namespaceViewer.mount({
@@ -106,10 +109,10 @@ export function createArchiveStage(options: ArchiveStageOptions): ViewerModule {
         await mounted?.unmount()
         mounted = undefined
         body.replaceChildren()
-        const text = decodeUtf8(bytes)
-        if (text !== undefined && !bytes.includes(0)) {
+        const decoded = decodeUtf8(bytes)
+        if (decoded !== undefined && !bytes.includes(0)) {
           const pane = element(body, 'div', { part: 'text' })
-          for (const line of text.split(/\r\n|\r|\n/u).slice(0, 2000)) {
+          for (const line of decoded.split(/\r\n|\r|\n/u).slice(0, 2000)) {
             element(pane, 'div', { part: 'text.line', text: line })
           }
         } else {
@@ -123,35 +126,29 @@ export function createArchiveStage(options: ArchiveStageOptions): ViewerModule {
             signal: scope.signal,
           })
         }
-        setViewerText(status, `${label} · ${bytes.byteLength} bytes`)
+        setViewerText(status, text('electron.archive.bytes', { label, bytes: bytes.byteLength }))
       }
 
       const preview = async (entryId: string): Promise<void> => {
         const entry = index.get(entryId)
         if (entry === undefined) {
-          setViewerText(status, `entry ${entryId} is outside the indexed namespace`)
+          setViewerText(status, text('electron.archive.outside', { entry: entryId }))
           return
         }
         const candidates = entryPreviewOperations(descriptor)
         if (candidates.length === 0) {
           setState(previewPane, ['degraded'])
-          setViewerText(
-            status,
-            `${entry.path}: this subject declares no available container.extract operation, so its bytes cannot be read here.`,
-          )
+          setViewerText(status, text('electron.archive.noExtract', { path: entry.path }))
           return
         }
         const operations = await options.operationsFor(descriptor)
         if (operations === undefined) {
           setState(previewPane, ['degraded'])
-          setViewerText(
-            status,
-            `${entry.path}: this host has no operation session for the subject.`,
-          )
+          setViewerText(status, text('electron.archive.noSession', { path: entry.path }))
           return
         }
         setState(previewPane, ['loading'])
-        setViewerText(status, `${entry.path}: extracting…`)
+        setViewerText(status, text('electron.archive.extracting', { path: entry.path }))
         for (const id of candidates) {
           const handler = (descriptor['operations'] as { id?: string; handlerId?: string }[])
             .filter(item => item.id === id)
@@ -168,7 +165,7 @@ export function createArchiveStage(options: ArchiveStageOptions): ViewerModule {
           return
         }
         setState(previewPane, ['error'])
-        setViewerText(status, `${entry.path}: no declared operation returned bytes for this entry.`)
+        setViewerText(status, text('electron.archive.noBytes', { path: entry.path }))
       }
 
       const onOpen = (event: Event): void => {
@@ -181,7 +178,7 @@ export function createArchiveStage(options: ArchiveStageOptions): ViewerModule {
       }
       treePane.addEventListener('modkit-open-source', onOpen)
       scope.cleanup(() => treePane.removeEventListener('modkit-open-source', onOpen))
-      setViewerText(status, `${index.size} file entries indexed. Select one to preview its bytes.`)
+      setViewerText(status, text('electron.archive.indexed', { count: index.size }))
 
       return {
         async update() {

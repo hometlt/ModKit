@@ -1,10 +1,11 @@
 import {
   EXPLORER_MAXIMUM_BYTES,
   WEB_EXTENSION_CATALOG,
-  WEB_PREVIEW_FALLBACK,
   createCodecPreview,
   createSingleFileAccess,
   createWebEditingArm,
+  createWebLocalizer,
+  createWebPreviewFallback,
   createWebPreviewStages,
   createWebSubjectServices,
   describeEditability,
@@ -19,7 +20,7 @@ import {
   sourceRevisionToken,
   sourceUriFor,
   stageIdOf
-} from "./chunks/chunk-FHDXK6YU.js";
+} from "./chunks/chunk-YBW7WWTE.js";
 import {
   define_MODKIT_EMBED_EXTENSION_ORIGINS_default
 } from "./chunks/chunk-HVXSZ42C.js";
@@ -112,15 +113,15 @@ var EMBED_EXTENSION_ORIGINS = Object.freeze(
 function resolveExtensionCatalogUrl(attribute, documentBase) {
   return new URL(attribute, documentBase).href;
 }
-function extensionCatalogRefusal(catalogUrl, allowedOrigins = EMBED_EXTENSION_ORIGINS) {
+function extensionCatalogRefusal(catalogUrl, allowedOrigins = EMBED_EXTENSION_ORIGINS, localizer = createWebLocalizer("en")) {
   let url;
   try {
     url = new URL(catalogUrl);
   } catch {
-    return `extension-catalog \xAB${catalogUrl}\xBB is not a valid URL.`;
+    return localizer.text("web.embed.catalog.invalidUrl", { url: catalogUrl });
   }
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    return `extension-catalog must use http or https; ${url.protocol} is not admitted.`;
+    return localizer.text("web.embed.catalog.protocol", { protocol: url.protocol });
   }
   const allowed = new Set(
     allowedOrigins.flatMap((value) => {
@@ -132,7 +133,7 @@ function extensionCatalogRefusal(catalogUrl, allowedOrigins = EMBED_EXTENSION_OR
     })
   );
   if (allowed.has(url.origin)) return void 0;
-  return `The extension catalog origin ${url.origin} is not in this embed.js build-time allowlist. The embedding page cannot add an origin; the deployer must rebuild embed.js with it.`;
+  return localizer.text("web.embed.catalog.origin", { origin: url.origin });
 }
 var record = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var strings = (value) => Array.isArray(value) && value.every((item) => typeof item === "string");
@@ -140,18 +141,18 @@ var digest = (value) => typeof value === "string" && /^sha256:[a-f0-9]{64}$/u.te
 var pairs = (value, check) => Array.isArray(value) && value.every(
   (item) => Array.isArray(item) && item.length === 2 && typeof item[0] === "string" && check(item[1])
 );
-function parseWebExtensionCatalog(value) {
+function parseWebExtensionCatalog(value, localizer = createWebLocalizer("en")) {
   if (!record(value) || value["schemaVersion"] !== 1 || !Array.isArray(value["extensions"]) || !Array.isArray(value["excluded"])) {
-    throw new TypeError("extension catalog must be a schemaVersion 1 object with array entries");
+    throw new TypeError(localizer.text("web.embed.catalog.schema"));
   }
   for (const excluded of value["excluded"]) {
     if (!record(excluded) || typeof excluded["name"] !== "string" || typeof excluded["reason"] !== "string") {
-      throw new TypeError("extension catalog exclusions require string name and reason fields");
+      throw new TypeError(localizer.text("web.embed.catalog.exclusion"));
     }
   }
   for (const entry of value["extensions"]) {
     if (!record(entry) || typeof entry["name"] !== "string" || typeof entry["source"] !== "string" || typeof entry["artifactRoot"] !== "string" || !record(entry["containers"]) || !strings(entry["files"]) || !pairs(entry["documents"], () => true) || !pairs(entry["documentDigests"], digest) || !record(entry["artifact"]) || typeof entry["artifact"]["inventoryRecordId"] !== "string" || !digest(entry["artifact"]["artifactDigest"]) || !record(entry["artifact"]["fileDigests"]) || !Object.values(entry["artifact"]["fileDigests"]).every(digest)) {
-      throw new TypeError("extension catalog contains a malformed extension entry");
+      throw new TypeError(localizer.text("web.embed.catalog.malformed"));
     }
   }
   return value;
@@ -161,15 +162,15 @@ function resolveAssetBase(attribute, scriptUrl, documentBase) {
   const href = resolved.href;
   return href.endsWith("/") ? href : `${href}/`;
 }
-function crossOriginRefusal(assetBase, pageOrigin) {
+function crossOriginRefusal(assetBase, pageOrigin, localizer = createWebLocalizer("en")) {
   let origin;
   try {
     origin = new URL(assetBase).origin;
   } catch {
-    return `asset-base \xAB${assetBase}\xBB is not a URL this page can resolve.`;
+    return localizer.text("web.embed.asset.invalidUrl", { base: assetBase });
   }
   if (origin === pageOrigin) return void 0;
-  return `The modkit assets at ${origin} are cross-origin to this page (${pageOrigin}). A module worker script is fetched in same-origin mode, so no CORS header can make that work: serve the modkit assets from this origin (copy or reverse-proxy them) and point asset-base there.`;
+  return localizer.text("web.embed.asset.crossOrigin", { origin, pageOrigin });
 }
 function displayNameFor(src, name, documentBase) {
   if (name !== void 0 && name !== "") return name;
@@ -212,10 +213,12 @@ function installEmbedHostLifecycle(scope = globalThis) {
   return true;
 }
 var descriptorKey = (descriptor) => `${descriptor.subjectUri} :: ${descriptor.revision}`;
-async function loadStyles(assetBase) {
+async function loadStyles(assetBase, localizer) {
   const response = await fetch(new URL("modkit-ui.css", assetBase).href);
   if (!response.ok) {
-    throw new Error(`modkit-ui.css could not be fetched from ${assetBase} (${response.status})`);
+    throw new Error(
+      localizer.text("web.embed.stylesFetch", { base: assetBase, status: response.status })
+    );
   }
   const text = `${await response.text()}
 ${EMBED_CHROME_CSS}`;
@@ -228,28 +231,39 @@ ${EMBED_CHROME_CSS}`;
     return { text };
   }
 }
-async function fetchExtensionCatalog(catalogUrl) {
+async function fetchExtensionCatalog(catalogUrl, localizer) {
   let response;
   try {
     response = await fetch(catalogUrl, { credentials: "omit" });
   } catch (error) {
-    throw new Error(`extension catalog ${catalogUrl} could not be fetched: ${describe(error)}`);
+    throw new Error(
+      localizer.text("web.embed.catalogFetch", { url: catalogUrl, reason: describe(error) })
+    );
   }
   if (!response.ok) {
     throw new Error(
-      `extension catalog ${catalogUrl} could not be fetched (${response.status} ${response.statusText})`
+      localizer.text("web.embed.catalogHttp", {
+        url: catalogUrl,
+        status: response.status,
+        statusText: response.statusText
+      })
     );
   }
   try {
-    return parseWebExtensionCatalog(await response.json());
+    return parseWebExtensionCatalog(await response.json(), localizer);
   } catch (error) {
-    throw new Error(`extension catalog ${catalogUrl} is invalid: ${describe(error)}`);
+    throw new Error(
+      localizer.text("web.embed.catalogInvalid", { url: catalogUrl, reason: describe(error) })
+    );
   }
 }
 async function composeEmbedHost(assetBase, extensionCatalogUrl) {
+  const localizer = createWebLocalizer(
+    globalThis.document?.documentElement.lang || globalThis.navigator?.languages
+  );
   const additionalCatalogs = extensionCatalogUrl === void 0 ? [] : [
     {
-      catalog: await fetchExtensionCatalog(extensionCatalogUrl),
+      catalog: await fetchExtensionCatalog(extensionCatalogUrl, localizer),
       baseUrl: extensionCatalogUrl
     }
   ];
@@ -272,10 +286,19 @@ async function composeEmbedHost(assetBase, extensionCatalogUrl) {
   });
   const operations = /* @__PURE__ */ new Map();
   const stages = createWebPreviewStages({
+    localizer,
     operationsFor: (descriptor) => operations.get(descriptorKey(descriptor))
   });
-  const styles = await loadStyles(assetBase);
-  return Object.freeze({ assetBase, services, stages, styles, operations });
+  const styles = await loadStyles(assetBase, localizer);
+  return Object.freeze({
+    assetBase,
+    services,
+    stages,
+    fallback: createWebPreviewFallback(localizer),
+    localizer,
+    styles,
+    operations
+  });
 }
 function embedHostFor(assetBase, extensionCatalogUrl) {
   installEmbedHostLifecycle();
@@ -373,6 +396,9 @@ function defineModkitElements(options = {}) {
   }
   if (registry.get(tagName) !== void 0) return tagName;
   const defaultAssetBase = options.assetBase ?? import.meta.url;
+  const localizer = createWebLocalizer(
+    globalThis.document?.documentElement.lang || globalThis.navigator?.languages
+  );
   class ModkitViewerElement extends base {
     static get observedAttributes() {
       return OBSERVED_ATTRIBUTES;
@@ -405,7 +431,7 @@ function defineModkitElements(options = {}) {
       const picker = document.createElement("select");
       picker.className = "modkit-embed__picker";
       picker.hidden = true;
-      picker.setAttribute("aria-label", "View");
+      picker.setAttribute("aria-label", localizer.text("web.embed.view"));
       setPart(picker, "viewpicker.select");
       header.append(picker);
       const stage = document.createElement("div");
@@ -545,7 +571,9 @@ function defineModkitElements(options = {}) {
         await handle.show(viewId);
         this.#picker.value = handle.activeView;
       } catch (error) {
-        this.#fail(`\xAB${viewId}\xBB could not be shown: ${describe(error)}`);
+        this.#fail(
+          localizer.text("web.embed.stageFailed", { view: viewId, reason: describe(error) })
+        );
       }
     }
     /** The bytes to open: the `file` property when the page set one, else `src`. */
@@ -562,12 +590,19 @@ function defineModkitElements(options = {}) {
       } catch (error) {
         if (signal.aborted) throw error;
         throw new Error(
-          `${target.href} could not be fetched (${describe(error)}). A cross-origin file needs CORS headers from its own server and an entry for its origin in this page's content-security-policy connect-src.`
+          localizer.text("web.embed.fileFetch", {
+            url: target.href,
+            reason: describe(error)
+          })
         );
       }
       if (!response.ok) {
         throw new Error(
-          `${target.href} could not be fetched (${response.status} ${response.statusText})`
+          localizer.text("web.embed.fileHttp", {
+            url: target.href,
+            status: response.status,
+            statusText: response.statusText
+          })
         );
       }
       return fileLikeFrom(await response.blob(), name);
@@ -586,17 +621,21 @@ function defineModkitElements(options = {}) {
       );
       setViewerText(this.#title, name, 300);
       if (this.#fileHandle === void 0 && this.#blob === void 0 && (this.getAttribute("src") ?? "") === "") {
-        this.#say("Waiting for a file: set the src attribute or assign the file property.", "empty");
+        this.#say(localizer.text("web.embed.waiting"), "empty");
         return;
       }
-      this.#say(`Loading ${name}\u2026`, "loading");
+      this.#say(localizer.text("web.embed.loading", { name }), "loading");
       try {
         const assetBase = resolveAssetBase(
           this.getAttribute("asset-base") ?? void 0,
           defaultAssetBase,
           this.ownerDocument.baseURI
         );
-        const refusal = crossOriginRefusal(assetBase, this.ownerDocument.location?.origin ?? "");
+        const refusal = crossOriginRefusal(
+          assetBase,
+          this.ownerDocument.location?.origin ?? "",
+          localizer
+        );
         if (refusal !== void 0) {
           this.#fail(refusal);
           return;
@@ -611,11 +650,15 @@ function defineModkitElements(options = {}) {
             );
           } catch {
             this.#fail(
-              `extension-catalog \xAB${catalogAttribute}\xBB is not a URL this page can resolve.`
+              localizer.text("web.embed.catalogAttributeInvalid", { url: catalogAttribute })
             );
             return;
           }
-          const catalogRefusal = extensionCatalogRefusal(extensionCatalogUrl);
+          const catalogRefusal = extensionCatalogRefusal(
+            extensionCatalogUrl,
+            EMBED_EXTENSION_ORIGINS,
+            localizer
+          );
           if (catalogRefusal !== void 0) {
             this.#fail(catalogRefusal);
             return;
@@ -629,7 +672,11 @@ function defineModkitElements(options = {}) {
         setViewerText(this.#title, file.name, 300);
         if (file.size > EMBED_MAXIMUM_BYTES) {
           this.#fail(
-            `${name} is ${file.size} bytes; this element reads at most ${EMBED_MAXIMUM_BYTES}.`
+            localizer.text("web.embed.tooLarge", {
+              name,
+              size: file.size,
+              limit: EMBED_MAXIMUM_BYTES
+            })
           );
           return;
         }
@@ -638,7 +685,7 @@ function defineModkitElements(options = {}) {
         const snapshot = await access.snapshotOf(entry.id, controller.signal);
         const bytes = await access.read(entry.id, EMBED_MAXIMUM_BYTES, controller.signal);
         if (!current()) return;
-        const editability = await describeEditability(access, entry.id, entry.name);
+        const editability = await describeEditability(access, entry.id, entry.name, localizer);
         const writable = editability.editable && snapshot !== void 0 && isWritableHandle(fileHandle);
         const token = snapshot === void 0 ? `provider-token:embed-${generation}-${bytes.byteLength}` : sourceRevisionToken(snapshot);
         const writableHandles = /* @__PURE__ */ new Map();
@@ -647,6 +694,7 @@ function defineModkitElements(options = {}) {
         let editorPorts;
         if (writable) {
           const editing = createWebEditingArm({
+            localizer,
             inventory: host.services.main.inventory,
             handleFor: (sourceId) => writableHandles.get(sourceId),
             onNotice: (message) => {
@@ -665,11 +713,16 @@ function defineModkitElements(options = {}) {
               else this.removeAttribute("data-mk-dirty");
             },
             async ensureWriteAccess() {
-              const currentAccess = await describeEditability(access, entry.id, entry.name);
+              const currentAccess = await describeEditability(
+                access,
+                entry.id,
+                entry.name,
+                localizer
+              );
               if (currentAccess.state === "granted" || currentAccess.state === "no-permission-surface")
                 return "granted";
               if (currentAccess.state !== "prompt") return "denied";
-              const asked = await requestWriteAccess(access);
+              const asked = await requestWriteAccess(access, localizer);
               return asked.state === "granted" ? "granted" : asked.state === "denied" ? "denied" : "prompt";
             }
           });
@@ -678,7 +731,7 @@ function defineModkitElements(options = {}) {
         const previewer = createCodecPreview({
           supported: host.services.supportedExtensions,
           stages: preferStage(host.stages, this.getAttribute("view") ?? void 0),
-          fallback: WEB_PREVIEW_FALLBACK,
+          fallback: host.fallback,
           editorPorts: () => editorPorts,
           openSession: async (openedEntry, openedBytes, signal) => {
             const session = await openEmbedSession(
@@ -724,7 +777,7 @@ function defineModkitElements(options = {}) {
           return;
         }
         if (handle === void 0) {
-          this.#fail(`${name} could not be shown: no stage matched what the codecs published.`);
+          this.#fail(localizer.text("web.embed.noStage", { name }));
           return;
         }
         this.#handle = handle;

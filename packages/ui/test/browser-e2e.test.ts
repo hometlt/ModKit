@@ -150,6 +150,55 @@ async function reset(): Promise<void> {
 }
 
 describe('13C real-browser viewer host', () => {
+  it('localizes shared component chrome per instance without changing English defaults', async () => {
+    const result = await page.evaluate(() => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const root = document.querySelector('#app') as HTMLElement
+      const createUiLocalizer = ui['createUiLocalizer'] as (locale: string) => unknown
+      const ru = createUiLocalizer('ru')
+      const createSearchField = ui['createSearchField'] as (
+        document: Document,
+        options: Record<string, unknown>,
+      ) => { root: HTMLElement; destroy(): void }
+      const russian = createSearchField(document, {
+        localizer: ru,
+        allowGlob: true,
+        onChange() {},
+      })
+      const english = createSearchField(document, { onChange() {} })
+      const createSubjectCard = ui['createSubjectCard'] as (
+        document: Document,
+        options: Record<string, unknown>,
+      ) => { root: HTMLElement; destroy(): void }
+      const card = createSubjectCard(document, {
+        localizer: ru,
+        label: 'Fixture',
+        sections: [{ kind: 'header', title: 'Fixture' }],
+      })
+      root.append(russian.root, english.root, card.root)
+      const result = {
+        russianFilter: russian.root.querySelector('input')?.getAttribute('aria-label'),
+        russianOptions: russian.root.querySelector('[role="group"]')?.getAttribute('aria-label'),
+        russianGlob: russian.root.querySelector('[aria-label="Шаблон пути"]') !== null,
+        englishFilter: english.root.querySelector('input')?.getAttribute('aria-label'),
+        russianCard: card.root.getAttribute('aria-label'),
+        russianCardKnowledge: card.root.querySelector('[role="status"]')?.textContent,
+      }
+      russian.destroy()
+      english.destroy()
+      card.destroy()
+      return result
+    })
+    expect(result).toEqual({
+      russianFilter: 'Фильтр',
+      russianOptions: 'Параметры фильтра',
+      russianGlob: true,
+      englishFilter: 'Filter',
+      russianCard: 'Карточка субъекта «Fixture»',
+      russianCardKnowledge: 'Описание пока недоступно.',
+    })
+  })
+
   it('renders bounded and virtual text, searches, and pages a 100 MiB logical line', async () => {
     await page.evaluate(async () => {
       const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit

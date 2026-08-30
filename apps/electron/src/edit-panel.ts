@@ -29,6 +29,7 @@ import {
   setViewerText,
   ViewerMountScope,
 } from '@modkitx-x3/ui'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
 import type { AnyDescriptor, AssetEditPlan, ViewerModule } from '@modkitx-x3/sdk'
 
 import {
@@ -48,6 +49,7 @@ export interface EditPanelPorts {
 }
 
 export interface EditPanelOptions {
+  readonly localizer?: UiLocalizer
   /** The arm this tab holds, or `undefined` when main refused one for the subject. */
   portsFor(descriptor: Record<string, unknown>): EditPanelPorts | undefined
   /**
@@ -73,12 +75,15 @@ const asRecord = (descriptor: AnyDescriptor): Record<string, unknown> =>
  * byte of the original. The coordinator commits it — the claim is `semantic`, not `lossy`, so it
  * asks for no confirmation — which means the only place the user can learn it is here.
  */
-export function fidelityNote(plan: AssetEditPlan): string {
+export function fidelityNote(
+  plan: AssetEditPlan,
+  localizer: UiLocalizer = DEFAULT_UI_LOCALIZER,
+): string {
   if (plan.fidelity.preservesUnknownData) return ''
   const notes = plan.fidelity.notes ?? []
   return notes.length === 0
-    ? ' (this rewrite does not keep bytes the format does not account for)'
-    : ` (${notes.join('; ')})`
+    ? localizer.text('edit.fidelityUnknownBytes')
+    : localizer.text('edit.fidelityNotes', { notes: notes.join('; ') })
 }
 
 /** A descriptor with the mutating operations taken out, for a toolbar that invokes with `null`. */
@@ -117,24 +122,29 @@ export const nonMutatingOperationToolbar: ViewerModule = defineViewerModule({
 })
 
 export function createEditPanel(options: EditPanelOptions): ViewerModule {
+  const localizer = options.localizer ?? DEFAULT_UI_LOCALIZER
+  const text = localizer.text
   return defineViewerModule({
     abiVersion: 1,
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
-      const root = createSurface(args.container, 'Edit')
+      const root = createSurface(args.container, text('electron.panel.edit'))
       const descriptor = asRecord(args.descriptor)
       const ports = options.portsFor(descriptor)
-      const offer = editOffer(descriptor, { editable: ports !== undefined })
+      const offer = editOffer(descriptor, { editable: ports !== undefined, localizer })
 
       const chooser = element(root, 'div', { part: 'form.row' })
-      element(chooser, 'label', { part: 'form.label', text: 'Operation' })
+      element(chooser, 'label', { part: 'form.label', text: text('edit.operation') })
       const picker = element(chooser, 'select', { part: 'form.select' })
       if (!(picker instanceof HTMLSelectElement)) throw new TypeError('no select element')
-      picker.setAttribute('aria-label', 'Mutating operation')
+      picker.setAttribute('aria-label', text('edit.mutatingOperation'))
       const summary = element(root, 'p', { part: 'form.description' })
       const pane = element(root, 'div', { part: 'settings.pane' })
       const controls = element(root, 'div', { part: 'form.control' })
-      const apply = element(controls, 'button', { part: 'operations.button', text: 'Apply' })
+      const apply = element(controls, 'button', {
+        part: 'operations.button',
+        text: text('edit.apply'),
+      })
       apply.setAttribute('type', 'button')
       const status = element(root, 'output', { part: 'operations.status' })
       const notes = element(root, 'div', { part: 'form.status' })
@@ -149,12 +159,18 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
         notes.replaceChildren()
         const previous = options.lastOutcome(descriptor)
         if (previous !== undefined) {
-          element(notes, 'div', { part: 'form.description', text: `Last change: ${previous}` })
+          element(notes, 'div', {
+            part: 'form.description',
+            text: text('edit.lastChange', { change: previous }),
+          })
         }
         for (const item of offer.unsupported) {
           element(notes, 'div', {
             part: 'form.description',
-            text: `${item.operationId}: not available in this host yet — ${item.reason}`,
+            text: text('electron.edit.unsupported', {
+              operation: item.operationId,
+              reason: item.reason,
+            }),
           })
         }
       }
@@ -169,7 +185,7 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
         pane.replaceChildren()
         const form = selectedForm()
         if (form === undefined) {
-          setViewerText(summary, 'This subject declares no mutating operation this host can drive.')
+          setViewerText(summary, text('edit.status.noneDrivable'))
           apply.setAttribute('disabled', '')
           return
         }
@@ -195,7 +211,7 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
       const run = async (): Promise<void> => {
         const form = selectedForm()
         if (form === undefined || ports === undefined) {
-          say('this host holds no editing arm for the file, so nothing can be applied', true)
+          say(text('edit.sessionUnavailable'), true)
           return
         }
         const values = new Map<string, string>()
@@ -205,11 +221,20 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
         try {
           input = form.build(values)
         } catch (error) {
-          say(`cannot apply: ${error instanceof Error ? error.message : String(error)}`, true)
+          say(
+            text('edit.applyFailed', {
+              reason: error instanceof Error ? error.message : String(error),
+            }),
+            true,
+          )
           return
         }
 
-        say(`${form.label}: invoking ${form.handlerId}…`, false)
+        const formLabel = form.label
+        say(
+          text('electron.edit.invoking', { operation: formLabel, handler: form.handlerId }),
+          false,
+        )
         let result
         try {
           result = await args.operations.invoke(form.handlerId, input, { signal: scope.signal })
@@ -217,19 +242,21 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
           // A codec that refuses before producing a plan rejects the call; its own words are the
           // only useful answer, so they are shown rather than a generic failure.
           say(
-            `refused by the codec: ${error instanceof Error ? error.message : String(error)}`,
+            text('electron.edit.codecRefused', {
+              reason: error instanceof Error ? error.message : String(error),
+            }),
             true,
           )
           return
         }
         if (isRejected(result)) {
-          say(invokeRefusalMessage(result), true)
+          say(invokeRefusalMessage(result, localizer), true)
           return
         }
 
         let plan: AssetEditPlan
         try {
-          plan = editPlanFromOperationOutput(result.output)
+          plan = editPlanFromOperationOutput(result.output, localizer)
         } catch (error) {
           say(error instanceof Error ? error.message : String(error), true)
           return
@@ -240,13 +267,13 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
           say(applied.message, true)
           return
         }
-        const outcome = `${form.label} — ${applied.message}${fidelityNote(plan)}`
+        const outcome = `${formLabel} — ${applied.message}${fidelityNote(plan, localizer)}`
         options.recordOutcome(descriptor, outcome)
-        say(`${outcome}; reopening the file to show it as it now is`, false)
+        say(text('electron.edit.appliedReopening', { outcome }), false)
         if (scope.signal.aborted) return
         const reopened = await options.reopen(descriptor)
         if (!reopened && !scope.signal.aborted) {
-          say(`${outcome}; the tab could not be reopened, so this view is stale`, true)
+          say(text('electron.edit.appliedReopenFailed', { outcome }), true)
         }
       }
 
@@ -262,7 +289,9 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
       })
 
       for (const form of offer.forms) {
-        const option = element(picker, 'option', { text: form.label })
+        const option = element(picker, 'option', {
+          text: form.label,
+        })
         option.setAttribute('value', form.id)
       }
       picker.addEventListener('change', drawFields)
@@ -273,12 +302,15 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
         setState(root, ['degraded'])
         say(
           offer.unsupported.length === 0
-            ? 'nothing here can change this file'
-            : `${offer.unsupported.length} of ${declared} mutating operation(s) declared, none drivable here`,
+            ? text('edit.status.noneDrivable')
+            : text('electron.edit.noneDrivableCount', {
+                unsupported: offer.unsupported.length,
+                declared,
+              }),
           false,
         )
       } else {
-        say(`${offer.forms.length} form(s) over ${declared} mutating operation(s)`, false)
+        say(text('electron.edit.formsAvailable', { forms: offer.forms.length, declared }), false)
       }
 
       return {

@@ -957,6 +957,7 @@
     },
     {
       "dependsOn": [
+        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
         "pkg:npm/%40modkitx-x3/vfs@0.1.0"
       ],
       "ref": "pkg:npm/%40modkitx/extension-manager@0.1.0"

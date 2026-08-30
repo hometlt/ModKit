@@ -31,6 +31,7 @@ import type {
 import { presentationSlotId } from '@modkitx-x3/sdk'
 import { diagnosticsPanel, operationToolbar } from '@modkitx-x3/ui/panels'
 import { element, setViewerText } from '@modkitx-x3/ui/viewer'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
 
 import { declaredMutatingOperations, editOffer } from './edit-operations.js'
 
@@ -108,6 +109,7 @@ export interface InspectorTarget {
 }
 
 export interface InspectorOptions {
+  readonly localizer?: UiLocalizer
   /**
    * The Edit panel module, mounted only for a subject this host can honestly offer one for.
    * Absent means this build ships no mutating surface at all, which is a decision for the shell.
@@ -123,8 +125,10 @@ export interface Inspector {
 }
 
 export function createInspector(document: Document, options: InspectorOptions = {}): Inspector {
+  const text = (options.localizer ?? DEFAULT_UI_LOCALIZER).text
   const root = document.createElement('div')
   root.className = 'web-inspector'
+  root.setAttribute('aria-label', text('web.inspector.label'))
 
   const heading = element(root, 'div', { part: 'viewer.status' })
   // A bare container: each line inside is its own `form.description`, and a part wrapping parts of
@@ -172,21 +176,26 @@ export function createInspector(document: Document, options: InspectorOptions = 
     const needInput = declinedNonMutatingOperations(target.descriptor)
     if (needInput.length > 0) {
       lines.push(
-        `${needInput.map(operation => operation.id).join(', ')}: not in the toolbar — they take ` +
-          'an input it does not collect, so a stage or a panel drives them instead.',
+        text('web.inspector.needInput', {
+          operations: needInput.map(operation => operation.id).join(', '),
+        }),
       )
     }
     const mutating = declaredMutatingOperations(target.descriptor)
     if (mutating.length > 0 && !target.editable) {
       lines.push(
-        `${mutating.map(operation => operation.id).join(', ')}: no Edit panel — ` +
-          (target.editNote ?? 'this page holds no writable handle for the file.'),
+        text('web.inspector.noEdit', {
+          operations: mutating.map(operation => operation.id).join(', '),
+          reason: target.editNote ?? text('web.inspector.noWritableHandle'),
+        }),
       )
     }
     const offer = editOffer(target.descriptor, { editable: target.editable })
     if (offer.forms.length === 0) {
       for (const item of offer.unsupported) {
-        lines.push(`${item.operationId}: no form here — ${item.reason}.`)
+        lines.push(
+          text('web.inspector.noForm', { operation: item.operationId, reason: item.reason }),
+        )
       }
     }
     for (const line of lines) element(declined, 'p', { part: 'form.description', text: line })
@@ -198,17 +207,20 @@ export function createInspector(document: Document, options: InspectorOptions = 
     async show(target) {
       await unmountAll()
       if (target === undefined) {
-        setViewerText(heading, 'No file is open.')
+        setViewerText(heading, text('web.inspector.noFile'))
         return
       }
       const offered = nonMutatingDescriptor(target.descriptor)
       const offer = editOffer(target.descriptor, { editable: target.editable })
       setViewerText(
         heading,
-        `${target.label} · ${offered.operations.length} non-mutating operation(s) · ` +
-          `${offer.forms.length} edit form(s) over ` +
-          `${declaredMutatingOperations(target.descriptor).length} mutating operation(s) · ` +
-          `${target.descriptor.diagnostics.length} diagnostic(s)`,
+        text('web.inspector.summary', {
+          label: target.label,
+          read: offered.operations.length,
+          forms: offer.forms.length,
+          write: declaredMutatingOperations(target.descriptor).length,
+          diagnostics: target.descriptor.diagnostics.length,
+        }),
       )
       drawDeclined(target)
       await mount(

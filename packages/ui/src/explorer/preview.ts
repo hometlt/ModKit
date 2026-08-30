@@ -19,6 +19,9 @@ import type {
 import type { ExplorerEntry, PreviewHandle, PreviewResolver } from './index.js'
 import { builtinByteRangeSource, builtinTextSource, looksTextual } from './builtin.js'
 import { setPart } from '../viewer/index.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { EXPLORER_PREVIEW_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 /** A stage the host is willing to show, keyed by a data source, an operation, or both. */
 export interface PreviewStage {
@@ -62,6 +65,7 @@ export interface PreviewStage {
 }
 
 export interface CodecPreviewOptions {
+  readonly localizer?: UiLocalizer
   readonly stages: readonly PreviewStage[]
   /** Optional host-owned read-only help catalog shared by every mounted stage. */
   readonly knowledge?: KnowledgeCatalog
@@ -162,6 +166,7 @@ const stageId = (stage: PreviewStage): string => {
 }
 
 export function createCodecPreview(options: CodecPreviewOptions): PreviewResolver {
+  const localizer = withEnglishUiFallback(options.localizer, EXPLORER_PREVIEW_FALLBACK_MESSAGES)
   const supported = [
     ...new Set(
       (options.supported ?? []).map(extension => extension.replace(/^\./u, '').toLowerCase()),
@@ -196,7 +201,7 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
       const published = new Set(publishedContracts(descriptor))
       const availableOperations = new Set(publishedOperations(descriptor))
 
-      const candidates = resolved ? options.stages : fallbackStages(options.fallback)
+      const candidates = resolved ? options.stages : fallbackStages(options.fallback, localizer)
       const hasPresentationPlan = session.presentation !== undefined
       const plannedSlots = new Map(
         (session.presentation?.slots ?? []).map(slot => [slot.slotId as string, slot]),
@@ -331,21 +336,32 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
 }
 
 /** Registered for hosts that want the raw bytes when no codec claims the file. */
-export function fallbackHexStage(module: ViewerModule): PreviewStage {
-  return { id: 'hex', label: 'Hex', contract: 'common.view/byte-range-source', module }
+export function fallbackHexStage(
+  module: ViewerModule,
+  localizer: UiLocalizer = withEnglishUiFallback(undefined, EXPLORER_PREVIEW_FALLBACK_MESSAGES),
+): PreviewStage {
+  return {
+    id: 'hex',
+    label: localizer.text('explorer.hex'),
+    contract: 'common.view/byte-range-source',
+    module,
+  }
 }
 
 export { setPart }
 
 /** Stage list for a file no codec claimed: whatever fallback viewers the host supplied. */
-function fallbackStages(fallback: CodecPreviewOptions['fallback']): readonly PreviewStage[] {
+function fallbackStages(
+  fallback: CodecPreviewOptions['fallback'],
+  localizer: UiLocalizer,
+): readonly PreviewStage[] {
   const stages: PreviewStage[] = []
   // ids, because `stageId` falls back to the contract and a picker then offers a file no codec
   // claimed a view named `common.view/text-data-source`
   if (fallback?.text !== undefined) {
     stages.push({
       id: 'text',
-      label: 'Text',
+      label: localizer.text('explorer.text'),
       contract: 'common.view/text-data-source',
       module: fallback.text,
     })
@@ -353,7 +369,7 @@ function fallbackStages(fallback: CodecPreviewOptions['fallback']): readonly Pre
   if (fallback?.hex !== undefined) {
     stages.push({
       id: 'hex',
-      label: 'Hex',
+      label: localizer.text('explorer.hex'),
       contract: 'common.view/byte-range-source',
       module: fallback.hex,
     })

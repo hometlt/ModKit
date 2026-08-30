@@ -23,6 +23,7 @@ import {
   type PreviewResolver,
 } from '@modkitx-x3/ui/explorer'
 import { createWorkbench } from '@modkitx-x3/ui/workbench'
+import type { UiLocale, UiLocalizer } from '@modkitx-x3/ui/localization'
 import {
   createSubjectCard,
   loadSubjectCardSections,
@@ -40,8 +41,9 @@ import { probeWebviewFacilities } from './facilities.js'
 import { createWebviewEditorPorts, type WebviewEditorPorts } from './editor-ports.js'
 import { reopenCommittedEntry } from './edit-reopen.js'
 import { continueVsCodeMapPreviewSelection } from './map-preview-selection.js'
-import { createVsCodePreviewStages, VSCODE_PREVIEW_FALLBACK } from './stages.js'
+import { createVsCodePreviewFallback, createVsCodePreviewStages } from './stages.js'
 import { preferredStage } from './view-policy.js'
+import { createVscodeLocalizer } from './localization.js'
 
 /** What the extension host serialises into the page. Inert data a bridge realm may see. */
 interface RealmSnapshot {
@@ -50,6 +52,7 @@ interface RealmSnapshot {
 }
 
 interface Bootstrap {
+  readonly locale: UiLocale
   readonly extensionHost: RealmSnapshot
   readonly webview: RealmSnapshot
   readonly topologyId: string
@@ -111,6 +114,7 @@ function baseName(path: string): string {
 
 const bootstrap = (globalThis as { __MODKIT_BOOTSTRAP__?: Bootstrap }).__MODKIT_BOOTSTRAP__
 const acquire = (globalThis as { acquireVsCodeApi?: () => VsCodeWebviewApi }).acquireVsCodeApi
+const pageLocalizer = createVscodeLocalizer(bootstrap?.locale ?? document.documentElement.lang)
 
 const root = document.querySelector('#root')
 if (root === null) throw new Error('missing #root')
@@ -119,13 +123,15 @@ if (bootstrap === undefined || acquire === undefined) {
   const message = document.createElement('p')
   message.textContent =
     bootstrap === undefined
-      ? 'No host snapshot was provided by the extension host.'
-      : 'This page is not running inside a VS Code webview.'
+      ? pageLocalizer.text('vscode.webview.noSnapshot')
+      : pageLocalizer.text('vscode.webview.notInside')
   root.replaceChildren(message)
 } else {
   void mount(root, bootstrap, acquire()).catch((error: unknown) => {
     const message = document.createElement('p')
-    message.textContent = `The Modkit workbench failed to start: ${describe(error)}`
+    message.textContent = pageLocalizer.text('vscode.webview.workbenchFailed', {
+      reason: describe(error),
+    })
     root.replaceChildren(message)
   })
 }
@@ -135,6 +141,7 @@ async function mount(
   snapshot: Bootstrap,
   api: VsCodeWebviewApi,
 ): Promise<void> {
+  const localizer = createVscodeLocalizer(snapshot.locale)
   // ---------------------------------------------------------------- transport
   const channel: WebviewChannel = {
     post: message => {
@@ -156,7 +163,8 @@ async function mount(
    * output channel and was never drawn anywhere a person looks.
    */
   const workbench = createWorkbench(document, {
-    title: 'Modkit',
+    localizer,
+    title: localizer.text('app.title'),
     host: { label: snapshot.webview.realmId, facilities: snapshot.webview.facilities },
   })
   mountPoint.replaceChildren(workbench.root)
@@ -188,7 +196,7 @@ async function mount(
   bridge.emit({ op: 'facilities', observed: probeWebviewFacilities(globalThis) })
 
   if (snapshot.extensionCard !== undefined) {
-    await mountExtensionSubjectCard(workbench, bridge, snapshot.extensionCard)
+    await mountExtensionSubjectCard(workbench, bridge, snapshot.extensionCard, localizer)
     return
   }
 
@@ -218,7 +226,7 @@ async function mount(
    * granted — the very roots `createPathSubjectOpener` confines `open` to.
    */
   const access: FileAccess = {
-    label: 'Workspace',
+    label: localizer.text('vscode.webview.workspace'),
     async list(entryId) {
       const answer = await bridge.request({
         op: 'list',
@@ -233,7 +241,9 @@ async function mount(
     },
     async read(entryId, maxBytes) {
       const answer = await bridge.request({ op: 'read', path: entryId, maxBytes })
-      if (!(answer instanceof Uint8Array)) throw new Error('the extension host returned no bytes')
+      if (!(answer instanceof Uint8Array)) {
+        throw new Error(localizer.text('vscode.webview.noBytes'))
+      }
       return answer
     },
   }
@@ -264,8 +274,10 @@ async function mount(
     [...subjects.values()].find(record => record.descriptor === descriptor)
 
   const codecPreview = createCodecPreview({
+    localizer,
     supported: snapshot.supportedExtensions,
     stages: createVsCodePreviewStages({
+      localizer,
       portsFor(descriptor) {
         const record = recordForDescriptor(descriptor)
         return record === undefined ? undefined : openPorts.get(record.entry.id)
@@ -286,7 +298,7 @@ async function mount(
         say(status.message)
       },
     }),
-    fallback: VSCODE_PREVIEW_FALLBACK,
+    fallback: createVsCodePreviewFallback(localizer),
 
     async openSession(entry) {
       let result = await client.open(entry.id)
@@ -294,20 +306,22 @@ async function mount(
         const candidates = mapPreviewCandidates(result.snapshot.candidates)
         if (candidates.length > 0) {
           const choice = window.prompt(
-            `Choose a map for the World view by entering its id:\n\n${candidates
-              .map(
-                candidate =>
-                  `${candidate.candidateId} — ${candidate.displayName}${
-                    candidate.sourcePath === undefined ? '' : ` (${candidate.sourcePath})`
-                  }`,
-              )
-              .join('\n')}`,
+            localizer.text('vscode.webview.chooseMap', {
+              candidates: candidates
+                .map(
+                  candidate =>
+                    `${candidate.candidateId} — ${candidate.displayName}${
+                      candidate.sourcePath === undefined ? '' : ` (${candidate.sourcePath})`
+                    }`,
+                )
+                .join('\n'),
+            }),
             '',
           )
           if (choice !== null && choice.trim().length > 0) {
             const selected = candidates.find(candidate => candidate.candidateId === choice.trim())
             if (selected === undefined) {
-              say(`${entry.name} · map preview selection was not one of the offered ids`)
+              say(localizer.text('vscode.webview.invalidMapSelection', { name: entry.name }))
             } else {
               const firstSession = result.session
               result = await continueVsCodeMapPreviewSelection({
@@ -322,7 +336,10 @@ async function mount(
       }
       if (result.state === 'unresolved') {
         say(
-          `${entry.name} — no codec claimed it (${result.snapshot.reason}); showing the raw bytes.`,
+          localizer.text('vscode.webview.noCodecClaimed', {
+            name: entry.name,
+            reason: result.snapshot.reason,
+          }),
         )
         subjects.delete(entry.id)
         return undefined
@@ -366,13 +383,19 @@ async function mount(
         const arm = await client.edit(record.sessionId)
         const ports = await createWebviewEditorPorts({
           arm,
+          localizer,
           onStatus: message => say(`${entry.name} · ${message}`),
           onDirty: dirty => markDirty(entry.id, dirty),
         })
         openPorts.set(entry.id, ports)
         return ports
       } catch (error) {
-        say(`${entry.name} is open read-only: ${describe(error)}`)
+        say(
+          localizer.text('vscode.webview.readOnly', {
+            name: entry.name,
+            reason: describe(error),
+          }),
+        )
         return undefined
       }
     },
@@ -400,6 +423,7 @@ async function mount(
    * this line.
    */
   const editors: EditorArea = createEditorArea(document, {
+    localizer,
     preview,
     /*
      * In the custom editor the file already has a tab and a breadcrumb — VS Code drew them, above
@@ -416,7 +440,7 @@ async function mount(
       const answer = String(
         await bridge.request({
           op: 'confirm',
-          message: `${entry.name} has unsaved changes.`,
+          message: localizer.text('vscode.webview.unsavedChanges', { name: entry.name }),
           savable: openPorts.has(entry.id),
         }),
       )
@@ -425,7 +449,7 @@ async function mount(
     async save(entry) {
       const ports = openPorts.get(entry.id)
       if (ports === undefined || !(await ports.save())) {
-        throw new Error(`${entry.name} could not be saved by its editing arm`)
+        throw new Error(localizer.text('vscode.webview.saveFailed', { name: entry.name }))
       }
     },
     onStatus(status) {
@@ -469,28 +493,36 @@ async function mount(
    */
   bridge.serve(async request => {
     if (request.op !== 'document-save' && request.op !== 'document-revert') {
-      throw new Error('the webview only serves custom-document lifecycle requests')
+      throw new Error(localizer.text('vscode.webview.lifecycleOnly'))
     }
     if (snapshot.openPath === undefined || request.path !== snapshot.openPath) {
-      throw new Error('the custom-document request does not name this webview document')
+      throw new Error(localizer.text('vscode.webview.wrongDocument'))
     }
     if (request.op === 'document-save') {
       const record = subjects.get(request.path)
-      if (record === undefined) throw new Error('the custom document is not open')
+      if (record === undefined) {
+        throw new Error(localizer.text('vscode.webview.documentNotOpen'))
+      }
       const entry = record.entry
-      if (!(await editors.save(request.path))) throw new Error('the mounted editor refused to save')
+      if (!(await editors.save(request.path))) {
+        throw new Error(localizer.text('vscode.webview.editorSaveRefused'))
+      }
       markDirty(request.path, false)
       if (!(await editors.close(request.path))) {
-        throw new Error('the saved custom document could not close its stale revision')
+        throw new Error(localizer.text('vscode.webview.staleRevisionCloseFailed'))
       }
       await editors.open(entry)
       return true
     }
     const record = subjects.get(request.path)
-    if (record === undefined) throw new Error('the custom document is not open')
+    if (record === undefined) {
+      throw new Error(localizer.text('vscode.webview.documentNotOpen'))
+    }
     const entry = record.entry
     markDirty(request.path, false)
-    if (!(await editors.close(request.path))) throw new Error('the custom document could not close')
+    if (!(await editors.close(request.path))) {
+      throw new Error(localizer.text('vscode.webview.documentCloseFailed'))
+    }
     await editors.open(entry)
     return true
   })
@@ -538,6 +570,7 @@ async function mountExtensionSubjectCard(
   workbench: ReturnType<typeof createWorkbench>,
   bridge: ReturnType<typeof createBridge>,
   bundle: import('./extension-cards.js').ExtensionCardBundle,
+  localizer: UiLocalizer,
 ): Promise<void> {
   const documents = new Map(
     bundle.documents.map(document => [document.subject.subjectId, document]),
@@ -559,9 +592,8 @@ async function mountExtensionSubjectCard(
       | { readonly op: 'set-managed-package'; readonly id: string; readonly enabled: boolean }
       | { readonly op: 'link-extension'; readonly id: string },
   ): Promise<void> => {
-    const result = (await bridge.request(request)) as { readonly message?: unknown }
-    status.textContent =
-      typeof result.message === 'string' ? result.message : 'Configuration updated.'
+    await bridge.request(request)
+    status.textContent = localizer.text('extensions.status.configurationUpdated')
   }
 
   const actionButton = (active: ExtensionSubjectCardWireDocument): HTMLButtonElement => {
@@ -574,7 +606,7 @@ async function mountExtensionSubjectCard(
       bundle.extension.managedPackageEnabled === false
     ) {
       const packageId = bundle.extension.managedPackageId
-      button.textContent = 'Enable package'
+      button.textContent = localizer.text('extensions.action.enablePackage')
       button.addEventListener('click', () => {
         void configure({
           op: 'set-managed-package',
@@ -585,20 +617,28 @@ async function mountExtensionSubjectCard(
       return button
     }
     if (!bundle.extension.installed && bundle.extension.linkable) {
-      button.textContent = 'Link extension'
+      button.textContent = localizer.text('extensions.action.linkExtension')
       button.addEventListener('click', () => {
         void configure({ op: 'link-extension', id: bundle.extension.id })
       })
       return button
     }
     if (subject.kind === 'org.modkitx/contribution') {
-      button.textContent = subject.enabled ? 'Disable contribution' : 'Enable contribution'
+      button.textContent = localizer.text(
+        subject.enabled
+          ? 'extensions.action.disableContribution'
+          : 'extensions.action.enableContribution',
+      )
       button.addEventListener('click', () => {
         void configure({ op: 'set-contribution', id: subject.id, enabled: !subject.enabled })
       })
       return button
     }
-    button.textContent = bundle.extension.enabled ? 'Disable extension' : 'Enable extension'
+    button.textContent = localizer.text(
+      bundle.extension.enabled
+        ? 'extensions.action.disableExtension'
+        : 'extensions.action.enableExtension',
+    )
     button.addEventListener('click', () => {
       void configure({
         op: 'set-extension-coordinate',
@@ -611,8 +651,12 @@ async function mountExtensionSubjectCard(
 
   const render = async (subjectId: string): Promise<void> => {
     const active = documents.get(subjectId)
-    if (active === undefined) throw new Error(`unknown extension subject ${subjectId}`)
-    const sections = await loadSubjectCardSections(subjectFactsSourceFromWire(active))
+    if (active === undefined) {
+      throw new Error(localizer.text('vscode.webview.unknownExtensionSubject', { id: subjectId }))
+    }
+    const sections = await loadSubjectCardSections(subjectFactsSourceFromWire(active), {
+      localizer,
+    })
     card?.destroy()
     toolbar.replaceChildren(actionButton(active), status)
     const navigate = (ref: CardRef): void => {
@@ -621,6 +665,7 @@ async function mountExtensionSubjectCard(
       }
     }
     card = createSubjectCard(document, {
+      localizer,
       label: active.subject.displayName,
       sections,
       onNavigate: navigate,

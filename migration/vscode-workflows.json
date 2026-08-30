@@ -362,6 +362,20 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.extensions.openContribution",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.openContribution",
+      "workflowId": "vscode/views-workbench",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.extensions.openExtension",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.openExtension",
+      "workflowId": "vscode/views-workbench",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.extensions.refresh",
       "kind": "vscode-command",
       "key": "modkit.extensions.refresh",
@@ -484,6 +498,13 @@
       "factId": "x3:vscode-configuration-property:modkit.disabledContributions",
       "kind": "vscode-configuration-property",
       "key": "modkit.disabledContributions",
+      "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-configuration-property:modkit.disabledExtensions",
+      "kind": "vscode-configuration-property",
+      "key": "modkit.disabledExtensions",
       "workflowId": "vscode/manifest-settings",
       "state": "observed-only"
     },

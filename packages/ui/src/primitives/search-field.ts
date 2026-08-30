@@ -14,6 +14,9 @@ import {
   type SearchOptions,
 } from '../search/matcher.js'
 import { setPart, setState, type StateName } from '../parts.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { PRIMITIVES_SEARCH_FIELD_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export interface SearchFieldState {
   readonly query: string
@@ -24,6 +27,7 @@ export interface SearchFieldState {
 }
 
 export interface SearchFieldOptions {
+  readonly localizer?: UiLocalizer
   readonly label?: string
   readonly placeholder?: string
   /** Show the glob toggle. Off by default; name filters (archive entries) turn it on. */
@@ -52,15 +56,21 @@ interface ToggleSpec {
   readonly title: string
 }
 
-const TOGGLES: readonly ToggleSpec[] = [
-  { id: 'case', label: 'Aa', title: 'Match case' },
-  { id: 'word', label: 'ab', title: 'Match whole word' },
-  { id: 'regex', label: '.*', title: 'Use regular expression' },
-]
-
-const GLOB_TOGGLE: ToggleSpec = { id: 'glob', label: '*', title: 'Use glob pattern' }
-
 export function createSearchField(document: Document, options: SearchFieldOptions): SearchField {
+  const localizer = withEnglishUiFallback(
+    options.localizer,
+    PRIMITIVES_SEARCH_FIELD_FALLBACK_MESSAGES,
+  )
+  const toggles: readonly ToggleSpec[] = [
+    { id: 'case', label: 'Aa', title: localizer.text('primitives.matchCase') },
+    { id: 'word', label: 'ab', title: localizer.text('primitives.matchWord') },
+    { id: 'regex', label: '.*', title: localizer.text('primitives.regex') },
+  ]
+  const globToggle: ToggleSpec = {
+    id: 'glob',
+    label: '*',
+    title: localizer.text('primitives.glob'),
+  }
   const root = document.createElement('div')
   root.className = 'modkit-search'
   setPart(root, 'search')
@@ -69,8 +79,8 @@ export function createSearchField(document: Document, options: SearchFieldOption
   const input = document.createElement('input')
   input.type = 'search'
   input.className = 'modkit-search__input'
-  input.placeholder = options.placeholder ?? 'Filter…'
-  input.setAttribute('aria-label', options.label ?? 'Filter')
+  input.placeholder = options.placeholder ?? `${localizer.text('primitives.filter')}…`
+  input.setAttribute('aria-label', options.label ?? localizer.text('primitives.filter'))
   input.value = options.initial?.query ?? ''
   setPart(input, 'search.input')
   root.append(input)
@@ -79,10 +89,10 @@ export function createSearchField(document: Document, options: SearchFieldOption
   toggleBar.className = 'modkit-search__toggles'
   setPart(toggleBar, 'search.toggles')
   toggleBar.setAttribute('role', 'group')
-  toggleBar.setAttribute('aria-label', 'Filter options')
+  toggleBar.setAttribute('aria-label', localizer.text('primitives.filterOptions'))
   root.append(toggleBar)
 
-  const specs = options.allowGlob === true ? [...TOGGLES, GLOB_TOGGLE] : TOGGLES
+  const specs = options.allowGlob === true ? [...toggles, globToggle] : toggles
   const buttons = new Map<string, HTMLButtonElement>()
   for (const spec of specs) {
     const button = document.createElement('button')
@@ -113,8 +123,8 @@ export function createSearchField(document: Document, options: SearchFieldOption
     nav.className = 'modkit-search__nav'
     setPart(nav, 'search.nav')
     for (const [label, direction, title] of [
-      ['‹', -1, 'Previous match'],
-      ['›', 1, 'Next match'],
+      ['‹', -1, localizer.text('primitives.previousMatch')],
+      ['›', 1, localizer.text('primitives.nextMatch')],
     ] as const) {
       const button = document.createElement('button')
       button.type = 'button'
@@ -160,7 +170,8 @@ export function createSearchField(document: Document, options: SearchFieldOption
   function render(): void {
     const compiled = current.compiled
     const invalid = compiled.kind === 'invalid'
-    message.textContent = compiled.kind === 'invalid' ? compiled.message : ''
+    message.textContent =
+      compiled.kind === 'invalid' ? localizer.text('primitives.invalidRegex') : ''
     const count = options.countMatches?.(current)
     const states: StateName[] = []
     if (invalid) states.push('invalid')
@@ -168,12 +179,12 @@ export function createSearchField(document: Document, options: SearchFieldOption
     setState(root, states)
     input.setAttribute('aria-invalid', String(invalid))
     status.textContent = invalid
-      ? 'invalid'
+      ? localizer.text('primitives.invalid')
       : compiled.kind === 'empty' || count === undefined
         ? ''
         : count === 1
-          ? '1 match'
-          : `${count} matches`
+          ? localizer.text('primitives.oneMatch')
+          : localizer.text('primitives.matches', { count })
     if (nav !== undefined) {
       for (const button of nav.querySelectorAll('button')) {
         button.disabled = invalid || count === undefined || count === 0

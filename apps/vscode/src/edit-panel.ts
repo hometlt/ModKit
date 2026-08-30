@@ -14,6 +14,7 @@ import {
   ViewerMountScope,
 } from '@modkitx-x3/ui/viewer'
 import type { AnyDescriptor, AssetEditPlan, ViewerModule } from '@modkitx-x3/sdk'
+import type { UiLocalizer } from '@modkitx-x3/ui/localization'
 
 import {
   editOffer,
@@ -24,8 +25,10 @@ import {
 } from './edit-operations.js'
 import type { WebviewEditorPorts, WebviewEditorStatus } from './editor-ports.js'
 import { descriptorOperations } from './view-policy.js'
+import { createVscodeLocalizer } from './localization.js'
 
 export interface EditPanelOptions {
+  readonly localizer: UiLocalizer
   portsFor(descriptor: Record<string, unknown>): WebviewEditorPorts | undefined
   reopen(descriptor: Record<string, unknown>): Promise<boolean>
   lastOutcome(descriptor: Record<string, unknown>): string | undefined
@@ -37,12 +40,15 @@ const asRecord = (descriptor: AnyDescriptor): Record<string, unknown> =>
   descriptor as unknown as Record<string, unknown>
 
 /** State the plan's own fidelity limitation beside the successful outcome. */
-export function fidelityNote(plan: AssetEditPlan): string {
+export function fidelityNote(
+  plan: AssetEditPlan,
+  localizer: UiLocalizer = createVscodeLocalizer('en'),
+): string {
   if (plan.fidelity.preservesUnknownData) return ''
   const notes = plan.fidelity.notes ?? []
   return notes.length === 0
-    ? ' (this rewrite does not keep bytes the format does not account for)'
-    : ` (${notes.join('; ')})`
+    ? ` (${localizer.text('vscode.edit.fidelityLoss')})`
+    : ` (${localizer.text('vscode.edit.fidelityNotes', { notes: notes.join('; ') })})`
 }
 
 export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
@@ -50,20 +56,27 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
     abiVersion: 1,
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
-      const root = createSurface(args.container, 'Edit')
+      const localizer = options.localizer
+      const root = createSurface(args.container, localizer.text('vscode.edit.title'))
       const descriptor = asRecord(args.descriptor)
       const ports = options.portsFor(descriptor)
-      const offer = editOffer(descriptor, { editable: ports !== undefined })
+      const offer = editOffer(descriptor, { editable: ports !== undefined, localizer })
 
       const chooser = element(root, 'div', { part: 'form.row' })
-      element(chooser, 'label', { part: 'form.label', text: 'Operation' })
+      element(chooser, 'label', {
+        part: 'form.label',
+        text: localizer.text('vscode.edit.operation'),
+      })
       const picker = element(chooser, 'select', { part: 'form.select' })
       if (!(picker instanceof HTMLSelectElement)) throw new TypeError('no select element')
-      picker.setAttribute('aria-label', 'Mutating operation')
+      picker.setAttribute('aria-label', localizer.text('vscode.edit.mutatingOperation'))
       const summary = element(root, 'p', { part: 'form.description' })
       const pane = element(root, 'div', { part: 'settings.pane' })
       const actions = element(root, 'div', { part: 'form.actions' })
-      const apply = element(actions, 'button', { part: 'form.button', text: 'Apply' })
+      const apply = element(actions, 'button', {
+        part: 'form.button',
+        text: localizer.text('vscode.edit.apply'),
+      })
       apply.setAttribute('type', 'button')
       const status = element(root, 'output', { part: 'form.status' })
       const notes = element(root, 'div')
@@ -78,12 +91,18 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
         notes.replaceChildren()
         const previous = options.lastOutcome(descriptor)
         if (previous !== undefined) {
-          element(notes, 'div', { part: 'form.description', text: `Last change: ${previous}` })
+          element(notes, 'div', {
+            part: 'form.description',
+            text: localizer.text('vscode.edit.lastChange', { change: previous }),
+          })
         }
         for (const item of offer.unsupported) {
           element(notes, 'div', {
             part: 'form.description',
-            text: `${item.operationId}: not available in this host yet — ${item.reason}`,
+            text: localizer.text('vscode.edit.unsupported', {
+              operation: item.operationId,
+              reason: item.reason,
+            }),
           })
         }
       }
@@ -97,7 +116,7 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
         pane.replaceChildren()
         const chosen = selectedForm()
         if (chosen === undefined) {
-          setViewerText(summary, 'This subject declares no mutating operation this host can drive.')
+          setViewerText(summary, localizer.text('vscode.edit.noOperation'))
           apply.setAttribute('disabled', '')
           return
         }
@@ -123,7 +142,7 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
       const run = async (): Promise<void> => {
         const chosen = selectedForm()
         if (chosen === undefined || ports === undefined) {
-          say('this host holds no editing arm for the file, so nothing can be applied', true)
+          say(localizer.text('vscode.edit.noArm'), true)
           return
         }
         const values = new Map<string, string>()
@@ -133,23 +152,36 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
         try {
           input = chosen.build(values)
         } catch (error) {
-          say(`cannot apply: ${error instanceof Error ? error.message : String(error)}`, true)
+          say(
+            localizer.text('vscode.edit.cannotApply', {
+              reason: error instanceof Error ? error.message : String(error),
+            }),
+            true,
+          )
           return
         }
 
-        say(`${chosen.label}: invoking ${chosen.handlerId}…`, false)
+        say(
+          localizer.text('vscode.edit.invoking', {
+            operation: chosen.label,
+            handler: chosen.handlerId,
+          }),
+          false,
+        )
         let result
         try {
           result = await args.operations.invoke(chosen.handlerId, input, { signal: scope.signal })
         } catch (error) {
           say(
-            `refused by the codec: ${error instanceof Error ? error.message : String(error)}`,
+            localizer.text('vscode.edit.codecRefused', {
+              reason: error instanceof Error ? error.message : String(error),
+            }),
             true,
           )
           return
         }
         if (isRejected(result)) {
-          say(invokeRefusalMessage(result), true)
+          say(invokeRefusalMessage(result, localizer), true)
           return
         }
 
@@ -158,7 +190,9 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
           plan = editPlanFromOperationOutput(result.output)
         } catch (error) {
           say(
-            `the host refused the plan: ${error instanceof Error ? error.message : String(error)}`,
+            localizer.text('vscode.edit.hostRefusedPlan', {
+              reason: error instanceof Error ? error.message : String(error),
+            }),
             true,
           )
           return
@@ -169,13 +203,13 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
           say(applied.message, true)
           return
         }
-        const outcome = `${chosen.label} — ${applied.message}${fidelityNote(plan)}`
+        const outcome = `${chosen.label} — ${applied.message}${fidelityNote(plan, localizer)}`
         options.recordOutcome(descriptor, outcome)
-        say(`${outcome}; reopening the file to show it as it now is`, false)
+        say(localizer.text('vscode.edit.reopenSuccess', { outcome }), false)
         if (scope.signal.aborted) return
         const reopened = await options.reopen(descriptor)
         if (!reopened && !scope.signal.aborted) {
-          say(`${outcome}; the tab could not be reopened, so this view is stale`, true)
+          say(localizer.text('vscode.edit.reopenFailed', { outcome }), true)
         }
       }
 
@@ -202,12 +236,15 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
         setState(root, ['degraded'])
         say(
           offer.unsupported.length === 0
-            ? 'nothing here can change this file'
-            : `${offer.unsupported.length} of ${declared} mutating operation(s) declared, none drivable here`,
+            ? localizer.text('vscode.edit.nothingHere')
+            : localizer.text('vscode.edit.noneDrivable', {
+                unsupported: offer.unsupported.length,
+                declared,
+              }),
           false,
         )
       } else {
-        say(`${offer.forms.length} form(s) over ${declared} mutating operation(s)`, false)
+        say(localizer.text('vscode.edit.counts', { forms: offer.forms.length, declared }), false)
       }
 
       return {

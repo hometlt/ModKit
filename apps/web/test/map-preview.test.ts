@@ -3,6 +3,7 @@ import type { OpenedSubject } from '@modkitx-x3/host'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY, prepareWebMapPreview } from '../src/map-preview.js'
+import { createWebLocalizer } from '../src/localization.js'
 import { MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY as ELECTRON_CATALOG_POLICY } from '../../electron/src/map-preview.js'
 import { MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY as VSCODE_CATALOG_POLICY } from '../../vscode/src/map-preview.js'
 
@@ -35,6 +36,7 @@ describe('Web map preview binding', () => {
       opened: opened(dispose),
       grant: { id: 'web-map-test', classes: ['read-source'] },
       budgets: budget,
+      localizer: createWebLocalizer('ru-RU'),
       catalog: explicitCatalog,
       coordinate: async request => {
         expect(request).not.toHaveProperty('resourcePlanResolver')
@@ -57,7 +59,44 @@ describe('Web map preview binding', () => {
     expect(result.opened.diagnostics.map(item => item.code)).toContain(
       'x3.app/web-map-preview-permission-required',
     )
+    expect(
+      result.opened.diagnostics.find(
+        item => item.code === 'x3.app/web-map-preview-permission-required',
+      )?.message,
+    ).toContain('Для этой карты нужны ресурсы установленной игры')
     expect(dispose).not.toHaveBeenCalled()
+  })
+
+  it('localizes selection diagnostics and shell status copy in English and Russian', async () => {
+    const result = await prepareWebMapPreview({
+      services: {} as never,
+      opened: opened(async () => undefined),
+      grant: { id: 'web-map-locale', classes: ['read-source'] },
+      budgets: budget,
+      localizer: createWebLocalizer('ru'),
+      coordinate: async () => ({
+        state: 'selection-required',
+        candidates: [{ candidateId: 'map:one', displayName: 'One' }],
+        diagnostics: [],
+      }),
+    })
+
+    expect(
+      result.opened.diagnostics.find(item => item.code === 'x3.app/map-preview-selection-required')
+        ?.message,
+    ).toContain('нужно явно выбрать вариант')
+    expect(
+      createWebLocalizer('en').text('web.map.selectionRequired', {
+        name: 'map.wz',
+        candidates: 'One',
+      }),
+    ).toContain('map preview needs a choice')
+    expect(
+      createWebLocalizer('ru').text('web.map.selectionRequired', {
+        name: 'map.wz',
+        candidates: 'One',
+      }),
+    ).toContain('нужно выбрать вариант')
   })
 
   it('keeps the explicit catalog enrichment policy identical in every production adapter', () => {

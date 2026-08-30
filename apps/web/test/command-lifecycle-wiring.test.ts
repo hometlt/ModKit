@@ -11,7 +11,9 @@ describe('PWA command lifecycle wiring', () => {
     expect(shellSource).toMatch(
       /const extensionStore = createIndexedDbExtensionStore\(indexedDB as unknown as IdbFactoryLike\)/u,
     )
-    expect(shellSource).toMatch(/mountExtensionsUi\(document,\s*\{\s*store: extensionStore,/u)
+    expect(shellSource).toMatch(
+      /mountExtensionsUi\(document,\s*\{\s*localizer,\s*store: extensionStore,/u,
+    )
     expect(shellSource.indexOf('await extensionsUi.reload()')).toBeGreaterThan(
       shellSource.indexOf('store: extensionStore'),
     )

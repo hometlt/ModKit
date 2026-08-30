@@ -8,6 +8,8 @@ import {
 } from '@modkitx-x3/sdk'
 import { createHostComposition, type ExtensionInput, type HostComposition } from '@modkitx-x3/host'
 import { createWorkbench, type Workbench } from '@modkitx-x3/ui/workbench'
+import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+import { createWebLocalizer } from './localization.js'
 export {
   createBrowserFileHandleSource,
   createHttpRangeSource,
@@ -270,10 +272,12 @@ export function mountWebWorkbench(
   document: Document,
   container: Element,
   app: WebApp,
-  title = 'Modkit MK3',
+  title?: string,
+  localizer: UiLocalizer = createWebLocalizer(globalThis.navigator?.languages),
 ): Workbench {
   const workbench = createWorkbench(document, {
-    title,
+    localizer,
+    title: title ?? localizer.text('app.title'),
     host: {
       label: app.main.profile.realmId,
       facilities: app.main.profile.facilities,

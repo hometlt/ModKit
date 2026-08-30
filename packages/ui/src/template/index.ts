@@ -13,6 +13,9 @@ import {
   safeViewerText,
   ViewerMountScope,
 } from '../viewer/index.js'
+import { type UiLocalizationOptions, type UiLocalizer } from '../localization/index.js'
+import { TEMPLATE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 const MAXIMUM_DISPLAY_ITEMS = 500
 const MAXIMUM_TREE_TEXT = 200_000
@@ -26,6 +29,7 @@ export function renderGameTemplatePreview(
   document: Document,
   host: HTMLElement,
   preview: GameTemplatePreviewResult,
+  localizer: UiLocalizer = withEnglishUiFallback(undefined, TEMPLATE_FALLBACK_MESSAGES),
 ): void {
   host.replaceChildren()
   host.dataset['templateKind'] = preview.templateKind
@@ -42,7 +46,9 @@ export function renderGameTemplatePreview(
   })
   if (preview.fidelity.unsupported.length > 0) {
     element(header, 'span', {
-      text: `${preview.fidelity.unsupported.length} named remainder`,
+      text: localizer.text('viewer.namedRemainder', {
+        count: preview.fidelity.unsupported.length,
+      }),
       part: 'viewer.status',
     })
     const remainder = element(host, 'ul', {
@@ -67,10 +73,13 @@ export function renderGameTemplatePreview(
     items.append(row)
   }
   if (visible.length === 0) {
-    element(items, 'li', { text: 'No display items.', part: 'viewer.empty' })
+    element(items, 'li', { text: localizer.text('viewer.noDisplayItems'), part: 'viewer.empty' })
   } else if (visible.length < preview.displayItems.length) {
     element(items, 'li', {
-      text: `Display capped at ${MAXIMUM_DISPLAY_ITEMS} of ${preview.displayItems.length} items.`,
+      text: localizer.text('viewer.displayCapped', {
+        maximum: MAXIMUM_DISPLAY_ITEMS,
+        count: preview.displayItems.length,
+      }),
       part: 'viewer.status',
     })
   }
@@ -78,7 +87,7 @@ export function renderGameTemplatePreview(
   const details = document.createElement('details')
   details.className = 'modkit-template__details'
   const summary = document.createElement('summary')
-  summary.textContent = 'Resolved semantic tree'
+  summary.textContent = localizer.text('viewer.resolvedSemanticTree')
   const tree = document.createElement('pre')
   tree.setAttribute('data-mk-part', 'text')
   tree.textContent = jsonText(preview.resolvedTree)
@@ -100,47 +109,55 @@ export function renderGameTemplatePreview(
 }
 
 /** Standard operation-backed stage shared by publisher-defined document templates. */
-export const gameTemplateViewer: ViewerModule = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal)
-    const root = createSurface(args.container, 'Game template')
-    let renderRevision = 0
-    const render = async (descriptor: typeof args.descriptor): Promise<void> => {
-      const revision = ++renderRevision
-      root.replaceChildren()
-      element(root, 'output', { text: 'Loading template…', part: 'viewer.status' })
-      const result = await invokeOperation(
-        descriptor,
-        args.operations,
-        GAME_TEMPLATE_PREVIEW_OPERATION_ID,
-        {},
-        { signal: scope.signal },
-      )
-      if (scope.signal.aborted || revision !== renderRevision) return
-      if (result.state !== 'ok') {
+export function createGameTemplateViewer(options: UiLocalizationOptions = {}): ViewerModule {
+  const localizer = withEnglishUiFallback(options.localizer, TEMPLATE_FALLBACK_MESSAGES)
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal)
+      const root = createSurface(args.container, localizer.text('viewer.gameTemplate'))
+      let renderRevision = 0
+      const render = async (descriptor: typeof args.descriptor): Promise<void> => {
+        const revision = ++renderRevision
         root.replaceChildren()
         element(root, 'output', {
-          text: `Template unavailable: ${result.reason}`,
+          text: localizer.text('viewer.loadingTemplate'),
           part: 'viewer.status',
         })
-        return
+        const result = await invokeOperation(
+          descriptor,
+          args.operations,
+          GAME_TEMPLATE_PREVIEW_OPERATION_ID,
+          {},
+          { signal: scope.signal },
+        )
+        if (scope.signal.aborted || revision !== renderRevision) return
+        if (result.state !== 'ok') {
+          root.replaceChildren()
+          element(root, 'output', {
+            text: localizer.text('viewer.templateUnavailable', { reason: result.reason }),
+            part: 'viewer.status',
+          })
+          return
+        }
+        if (result.output.kind !== 'json' || !isGameTemplatePreviewResult(result.output.value)) {
+          throw new TypeError('view.template returned an invalid game-template-preview result')
+        }
+        renderGameTemplatePreview(root.ownerDocument, root, result.output.value, localizer)
+        root.dataset['revision'] = descriptor.revision
       }
-      if (result.output.kind !== 'json' || !isGameTemplatePreviewResult(result.output.value)) {
-        throw new TypeError('view.template returned an invalid game-template-preview result')
+      try {
+        await render(args.descriptor)
+        return createViewerMount(root, scope, args, ({ descriptor }) => render(descriptor))
+      } catch (error) {
+        await scope.close()
+        root.remove()
+        throw error
       }
-      renderGameTemplatePreview(root.ownerDocument, root, result.output.value)
-      root.dataset['revision'] = descriptor.revision
-    }
-    try {
-      await render(args.descriptor)
-      return createViewerMount(root, scope, args, ({ descriptor }) => render(descriptor))
-    } catch (error) {
-      await scope.close()
-      root.remove()
-      throw error
-    }
-  },
-})
+    },
+  })
+}
+
+export const gameTemplateViewer: ViewerModule = createGameTemplateViewer()
 
 export default gameTemplateViewer

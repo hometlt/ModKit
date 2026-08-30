@@ -72,6 +72,13 @@ const expectNone = (text: string, except: readonly string[] = []): void => {
 }
 
 describe('minimal builds stay minimal', () => {
+  it('gates generated per-surface localization catalogs in the root build', () => {
+    const packageJson = JSON.parse(readFileSync(resolve(repoRoot, 'package.json'), 'utf8')) as {
+      readonly scripts?: Readonly<Record<string, string>>
+    }
+    expect(packageJson.scripts?.['build']).toContain('pnpm localization:check')
+  })
+
   it('keeps production web and VS Code graphs on explicit UI surface imports', () => {
     const rootImports: string[] = []
     for (const appRoot of ['apps/web/src', 'apps/vscode/src']) {
@@ -85,6 +92,22 @@ describe('minimal builds stay minimal', () => {
       }
     }
     expect(rootImports).toEqual([])
+  })
+
+  it('keeps UI surfaces off the aggregate built-in localization catalog', () => {
+    const aggregateDefaultImports: string[] = []
+    const uiRoot = resolve(repoRoot, 'packages/ui/src')
+    for (const file of productionSources(uiRoot)) {
+      const sourcePath = relative(uiRoot, file).replaceAll('\\', '/')
+      if (sourcePath === 'index.ts' || sourcePath === 'localization/index.ts') continue
+      const lines = readFileSync(file, 'utf8').split('\n')
+      lines.forEach((line, index) => {
+        if (line.includes('DEFAULT_UI_LOCALIZER')) {
+          aggregateDefaultImports.push(`${relative(repoRoot, file)}:${index + 1}`)
+        }
+      })
+    }
+    expect(aggregateDefaultImports).toEqual([])
   })
 
   it('an image-viewer consumer gets the image viewer and none of the rest', async () => {
@@ -101,6 +124,12 @@ describe('minimal builds stay minimal', () => {
     const text = await bundled(`export { hexViewer } from '@modkitx-x3/ui/hex'\n`)
     expect(text).toContain('Byte offset')
     expectNone(text, ['Byte offset'])
+  }, 60_000)
+
+  it('a representative media viewer carries only its own fallback vocabulary', async () => {
+    const text = await bundled(`export { audioViewer } from '@modkitx-x3/ui/audio'\n`)
+    expect(text).toContain('Audio viewer')
+    expectNone(text)
   }, 60_000)
 
   it('a subpath import costs a fraction of the barrel, and the barrel is measured, not banned', async () => {

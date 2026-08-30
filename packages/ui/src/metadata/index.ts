@@ -18,6 +18,9 @@ import {
   setViewerText,
   ViewerMountScope,
 } from '../viewer/index.js'
+import type { UiLocalizationOptions, UiLocalizer } from '../localization/index.js'
+import { METADATA_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 /** `AnyDescriptor` also covers the unresolved arm, which carries neither metadata nor identity. */
 function resolved(descriptor: AnyDescriptor): ResolvedAssetDescriptor | undefined {
@@ -32,12 +35,16 @@ function traitValue(trait: AnyDescriptor['traits'][number]): string {
   return `${trait.state} · ${stated}`
 }
 
-function renderMetadata(root: HTMLElement, descriptor: AnyDescriptor): void {
+function renderMetadata(
+  root: HTMLElement,
+  descriptor: AnyDescriptor,
+  localizer: UiLocalizer,
+): void {
   root.replaceChildren()
   const groups: readonly MetadataGroup[] = resolved(descriptor)?.metadata ?? []
   const traits = descriptor.traits
   if (groups.length === 0 && traits.length === 0) {
-    element(root, 'p', { text: 'No metadata reported by the codec.', part: 'viewer.empty' })
+    element(root, 'p', { text: localizer.text('metadata.empty'), part: 'viewer.empty' })
     return
   }
   for (const group of groups) {
@@ -66,7 +73,10 @@ function renderMetadata(root: HTMLElement, descriptor: AnyDescriptor): void {
    */
   if (traits.length === 0) return
   const section = element(root, 'section', { part: 'metadata.group' })
-  element(section, 'h3', { text: 'Observed traits', part: 'metadata.heading' })
+  element(section, 'h3', {
+    text: localizer.text('metadata.observedTraits'),
+    part: 'metadata.heading',
+  })
   const list = element(section, 'dl')
   for (const trait of traits) {
     const row = element(list, 'div', { part: 'metadata.row' })
@@ -78,45 +88,74 @@ function renderMetadata(root: HTMLElement, descriptor: AnyDescriptor): void {
   }
 }
 
-export const metadataPanel: ViewerModule = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal)
-    const root = createSurface(args.container, 'Metadata')
-    const body = element(root, 'div', { part: 'metadata' })
-    renderMetadata(body, args.descriptor)
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset['revision'] = descriptor.revision
-      renderMetadata(body, descriptor)
-    })
-  },
-})
+export function createMetadataPanel(options: UiLocalizationOptions = {}): ViewerModule {
+  const localizer = withEnglishUiFallback(options.localizer, METADATA_FALLBACK_MESSAGES)
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal)
+      const root = createSurface(args.container, localizer.text('metadata.title'))
+      const body = element(root, 'div', { part: 'metadata' })
+      renderMetadata(body, args.descriptor, localizer)
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        root.dataset['revision'] = descriptor.revision
+        renderMetadata(body, descriptor, localizer)
+      })
+    },
+  })
+}
+
+export const metadataPanel: ViewerModule = createMetadataPanel()
 
 /**
  * Observed traits, their state and their parameters, as a flat property table.
  * This is the "what does the codec actually claim about this subject" view MK2 showed as
  * the properties pane; it is descriptor truth, not a semantic property graph (that is V18).
  */
-function renderProperties(root: HTMLElement, descriptor: AnyDescriptor): void {
+function renderProperties(
+  root: HTMLElement,
+  descriptor: AnyDescriptor,
+  localizer: UiLocalizer,
+): void {
   root.replaceChildren()
   const rows: { name: string; value: string; origin: string }[] = [
-    { name: 'subject', value: descriptor.subjectUri, origin: 'identity' },
-    { name: 'revision', value: descriptor.revision, origin: 'identity' },
     {
-      name: 'interpretation',
-      value: String(resolved(descriptor)?.interpretation ?? 'unresolved'),
-      origin: 'identity',
+      name: localizer.text('metadata.subject'),
+      value: descriptor.subjectUri,
+      origin: localizer.text('metadata.identity'),
+    },
+    {
+      name: localizer.text('metadata.revision'),
+      value: descriptor.revision,
+      origin: localizer.text('metadata.identity'),
+    },
+    {
+      name: localizer.text('metadata.interpretation'),
+      value: String(resolved(descriptor)?.interpretation ?? localizer.text('metadata.unresolved')),
+      origin: localizer.text('metadata.identity'),
     },
   ]
   const identity = resolved(descriptor)?.identity as
     { formatId?: string; formatLabel?: string; codecId?: string; confidence?: number } | undefined
   if (identity !== undefined) {
     if (identity.formatId !== undefined)
-      rows.push({ name: 'format', value: identity.formatId, origin: 'identity' })
+      rows.push({
+        name: localizer.text('metadata.format'),
+        value: identity.formatId,
+        origin: localizer.text('metadata.identity'),
+      })
     if (identity.codecId !== undefined)
-      rows.push({ name: 'codec', value: identity.codecId, origin: 'identity' })
+      rows.push({
+        name: localizer.text('metadata.codec'),
+        value: identity.codecId,
+        origin: localizer.text('metadata.identity'),
+      })
     if (identity.confidence !== undefined)
-      rows.push({ name: 'confidence', value: identity.confidence.toFixed(2), origin: 'detection' })
+      rows.push({
+        name: localizer.text('metadata.confidence'),
+        value: identity.confidence.toFixed(2),
+        origin: localizer.text('metadata.detection'),
+      })
   }
   for (const trait of descriptor.traits) {
     const parameters = Object.entries(trait.parameters ?? {})
@@ -126,14 +165,14 @@ function renderProperties(root: HTMLElement, descriptor: AnyDescriptor): void {
         parameters.length === 0
           ? trait.state
           : `${trait.state} · ${parameters.map(([key, item]) => `${key}=${String(item)}`).join(', ')}`,
-      origin: 'trait',
+      origin: localizer.text('metadata.trait'),
     })
   }
   for (const operation of descriptor.operations) {
     rows.push({
       name: operation.id,
-      value: `${operation.state}${operation.mutatesSource ? ' · mutates source' : ''}`,
-      origin: 'operation',
+      value: `${operation.state}${operation.mutatesSource ? ` · ${localizer.text('metadata.mutatesSource')}` : ''}`,
+      origin: localizer.text('metadata.operation'),
     })
   }
 
@@ -145,17 +184,22 @@ function renderProperties(root: HTMLElement, descriptor: AnyDescriptor): void {
   }
 }
 
-export const propertiesTable: ViewerModule = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal)
-    const root = createSurface(args.container, 'Properties')
-    const body = element(root, 'div', { part: 'properties' })
-    body.setAttribute('role', 'table')
-    renderProperties(body, args.descriptor)
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset['revision'] = descriptor.revision
-      renderProperties(body, descriptor)
-    })
-  },
-})
+export function createPropertiesTable(options: UiLocalizationOptions = {}): ViewerModule {
+  const localizer = withEnglishUiFallback(options.localizer, METADATA_FALLBACK_MESSAGES)
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal)
+      const root = createSurface(args.container, localizer.text('metadata.properties'))
+      const body = element(root, 'div', { part: 'properties' })
+      body.setAttribute('role', 'table')
+      renderProperties(body, args.descriptor, localizer)
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        root.dataset['revision'] = descriptor.revision
+        renderProperties(body, descriptor, localizer)
+      })
+    },
+  })
+}
+
+export const propertiesTable: ViewerModule = createPropertiesTable()

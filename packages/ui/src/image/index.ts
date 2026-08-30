@@ -20,6 +20,9 @@ import {
 } from '../viewer/index.js'
 import { setToken } from '../tokens/index.js'
 import { collectEncodedMedia } from '../media/encoded.js'
+import type { UiLocalizer } from '../localization/index.js'
+import { IMAGE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 /** Refuse to materialise more than this; a texture atlas is fine, a 2 GiB blob is not. */
 export const IMAGE_MAXIMUM_BYTES = 64 * 1024 * 1024
@@ -104,124 +107,146 @@ function isolateChannel(
   context.putImageData(frame, 0, 0)
 }
 
-export const imageViewer: ViewerModule = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal)
-    const root = createSurface(args.container, 'Image viewer')
-    const stage = element(root, 'div', { part: 'image' })
+export interface ImageViewerOptions {
+  readonly localizer?: UiLocalizer
+}
 
-    const toolbar = element(stage, 'div', { part: 'image.toolbar', role: 'toolbar' })
-    toolbar.setAttribute('aria-label', 'Image controls')
-    const readout = element(stage, 'output', { part: 'image.readout' })
-    const canvas = element(stage, 'canvas', { part: 'image.canvas' }) as HTMLCanvasElement
-    canvas.tabIndex = 0
+export function createImageViewer(options: ImageViewerOptions = {}): ViewerModule {
+  const localizer = withEnglishUiFallback(options.localizer, IMAGE_FALLBACK_MESSAGES)
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal)
+      const root = createSurface(args.container, localizer.text('viewer.image'))
+      const stage = element(root, 'div', { part: 'image' })
 
-    const lease = await unknownSourceLease(
-      args.sources,
-      args.slot,
-      'common.view/raster-image-source',
-    )
-    if (lease === undefined) throw new TypeError('image binding is unavailable')
-    scope.lease(lease)
+      const toolbar = element(stage, 'div', { part: 'image.toolbar', role: 'toolbar' })
+      toolbar.setAttribute('aria-label', localizer.text('viewer.imageControls'))
+      const readout = element(stage, 'output', { part: 'image.readout' })
+      const canvas = element(stage, 'canvas', { part: 'image.canvas' }) as HTMLCanvasElement
+      canvas.tabIndex = 0
 
-    let model: ImageStageModel | undefined
-    let zoom = 1
-    let fit = true
-    let background: ImageBackground = 'checker'
-    let channel: ImageChannel = 'rgb'
-
-    const context = canvas.getContext('2d')
-    if (context === null) throw new TypeError('2d canvas context is unavailable')
-
-    const paint = (): void => {
-      if (model === undefined) return
-      const { bitmap } = model
-      const box = stage.getBoundingClientRect()
-      const available = {
-        width: Math.max(64, box.width - 8),
-        height: Math.max(64, box.height - 96),
-      }
-      const scale = fit
-        ? Math.min(available.width / bitmap.width, available.height / bitmap.height, 1)
-        : zoom
-      const width = Math.max(1, Math.round(bitmap.width * scale))
-      const height = Math.max(1, Math.round(bitmap.height * scale))
-      canvas.width = width
-      canvas.height = height
-      // C3: the rendered size travels as a validated token, never as a style attribute.
-      setToken(canvas, 'size.icon', `${Math.min(width, 4096)}px`)
-      context.imageSmoothingEnabled = scale < 1
-      if (background === 'checker') drawChecker(context, width, height)
-      else {
-        context.fillStyle = background === 'dark' ? '#141414' : '#f4f4f4'
-        context.fillRect(0, 0, width, height)
-      }
-      context.drawImage(bitmap, 0, 0, width, height)
-      isolateChannel(context, width, height, channel)
-      setViewerText(
-        readout,
-        `${bitmap.width}×${bitmap.height} · ${(model.bytes / 1024).toFixed(1)} KiB · ${Math.round(scale * 100)}%${channel === 'rgb' ? '' : ` · channel ${channel.toUpperCase()}`}`,
+      const lease = await unknownSourceLease(
+        args.sources,
+        args.slot,
+        'common.view/raster-image-source',
       )
-    }
+      if (lease === undefined) throw new TypeError('image binding is unavailable')
+      scope.lease(lease)
 
-    const button = (label: string, title: string, onClick: () => void): void => {
-      const node = element(toolbar, 'button', {
-        text: label,
-        part: 'operations.button',
-      }) as HTMLButtonElement
-      node.type = 'button'
-      node.title = title
-      node.addEventListener('click', () => {
-        onClick()
+      let model: ImageStageModel | undefined
+      let zoom = 1
+      let fit = true
+      let background: ImageBackground = 'checker'
+      let channel: ImageChannel = 'rgb'
+
+      const context = canvas.getContext('2d')
+      if (context === null) throw new TypeError('2d canvas context is unavailable')
+
+      const paint = (): void => {
+        if (model === undefined) return
+        const { bitmap } = model
+        const box = stage.getBoundingClientRect()
+        const available = {
+          width: Math.max(64, box.width - 8),
+          height: Math.max(64, box.height - 96),
+        }
+        const scale = fit
+          ? Math.min(available.width / bitmap.width, available.height / bitmap.height, 1)
+          : zoom
+        const width = Math.max(1, Math.round(bitmap.width * scale))
+        const height = Math.max(1, Math.round(bitmap.height * scale))
+        canvas.width = width
+        canvas.height = height
+        // C3: the rendered size travels as a validated token, never as a style attribute.
+        setToken(canvas, 'size.icon', `${Math.min(width, 4096)}px`)
+        context.imageSmoothingEnabled = scale < 1
+        if (background === 'checker') drawChecker(context, width, height)
+        else {
+          context.fillStyle = background === 'dark' ? '#141414' : '#f4f4f4'
+          context.fillRect(0, 0, width, height)
+        }
+        context.drawImage(bitmap, 0, 0, width, height)
+        isolateChannel(context, width, height, channel)
+        setViewerText(
+          readout,
+          localizer.text('viewer.imageSummary', {
+            width: bitmap.width,
+            height: bitmap.height,
+            size: (model.bytes / 1024).toFixed(1),
+            scale: Math.round(scale * 100),
+            channel:
+              channel === 'rgb'
+                ? ''
+                : localizer.text('viewer.imageChannel', { channel: channel.toUpperCase() }),
+          }),
+        )
+      }
+
+      const button = (label: string, title: string, onClick: () => void): void => {
+        const node = element(toolbar, 'button', {
+          text: label,
+          part: 'operations.button',
+        }) as HTMLButtonElement
+        node.type = 'button'
+        node.title = title
+        node.addEventListener('click', () => {
+          onClick()
+          paint()
+        })
+        scope.cleanup(() => node.replaceWith(node.cloneNode(true)))
+      }
+
+      button(localizer.text('viewer.fit'), localizer.text('viewer.fitTitle'), () => {
+        fit = true
+      })
+      button('1:1', localizer.text('viewer.actualPixels'), () => {
+        fit = false
+        zoom = 1
+      })
+      button('−', localizer.text('viewer.zoomOut'), () => {
+        fit = false
+        zoom = Math.max(0.1, zoom / 1.5)
+      })
+      button('+', localizer.text('viewer.zoomIn'), () => {
+        fit = false
+        zoom = Math.min(32, zoom * 1.5)
+      })
+      button('BG', localizer.text('viewer.cycleBackdrop'), () => {
+        background = background === 'checker' ? 'dark' : background === 'dark' ? 'light' : 'checker'
+      })
+      for (const value of ['rgb', 'r', 'g', 'b', 'a'] as const) {
+        button(
+          value.toUpperCase(),
+          localizer.text('viewer.isolateChannel', { channel: value.toUpperCase() }),
+          () => {
+            channel = value
+          },
+        )
+      }
+
+      setState(stage, ['loading'])
+      try {
+        model = await loadBitmap(lease.value as RasterImageSource, scope.signal)
+        setState(stage, [])
+        paint()
+      } catch (error) {
+        setState(stage, ['error'])
+        canvas.remove()
+        element(stage, 'p', {
+          part: 'viewer.empty',
+          text: localizer.text('viewer.imageDecodeError', {
+            reason: error instanceof Error ? error.message : String(error),
+          }),
+        })
+      }
+
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        root.dataset['revision'] = descriptor.revision
         paint()
       })
-      scope.cleanup(() => node.replaceWith(node.cloneNode(true)))
-    }
+    },
+  })
+}
 
-    button('Fit', 'Fit to the stage', () => {
-      fit = true
-    })
-    button('1:1', 'Actual pixels', () => {
-      fit = false
-      zoom = 1
-    })
-    button('−', 'Zoom out', () => {
-      fit = false
-      zoom = Math.max(0.1, zoom / 1.5)
-    })
-    button('+', 'Zoom in', () => {
-      fit = false
-      zoom = Math.min(32, zoom * 1.5)
-    })
-    button('BG', 'Cycle the backdrop', () => {
-      background = background === 'checker' ? 'dark' : background === 'dark' ? 'light' : 'checker'
-    })
-    for (const value of ['rgb', 'r', 'g', 'b', 'a'] as const) {
-      button(value.toUpperCase(), `Isolate the ${value.toUpperCase()} channel`, () => {
-        channel = value
-      })
-    }
-
-    setState(stage, ['loading'])
-    try {
-      model = await loadBitmap(lease.value as RasterImageSource, scope.signal)
-      setState(stage, [])
-      paint()
-    } catch (error) {
-      setState(stage, ['error'])
-      canvas.remove()
-      element(stage, 'p', {
-        part: 'viewer.empty',
-        text: `The platform decoder cannot render these bytes: ${
-          error instanceof Error ? error.message : String(error)
-        }. A format-specific decoder provider is required.`,
-      })
-    }
-
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset['revision'] = descriptor.revision
-      paint()
-    })
-  },
-})
+export const imageViewer: ViewerModule = createImageViewer()

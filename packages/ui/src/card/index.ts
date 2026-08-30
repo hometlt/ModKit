@@ -30,6 +30,9 @@ import {
   unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
+import { type UiLocalizer, type UiMessageKey } from '../localization/index.js'
+import { CARD_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export interface CardRef {
   readonly label: string
@@ -141,6 +144,7 @@ export type CardSection =
     }
 
 export interface SubjectCardOptions {
+  readonly localizer?: UiLocalizer
   readonly label: string
   readonly sections: readonly CardSection[]
   /** Optional read-only knowledge snapshot; cards remain usable when it is absent. */
@@ -155,6 +159,7 @@ export interface SubjectCard {
 }
 
 export interface SubjectCardLoadOptions {
+  readonly localizer?: UiLocalizer
   readonly groupLimit?: number
   readonly factsPerGroup?: number
   readonly relationLimit?: number
@@ -193,10 +198,80 @@ function factValue(value: JsonValue): string {
   return JSON.stringify(value)
 }
 
-function factField(fact: SubjectFact): CardField {
+const EXTENSION_SUBJECT_KIND = 'org.modkitx/extension'
+const CONTRIBUTION_SUBJECT_KIND = 'org.modkitx/contribution'
+
+/**
+ * Presentation labels for Modkit's own extension-subject projection.
+ *
+ * The subject-facts ABI intentionally remains presentation-neutral and continues to carry the
+ * producer's original labels. Only these stable system ids are translated here; unknown ids,
+ * including codec-owned `spec.*` fields, keep their exact producer-supplied labels.
+ */
+const EXTENSION_GROUP_MESSAGE_KEYS: Readonly<Record<string, UiMessageKey>> = Object.freeze({
+  overview: 'card.extension.group.overview',
+  state: 'card.extension.group.state',
+  declaration: 'card.extension.group.declaration',
+  specification: 'card.extension.group.specification',
+  contracts: 'card.extension.group.contracts',
+})
+
+const EXTENSION_FACT_MESSAGE_KEYS: Readonly<Record<string, UiMessageKey>> = Object.freeze({
+  id: 'card.extension.fact.id',
+  'display-name': 'card.extension.fact.displayName',
+  publisher: 'card.extension.fact.publisher',
+  version: 'card.extension.fact.version',
+  license: 'card.extension.fact.license',
+  description: 'card.extension.fact.description',
+  homepage: 'card.extension.fact.homepage',
+  source: 'card.extension.fact.source',
+  trusted: 'card.extension.fact.trusted',
+  enabled: 'card.extension.fact.enabled',
+  'contribution-count': 'card.extension.fact.contributionCount',
+  'contract-count': 'card.extension.fact.contractCount',
+})
+
+const CONTRIBUTION_FACT_MESSAGE_KEYS: Readonly<Record<string, UiMessageKey>> = Object.freeze({
+  id: 'card.contribution.fact.id',
+  'display-name': 'card.contribution.fact.displayName',
+  'owner-extension': 'card.contribution.fact.ownerExtension',
+  'contract-id': 'card.contribution.fact.contractId',
+  'contract-major': 'card.contribution.fact.contractMajor',
+  'contract-coordinate': 'card.contribution.fact.contractCoordinate',
+  status: 'card.contribution.fact.status',
+  enabled: 'card.contribution.fact.enabled',
+  'effective-enabled': 'card.contribution.fact.effectiveEnabled',
+  'depends-on': 'card.contribution.fact.dependencies',
+  limitations: 'card.contribution.fact.limitations',
+  'runtime-variants': 'card.contribution.fact.runtimeVariants',
+  spec: 'card.contribution.fact.specification',
+})
+const NO_FACT_MESSAGE_KEYS: Readonly<Record<string, UiMessageKey>> = Object.freeze({})
+
+function systemSubjectLabel(
+  localizer: UiLocalizer,
+  subjectKind: string,
+  keys: Readonly<Record<string, UiMessageKey>>,
+  id: string,
+  fallback: string,
+): string {
+  if (subjectKind !== EXTENSION_SUBJECT_KIND && subjectKind !== CONTRIBUTION_SUBJECT_KIND) {
+    return fallback
+  }
+  const key = keys[id]
+  return key === undefined ? fallback : localizer.text(key)
+}
+
+function factField(fact: SubjectFact, subjectKind: string, localizer: UiLocalizer): CardField {
   const provenance = fact.provenance.map(item => item.label)
+  const keys: Readonly<Record<string, UiMessageKey>> =
+    subjectKind === EXTENSION_SUBJECT_KIND
+      ? EXTENSION_FACT_MESSAGE_KEYS
+      : subjectKind === CONTRIBUTION_SUBJECT_KIND
+        ? CONTRIBUTION_FACT_MESSAGE_KEYS
+        : NO_FACT_MESSAGE_KEYS
   return {
-    name: fact.label,
+    name: systemSubjectLabel(localizer, subjectKind, keys, fact.id, fact.label),
     value: factValue(fact.value),
     ...(provenance.length === 0 ? {} : { badge: provenance[0] }),
     ...(provenance.length <= 1 ? {} : { title: provenance.join(' · ') }),
@@ -209,6 +284,7 @@ export async function loadSubjectCardSections(
   source: SubjectFactsSource,
   options: SubjectCardLoadOptions = {},
 ): Promise<readonly CardSection[]> {
+  const localizer = withEnglishUiFallback(options.localizer, CARD_FALLBACK_MESSAGES)
   const groupLimit = cardLoadLimit(options.groupLimit ?? 32, 'groupLimit')
   const factsPerGroup = cardLoadLimit(options.factsPerGroup ?? 256, 'factsPerGroup')
   const relationLimit = cardLoadLimit(options.relationLimit ?? 256, 'relationLimit')
@@ -230,9 +306,9 @@ export async function loadSubjectCardSections(
   ])
   const notes: string[] = []
   if (groups.capped || groups.items.length < summary.groupCount)
-    notes.push('Fact groups are capped.')
+    notes.push(localizer.text('card.factGroupsCapped'))
   if (relations.capped || relations.items.length < summary.relationCount)
-    notes.push('Related subjects are capped.')
+    notes.push(localizer.text('card.relatedCapped'))
   const sections: CardSection[] = [
     {
       kind: 'header',
@@ -264,14 +340,21 @@ export async function loadSubjectCardSections(
     })),
   )
   for (const { group, page } of factGroups) {
+    const groupLabel = systemSubjectLabel(
+      localizer,
+      summary.identity.kind,
+      EXTENSION_GROUP_MESSAGE_KEYS,
+      group.id,
+      group.label,
+    )
     sections.push({
       kind: 'fields',
       id: group.id,
       title:
         page.capped || page.items.length < group.factCount
-          ? `${group.label} (capped)`
-          : group.label,
-      fields: page.items.map(factField),
+          ? localizer.text('card.capped', { label: groupLabel })
+          : groupLabel,
+      fields: page.items.map(fact => factField(fact, summary.identity.kind, localizer)),
       expanded: true,
     })
   }
@@ -279,7 +362,7 @@ export async function loadSubjectCardSections(
     sections.push({
       kind: 'links',
       id: 'related-subjects',
-      title: 'Related subjects',
+      title: localizer.text('card.relatedSubjects'),
       links: relations.items.map(item => ({
         label: item.label,
         href: item.subjectId,
@@ -307,6 +390,7 @@ function renderHeader(
   document: Document,
   host: HTMLElement,
   section: Extract<CardSection, { kind: 'header' }>,
+  localizer: UiLocalizer,
   onNavigate?: (ref: CardRef) => void,
 ): void {
   const header = document.createElement('div')
@@ -404,7 +488,7 @@ function renderHeader(
   if (section.aside !== undefined) {
     const select = document.createElement('select')
     select.className = 'modkit-card__locale'
-    select.setAttribute('aria-label', 'Locale')
+    select.setAttribute('aria-label', localizer.text('card.locale'))
     setPart(select, 'card.locale')
     for (const option of section.aside.options) {
       const node = document.createElement('option')
@@ -462,13 +546,14 @@ function renderFields(
 }
 
 export function createSubjectCard(document: Document, options: SubjectCardOptions): SubjectCard {
+  const localizer = withEnglishUiFallback(options.localizer, CARD_FALLBACK_MESSAGES)
   const root = document.createElement('article')
   root.className = 'modkit-card'
-  root.setAttribute('aria-label', options.label)
+  root.setAttribute('aria-label', localizer.text('card.namedSubject', { label: options.label }))
   setPart(root, 'card')
 
   const header = options.sections.find(section => section.kind === 'header')
-  if (header !== undefined) renderHeader(document, root, header, options.onNavigate)
+  if (header !== undefined) renderHeader(document, root, header, localizer, options.onNavigate)
 
   const knowledge = document.createElement('aside')
   knowledge.className = 'modkit-card__knowledge'
@@ -476,7 +561,7 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
   knowledge.setAttribute('aria-live', 'polite')
   knowledge.dataset['knowledgeState'] = 'missing'
   setPart(knowledge, 'card.knowledge')
-  knowledge.textContent = 'Description is not available yet.'
+  knowledge.textContent = localizer.text('card.descriptionUnavailable')
   root.append(knowledge)
 
   let lookupRevision = 0
@@ -490,7 +575,7 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
   const showMissingKnowledge = (): void => {
     knowledge.dataset['knowledgeState'] = 'missing'
     knowledge.replaceChildren()
-    knowledge.textContent = 'Description is not available yet.'
+    knowledge.textContent = localizer.text('card.descriptionUnavailable')
   }
   const directSource = (
     hit: KnowledgeHit,
@@ -533,7 +618,7 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
     lookupController = controller
     knowledge.dataset['knowledgeState'] = 'loading'
     knowledge.replaceChildren()
-    knowledge.textContent = 'Loading description…'
+    knowledge.textContent = localizer.text('card.loadingDescription')
     void (async () => {
       try {
         const page = await options.knowledge?.resolve(
@@ -554,7 +639,7 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
 
   const collapsible = options.sections.filter(section => section.kind !== 'header')
   const accordion = createAccordion(document, {
-    label: `${options.label} sections`,
+    label: localizer.text('card.sections', { label: options.label }),
     sections: collapsible.map(section => ({
       id: section.id,
       title: section.title,
@@ -694,40 +779,51 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
 }
 
 /** Standard stage adapter over the codec-owned, presentation-neutral subject facts source. */
-export const subjectCardViewer: ViewerModule = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal)
-    const root = createSurface(args.container, 'Subject card')
-    try {
-      const lease = await unknownSourceLease(
-        args.sources,
-        args.slot,
-        'common.view/subject-facts-source',
-      )
-      if (lease === undefined) throw new TypeError('subject facts binding is unavailable')
-      scope.lease(lease)
-      const sections = await loadSubjectCardSections(lease.value as SubjectFactsSource, {
-        signal: scope.signal,
-      })
-      const card = createSubjectCard(root.ownerDocument, {
-        label: 'Subject card',
-        sections,
-        ...(args.knowledge === undefined ? {} : { knowledge: args.knowledge }),
-      })
-      root.append(card.root)
-      scope.cleanup(() => card.destroy())
-      root.dataset['revision'] = args.descriptor.revision
-      return createViewerMount(root, scope, args, ({ descriptor }) => {
-        root.dataset['revision'] = descriptor.revision
-      })
-    } catch (error) {
-      await scope.close()
-      root.remove()
-      throw error
-    }
-  },
-})
+export interface SubjectCardViewerOptions {
+  readonly localizer?: UiLocalizer
+}
+
+export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}): ViewerModule {
+  const localizer = withEnglishUiFallback(options.localizer, CARD_FALLBACK_MESSAGES)
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal)
+      const root = createSurface(args.container, localizer.text('card.subject'))
+      try {
+        const lease = await unknownSourceLease(
+          args.sources,
+          args.slot,
+          'common.view/subject-facts-source',
+        )
+        if (lease === undefined) throw new TypeError('subject facts binding is unavailable')
+        scope.lease(lease)
+        const sections = await loadSubjectCardSections(lease.value as SubjectFactsSource, {
+          localizer,
+          signal: scope.signal,
+        })
+        const card = createSubjectCard(root.ownerDocument, {
+          label: localizer.text('card.subject'),
+          localizer,
+          sections,
+          ...(args.knowledge === undefined ? {} : { knowledge: args.knowledge }),
+        })
+        root.append(card.root)
+        scope.cleanup(() => card.destroy())
+        root.dataset['revision'] = args.descriptor.revision
+        return createViewerMount(root, scope, args, ({ descriptor }) => {
+          root.dataset['revision'] = descriptor.revision
+        })
+      } catch (error) {
+        await scope.close()
+        root.remove()
+        throw error
+      }
+    },
+  })
+}
+
+export const subjectCardViewer: ViewerModule = createSubjectCardViewer()
 
 export default subjectCardViewer
 

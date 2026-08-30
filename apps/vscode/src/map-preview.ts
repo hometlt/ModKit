@@ -10,6 +10,9 @@ import {
   type CoordinatedMapPreviewAssetSessionResult,
   type MapPreviewResourcePlanResolver,
 } from '@modkitx-x3/host/maps'
+import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+
+import { createVscodeLocalizer } from './localization.js'
 
 export const MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY: NonNullable<
   CoordinateMapPreviewAssetSessionRequest['catalogEnrichment']
@@ -65,6 +68,8 @@ export interface PrepareVsCodeMapPreviewRequest {
   readonly catalog?: CoordinateMapPreviewAssetSessionRequest['catalog']
   readonly selectionId?: string
   readonly signal?: AbortSignal
+  /** Host-selected UI language; defaults to the deterministic English application catalog. */
+  readonly localizer?: UiLocalizer
   /** Test seam: product callers always use the common host coordinator. */
   readonly coordinate?: MapPreviewCoordinator
 }
@@ -75,17 +80,18 @@ export interface PreparedVsCodeMapPreview {
   readonly candidates: readonly VsCodeMapPreviewCandidate[]
 }
 
-const selectionDiagnostic = (): Diagnostic =>
+const selectionDiagnostic = (localizer: UiLocalizer): Diagnostic =>
   diagnostic(
     'information',
     'x3.app/map-preview-selection-required',
-    'Map preview needs an explicit selection; choose one of the returned map-preview candidates to continue.',
+    localizer.text('vscode.map.diagnostic.selectionRequired'),
   )
 
 /** Preserve the ordinary live session unless the common coordinator returns `opened`. */
 export async function prepareVsCodeMapPreview(
   request: PrepareVsCodeMapPreviewRequest,
 ): Promise<PreparedVsCodeMapPreview> {
+  const localizer = request.localizer ?? createVscodeLocalizer('en')
   let result: CoordinatedMapPreviewAssetSessionResult
   try {
     result = await (request.coordinate ?? coordinateMapPreviewAssetSession)({
@@ -109,7 +115,7 @@ export async function prepareVsCodeMapPreview(
   const diagnostics = Object.freeze([
     ...request.opened.diagnostics,
     ...result.diagnostics,
-    ...(result.state === 'selection-required' ? [selectionDiagnostic()] : []),
+    ...(result.state === 'selection-required' ? [selectionDiagnostic(localizer)] : []),
   ])
   const candidates =
     result.state === 'selection-required'

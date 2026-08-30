@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { KnowledgeTarget, SubjectFactsSource } from '@modkitx-x3/sdk'
-import { loadSubjectCardSections } from '@modkitx-x3/ui/card'
+import { loadSubjectCardSections } from '../src/card/index.js'
+import { createUiLocalizer } from '../src/localization/index.js'
 
 describe('subject-card knowledge projection', () => {
   it('preserves the exact codec-owned knowledge target on the projected field', async () => {
@@ -46,6 +47,49 @@ describe('subject-card knowledge projection', () => {
     expect(fields).toMatchObject({
       kind: 'fields',
       fields: [{ name: 'Value', value: '7', knowledgeTarget: target }],
+    })
+  })
+
+  it('localizes stable extension-subject ids while preserving codec-owned labels', async () => {
+    const source: SubjectFactsSource = {
+      async summary() {
+        return {
+          snapshotId: 'extension-fixture',
+          identity: {
+            subjectId: 'contribution-fixture',
+            kind: 'org.modkitx/contribution',
+            label: 'Fixture contribution',
+            origins: [],
+          },
+          groupCount: 1,
+          relationCount: 0,
+        }
+      },
+      async groups() {
+        return { items: [{ id: 'overview', label: 'Overview', factCount: 2 }] }
+      },
+      async facts() {
+        return {
+          items: [
+            { id: 'id', label: 'Contribution ID', value: 'fixture', provenance: [] },
+            { id: 'spec.codec-field', label: 'Codec-owned field', value: 7, provenance: [] },
+          ],
+        }
+      },
+      async relations() {
+        return { items: [] }
+      },
+    }
+
+    const english = await loadSubjectCardSections(source, { localizer: createUiLocalizer('en') })
+    const russian = await loadSubjectCardSections(source, { localizer: createUiLocalizer('ru') })
+    expect(english.find(section => section.kind === 'fields')).toMatchObject({
+      title: 'Overview',
+      fields: [{ name: 'Contribution ID' }, { name: 'Codec-owned field' }],
+    })
+    expect(russian.find(section => section.kind === 'fields')).toMatchObject({
+      title: 'Обзор',
+      fields: [{ name: 'Идентификатор возможности' }, { name: 'Codec-owned field' }],
     })
   })
 })

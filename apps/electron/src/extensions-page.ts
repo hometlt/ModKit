@@ -26,6 +26,7 @@ import {
   type SettingsUiGroupContext,
   type SubjectCard,
 } from '@modkitx-x3/ui'
+import { contributionContractLabel, type UiLocalizer } from '@modkitx-x3/ui/localization'
 import {
   subjectFactsSourceFromWire,
   type ExtensionSubjectCardWireDocument,
@@ -33,6 +34,7 @@ import {
   type ExtensionManagerEntry,
   type ExtensionManagerSnapshot,
 } from '@modkitx/extension-manager'
+import { createElectronLocalizer } from './localization.js'
 
 export type { ExtensionManagerSnapshot } from '@modkitx/extension-manager'
 
@@ -159,6 +161,8 @@ export type BrowseResult =
 // the page
 
 export interface ExtensionsSettingsGroupsOptions {
+  /** Host-selected locale; omitted hosts follow Chromium's BCP-47 preferences. */
+  readonly localizer?: UiLocalizer
   /** The very same portable document the shared settings page edits. */
   readonly store: SettingsStore
   /** What the running composition holds right now. */
@@ -191,6 +195,109 @@ export function contributionContractKey(contribution: ContributionReport): strin
   return contribution.contract === undefined || contribution.contractMajor === undefined
     ? undefined
     : `${contribution.contract}@${contribution.contractMajor}`
+}
+
+function extensionCopy(localizer: UiLocalizer) {
+  return {
+    extensions: localizer.text('extensions.title'),
+    contributions: localizer.text('extensions.contributions'),
+    back: localizer.text('electron.extensions.back'),
+    loadingCard: localizer.text('electron.extensions.loadingCard'),
+    enable: localizer.text('common.enable'),
+    disable: localizer.text('common.disable'),
+    enableContribution: localizer.text('extensions.action.enableContribution'),
+    disableContribution: localizer.text('extensions.action.disableContribution'),
+    enableExtension: localizer.text('extensions.action.enableExtension'),
+    disableExtension: localizer.text('extensions.action.disableExtension'),
+    install: localizer.text('common.install'),
+    update: localizer.text('common.update'),
+    remove: localizer.text('common.remove'),
+    dismiss: localizer.text('common.dismiss'),
+    enabled: localizer.text('common.enabled'),
+    disabled: localizer.text('common.disabled'),
+    available: localizer.text('extensions.group.available'),
+    installed: localizer.text('extensions.group.installed'),
+    enabledGroup: localizer.text('extensions.group.enabled'),
+    updates: localizer.text('extensions.group.updates'),
+    problems: localizer.text('extensions.group.problems'),
+    refreshCatalog: localizer.text('extensions.refreshCatalog'),
+    addFolder: localizer.text('extensions.addFolder'),
+    connected: localizer.text('extensions.connected'),
+    notAdded: localizer.text('extensions.notAdded'),
+    shippedNotLoaded: localizer.text('extensions.shippedNotLoaded'),
+    bundled: localizer.text('extensions.bundled'),
+    noId: localizer.text('electron.extensions.noId'),
+    unreadable: localizer.text('electron.extensions.unreadable'),
+    noContributions: localizer.text('electron.extensions.noContributions'),
+    noManagerProblems: localizer.text('extensions.emptyManagerProblems'),
+    emptyConnected: localizer.text('electron.extensions.emptyConnected'),
+    extensionsDescription: (location: string) =>
+      localizer.text('electron.extensions.description', { location }),
+    immediateDescription: localizer.text('electron.extensions.immediateDescription'),
+    contributionsDescription: localizer.text('electron.extensions.contributionsDescription'),
+    contributionDiagnostic: localizer.text('electron.extensions.contributionDiagnostic'),
+    settingsFailed: (reason: string) =>
+      localizer.text('electron.extensions.settingsFailed', { reason }),
+    notInstalled: localizer.text('common.notInstalled'),
+    trustedSource: localizer.text('electron.extensions.trustedSource'),
+    untrustedSource: localizer.text('electron.extensions.untrustedSource'),
+    noInstallable: localizer.text('electron.extensions.noInstallable'),
+    noInstalled: localizer.text('electron.extensions.noInstalled'),
+    noEnabled: localizer.text('electron.extensions.noEnabled'),
+    noUpdates: localizer.text('electron.extensions.noUpdates'),
+    noSettingsId: localizer.text('electron.extensions.noSettingsId'),
+    entryLoaded: localizer.text('electron.extensions.entryLoaded'),
+    entryDisabled: localizer.text('electron.extensions.entryDisabled'),
+    entryAbsent: localizer.text('electron.extensions.entryAbsent'),
+    entryFailed: (code: string, message: string) =>
+      localizer.text('electron.extensions.entryFailed', { code, message }),
+    bundledEnabled: localizer.text('electron.extensions.bundledEnabled'),
+    bundledDisabled: localizer.text('electron.extensions.bundledDisabled'),
+    contributionOwnerDisabled: localizer.text('electron.extensions.contributionOwnerDisabled'),
+    contributionDisabled: localizer.text('electron.extensions.contributionDisabled'),
+    contributionActive: (origin: string) =>
+      localizer.text('electron.extensions.contributionActive', { origin }),
+    contributionInert: (origin: string) =>
+      localizer.text('electron.extensions.contributionInert', { origin }),
+    ownerSummary: (owner: string, count: number, off: number) =>
+      localizer.text(
+        off === 0 ? 'electron.extensions.ownerSummary' : 'electron.extensions.ownerSummaryOff',
+        off === 0 ? { owner, count } : { owner, count, off },
+      ),
+    summary: (loaded: number, contributions: number, off: number, types: number) =>
+      localizer.text('electron.extensions.summary', {
+        loaded,
+        contributions,
+        off,
+        types,
+      }),
+    operation: (
+      verb: 'add' | 'refresh' | 'install' | 'enable' | 'disable' | 'remove' | 'update',
+      id: string,
+    ) => localizer.text(`electron.extensions.operation.${verb}`, { id }),
+    saving: (what: string) => localizer.text('electron.extensions.saving', { what }),
+    applied: (what: string, summary: string) =>
+      localizer.text('electron.extensions.applied', { what, summary }),
+    failed: (what: string, reason: string) =>
+      localizer.text('electron.extensions.failed', { what, reason }),
+    complete: (what: string, summary?: string) =>
+      localizer.text(
+        summary === undefined
+          ? 'electron.extensions.complete'
+          : 'electron.extensions.completeSummary',
+        summary === undefined ? { what } : { what, summary },
+      ),
+    browseFailed: (reason: string) =>
+      localizer.text('electron.extensions.browseFailed', { reason }),
+    noFolder: localizer.text('electron.extensions.noFolder'),
+    alreadyListed: (root: string) => localizer.text('electron.extensions.alreadyListed', { root }),
+    notAddedStatus: (root: string, code: string, message: string) =>
+      localizer.text('electron.extensions.notAddedStatus', { root, code, message }),
+    missingCard: (id: string) => localizer.text('electron.extensions.missingCard', { id }),
+    stateReadFailed: (reason: string) =>
+      localizer.text('electron.extensions.stateReadFailed', { reason }),
+    cardFailed: (reason: string) => localizer.text('electron.extensions.cardFailed', { reason }),
+  } as const
 }
 
 /** Groups real contributions only by the exact `contract.id@major` stored in their manifest. */
@@ -253,6 +360,8 @@ export function withContributionEnabled(
 export function createExtensionsSettingsGroups(
   options: ExtensionsSettingsGroupsOptions,
 ): ExtensionsSettingsGroups {
+  const localizer = options.localizer ?? createElectronLocalizer(globalThis.navigator?.languages)
+  const copy = extensionCopy(localizer)
   let report: ExtensionsReport | undefined
   let managerSnapshot: ExtensionManagerSnapshot | undefined
   const managerProblems: string[] = []
@@ -287,10 +396,7 @@ export function createExtensionsSettingsGroups(
   const summarise = (value: ExtensionsReport): string => {
     const loaded = value.bundled.length + value.installed.length
     const off = value.contributions.filter(item => item.disabled).length
-    return (
-      `${loaded} extension(s) loaded, ${value.contributions.length} contribution(s), ` +
-      `${off} switched off, ${value.supportedExtensions.length} detectable type(s).`
-    )
+    return copy.summary(loaded, value.contributions.length, off, value.supportedExtensions.length)
   }
 
   /**
@@ -311,14 +417,14 @@ export function createExtensionsSettingsGroups(
   ): Promise<void> => {
     if (busy) return
     busy = true
-    say(`${what}: saving and recomposing…`)
+    say(copy.saving(what))
     draw()
     try {
       await options.store.write(change((await options.store.read()).document))
       report = await options.apply()
-      say(`${what}: applied. ${summarise(report)}`)
+      say(copy.applied(what, summarise(report)))
     } catch (error) {
-      say(`${what} failed: ${describe(error)}`, true)
+      say(copy.failed(what, describe(error)), true)
     } finally {
       busy = false
       draw()
@@ -340,9 +446,9 @@ export function createExtensionsSettingsGroups(
       managerSnapshot = await options.manager?.snapshot()
       managerProblems.length = 0
       if (recompose) report = await options.apply()
-      say(`${what}: complete${report === undefined ? '.' : `. ${summarise(report)}`}`)
+      say(copy.complete(what, report === undefined ? undefined : summarise(report)))
     } catch (error) {
-      const problem = `${what} failed: ${describe(error)}`
+      const problem = copy.failed(what, describe(error))
       managerProblems.unshift(problem)
       say(problem, true)
     } finally {
@@ -366,7 +472,7 @@ export function createExtensionsSettingsGroups(
   ): void => {
     const document = subjectCardFor(kind, id)
     if (document === undefined) {
-      say(`${id} has no loaded manifest card in the current composition.`, true)
+      say(copy.missingCard(id), true)
       return
     }
     selectedSubjectId = document.subject.subjectId
@@ -381,7 +487,11 @@ export function createExtensionsSettingsGroups(
     if (subjectCardFor(kind, id) === undefined) return
     node.tabIndex = 0
     node.setAttribute('role', 'button')
-    node.title = `Open ${id} subject card`
+    node.title = localizer.text(
+      kind === 'org.modkitx/contribution'
+        ? 'extensions.action.openContributionCard'
+        : 'extensions.action.openExtensionCard',
+    )
     node.dataset['subjectKind'] = kind
     node.dataset['subject'] = id
     node.addEventListener('click', () => openSubjectCard(kind, id))
@@ -399,12 +509,12 @@ export function createExtensionsSettingsGroups(
     })
     icon.dataset['enablement'] = enabled ? 'enabled' : 'disabled'
     icon.setAttribute('role', 'img')
-    icon.setAttribute('aria-label', `${label} ${enabled ? 'enabled' : 'disabled'}`)
+    icon.setAttribute('aria-label', `${label} ${enabled ? copy.enabled : copy.disabled}`)
     return icon
   }
 
   const mutateContribution = (id: string, enabled: boolean): void => {
-    void mutate(`${enabled ? 'Enabling' : 'Disabling'} ${id}`, document =>
+    void mutate(copy.operation(enabled ? 'enable' : 'disable', id), document =>
       withContributionEnabled(document, id, enabled),
     )
   }
@@ -436,7 +546,7 @@ export function createExtensionsSettingsGroups(
     )
     const back = element(actions, 'button', {
       part: 'settings.add',
-      text: 'Back to extensions',
+      text: copy.back,
     }) as HTMLButtonElement
     back.type = 'button'
     back.dataset['action'] = 'close-subject-card'
@@ -448,7 +558,7 @@ export function createExtensionsSettingsGroups(
     if (wire.subject.kind === 'org.modkitx/contribution') {
       const toggle = element(actions, 'button', {
         part: 'settings.add',
-        text: wire.subject.enabled ? 'Disable contribution' : 'Enable contribution',
+        text: wire.subject.enabled ? copy.disableContribution : copy.enableContribution,
       }) as HTMLButtonElement
       toggle.type = 'button'
       toggle.disabled = busy
@@ -461,14 +571,14 @@ export function createExtensionsSettingsGroups(
     } else {
       const toggle = element(actions, 'button', {
         part: 'settings.add',
-        text: wire.subject.enabled ? 'Disable extension' : 'Enable extension',
+        text: wire.subject.enabled ? copy.disableExtension : copy.enableExtension,
       }) as HTMLButtonElement
       toggle.type = 'button'
       toggle.disabled = busy
       toggle.dataset['action'] = wire.subject.enabled ? 'disable-extension' : 'enable-extension'
       toggle.addEventListener('click', () => {
         void mutate(
-          `${wire.subject.enabled ? 'Disabling' : 'Enabling'} ${wire.subject.id}`,
+          copy.operation(wire.subject.enabled ? 'disable' : 'enable', wire.subject.id),
           document => withExtensionEnabled(document, wire.subject.id, !wire.subject.enabled),
         )
       })
@@ -476,14 +586,17 @@ export function createExtensionsSettingsGroups(
 
     const cardHost = element(host, 'div', { part: 'settings.list' })
     cardHost.dataset['subjectId'] = wire.subject.subjectId
-    element(cardHost, 'p', { part: 'settings.description', text: 'Loading subject card…' })
+    element(cardHost, 'p', { part: 'settings.description', text: copy.loadingCard })
     const revision = cardLoadRevision
     void (async () => {
       try {
-        const sections = await loadSubjectCardSections(subjectFactsSourceFromWire(wire))
+        const sections = await loadSubjectCardSections(subjectFactsSourceFromWire(wire), {
+          localizer,
+        })
         if (revision !== cardLoadRevision || selectedSubjectId !== wire.subject.subjectId) return
         const card = createSubjectCard(cardHost.ownerDocument, {
-          label: `${wire.subject.displayName} subject card`,
+          localizer,
+          label: wire.subject.displayName,
           sections,
           onNavigate(reference: CardRef) {
             if (
@@ -503,7 +616,7 @@ export function createExtensionsSettingsGroups(
         cardHost.replaceChildren()
         const problem = element(cardHost, 'p', {
           part: 'settings.description',
-          text: `Could not render this subject card: ${describe(error)}`,
+          text: copy.cardFailed(describe(error)),
         })
         setState(problem, ['error'])
       }
@@ -519,27 +632,27 @@ export function createExtensionsSettingsGroups(
       try {
         picked = await options.browse()
       } catch (error) {
-        say(`The folder dialog failed: ${describe(error)}`, true)
+        say(copy.browseFailed(describe(error)), true)
         return
       }
       if (picked.canceled) {
-        say('No folder was chosen.')
+        say(copy.noFolder)
         return
       }
       if (picked.state === 'already-configured') {
-        say(`${picked.root} is already in the list.`)
+        say(copy.alreadyListed(picked.root))
         return
       }
       if (picked.state === 'refused') {
         // Verbatim, and it stays on the page: "that folder is not an extension, here is the
         // loader's reason" is the whole answer a user who picked the wrong directory needs.
         refusals.unshift({ root: picked.root, code: picked.code, message: picked.message })
-        say(`${picked.root} was not added — ${picked.code}: ${picked.message}`, true)
+        say(copy.notAddedStatus(picked.root, picked.code, picked.message), true)
         draw()
         return
       }
       const entry = { id: picked.id, path: picked.root, enabled: true }
-      await mutate(`Adding ${picked.id}`, document => ({
+      await mutate(copy.operation('add', picked.id), document => ({
         ...document,
         extensions: [...document.extensions.filter(other => other.id !== entry.id), entry],
       }))
@@ -551,21 +664,16 @@ export function createExtensionsSettingsGroups(
     const value = report
     element(host, 'p', {
       part: 'settings.description',
-      text:
-        `Extensions are recorded in ${options.store.location}. Connect a folder and this build ` +
-        'loads it as an installed artifact — never inside the main process, always in the worker ' +
-        'realm the bundled codecs run in.',
+      text: copy.extensionsDescription(options.store.location),
     })
     element(host, 'p', {
       part: 'settings.description',
-      text:
-        'Changes here apply immediately: the app recomposes its host and reopens the files you ' +
-        'had open. Nothing waits for a restart.',
+      text: copy.immediateDescription,
     })
     if (value?.problem !== undefined) {
       const problem = element(host, 'p', {
         part: 'settings.description',
-        text: `The settings file could not be read: ${value.problem}`,
+        text: copy.settingsFailed(value.problem),
       })
       setState(problem, ['error'])
     }
@@ -579,13 +687,13 @@ export function createExtensionsSettingsGroups(
       const managerActions = element(host, 'div', { part: 'settings.adder' })
       const refresh = element(managerActions, 'button', {
         part: 'settings.add',
-        text: 'Refresh extension catalog',
+        text: copy.refreshCatalog,
       }) as HTMLButtonElement
       refresh.type = 'button'
       refresh.dataset['action'] = 'refresh-catalog'
       refresh.disabled = busy
       refresh.addEventListener('click', () => {
-        void manage('Refreshing extension catalog', () => manager.refresh(), false)
+        void manage(copy.operation('refresh', copy.extensions), () => manager.refresh(), false)
       })
 
       const renderManagedRows = (
@@ -615,8 +723,8 @@ export function createExtensionsSettingsGroups(
             part: 'settings.description',
             text:
               `${safeViewerText(entry.id, 200)} · ` +
-              `${entry.installedVersion ?? 'not installed'} → ${entry.availableVersion} · ` +
-              `${entry.trusted ? 'trusted source' : 'untrusted remote source'}`,
+              `${entry.installedVersion ?? copy.notInstalled} → ${entry.availableVersion} · ` +
+              `${entry.trusted ? copy.trustedSource : copy.untrustedSource}`,
           })
           makeSubjectLink(text, 'org.modkitx/extension', entry.id)
           action(entry, row)
@@ -635,62 +743,64 @@ export function createExtensionsSettingsGroups(
       }
 
       renderManagedRows(
-        'Available',
+        copy.available,
         managed.available,
         (entry, row) => {
-          button(row, 'Install', 'install', () => {
-            void manage(`Installing ${entry.id}`, () =>
+          button(row, copy.install, 'install', () => {
+            void manage(copy.operation('install', entry.id), () =>
               manager.install(entry.id, entry.availableVersion),
             )
           })
         },
-        'No installable extensions are in the current catalog.',
+        copy.noInstallable,
       )
       renderManagedRows(
-        'Installed',
+        copy.installed,
         managed.installed,
         (entry, row) => {
           button(
             row,
-            entry.enabled ? 'Disable' : 'Enable',
+            entry.enabled ? copy.disable : copy.enable,
             entry.enabled ? 'disable' : 'enable',
             () => {
-              void manage(`${entry.enabled ? 'Disabling' : 'Enabling'} ${entry.id}`, () =>
+              void manage(copy.operation(entry.enabled ? 'disable' : 'enable', entry.id), () =>
                 manager.setEnabled(entry.id, !entry.enabled),
               )
             },
           )
-          button(row, 'Remove', 'remove', () => {
-            void manage(`Removing ${entry.id}`, () => manager.remove(entry.id))
+          button(row, copy.remove, 'remove', () => {
+            void manage(copy.operation('remove', entry.id), () => manager.remove(entry.id))
           })
         },
-        'No extensions are installed by the manager.',
+        copy.noInstalled,
       )
       renderManagedRows(
-        'Enabled',
+        copy.enabledGroup,
         managed.enabled,
         (entry, row) => {
-          button(row, 'Disable', 'disable', () => {
-            void manage(`Disabling ${entry.id}`, () => manager.setEnabled(entry.id, false))
+          button(row, copy.disable, 'disable', () => {
+            void manage(copy.operation('disable', entry.id), () =>
+              manager.setEnabled(entry.id, false),
+            )
           })
         },
-        'No managed extensions are enabled.',
+        copy.noEnabled,
       )
       renderManagedRows(
-        'Updates',
+        copy.updates,
         managed.updates,
         (entry, row) => {
-          button(row, 'Update', 'update', () => {
-            void manage(`Updating ${entry.id}`, () => manager.update(entry.id))
+          button(row, copy.update, 'update', () => {
+            void manage(copy.operation('update', entry.id), () => manager.update(entry.id))
           })
         },
-        'All managed extensions use the catalog version.',
+        copy.noUpdates,
       )
 
-      element(host, 'div', { part: 'settings.label', text: 'Problems' })
+      element(host, 'div', { part: 'settings.label', text: copy.problems })
       const problems = element(host, 'div', { part: 'settings.list' })
       if (managed.problems.length === 0) {
-        element(problems, 'p', { part: 'settings.description', text: 'No manager problems.' })
+        element(problems, 'p', { part: 'settings.description', text: copy.noManagerProblems })
       }
       for (const message of managed.problems) {
         const problem = element(problems, 'p', {
@@ -704,7 +814,7 @@ export function createExtensionsSettingsGroups(
     const actions = element(host, 'div', { part: 'settings.adder' })
     const add = element(actions, 'button', {
       part: 'settings.add',
-      text: 'Add extension folder…',
+      text: copy.addFolder,
     }) as HTMLButtonElement
     add.type = 'button'
     add.dataset['action'] = 'add-folder'
@@ -712,13 +822,13 @@ export function createExtensionsSettingsGroups(
     add.addEventListener('click', addFolder)
 
     // ---- what the user connected
-    element(host, 'div', { part: 'settings.label', text: 'Connected extensions' })
+    element(host, 'div', { part: 'settings.label', text: copy.connected })
     const list = element(host, 'div', { part: 'settings.list' })
     const entries = value?.entries ?? []
     if (entries.length === 0) {
       element(list, 'p', {
         part: 'settings.description',
-        text: 'None yet. Everything below ships with this build.',
+        text: copy.emptyConnected,
       })
     }
     for (const entry of entries) {
@@ -730,12 +840,12 @@ export function createExtensionsSettingsGroups(
       toggle.checked = entry.enabled
       toggle.disabled = busy || entry.id === undefined
       toggle.dataset['extension'] = entry.id ?? entry.path
-      toggle.setAttribute('aria-label', `Enable ${entry.id ?? entry.path}`)
+      toggle.setAttribute('aria-label', `${copy.enable} ${entry.id ?? entry.path}`)
       toggle.addEventListener('change', () => {
         const wanted = toggle.checked
         const key = entry.id
         if (key === undefined) return
-        void mutate(`${wanted ? 'Enabling' : 'Disabling'} ${key}`, document =>
+        void mutate(copy.operation(wanted ? 'enable' : 'disable', key), document =>
           withExtensionEnabled(document, key, wanted),
         )
       })
@@ -743,7 +853,7 @@ export function createExtensionsSettingsGroups(
       const text = element(item, 'div', { part: 'settings.extension-text' })
       element(text, 'div', {
         part: 'settings.label',
-        text: safeViewerText(entry.id ?? '(no id in the settings file)', 200),
+        text: safeViewerText(entry.id ?? copy.noSettingsId, 200),
       })
       element(text, 'div', { part: 'settings.description', text: safeViewerText(entry.path, 400) })
       element(text, 'div', {
@@ -751,23 +861,23 @@ export function createExtensionsSettingsGroups(
         // The loader's own words. A paraphrase here would send the user looking for the wrong bug.
         text:
           entry.state === 'loaded'
-            ? 'loaded — its contributions are in the list of codecs'
+            ? copy.entryLoaded
             : entry.state === 'disabled'
-              ? 'switched off — this folder is not offered to the loader at all'
+              ? copy.entryDisabled
               : entry.state === 'failed'
-                ? `not loaded — ${entry.code ?? ''}: ${entry.message ?? ''}`
-                : 'enabled, but the composition did not report it under this id',
+                ? copy.entryFailed(entry.code ?? '', entry.message ?? '')
+                : copy.entryAbsent,
       })
       if (entry.id !== undefined) makeSubjectLink(text, 'org.modkitx/extension', entry.id)
 
       const remove = element(item, 'button', {
         part: 'settings.remove',
-        text: 'Remove',
+        text: copy.remove,
       }) as HTMLButtonElement
       remove.type = 'button'
       remove.disabled = busy
       remove.addEventListener('click', () => {
-        void mutate(`Removing ${entry.id ?? entry.path}`, document => ({
+        void mutate(copy.operation('remove', entry.id ?? entry.path), document => ({
           ...document,
           extensions: document.extensions.filter(other =>
             entry.id === undefined ? other.path !== entry.path : other.id !== entry.id,
@@ -778,7 +888,7 @@ export function createExtensionsSettingsGroups(
 
     // ---- folders the user picked that were not extensions
     if (refusals.length > 0) {
-      element(host, 'div', { part: 'settings.label', text: 'Not added' })
+      element(host, 'div', { part: 'settings.label', text: copy.notAdded })
       const refused = element(host, 'div', { part: 'settings.list' })
       for (const item of refusals) {
         const row = element(refused, 'div', { part: 'settings.extension' })
@@ -791,7 +901,7 @@ export function createExtensionsSettingsGroups(
         })
         const dismiss = element(row, 'button', {
           part: 'settings.remove',
-          text: 'Dismiss',
+          text: copy.dismiss,
         }) as HTMLButtonElement
         dismiss.type = 'button'
         dismiss.addEventListener('click', () => {
@@ -805,7 +915,7 @@ export function createExtensionsSettingsGroups(
     // ---- roots that failed and are not in the settings list
     const orphans = value?.unconfiguredFailures ?? []
     if (orphans.length > 0) {
-      element(host, 'div', { part: 'settings.label', text: 'Shipped, but not loaded' })
+      element(host, 'div', { part: 'settings.label', text: copy.shippedNotLoaded })
       const failed = element(host, 'div', { part: 'settings.list' })
       for (const item of orphans) {
         const row = element(failed, 'div', { part: 'settings.extension' })
@@ -820,7 +930,7 @@ export function createExtensionsSettingsGroups(
     }
 
     // ---- what shipped with the build
-    element(host, 'div', { part: 'settings.label', text: 'Bundled with this build' })
+    element(host, 'div', { part: 'settings.label', text: copy.bundled })
     const bundled = element(host, 'div', { part: 'settings.list' })
     for (const coordinate of value?.bundled ?? []) {
       const item = element(bundled, 'div', { part: 'settings.extension' })
@@ -831,9 +941,7 @@ export function createExtensionsSettingsGroups(
       element(text, 'div', {
         part: 'settings.description',
         // Whole bundled extensions are not removable here; their contributions are, next door.
-        text: enabled
-          ? 'ships with the application — enabled; open its card to switch it off'
-          : 'ships with the application — disabled; its contributions remain inventoried',
+        text: enabled ? copy.bundledEnabled : copy.bundledDisabled,
       })
       makeSubjectLink(text, 'org.modkitx/extension', coordinate)
     }
@@ -845,23 +953,18 @@ export function createExtensionsSettingsGroups(
     const value = report
     element(host, 'p', {
       part: 'settings.description',
-      text:
-        'Every contribution the host inventoried, whichever extension ships it. Switching one off ' +
-        'keeps the record — it stays listed here, and the host refuses to activate it — so a file ' +
-        'that only that contribution could read opens as raw bytes instead, and the inspector says why.',
+      text: copy.contributionsDescription,
     })
     element(host, 'p', {
       part: 'settings.description',
-      text:
-        'Changes apply immediately: the app recomposes and reopens the files you had open. The ' +
-        'reason a disabled contribution gives is the diagnostic x3.host/contribution-disabled.',
+      text: copy.contributionDiagnostic,
     })
 
     const contributions = value?.contributions ?? []
     if (contributions.length === 0) {
       element(host, 'p', {
         part: 'settings.description',
-        text: 'No contributions are loaded, so there is nothing to switch.',
+        text: copy.noContributions,
       })
       return
     }
@@ -872,14 +975,20 @@ export function createExtensionsSettingsGroups(
       const off = owned.filter(item => item.disabled).length
       const ownerLabel = element(host, 'div', {
         part: 'settings.label',
-        text: `${owner} — ${owned.length} contribution(s)${off === 0 ? '' : `, ${off} off`}`,
+        text: copy.ownerSummary(owner, owned.length, off),
       })
       makeSubjectLink(ownerLabel, 'org.modkitx/extension', owner)
       for (const contractGroup of groupContributionsByContract(owned)) {
         element(host, 'div', {
           part: 'settings.description',
-          text: contractGroup.key ?? 'Unreadable contribution manifest',
+          text: contributionContractLabel(localizer, contractGroup.key),
         })
+        const contractHeading = host.lastElementChild
+        if (contractHeading instanceof HTMLElement && contractGroup.key !== undefined) {
+          contractHeading.title = localizer.text('extensions.tooltip.exactContract', {
+            contract: contractGroup.key,
+          })
+        }
         const list = element(host, 'div', { part: 'settings.list' })
         for (const contribution of contractGroup.contributions) {
           const item = element(list, 'div', { part: 'settings.extension' })
@@ -893,14 +1002,14 @@ export function createExtensionsSettingsGroups(
           if (id === undefined) {
             // No id means the envelope did not parse: it is inspectable, never activatable, and
             // there is nothing for a switch to name.
-            element(item, 'div', { part: 'settings.description', text: 'no id' })
+            element(item, 'div', { part: 'settings.description', text: copy.noId })
           } else {
             const toggle = element(item, 'input', { part: 'settings.toggle' }) as HTMLInputElement
             toggle.type = 'checkbox'
             toggle.checked = !contribution.disabled
             toggle.disabled = busy
             toggle.dataset['contribution'] = id
-            toggle.setAttribute('aria-label', `Enable ${id}`)
+            toggle.setAttribute('aria-label', `${copy.enable} ${id}`)
             toggle.addEventListener('change', () => mutateContribution(id, toggle.checked))
           }
 
@@ -916,12 +1025,12 @@ export function createExtensionsSettingsGroups(
           element(text, 'div', {
             part: 'settings.description',
             text: contribution.extensionDisabled
-              ? 'inactive — the owner extension is switched off'
+              ? copy.contributionOwnerDisabled
               : contribution.disabled
-                ? 'switched off — the host will not activate it'
+                ? copy.contributionDisabled
                 : contribution.activationEligible
-                  ? `active · ${contribution.origin}`
-                  : `inventoried, not activatable · ${contribution.origin}`,
+                  ? copy.contributionActive(contribution.origin)
+                  : copy.contributionInert(contribution.origin),
           })
           if (id !== undefined) makeSubjectLink(text, 'org.modkitx/contribution', id)
         }
@@ -931,7 +1040,7 @@ export function createExtensionsSettingsGroups(
 
   const extensionsGroup: SettingsUiGroup = {
     id: 'extensions',
-    label: 'Extensions',
+    label: copy.extensions,
     render(host, context) {
       groupContext = context
       renderExtensions(host)
@@ -944,7 +1053,7 @@ export function createExtensionsSettingsGroups(
         managerProblems.length = 0
         say(summarise(report))
       } catch (error) {
-        const problem = `Could not read the extension state: ${describe(error)}`
+        const problem = copy.stateReadFailed(describe(error))
         managerProblems.unshift(problem)
         say(problem, true)
       }
@@ -959,7 +1068,7 @@ export function createExtensionsSettingsGroups(
 
   const codecsGroup: SettingsUiGroup = {
     id: 'codecs',
-    label: 'Contributions',
+    label: copy.contributions,
     render(host, context) {
       groupContext = context
       renderCodecs(host)

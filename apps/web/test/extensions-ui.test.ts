@@ -33,6 +33,7 @@ import {
   USER_EXTENSION_PROVENANCE_NOTE,
   USER_EXTENSION_TRUST_SENTENCE,
 } from '../src/extensions-ui.js'
+import { createWebLocalizer } from '../src/localization.js'
 import { repositoryRoot } from './browser-harness.js'
 
 const subtle = webcrypto.subtle as never
@@ -145,6 +146,31 @@ describe('the installed-extensions panel', () => {
     expect(rows).toHaveLength(WEB_EXTENSION_CATALOG.extensions.length)
     expect(rows.every(row => row.kind === 'bundled' && row.state === 'loaded')).toBe(true)
     expect(rows[0]?.provenance).toContain('Bundled with this build')
+    expect(rows.some(row => row.coordinate === 'org.modkitx/images')).toBe(true)
+  })
+
+  it('localizes provenance rows for a Russian host without changing their technical identity', () => {
+    const rows = describeExtensionList(
+      {
+        catalog: WEB_EXTENSION_CATALOG,
+        loaded: {
+          inputs: [],
+          failures: [],
+          coordinates: [],
+          rootIds: [],
+          moduleMap: {},
+          moduleMapOwners: {},
+          verifiedModuleRoots: [],
+          serve: async url => ({
+            ok: false,
+            status: 404,
+            arrayBuffer: () => Promise.reject(new Error(url)),
+          }),
+        },
+      },
+      createWebLocalizer('ru'),
+    )
+    expect(rows[0]?.provenance).toContain('Встроено в эту сборку')
     expect(rows.some(row => row.coordinate === 'org.modkitx/images')).toBe(true)
   })
 

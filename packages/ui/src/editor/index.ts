@@ -16,6 +16,9 @@ import {
   ViewerMountScope,
 } from '../viewer/index.js'
 import { handleEditorSaveRequest } from './commands.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { EDITOR_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 const TEXT_DATA_SOURCE = Object.freeze({
   bindingId: bindingId('editor-text'),
@@ -24,6 +27,7 @@ const TEXT_DATA_SOURCE = Object.freeze({
 })
 
 export interface TextEditorModuleOptions {
+  readonly localizer?: UiLocalizer
   readonly maximumSourceBytes?: number
   readonly createChangeSet?: (args: {
     readonly text: string
@@ -75,12 +79,13 @@ function rejectionText(state: string, reason?: string): string {
  * grants, revision checks and side effects stay behind the injected SDK ports.
  */
 export function createTextEditorModule(options: TextEditorModuleOptions = {}): EditorModule {
+  const localizer = withEnglishUiFallback(options.localizer, EDITOR_FALLBACK_MESSAGES)
   const maximum = options.maximumSourceBytes ?? 16 * 1024 * 1024
   return defineEditorModule({
     abiVersion: 1,
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
-      const root = createSurface(args.container, 'Text editor')
+      const root = createSurface(args.container, localizer.text('editor.text'))
       root.dataset['modkitEditor'] = 'text'
       root.dataset['revision'] = args.descriptor.revision
       const lease = (await args.sources.get(TEXT_DATA_SOURCE)) as Lease<TextDataSource> | undefined
@@ -92,12 +97,21 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
         role: 'toolbar',
         part: 'editor.toolbar',
       })
-      toolbar.setAttribute('aria-label', 'Editing actions')
-      const save = element(toolbar, 'button', { text: 'Save' }) as HTMLButtonElement
+      toolbar.setAttribute('aria-label', localizer.text('viewer.editingActions'))
+      const save = element(toolbar, 'button', {
+        text: localizer.text('viewer.save'),
+      }) as HTMLButtonElement
       save.dataset['modkitAction'] = 'save'
-      const undo = element(toolbar, 'button', { text: 'Undo' }) as HTMLButtonElement
-      const redo = element(toolbar, 'button', { text: 'Redo' }) as HTMLButtonElement
-      const status = element(toolbar, 'output', { text: 'Ready', part: 'viewer.status' })
+      const undo = element(toolbar, 'button', {
+        text: localizer.text('viewer.undo'),
+      }) as HTMLButtonElement
+      const redo = element(toolbar, 'button', {
+        text: localizer.text('viewer.redo'),
+      }) as HTMLButtonElement
+      const status = element(toolbar, 'output', {
+        text: localizer.text('viewer.ready'),
+        part: 'viewer.status',
+      })
       save.type = undo.type = redo.type = 'button'
       undo.disabled = true
       redo.disabled = true
@@ -105,7 +119,7 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
         className: 'modkit-editor__text',
         part: 'editor.text',
       }) as HTMLTextAreaElement
-      input.setAttribute('aria-label', 'Editable text')
+      input.setAttribute('aria-label', localizer.text('viewer.editableText'))
       input.spellcheck = false
       input.value = await loadText(lease.value, maximum, scope.signal)
 
@@ -120,20 +134,20 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
         if (busy || scope.signal.aborted) return false
         busy = true
         save.disabled = true
-        setViewerText(status, 'Validating…')
+        setViewerText(status, localizer.text('editor.validating'))
         try {
           const change =
             options.createChangeSet?.({ text: input.value, targets: args.edit.targets }) ??
             defaultChangeSet(input.value, args.edit.targets)
           const validation = await args.edit.propose(change)
           if (!validation.valid) {
-            setViewerText(status, 'Validation rejected the change')
+            setViewerText(status, localizer.text('editor.validationRejected'))
             return false
           }
           const plan = await args.edit.plan(change)
           const authorization = await request(plan)
           if (authorization === undefined) {
-            setViewerText(status, 'Save cancelled')
+            setViewerText(status, localizer.text('viewer.saveCancelled'))
             return false
           }
           const prepared = await args.commit.prepare(plan, {
@@ -147,32 +161,33 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
             setViewerText(
               status,
               prepared.state === 'conflict'
-                ? 'Conflict: source changed'
-                : rejectionText('Save rejected', prepared.reason),
+                ? localizer.text('editor.conflictChanged')
+                : rejectionText(localizer.text('viewer.saveRejected'), prepared.reason),
             )
             return false
           }
-          setViewerText(status, 'Saving…')
+          setViewerText(status, localizer.text('editor.saving'))
           const result = await args.commit.commit(prepared.prepared, {
             grant: authorization.grant,
             signal: scope.signal,
-            onProgress: done => setViewerText(status, `Saving… ${done}`),
+            onProgress: done =>
+              setViewerText(status, localizer.text('editor.savingProgress', { progress: done })),
           })
           if (result.state === 'committed') {
             lastPlan = plan
             lastReceipt = result.receipt
             undo.disabled = result.receipt.undo === 'none'
             redo.disabled = true
-            setViewerText(status, 'Saved')
+            setViewerText(status, localizer.text('viewer.saved'))
             return true
           } else {
             setViewerText(
               status,
               result.state === 'not-applied'
-                ? rejectionText('Not saved', result.reason)
+                ? rejectionText(localizer.text('editor.notSaved'), result.reason)
                 : result.state === 'rolled-back'
-                  ? 'Write failed; changes rolled back'
-                  : 'Partially saved; recovery is available',
+                  ? localizer.text('editor.rolledBack')
+                  : localizer.text('editor.partiallySaved'),
             )
             return false
           }
@@ -190,7 +205,12 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
         busy = true
         const authorization = await request(lastPlan)
         if (authorization === undefined) {
-          setViewerText(status, `${kind === 'undo' ? 'Undo' : 'Redo'} cancelled`)
+          setViewerText(
+            status,
+            localizer.text('editor.actionCancelled', {
+              action: localizer.text(kind === 'undo' ? 'viewer.undo' : 'viewer.redo'),
+            }),
+          )
           busy = false
           return
         }
@@ -201,13 +221,20 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
         if (result.state === 'committed') {
           undo.disabled = kind === 'undo'
           redo.disabled = kind === 'redo'
-          setViewerText(status, kind === 'undo' ? 'Undone' : 'Redone')
+          setViewerText(status, localizer.text(kind === 'undo' ? 'editor.undone' : 'editor.redone'))
         } else {
           setViewerText(
             status,
             result.state === 'not-applied'
-              ? rejectionText(`${kind === 'undo' ? 'Undo' : 'Redo'} rejected`, result.reason)
-              : `${kind === 'undo' ? 'Undo' : 'Redo'} failed`,
+              ? rejectionText(
+                  localizer.text('editor.actionRejected', {
+                    action: localizer.text(kind === 'undo' ? 'viewer.undo' : 'viewer.redo'),
+                  }),
+                  result.reason,
+                )
+              : localizer.text('editor.actionFailed', {
+                  action: localizer.text(kind === 'undo' ? 'viewer.undo' : 'viewer.redo'),
+                }),
           )
         }
         busy = false
@@ -225,7 +252,7 @@ export function createTextEditorModule(options: TextEditorModuleOptions = {}): E
       return Object.freeze({
         async update(update: Parameters<EditorMount['update']>[0]) {
           root.dataset['revision'] = update.descriptor.revision
-          setViewerText(status, 'Source updated; review before saving')
+          setViewerText(status, localizer.text('editor.sourceUpdated'))
         },
         async unmount() {
           await scope.close()

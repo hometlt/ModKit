@@ -23,6 +23,9 @@ import {
   unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { GRAPH_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export type GraphNode = SourceGraphNode
 export type GraphEdge = SourceGraphEdge
@@ -66,6 +69,7 @@ export interface GraphRendererFactory {
 }
 
 export interface RelationGraphOptions {
+  readonly localizer?: UiLocalizer
   readonly label: string
   readonly nodes: readonly GraphNode[]
   readonly edges: readonly GraphEdge[]
@@ -87,6 +91,7 @@ export interface RelationGraphOptions {
 }
 
 export interface RelationGraphLoadOptions {
+  readonly localizer?: UiLocalizer
   readonly label: string
   readonly nodeLimit?: number
   readonly edgeLimit?: number
@@ -139,8 +144,14 @@ function loadedCountReason(
   totalNodes: number,
   edgeCount: number,
   totalEdges: number,
+  localizer: UiLocalizer,
 ): string {
-  return `loaded ${nodeCount.toLocaleString('en-US')} of ${totalNodes.toLocaleString('en-US')} nodes and ${edgeCount.toLocaleString('en-US')} of ${totalEdges.toLocaleString('en-US')} edges`
+  return localizer.text('graph.loadedCounts', {
+    nodes: nodeCount.toLocaleString(localizer.locale),
+    totalNodes: totalNodes.toLocaleString(localizer.locale),
+    edges: edgeCount.toLocaleString(localizer.locale),
+    totalEdges: totalEdges.toLocaleString(localizer.locale),
+  })
 }
 
 /** Host-side adapter: codecs publish facts; the UI decides how many pages to materialize. */
@@ -148,6 +159,7 @@ export async function loadRelationGraphOptions(
   source: RelationGraphSource,
   options: RelationGraphLoadOptions,
 ): Promise<RelationGraphOptions> {
+  const localizer = withEnglishUiFallback(options.localizer, GRAPH_FALLBACK_MESSAGES)
   const nodeLimit = positiveLimit(options.nodeLimit ?? 500, 'nodeLimit')
   const edgeLimit = positiveLimit(options.edgeLimit ?? 5_000, 'edgeLimit')
   const pageSize = positiveLimit(options.pageSize ?? 250, 'pageSize')
@@ -186,6 +198,7 @@ export async function loadRelationGraphOptions(
       : 'complete'
   return {
     label: options.label,
+    localizer,
     nodes: nodeLoad.items,
     edges: edgeLoad.items,
     types: summary.types,
@@ -202,6 +215,7 @@ export async function loadRelationGraphOptions(
             summary.totalNodes,
             edgeLoad.items.length,
             summary.totalEdges,
+            localizer,
           ),
         }),
     cap: nodeLimit,
@@ -228,6 +242,7 @@ export function createRelationGraph(
   document: Document,
   options: RelationGraphOptions,
 ): RelationGraph {
+  const localizer = withEnglishUiFallback(options.localizer, GRAPH_FALLBACK_MESSAGES)
   const cap = options.cap ?? 500
   const root = document.createElement('div')
   root.className = 'modkit-graph'
@@ -243,11 +258,11 @@ export function createRelationGraph(
   sidebarHead.className = 'modkit-graph__sidebar-head'
   setPart(sidebarHead, 'graph.sidebar-head')
   const heading = document.createElement('span')
-  heading.textContent = 'Node types'
+  heading.textContent = localizer.text('graph.nodeTypes')
   sidebarHead.append(heading)
   for (const [label, all] of [
-    ['All', true],
-    ['None', false],
+    [localizer.text('graph.all'), true],
+    [localizer.text('graph.none'), false],
   ] as const) {
     const button = document.createElement('button')
     button.type = 'button'
@@ -263,8 +278,8 @@ export function createRelationGraph(
 
   const filter = document.createElement('input')
   filter.type = 'search'
-  filter.placeholder = 'Filter classes…'
-  filter.setAttribute('aria-label', 'Filter node types')
+  filter.placeholder = localizer.text('graph.filterClasses')
+  filter.setAttribute('aria-label', localizer.text('graph.filterNodeTypes'))
   filter.className = 'modkit-graph__filter'
   sidebar.append(filter)
 
@@ -328,7 +343,7 @@ export function createRelationGraph(
   const controls = document.createElement('div')
   controls.className = 'modkit-graph__controls'
   controls.setAttribute('role', 'toolbar')
-  controls.setAttribute('aria-label', 'Graph controls')
+  controls.setAttribute('aria-label', localizer.text('graph.controls'))
   setPart(controls, 'graph.controls')
 
   const status = document.createElement('output')
@@ -364,24 +379,24 @@ export function createRelationGraph(
   const labels = document.createElement('input')
   labels.type = 'checkbox'
   labels.checked = true
-  labelsWrapper.append(labels, document.createTextNode('Labels'))
+  labelsWrapper.append(labels, document.createTextNode(localizer.text('graph.labels')))
   controls.append(labelsWrapper)
 
   const nodeChoices = [...new Set([100, 250, 500, 1_000, cap])]
     .sort((left, right) => left - right)
     .map(String)
-  const nodesCap = control('Nodes', nodeChoices, String(cap))
+  const nodesCap = control(localizer.text('graph.nodes'), nodeChoices, String(cap))
 
   const rendererIds = ['canvas-2d', ...(options.renderers ?? []).map(item => item.id)]
   const rendererSelect = control(
-    'Renderer',
-    ['2D canvas', ...(options.renderers ?? []).map(item => item.label)],
-    '2D canvas',
+    localizer.text('graph.renderer'),
+    [localizer.text('graph.canvas2d'), ...(options.renderers ?? []).map(item => item.label)],
+    localizer.text('graph.canvas2d'),
   )
 
   const reset = document.createElement('button')
   reset.type = 'button'
-  reset.textContent = 'Reset view'
+  reset.textContent = localizer.text('graph.resetView')
   reset.addEventListener('click', () => {
     if (external !== undefined) {
       external.reset()
@@ -400,12 +415,7 @@ export function createRelationGraph(
 
   const hint = document.createElement('p')
   hint.className = 'modkit-graph__hint'
-  hint.textContent = [
-    'Drag empty space to pan',
-    'drag a node to reposition it',
-    'scroll to zoom',
-    ...(options.onOpen === undefined ? [] : ['double-click a node to open its linked subject']),
-  ].join(' · ')
+  hint.textContent = localizer.text(options.onOpen === undefined ? 'graph.hint' : 'graph.hintOpen')
   setPart(hint, 'graph.hint')
 
   main.append(controls, canvas, hint)
@@ -459,7 +469,11 @@ export function createRelationGraph(
     const state =
       completeness === undefined || completeness === 'complete' ? '' : ` ${completeness}`
     const explanation = reason === undefined ? '' : `: ${safeViewerText(reason, 240)}`
-    return `${owner}${state}${explanation}`
+    return localizer.text('graph.completeness', {
+      owner: localizer.text(owner === 'source' ? 'graph.source' : 'graph.view'),
+      state,
+      reason: explanation,
+    })
   }
 
   const statusText = (drawnEdges: number, renderer?: string): string => {
@@ -469,12 +483,21 @@ export function createRelationGraph(
       completenessNotice('source', options.sourceCompleteness, options.sourceReason),
       completenessNotice('view', options.consumerCompleteness, options.consumerReason),
       ...(placed.length < visibleCandidates.length
-        ? [`visible selection capped at ${placed.length.toLocaleString('en-US')} nodes`]
+        ? [
+            localizer.text('graph.visibleCapped', {
+              count: placed.length.toLocaleString(localizer.locale),
+            }),
+          ]
         : []),
     ].filter((item): item is string => item !== undefined)
     return [
-      `${placed.length.toLocaleString('en-US')} / ${totalNodes.toLocaleString('en-US')} nodes`,
-      `${drawnEdges.toLocaleString('en-US')} visible edges`,
+      localizer.text('graph.nodeCount', {
+        visible: placed.length.toLocaleString(localizer.locale),
+        total: totalNodes.toLocaleString(localizer.locale),
+      }),
+      localizer.text('graph.edgeCount', {
+        count: drawnEdges.toLocaleString(localizer.locale),
+      }),
       renderer,
       ...notices,
     ]
@@ -698,36 +721,46 @@ export function createRelationGraph(
 }
 
 /** Standard stage adapter over the selected relation-graph data-source binding. */
-export const relationGraphViewer: ViewerModule = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal)
-    const root = createSurface(args.container, 'Relation graph viewer')
-    try {
-      const lease = await unknownSourceLease(
-        args.sources,
-        args.slot,
-        'common.view/relation-graph-source',
-      )
-      if (lease === undefined) throw new TypeError('relation graph binding is unavailable')
-      scope.lease(lease)
-      const options = await loadRelationGraphOptions(lease.value as RelationGraphSource, {
-        label: 'Relation graph',
-        signal: scope.signal,
-      })
-      const graph = createRelationGraph(root.ownerDocument, options)
-      root.append(graph.root)
-      scope.cleanup(() => graph.destroy())
-      root.dataset['revision'] = args.descriptor.revision
-      return createViewerMount(root, scope, args, ({ descriptor }) => {
-        root.dataset['revision'] = descriptor.revision
-      })
-    } catch (error) {
-      await scope.close()
-      root.remove()
-      throw error
-    }
-  },
-})
+export interface RelationGraphViewerOptions {
+  readonly localizer?: UiLocalizer
+}
+
+export function createRelationGraphViewer(options: RelationGraphViewerOptions = {}): ViewerModule {
+  const localizer = withEnglishUiFallback(options.localizer, GRAPH_FALLBACK_MESSAGES)
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal)
+      const root = createSurface(args.container, localizer.text('graph.viewer'))
+      try {
+        const lease = await unknownSourceLease(
+          args.sources,
+          args.slot,
+          'common.view/relation-graph-source',
+        )
+        if (lease === undefined) throw new TypeError('relation graph binding is unavailable')
+        scope.lease(lease)
+        const options = await loadRelationGraphOptions(lease.value as RelationGraphSource, {
+          label: localizer.text('graph.relation'),
+          localizer,
+          signal: scope.signal,
+        })
+        const graph = createRelationGraph(root.ownerDocument, options)
+        root.append(graph.root)
+        scope.cleanup(() => graph.destroy())
+        root.dataset['revision'] = args.descriptor.revision
+        return createViewerMount(root, scope, args, ({ descriptor }) => {
+          root.dataset['revision'] = descriptor.revision
+        })
+      } catch (error) {
+        await scope.close()
+        root.remove()
+        throw error
+      }
+    },
+  })
+}
+
+export const relationGraphViewer: ViewerModule = createRelationGraphViewer()
 
 export default relationGraphViewer

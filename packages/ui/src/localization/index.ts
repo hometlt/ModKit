@@ -1,5 +1,15 @@
-/** Locales shipped by the reference UI. Hosts may still provide a complete replacement catalog. */
-export type UiLocale = 'en' | 'ru'
+/** Locales shipped by the reference UI. Additional BCP-47 catalogs may be supplied as data. */
+export type BuiltinUiLocale = 'en' | 'ru'
+export type UiLocale = string
+
+export const UI_CATALOG_SCHEMA = 'org.modkitx/ui-message-catalog@1' as const
+
+/** Raw JSON should be rejected by a host before decoding when it exceeds this byte budget. */
+export const UI_CATALOG_RECOMMENDED_MAXIMUM_JSON_BYTES = 8 * 1024 * 1024
+export const UI_CATALOG_MAXIMUM_MESSAGES = 10_000
+export const UI_CATALOG_MAXIMUM_KEY_LENGTH = 256
+export const UI_CATALOG_MAXIMUM_MESSAGE_LENGTH = 20_000
+export const UI_CATALOG_MAXIMUM_DECODED_CODE_UNITS = 4 * 1024 * 1024
 
 const EN_MESSAGES = Object.freeze({
   'app.title': 'Modkit MK3',
@@ -27,6 +37,20 @@ const EN_MESSAGES = Object.freeze({
   'locale.ru': 'Русский',
   'common.yes': 'yes',
   'common.no': 'no',
+  'common.enable': 'Enable',
+  'common.disable': 'Disable',
+  'common.enabled': 'Enabled',
+  'common.disabled': 'Disabled',
+  'common.install': 'Install',
+  'common.update': 'Update',
+  'common.remove': 'Remove',
+  'common.dismiss': 'Dismiss',
+  'common.loading': 'Loading…',
+  'common.none': 'None',
+  'common.notInstalled': 'Not installed',
+  'common.loaded': 'Loaded',
+  'common.active': 'Active',
+  'common.inactive': 'Inactive',
   'activity.files': 'Files',
   'activity.explorer': 'Explorer',
   'activity.host': 'Host',
@@ -42,13 +66,541 @@ const EN_MESSAGES = Object.freeze({
   'error.openFile': 'Could not open the file: {reason}',
   'error.drop': 'Drop failed: {reason}',
   'error.fetch': '{path} could not be fetched from this origin.',
+  'extensions.title': 'Extensions',
+  'extensions.contributions': 'Contributions',
+  'extensions.subjects': 'Subjects',
+  'extensions.downloadable': 'Downloadable',
+  'extensions.connected': 'Connected',
+  'extensions.bundled': 'Bundled',
+  'extensions.notAdded': 'Not added',
+  'extensions.shippedNotLoaded': 'Shipped but not loaded',
+  'extensions.addFolder': 'Add extension folder…',
+  'extensions.refreshCatalog': 'Refresh catalog',
+  'extensions.checkCatalog': 'Check catalog',
+  'extensions.grantAccess': 'Grant access',
+  'extensions.emptySubjects': 'No extension subjects are available.',
+  'extensions.emptyFolders': 'No extension folders have been added.',
+  'extensions.emptyManagerProblems': 'The extension manager found no problems.',
+  'extensions.group.available': 'Available',
+  'extensions.group.installed': 'Installed',
+  'extensions.group.enabled': 'Enabled',
+  'extensions.group.updates': 'Updates',
+  'extensions.group.problems': 'Problems',
+  'extensions.contract.codecs': 'Codec Contributions',
+  'extensions.contract.editors': 'Editor Contributions',
+  'extensions.contract.services': 'Service Contributions',
+  'extensions.contract.viewers': 'Viewer Contributions',
+  'extensions.contract.languages': 'Language Contributions',
+  'extensions.contract.renderers': 'Renderer Contributions',
+  'extensions.contract.runtimes': 'Runtime Contributions',
+  'extensions.contract.commands': 'Command Contributions',
+  'extensions.contract.ui': 'UI Contributions',
+  'extensions.contract.contracts': 'Contribution Contracts',
+  'extensions.contract.other': 'Other Contributions',
+  'extensions.contract.invalid': 'Invalid Contributions',
+  'extensions.contract.custom': '{name} Contributions',
+  'extensions.state.reloadPending': 'Reload pending',
+  'extensions.state.afterReload': 'Takes effect after reload',
+  'extensions.tooltip.invalidContract': 'Invalid contribution contract',
+  'extensions.tooltip.exactContract': 'Exact contract: {contract}',
+  'extensions.tooltip.contract': 'Contract: {contract}',
+  'extensions.tooltip.state': 'State: {state}',
+  'extensions.tooltip.origin': 'Origin: {origin}',
+  'extensions.tooltip.source': 'Source: {source}',
+  'extensions.tooltip.trustedPublisher': 'Trusted publisher',
+  'extensions.tooltip.unverifiedPublisher': 'Publisher is not verified',
+  'extensions.action.openContributionCard': 'Open contribution card',
+  'extensions.action.updateExtension': 'Update extension',
+  'extensions.action.openExtensionCard': 'Open extension card',
+  'extensions.action.enablePackage': 'Enable package',
+  'extensions.action.linkExtension': 'Link extension',
+  'extensions.action.disableContribution': 'Disable contribution',
+  'extensions.action.enableContribution': 'Enable contribution',
+  'extensions.action.disableExtension': 'Disable extension',
+  'extensions.action.enableExtension': 'Enable extension',
+  'extensions.action.reloadWindow': 'Reload window',
+  'extensions.status.configurationUpdated': 'Extension configuration updated.',
+  'extensions.status.reloadRequired': '{id} was {state}. Reload the window.',
+  'viewer.audio': 'Audio viewer',
+  'viewer.audioControls': 'Audio controls',
+  'viewer.audioDecodeError':
+    'The platform decoder cannot render this audio: {reason}. A format-specific decoder provider is required.',
+  'viewer.audioSummary': '{position} / {duration} · {channels} channels · {rate} kHz · {size} KiB',
+  'viewer.text': 'Bounded text viewer',
+  'viewer.searchText': 'Search text',
+  'viewer.search': 'Search',
+  'viewer.ready': 'Ready',
+  'viewer.textContent': 'Text content',
+  'viewer.enterSearch': 'Enter a search term',
+  'viewer.searching': 'Searching…',
+  'viewer.searchMatches': '{count} matches',
+  'viewer.searchMatch': '{count} match',
+  'viewer.image': 'Image viewer',
+  'viewer.imageControls': 'Image controls',
+  'viewer.fit': 'Fit',
+  'viewer.fitTitle': 'Fit to the stage',
+  'viewer.actualPixels': 'Actual pixels',
+  'viewer.zoomOut': 'Zoom out',
+  'viewer.zoomIn': 'Zoom in',
+  'viewer.cycleBackdrop': 'Cycle the backdrop',
+  'viewer.isolateChannel': 'Isolate the {channel} channel',
+  'viewer.imageDecodeError':
+    'The platform decoder cannot render these bytes: {reason}. A format-specific decoder provider is required.',
+  'viewer.imageSummary': '{width}×{height} · {size} KiB · {scale}%{channel}',
+  'viewer.imageChannel': ' · channel {channel}',
+  'viewer.video': 'Video viewer',
+  'viewer.videoSummary': '{video} video · {audio} audio · {duration}',
+  'viewer.durationUnknown': 'duration unknown',
+  'viewer.videoPlayError': 'The platform cannot play this video representation: {reason}',
+  'viewer.vector': 'Vector viewer',
+  'viewer.vectorPreview': 'Vector scene preview',
+  'viewer.vectorSummary': '{nodes} nodes · {paths} paths · {shapes} shapes · {text} text nodes',
+  'viewer.vectorError': 'The vector scene cannot be rendered safely: {reason}',
+  'viewer.world': 'World viewer',
+  'viewer.worldPreview': 'Top-down world preview',
+  'viewer.worldEmpty':
+    'World metadata is available; no drawable terrain or objects were published.',
+  'viewer.worldError': 'The world cannot be rendered: {reason}',
+  'viewer.worldSummary': '{map} · {layers} layers · {items} items{bounded}',
+  'viewer.boundedPreview': ' · bounded preview',
+  'viewer.mixedWorkspace': 'Mixed visual workspace',
+  'viewer.composition': 'Visual-only world and model composition',
+  'viewer.compositionSummary': '{overlays} overlays · {resources} resources · visual-only',
+  'viewer.compositionError': 'The mixed visual workspace cannot be rendered: {reason}',
+  'viewer.model': 'Model viewer',
+  'viewer.modelView': 'Model view',
+  'viewer.modelDetails': 'Model details',
+  'viewer.modelPrimitive': 'Model primitive',
+  'viewer.modelGeometryUnavailable':
+    'Scene metadata is available. A buffer resolver/renderer provider is required for geometry.',
+  'viewer.modelError': 'The model scene cannot be rendered: {reason}',
+  'viewer.modelSummary':
+    '{nodes} nodes · {meshes} meshes · {primitives} primitives · {materials} materials · {animations} animations{facets}',
+  'viewer.reset': 'Reset',
+  'viewer.resetCamera': 'Reset the camera to its default pose',
+  'viewer.modelResources': 'resources',
+  'viewer.modelBones': 'bones',
+  'viewer.modelClips': 'clips',
+  'viewer.modelCollision': 'collision',
+  'viewer.modelMaterials': 'materials',
+  'viewer.modelSockets': 'sockets',
+  'viewer.modelParent': 'parent {parent}',
+  'viewer.modelUnnamed': '(unnamed)',
+  'viewer.modelNoNamedFlags': 'no named flags',
+  'viewer.modelClipDetail': '{frames} frames · {channels} channels · {samples} samples',
+  'viewer.modelMaterial': 'material',
+  'viewer.modelBlendUnknown': 'blend unknown',
+  'viewer.modelLayers': '{count} layers',
+  'viewer.viewAxis': 'View axis',
+  'viewer.viewFromAxis': 'View from {axis}',
+  'viewer.hex': 'Hex viewer',
+  'viewer.byteOffset': 'Byte offset',
+  'viewer.go': 'Go',
+  'viewer.hexEditing': 'Hex editing',
+  'viewer.save': 'Save',
+  'viewer.revert': 'Revert',
+  'viewer.undo': 'Undo',
+  'viewer.redo': 'Redo',
+  'viewer.editingActions': 'Editing actions',
+  'viewer.editableText': 'Editable text',
+  'viewer.saveCancelled': 'Save cancelled',
+  'viewer.saveRejected': 'Save rejected',
+  'viewer.saved': 'Saved',
+  'viewer.editText': 'Edit text',
+  'viewer.editBytes': 'Edit bytes',
+  'editor.text': 'Text editor',
+  'editor.hex': 'Hex editor',
+  'editor.validating': 'Validating…',
+  'editor.validationRejected': 'Validation rejected the change',
+  'editor.conflictChanged': 'Conflict: source changed',
+  'editor.saving': 'Saving…',
+  'editor.savingProgress': 'Saving… {progress}',
+  'editor.notSaved': 'Not saved',
+  'editor.rolledBack': 'Write failed; changes rolled back',
+  'editor.partiallySaved': 'Partially saved; recovery is available',
+  'editor.actionCancelled': '{action} cancelled',
+  'editor.undone': 'Undone',
+  'editor.redone': 'Redone',
+  'editor.actionRejected': '{action} rejected',
+  'editor.actionFailed': '{action} failed',
+  'editor.sourceUpdated': 'Source updated; review before saving',
+  'editor.bytesChanged': '{count} byte(s) changed',
+  'editor.rejectedValidation': 'Rejected by validation',
+  'editor.rejectedReason': 'Rejected: {reason}',
+  'editor.notAuthorized': 'Not authorised',
+  'editor.prepareRejected': 'Prepare rejected: {reason}',
+  'editor.saveState': 'Save {state}',
+  'editor.committedRanges': 'Committed {count} range(s) — reopen the file before editing it again',
+  'editor.saveFailed': 'Save failed: {reason}',
+  'editor.saveRejectedReason': 'Save rejected: {reason}',
+  'editor.saved': 'saved',
+  'editor.nothingPrepared': 'nothing prepared to save',
+  'editor.nothingToSave': 'nothing to save',
+  'editor.saveRefused': 'save refused: {reason}',
+  'editor.saveRefusedCode': 'save refused: {reason} ({code})',
+  'editor.saveConflict':
+    'save refused: the file changed on disk while it was open ({count} conflict(s))',
+  'editor.writerRejected': 'the writer rejected the change',
+  'editor.replayUnsupported': 'this host does not replay commits yet',
+  'editor.undoRefused': 'undo refused: {reason}',
+  'editor.redoRefused': 'redo refused: {reason}',
+  'editor.inlinePayloadOnly': 'this host does not stage payloads: edits travel inline',
+  'editor.changeSetEditsRequired': 'an editor change set must carry an `edits` array',
+  'editor.editObjectRequired': 'an edit must be an object',
+  'editor.noEditTarget': 'this subject publishes no edit target, so an edit cannot be placed',
+  'editor.legacyPayloadRequired': 'a legacy edit must carry an inline or text payload',
+  'editor.refusal.planInvalid': 'the change did not describe a valid edit of this file',
+  'editor.refusal.permissionMissing': 'this session may not write the file',
+  'editor.refusal.writeScopeMismatch': 'the edit named a file outside what this session may write',
+  'editor.refusal.guaranteeUnachievable': 'the host cannot promise this write safely enough',
+  'editor.refusal.fidelityUnproven': 'no evidence backs the writer fidelity claim for this change',
+  'editor.refusal.confirmationRequired':
+    'a lossy write needs a confirmation this host does not ask for',
+  'editor.refusal.payloadUnavailable': 'the edited bytes never reached the writer',
+  'editor.refusal.staleRevision': 'the file changed on disk after the change was prepared',
+  'editor.refusal.cancelled': 'the save was cancelled',
+  'viewer.byteAt': 'byte at {offset}',
+  'viewer.characterAt': 'character at {offset}',
+  'viewer.loadNextPage': 'Load next page',
+  'viewer.nextRows': 'Next rows',
+  'viewer.loading': 'Loading',
+  'viewer.loadingTemplate': 'Loading template…',
+  'viewer.templateUnavailable': 'Template unavailable: {reason}',
+  'viewer.noDisplayItems': 'No display items.',
+  'viewer.displayCapped': 'Display capped at {maximum} of {count} items.',
+  'viewer.resolvedSemanticTree': 'Resolved semantic tree',
+  'viewer.namedRemainder': '{count} named remainder',
+  'card.relatedSubjects': 'Related subjects',
+  'card.locale': 'Locale',
+  'card.descriptionUnavailable': 'Description is not available yet.',
+  'card.loadingDescription': 'Loading description…',
+  'card.sections': '{label} sections',
+  'card.subject': 'Subject card',
+  'card.factGroupsCapped': 'Fact groups are capped.',
+  'card.relatedCapped': 'Related subjects are capped.',
+  'card.capped': '{label} (capped)',
+  'card.namedSubject': '{label} subject card',
+  'card.extension.group.overview': 'Overview',
+  'card.extension.group.state': 'State',
+  'card.extension.group.declaration': 'Declaration',
+  'card.extension.group.specification': 'Specification',
+  'card.extension.group.contracts': 'Contracts',
+  'card.extension.fact.id': 'Extension ID',
+  'card.extension.fact.displayName': 'Display name',
+  'card.extension.fact.publisher': 'Publisher',
+  'card.extension.fact.version': 'Version',
+  'card.extension.fact.license': 'License',
+  'card.extension.fact.description': 'Description',
+  'card.extension.fact.homepage': 'Homepage',
+  'card.extension.fact.source': 'Source',
+  'card.extension.fact.trusted': 'Trusted',
+  'card.extension.fact.enabled': 'Extension enabled',
+  'card.extension.fact.contributionCount': 'Contributions',
+  'card.extension.fact.contractCount': 'Contracts',
+  'card.contribution.fact.id': 'Contribution ID',
+  'card.contribution.fact.displayName': 'Display name',
+  'card.contribution.fact.ownerExtension': 'Owner extension',
+  'card.contribution.fact.contractId': 'Contract',
+  'card.contribution.fact.contractMajor': 'Contract major',
+  'card.contribution.fact.contractCoordinate': 'Contract coordinate',
+  'card.contribution.fact.status': 'Status',
+  'card.contribution.fact.enabled': 'Contribution enabled',
+  'card.contribution.fact.effectiveEnabled': 'Effectively enabled',
+  'card.contribution.fact.dependencies': 'Dependencies',
+  'card.contribution.fact.limitations': 'Limitations',
+  'card.contribution.fact.runtimeVariants': 'Runtime variants',
+  'card.contribution.fact.specification': 'Specification',
+  'calculations.label': 'Subject calculations',
+  'calculations.summary': '{count} calculations · {warnings} warnings',
+  'calculations.empty': 'This subject publishes no calculations.',
+  'calculations.progress': '{visible} of {total} calculations · {state}{reason}',
+  'calculations.capped': 'capped by the viewer',
+  'calculations.notAvailable': 'not available',
+  'calculations.sources': 'Sources: {sources}',
+  'graph.nodeTypes': 'Node types',
+  'graph.filterNodeTypes': 'Filter node types',
+  'graph.controls': 'Graph controls',
+  'graph.resetView': 'Reset view',
+  'graph.relation': 'Relation graph',
+  'graph.status': '{nodes} nodes · {edges} edges',
+  'graph.statusRenderer': '{nodes} nodes · {edges} edges · {renderer}',
+  'graph.hint': 'Scroll to zoom · drag the background to pan · drag nodes to move them',
+  'graph.all': 'All',
+  'graph.none': 'None',
+  'graph.filterClasses': 'Filter classes…',
+  'graph.labels': 'Labels',
+  'graph.nodes': 'Nodes',
+  'graph.renderer': 'Renderer',
+  'graph.canvas2d': '2D canvas',
+  'graph.hintOpen':
+    'Drag empty space to pan · drag a node to reposition it · scroll to zoom · double-click a node to open its linked subject',
+  'graph.loadedCounts': 'loaded {nodes} of {totalNodes} nodes and {edges} of {totalEdges} edges',
+  'graph.completeness': '{owner}{state}{reason}',
+  'graph.source': 'source',
+  'graph.view': 'view',
+  'graph.visibleCapped': 'visible selection capped at {count} nodes',
+  'graph.nodeCount': '{visible} / {total} nodes',
+  'graph.edgeCount': '{count} visible edges',
+  'graph.viewer': 'Relation graph viewer',
+  'explorer.actions': 'Explorer actions',
+  'explorer.previewView': 'Preview view',
+  'explorer.openFolder': 'Open folder…',
+  'explorer.openFolderTitle': 'Grant access to a folder and browse it',
+  'explorer.openFile': 'Open file…',
+  'explorer.openFileTitle': 'Open a single file for preview',
+  'explorer.filterFiles': 'Filter files',
+  'explorer.filter': 'Filter',
+  'explorer.opening': 'Opening {name}…',
+  'explorer.noPreview': 'No preview is available for {name}. Supported extensions: {extensions}.',
+  'explorer.previewError': 'Could not preview {name}: {reason}',
+  'explorer.empty': 'Open a folder, or drop a file here to preview it.',
+  'explorer.emptyReadOnly': 'Drop a file here to preview it.',
+  'explorer.openFiles': 'Open files',
+  'explorer.filePath': 'File path',
+  'explorer.view': 'View',
+  'explorer.noFileOpen': 'No file open in this group.',
+  'explorer.close': 'Close',
+  'explorer.closeOthers': 'Close Others',
+  'explorer.closeRight': 'Close to the Right',
+  'explorer.closeAll': 'Close All',
+  'explorer.closeFile': 'Close {name}',
+  'explorer.hex': 'Hex',
+  'explorer.text': 'Text',
+  'explorer.openFolderError': 'Could not open the folder: {reason}',
+  'explorer.openFileError': 'Could not open the file: {reason}',
+  'explorer.defaultApp': 'Set as default app…',
+  'explorer.defaultAppTitle': 'Register this app for the file types it can preview',
+  'explorer.registerError': 'Could not register file types: {reason}',
+  'explorer.changeViewError': 'Could not change view: {reason}',
+  'explorer.tooLarge': '{name} is {size}, over the {limit} preview limit.',
+  'explorer.tooLargeStatus': '{name} — too large',
+  'explorer.noRenderer':
+    'Nothing could render “{name}”. The host publishes no codec for it and no built-in text or hex viewer was configured.',
+  'explorer.noRendererShort': 'Nothing could render “{name}”.',
+  'explorer.noViewer': 'no viewer',
+  'explorer.noViewerStatus': '{name} — no viewer',
+  'explorer.failedStatus': '{name} — failed',
+  'explorer.readingDrop': 'Reading dropped item…',
+  'explorer.dropUnreadable': 'The dropped item could not be read.',
+  'explorer.folderOpened': 'Folder opened. Pick a file in the tree.',
+  'explorer.dropFailed': 'Drop failed: {reason}',
+  'primitives.filter': 'Filter',
+  'primitives.filterOptions': 'Filter options',
+  'primitives.matchCase': 'Match case',
+  'primitives.matchWord': 'Match whole word',
+  'primitives.regex': 'Use regular expression',
+  'primitives.glob': 'Use glob pattern',
+  'primitives.treeActions': '{label} actions',
+  'primitives.nothingToShow': 'Nothing to show.',
+  'primitives.previousMatch': 'Previous match',
+  'primitives.nextMatch': 'Next match',
+  'primitives.invalid': 'invalid',
+  'primitives.invalidRegex': 'Invalid regular expression',
+  'primitives.oneMatch': '1 match',
+  'primitives.matches': '{count} matches',
+  'shell.subjectPath': 'Subject path',
+  'shell.more': 'More',
+  'shell.hiddenSegments': 'Show {count} hidden segment(s)',
+  'shell.viewMode': 'View mode',
+  'shell.viewer': 'Viewer',
+  'workbench.activities': 'Workbench activities',
+  'workbench.facilities': '{label} · {count} facilities',
+  'workbench.hostUnavailable': 'Host unavailable',
+  'workbench.noHostProfile': 'No host profile',
+  'settings.groups': 'Settings groups',
+  'settings.back': '← Back',
+  'settings.appearance': 'Appearance',
+  'settings.colorTheme': 'Color theme',
+  'settings.density': 'Density',
+  'settings.extensions': 'Extensions',
+  'settings.extensionsIntro':
+    'Extensions are data-driven packages. Disable one to keep it installed without loading its contributions.',
+  'settings.noExtensions': 'No extensions are configured yet.',
+  'settings.enableExtension': 'Enable {id}',
+  'settings.extensionId': 'Extension id',
+  'settings.extensionLocation': 'Extension location',
+  'settings.add': 'Add',
+  'settings.browse': 'Browse…',
+  'settings.fileAssociations': 'File associations',
+  'settings.noCodecs': 'No codecs are loaded, so there is nothing to associate.',
+  'settings.associate': 'Associate .{type}',
+  'settings.selectAll': 'Select all',
+  'settings.selectNone': 'Select none',
+  'settings.defaultApp': 'Set as default app',
+  'settings.close': 'Close settings (Esc)',
+  'settings.savedTo': 'Saved to {location}',
+  'settings.saveError': 'Could not save: {reason}',
+  'settings.themeDescription': 'Applies immediately and to every viewer surface.',
+  'settings.densityDescription':
+    'Compact matches VS Code list metrics; comfortable suits touch and larger displays.',
+  'settings.compact': 'Compact',
+  'settings.comfortable': 'Comfortable',
+  'settings.extensionsLocationIntro':
+    'Extensions are listed in {location}. Each entry has an id, a location the host loads from, and an enabled state. The same settings are used by desktop, web and headless hosts.',
+  'settings.extensionPathPlaceholder': 'path, package or URL',
+  'settings.extensionRequired': 'An extension needs both an id and a location.',
+  'settings.associationsDescription':
+    'Make this app the default for the formats its codecs can open. Registration is per-user and reversible from the operating system, and nothing is written until you apply it.',
+  'settings.pickFileType': 'Pick at least one file type first.',
+  'settings.nothingToRegister': 'Nothing to register.',
+  'settings.registerError': 'Could not register: {reason}',
+  'settings.loadedFrom': 'Loaded from {location}',
+  'settings.loadedProblems': 'Loaded with {count} problem(s): {problems}',
+  'metadata.empty': 'No metadata reported by the codec.',
+  'metadata.observedTraits': 'Observed traits',
+  'metadata.subject': 'subject',
+  'metadata.revision': 'revision',
+  'metadata.interpretation': 'interpretation',
+  'metadata.format': 'format',
+  'metadata.codec': 'codec',
+  'metadata.confidence': 'confidence',
+  'metadata.identity': 'identity',
+  'metadata.detection': 'detection',
+  'metadata.trait': 'trait',
+  'metadata.operation': 'operation',
+  'metadata.unresolved': 'unresolved',
+  'metadata.mutatesSource': 'mutates source',
+  'panels.ready': 'Ready',
+  'panels.diagnostics': 'Diagnostics',
+  'panels.operations': 'Operations',
+  'panels.working': 'Working',
+  'panels.operationComplete': '{operation}: complete',
+  'metadata.title': 'Metadata',
+  'metadata.properties': 'Properties',
+  'viewer.gameTemplate': 'Game template',
+  'viewer.table': 'Table viewer',
+  'viewer.tableShape': '{rows} rows, {columns} columns',
+  'viewer.virtualText': 'Virtual text viewer',
+  'viewer.transport': 'Transport controls',
+  'viewer.namespace': 'Namespace tree',
+  'viewer.storedSize': 'stored {size}',
+  'viewer.tree': 'Tree viewer',
+  'viewer.playPause': 'Play or pause',
+  'viewer.seekStart': 'Seek to start',
+  'viewer.normalSpeed': 'Normal speed',
+  'viewer.operationComplete': '{label}: complete',
+  'imageEdit.tools': 'Image tools',
+  'imageEdit.actions': 'Image actions',
+  'imageEdit.tool.select': 'Select a rectangular region',
+  'imageEdit.tool.brush': 'Brush',
+  'imageEdit.tool.eraser': 'Erase to transparent',
+  'imageEdit.tool.line': 'Line',
+  'imageEdit.tool.rect': 'Rectangle',
+  'imageEdit.tool.ellipse': 'Ellipse',
+  'imageEdit.tool.fill': 'Flood fill',
+  'imageEdit.tool.gradient': 'Linear gradient',
+  'imageEdit.tool.eyedropper': 'Pick a colour',
+  'imageEdit.colour': 'Tool colour',
+  'imageEdit.brushSize': 'Brush size',
+  'imageEdit.undoTitle': 'Undo the last edit',
+  'imageEdit.redoTitle': 'Redo the last undone edit',
+  'imageEdit.crop': 'Crop',
+  'imageEdit.cropTitle': 'Crop to the current selection',
+  'imageEdit.applyTitle': 'Commit the edited pixels',
+  'imageEdit.toolStatus': 'tool {tool}',
+  'imageEdit.channelStatus': 'channel {channel}',
+  'imageEdit.noSelection': 'no selection',
+  'imageEdit.selectionStatus': 'selection {width}×{height} at {x},{y}',
+  'imageEdit.undoStatus': '{count} undo',
+  'edit.operation': 'Operation',
+  'edit.mutatingOperation': 'Editing operation',
+  'edit.apply': 'Apply',
+  'edit.lastChange': 'Last change: {change}',
+  'edit.unavailable': 'Editing is unavailable for this subject.',
+  'edit.noOperations': 'This editor provides no operations.',
+  'edit.sessionUnavailable': 'The editing session is unavailable.',
+  'edit.applying': 'Applying…',
+  'edit.applyFailed': 'Could not apply the change: {reason}',
+  'edit.appliedReopening': 'Change applied. Reopening the subject…',
+  'edit.appliedReopenFailed': 'Change applied, but the subject could not be reopened: {reason}',
+  'edit.operation.pngText': 'Set PNG text',
+  'edit.operation.id3Text': 'Set ID3 text frame',
+  'edit.operation.jpegComment': 'Set JPEG comment',
+  'edit.operation.jpegRemove': 'Remove JPEG segment',
+  'edit.operation.archiveAdd': 'Add archive entry',
+  'edit.operation.archiveRemove': 'Remove archive entry',
+  'edit.operation.archiveRename': 'Rename archive entry',
+  'edit.operation.archiveReplace': 'Replace archive entry',
+  'edit.field.name': 'Name',
+  'edit.field.path': 'Path',
+  'edit.field.key': 'Key',
+  'edit.field.value': 'Value',
+  'edit.field.text': 'Text',
+  'edit.field.kind': 'Kind',
+  'edit.field.payloadBase64': 'Payload (Base64)',
+  'edit.field.segmentIndex': 'Segment index',
+  'edit.field.frameId': 'Frame ID',
+  'edit.hint.pngTextKey': '1–79 Latin-1 characters without NUL (Title, Author, Description, …)',
+  'edit.hint.pngTextValue': 'Latin-1 text without NUL',
+  'edit.hint.id3FrameId':
+    'Four-character text frame id: TIT2, TPE1, TALB, … (TXXX uses another shape)',
+  'edit.hint.id3Text': 'ID3 text value',
+  'edit.hint.jpegComment': 'JPEG comment text',
+  'edit.hint.jpegSegmentIndex': 'Zero-based JPEG segment index',
+  'edit.hint.archivePath': 'Path inside the archive',
+  'edit.hint.archiveNewPath': 'New path inside the archive',
+  'edit.hint.payloadBase64': 'Binary payload encoded as Base64',
+  'edit.summary.pngText': 'Sets or replaces one tEXt chunk; every other byte of the file is kept.',
+  'edit.summary.id3Text':
+    'Sets or replaces one ID3v2 text frame, creating the tag when the file has none; the audio is never moved.',
+  'edit.summary.jpegComment':
+    'Writes the COM segment after the APP block, replacing it in place if it exists.',
+  'edit.summary.jpegRemove':
+    'Drops one metadata segment. A marker that carries the image is refused by the codec.',
+  'edit.summary.archiveAdd':
+    'Adds one stored entry and repacks the archive; every kept entry is copied byte for byte.',
+  'edit.summary.archiveRemove':
+    'Removes one entry and repacks; the other entries keep their exact bytes.',
+  'edit.summary.archiveRename': 'Renames one entry without touching its data or its compression.',
+  'edit.summary.archiveReplace':
+    "Replaces one file entry's payload (stored, fresh CRC); nothing else moves.",
+  'edit.status.codecRefused': 'The codec refused this editing operation.',
+  'edit.status.hostRefusedPlan': 'The host refused the edit plan.',
+  'edit.status.formsAvailable': '{count} editing form(s) available.',
+  'edit.status.noneDrivable': 'No available operation has a supported editing form.',
+  'edit.status.unsupportedCount': '{count} operation(s) do not yet have a form.',
+  'edit.status.fidelityUnknown': 'Writer fidelity is unknown.',
+  'edit.field.keyword': 'Keyword',
+  'edit.field.frame': 'Frame',
+  'edit.field.comment': 'Comment',
+  'edit.field.marker': 'Marker',
+  'edit.field.entryPath': 'Entry path',
+  'edit.field.contents': 'Contents',
+  'edit.field.from': 'From',
+  'edit.field.to': 'To',
+  'edit.hint.latin1NoNul': 'Latin-1 text without NUL characters',
+  'edit.hint.metadataMarker': 'Metadata marker name, for example APP0, APP1, or COM',
+  'edit.hint.archiveExistingPath': 'Path of an entry the archive already contains',
+  'edit.hint.archiveContent': 'Text; this host sends it as UTF-8 bytes',
+  'edit.hint.archiveRenameType':
+    'A file cannot be renamed into a directory marker, or the other way around',
+  'edit.required': '{field} is required',
+  'edit.unsupportedInput': 'this host cannot construct the input for «{handler}» yet',
+  'edit.invokeRefused': 'refused: {reason}',
+  'edit.invokeRefusedCode': 'refused: {reason} ({code})',
+  'edit.invokeRefusedDetail': '{head} — {detail}',
+  'edit.operationReturnedWrongKind': 'the operation returned «{kind}», not an edit plan',
+  'edit.returnedNothing': 'nothing',
+  'edit.fidelityUnknownBytes':
+    ' (this rewrite does not keep bytes the format does not account for)',
+  'edit.fidelityNotes': ' ({notes})',
+  'edit.refusal.notDeclared': 'this codec does not declare that operation',
+  'edit.refusal.disabled': 'the codec disabled this operation for this file',
+  'edit.refusal.dependencyRequired': 'the operation needs a dependency this host has not resolved',
+  'edit.refusal.permissionMissing': 'this session was not opened with permission to write the file',
+  'edit.refusal.inputNotSerializable': 'the values could not be sent to the codec',
+  'edit.refusal.handlerUnregistered': 'the codec registered no handler for that operation',
+  'edit.refusal.cancelled': 'the operation was cancelled',
+  'edit.refusal.staleRevision': 'the file changed on disk after it was opened',
 })
 
-export type UiMessageKey = keyof typeof EN_MESSAGES
+export type CoreUiMessageKey = keyof typeof EN_MESSAGES
+/** UI message keys must contain a namespace segment, including keys owned by extensions. */
+export type UiMessageKey = CoreUiMessageKey | `${string}.${string}`
 export type UiMessageValues = Readonly<Record<string, string | number>>
-export type UiMessageCatalog = Readonly<Record<UiMessageKey, string>>
+export type UiMessageCatalog = Readonly<Record<string, string>>
 
-const RU_MESSAGES: UiMessageCatalog = Object.freeze({
+const RU_MESSAGES: Readonly<Record<CoreUiMessageKey, string>> = Object.freeze({
   'app.title': 'Modkit MK3',
   'app.starting': 'Запуск Modkit MK3…',
   'action.openFile': 'Открыть файл…',
@@ -58,11 +610,11 @@ const RU_MESSAGES: UiMessageCatalog = Object.freeze({
   'action.enableEditing': 'Разрешить редактирование',
   'action.enableEditingTitle': 'Запросить у браузера право записи в выбранный файл или папку',
   'action.restartSession': 'Перезапустить сеанс',
-  'action.restartSessionTitle': 'Перезагрузить Modkit после остановки рабочего процесса кодеков',
+  'action.restartSessionTitle': 'Перезагрузить Modkit после остановки процесса кодеков',
   'settings.bundled': 'Встроенные расширения',
   'settings.bundledExcluded': 'Встроены, но здесь не опубликованы',
   'settings.bundledDescription':
-    'Расширений аттестовано при сборке: {count}. Они публикуются с этого origin в extensions/ и доступны только для чтения: {reason}.',
+    'Расширений аттестовано при сборке: {count}. Они публикуются с этого сервера в extensions/ и доступны только для чтения: {reason}.',
   'sidebar.host': 'Хост',
   'sidebar.facilities': 'Возможности',
   'sidebar.samples': 'Примеры с сервера',
@@ -73,39 +625,778 @@ const RU_MESSAGES: UiMessageCatalog = Object.freeze({
   'locale.ru': 'Русский',
   'common.yes': 'да',
   'common.no': 'нет',
+  'common.enable': 'Включить',
+  'common.disable': 'Отключить',
+  'common.enabled': 'Включено',
+  'common.disabled': 'Отключено',
+  'common.install': 'Установить',
+  'common.update': 'Обновить',
+  'common.remove': 'Удалить',
+  'common.dismiss': 'Скрыть',
+  'common.loading': 'Загрузка…',
+  'common.none': 'Нет',
+  'common.notInstalled': 'Не установлено',
+  'common.loaded': 'Загружено',
+  'common.active': 'Активно',
+  'common.inactive': 'Неактивно',
   'activity.files': 'Файлы',
   'activity.explorer': 'Проводник',
   'activity.host': 'Хост',
   'activity.hostTitle': 'Показать или скрыть панель хоста',
-  'activity.info': 'Инфо',
+  'activity.info': 'Информация',
   'activity.infoTitle': 'Показать или скрыть диагностику и операции',
   'activity.settings': 'Настройки',
   'status.noFileEditable': 'Файл ещё не открыт — редактировать пока нечего.',
-  'status.workerUnavailable':
-    'Рабочий процесс кодеков остановлен · перезапустите сеанс, чтобы продолжить',
+  'status.workerUnavailable': 'Процесс кодеков остановлен · перезапустите сеанс, чтобы продолжить',
   'status.ready': 'Готово · расширений: {extensions} · сообщений запуска: {notices}',
   'confirm.discardAndRestart':
     'В открытых вкладках есть несохранённые изменения. Перезапустить сеанс и удалить их?',
   'error.openFile': 'Не удалось открыть файл: {reason}',
   'error.drop': 'Не удалось принять файл: {reason}',
-  'error.fetch': 'Не удалось загрузить {path} с этого origin.',
+  'error.fetch': 'Не удалось загрузить {path} с этого сервера.',
+  'extensions.title': 'Расширения',
+  'extensions.contributions': 'Возможности',
+  'extensions.subjects': 'Субъекты',
+  'extensions.downloadable': 'Доступны для загрузки',
+  'extensions.connected': 'Подключены',
+  'extensions.bundled': 'Встроены',
+  'extensions.notAdded': 'Не добавлены',
+  'extensions.shippedNotLoaded': 'Поставлены, но не загружены',
+  'extensions.addFolder': 'Добавить папку расширения…',
+  'extensions.refreshCatalog': 'Обновить каталог',
+  'extensions.checkCatalog': 'Проверить каталог',
+  'extensions.grantAccess': 'Разрешить доступ',
+  'extensions.emptySubjects': 'Нет доступных субъектов расширений.',
+  'extensions.emptyFolders': 'Папки расширений ещё не добавлены.',
+  'extensions.emptyManagerProblems': 'Менеджер расширений не нашёл проблем.',
+  'extensions.group.available': 'Доступные',
+  'extensions.group.installed': 'Установленные',
+  'extensions.group.enabled': 'Включённые',
+  'extensions.group.updates': 'Обновления',
+  'extensions.group.problems': 'Проблемы',
+  'extensions.contract.codecs': 'Кодеки',
+  'extensions.contract.editors': 'Редакторы',
+  'extensions.contract.services': 'Сервисы',
+  'extensions.contract.viewers': 'Средства просмотра',
+  'extensions.contract.languages': 'Языки',
+  'extensions.contract.renderers': 'Средства рендеринга',
+  'extensions.contract.runtimes': 'Среды выполнения',
+  'extensions.contract.commands': 'Команды',
+  'extensions.contract.ui': 'Интерфейс',
+  'extensions.contract.contracts': 'Контракты возможностей',
+  'extensions.contract.other': 'Другие возможности',
+  'extensions.contract.invalid': 'Ошибочные возможности',
+  'extensions.contract.custom': 'Возможности: {name}',
+  'extensions.state.reloadPending': 'Ожидает перезагрузки',
+  'extensions.state.afterReload': 'Изменение вступит в силу после перезагрузки',
+  'extensions.tooltip.invalidContract': 'Некорректный контракт возможности',
+  'extensions.tooltip.exactContract': 'Точный контракт: {contract}',
+  'extensions.tooltip.contract': 'Контракт: {contract}',
+  'extensions.tooltip.state': 'Состояние: {state}',
+  'extensions.tooltip.origin': 'Источник: {origin}',
+  'extensions.tooltip.source': 'Расположение: {source}',
+  'extensions.tooltip.trustedPublisher': 'Доверенный издатель',
+  'extensions.tooltip.unverifiedPublisher': 'Издатель не проверен',
+  'extensions.action.openContributionCard': 'Открыть карточку возможности',
+  'extensions.action.updateExtension': 'Обновить расширение',
+  'extensions.action.openExtensionCard': 'Открыть карточку расширения',
+  'extensions.action.enablePackage': 'Включить пакет',
+  'extensions.action.linkExtension': 'Подключить расширение',
+  'extensions.action.disableContribution': 'Отключить возможность',
+  'extensions.action.enableContribution': 'Включить возможность',
+  'extensions.action.disableExtension': 'Отключить расширение',
+  'extensions.action.enableExtension': 'Включить расширение',
+  'extensions.action.reloadWindow': 'Перезагрузить окно',
+  'extensions.status.configurationUpdated': 'Настройки расширений обновлены.',
+  'extensions.status.reloadRequired': '{id}: состояние «{state}» сохранено. Перезагрузите окно.',
+  'viewer.audio': 'Просмотр аудио',
+  'viewer.audioControls': 'Управление аудио',
+  'viewer.audioDecodeError':
+    'Системный декодер не может открыть это аудио: {reason}. Нужен декодер этого формата.',
+  'viewer.audioSummary': '{position} / {duration} · каналов: {channels} · {rate} кГц · {size} КиБ',
+  'viewer.text': 'Просмотр текста',
+  'viewer.searchText': 'Поиск в тексте',
+  'viewer.search': 'Найти',
+  'viewer.ready': 'Готово',
+  'viewer.textContent': 'Содержимое текста',
+  'viewer.enterSearch': 'Введите текст для поиска',
+  'viewer.searching': 'Поиск…',
+  'viewer.searchMatches': 'Совпадений: {count}',
+  'viewer.searchMatch': 'Совпадений: {count}',
+  'viewer.image': 'Просмотр изображения',
+  'viewer.imageControls': 'Управление изображением',
+  'viewer.fit': 'Вместить',
+  'viewer.fitTitle': 'Вместить изображение в область просмотра',
+  'viewer.actualPixels': 'Настоящий размер',
+  'viewer.zoomOut': 'Уменьшить',
+  'viewer.zoomIn': 'Увеличить',
+  'viewer.cycleBackdrop': 'Сменить фон',
+  'viewer.isolateChannel': 'Показать только канал {channel}',
+  'viewer.imageDecodeError':
+    'Системный декодер не может открыть эти данные: {reason}. Нужен декодер этого формата.',
+  'viewer.imageSummary': '{width}×{height} · {size} КиБ · {scale}%{channel}',
+  'viewer.imageChannel': ' · канал {channel}',
+  'viewer.video': 'Просмотр видео',
+  'viewer.videoSummary': 'Видео: {video} · аудио: {audio} · {duration}',
+  'viewer.durationUnknown': 'длительность неизвестна',
+  'viewer.videoPlayError': 'Система не может воспроизвести это видео: {reason}',
+  'viewer.vector': 'Просмотр векторного изображения',
+  'viewer.vectorPreview': 'Предпросмотр векторной сцены',
+  'viewer.vectorSummary': 'Узлов: {nodes} · путей: {paths} · фигур: {shapes} · текста: {text}',
+  'viewer.vectorError': 'Не удалось безопасно показать векторную сцену: {reason}',
+  'viewer.world': 'Просмотр мира',
+  'viewer.worldPreview': 'Вид мира сверху',
+  'viewer.worldEmpty': 'Метаданные мира доступны, но нет объектов или поверхности для показа.',
+  'viewer.worldError': 'Не удалось показать мир: {reason}',
+  'viewer.worldSummary': '{map} · слоёв: {layers} · элементов: {items}{bounded}',
+  'viewer.boundedPreview': ' · ограниченный предпросмотр',
+  'viewer.mixedWorkspace': 'Совместное рабочее пространство',
+  'viewer.composition': 'Совместный вид мира и модели',
+  'viewer.compositionSummary': 'Наложений: {overlays} · ресурсов: {resources} · только просмотр',
+  'viewer.compositionError': 'Не удалось показать совместный вид: {reason}',
+  'viewer.model': 'Просмотр модели',
+  'viewer.modelView': 'Вид модели',
+  'viewer.modelDetails': 'Сведения о модели',
+  'viewer.modelPrimitive': 'Часть модели',
+  'viewer.modelGeometryUnavailable':
+    'Метаданные сцены доступны. Для геометрии нужен поставщик буферов или рендеринга.',
+  'viewer.modelError': 'Не удалось показать сцену модели: {reason}',
+  'viewer.modelSummary':
+    'Узлов: {nodes} · сеток: {meshes} · частей: {primitives} · материалов: {materials} · анимаций: {animations}{facets}',
+  'viewer.reset': 'Сбросить',
+  'viewer.resetCamera': 'Вернуть камеру в исходное положение',
+  'viewer.modelResources': 'ресурсы',
+  'viewer.modelBones': 'кости',
+  'viewer.modelClips': 'анимации',
+  'viewer.modelCollision': 'столкновения',
+  'viewer.modelMaterials': 'материалы',
+  'viewer.modelSockets': 'точки крепления',
+  'viewer.modelParent': 'родитель: {parent}',
+  'viewer.modelUnnamed': '(без имени)',
+  'viewer.modelNoNamedFlags': 'нет именованных флагов',
+  'viewer.modelClipDetail': 'кадров: {frames} · каналов: {channels} · отсчётов: {samples}',
+  'viewer.modelMaterial': 'материал',
+  'viewer.modelBlendUnknown': 'режим смешивания неизвестен',
+  'viewer.modelLayers': 'слоёв: {count}',
+  'viewer.viewAxis': 'Ось вида',
+  'viewer.viewFromAxis': 'Вид со стороны {axis}',
+  'viewer.hex': 'Просмотр байтов',
+  'viewer.byteOffset': 'Смещение байта',
+  'viewer.go': 'Перейти',
+  'viewer.hexEditing': 'Редактирование байтов',
+  'viewer.save': 'Сохранить',
+  'viewer.revert': 'Вернуть',
+  'viewer.undo': 'Отменить',
+  'viewer.redo': 'Повторить',
+  'viewer.editingActions': 'Действия редактора',
+  'viewer.editableText': 'Редактируемый текст',
+  'viewer.saveCancelled': 'Сохранение отменено',
+  'viewer.saveRejected': 'Сохранение отклонено',
+  'viewer.saved': 'Сохранено',
+  'viewer.editText': 'Изменить текст',
+  'viewer.editBytes': 'Изменить байты',
+  'editor.text': 'Текстовый редактор',
+  'editor.hex': 'Редактор байтов',
+  'editor.validating': 'Проверка…',
+  'editor.validationRejected': 'Изменение не прошло проверку',
+  'editor.conflictChanged': 'Конфликт: источник изменился',
+  'editor.saving': 'Сохранение…',
+  'editor.savingProgress': 'Сохранение… {progress}',
+  'editor.notSaved': 'Не сохранено',
+  'editor.rolledBack': 'Ошибка записи; изменения отменены',
+  'editor.partiallySaved': 'Сохранено частично; доступно восстановление',
+  'editor.actionCancelled': 'Действие «{action}» отменено',
+  'editor.undone': 'Изменение отменено',
+  'editor.redone': 'Изменение повторено',
+  'editor.actionRejected': 'Действие «{action}» отклонено',
+  'editor.actionFailed': 'Действие «{action}» завершилось ошибкой',
+  'editor.sourceUpdated': 'Источник обновлён; проверьте его перед сохранением',
+  'editor.bytesChanged': 'Изменено байтов: {count}',
+  'editor.rejectedValidation': 'Отклонено проверкой',
+  'editor.rejectedReason': 'Отклонено: {reason}',
+  'editor.notAuthorized': 'Нет разрешения',
+  'editor.prepareRejected': 'Подготовка отклонена: {reason}',
+  'editor.saveState': 'Сохранение: {state}',
+  'editor.committedRanges':
+    'Сохранено диапазонов: {count} — откройте файл заново перед следующим изменением',
+  'editor.saveFailed': 'Ошибка сохранения: {reason}',
+  'editor.saveRejectedReason': 'Сохранение отклонено: {reason}',
+  'editor.saved': 'Сохранено',
+  'editor.nothingPrepared': 'Нет подготовленных изменений для сохранения',
+  'editor.nothingToSave': 'Нет изменений для сохранения',
+  'editor.saveRefused': 'Сохранение отклонено: {reason}',
+  'editor.saveRefusedCode': 'Сохранение отклонено: {reason} ({code})',
+  'editor.saveConflict':
+    'Сохранение отклонено: файл изменился на диске, пока был открыт (конфликтов: {count})',
+  'editor.writerRejected': 'Модуль записи отклонил изменение',
+  'editor.replayUnsupported': 'Этот хост пока не умеет повторно применять сохранённые изменения',
+  'editor.undoRefused': 'Отмена отклонена: {reason}',
+  'editor.redoRefused': 'Повтор отклонён: {reason}',
+  'editor.inlinePayloadOnly':
+    'Этот хост не хранит данные отдельно: изменения передаются внутри операции',
+  'editor.changeSetEditsRequired': 'Набор изменений редактора должен содержать массив `edits`',
+  'editor.editObjectRequired': 'Изменение должно быть объектом',
+  'editor.noEditTarget': 'Субъект не предоставляет цель, к которой можно применить изменение',
+  'editor.legacyPayloadRequired':
+    'Старый формат изменения должен содержать встроенные или текстовые данные',
+  'editor.refusal.planInvalid': 'изменение некорректно описывает правку этого файла',
+  'editor.refusal.permissionMissing': 'этому сеансу не разрешено записывать файл',
+  'editor.refusal.writeScopeMismatch': 'в изменении указан файл вне разрешённой области записи',
+  'editor.refusal.guaranteeUnachievable': 'хост не может обеспечить требуемую безопасность записи',
+  'editor.refusal.fidelityUnproven':
+    'нет подтверждения заявленной точности записи для этого изменения',
+  'editor.refusal.confirmationRequired':
+    'запись с потерями требует подтверждения, которое этот хост пока не запрашивает',
+  'editor.refusal.payloadUnavailable': 'изменённые данные не дошли до модуля записи',
+  'editor.refusal.staleRevision': 'файл изменился на диске после подготовки изменения',
+  'editor.refusal.cancelled': 'сохранение отменено',
+  'viewer.byteAt': 'байт по адресу {offset}',
+  'viewer.characterAt': 'символ по адресу {offset}',
+  'viewer.loadNextPage': 'Загрузить следующую страницу',
+  'viewer.nextRows': 'Следующие строки',
+  'viewer.loading': 'Загрузка',
+  'viewer.loadingTemplate': 'Загрузка шаблона…',
+  'viewer.templateUnavailable': 'Шаблон недоступен: {reason}',
+  'viewer.noDisplayItems': 'Нет элементов для показа.',
+  'viewer.displayCapped': 'Показано не больше {maximum} из {count} элементов.',
+  'viewer.resolvedSemanticTree': 'Итоговое смысловое дерево',
+  'viewer.namedRemainder': 'Неподдержанных частей: {count}',
+  'card.relatedSubjects': 'Связанные субъекты',
+  'card.locale': 'Язык',
+  'card.descriptionUnavailable': 'Описание пока недоступно.',
+  'card.loadingDescription': 'Загрузка описания…',
+  'card.sections': 'Разделы: {label}',
+  'card.subject': 'Карточка субъекта',
+  'card.factGroupsCapped': 'Число групп свойств ограничено.',
+  'card.relatedCapped': 'Число связанных субъектов ограничено.',
+  'card.capped': '{label} (показана часть)',
+  'card.namedSubject': 'Карточка субъекта «{label}»',
+  'card.extension.group.overview': 'Обзор',
+  'card.extension.group.state': 'Состояние',
+  'card.extension.group.declaration': 'Описание',
+  'card.extension.group.specification': 'Спецификация',
+  'card.extension.group.contracts': 'Контракты',
+  'card.extension.fact.id': 'Идентификатор расширения',
+  'card.extension.fact.displayName': 'Отображаемое имя',
+  'card.extension.fact.publisher': 'Издатель',
+  'card.extension.fact.version': 'Версия',
+  'card.extension.fact.license': 'Лицензия',
+  'card.extension.fact.description': 'Описание',
+  'card.extension.fact.homepage': 'Домашняя страница',
+  'card.extension.fact.source': 'Источник',
+  'card.extension.fact.trusted': 'Доверенный источник',
+  'card.extension.fact.enabled': 'Расширение включено',
+  'card.extension.fact.contributionCount': 'Возможности',
+  'card.extension.fact.contractCount': 'Контракты',
+  'card.contribution.fact.id': 'Идентификатор возможности',
+  'card.contribution.fact.displayName': 'Отображаемое имя',
+  'card.contribution.fact.ownerExtension': 'Расширение-владелец',
+  'card.contribution.fact.contractId': 'Контракт',
+  'card.contribution.fact.contractMajor': 'Основная версия контракта',
+  'card.contribution.fact.contractCoordinate': 'Координата контракта',
+  'card.contribution.fact.status': 'Состояние',
+  'card.contribution.fact.enabled': 'Возможность включена',
+  'card.contribution.fact.effectiveEnabled': 'Действительно включена',
+  'card.contribution.fact.dependencies': 'Зависимости',
+  'card.contribution.fact.limitations': 'Ограничения',
+  'card.contribution.fact.runtimeVariants': 'Варианты среды выполнения',
+  'card.contribution.fact.specification': 'Спецификация',
+  'calculations.label': 'Расчёты субъекта',
+  'calculations.summary': 'Расчётов: {count} · предупреждений: {warnings}',
+  'calculations.empty': 'Этот субъект не предоставляет расчётов.',
+  'calculations.progress': 'Показано {visible} из {total} расчётов · {state}{reason}',
+  'calculations.capped': 'ограничено средством просмотра',
+  'calculations.notAvailable': 'недоступно',
+  'calculations.sources': 'Источники: {sources}',
+  'graph.nodeTypes': 'Типы узлов',
+  'graph.filterNodeTypes': 'Фильтр типов узлов',
+  'graph.controls': 'Управление графом',
+  'graph.resetView': 'Сбросить вид',
+  'graph.relation': 'Граф связей',
+  'graph.status': 'Узлов: {nodes} · связей: {edges}',
+  'graph.statusRenderer': 'Узлов: {nodes} · связей: {edges} · {renderer}',
+  'graph.hint': 'Колесо меняет масштаб · фон перемещает вид · узлы можно перетаскивать',
+  'graph.all': 'Все',
+  'graph.none': 'Ничего',
+  'graph.filterClasses': 'Фильтр классов…',
+  'graph.labels': 'Подписи',
+  'graph.nodes': 'Узлы',
+  'graph.renderer': 'Рендерер',
+  'graph.canvas2d': 'Холст 2D',
+  'graph.hintOpen':
+    'Пустой фон перемещает вид · узлы можно перетаскивать · колесо меняет масштаб · двойной щелчок открывает связанный субъект',
+  'graph.loadedCounts': 'загружено узлов: {nodes} из {totalNodes}, связей: {edges} из {totalEdges}',
+  'graph.completeness': '{owner}{state}{reason}',
+  'graph.source': 'источник',
+  'graph.view': 'представление',
+  'graph.visibleCapped': 'видимая выборка ограничена: {count} узлов',
+  'graph.nodeCount': 'Узлов: {visible} / {total}',
+  'graph.edgeCount': 'Видимых связей: {count}',
+  'graph.viewer': 'Просмотр графа связей',
+  'explorer.actions': 'Действия проводника',
+  'explorer.previewView': 'Вид предпросмотра',
+  'explorer.openFolder': 'Открыть папку…',
+  'explorer.openFolderTitle': 'Разрешить доступ к папке и открыть её',
+  'explorer.openFile': 'Открыть файл…',
+  'explorer.openFileTitle': 'Открыть один файл для предпросмотра',
+  'explorer.filterFiles': 'Фильтр файлов',
+  'explorer.filter': 'Фильтр',
+  'explorer.opening': 'Открывается {name}…',
+  'explorer.noPreview': 'Для {name} нет предпросмотра. Поддерживаемые расширения: {extensions}.',
+  'explorer.previewError': 'Не удалось показать {name}: {reason}',
+  'explorer.empty': 'Откройте папку или перетащите сюда файл.',
+  'explorer.emptyReadOnly': 'Перетащите сюда файл для предпросмотра.',
+  'explorer.openFiles': 'Открытые файлы',
+  'explorer.filePath': 'Путь к файлу',
+  'explorer.view': 'Вид',
+  'explorer.noFileOpen': 'В этой группе нет открытого файла.',
+  'explorer.close': 'Закрыть',
+  'explorer.closeOthers': 'Закрыть остальные',
+  'explorer.closeRight': 'Закрыть справа',
+  'explorer.closeAll': 'Закрыть все',
+  'explorer.closeFile': 'Закрыть {name}',
+  'explorer.hex': 'Байты',
+  'explorer.text': 'Текст',
+  'explorer.openFolderError': 'Не удалось открыть папку: {reason}',
+  'explorer.openFileError': 'Не удалось открыть файл: {reason}',
+  'explorer.defaultApp': 'Сделать приложением по умолчанию…',
+  'explorer.defaultAppTitle': 'Связать приложение с типами файлов, которые оно показывает',
+  'explorer.registerError': 'Не удалось связать типы файлов: {reason}',
+  'explorer.changeViewError': 'Не удалось сменить вид: {reason}',
+  'explorer.tooLarge': 'Размер {name} — {size}, это больше предела предпросмотра {limit}.',
+  'explorer.tooLargeStatus': '{name} — слишком большой файл',
+  'explorer.noRenderer':
+    'Не удалось показать «{name}»: хост не предоставляет кодек, а встроенный просмотр текста или байтов не настроен.',
+  'explorer.noRendererShort': 'Не удалось показать «{name}».',
+  'explorer.noViewer': 'нет средства просмотра',
+  'explorer.noViewerStatus': '{name} — нет средства просмотра',
+  'explorer.failedStatus': '{name} — ошибка',
+  'explorer.readingDrop': 'Чтение перетащенного элемента…',
+  'explorer.dropUnreadable': 'Не удалось прочитать перетащенный элемент.',
+  'explorer.folderOpened': 'Папка открыта. Выберите файл в дереве.',
+  'explorer.dropFailed': 'Ошибка перетаскивания: {reason}',
+  'primitives.filter': 'Фильтр',
+  'primitives.filterOptions': 'Параметры фильтра',
+  'primitives.matchCase': 'Учитывать регистр',
+  'primitives.matchWord': 'Только целые слова',
+  'primitives.regex': 'Регулярное выражение',
+  'primitives.glob': 'Шаблон пути',
+  'primitives.treeActions': 'Действия: {label}',
+  'primitives.nothingToShow': 'Нечего показывать.',
+  'primitives.previousMatch': 'Предыдущее совпадение',
+  'primitives.nextMatch': 'Следующее совпадение',
+  'primitives.invalid': 'ошибка',
+  'primitives.invalidRegex': 'Некорректное регулярное выражение',
+  'primitives.oneMatch': '1 совпадение',
+  'primitives.matches': 'Совпадений: {count}',
+  'shell.subjectPath': 'Путь субъекта',
+  'shell.more': 'Ещё',
+  'shell.hiddenSegments': 'Показать скрытые сегменты: {count}',
+  'shell.viewMode': 'Режим просмотра',
+  'shell.viewer': 'Средство просмотра',
+  'workbench.activities': 'Разделы рабочего пространства',
+  'workbench.facilities': '{label} · возможностей: {count}',
+  'workbench.hostUnavailable': 'Хост недоступен',
+  'workbench.noHostProfile': 'Профиль хоста отсутствует',
+  'settings.groups': 'Группы настроек',
+  'settings.back': '← Назад',
+  'settings.appearance': 'Внешний вид',
+  'settings.colorTheme': 'Цветовая тема',
+  'settings.density': 'Плотность',
+  'settings.extensions': 'Расширения',
+  'settings.extensionsIntro':
+    'Расширения — это пакеты данных. Отключённое расширение остаётся установленным, но его возможности не загружаются.',
+  'settings.noExtensions': 'Расширения ещё не настроены.',
+  'settings.enableExtension': 'Включить {id}',
+  'settings.extensionId': 'Идентификатор расширения',
+  'settings.extensionLocation': 'Расположение расширения',
+  'settings.add': 'Добавить',
+  'settings.browse': 'Обзор…',
+  'settings.fileAssociations': 'Связи типов файлов',
+  'settings.noCodecs': 'Кодеки не загружены, поэтому связывать пока нечего.',
+  'settings.associate': 'Связать .{type}',
+  'settings.selectAll': 'Выбрать все',
+  'settings.selectNone': 'Снять выбор',
+  'settings.defaultApp': 'Сделать приложением по умолчанию',
+  'settings.close': 'Закрыть настройки (Esc)',
+  'settings.savedTo': 'Сохранено в {location}',
+  'settings.saveError': 'Не удалось сохранить: {reason}',
+  'settings.themeDescription': 'Применяется сразу ко всем средствам просмотра.',
+  'settings.densityDescription':
+    'Компактный режим соответствует спискам VS Code; удобный подходит для сенсорного экрана и крупных окон.',
+  'settings.compact': 'Компактно',
+  'settings.comfortable': 'Удобно',
+  'settings.extensionsLocationIntro':
+    'Расширения перечислены в {location}. У каждой записи есть идентификатор, расположение для загрузки и состояние. Одни настройки используются в настольном приложении, браузере и фоновом режиме.',
+  'settings.extensionPathPlaceholder': 'путь, пакет или URL',
+  'settings.extensionRequired': 'Для расширения нужны идентификатор и расположение.',
+  'settings.associationsDescription':
+    'Сделать приложение основным для форматов, которые открывают его кодеки. Настройка действует только для пользователя, отменяется средствами системы и применяется только по кнопке.',
+  'settings.pickFileType': 'Сначала выберите хотя бы один тип файла.',
+  'settings.nothingToRegister': 'Нет типов для регистрации.',
+  'settings.registerError': 'Не удалось зарегистрировать: {reason}',
+  'settings.loadedFrom': 'Загружено из {location}',
+  'settings.loadedProblems': 'Загружено с проблемами ({count}): {problems}',
+  'metadata.empty': 'Кодек не сообщил метаданные.',
+  'metadata.observedTraits': 'Обнаруженные признаки',
+  'metadata.subject': 'субъект',
+  'metadata.revision': 'версия',
+  'metadata.interpretation': 'представление',
+  'metadata.format': 'формат',
+  'metadata.codec': 'кодек',
+  'metadata.confidence': 'уверенность',
+  'metadata.identity': 'идентичность',
+  'metadata.detection': 'распознавание',
+  'metadata.trait': 'признак',
+  'metadata.operation': 'операция',
+  'metadata.unresolved': 'не распознано',
+  'metadata.mutatesSource': 'изменяет источник',
+  'panels.ready': 'Готово',
+  'panels.diagnostics': 'Диагностика',
+  'panels.operations': 'Операции',
+  'panels.working': 'Выполнение',
+  'panels.operationComplete': '{operation}: выполнено',
+  'metadata.title': 'Метаданные',
+  'metadata.properties': 'Свойства',
+  'viewer.gameTemplate': 'Игровой шаблон',
+  'viewer.table': 'Просмотр таблицы',
+  'viewer.tableShape': 'Строк: {rows}, столбцов: {columns}',
+  'viewer.virtualText': 'Постраничный просмотр текста',
+  'viewer.transport': 'Управление воспроизведением',
+  'viewer.namespace': 'Дерево пространства имён',
+  'viewer.storedSize': 'хранится {size}',
+  'viewer.tree': 'Просмотр дерева',
+  'viewer.playPause': 'Воспроизвести или приостановить',
+  'viewer.seekStart': 'Перейти в начало',
+  'viewer.normalSpeed': 'Обычная скорость',
+  'viewer.operationComplete': '{label}: выполнено',
+  'imageEdit.tools': 'Инструменты изображения',
+  'imageEdit.actions': 'Действия с изображением',
+  'imageEdit.tool.select': 'Выбрать прямоугольную область',
+  'imageEdit.tool.brush': 'Кисть',
+  'imageEdit.tool.eraser': 'Стереть до прозрачности',
+  'imageEdit.tool.line': 'Линия',
+  'imageEdit.tool.rect': 'Прямоугольник',
+  'imageEdit.tool.ellipse': 'Эллипс',
+  'imageEdit.tool.fill': 'Заливка',
+  'imageEdit.tool.gradient': 'Линейный градиент',
+  'imageEdit.tool.eyedropper': 'Выбрать цвет',
+  'imageEdit.colour': 'Цвет инструмента',
+  'imageEdit.brushSize': 'Размер кисти',
+  'imageEdit.undoTitle': 'Отменить последнее изменение',
+  'imageEdit.redoTitle': 'Повторить последнее отменённое изменение',
+  'imageEdit.crop': 'Обрезать',
+  'imageEdit.cropTitle': 'Обрезать до выбранной области',
+  'imageEdit.applyTitle': 'Применить изменённые пиксели',
+  'imageEdit.toolStatus': 'инструмент: {tool}',
+  'imageEdit.channelStatus': 'канал: {channel}',
+  'imageEdit.noSelection': 'нет выбранной области',
+  'imageEdit.selectionStatus': 'выбрано {width}×{height} в точке {x},{y}',
+  'imageEdit.undoStatus': 'отмен доступно: {count}',
+  'edit.operation': 'Операция',
+  'edit.mutatingOperation': 'Операция изменения',
+  'edit.apply': 'Применить',
+  'edit.lastChange': 'Последнее изменение: {change}',
+  'edit.unavailable': 'Редактирование этого субъекта недоступно.',
+  'edit.noOperations': 'Этот редактор не предоставляет операций.',
+  'edit.sessionUnavailable': 'Сеанс редактирования недоступен.',
+  'edit.applying': 'Применение…',
+  'edit.applyFailed': 'Не удалось применить изменение: {reason}',
+  'edit.appliedReopening': 'Изменение применено. Субъект открывается заново…',
+  'edit.appliedReopenFailed': 'Изменение применено, но субъект не удалось открыть заново: {reason}',
+  'edit.operation.pngText': 'Задать текст PNG',
+  'edit.operation.id3Text': 'Задать текстовый кадр ID3',
+  'edit.operation.jpegComment': 'Задать комментарий JPEG',
+  'edit.operation.jpegRemove': 'Удалить сегмент JPEG',
+  'edit.operation.archiveAdd': 'Добавить файл в архив',
+  'edit.operation.archiveRemove': 'Удалить файл из архива',
+  'edit.operation.archiveRename': 'Переименовать файл в архиве',
+  'edit.operation.archiveReplace': 'Заменить файл в архиве',
+  'edit.field.name': 'Имя',
+  'edit.field.path': 'Путь',
+  'edit.field.key': 'Ключ',
+  'edit.field.value': 'Значение',
+  'edit.field.text': 'Текст',
+  'edit.field.kind': 'Тип',
+  'edit.field.payloadBase64': 'Данные (Base64)',
+  'edit.field.segmentIndex': 'Номер сегмента',
+  'edit.field.frameId': 'Идентификатор кадра',
+  'edit.hint.pngTextKey': 'От 1 до 79 символов Latin-1 без NUL (Title, Author, Description, …)',
+  'edit.hint.pngTextValue': 'Текст Latin-1 без NUL',
+  'edit.hint.id3FrameId':
+    'Четырёхсимвольный id текстового кадра: TIT2, TPE1, TALB, … (у TXXX другая структура)',
+  'edit.hint.id3Text': 'Текстовое значение ID3',
+  'edit.hint.jpegComment': 'Текст комментария JPEG',
+  'edit.hint.jpegSegmentIndex': 'Номер сегмента JPEG с нуля',
+  'edit.hint.archivePath': 'Путь внутри архива',
+  'edit.hint.archiveNewPath': 'Новый путь внутри архива',
+  'edit.hint.payloadBase64': 'Двоичные данные в кодировке Base64',
+  'edit.summary.pngText': 'Задаёт или заменяет один блок tEXt; остальные байты файла сохраняются.',
+  'edit.summary.id3Text':
+    'Задаёт или заменяет текстовый кадр ID3v2 и при необходимости создаёт тег; аудиоданные не перемещаются.',
+  'edit.summary.jpegComment':
+    'Записывает сегмент COM после блока APP или заменяет существующий на том же месте.',
+  'edit.summary.jpegRemove':
+    'Удаляет один сегмент метаданных; кодек не позволит удалить маркер с данными изображения.',
+  'edit.summary.archiveAdd':
+    'Добавляет одну запись и пересобирает архив; сохранённые записи копируются байт в байт.',
+  'edit.summary.archiveRemove':
+    'Удаляет одну запись и пересобирает архив; байты остальных записей не меняются.',
+  'edit.summary.archiveRename': 'Переименовывает запись, не изменяя её данные и способ сжатия.',
+  'edit.summary.archiveReplace':
+    'Заменяет данные одной файловой записи с новым CRC; остальные записи не перемещаются.',
+  'edit.status.codecRefused': 'Кодек отклонил эту операцию изменения.',
+  'edit.status.hostRefusedPlan': 'Хост отклонил план изменения.',
+  'edit.status.formsAvailable': 'Доступно форм редактирования: {count}.',
+  'edit.status.noneDrivable': 'Для доступных операций пока нет поддерживаемой формы.',
+  'edit.status.unsupportedCount': 'Операций без формы: {count}.',
+  'edit.status.fidelityUnknown': 'Точность записи неизвестна.',
+  'edit.field.keyword': 'Ключевое слово',
+  'edit.field.frame': 'Кадр',
+  'edit.field.comment': 'Комментарий',
+  'edit.field.marker': 'Маркер',
+  'edit.field.entryPath': 'Путь записи',
+  'edit.field.contents': 'Содержимое',
+  'edit.field.from': 'Откуда',
+  'edit.field.to': 'Куда',
+  'edit.hint.latin1NoNul': 'Текст Latin-1 без нулевых символов',
+  'edit.hint.metadataMarker': 'Имя маркера метаданных, например APP0, APP1 или COM',
+  'edit.hint.archiveExistingPath': 'Путь записи, которая уже находится в архиве',
+  'edit.hint.archiveContent': 'Текст; хост передаст его как байты UTF-8',
+  'edit.hint.archiveRenameType': 'Файл нельзя переименовать в маркер каталога, и наоборот',
+  'edit.required': 'Поле «{field}» обязательно',
+  'edit.unsupportedInput': 'Хост пока не умеет подготовить данные для «{handler}»',
+  'edit.invokeRefused': 'Операция отклонена: {reason}',
+  'edit.invokeRefusedCode': 'Операция отклонена: {reason} ({code})',
+  'edit.invokeRefusedDetail': '{head} — {detail}',
+  'edit.operationReturnedWrongKind': 'Операция вернула «{kind}», а не план изменения',
+  'edit.returnedNothing': 'ничего',
+  'edit.fidelityUnknownBytes':
+    ' (при перезаписи не сохраняются байты, которые формат не описывает)',
+  'edit.fidelityNotes': ' ({notes})',
+  'edit.refusal.notDeclared': 'кодек не объявляет эту операцию',
+  'edit.refusal.disabled': 'кодек отключил эту операцию для данного файла',
+  'edit.refusal.dependencyRequired': 'операции нужна зависимость, которую хост не нашёл',
+  'edit.refusal.permissionMissing': 'сеанс открыт без разрешения на запись файла',
+  'edit.refusal.inputNotSerializable': 'значения не удалось передать кодеку',
+  'edit.refusal.handlerUnregistered': 'кодек не зарегистрировал обработчик этой операции',
+  'edit.refusal.cancelled': 'операция отменена',
+  'edit.refusal.staleRevision': 'файл изменился на диске после открытия',
 })
 
-export const UI_MESSAGES: Readonly<Record<UiLocale, UiMessageCatalog>> = Object.freeze({
+export const UI_MESSAGES: Readonly<Record<BuiltinUiLocale, UiMessageCatalog>> = Object.freeze({
   en: EN_MESSAGES,
   ru: RU_MESSAGES,
 })
 
-/** Resolve a BCP-47 preference list to the small locale set this build actually ships. */
-export function resolveUiLocale(requested: string | readonly string[] | undefined): UiLocale {
-  const candidates =
-    requested === undefined ? [] : typeof requested === 'string' ? [requested] : requested
-  for (const candidate of candidates) {
-    const language = candidate.trim().toLowerCase().split('-')[0]
-    if (language === 'ru') return 'ru'
-    if (language === 'en') return 'en'
+/** JSON-safe wire format for language packs. This API never imports or executes extension code. */
+export interface UiCatalogDocument {
+  readonly schema: typeof UI_CATALOG_SCHEMA
+  readonly locale: string
+  readonly namespace: string
+  readonly messages: UiMessageCatalog
+}
+
+export interface UiLocaleResolutionOptions {
+  readonly availableLocales?: readonly string[]
+  readonly systemLocales?: readonly string[]
+  readonly fallbackLocale?: string
+}
+
+export interface UiLocalizerOptions {
+  readonly catalogs?: readonly UiCatalogDocument[]
+  readonly fallbackLocale?: string
+  readonly overrides?: UiMessageCatalog
+}
+
+export interface ParseUiCatalogDocumentOptions {
+  /**
+   * Message-key prefixes this host authorises the catalog to publish, each ending in `.`.
+   * Omit this to restrict the catalog to the prefix derived from its own namespace.
+   */
+  readonly authorizedMessagePrefixes?: readonly string[]
+  /** Existing messages whose interpolation placeholder names an override must preserve. */
+  readonly fallbackCatalog?: UiMessageCatalog
+}
+
+const LOCALE_PATTERN = /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/u
+const NAMESPACE_PATTERN = /^[a-z0-9]+(?:[./-][a-z0-9]+)+$/u
+const MESSAGE_KEY_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]*(?:\.[a-zA-Z0-9][a-zA-Z0-9_-]*)+$/u
+const PLACEHOLDER_PATTERN = /\{([a-zA-Z][a-zA-Z0-9]*)\}/gu
+
+function canonicalLocale(value: string): string | undefined {
+  const trimmed = value.trim()
+  if (!LOCALE_PATTERN.test(trimmed)) return undefined
+  try {
+    return Intl.getCanonicalLocales(trimmed)[0]
+  } catch {
+    return undefined
   }
-  return 'en'
+}
+
+function localeFallbacks(locale: string, fallbackLocale = 'en'): readonly string[] {
+  const result: string[] = []
+  const append = (candidate: string): void => {
+    const canonical = canonicalLocale(candidate)
+    if (canonical === undefined) return
+    const parts = canonical.split('-')
+    while (parts.length > 0) {
+      const current = parts.join('-')
+      if (!result.some(value => value.toLowerCase() === current.toLowerCase())) {
+        result.push(current)
+      }
+      parts.pop()
+    }
+  }
+  append(locale)
+  append(fallbackLocale)
+  return Object.freeze(result)
+}
+
+/**
+ * Resolve explicit BCP-47 preferences, or `auto`, against catalogs available to a host.
+ * Matching is case-insensitive and falls back from a regional tag to its parent language.
+ */
+export function resolveUiLocale(
+  requested: string | readonly string[] | undefined,
+  options: UiLocaleResolutionOptions = {},
+): UiLocale {
+  const available = (options.availableLocales ?? Object.keys(UI_MESSAGES))
+    .map(locale => canonicalLocale(locale))
+    .filter((locale): locale is string => locale !== undefined)
+  const fallback = canonicalLocale(options.fallbackLocale ?? 'en') ?? 'en'
+  const requestedList =
+    requested === undefined ? ['auto'] : typeof requested === 'string' ? [requested] : requested
+  const candidates = requestedList.flatMap(candidate =>
+    candidate.trim().toLowerCase() === 'auto' ? (options.systemLocales ?? []) : [candidate],
+  )
+
+  for (const candidate of candidates) {
+    const canonical = canonicalLocale(candidate)
+    if (canonical === undefined) continue
+    for (const possible of localeFallbacks(canonical, canonical)) {
+      const match = available.find(locale => locale.toLowerCase() === possible.toLowerCase())
+      if (match !== undefined) return match
+    }
+  }
+
+  for (const possible of localeFallbacks(fallback, 'en')) {
+    const match = available.find(locale => locale.toLowerCase() === possible.toLowerCase())
+    if (match !== undefined) return match
+  }
+  return available[0] ?? fallback
+}
+
+function ownDataProperty(object: object, key: string): unknown {
+  const descriptor = Object.getOwnPropertyDescriptor(object, key)
+  if (descriptor === undefined || !('value' in descriptor)) return undefined
+  return descriptor.value
+}
+
+function namespaceOwnedMessagePrefix(namespace: string): string {
+  const tail = namespace.split(/[./]/u).at(-1) ?? namespace
+  const owner = tail.replace(/-(?:app|ui|localization|messages)$/u, '') || tail
+  return `${owner}.`
+}
+
+function validateMessagePrefixes(
+  namespace: string,
+  requested: readonly string[] | undefined,
+): readonly string[] {
+  const prefixes = requested ?? [namespaceOwnedMessagePrefix(namespace)]
+  if (prefixes.length === 0) {
+    throw new TypeError('UI catalog must have at least one authorised message prefix')
+  }
+  return Object.freeze(
+    prefixes.map(prefix => {
+      const trimmed = prefix.trim()
+      if (!trimmed.endsWith('.') || !MESSAGE_KEY_PATTERN.test(`${trimmed}message`)) {
+        throw new TypeError(`Invalid authorised UI message prefix: ${prefix}`)
+      }
+      return trimmed
+    }),
+  )
+}
+
+function placeholderNames(message: string): readonly string[] {
+  return Object.freeze(
+    [
+      ...new Set([...message.matchAll(PLACEHOLDER_PATTERN)].map(match => match[1] as string)),
+    ].sort(),
+  )
+}
+
+function sameStrings(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index])
+}
+
+/** Validate and freeze a JSON-decoded catalog without invoking getters or extension code. */
+export function parseUiCatalogDocument(
+  value: unknown,
+  options: ParseUiCatalogDocumentOptions = {},
+): UiCatalogDocument {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new TypeError('UI catalog must be an object')
+  }
+  const schema = ownDataProperty(value, 'schema')
+  const localeValue = ownDataProperty(value, 'locale')
+  const namespace = ownDataProperty(value, 'namespace')
+  const messagesValue = ownDataProperty(value, 'messages')
+  if (schema !== UI_CATALOG_SCHEMA)
+    throw new TypeError(`UI catalog schema must be ${UI_CATALOG_SCHEMA}`)
+  if (typeof localeValue !== 'string') throw new TypeError('UI catalog locale must be a string')
+  const locale = canonicalLocale(localeValue)
+  if (locale === undefined) throw new TypeError(`Invalid BCP-47 UI locale: ${localeValue}`)
+  if (typeof namespace !== 'string' || !NAMESPACE_PATTERN.test(namespace)) {
+    throw new TypeError('UI catalog namespace must be a lowercase namespaced identifier')
+  }
+  const authorizedMessagePrefixes = validateMessagePrefixes(
+    namespace,
+    options.authorizedMessagePrefixes,
+  )
+  if (typeof messagesValue !== 'object' || messagesValue === null || Array.isArray(messagesValue)) {
+    throw new TypeError('UI catalog messages must be an object')
+  }
+  const descriptors = Object.getOwnPropertyDescriptors(messagesValue)
+  const entries = Object.entries(descriptors)
+  if (entries.length > UI_CATALOG_MAXIMUM_MESSAGES)
+    throw new TypeError('UI catalog has too many messages')
+  const messages: Record<string, string> = Object.create(null) as Record<string, string>
+  let decodedCodeUnits = 0
+  for (const [key, descriptor] of entries) {
+    if (key.length > UI_CATALOG_MAXIMUM_KEY_LENGTH) {
+      throw new TypeError(`UI catalog message key is too long: ${key.slice(0, 64)}`)
+    }
+    if (!MESSAGE_KEY_PATTERN.test(key))
+      throw new TypeError(`Invalid namespaced UI message key: ${key}`)
+    if (!authorizedMessagePrefixes.some(prefix => key.startsWith(prefix))) {
+      throw new TypeError(`UI catalog namespace ${namespace} is not authorised to publish ${key}`)
+    }
+    if (!('value' in descriptor) || typeof descriptor.value !== 'string') {
+      throw new TypeError(`UI catalog message ${key} must be a string data property`)
+    }
+    if (descriptor.value.length > UI_CATALOG_MAXIMUM_MESSAGE_LENGTH) {
+      throw new TypeError(`UI catalog message ${key} is too long`)
+    }
+    decodedCodeUnits += key.length + descriptor.value.length
+    if (decodedCodeUnits > UI_CATALOG_MAXIMUM_DECODED_CODE_UNITS) {
+      throw new TypeError('UI catalog decoded messages exceed the size budget')
+    }
+    const fallback = ownDataProperty(options.fallbackCatalog ?? EN_MESSAGES, key)
+    if (
+      typeof fallback === 'string' &&
+      !sameStrings(placeholderNames(fallback), placeholderNames(descriptor.value))
+    ) {
+      throw new TypeError(`UI catalog message ${key} changes interpolation placeholders`)
+    }
+    messages[key] = descriptor.value
+  }
+  return Object.freeze({
+    schema: UI_CATALOG_SCHEMA,
+    locale,
+    namespace,
+    messages: Object.freeze(messages),
+  })
 }
 
 export interface UiLocalizer {
@@ -113,23 +1404,106 @@ export interface UiLocalizer {
   text(key: UiMessageKey, values?: UiMessageValues): string
 }
 
-/** Immutable per-host translator. There is no process-global locale for two embedded hosts to race. */
+/** Common per-instance dependency used by small UI components and viewer factories. */
+export interface UiLocalizationOptions {
+  readonly localizer?: UiLocalizer
+}
+
+function isLocalizerOptions(
+  value: UiMessageCatalog | UiLocalizerOptions,
+): value is UiLocalizerOptions {
+  return 'catalogs' in value || 'fallbackLocale' in value || 'overrides' in value
+}
+
+/** Immutable per-host translator. There is no process-global locale for embedded hosts to race. */
 export function createUiLocalizer(
   locale: UiLocale,
-  overrides: Partial<UiMessageCatalog> = {},
+  optionsOrOverrides: UiMessageCatalog | UiLocalizerOptions = {},
 ): UiLocalizer {
-  const catalog = Object.freeze({ ...UI_MESSAGES[locale], ...overrides })
+  const options: UiLocalizerOptions = isLocalizerOptions(optionsOrOverrides)
+    ? optionsOrOverrides
+    : { overrides: optionsOrOverrides }
+  const fallbackLocale = options.fallbackLocale ?? 'en'
+  const requestedLocale = canonicalLocale(locale) ?? fallbackLocale
+  const layers: UiMessageCatalog[] = [EN_MESSAGES]
+  const requestedFallbacks = [...localeFallbacks(requestedLocale, fallbackLocale)].reverse()
+  for (const candidate of requestedFallbacks) {
+    const builtin = UI_MESSAGES[candidate.toLowerCase() as BuiltinUiLocale]
+    if (builtin !== undefined && builtin !== EN_MESSAGES) layers.push(builtin)
+    for (const catalog of options.catalogs ?? []) {
+      if (catalog.locale.toLowerCase() === candidate.toLowerCase()) layers.push(catalog.messages)
+    }
+  }
+  if (options.overrides !== undefined) layers.push(options.overrides)
+  const catalog = Object.freeze(Object.assign(Object.create(null), ...layers)) as UiMessageCatalog
   const localizer: UiLocalizer = {
-    locale,
+    locale: requestedLocale,
     text(key: UiMessageKey, values: UiMessageValues = {}) {
-      return catalog[key].replace(
-        /\{([a-zA-Z][a-zA-Z0-9]*)\}/gu,
-        (_match: string, name: string) => {
-          const value = values[name]
-          return value === undefined ? `{${name}}` : String(value)
-        },
-      )
+      const message = catalog[key] ?? key
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match: string, name: string) => {
+        const value = values[name]
+        return value === undefined ? `{${name}}` : String(value)
+      })
     },
   }
   return Object.freeze(localizer)
+}
+
+/** Stable English fallback for components whose host did not provide a per-instance localizer. */
+export const DEFAULT_UI_LOCALIZER: UiLocalizer = createUiLocalizer('en')
+
+export type ContributionContractKind =
+  | 'codecs'
+  | 'editors'
+  | 'services'
+  | 'viewers'
+  | 'languages'
+  | 'renderers'
+  | 'runtimes'
+  | 'commands'
+  | 'ui'
+  | 'contracts'
+  | 'other'
+  | 'invalid'
+
+/** Classify a technical contribution contract without changing its exact stored identifier. */
+export function contributionContractKind(
+  exactContract: string | undefined,
+): ContributionContractKind {
+  if (exactContract === undefined || exactContract.trim() === '') return 'invalid'
+  const name = exactContract.toLowerCase().replace(/@\d+$/u, '').split('/').at(-1) ?? ''
+  if (name === 'codec-contribution') return 'codecs'
+  if (name === 'editor-contribution') return 'editors'
+  if (name === 'service-provider-contribution' || name === 'service-contribution') return 'services'
+  if (name === 'viewer-contribution') return 'viewers'
+  if (name.includes('language')) return 'languages'
+  if (name.includes('renderer')) return 'renderers'
+  if (name.includes('runtime')) return 'runtimes'
+  if (name.includes('command')) return 'commands'
+  if (name === 'ui-contribution') return 'ui'
+  if (name.includes('contract')) return 'contracts'
+  return 'other'
+}
+
+function humanizeContractName(exactContract: string): string {
+  const slug = exactContract.replace(/@\d+$/u, '').split('/').at(-1) ?? exactContract
+  const withoutSuffix = slug.replace(/-contribution$/u, '')
+  return withoutSuffix
+    .split(/[-_]+/u)
+    .filter(Boolean)
+    .map(part => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
+    .join(' ')
+}
+
+/** Human-readable group label; callers should retain the exact contract in technical metadata. */
+export function contributionContractLabel(
+  localizer: UiLocalizer,
+  exactContract: string | undefined,
+): string {
+  const kind = contributionContractKind(exactContract)
+  if (kind !== 'other') return localizer.text(`extensions.contract.${kind}`)
+  const name = exactContract === undefined ? '' : humanizeContractName(exactContract)
+  return name === ''
+    ? localizer.text('extensions.contract.other')
+    : localizer.text('extensions.contract.custom', { name })
 }

@@ -14,6 +14,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { AssetEditPlan } from '@modkitx-x3/sdk'
+import { createUiLocalizer } from '@modkitx-x3/ui/localization'
 
 import {
   base64OfUtf8,
@@ -191,6 +192,18 @@ describe('the forms', () => {
     }
   })
 
+  it('localises form labels, summaries, fields, hints and validation as one pure offer', () => {
+    const offer = editOffer(PNG, { editable: true, localizer: createUiLocalizer('ru') })
+    const form = offer.forms[0]
+    expect(form?.label).toBe('Задать текст PNG')
+    expect(form?.summary).toBe(
+      'Задаёт или заменяет один блок tEXt; остальные байты файла сохраняются.',
+    )
+    expect(form?.fields.map(field => field.label)).toEqual(['Ключевое слово', 'Текст'])
+    expect(form?.fields[0]?.hint).toContain('1 до 79 символов Latin-1')
+    expect(() => form?.build(values({ keyword: '' }))).toThrow('Поле «Ключевое слово» обязательно')
+  })
+
   it('encodes bytes parameters as standard base64 the codec accepts', () => {
     expect(base64OfUtf8('')).toBe('')
     expect(base64OfUtf8('a')).toBe('YQ==')
@@ -237,6 +250,16 @@ describe('plan adaptation and refusals', () => {
     expect(invokeRefusalMessage({ reason: 'stale-revision' })).toContain('stale-revision')
     // an unknown reason is reported verbatim, never flattened into "failed"
     expect(invokeRefusalMessage({ reason: 'something-new' })).toBe('refused: something-new')
+  })
+
+  it('localises known invoke refusals and invalid operation output without hiding stable codes', () => {
+    const ru = createUiLocalizer('ru')
+    expect(invokeRefusalMessage({ reason: 'permission-missing' }, ru)).toBe(
+      'Операция отклонена: сеанс открыт без разрешения на запись файла (permission-missing)',
+    )
+    expect(() => editPlanFromOperationOutput({ kind: 'json' }, ru)).toThrow(
+      'Операция вернула «json», а не план изменения',
+    )
   })
 
   it('prints one line per applied operation, the shape the run is read by', () => {

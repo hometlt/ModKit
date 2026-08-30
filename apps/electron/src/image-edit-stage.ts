@@ -16,6 +16,7 @@ import {
   ViewerMountScope,
   type ImageEditor,
 } from '@modkitx-x3/ui'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
 import type { ChangeSet, EditorModule, RasterImageSource, SubjectEditTarget } from '@modkitx-x3/sdk'
 
 /** The same ceiling the read-only image stage applies before it materialises pixels. */
@@ -25,6 +26,7 @@ export const PNG_SEMANTIC_WARNING =
   'Saving re-encodes the PNG from the current RGBA canvas. Metadata and unknown PNG chunks are removed.'
 
 export interface ImageEditStageOptions {
+  readonly localizer?: UiLocalizer
   /** Reopen the tab after commit so every view reads the new revision. */
   readonly onCommitted?: (descriptor: Record<string, unknown>) => Promise<boolean>
 }
@@ -123,16 +125,17 @@ async function loadPixels(
 }
 
 export function createImageEditStage(options: ImageEditStageOptions = {}): EditorModule {
+  const text = (options.localizer ?? DEFAULT_UI_LOCALIZER).text
   return defineEditorModule({
     abiVersion: 1,
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
-      const root = createSurface(args.container, 'Image editor')
+      const root = createSurface(args.container, text('electron.image.editor'))
       const stage = element(root, 'div', { part: 'image' })
       const readout = element(stage, 'output', { part: 'image.readout' })
       const warning = element(stage, 'p', {
         part: 'imageedit.warning',
-        text: PNG_SEMANTIC_WARNING,
+        text: text('electron.image.semanticWarning'),
       })
       warning.setAttribute('role', 'note')
       const canvas = element(stage, 'canvas', { part: 'image.canvas' }) as HTMLCanvasElement
@@ -162,7 +165,7 @@ export function createImageEditStage(options: ImageEditStageOptions = {}): Edito
 
         const commitPixels = async (current: ImageData): Promise<void> => {
           setState(stage, ['loading'])
-          setViewerText(readout, 'Validating RGBA8 pixels…')
+          setViewerText(readout, text('electron.image.validating'))
           try {
             const change = pngPixelChange(current, args.edit.targets)
             const validation = await args.edit.propose(change)
@@ -170,11 +173,11 @@ export function createImageEditStage(options: ImageEditStageOptions = {}): Edito
               setState(stage, ['error'])
               setViewerText(
                 readout,
-                validation.diagnostics[0]?.message ?? 'The PNG writer rejected these pixels.',
+                validation.diagnostics[0]?.message ?? text('electron.image.rejected'),
               )
               return
             }
-            setViewerText(readout, 'Planning the semantic PNG rewrite…')
+            setViewerText(readout, text('electron.image.planning'))
             const plan = await args.edit.plan(change)
             if (
               plan.fidelity.roundTrip !== 'semantic' ||
@@ -184,14 +187,14 @@ export function createImageEditStage(options: ImageEditStageOptions = {}): Edito
                 'the PNG writer did not return the required semantic fidelity claim',
               )
             }
-            setViewerText(readout, 'Authorizing the PNG rewrite…')
+            setViewerText(readout, text('electron.image.authorizing'))
             const authorization = await args.authorization.request(plan, { signal: scope.signal })
             if (authorization === undefined) {
               setState(stage, [])
-              setViewerText(readout, 'Save cancelled.')
+              setViewerText(readout, text('electron.image.cancelled'))
               return
             }
-            setViewerText(readout, 'Preparing the PNG rewrite…')
+            setViewerText(readout, text('electron.image.preparing'))
             const prepared = await args.commit.prepare(plan, {
               grant: authorization.grant,
               ...(authorization.confirmationToken === undefined
@@ -204,12 +207,12 @@ export function createImageEditStage(options: ImageEditStageOptions = {}): Edito
               setViewerText(
                 readout,
                 prepared.state === 'conflict'
-                  ? 'Not saved: the PNG changed on disk.'
-                  : `Not saved: ${prepared.reason}.`,
+                  ? text('electron.image.changed')
+                  : text('electron.image.notSaved', { reason: prepared.reason }),
               )
               return
             }
-            setViewerText(readout, 'Encoding and committing PNG bytes…')
+            setViewerText(readout, text('electron.image.encoding'))
             const committed = await args.commit.commit(prepared.prepared, {
               grant: authorization.grant,
               signal: scope.signal,
@@ -219,13 +222,13 @@ export function createImageEditStage(options: ImageEditStageOptions = {}): Edito
               setViewerText(
                 readout,
                 committed.state === 'not-applied'
-                  ? `Not saved: ${committed.reason}.`
-                  : `Save ended in state ${committed.state}.`,
+                  ? text('electron.image.notSaved', { reason: committed.reason })
+                  : text('electron.image.saveState', { state: committed.state }),
               )
               return
             }
             setState(stage, [])
-            setViewerText(readout, 'Saved. Reopening the PNG at its new revision…')
+            setViewerText(readout, text('electron.image.savedReopening'))
             /*
              * Closing this very stage while its Apply listener is still on the stack can leave
              * the explorer waiting for the listener whose DOM it is unmounting. Start the reopen
@@ -238,7 +241,7 @@ export function createImageEditStage(options: ImageEditStageOptions = {}): Edito
                 .onCommitted?.(args.descriptor as unknown as Record<string, unknown>)
                 .then(reopened => {
                   if (reopened === false && readout.isConnected) {
-                    setViewerText(readout, 'Saved. Reopen the tab to see the new revision.')
+                    setViewerText(readout, text('electron.image.savedReopen'))
                   }
                 })
                 .catch(error => {
@@ -246,7 +249,9 @@ export function createImageEditStage(options: ImageEditStageOptions = {}): Edito
                     setState(stage, ['error'])
                     setViewerText(
                       readout,
-                      `Saved, but reopening failed: ${error instanceof Error ? error.message : String(error)}`,
+                      text('electron.image.reopenFailed', {
+                        reason: error instanceof Error ? error.message : String(error),
+                      }),
                     )
                   }
                 })
@@ -262,7 +267,10 @@ export function createImageEditStage(options: ImageEditStageOptions = {}): Edito
           onChange: current => {
             paint(current)
             setState(stage, ['mutating'])
-            setViewerText(readout, `${current.width}x${current.height} · edited pixels not saved`)
+            setViewerText(
+              readout,
+              text('electron.image.edited', { width: current.width, height: current.height }),
+            )
           },
           onCommit: commitPixels,
         })
@@ -270,15 +278,18 @@ export function createImageEditStage(options: ImageEditStageOptions = {}): Edito
         paint(surface.pixels)
         surface.attach(canvas, scope.signal)
         setState(stage, [])
-        setViewerText(readout, `${pixels.width}x${pixels.height} · ready to edit`)
+        setViewerText(
+          readout,
+          text('electron.image.ready', { width: pixels.width, height: pixels.height }),
+        )
       } catch (error) {
         setState(stage, ['error'])
         canvas.remove()
         element(stage, 'p', {
           part: 'viewer.empty',
-          text: `These bytes cannot be opened for editing: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
+          text: text('electron.image.unavailable', {
+            reason: error instanceof Error ? error.message : String(error),
+          }),
         })
       }
 
@@ -286,7 +297,7 @@ export function createImageEditStage(options: ImageEditStageOptions = {}): Edito
         async update() {
           // A committed change reopens the tab; an in-place descriptor update must not discard a
           // working pixel buffer.
-          setViewerText(readout, 'Source updated; review the pixel buffer before saving.')
+          setViewerText(readout, text('electron.image.sourceUpdated'))
         },
         async unmount() {
           await scope.close()

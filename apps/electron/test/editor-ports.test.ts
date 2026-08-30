@@ -9,6 +9,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { revisionId } from '@modkitx-x3/sdk'
+import { createUiLocalizer, type UiLocalizer } from '@modkitx-x3/ui/localization'
 import type {
   AssetEditPlan,
   AssetRevision,
@@ -112,13 +113,17 @@ interface Recorded {
   readonly dirty: boolean[]
 }
 
-async function portsWith(arm: SubjectEditingArm): Promise<{
+async function portsWith(
+  arm: SubjectEditingArm,
+  localizer?: UiLocalizer,
+): Promise<{
   ports: Awaited<ReturnType<typeof createRendererEditorPorts>>
   recorded: Recorded
 }> {
   const recorded: Recorded = { status: [], dirty: [] }
   const ports = await createRendererEditorPorts({
     arm,
+    ...(localizer === undefined ? {} : { localizer }),
     onStatus: status => recorded.status.push(status),
     onDirty: dirty => recorded.dirty.push(dirty),
   })
@@ -277,9 +282,31 @@ describe('refusal vocabulary', () => {
     expect(commitStatus({ state: 'rolled-back' }).failed).toBe(true)
     expect(commitStatus({ state: 'partially-applied' }).failed).toBe(true)
   })
+
+  it('localises save outcomes and refusal explanations while keeping reason codes', () => {
+    const ru = createUiLocalizer('ru')
+    expect(commitStatus({ state: 'committed' }, ru)).toEqual({
+      message: 'Сохранено',
+      failed: false,
+    })
+    expect(refusalMessage('fidelity-unproven', ru)).toBe(
+      'Сохранение отклонено: нет подтверждения заявленной точности записи для этого изменения (fidelity-unproven)',
+    )
+    expect(prepareStatus({ state: 'conflict', conflicts: [] }, ru)?.message).toContain(
+      'файл изменился на диске',
+    )
+  })
 })
 
 describe('the renderer editor ports over an editing arm', () => {
+  it('uses the instance localizer for save and commit-port status', async () => {
+    const { ports, recorded } = await portsWith(fakeArm(), createUiLocalizer('ru'))
+    await ports.save()
+    expect(recorded.status.at(-1)?.message).toBe('Нет изменений для сохранения')
+    expect(await asPorts(ports).commit.commit({})).toEqual({ state: 'not-applied' })
+    expect(recorded.status.at(-1)?.message).toBe('Нет подготовленных изменений для сохранения')
+  })
+
   it('hands the editor an opaque handle and spends the id on commit — no prepared commit crosses', async () => {
     const arm = fakeArm()
     const { ports, recorded } = await portsWith(arm)

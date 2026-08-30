@@ -76,6 +76,14 @@ describe('deterministic Electron app catalog emission', () => {
       expect(content).not.toMatch(/[A-Za-z]:[\\/]/)
       expect(content).not.toContain('\r')
     }
+    const viewerCatalog = readFileSync(join(generated, 'viewer-catalog.js'), 'utf8')
+    for (const factory of [
+      'createGameTemplateViewer',
+      'createTableViewer',
+      'createVirtualTextViewer',
+    ]) {
+      expect(viewerCatalog).toContain(`${factory}({ localizer })`)
+    }
     expect(presentation).not.toContain(repoRoot.replaceAll('\\', '/'))
     expect(presentation).not.toMatch(/[A-Za-z]:[\\/]/)
     expect(presentation).not.toContain('\r')

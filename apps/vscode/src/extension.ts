@@ -22,6 +22,7 @@ import {
   discoverLocalExtensionCandidates,
   type LocalExtensionCandidate,
 } from '@modkitx/extension-manager/node'
+import { type UiLocale, type UiLocalizer, type UiMessageKey } from '@modkitx-x3/ui/localization'
 
 import type { CloseAnswer, WebviewChannel } from './bridge.js'
 import {
@@ -84,6 +85,7 @@ import { describeDegradation, describeFacilities, type FacilityReport } from './
 import { pageHtml, refusalHtml, type WebviewLike } from './page.js'
 import BUNDLED_CATALOG from '../generated/bundled-catalog.json' with { type: 'json' }
 import { describeOpenTarget } from './uri.js'
+import { createVscodeLocalizer } from './localization.js'
 import {
   createLanguageSessionController,
   LANGUAGE_TOKEN_MODIFIERS,
@@ -197,6 +199,7 @@ interface PanelPageOptions {
   readonly extensionUri: vscode.Uri
   readonly host: VsCodeSubjectHost
   readonly session: string
+  readonly locale: UiLocale
   readonly openPath?: string
   readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
 }
@@ -220,6 +223,7 @@ function panelHtml(options: PanelPageOptions): string {
      * sits between.
      */
     bootstrap: {
+      locale: options.locale,
       extensionHost: {
         realmId: options.host.services.host.profile.realmId,
         facilities: options.host.services.host.profile.facilities,
@@ -261,6 +265,7 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
     private readonly manager: ExtensionManagerController,
     private readonly disabledContributionIds: () => readonly string[],
     private readonly availableContributions: readonly import('./contributions.js').ContributionRow[],
+    private readonly localizer: UiLocalizer,
   ) {
     this.subscription = manager.onDidChange(() => this.changed.fire(undefined))
   }
@@ -293,10 +298,14 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
     if (node.kind === 'contract') {
       const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Collapsed)
       item.description = `${node.contributions.length}`
-      item.tooltip =
+      const exactContract =
         node.contract === undefined
-          ? 'Contribution records whose manifest did not parse'
-          : `Exact contribution contract ${node.label}`
+          ? undefined
+          : `${node.contract}${node.contractMajor === undefined ? '' : `@${node.contractMajor}`}`
+      item.tooltip =
+        exactContract === undefined
+          ? this.localizer.text('extensions.tooltip.invalidContract')
+          : `${node.label}\n${this.localizer.text('extensions.tooltip.exactContract', { contract: exactContract })}`
       item.iconPath = new vscode.ThemeIcon('symbol-interface')
       item.contextValue = 'modkitContributionContract'
       return item
@@ -309,12 +318,19 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
         vscode.TreeItemCollapsibleState.None,
       )
       const identity = contribution.id ?? contribution.path
-      const state = node.enabled ? 'enabled' : 'disabled'
-      item.description = `${state}${node.pendingReload ? ' · reload pending' : ''}`
+      const state = this.localizer.text(node.enabled ? 'common.enabled' : 'common.disabled')
+      item.description = `${state}${
+        node.pendingReload ? ` · ${this.localizer.text('extensions.state.reloadPending')}` : ''
+      }`
+      const exactContract = `${contribution.contract ?? this.localizer.text('extensions.tooltip.invalidContract')}${
+        contribution.contractMajor === undefined ? '' : `@${contribution.contractMajor}`
+      }`
       item.tooltip =
-        `${identity}\n${node.extension}\ncontract: ${contribution.contract ?? 'invalid manifest'}` +
-        `${contribution.contractMajor === undefined ? '' : `@${contribution.contractMajor}`}\n` +
-        `state: ${state}${node.pendingReload ? ' after reload' : ''}\norigin: ${contribution.origin}`
+        `${identity}\n${node.extension}\n` +
+        `${this.localizer.text('extensions.tooltip.contract', { contract: exactContract })}\n` +
+        `${this.localizer.text('extensions.tooltip.state', { state })}` +
+        `${node.pendingReload ? ` · ${this.localizer.text('extensions.state.afterReload')}` : ''}\n` +
+        this.localizer.text('extensions.tooltip.origin', { origin: contribution.origin })
       item.iconPath = new vscode.ThemeIcon(node.enabled ? 'pass-filled' : 'circle-slash')
       item.contextValue =
         contribution.id === undefined
@@ -323,7 +339,7 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
       if (contribution.id !== undefined) {
         item.command = {
           command: OPEN_CONTRIBUTION_COMMAND,
-          title: 'Open contribution card',
+          title: this.localizer.text('extensions.action.openContributionCard'),
           arguments: [
             { kind: 'contribution', id: contribution.id, extension: node.extension } as const,
           ],
@@ -341,14 +357,20 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
     )
     const version =
       entry.installedVersion === undefined
-        ? `available ${entry.availableVersion}`
+        ? `${this.localizer.text('extensions.group.available')} ${entry.availableVersion}`
         : entry.updateAvailable
           ? `${entry.installedVersion} → ${entry.availableVersion}`
           : entry.installedVersion
     item.description = `${version} · ${entry.publisher}`
     item.tooltip =
-      `${entry.id}\n${version}\nsource: ${entry.source}\n` +
-      `${entry.trusted ? 'trusted publisher' : 'unverified publisher'}`
+      `${entry.id}\n${version}\n${this.localizer.text('extensions.tooltip.source', {
+        source: entry.source,
+      })}\n` +
+      this.localizer.text(
+        entry.trusted
+          ? 'extensions.tooltip.trustedPublisher'
+          : 'extensions.tooltip.unverifiedPublisher',
+      )
     item.iconPath = new vscode.ThemeIcon(
       node.group === 'updates'
         ? 'cloud-download'
@@ -367,13 +389,13 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
     if (node.group === 'updates') {
       item.command = {
         command: 'modkit.extensions.update',
-        title: 'Update extension',
+        title: this.localizer.text('extensions.action.updateExtension'),
         arguments: [entry.id],
       }
     } else {
       item.command = {
         command: OPEN_EXTENSION_COMMAND,
-        title: 'Open extension card',
+        title: this.localizer.text('extensions.action.openExtensionCard'),
         arguments: [{ kind: 'extension', id: entry.id } as const],
       }
     }
@@ -381,7 +403,8 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
   }
 
   async getChildren(node?: ExtensionNode): Promise<ExtensionNode[]> {
-    if (node !== undefined) return [...extensionTreeChildren(node, this.disabledContributionIds())]
+    if (node !== undefined)
+      return [...extensionTreeChildren(node, this.disabledContributionIds(), this.localizer)]
 
     const entries = (await this.manager.snapshot()).entries
     const problems = [
@@ -393,7 +416,7 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
       ...this.host.extensions.problems.map(problem => ({
         kind: 'problem' as const,
         label: problem,
-        detail: 'setting',
+        detail: this.localizer.text('activity.settings'),
       })),
     ]
     return [
@@ -402,6 +425,7 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
         contributions: [...this.host.contributions, ...this.availableContributions],
         configuredDisabledContributionIds: this.disabledContributionIds(),
         problems,
+        localizer: this.localizer,
       }),
     ]
   }
@@ -434,6 +458,7 @@ class HostView implements vscode.TreeDataProvider<HostNode> {
     private readonly host: VsCodeSubjectHost,
     private readonly topologyId: string,
     private readonly sources: () => readonly SelectedContentSource[],
+    private readonly localizer: UiLocalizer,
   ) {}
 
   refresh(): void {
@@ -472,28 +497,37 @@ class HostView implements vscode.TreeDataProvider<HostNode> {
     const isolated = !webviewFacilities.includes('editor.host-native')
     return [
       {
-        label: 'Host',
+        label: this.localizer.text('sidebar.host'),
         icon: 'server-process',
         children: [
-          { label: 'topology', detail: this.topologyId },
-          { label: 'extension host', detail: services.host.profile.realmId },
+          { label: this.localizer.text('vscode.host.topology'), detail: this.topologyId },
           {
-            label: 'codecs',
+            label: this.localizer.text('vscode.host.extensionHost'),
+            detail: services.host.profile.realmId,
+          },
+          {
+            label: this.localizer.text('vscode.host.codecs'),
             detail: `${services.workers.profile.realmId} (${services.executionProfiles.join('/')})`,
           },
-          { label: 'webview', detail: this.host.webview.profile.realmId },
           {
-            label: 'inventory diagnostics',
+            label: this.localizer.text('vscode.host.webview'),
+            detail: this.host.webview.profile.realmId,
+          },
+          {
+            label: this.localizer.text('vscode.host.inventoryDiagnostics'),
             detail: String(services.host.inventory.diagnostics.length),
           },
           {
-            label: 'isolation',
+            label: this.localizer.text('vscode.host.isolation'),
             detail: isolated
-              ? 'the page holds no extension-host facility'
-              : 'the page was granted an extension-host facility, which it must never have',
+              ? this.localizer.text('vscode.host.isolationSafe')
+              : this.localizer.text('vscode.host.isolationUnsafe'),
             icon: isolated ? 'shield' : 'warning',
           },
-          { label: 'detectable types', detail: String(this.host.supportedExtensions.length) },
+          {
+            label: this.localizer.text('vscode.host.detectableTypes'),
+            detail: String(this.host.supportedExtensions.length),
+          },
         ],
       },
       {
@@ -502,35 +536,40 @@ class HostView implements vscode.TreeDataProvider<HostNode> {
          * rail says the composed set and no more — inventing an observation would be the exact
          * imitation §1.5 forbids.
          */
-        label: 'Facilities',
+        label: this.localizer.text('sidebar.facilities'),
         icon: 'list-unordered',
         children:
           this.facilities === undefined
             ? webviewFacilities.map(facility => ({
                 label: facility,
-                detail: 'composed; no page has reported yet',
+                detail: this.localizer.text('vscode.host.facilitiesPending'),
               }))
             : [
                 ...this.facilities.intended.map(facility => ({
                   label: facility,
                   detail: this.facilities?.observed.includes(facility)
-                    ? 'honoured by the page'
-                    : 'composed, but this page cannot honour it — unavailable, not emulated',
+                    ? this.localizer.text('vscode.host.facilityHonoured')
+                    : this.localizer.text('vscode.host.facilityUnavailable'),
                   icon: this.facilities?.observed.includes(facility) ? 'pass' : 'warning',
                 })),
                 ...this.facilities.ungranted.map(facility => ({
                   label: facility,
-                  detail: 'the page offers it; this realm is not composed with it',
+                  detail: this.localizer.text('vscode.host.facilityUngranted'),
                   icon: 'circle-outline',
                 })),
               ],
       },
       {
-        label: 'Sources',
+        label: this.localizer.text('vscode.host.sources'),
         icon: 'root-folder',
         children:
           this.sources().length === 0
-            ? [{ label: 'No selected game installation', detail: 'run Select Game Installation' }]
+            ? [
+                {
+                  label: this.localizer.text('vscode.host.noSelectedGame'),
+                  detail: this.localizer.text('vscode.host.selectGameHint'),
+                },
+              ]
             : this.sources().map(source => ({
                 label: source.displayName,
                 detail: source.gameId,
@@ -575,6 +614,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const output = vscode.window.createOutputChannel('Modkit MK3')
   context.subscriptions.push(output)
   const journal = createDiagnosticJournal()
+  const localizer = createVscodeLocalizer(vscode.env.language)
   const log = (line: string): void => {
     journal.append(line)
     output.appendLine(line)
@@ -720,8 +760,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   }
   if (host.extensions.failures.length > 0 || host.extensions.problems.length > 0) {
     void vscode.window.showWarningMessage(
-      `Modkit: ${host.extensions.failures.length + host.extensions.problems.length} extension ` +
-        'root(s) did not load. Run “Modkit: Show Diagnostics” for the readable journal.',
+      `Modkit: ${localizer.text('vscode.shell.extensionRootsFailed', {
+        count: host.extensions.failures.length + host.extensions.problems.length,
+      })}`,
     )
   }
 
@@ -731,7 +772,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   let selectedSources = selectedContentSources(
     context.workspaceState.get<unknown>(SELECTED_SOURCES_KEY),
   )
-  const hostView = new HostView(host, host.services.host.topology.topologyId, () => selectedSources)
+  const hostView = new HostView(
+    host,
+    host.services.host.topology.topologyId,
+    () => selectedSources,
+    localizer,
+  )
 
   const granted = new Set<string>(selectedSources.map(source => resolve(source.installPath)))
   const roots = (): readonly string[] => [...new Set([...workspaceFolders(), ...granted])]
@@ -867,8 +913,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
   /** Composed once at activation, so a write asks the user to reload rather than pretending. */
   const askToReload = (message: string): void => {
-    void vscode.window.showInformationMessage(message, 'Reload Window').then(choice => {
-      if (choice === 'Reload Window') {
+    const reload = localizer.text('extensions.action.reloadWindow')
+    void vscode.window.showInformationMessage(message, reload).then(choice => {
+      if (choice === reload) {
         void vscode.commands.executeCommand('workbench.action.reloadWindow')
       }
     })
@@ -884,15 +931,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     async write(key, value) {
       await vscode.workspace.getConfiguration('modkit').update(key, [...value], configurationTarget)
       log(`modkit.${key} written (${configurationScope}): ${JSON.stringify(value)}`)
-      askToReload(`Modkit: modkit.${key} was updated. Reload the window for it to take effect.`)
+      askToReload(
+        `${localizer.text('extensions.status.configurationUpdated')} ${localizer.text(
+          'extensions.state.afterReload',
+        )}`,
+      )
     },
     async pickFolder() {
       const picked = await vscode.window.showOpenDialog({
         canSelectFiles: false,
         canSelectFolders: true,
         canSelectMany: false,
-        openLabel: 'Add extension folder',
-        title: 'Add a Modkit extension folder',
+        openLabel: localizer.text('vscode.shell.addExtensionFolder'),
+        title: localizer.text('vscode.shell.addExtensionFolderTitle'),
       })
       return picked?.[0]?.fsPath
     },
@@ -1020,6 +1071,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     extensionManager,
     () => configuredDisabledContributions(configuration.readDisabledContributions()).ids,
     availableContributions,
+    localizer,
   )
   context.subscriptions.push(extensionsView)
   context.subscriptions.push(
@@ -1035,10 +1087,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   )
 
   const confirmClose = async (message: string, savable: boolean): Promise<CloseAnswer> => {
-    const choices = savable ? ['Save', 'Discard'] : ['Discard']
+    const save = localizer.text('vscode.shell.save')
+    const discard = localizer.text('vscode.shell.discard')
+    const choices = savable ? [save, discard] : [discard]
     const answer = await vscode.window.showWarningMessage(message, { modal: true }, ...choices)
-    if (answer === 'Save') return 'save'
-    return answer === 'Discard' ? 'discard' : 'cancel'
+    if (answer === save) return 'save'
+    return answer === discard ? 'discard' : 'cancel'
   }
 
   // ---------------------------------------------------------------- problems
@@ -1655,11 +1709,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       setManagedPackageEnabled: async (id, enabled) => {
         await extensionManager.execute({ kind: 'set-enabled', id, enabled })
         log(`[extensions] ${id} ${enabled ? 'enabled' : 'disabled'} from extension card`)
-        askToReload(`Modkit: ${id} was ${enabled ? 'enabled' : 'disabled'}. Reload the window.`)
+        askToReload(
+          localizer.text('extensions.status.reloadRequired', {
+            id,
+            state: localizer.text(enabled ? 'common.enabled' : 'common.disabled'),
+          }),
+        )
       },
       confirmClose,
       configuration,
       mapPreviewResourcePlanResolver,
+      localizer,
       // The window's one registry, so a page opening a member reaches the archive the Explorer
       // already has open rather than a second copy of it.
       containers,
@@ -1682,6 +1742,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       extensionUri: context.extensionUri,
       host,
       session,
+      locale: localizer.locale,
       ...(openPath === undefined ? {} : { openPath }),
       ...(extensionCard === undefined ? {} : { extensionCard }),
     })
@@ -1719,7 +1780,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     const target = describeOpenTarget(uri)
     if (target.state === 'refused') {
       log(`refused ${uri.toString()}: ${target.reason}`)
-      void vscode.window.showWarningMessage(`Modkit cannot open this: ${target.reason}`)
+      void vscode.window.showWarningMessage(
+        localizer.text('vscode.shell.cannotOpen', { reason: target.reason }),
+      )
       return
     }
     grantFor(target)
@@ -1741,47 +1804,68 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     createVsCodeCommandOpener({ services: host.services, roots, containers }),
   )
 
+  const runtimeActionLabel = (action: string): string => {
+    const keys: Readonly<Record<string, UiMessageKey>> = Object.freeze({
+      start: 'vscode.runtime.action.start',
+      continue: 'vscode.runtime.action.continue',
+      pause: 'vscode.runtime.action.pause',
+      step: 'vscode.runtime.action.step',
+      inspect: 'vscode.runtime.action.inspect',
+      status: 'vscode.runtime.action.status',
+      events: 'vscode.runtime.action.events',
+      snapshot: 'vscode.runtime.action.snapshot',
+      restore: 'vscode.runtime.action.restore',
+      stateHash: 'vscode.runtime.action.stateHash',
+      stop: 'vscode.runtime.action.stop',
+    })
+    const key = keys[action]
+    return key === undefined ? action : localizer.text(key)
+  }
+
   const chooseRuntimeSession = async (): Promise<string | undefined> => {
     if (runtimeDebug.sessionIds.length === 0) {
       void vscode.window.showInformationMessage(
-        'Modkit: no runtime session is open in this window.',
+        `Modkit: ${localizer.text('vscode.runtime.noSession')}`,
       )
       return undefined
     }
     if (runtimeDebug.sessionIds.length === 1) return runtimeDebug.sessionIds[0]
     return vscode.window.showQuickPick([...runtimeDebug.sessionIds], {
-      title: 'Runtime session',
-      placeHolder: 'Pick the session to control',
+      title: localizer.text('vscode.runtime.session'),
+      placeHolder: localizer.text('vscode.runtime.sessionPlaceholder'),
     })
   }
 
   const runtimeRequestFromPalette = async (): Promise<RuntimeDebugCommandRequest | undefined> => {
     const action = await vscode.window.showQuickPick(
       [
-        { label: 'Start', description: 'start' },
-        { label: 'Continue to tick or limit', description: 'continue' },
-        { label: 'Pause', description: 'pause' },
-        { label: 'Step', description: 'step' },
-        { label: 'Inspect paused state', description: 'inspect' },
-        { label: 'Status', description: 'status' },
-        { label: 'Events', description: 'events' },
-        { label: 'Capture snapshot', description: 'snapshot' },
-        { label: 'Restore snapshot', description: 'restore' },
-        { label: 'State hash', description: 'stateHash' },
-        { label: 'Stop', description: 'stop' },
+        { label: runtimeActionLabel('start'), description: 'start' },
+        { label: runtimeActionLabel('continue'), description: 'continue' },
+        { label: runtimeActionLabel('pause'), description: 'pause' },
+        { label: runtimeActionLabel('step'), description: 'step' },
+        { label: runtimeActionLabel('inspect'), description: 'inspect' },
+        { label: runtimeActionLabel('status'), description: 'status' },
+        { label: runtimeActionLabel('events'), description: 'events' },
+        { label: runtimeActionLabel('snapshot'), description: 'snapshot' },
+        { label: runtimeActionLabel('restore'), description: 'restore' },
+        { label: runtimeActionLabel('stateHash'), description: 'stateHash' },
+        { label: runtimeActionLabel('stop'), description: 'stop' },
       ] as const,
-      { title: 'Control a Modkit runtime', placeHolder: 'Pick an action' },
+      {
+        title: localizer.text('vscode.runtime.control'),
+        placeHolder: localizer.text('vscode.runtime.actionPlaceholder'),
+      },
     )
     if (action === undefined) return undefined
     if (action.description === 'start') {
       const runtimeId = await vscode.window.showInputBox({
-        title: 'Runtime id',
-        prompt: 'A runtime id advertised through common.runtime/provider',
+        title: localizer.text('vscode.runtime.runtimeId'),
+        prompt: localizer.text('vscode.runtime.runtimeIdPrompt'),
         ignoreFocusOut: true,
       })
       if (runtimeId === undefined) return undefined
       const sessionId = await vscode.window.showInputBox({
-        title: 'Runtime session id',
+        title: localizer.text('vscode.runtime.sessionId'),
         value: `vscode-runtime-${Date.now()}`,
         ignoreFocusOut: true,
       })
@@ -1790,19 +1874,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     const sessionId = await chooseRuntimeSession()
     if (sessionId === undefined) return undefined
     if (action.description === 'step') {
-      const value = await vscode.window.showInputBox({ title: 'Ticks to step', value: '1' })
+      const value = await vscode.window.showInputBox({
+        title: localizer.text('vscode.runtime.ticks'),
+        value: '1',
+      })
       if (value === undefined) return undefined
       return { action: 'step', sessionId, ticks: Number(value) }
     }
     if (action.description === 'continue') {
       const value = await vscode.window.showInputBox({
-        title: 'Maximum ticks before pausing',
+        title: localizer.text('vscode.runtime.maxTicks'),
         value: '100',
       })
       if (value === undefined) return undefined
       const tick = await vscode.window.showInputBox({
-        title: 'Optional tick breakpoint',
-        prompt: 'Leave empty to pause only at the maximum tick count',
+        title: localizer.text('vscode.runtime.breakpoint'),
+        prompt: localizer.text('vscode.runtime.breakpointPrompt'),
       })
       if (tick === undefined) return undefined
       return {
@@ -1814,7 +1901,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     }
     if (action.description === 'snapshot') {
       const snapshotId = await vscode.window.showInputBox({
-        title: 'Snapshot id',
+        title: localizer.text('vscode.runtime.snapshotId'),
         value: `snapshot-${Date.now()}`,
       })
       return snapshotId === undefined ? undefined : { action: 'snapshot', sessionId, snapshotId }
@@ -1823,7 +1910,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       const snapshotId = await vscode.window.showQuickPick(
         [...runtimeDebug.snapshotIds(sessionId)],
         {
-          title: 'Restore snapshot',
+          title: runtimeActionLabel('restore'),
         },
       )
       return snapshotId === undefined ? undefined : { action: 'restore', sessionId, snapshotId }
@@ -1842,10 +1929,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     const result = await runtimeDebug.dispatch(request)
     log(`[runtime] ${JSON.stringify(result)}`)
     if (result.state === 'unavailable') {
-      void vscode.window.showWarningMessage(`Modkit runtime: ${result.message}`)
+      void vscode.window.showWarningMessage(
+        `${localizer.text('vscode.runtime.control')}: ${result.message}`,
+      )
     } else {
       void vscode.window.showInformationMessage(
-        `Modkit runtime ${result.sessionId}: ${result.action} completed.`,
+        localizer.text('vscode.runtime.completed', {
+          session: result.sessionId,
+          action: runtimeActionLabel(result.action),
+        }),
       )
     }
     return result
@@ -1901,12 +1993,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     }
     if (result.state === 'ok') {
       void vscode.window.showInformationMessage(
-        `${title}: ${subjectLabel(request.subject)} — see the Modkit MK3 output for the full result.`,
+        `${title}: ${localizer.text('vscode.command.completedOutput', {
+          subject: subjectLabel(request.subject),
+        })}`,
       )
     } else if (result.state === 'unavailable') {
       // §4.2: the reason and the alternative, both, on a surface the person is already looking at.
       void vscode.window
-        .showWarningMessage(`${title}: ${result.reason}`, 'What instead?')
+        .showWarningMessage(
+          `${title}: ${result.reason}`,
+          localizer.text('vscode.command.whatInstead'),
+        )
         .then(choice => {
           if (choice !== undefined) void vscode.window.showInformationMessage(result.alternative)
         })
@@ -1971,7 +2068,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     hostView.refresh()
     for (const served of live) {
       served.publishRoots()
-      served.notice('Selected content sources changed, so the available roots were refreshed.')
+      served.notice(localizer.text('vscode.shell.selectedSourcesChanged'))
     }
   }
 
@@ -2007,7 +2104,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     if (extensionId === undefined) return
     const entry = extensionCards().get(extensionId)
     if (entry === undefined) {
-      void vscode.window.showWarningMessage(`Modkit has no card data for ${extensionId}.`)
+      void vscode.window.showWarningMessage(
+        localizer.text('vscode.extensions.noCardData', { id: extensionId }),
+      )
       return
     }
     const contributionId =
@@ -2036,7 +2135,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   ): Promise<string | undefined> => {
     const entries = (await extensionManager.snapshot()).entries.filter(accept)
     if (entries.length === 0) {
-      void vscode.window.showInformationMessage(`Modkit: ${title.toLowerCase()} — nothing to do.`)
+      void vscode.window.showInformationMessage(
+        `Modkit: ${title} — ${localizer.text('common.none')}`,
+      )
       return undefined
     }
     return vscode.window
@@ -2046,7 +2147,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           description: entry.id,
           detail:
             entry.installedVersion === undefined
-              ? `available ${entry.availableVersion}`
+              ? `${localizer.text('extensions.group.available')} ${entry.availableVersion}`
               : entry.updateAvailable
                 ? `${entry.installedVersion} → ${entry.availableVersion}`
                 : entry.installedVersion,
@@ -2065,8 +2166,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       await extensionManager.execute(command)
       log(`[extensions] ${success}`)
       const completion = extensionManagerCommandCompletion(command, success)
-      if (completion.reload) askToReload(completion.message)
-      else void vscode.window.showInformationMessage(completion.message)
+      const message =
+        command.kind === 'set-enabled'
+          ? localizer.text('extensions.status.reloadRequired', {
+              id: command.id,
+              state: localizer.text(command.enabled ? 'common.enabled' : 'common.disabled'),
+            })
+          : completion.reload
+            ? `${success}. ${localizer.text('extensions.state.afterReload')}.`
+            : success
+      if (completion.reload) askToReload(message)
+      else void vscode.window.showInformationMessage(message)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       log(`[extensions] command failed: ${message}`)
@@ -2086,7 +2196,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     }),
 
     vscode.commands.registerCommand('modkit.extensions.refresh', () =>
-      runManagerCommand({ kind: 'refresh' }, 'extension catalog refreshed'),
+      runManagerCommand({ kind: 'refresh' }, localizer.text('vscode.extensions.catalogRefreshed')),
     ),
 
     vscode.commands.registerCommand(OPEN_EXTENSION_COMMAND, (argument: unknown) => {
@@ -2109,37 +2219,54 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       const id =
         managerEntryId(argument) ??
         (await pickManagerEntry(
-          'Install a Modkit extension',
+          localizer.text('vscode.extensions.installTitle'),
           entry => entry.installedVersion === undefined && !entry.source.startsWith('local:'),
         ))
-      if (id !== undefined) await runManagerCommand({ kind: 'install', id }, `${id} installed`)
+      if (id !== undefined) {
+        await runManagerCommand(
+          { kind: 'install', id },
+          localizer.text('vscode.extensions.installed', { id }),
+        )
+      }
     }),
 
     vscode.commands.registerCommand('modkit.extensions.update', async (argument: unknown) => {
       const id =
         managerEntryId(argument) ??
-        (await pickManagerEntry('Update a Modkit extension', entry => entry.updateAvailable))
-      if (id !== undefined) await runManagerCommand({ kind: 'update', id }, `${id} updated`)
+        (await pickManagerEntry(
+          localizer.text('vscode.extensions.updateTitle'),
+          entry => entry.updateAvailable,
+        ))
+      if (id !== undefined) {
+        await runManagerCommand(
+          { kind: 'update', id },
+          localizer.text('vscode.extensions.updated', { id }),
+        )
+      }
     }),
 
     vscode.commands.registerCommand('modkit.extensions.remove', async (argument: unknown) => {
       const id =
         managerEntryId(argument) ??
         (await pickManagerEntry(
-          'Remove a Modkit extension',
+          localizer.text('vscode.extensions.removeTitle'),
           entry =>
             entry.installedVersion !== undefined &&
             entry.source !== 'bundled' &&
             entry.source !== 'workspace',
         ))
       if (id === undefined) return
+      const remove = localizer.text('common.remove')
       const confirmed = await vscode.window.showWarningMessage(
-        `Remove ${id} from this Modkit installation?`,
+        localizer.text('vscode.extensions.removeConfirm', { id }),
         { modal: true },
-        'Remove',
+        remove,
       )
-      if (confirmed === 'Remove') {
-        await runManagerCommand({ kind: 'remove', id }, `${id} removed`)
+      if (confirmed === remove) {
+        await runManagerCommand(
+          { kind: 'remove', id },
+          localizer.text('vscode.extensions.removed', { id }),
+        )
       }
     }),
 
@@ -2147,7 +2274,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       const id =
         managerEntryId(argument) ??
         (await pickManagerEntry(
-          'Enable a Modkit extension',
+          `${localizer.text('extensions.action.enableExtension')}…`,
           entry =>
             entry.installedVersion !== undefined &&
             !entry.enabled &&
@@ -2155,7 +2282,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             entry.source !== 'workspace',
         ))
       if (id !== undefined) {
-        await runManagerCommand({ kind: 'set-enabled', id, enabled: true }, `${id} enabled`)
+        await runManagerCommand(
+          { kind: 'set-enabled', id, enabled: true },
+          `${id}: ${localizer.text('common.enabled')}`,
+        )
       }
     }),
 
@@ -2163,11 +2293,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       const id =
         managerEntryId(argument) ??
         (await pickManagerEntry(
-          'Disable a Modkit extension',
+          `${localizer.text('extensions.action.disableExtension')}…`,
           entry => entry.enabled && entry.source !== 'bundled' && entry.source !== 'workspace',
         ))
       if (id !== undefined) {
-        await runManagerCommand({ kind: 'set-enabled', id, enabled: false }, `${id} disabled`)
+        await runManagerCommand(
+          { kind: 'set-enabled', id, enabled: false },
+          `${id}: ${localizer.text('common.disabled')}`,
+        )
       }
     }),
 
@@ -2184,7 +2317,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         }
         const picked = await vscode.window.showOpenDialog({
           canSelectMany: false,
-          openLabel: 'Open in Modkit',
+          openLabel: localizer.text('action.openFile'),
         })
         const first = picked?.[0]
         if (first !== undefined) openResource(first)
@@ -2213,7 +2346,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         const subject = activeSubject ?? vscode.window.activeTextEditor?.document.uri.fsPath
         if (subject === undefined) {
           void vscode.window.showInformationMessage(
-            'Modkit: open a file first — these commands run against the active subject.',
+            `Modkit: ${localizer.text('vscode.command.openFileFirst')}`,
           )
           return undefined
         }
@@ -2223,7 +2356,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             description: item.id,
             detail: item.summary,
           })),
-          { title: `Run on ${subjectLabel(subject)}`, placeHolder: 'Pick a command' },
+          {
+            title: localizer.text('vscode.command.runOn', { subject: subjectLabel(subject) }),
+            placeHolder: localizer.text('vscode.command.pick'),
+          },
         )
         if (picked === undefined) return undefined
         /*
@@ -2233,8 +2369,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         let entry: string | undefined
         if (picked.description === 'subject.extract') {
           entry = await vscode.window.showInputBox({
-            title: 'Member to extract',
-            prompt: 'Path of the entry inside the container',
+            title: localizer.text('vscode.command.memberToExtract'),
+            prompt: localizer.text('vscode.command.memberPath'),
           })
           if (entry === undefined) return undefined
         }
@@ -2254,7 +2390,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       (async () => {
         const container = containerFrom(argument)
         if (container === undefined) {
-          void vscode.window.showInformationMessage('Modkit: open a container before searching it.')
+          void vscode.window.showInformationMessage(
+            `Modkit: ${localizer.text('vscode.container.openBeforeSearch')}`,
+          )
           return undefined
         }
         const supplied =
@@ -2264,7 +2402,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         const query =
           typeof supplied === 'string'
             ? supplied
-            : await vscode.window.showInputBox({ title: `Search ${basename(container)}` })
+            : await vscode.window.showInputBox({
+                title: localizer.text('vscode.container.search', {
+                  container: basename(container),
+                }),
+              })
         if (query === undefined || query.trim().length === 0) return undefined
         const hits = await containers.search(container, query)
         const picked = await vscode.window.showQuickPick(
@@ -2272,9 +2414,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             label: hit.path,
             ...(hit.node.size === undefined
               ? {}
-              : { description: `${String(hit.node.size)} bytes` }),
+              : {
+                  description: localizer.text('vscode.container.bytes', {
+                    count: String(hit.node.size),
+                  }),
+                }),
           })),
-          { title: `Matches in ${basename(container)}` },
+          {
+            title: localizer.text('vscode.container.matches', {
+              container: basename(container),
+            }),
+          },
         )
         if (picked === undefined) return undefined
         const uri = vscode.Uri.from({
@@ -2292,7 +2442,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         const container = containerFrom(argument)
         if (container === undefined) {
           void vscode.window.showInformationMessage(
-            'Modkit: open a container before refreshing it.',
+            `Modkit: ${localizer.text('vscode.container.openBeforeRefresh')}`,
           )
           return false
         }
@@ -2309,13 +2459,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         const container = containerFrom(argument)
         if (container === undefined) {
           void vscode.window.showInformationMessage(
-            'Modkit: open a container or one of its members before materializing.',
+            `Modkit: ${localizer.text('vscode.container.openBeforeMaterialize')}`,
           )
           return undefined
         }
         const entry =
           entryFrom(argument) ??
-          (await pickContainerMember(container, `Materialize a member of ${basename(container)}`))
+          (await pickContainerMember(
+            container,
+            localizer.text('vscode.container.pickMaterialize', {
+              container: basename(container),
+            }),
+          ))
         if (entry === undefined || entry.length === 0) return undefined
         const node = await containers.stat(container, entry)
         assertMaterializationBound(entry, node)
@@ -2329,7 +2484,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             : typeof requestedTarget === 'string' && isAbsolute(requestedTarget)
               ? vscode.Uri.file(requestedTarget)
               : await vscode.window.showSaveDialog({
-                  title: `Materialize ${entry}`,
+                  title: localizer.text('vscode.container.materialize', { entry }),
                   defaultUri: vscode.Uri.file(join(dirname(container), basename(entry))),
                 })
         if (target === undefined) return undefined
@@ -2375,7 +2530,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         }
         if (candidates.length === 0) {
           void vscode.window.showWarningMessage(
-            'Modkit: no verified installation was found by the installed game extensions.',
+            `Modkit: ${localizer.text('vscode.game.noVerifiedInstallation')}`,
           )
           return undefined
         }
@@ -2386,7 +2541,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             detail: source.installPath,
             source,
           })),
-          { title: 'Select a game installation as a content source' },
+          { title: localizer.text('vscode.game.selectInstallation') },
         )
         if (picked === undefined) return undefined
         granted.add(resolve(picked.source.installPath))
@@ -2416,7 +2571,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
                     detail: source.installPath,
                     source,
                   })),
-                  { title: 'Unload a selected content source' },
+                  { title: localizer.text('vscode.game.unloadSource') },
                 )
                 .then(item => item?.source)
         if (selected === undefined) return false
@@ -2445,13 +2600,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
               : activeSubject
         if (requestedPath === undefined || !isAbsolute(requestedPath)) {
           void vscode.window.showWarningMessage(
-            'Modkit: open a local map file before launching a native game.',
+            `Modkit: ${localizer.text('vscode.game.openMapFirst')}`,
           )
           return undefined
         }
         if (selectedSources.length === 0) {
           void vscode.window.showWarningMessage(
-            'Modkit: select a verified game installation before launching a map.',
+            `Modkit: ${localizer.text('vscode.game.selectInstallationFirst')}`,
           )
           return undefined
         }
@@ -2466,12 +2621,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
                     detail: item.installPath,
                     source: item,
                   })),
-                  { title: 'Choose the installed game which will open this map' },
+                  { title: localizer.text('vscode.game.chooseInstallation') },
                 )
                 .then(item => item?.source)
         if (source === undefined) {
           void vscode.window.showWarningMessage(
-            'Modkit: select a verified game installation before launching a map.',
+            `Modkit: ${localizer.text('vscode.game.selectInstallationFirst')}`,
           )
           return undefined
         }
@@ -2503,7 +2658,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             : undefined
         if (installation === undefined) {
           void vscode.window.showErrorMessage(
-            'Modkit: the selected installation is no longer verified; select it again.',
+            `Modkit: ${localizer.text('vscode.game.installationStale')}`,
           )
           return undefined
         }
@@ -2515,6 +2670,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             resourcePath: requestedPath,
           },
           {
+            localizer,
             confirm: async request =>
               (await vscode.window.showWarningMessage(
                 request.title,
@@ -2539,13 +2695,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         }
         if (launched.state !== 'launched') {
           void vscode.window.showErrorMessage(
-            `Modkit: native game launch did not start (${launched.state}). See diagnostics.`,
+            `Modkit: ${localizer.text('vscode.game.launchFailed', { state: launched.state })}`,
           )
           return launched
         }
         try {
           void vscode.window.showInformationMessage(
-            `Modkit: ${installation.displayName} started with ${basename(requestedPath)}.`,
+            `Modkit: ${localizer.text('vscode.game.launched', {
+              game: installation.displayName,
+              map: basename(requestedPath),
+            })}`,
           )
           return launched.receipt
         } finally {
@@ -2561,7 +2720,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       for (const [served, path] of liveSubjects) {
         if (path !== activeSubject) continue
         served.open(activeSubject)
-        served.notice('The active subject and its relation/tree stages were refreshed.')
+        served.notice(localizer.text('vscode.shell.activeSubjectRefreshed'))
         refreshed = true
       }
       return refreshed
@@ -2596,7 +2755,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           argument instanceof vscode.Uri
             ? argument
             : await vscode.window.showSaveDialog({
-                title: 'Export Modkit diagnostics',
+                title: localizer.text('vscode.shell.exportDiagnostics'),
                 defaultUri: vscode.Uri.file(
                   join(workspaceFolders()[0] ?? extensionRoot, 'modkit.log'),
                 ),
@@ -2625,14 +2784,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
               (
                 await vscode.window.showOpenDialog({
                   canSelectMany: false,
-                  openLabel: 'Browse container',
+                  openLabel: localizer.text('vscode.container.browse'),
                 })
               )?.[0])
         if (uri === undefined) return
         const target = describeOpenTarget(uri)
         if (target.state === 'refused' || target.kind !== 'file') {
           void vscode.window.showWarningMessage(
-            `Modkit cannot browse this: ${target.state === 'refused' ? target.reason : 'it is already a container member'}`,
+            localizer.text('vscode.container.cannotBrowse', {
+              reason:
+                target.state === 'refused'
+                  ? target.reason
+                  : localizer.text('vscode.container.alreadyMember'),
+            }),
           )
           return
         }
@@ -2644,15 +2808,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error)
           log(`browse refused ${basename(target.path)}: ${message}`)
-          void vscode.window.showWarningMessage(`Modkit cannot browse this file: ${message}`)
+          void vscode.window.showWarningMessage(
+            localizer.text('vscode.container.cannotBrowse', { reason: message }),
+          )
           return
         }
         const existing = vscode.workspace.workspaceFolders
         if (existing === undefined || existing.length === 0) {
           void vscode.window.showWarningMessage(
-            'Modkit: open a folder in this window first — adding the first workspace folder ' +
-              'restarts the extension host, which would close the container again. ' +
-              'Open a folder and run this command again.',
+            `Modkit: ${localizer.text('vscode.container.openFolderFirst')}`,
           )
           return
         }
@@ -2675,7 +2839,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         )
         if (!added) {
           void vscode.window.showWarningMessage(
-            'Modkit: VS Code did not accept the container as a workspace folder.',
+            `Modkit: ${localizer.text('vscode.container.workspaceRejected')}`,
           )
         }
       })()
@@ -2697,7 +2861,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         const active = activeSubject
         if (active === undefined || parseContainerUriText(active) !== undefined) {
           void vscode.window.showInformationMessage(
-            'Modkit: open a container file first, then run this command to pick a member.',
+            `Modkit: ${localizer.text('vscode.container.openFileFirst')}`,
           )
           return
         }
@@ -2708,13 +2872,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error)
           void vscode.window.showWarningMessage(
-            `Modkit: ${basename(active)} holds no entries: ${message}`,
+            `Modkit: ${localizer.text('vscode.container.holdsNoEntries', {
+              container: basename(active),
+              reason: message,
+            })}`,
           )
           return
         }
         const picked = await vscode.window.showQuickPick([...members], {
-          title: `Members of ${basename(active)}`,
-          placeHolder: 'Open a member as a subject of its own',
+          title: localizer.text('vscode.container.members', { container: basename(active) }),
+          placeHolder: localizer.text('vscode.container.openMember'),
         })
         if (picked === undefined) return
         openResource(
@@ -2740,7 +2907,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         })
         if (!added) {
           log(`modkit.extensions unchanged: ${reason ?? 'already present'}`)
-          void vscode.window.showInformationMessage(`Modkit: ${reason ?? 'already present'}`)
+          void vscode.window.showInformationMessage(
+            `Modkit: ${reason ?? localizer.text('vscode.shell.alreadyPresent')}`,
+          )
           return
         }
         // `write` logs, and asks to reload — this extension host composed once at activation.
@@ -2750,17 +2919,35 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
     vscode.commands.registerCommand('modkit.explainResolution', () => {
       const lines = [
-        `topology: ${host.services.host.topology.topologyId}`,
-        `extension host: ${host.services.host.profile.realmId} — ` +
-          `${host.services.host.profile.facilities.length} facilities`,
-        `codecs: ${host.services.workers.profile.realmId} (${host.services.executionProfiles.join('/')})`,
-        `webview: ${host.webview.profile.realmId} — ${host.webview.profile.facilities.length} facilities`,
-        `extensions: ${host.extensions.bundled.length + host.extensions.installed.length} loaded, ` +
-          `${host.extensions.failures.length + host.extensions.problems.length} refused`,
-        `contributions: ${host.contributions.length} inventoried, ` +
-          `${host.contributions.filter(row => row.disabled).length} switched off`,
-        `detectable types: ${host.supportedExtensions.length}`,
-        `diagnostics: ${host.services.host.inventory.diagnostics.length}`,
+        localizer.text('vscode.resolution.topology', {
+          id: host.services.host.topology.topologyId,
+        }),
+        localizer.text('vscode.resolution.extensionHost', {
+          realm: host.services.host.profile.realmId,
+          count: host.services.host.profile.facilities.length,
+        }),
+        localizer.text('vscode.resolution.codecs', {
+          realm: host.services.workers.profile.realmId,
+          profiles: host.services.executionProfiles.join('/'),
+        }),
+        localizer.text('vscode.resolution.webview', {
+          realm: host.webview.profile.realmId,
+          count: host.webview.profile.facilities.length,
+        }),
+        localizer.text('vscode.resolution.extensions', {
+          loaded: host.extensions.bundled.length + host.extensions.installed.length,
+          refused: host.extensions.failures.length + host.extensions.problems.length,
+        }),
+        localizer.text('vscode.resolution.contributions', {
+          count: host.contributions.length,
+          disabled: host.contributions.filter(row => row.disabled).length,
+        }),
+        localizer.text('vscode.resolution.detectableTypes', {
+          count: host.supportedExtensions.length,
+        }),
+        localizer.text('vscode.resolution.diagnostics', {
+          count: host.services.host.inventory.diagnostics.length,
+        }),
       ]
       for (const line of lines) log(line)
       void vscode.window.showInformationMessage(lines.join(' · '), { modal: false })
@@ -2811,7 +2998,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       const target = describeOpenTarget(document.uri)
       if (target.state === 'refused') {
         log(`refused ${document.uri.toString()}: ${target.reason}`)
-        panel.webview.html = refusalHtml(target.reason)
+        panel.webview.html = refusalHtml(target.reason, localizer)
         return
       }
       grantFor(target)
@@ -2931,7 +3118,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       // The grant widened or narrowed; every open page reloads its tree and is told why.
       for (const served of live) {
         served.publishRoots()
-        served.notice('The workspace folders changed, so the file tree was reloaded.')
+        served.notice(localizer.text('vscode.shell.workspaceFoldersChanged'))
       }
     }),
   )
@@ -2988,9 +3175,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     status.text = `$(file-binary) ${describeSubject(path)}`
     status.tooltip = [
       describeSubject(path),
-      facts === undefined ? 'not opened by a codec' : `${facts.contributionId}/${facts.variantId}`,
+      facts === undefined
+        ? localizer.text('vscode.shell.statusNotOpened')
+        : `${facts.contributionId}/${facts.variantId}`,
       size,
-      `reads up to ${VSCODE_MAXIMUM_SUBJECT_BYTES / (1024 * 1024)} MiB per file`,
+      localizer.text('vscode.shell.statusReadLimit', {
+        mib: VSCODE_MAXIMUM_SUBJECT_BYTES / (1024 * 1024),
+      }),
     ]
       .filter(line => line !== undefined)
       .join('\n')

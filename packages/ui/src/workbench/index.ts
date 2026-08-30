@@ -15,6 +15,9 @@
  */
 import { setPart, setState, type StateName } from '../parts.js'
 import { safeViewerText } from '../viewer/index.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { WORKBENCH_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export interface WorkbenchHostState {
   readonly label: string
@@ -23,6 +26,7 @@ export interface WorkbenchHostState {
 }
 
 export interface WorkbenchOptions {
+  readonly localizer?: UiLocalizer
   readonly title: string
   readonly host?: WorkbenchHostState
 }
@@ -41,6 +45,7 @@ export interface Workbench {
 }
 
 export function createWorkbench(document: Document, options: WorkbenchOptions): Workbench {
+  const localizer = withEnglishUiFallback(options.localizer, WORKBENCH_FALLBACK_MESSAGES)
   const root = document.createElement('div')
   root.className = 'modkit-viewer modkit-workbench'
   setPart(root, 'workbench')
@@ -50,7 +55,7 @@ export function createWorkbench(document: Document, options: WorkbenchOptions): 
   setPart(titlebar, 'workbench.titlebar')
 
   const activitybar = document.createElement('nav')
-  activitybar.setAttribute('aria-label', 'Workbench activities')
+  activitybar.setAttribute('aria-label', localizer.text('workbench.activities'))
   setPart(activitybar, 'workbench.activitybar')
 
   const sidebar = document.createElement('aside')
@@ -72,7 +77,10 @@ export function createWorkbench(document: Document, options: WorkbenchOptions): 
 
   const setHostState = (state: WorkbenchHostState): void => {
     const reasons = state.degradedReasons ?? []
-    hostStatus.textContent = `${safeViewerText(state.label, 128)} · ${state.facilities.length} facilities`
+    hostStatus.textContent = localizer.text('workbench.facilities', {
+      label: safeViewerText(state.label, 128),
+      count: state.facilities.length,
+    })
     hostStatus.title = reasons.length === 0 ? state.facilities.join(', ') : reasons.join('\n')
     const states: StateName[] = reasons.length === 0 ? [] : ['degraded']
     setState(hostStatus, states)
@@ -82,9 +90,9 @@ export function createWorkbench(document: Document, options: WorkbenchOptions): 
   }
   setHostState(
     options.host ?? {
-      label: 'Host unavailable',
+      label: localizer.text('workbench.hostUnavailable'),
       facilities: [],
-      degradedReasons: ['No host profile'],
+      degradedReasons: [localizer.text('workbench.noHostProfile')],
     },
   )
 

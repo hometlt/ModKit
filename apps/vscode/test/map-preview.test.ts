@@ -11,6 +11,7 @@ import {
   continueVsCodeMapPreviewSelection,
   parseVsCodeMapPreviewSelectionRequest,
 } from '../src/map-preview-selection.js'
+import { createVscodeLocalizer } from '../src/localization.js'
 
 const budget = {
   maxInputBytes: 64n * 1024n * 1024n,
@@ -91,6 +92,26 @@ describe('VS Code map preview binding', () => {
     })
   })
 
+  it('uses the selected VS Code locale for host-owned map diagnostics', async () => {
+    const result = await prepareVsCodeMapPreview({
+      services: {} as never,
+      opened: opened(async () => undefined),
+      grant: { id: 'vscode-map-locale', classes: ['read-source'] },
+      budgets: budget,
+      localizer: createVscodeLocalizer('ru-RU'),
+      coordinate: async () => ({
+        state: 'selection-required',
+        candidates: [{ candidateId: 'map:one', displayName: 'One' }],
+        diagnostics: [],
+      }),
+    })
+
+    expect(
+      result.opened.diagnostics.find(item => item.code === 'x3.app/map-preview-selection-required')
+        ?.message,
+    ).toContain('нужно явно выбрать вариант')
+  })
+
   it('wires one generic desktop resolver from the composed host into every served page', () => {
     const source = readFileSync(join(import.meta.dirname, '..', 'src', 'extension.ts'), 'utf8')
     const factoryCall = /createNodeMapPreviewResourcePlanResolver\(\{[\s\S]*?\n {2}\}\)/u.exec(
@@ -100,5 +121,6 @@ describe('VS Code map preview binding', () => {
     expect(factoryCall).toContain('subjects: host.services')
     expect(factoryCall).not.toContain('configuredPaths')
     expect(source).toContain('mapPreviewResourcePlanResolver,')
+    expect(source).toContain('localizer,')
   })
 })

@@ -17,6 +17,9 @@ import {
   ViewerMountScope,
 } from '../viewer/index.js'
 import { collectEncodedMedia } from '../media/encoded.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { AUDIO_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export const AUDIO_MAXIMUM_BYTES = 96 * 1024 * 1024
 export const WAVEFORM_BUCKETS = 900
@@ -97,105 +100,120 @@ const clock = (seconds: number): string => {
   return `${String(Math.floor(whole / 60)).padStart(2, '0')}:${String(whole % 60).padStart(2, '0')}`
 }
 
-export const audioViewer: ViewerModule = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal)
-    const root = createSurface(args.container, 'Audio viewer')
-    const stage = element(root, 'div', { part: 'audio' })
-    const toolbar = element(stage, 'div', { part: 'audio.toolbar', role: 'toolbar' })
-    toolbar.setAttribute('aria-label', 'Audio controls')
-    const readout = element(stage, 'output', { part: 'audio.readout' })
-    const canvas = element(stage, 'canvas', { part: 'audio.waveform' }) as HTMLCanvasElement
-    canvas.setAttribute('role', 'img')
-    const player = element(stage, 'audio', { part: 'audio.player' }) as HTMLAudioElement
-    player.controls = true
+export interface AudioViewerOptions {
+  readonly localizer?: UiLocalizer
+}
 
-    const lease = await unknownSourceLease(
-      args.sources,
-      args.slot,
-      'common.view/audio-media-source',
-    )
-    if (lease === undefined) throw new TypeError('audio binding is unavailable')
-    scope.lease(lease)
+export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModule {
+  const localizer = withEnglishUiFallback(options.localizer, AUDIO_FALLBACK_MESSAGES)
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal)
+      const root = createSurface(args.container, localizer.text('viewer.audio'))
+      const stage = element(root, 'div', { part: 'audio' })
+      const toolbar = element(stage, 'div', { part: 'audio.toolbar', role: 'toolbar' })
+      toolbar.setAttribute('aria-label', localizer.text('viewer.audioControls'))
+      const readout = element(stage, 'output', { part: 'audio.readout' })
+      const canvas = element(stage, 'canvas', { part: 'audio.waveform' }) as HTMLCanvasElement
+      canvas.setAttribute('role', 'img')
+      const player = element(stage, 'audio', { part: 'audio.player' }) as HTMLAudioElement
+      player.controls = true
 
-    let model: WaveformModel | undefined
-    let cursor = 0
-
-    const context = canvas.getContext('2d')
-    if (context === null) throw new TypeError('2d canvas context is unavailable')
-
-    const paint = (): void => {
-      if (model === undefined) return
-      const box = stage.getBoundingClientRect()
-      const width = Math.max(160, Math.round(box.width - 16))
-      const height = 120
-      canvas.width = width
-      canvas.height = height
-      const styles = getComputedStyle(root)
-      const ink = styles.getPropertyValue('--mk-chart-categorical-1').trim() || '#4daafc'
-      const ground = styles.getPropertyValue('--mk-color-sunken').trim() || '#181818'
-      const guide = styles.getPropertyValue('--mk-color-border').trim() || '#2b2b2b'
-      context.fillStyle = ground
-      context.fillRect(0, 0, width, height)
-      context.strokeStyle = guide
-      context.beginPath()
-      context.moveTo(0, height / 2)
-      context.lineTo(width, height / 2)
-      context.stroke()
-      context.fillStyle = ink
-      const buckets = model.peaks.length / 2
-      for (let x = 0; x < width; x += 1) {
-        const bucket = Math.min(buckets - 1, Math.floor((x / width) * buckets))
-        const minimum = model.peaks[bucket * 2] as number
-        const maximum = model.peaks[bucket * 2 + 1] as number
-        const top = (1 - maximum) * (height / 2)
-        const bottom = (1 - minimum) * (height / 2)
-        context.fillRect(x, top, 1, Math.max(1, bottom - top))
-      }
-      if (cursor > 0 && model.duration > 0) {
-        context.fillStyle = styles.getPropertyValue('--mk-color-accent').trim() || '#0078d4'
-        context.fillRect(Math.round((cursor / model.duration) * width), 0, 2, height)
-      }
-      setViewerText(
-        readout,
-        `${clock(cursor)} / ${clock(model.duration)} · ${model.channels}ch · ${(model.sampleRate / 1000).toFixed(1)} kHz · ${(model.bytes / 1024).toFixed(0)} KiB`,
+      const lease = await unknownSourceLease(
+        args.sources,
+        args.slot,
+        'common.view/audio-media-source',
       )
-    }
+      if (lease === undefined) throw new TypeError('audio binding is unavailable')
+      scope.lease(lease)
 
-    canvas.addEventListener('click', event => {
-      if (model === undefined) return
-      const box = canvas.getBoundingClientRect()
-      cursor = ((event.clientX - box.left) / box.width) * model.duration
-      paint()
-    })
+      let model: WaveformModel | undefined
+      let cursor = 0
 
-    setState(stage, ['loading'])
-    try {
-      const loaded = await loadWaveform(lease.value as AudioMediaSource, scope.signal)
-      model = loaded.model
-      const objectUrl = URL.createObjectURL(
-        new Blob([loaded.bytes as BlobPart], { type: loaded.mediaType }),
-      )
-      player.src = objectUrl
-      scope.cleanup(() => URL.revokeObjectURL(objectUrl))
-      setState(stage, [])
-      paint()
-    } catch (error) {
-      setState(stage, ['error'])
-      canvas.remove()
-      player.remove()
-      element(stage, 'p', {
-        part: 'viewer.empty',
-        text: `The platform decoder cannot render this audio: ${
-          error instanceof Error ? error.message : String(error)
-        }. A format-specific decoder provider is required.`,
+      const context = canvas.getContext('2d')
+      if (context === null) throw new TypeError('2d canvas context is unavailable')
+
+      const paint = (): void => {
+        if (model === undefined) return
+        const box = stage.getBoundingClientRect()
+        const width = Math.max(160, Math.round(box.width - 16))
+        const height = 120
+        canvas.width = width
+        canvas.height = height
+        const styles = getComputedStyle(root)
+        const ink = styles.getPropertyValue('--mk-chart-categorical-1').trim() || '#4daafc'
+        const ground = styles.getPropertyValue('--mk-color-sunken').trim() || '#181818'
+        const guide = styles.getPropertyValue('--mk-color-border').trim() || '#2b2b2b'
+        context.fillStyle = ground
+        context.fillRect(0, 0, width, height)
+        context.strokeStyle = guide
+        context.beginPath()
+        context.moveTo(0, height / 2)
+        context.lineTo(width, height / 2)
+        context.stroke()
+        context.fillStyle = ink
+        const buckets = model.peaks.length / 2
+        for (let x = 0; x < width; x += 1) {
+          const bucket = Math.min(buckets - 1, Math.floor((x / width) * buckets))
+          const minimum = model.peaks[bucket * 2] as number
+          const maximum = model.peaks[bucket * 2 + 1] as number
+          const top = (1 - maximum) * (height / 2)
+          const bottom = (1 - minimum) * (height / 2)
+          context.fillRect(x, top, 1, Math.max(1, bottom - top))
+        }
+        if (cursor > 0 && model.duration > 0) {
+          context.fillStyle = styles.getPropertyValue('--mk-color-accent').trim() || '#0078d4'
+          context.fillRect(Math.round((cursor / model.duration) * width), 0, 2, height)
+        }
+        setViewerText(
+          readout,
+          localizer.text('viewer.audioSummary', {
+            position: clock(cursor),
+            duration: clock(model.duration),
+            channels: model.channels,
+            rate: (model.sampleRate / 1000).toFixed(1),
+            size: (model.bytes / 1024).toFixed(0),
+          }),
+        )
+      }
+
+      canvas.addEventListener('click', event => {
+        if (model === undefined) return
+        const box = canvas.getBoundingClientRect()
+        cursor = ((event.clientX - box.left) / box.width) * model.duration
+        paint()
       })
-    }
 
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset['revision'] = descriptor.revision
-      paint()
-    })
-  },
-})
+      setState(stage, ['loading'])
+      try {
+        const loaded = await loadWaveform(lease.value as AudioMediaSource, scope.signal)
+        model = loaded.model
+        const objectUrl = URL.createObjectURL(
+          new Blob([loaded.bytes as BlobPart], { type: loaded.mediaType }),
+        )
+        player.src = objectUrl
+        scope.cleanup(() => URL.revokeObjectURL(objectUrl))
+        setState(stage, [])
+        paint()
+      } catch (error) {
+        setState(stage, ['error'])
+        canvas.remove()
+        player.remove()
+        element(stage, 'p', {
+          part: 'viewer.empty',
+          text: localizer.text('viewer.audioDecodeError', {
+            reason: error instanceof Error ? error.message : String(error),
+          }),
+        })
+      }
+
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        root.dataset['revision'] = descriptor.revision
+        paint()
+      })
+    },
+  })
+}
+
+export const audioViewer: ViewerModule = createAudioViewer()

@@ -8,8 +8,10 @@
  * a control that cannot construct its input.
  */
 import type { AssetEditPlan, JsonValue, OperationResult } from '@modkitx-x3/sdk'
+import type { UiLocalizer } from '@modkitx-x3/ui/localization'
 
 import { descriptorOperations } from './view-policy.js'
+import { createVscodeLocalizer } from './localization.js'
 
 export interface EditOperationField {
   readonly name: string
@@ -245,11 +247,71 @@ export const EDIT_FORM_IDS: readonly string[] = Object.freeze(
   [...FORMS_BY_HANDLER.values()].flatMap(forms => forms.map(item => item.id)),
 )
 
+const FORM_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  'png-set-text': 'pngSetText',
+  'mp3-set-text-frame': 'mp3SetTextFrame',
+  'jpeg-set-comment': 'jpegSetComment',
+  'jpeg-remove-segment': 'jpegRemoveSegment',
+  'zip-add-entry': 'zipAddEntry',
+  'zip-remove-entry': 'zipRemoveEntry',
+  'zip-rename-entry': 'zipRenameEntry',
+  'zip-replace-entry': 'zipReplaceEntry',
+})
+
+const fieldKey = (formId: string, name: string): string => {
+  if (name === 'keyword') return formId === 'mp3-set-text-frame' ? 'frame' : 'keyword'
+  if (name === 'path') return 'entryPath'
+  if (name === 'content') return 'contents'
+  if (name === 'text') return formId === 'jpeg-set-comment' ? 'comment' : 'text'
+  return name
+}
+
+const hintKey = (formId: string, name: string): string | undefined => {
+  if (formId === 'png-set-text' && name === 'keyword') return 'pngKeyword'
+  if (formId === 'png-set-text' && name === 'text') return 'pngText'
+  if (formId === 'mp3-set-text-frame' && name === 'keyword') return 'mp3Frame'
+  if (formId === 'jpeg-remove-segment' && name === 'marker') return 'metadataMarker'
+  if (formId === 'zip-add-entry' && name === 'path') return 'archivePath'
+  if (name === 'content') return 'utf8Contents'
+  return undefined
+}
+
+const localizeForm = (definition: EditOperationForm, localizer: UiLocalizer): EditOperationForm => {
+  const key = FORM_KEYS[definition.id]
+  if (key === undefined) return definition
+  const fields = Object.freeze(
+    definition.fields.map(item => {
+      const field = fieldKey(definition.id, item.name)
+      const hint = hintKey(definition.id, item.name)
+      return Object.freeze({
+        ...item,
+        label: localizer.text(`vscode.edit.field.${field}`),
+        ...(hint === undefined ? {} : { hint: localizer.text(`vscode.edit.hint.${hint}`) }),
+      })
+    }),
+  )
+  return Object.freeze({
+    ...definition,
+    label: localizer.text(`vscode.edit.form.${key}.label`),
+    summary: localizer.text(`vscode.edit.form.${key}.summary`),
+    fields,
+    build(values: ReadonlyMap<string, string>) {
+      for (const item of fields) {
+        if (item.required && (values.get(item.name) ?? '') === '') {
+          throw new TypeError(localizer.text('vscode.edit.required', { field: item.label }))
+        }
+      }
+      return definition.build(values)
+    },
+  })
+}
+
 export function editOffer(
   descriptor: Record<string, unknown>,
-  options: { readonly editable: boolean },
+  options: { readonly editable: boolean; readonly localizer?: UiLocalizer },
 ): EditOffer {
   if (!options.editable) return Object.freeze({ forms: [], unsupported: [] })
+  const localizer = options.localizer ?? createVscodeLocalizer('en')
   const forms: EditOperationForm[] = []
   const unsupported: UnsupportedEditOperation[] = []
   for (const operation of descriptorOperations(descriptor)) {
@@ -261,11 +323,13 @@ export function editOffer(
       unsupported.push({
         operationId: operation.id,
         handlerId: operation.handlerId,
-        reason: `this host cannot construct the input for «${operation.handlerId}» yet`,
+        reason: localizer.text('vscode.edit.unsupportedHandler', {
+          handler: operation.handlerId,
+        }),
       })
       continue
     }
-    forms.push(...known)
+    forms.push(...known.map(item => localizeForm(item, localizer)))
   }
   return Object.freeze({ forms: Object.freeze(forms), unsupported: Object.freeze(unsupported) })
 }
@@ -278,26 +342,32 @@ export function offersEditOperations(
   return offer.forms.length > 0 || offer.unsupported.length > 0
 }
 
-const INVOKE_REASONS: Readonly<Record<string, string>> = Object.freeze({
-  'not-declared': 'this codec does not declare that operation',
-  disabled: 'the codec disabled this operation for this file',
-  'dependency-required': 'the operation needs a dependency this host has not resolved',
-  'permission-missing': 'this session was not opened with permission to write the file',
-  'input-not-serializable': 'the values could not be sent to the codec',
-  'handler-unregistered': 'the codec registered no handler for that operation',
-  cancelled: 'the operation was cancelled',
-  'stale-revision': 'the file changed on disk after it was opened',
+const INVOKE_REASON_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  'not-declared': 'notDeclared',
+  disabled: 'disabled',
+  'dependency-required': 'dependencyRequired',
+  'permission-missing': 'permissionMissing',
+  'input-not-serializable': 'inputNotSerializable',
+  'handler-unregistered': 'handlerUnregistered',
+  cancelled: 'cancelled',
+  'stale-revision': 'staleRevision',
 })
 
 /** Keep the host's reason and first diagnostic verbatim beside the application explanation. */
-export function invokeRefusalMessage(result: {
-  readonly reason: string
-  readonly diagnostics?: readonly { readonly message: string }[]
-}): string {
-  const plain = INVOKE_REASONS[result.reason]
+export function invokeRefusalMessage(
+  result: {
+    readonly reason: string
+    readonly diagnostics?: readonly { readonly message: string }[]
+  },
+  localizer: UiLocalizer = createVscodeLocalizer('en'),
+): string {
+  const reasonKey = INVOKE_REASON_KEYS[result.reason]
+  const plain =
+    reasonKey === undefined ? undefined : localizer.text(`vscode.edit.refusal.${reasonKey}`)
   const detail = result.diagnostics?.[0]?.message
   const head = plain === undefined ? result.reason : `${plain} (${result.reason})`
-  return detail === undefined ? `refused: ${head}` : `refused: ${head} — ${detail}`
+  const message = localizer.text('vscode.edit.refused', { reason: head })
+  return detail === undefined ? message : `${message} — ${detail}`
 }
 
 /** Extract a Path A plan without converting it into a Path B change proposal. */

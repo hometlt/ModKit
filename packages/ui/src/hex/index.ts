@@ -8,6 +8,9 @@ import {
   unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
+import type { UiLocalizer } from '../localization/index.js'
+import { HEX_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export const HEX_WINDOW_BYTES = 4096
 
@@ -42,44 +45,60 @@ export class HexWindowModel {
   }
 }
 
-export const hexViewer: ViewerModule = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal)
-    const root = createSurface(args.container, 'Hex viewer')
-    const lease = await unknownSourceLease(args.sources, args.slot, 'common.view/byte-range-source')
-    if (lease === undefined) throw new TypeError('hex binding is unavailable')
-    scope.lease(lease)
-    const model = new HexWindowModel(lease.value as ByteRangeSource)
-    const controls = element(root, 'div', {
-      className: 'modkit-viewer__toolbar',
-      part: 'hex.toolbar',
-    })
-    const offset = element(controls, 'input', { part: 'hex.offset-input' }) as HTMLInputElement
-    offset.type = 'text'
-    offset.inputMode = 'numeric'
-    offset.value = '0'
-    offset.setAttribute('aria-label', 'Byte offset')
-    const go = element(controls, 'button', { text: 'Go', part: 'hex.go' }) as HTMLButtonElement
-    go.type = 'button'
-    const content = element(root, 'pre', { className: 'modkit-viewer__hex', part: 'hex.content' })
-    content.tabIndex = 0
+export interface HexViewerOptions {
+  readonly localizer?: UiLocalizer
+}
 
-    const render = async () => {
-      const value = /^(?:0x)?[0-9a-f]+$/iu.test(offset.value.trim())
-        ? BigInt(offset.value.trim())
-        : -1n
-      const window = await model.read(value, scope.signal)
-      setViewerText(content, window.text)
-      content.dataset['offset'] = window.offset.toString(10)
-    }
-    await render()
-    go.addEventListener('click', render)
-    scope.cleanup(() => go.removeEventListener('click', render))
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset['revision'] = descriptor.revision
-    })
-  },
-})
+export function createHexViewer(options: HexViewerOptions = {}): ViewerModule {
+  const localizer = withEnglishUiFallback(options.localizer, HEX_FALLBACK_MESSAGES)
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal)
+      const root = createSurface(args.container, localizer.text('viewer.hex'))
+      const lease = await unknownSourceLease(
+        args.sources,
+        args.slot,
+        'common.view/byte-range-source',
+      )
+      if (lease === undefined) throw new TypeError('hex binding is unavailable')
+      scope.lease(lease)
+      const model = new HexWindowModel(lease.value as ByteRangeSource)
+      const controls = element(root, 'div', {
+        className: 'modkit-viewer__toolbar',
+        part: 'hex.toolbar',
+      })
+      const offset = element(controls, 'input', { part: 'hex.offset-input' }) as HTMLInputElement
+      offset.type = 'text'
+      offset.inputMode = 'numeric'
+      offset.value = '0'
+      offset.setAttribute('aria-label', localizer.text('viewer.byteOffset'))
+      const go = element(controls, 'button', {
+        text: localizer.text('viewer.go'),
+        part: 'hex.go',
+      }) as HTMLButtonElement
+      go.type = 'button'
+      const content = element(root, 'pre', { className: 'modkit-viewer__hex', part: 'hex.content' })
+      content.tabIndex = 0
+
+      const render = async () => {
+        const value = /^(?:0x)?[0-9a-f]+$/iu.test(offset.value.trim())
+          ? BigInt(offset.value.trim())
+          : -1n
+        const window = await model.read(value, scope.signal)
+        setViewerText(content, window.text)
+        content.dataset['offset'] = window.offset.toString(10)
+      }
+      await render()
+      go.addEventListener('click', render)
+      scope.cleanup(() => go.removeEventListener('click', render))
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        root.dataset['revision'] = descriptor.revision
+      })
+    },
+  })
+}
+
+export const hexViewer: ViewerModule = createHexViewer()
 
 export default hexViewer

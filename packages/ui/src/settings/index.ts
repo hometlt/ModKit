@@ -16,6 +16,9 @@ import {
   type SettingsDocument,
   type SettingsStore,
 } from './model.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { SETTINGS_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export interface ThemeChoice {
   readonly id: string
@@ -114,6 +117,7 @@ export interface SettingsUiGroup {
 }
 
 export interface SettingsUiOptions {
+  readonly localizer?: UiLocalizer
   readonly store: SettingsStore
   /** Themes this host ships. Empty disables the appearance group's theme picker. */
   readonly themes: readonly ThemeChoice[]
@@ -165,21 +169,22 @@ interface Group {
 }
 
 export function createSettingsUi(document: Document, options: SettingsUiOptions): SettingsUi {
+  const localizer = withEnglishUiFallback(options.localizer, SETTINGS_FALLBACK_MESSAGES)
   const root = document.createElement('div')
   root.className = 'modkit-viewer modkit-settings'
   setPart(root, 'settings')
 
   const groupList = element(root, 'nav', { part: 'settings.groups' })
-  groupList.setAttribute('aria-label', 'Settings groups')
+  groupList.setAttribute('aria-label', localizer.text('settings.groups'))
 
   // A panel that can only be dismissed from a menu is a trap for anyone who opened it by accident.
   if (options.onClose !== undefined) {
     const close = element(groupList, 'button', {
       part: 'settings.close',
-      text: '← Back',
+      text: localizer.text('settings.back'),
     }) as HTMLButtonElement
     close.type = 'button'
-    close.title = 'Close settings (Esc)'
+    close.title = localizer.text('settings.close')
     close.addEventListener('click', () => options.onClose?.())
     root.addEventListener('keydown', event => {
       if (event.key === 'Escape') options.onClose?.()
@@ -203,9 +208,14 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
       await options.store.write(next)
       current = next
       options.onChange?.(next)
-      say(`Saved to ${options.store.location}`)
+      say(localizer.text('settings.savedTo', { location: options.store.location }))
     } catch (error) {
-      say(`Could not save: ${error instanceof Error ? error.message : String(error)}`, true)
+      say(
+        localizer.text('settings.saveError', {
+          reason: error instanceof Error ? error.message : String(error),
+        }),
+        true,
+      )
     }
   }
 
@@ -220,12 +230,16 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
   // ------------------------------------------------------------------ appearance
   const appearanceGroup: Group = {
     id: 'appearance',
-    label: 'Appearance',
+    label: localizer.text('settings.appearance'),
     render(host) {
       if (options.themes.length > 0) {
-        const control = row(host, 'Color theme', 'Applies immediately and to every viewer surface.')
+        const control = row(
+          host,
+          localizer.text('settings.colorTheme'),
+          localizer.text('settings.themeDescription'),
+        )
         const select = element(control, 'select', { part: 'settings.select' }) as HTMLSelectElement
-        select.setAttribute('aria-label', 'Color theme')
+        select.setAttribute('aria-label', localizer.text('settings.colorTheme'))
         for (const theme of options.themes) {
           const option = document.createElement('option')
           option.value = theme.id
@@ -242,17 +256,19 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
 
       const densityControl = row(
         host,
-        'Density',
-        'Compact matches VS Code list metrics; comfortable suits touch and larger displays.',
+        localizer.text('settings.density'),
+        localizer.text('settings.densityDescription'),
       )
       const density = element(densityControl, 'select', {
         part: 'settings.select',
       }) as HTMLSelectElement
-      density.setAttribute('aria-label', 'Density')
+      density.setAttribute('aria-label', localizer.text('settings.density'))
       for (const value of ['compact', 'comfortable'] as const) {
         const option = document.createElement('option')
         option.value = value
-        option.textContent = value[0]?.toUpperCase() + value.slice(1)
+        option.textContent = localizer.text(
+          value === 'compact' ? 'settings.compact' : 'settings.comfortable',
+        )
         density.append(option)
       }
       density.value = current.appearance.density
@@ -270,13 +286,12 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
   // ------------------------------------------------------------------ extensions
   const extensionsGroup: Group = {
     id: 'extensions',
-    label: 'Extensions',
+    label: localizer.text('settings.extensions'),
     render(host) {
       const intro = element(host, 'p', { part: 'settings.description' })
-      intro.textContent =
-        `Extensions are listed in ${options.store.location}. Each entry is an id, a path the host ` +
-        'loads from, and whether it is enabled. The same file is read by the desktop app, the web ' +
-        'app and a headless run.'
+      intro.textContent = localizer.text('settings.extensionsLocationIntro', {
+        location: options.store.location,
+      })
 
       const readOnly = options.extensionsReadOnly
       if (readOnly !== undefined) {
@@ -293,7 +308,7 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
         if (current.extensions.length === 0) {
           element(list, 'p', {
             part: 'settings.description',
-            text: 'No extensions are configured yet.',
+            text: localizer.text('settings.noExtensions'),
           })
         }
         for (const entry of current.extensions) {
@@ -304,7 +319,10 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
             }) as HTMLInputElement
             toggle.type = 'checkbox'
             toggle.checked = entry.enabled
-            toggle.setAttribute('aria-label', `Enable ${entry.id}`)
+            toggle.setAttribute(
+              'aria-label',
+              localizer.text('settings.enableExtension', { id: entry.id }),
+            )
             toggle.addEventListener('change', () => {
               void persist({
                 ...current,
@@ -318,7 +336,7 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
             // style against, and one read-only annotation does not earn an entry in it
             element(item, 'div', {
               part: 'settings.description',
-              text: entry.enabled ? 'enabled' : 'disabled',
+              text: localizer.text(entry.enabled ? 'common.enabled' : 'common.disabled'),
             })
           }
 
@@ -332,7 +350,7 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
           if (readOnly === undefined) {
             const remove = element(item, 'button', {
               part: 'settings.remove',
-              text: 'Remove',
+              text: localizer.text('common.remove'),
             }) as HTMLButtonElement
             remove.type = 'button'
             remove.addEventListener('click', () => {
@@ -351,10 +369,10 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
       const adder = element(host, 'div', { part: 'settings.adder' })
       const id = element(adder, 'input', { part: 'settings.input' }) as HTMLInputElement
       id.placeholder = 'publisher/name'
-      id.setAttribute('aria-label', 'Extension id')
+      id.setAttribute('aria-label', localizer.text('settings.extensionId'))
       const path = element(adder, 'input', { part: 'settings.input' }) as HTMLInputElement
-      path.placeholder = 'path, package or URL'
-      path.setAttribute('aria-label', 'Extension location')
+      path.placeholder = localizer.text('settings.extensionPathPlaceholder')
+      path.setAttribute('aria-label', localizer.text('settings.extensionLocation'))
 
       const add = (entry: ExtensionSetting): void => {
         void persist({
@@ -365,14 +383,14 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
 
       const addButton = element(adder, 'button', {
         part: 'settings.add',
-        text: 'Add',
+        text: localizer.text('settings.add'),
       }) as HTMLButtonElement
       addButton.type = 'button'
       addButton.addEventListener('click', () => {
         const entryId = id.value.trim()
         const entryPath = path.value.trim()
         if (entryId === '' || entryPath === '') {
-          say('An extension needs both an id and a location.', true)
+          say(localizer.text('settings.extensionRequired'), true)
           return
         }
         add({ id: entryId, path: entryPath, enabled: true })
@@ -383,7 +401,7 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
       if (options.browseForExtension !== undefined) {
         const browse = element(adder, 'button', {
           part: 'settings.add',
-          text: 'Browse…',
+          text: localizer.text('settings.browse'),
         }) as HTMLButtonElement
         browse.type = 'button'
         browse.addEventListener('click', () => {
@@ -402,20 +420,18 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
 
   const associationsGroup: Group = {
     id: 'associations',
-    label: 'File associations',
+    label: localizer.text('settings.fileAssociations'),
     render(host) {
       const types = [...(options.associableTypes ?? [])].sort()
       element(host, 'p', {
         part: 'settings.description',
-        text:
-          'Make this app the default for the formats its codecs can open. Registration is per-user ' +
-          'and reversible from the operating system, and nothing is written until you apply it.',
+        text: localizer.text('settings.associationsDescription'),
       })
 
       if (types.length === 0) {
         element(host, 'p', {
           part: 'settings.description',
-          text: 'No codecs are loaded, so there is nothing to associate.',
+          text: localizer.text('settings.noCodecs'),
         })
         return
       }
@@ -427,7 +443,7 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
         const toggle = element(item, 'input', { part: 'settings.toggle' }) as HTMLInputElement
         toggle.type = 'checkbox'
         toggle.checked = true
-        toggle.setAttribute('aria-label', `Associate .${type}`)
+        toggle.setAttribute('aria-label', localizer.text('settings.associate', { type }))
         toggle.addEventListener('change', () => {
           if (toggle.checked) chosen.add(type)
           else chosen.delete(type)
@@ -439,7 +455,7 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
       const actions = element(host, 'div', { part: 'settings.adder' })
       const all = element(actions, 'button', {
         part: 'settings.add',
-        text: 'Select all',
+        text: localizer.text('settings.selectAll'),
       }) as HTMLButtonElement
       all.type = 'button'
       all.addEventListener('click', () => {
@@ -451,7 +467,7 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
 
       const none = element(actions, 'button', {
         part: 'settings.add',
-        text: 'Select none',
+        text: localizer.text('settings.selectNone'),
       }) as HTMLButtonElement
       none.type = 'button'
       none.addEventListener('click', () => {
@@ -463,21 +479,26 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
 
       const apply = element(actions, 'button', {
         part: 'settings.add',
-        text: 'Set as default app',
+        text: localizer.text('settings.defaultApp'),
       }) as HTMLButtonElement
       apply.type = 'button'
       apply.addEventListener('click', () => {
         void (async () => {
           if (chosen.size === 0) {
-            say('Pick at least one file type first.', true)
+            say(localizer.text('settings.pickFileType'), true)
             return
           }
           try {
             apply.disabled = true
-            say((await registerFileTypes?.([...chosen])) ?? 'Nothing to register.')
+            say(
+              (await registerFileTypes?.([...chosen])) ??
+                localizer.text('settings.nothingToRegister'),
+            )
           } catch (error) {
             say(
-              `Could not register: ${error instanceof Error ? error.message : String(error)}`,
+              localizer.text('settings.registerError', {
+                reason: error instanceof Error ? error.message : String(error),
+              }),
               true,
             )
           } finally {
@@ -565,8 +586,11 @@ export function createSettingsUi(document: Document, options: SettingsUiOptions)
       options.onAppearance?.(loaded.appearance)
       say(
         problems.length === 0
-          ? `Loaded from ${options.store.location}`
-          : `Loaded with ${problems.length} problem(s): ${problems.join('; ')}`,
+          ? localizer.text('settings.loadedFrom', { location: options.store.location })
+          : localizer.text('settings.loadedProblems', {
+              count: problems.length,
+              problems: problems.join('; '),
+            }),
         problems.length > 0,
       )
       for (const group of groups) await group.reload?.(groupContext)

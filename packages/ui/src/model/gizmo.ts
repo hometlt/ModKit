@@ -11,6 +11,9 @@
  * widget stays themeable because every colour still resolves from a token.
  */
 import { element, setPart } from '../viewer/index.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { MODEL_GIZMO_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 import type { ViewAxis } from './orbit.js'
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
@@ -40,6 +43,7 @@ const AXES: readonly AxisSpec[] = Object.freeze([
 ])
 
 export interface ViewGizmoOptions {
+  readonly localizer?: UiLocalizer
   /** Called when an axis handle is activated by pointer or keyboard. */
   readonly onAxis?: (axis: ViewAxis) => void
 }
@@ -60,9 +64,10 @@ interface AxisNodes {
 }
 
 export function createViewGizmo(host: HTMLElement, options: ViewGizmoOptions = {}): ViewGizmo {
+  const localizer = withEnglishUiFallback(options.localizer, MODEL_GIZMO_FALLBACK_MESSAGES)
   const document = host.ownerDocument
   const root = element(host, 'div', { part: 'gizmo' })
-  root.setAttribute('aria-label', 'View axis')
+  root.setAttribute('aria-label', localizer.text('viewer.viewAxis'))
   root.setAttribute('role', 'group')
 
   const svg = document.createElementNS(SVG_NS, 'svg')
@@ -94,7 +99,10 @@ export function createViewGizmo(host: HTMLElement, options: ViewGizmoOptions = {
     const hit = document.createElementNS(SVG_NS, 'g')
     hit.setAttribute('role', 'button')
     hit.setAttribute('tabindex', '0')
-    hit.setAttribute('aria-label', `View from ${spec.key.toUpperCase()}`)
+    hit.setAttribute(
+      'aria-label',
+      localizer.text('viewer.viewFromAxis', { axis: spec.key.toUpperCase() }),
+    )
     setPart(hit, 'gizmo.handle')
 
     const handle = document.createElementNS(SVG_NS, 'circle')

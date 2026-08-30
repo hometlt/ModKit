@@ -10,29 +10,30 @@
  * editor, and a VS Code webview gets neither. The bounded and virtual text viewers cover reading;
  * the text editor stage covers writing.
  */
-import { audioViewer } from '@modkitx-x3/ui/audio'
-import { boundedTextViewer } from '@modkitx-x3/ui/code'
-import { subjectCardViewer } from '@modkitx-x3/ui/card'
-import { subjectCalculationsViewer } from '@modkitx-x3/ui/calculations'
-import { textEditor } from '@modkitx-x3/ui/editor'
+import { createAudioViewer } from '@modkitx-x3/ui/audio'
+import { createBoundedTextViewer } from '@modkitx-x3/ui/code'
+import { createSubjectCardViewer } from '@modkitx-x3/ui/card'
+import { createSubjectCalculationsViewer } from '@modkitx-x3/ui/calculations'
+import { createTextEditorModule } from '@modkitx-x3/ui/editor'
 import type { PreviewStage } from '@modkitx-x3/ui/explorer'
-import { relationGraphViewer } from '@modkitx-x3/ui/graph'
-import { gameTemplateViewer } from '@modkitx-x3/ui/template'
-import { hexViewer } from '@modkitx-x3/ui/hex'
-import { hexEditor } from '@modkitx-x3/ui/hex-editor'
-import { imageViewer } from '@modkitx-x3/ui/image'
-import { metadataPanel } from '@modkitx-x3/ui/metadata'
-import { modelViewer } from '@modkitx-x3/ui/model'
-import { tableViewer } from '@modkitx-x3/ui/table'
-import { virtualTextViewer } from '@modkitx-x3/ui/text-virtual'
-import { treeViewer } from '@modkitx-x3/ui/tree'
-import { vectorViewer } from '@modkitx-x3/ui/vector'
-import { videoViewer } from '@modkitx-x3/ui/video'
-import { worldViewer } from '@modkitx-x3/ui/world'
+import { createRelationGraphViewer } from '@modkitx-x3/ui/graph'
+import { createGameTemplateViewer } from '@modkitx-x3/ui/template'
+import { createHexViewer } from '@modkitx-x3/ui/hex'
+import { createHexEditor } from '@modkitx-x3/ui/hex-editor'
+import { createImageViewer } from '@modkitx-x3/ui/image'
+import { createMetadataPanel } from '@modkitx-x3/ui/metadata'
+import { createModelViewer } from '@modkitx-x3/ui/model'
+import { createTableViewer } from '@modkitx-x3/ui/table'
+import { createVirtualTextViewer } from '@modkitx-x3/ui/text-virtual'
+import { createTreeViewer } from '@modkitx-x3/ui/tree'
+import { createVectorViewer } from '@modkitx-x3/ui/vector'
+import { createVideoViewer } from '@modkitx-x3/ui/video'
+import { createWorldViewer } from '@modkitx-x3/ui/world'
 
 import { orderStages } from './view-policy.js'
-import { vscodeArchiveStage } from './archive-stage.js'
+import { createVsCodeArchiveStage } from './archive-stage.js'
 import { createVsCodeEditPanel, type EditPanelOptions } from './edit-panel.js'
+import type { UiLocalizer } from '@modkitx-x3/ui/localization'
 
 /**
  * Every first-party stage this host offers, in policy order.
@@ -44,84 +45,94 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
   return orderStages<PreviewStage>([
     {
       id: 'image',
-      label: 'Image',
+      label: context.localizer.text('stage.image'),
       contract: 'common.view/raster-image-source',
-      module: imageViewer,
+      module: createImageViewer({ localizer: context.localizer }),
     },
     {
       id: 'vector',
-      label: 'Vector',
+      label: context.localizer.text('stage.vector'),
       contract: 'common.view/vector-scene-source',
-      module: vectorViewer,
+      module: createVectorViewer({ localizer: context.localizer }),
     },
     {
       id: 'world',
-      label: 'World',
+      label: context.localizer.text('stage.world'),
       contract: 'common.view/world-scene-source',
-      module: worldViewer,
+      module: createWorldViewer({ localizer: context.localizer }),
     },
     {
       id: 'model',
-      label: 'Model',
+      label: context.localizer.text('stage.model'),
       contract: 'common.view/model-scene-source',
-      module: modelViewer,
+      module: createModelViewer({ localizer: context.localizer }),
     },
     {
       id: 'audio',
-      label: 'Audio',
+      label: context.localizer.text('stage.audio'),
       contract: 'common.view/audio-media-source',
-      module: audioViewer,
+      module: createAudioViewer({ localizer: context.localizer }),
     },
     {
       id: 'video',
-      label: 'Video',
+      label: context.localizer.text('stage.video'),
       contract: 'common.view/video-media-source',
-      module: videoViewer,
+      module: createVideoViewer({ localizer: context.localizer }),
     },
     {
       id: 'archive',
-      label: 'Entries',
+      label: context.localizer.text('stage.entries'),
       contract: 'common.view/namespace-entry-source',
-      module: vscodeArchiveStage,
+      module: createVsCodeArchiveStage(context.localizer),
     },
     {
       id: 'template',
-      label: 'Template',
+      label: context.localizer.text('stage.template'),
       operation: 'view.template',
-      module: gameTemplateViewer,
+      module: createGameTemplateViewer({ localizer: context.localizer }),
     },
     {
       id: 'card',
-      label: 'Card',
+      label: context.localizer.text('stage.card'),
       contract: 'common.view/subject-facts-source',
-      module: subjectCardViewer,
+      module: createSubjectCardViewer({ localizer: context.localizer }),
     },
     {
       id: 'calculations',
-      label: 'Calculations',
+      label: context.localizer.text('stage.calculations'),
       contract: 'common.view/subject-calculations-source',
-      module: subjectCalculationsViewer,
+      module: createSubjectCalculationsViewer({ localizer: context.localizer }),
     },
-    { id: 'table', label: 'Table', contract: 'common.view/table-data-source', module: tableViewer },
-    { id: 'tree', label: 'Tree', contract: 'common.view/tree-data-source', module: treeViewer },
+    {
+      id: 'table',
+      label: context.localizer.text('stage.table'),
+      contract: 'common.view/table-data-source',
+      module: createTableViewer({ localizer: context.localizer }),
+    },
+    {
+      id: 'tree',
+      label: context.localizer.text('stage.tree'),
+      contract: 'common.view/tree-data-source',
+      module: createTreeViewer({ localizer: context.localizer }),
+    },
     {
       id: 'relations',
-      label: 'Relations',
+      label: context.localizer.text('stage.relations'),
       contract: 'common.view/relation-graph-source',
-      module: relationGraphViewer,
+      module: createRelationGraphViewer({ localizer: context.localizer }),
     },
     {
       id: 'text',
-      label: 'Text',
+      label: context.localizer.text('stage.text'),
       contract: 'common.view/text-data-source',
-      module: boundedTextViewer,
+      module: createBoundedTextViewer({ localizer: context.localizer }),
       trait: 'content.text',
     },
     {
       id: 'virtual-text',
-      label: 'Text (streaming)',
+      label: context.localizer.text('stage.textStreaming'),
       contract: 'common.view/text-data-source',
-      module: virtualTextViewer,
+      module: createVirtualTextViewer({ localizer: context.localizer }),
       trait: 'content.text',
     },
     /*
@@ -131,16 +142,16 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
      */
     {
       id: 'text-editor',
-      label: 'Text (editor)',
+      label: context.localizer.text('stage.textEditor'),
       contract: 'common.view/text-data-source',
-      module: textEditor,
+      module: createTextEditorModule({ localizer: context.localizer }),
       trait: 'content.text',
       editable: true,
       appLocal: true,
     },
     {
       id: 'edit',
-      label: 'Edit',
+      label: context.localizer.text('stage.edit'),
       contract: 'common.view/byte-range-source',
       module: createVsCodeEditPanel(context),
       editable: true,
@@ -153,17 +164,22 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
      */
     {
       id: 'metadata',
-      label: 'Metadata',
+      label: context.localizer.text('stage.metadata'),
       contract: 'common.view/byte-range-source',
-      module: metadataPanel,
+      module: createMetadataPanel({ localizer: context.localizer }),
       appLocal: true,
     },
-    { id: 'hex', label: 'Hex', contract: 'common.view/byte-range-source', module: hexViewer },
+    {
+      id: 'hex',
+      label: context.localizer.text('stage.hex'),
+      contract: 'common.view/byte-range-source',
+      module: createHexViewer({ localizer: context.localizer }),
+    },
     {
       id: 'hex-editor',
-      label: 'Hex (editor)',
+      label: context.localizer.text('stage.hexEditor'),
       contract: 'common.view/byte-range-source',
-      module: hexEditor,
+      module: createHexEditor({ localizer: context.localizer }),
       editable: true,
       appLocal: true,
     },
@@ -171,7 +187,8 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
 }
 
 /** Shown when no codec claims the file at all, so "unknown format" still means "look at it". */
-export const VSCODE_PREVIEW_FALLBACK = Object.freeze({
-  text: boundedTextViewer,
-  hex: hexViewer,
-})
+export const createVsCodePreviewFallback = (localizer: UiLocalizer) =>
+  Object.freeze({
+    text: createBoundedTextViewer({ localizer }),
+    hex: createHexViewer({ localizer }),
+  })

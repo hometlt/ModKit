@@ -32,6 +32,9 @@ import {
 } from '../viewer/index.js'
 import { inspectCandidateWorld, type CandidateWorldViewerModel } from '../world/index.js'
 import { loadModelStage, type ModelStageModel } from '../model/index.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { COMPOSITION_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export interface MixedVisualOverlaySnapshot {
   readonly placement: MixedVisualOverlayPlacement
@@ -401,38 +404,49 @@ export function drawMixedVisualWorkspace(
   }
 }
 
-export const mixedVisualViewer: ViewerModule = defineViewerModule({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope(args.signal)
-    const root = createSurface(args.container, 'Mixed visual workspace')
-    const stage = element(root, 'div', { part: 'model' })
-    const readout = element(stage, 'output', { part: 'model.readout' })
-    const canvas = element(stage, 'canvas', { part: 'model.canvas' }) as HTMLCanvasElement
-    canvas.setAttribute('role', 'img')
-    canvas.setAttribute('aria-label', 'Visual-only world and model composition')
-    setState(stage, ['loading'])
-    try {
-      const snapshot = await loadMixedVisualStage(args.sources, args.slot, scope, scope.signal)
-      drawMixedVisualWorkspace(canvas, snapshot)
-      setViewerText(
-        readout,
-        `${snapshot.workspace.overlayPlacements.length} overlays · ` +
-          `${snapshot.workspace.resources.length} resources · visual-only`,
-      )
-      setState(stage, [])
-    } catch (error) {
-      setState(stage, ['error'])
-      canvas.remove()
-      element(stage, 'p', {
-        part: 'viewer.empty',
-        text: `The mixed visual workspace cannot be rendered: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+export interface MixedVisualViewerOptions {
+  readonly localizer?: UiLocalizer
+}
+
+export function createMixedVisualViewer(options: MixedVisualViewerOptions = {}): ViewerModule {
+  const localizer = withEnglishUiFallback(options.localizer, COMPOSITION_FALLBACK_MESSAGES)
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope(args.signal)
+      const root = createSurface(args.container, localizer.text('viewer.mixedWorkspace'))
+      const stage = element(root, 'div', { part: 'model' })
+      const readout = element(stage, 'output', { part: 'model.readout' })
+      const canvas = element(stage, 'canvas', { part: 'model.canvas' }) as HTMLCanvasElement
+      canvas.setAttribute('role', 'img')
+      canvas.setAttribute('aria-label', localizer.text('viewer.composition'))
+      setState(stage, ['loading'])
+      try {
+        const snapshot = await loadMixedVisualStage(args.sources, args.slot, scope, scope.signal)
+        drawMixedVisualWorkspace(canvas, snapshot)
+        setViewerText(
+          readout,
+          localizer.text('viewer.compositionSummary', {
+            overlays: snapshot.workspace.overlayPlacements.length,
+            resources: snapshot.workspace.resources.length,
+          }),
+        )
+        setState(stage, [])
+      } catch (error) {
+        setState(stage, ['error'])
+        canvas.remove()
+        element(stage, 'p', {
+          part: 'viewer.empty',
+          text: localizer.text('viewer.compositionError', {
+            reason: error instanceof Error ? error.message : String(error),
+          }),
+        })
+      }
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        root.dataset['revision'] = descriptor.revision
       })
-    }
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset['revision'] = descriptor.revision
-    })
-  },
-})
+    },
+  })
+}
+
+export const mixedVisualViewer: ViewerModule = createMixedVisualViewer()

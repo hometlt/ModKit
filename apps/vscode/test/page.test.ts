@@ -15,6 +15,7 @@ import {
   type WebviewLike,
 } from '../src/page.js'
 import { VIEWER_CSP } from '@modkitx-x3/ui'
+import { createVscodeLocalizer } from '../src/localization.js'
 
 const webview: WebviewLike = {
   cspSource: 'vscode-resource://modkitx.modkit',
@@ -22,6 +23,7 @@ const webview: WebviewLike = {
 }
 
 const bootstrap: PageBootstrap = {
+  locale: 'en',
   extensionHost: {
     realmId: 'org.modkitx.app.vscode/desktop-extension',
     facilities: ['native.load'],
@@ -83,6 +85,22 @@ describe('webview page', () => {
     expect(html).toContain('vscode-resource://modkitx.modkit/dist-app/app.css')
   })
 
+  it('uses the host-resolved locale for the webview document', () => {
+    expect(pageHtml({ webview, bootstrap: { ...bootstrap, locale: 'ru' }, nonce: 'n' })).toContain(
+      '<html lang="ru"',
+    )
+  })
+
+  it('does not allow a malformed locale to create an HTML attribute', () => {
+    const html = pageHtml({
+      webview,
+      bootstrap: { ...bootstrap, locale: 'ru\" data-hostile=\"yes' },
+      nonce: 'n',
+    })
+    expect(html).not.toContain('lang="ru" data-hostile="yes"')
+    expect(html).toContain('lang="ru&quot; data-hostile=&quot;yes"')
+  })
+
   it('escapes the snapshot so nothing in it can close the script element', () => {
     const hostile: PageBootstrap = {
       ...bootstrap,
@@ -121,5 +139,11 @@ describe('refusal page', () => {
     expect(html).not.toContain('<script')
     expect(html).not.toContain('<link')
     expect(html).toContain('&lt;b&gt;out&lt;/b&gt;')
+  })
+
+  it('uses the selected language for its document and visible refusal', () => {
+    const html = refusalHtml('нет доступа', createVscodeLocalizer('ru'))
+    expect(html).toContain('<html lang="ru">')
+    expect(html).toContain('Modkit не может открыть этот объект: нет доступа')
   })
 })

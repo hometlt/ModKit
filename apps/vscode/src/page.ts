@@ -16,6 +16,10 @@
  */
 
 /** The two things this module needs from `vscode.Webview`. */
+import type { UiLocale, UiLocalizer } from '@modkitx-x3/ui/localization'
+
+import { createVscodeLocalizer } from './localization.js'
+
 export interface WebviewLike {
   /** Origin the webview will load local resources from. */
   readonly cspSource: string
@@ -25,6 +29,8 @@ export interface WebviewLike {
 
 /** Everything the page is told, and nothing else. Inert data a bridge realm may hold. */
 export interface PageBootstrap {
+  /** Locale resolved by the extension host from VS Code's UI language. */
+  readonly locale: UiLocale
   readonly extensionHost: { readonly realmId: string; readonly facilities: readonly string[] }
   readonly webview: { readonly realmId: string; readonly facilities: readonly string[] }
   readonly topologyId: string
@@ -68,6 +74,14 @@ export function serializeBootstrap(bootstrap: PageBootstrap): string {
   return JSON.stringify(bootstrap).replace(/</gu, '\\u003c')
 }
 
+const escapeAttribute = (value: string): string =>
+  value.replace(/[&<>"]/gu, character => {
+    if (character === '&') return '&amp;'
+    if (character === '<') return '&lt;'
+    if (character === '>') return '&gt;'
+    return '&quot;'
+  })
+
 export function pageHtml(options: PageOptions): string {
   const { webview, nonce } = options
   const script = webview.asWebviewUri('webview.js').toString()
@@ -76,7 +90,7 @@ export function pageHtml(options: PageOptions): string {
   const policy = contentSecurityPolicy(webview.cspSource, nonce).join('; ')
 
   return `<!doctype html>
-<html lang="en" data-mk-theme="modkit-dark" data-mk-density="compact">
+<html lang="${escapeAttribute(options.bootstrap.locale)}" data-mk-theme="modkit-dark" data-mk-density="compact">
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="Content-Security-Policy" content="${policy};" />
@@ -103,16 +117,19 @@ const escapeText = (value: string): string =>
  * It loads no script and no stylesheet at all, so it needs neither a nonce nor an origin — the
  * refusal is one sentence of text under `default-src 'none'`.
  */
-export function refusalHtml(reason: string): string {
+export function refusalHtml(
+  reason: string,
+  localizer: UiLocalizer = createVscodeLocalizer('en'),
+): string {
   return `<!doctype html>
-<html lang="en">
+<html lang="${escapeAttribute(localizer.locale)}">
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'none';" />
     <title>Modkit</title>
   </head>
   <body>
-    <p>Modkit cannot open this: ${escapeText(reason)}</p>
+    <p>${escapeText(localizer.text('vscode.shell.cannotOpen', { reason }))}</p>
   </body>
 </html>`
 }

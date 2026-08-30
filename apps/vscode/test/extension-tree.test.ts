@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ExtensionManagerEntry } from '@modkitx/extension-manager'
+import { createUiLocalizer } from '@modkitx-x3/ui/localization'
 
 import type { ContributionRow } from '../src/contributions.js'
 import {
@@ -106,12 +107,15 @@ describe('VS Code extension contribution tree', () => {
     ]) as readonly ContributionContractNode[]
 
     expect(contracts.map(node => node.label)).toEqual([
-      'Invalid contribution manifest',
-      'org.modkitx/codec-contribution@1',
-      'org.modkitx/codec-contribution@2',
-      'org.modkitx/language-provider@1',
+      'Invalid Contributions',
+      'Codec Contributions',
+      'Codec Contributions',
+      'Language Contributions',
     ])
-    expect(contracts.find(node => node.label.endsWith('@1'))?.contributions).toEqual(
+    expect(
+      contracts.find(node => node.contractMajor === 1 && node.contract?.includes('codec'))
+        ?.contributions,
+    ).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: 'org.example/model-a' }),
         expect.objectContaining({ id: 'org.example/model-b' }),
@@ -132,7 +136,7 @@ describe('VS Code extension contribution tree', () => {
       extensionTreeChildren(modelExtension, [
         'org.example/model-b',
       ]) as readonly ContributionContractNode[]
-    ).find(node => node.label === 'org.modkitx/codec-contribution@1')
+    ).find(node => node.contract === 'org.modkitx/codec-contribution' && node.contractMajor === 1)
     const requiredCodecContract = required(codecContract, 'codec contract group is missing')
     const leaves = extensionTreeChildren(requiredCodecContract, ['org.example/model-b'])
 
@@ -182,5 +186,42 @@ describe('VS Code extension contribution tree', () => {
 
     expect(entry?.entry.id).toBe(available.id)
     expect(extensionTreeChildren(required(entry, 'available entry is missing'), [])).toEqual([])
+  })
+
+  it('localizes group and contribution contract labels without replacing exact identities', () => {
+    const localized = createExtensionTree({
+      entries: [installed],
+      contributions,
+      configuredDisabledContributionIds: [],
+      problems: [],
+      localizer: createUiLocalizer('ru'),
+    })
+    expect(localized.map(group => group.label)).toEqual([
+      'Доступные',
+      'Установленные',
+      'Включённые',
+      'Обновления',
+      'Проблемы',
+    ])
+    const installedGroup = required(
+      localized.find(group => group.group === 'installed'),
+      'installed group is missing',
+    )
+    const extension = required(installedGroup.entries?.[0], 'installed extension is missing')
+    const contracts = extensionTreeChildren(
+      extension,
+      [],
+      createUiLocalizer('ru'),
+    ) as readonly ContributionContractNode[]
+    expect(contracts.map(node => node.label)).toEqual([
+      'Ошибочные возможности',
+      'Кодеки',
+      'Кодеки',
+      'Языки',
+    ])
+    expect(contracts[1]).toMatchObject({
+      contract: 'org.modkitx/codec-contribution',
+      contractMajor: 1,
+    })
   })
 })

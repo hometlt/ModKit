@@ -17,6 +17,7 @@
  * draws it and `./editor-ports.ts` commits what it produces, so the rules stay testable in Node.
  */
 import type { AssetEditPlan, JsonValue, OperationResult } from '@modkitx-x3/sdk'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
 
 import { descriptorOperations } from './view-policy.js'
 
@@ -96,9 +97,15 @@ export function base64OfUtf8(text: string): string {
   return out
 }
 
-const required = (values: ReadonlyMap<string, string>, name: string, label: string): string => {
+class RequiredFieldError extends TypeError {
+  constructor(readonly fieldName: string) {
+    super(fieldName)
+  }
+}
+
+const required = (values: ReadonlyMap<string, string>, name: string): string => {
   const value = values.get(name) ?? ''
-  if (value === '') throw new TypeError(`${label} is required`)
+  if (value === '') throw new RequiredFieldError(name)
   return value
 }
 
@@ -148,7 +155,7 @@ const FORMS_BY_HANDLER: ReadonlyMap<string, readonly EditOperationForm[]> = new 
           field('text', 'Text', 'set from the Modkit inspector', { hint: 'Latin-1, no NUL' }),
         ]),
         build: (values): JsonValue => ({
-          keyword: required(values, 'keyword', 'Keyword'),
+          keyword: required(values, 'keyword'),
           text: values.get('text') ?? '',
         }),
       }),
@@ -171,7 +178,7 @@ const FORMS_BY_HANDLER: ReadonlyMap<string, readonly EditOperationForm[]> = new 
           field('text', 'Text', 'set from the Modkit inspector'),
         ]),
         build: (values): JsonValue => ({
-          keyword: required(values, 'keyword', 'Frame'),
+          keyword: required(values, 'keyword'),
           text: values.get('text') ?? '',
         }),
       }),
@@ -206,7 +213,7 @@ const FORMS_BY_HANDLER: ReadonlyMap<string, readonly EditOperationForm[]> = new 
             hint: 'a metadata marker name, e.g. APP0, APP1, COM',
           }),
         ]),
-        build: (values): JsonValue => ({ marker: required(values, 'marker', 'Marker') }),
+        build: (values): JsonValue => ({ marker: required(values, 'marker') }),
       }),
     ]),
   ],
@@ -230,7 +237,7 @@ const FORMS_BY_HANDLER: ReadonlyMap<string, readonly EditOperationForm[]> = new 
         build: (values): JsonValue => ({
           add: [
             {
-              path: required(values, 'path', 'Entry path'),
+              path: required(values, 'path'),
               bytes: base64OfUtf8(values.get('content') ?? ''),
             },
           ],
@@ -247,7 +254,7 @@ const FORMS_BY_HANDLER: ReadonlyMap<string, readonly EditOperationForm[]> = new 
             hint: 'the path of an entry the archive already holds',
           }),
         ]),
-        build: (values): JsonValue => ({ remove: [required(values, 'path', 'Entry path')] }),
+        build: (values): JsonValue => ({ remove: [required(values, 'path')] }),
       }),
       form({
         id: 'zip-rename-entry',
@@ -262,7 +269,7 @@ const FORMS_BY_HANDLER: ReadonlyMap<string, readonly EditOperationForm[]> = new 
           }),
         ]),
         build: (values): JsonValue => ({
-          rename: [{ from: required(values, 'from', 'From'), to: required(values, 'to', 'To') }],
+          rename: [{ from: required(values, 'from'), to: required(values, 'to') }],
         }),
       }),
     ]),
@@ -284,13 +291,92 @@ const FORMS_BY_HANDLER: ReadonlyMap<string, readonly EditOperationForm[]> = new 
           }),
         ]),
         build: (values): JsonValue => ({
-          path: required(values, 'path', 'Entry path'),
+          path: required(values, 'path'),
           bytes: base64OfUtf8(values.get('content') ?? ''),
         }),
       }),
     ]),
   ],
 ])
+
+const FORM_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  'png-set-text': 'pngText',
+  'mp3-set-text-frame': 'id3Text',
+  'jpeg-set-comment': 'jpegComment',
+  'jpeg-remove-segment': 'jpegRemove',
+  'zip-add-entry': 'archiveAdd',
+  'zip-remove-entry': 'archiveRemove',
+  'zip-rename-entry': 'archiveRename',
+  'zip-replace-entry': 'archiveReplace',
+})
+
+const FIELD_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  'png-set-text/keyword': 'keyword',
+  'png-set-text/text': 'text',
+  'mp3-set-text-frame/keyword': 'frame',
+  'mp3-set-text-frame/text': 'text',
+  'jpeg-set-comment/text': 'comment',
+  'jpeg-remove-segment/marker': 'marker',
+  'zip-add-entry/path': 'entryPath',
+  'zip-add-entry/content': 'contents',
+  'zip-remove-entry/path': 'entryPath',
+  'zip-rename-entry/from': 'from',
+  'zip-rename-entry/to': 'to',
+  'zip-replace-entry/path': 'entryPath',
+  'zip-replace-entry/content': 'contents',
+})
+
+const HINT_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  'png-set-text/keyword': 'pngTextKey',
+  'png-set-text/text': 'pngTextValue',
+  'mp3-set-text-frame/keyword': 'id3FrameId',
+  'jpeg-remove-segment/marker': 'metadataMarker',
+  'zip-add-entry/path': 'archivePath',
+  'zip-add-entry/content': 'archiveContent',
+  'zip-remove-entry/path': 'archiveExistingPath',
+  'zip-rename-entry/to': 'archiveRenameType',
+  'zip-replace-entry/content': 'archiveContent',
+})
+
+function localizeForm(form: EditOperationForm, localizer: UiLocalizer): EditOperationForm {
+  const formKey = FORM_KEYS[form.id]
+  const fields = Object.freeze(
+    form.fields.map(item => {
+      const fieldKey = FIELD_KEYS[`${form.id}/${item.name}`]
+      const hintKey = HINT_KEYS[`${form.id}/${item.name}`]
+      return Object.freeze({
+        ...item,
+        label: fieldKey === undefined ? item.label : localizer.text(`edit.field.${fieldKey}`),
+        ...(item.hint === undefined
+          ? {}
+          : {
+              hint: hintKey === undefined ? item.hint : localizer.text(`edit.hint.${hintKey}`),
+            }),
+      })
+    }),
+  )
+  const labels = new Map(fields.map(item => [item.name, item.label]))
+  return Object.freeze({
+    ...form,
+    label: formKey === undefined ? form.label : localizer.text(`edit.operation.${formKey}`),
+    summary: formKey === undefined ? form.summary : localizer.text(`edit.summary.${formKey}`),
+    fields,
+    build(values: ReadonlyMap<string, string>): JsonValue {
+      try {
+        return form.build(values)
+      } catch (error) {
+        if (error instanceof RequiredFieldError) {
+          throw new TypeError(
+            localizer.text('edit.required', {
+              field: labels.get(error.fieldName) ?? error.fieldName,
+            }),
+          )
+        }
+        throw error
+      }
+    },
+  })
+}
 
 // ---------------------------------------------------------------------------------------------
 // the offer rule
@@ -302,6 +388,8 @@ export interface EditOfferOptions {
    * user cannot enable explains nothing that the read-only note in the status line does not.
    */
   readonly editable: boolean
+  /** Per-host language; omitted for the English-compatible pure-model default. */
+  readonly localizer?: UiLocalizer
 }
 
 /**
@@ -315,6 +403,7 @@ export function editOffer(
   options: EditOfferOptions,
 ): EditOffer {
   if (!options.editable) return Object.freeze({ forms: [], unsupported: [] })
+  const localizer = options.localizer ?? DEFAULT_UI_LOCALIZER
   const forms: EditOperationForm[] = []
   const unsupported: UnsupportedEditOperation[] = []
   for (const operation of descriptorOperations(descriptor)) {
@@ -326,11 +415,11 @@ export function editOffer(
       unsupported.push({
         operationId: operation.id,
         handlerId: operation.handlerId,
-        reason: `this host cannot construct the input for «${operation.handlerId}» yet`,
+        reason: localizer.text('edit.unsupportedInput', { handler: operation.handlerId }),
       })
       continue
     }
-    forms.push(...known)
+    forms.push(...known.map(item => localizeForm(item, localizer)))
   }
   return Object.freeze({ forms: Object.freeze(forms), unsupported: Object.freeze(unsupported) })
 }
@@ -354,25 +443,32 @@ export function offersEditOperations(
  * because main would not write the file. Saying "failed" there would hide the only fact that
  * matters.
  */
-const INVOKE_REASONS: Readonly<Record<string, string>> = Object.freeze({
-  'not-declared': 'this codec does not declare that operation',
-  disabled: 'the codec disabled this operation for this file',
-  'dependency-required': 'the operation needs a dependency this host has not resolved',
-  'permission-missing': 'this session was not opened with permission to write the file',
-  'input-not-serializable': 'the values could not be sent to the codec',
-  'handler-unregistered': 'the codec registered no handler for that operation',
-  cancelled: 'the operation was cancelled',
-  'stale-revision': 'the file changed on disk after it was opened',
+const INVOKE_REASON_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  'not-declared': 'notDeclared',
+  disabled: 'disabled',
+  'dependency-required': 'dependencyRequired',
+  'permission-missing': 'permissionMissing',
+  'input-not-serializable': 'inputNotSerializable',
+  'handler-unregistered': 'handlerUnregistered',
+  cancelled: 'cancelled',
+  'stale-revision': 'staleRevision',
 })
 
-export function invokeRefusalMessage(result: {
-  readonly reason: string
-  readonly diagnostics?: readonly { readonly message: string }[]
-}): string {
-  const plain = INVOKE_REASONS[result.reason]
+export function invokeRefusalMessage(
+  result: {
+    readonly reason: string
+    readonly diagnostics?: readonly { readonly message: string }[]
+  },
+  localizer: UiLocalizer = DEFAULT_UI_LOCALIZER,
+): string {
+  const reasonKey = INVOKE_REASON_KEYS[result.reason]
+  const plain = reasonKey === undefined ? undefined : localizer.text(`edit.refusal.${reasonKey}`)
   const detail = result.diagnostics?.[0]?.message
-  const head = plain === undefined ? result.reason : `${plain} (${result.reason})`
-  return detail === undefined ? `refused: ${head}` : `refused: ${head} — ${detail}`
+  const head =
+    plain === undefined
+      ? localizer.text('edit.invokeRefused', { reason: result.reason })
+      : localizer.text('edit.invokeRefusedCode', { reason: plain, code: result.reason })
+  return detail === undefined ? head : localizer.text('edit.invokeRefusedDetail', { head, detail })
 }
 
 /**
@@ -382,11 +478,16 @@ export function invokeRefusalMessage(result: {
  * back JSON has not produced anything committable, and the arm would refuse it later with a much
  * worse message. `planFromOperation` on the serving side re-checks the plan against the subject.
  */
-export function editPlanFromOperationOutput(output: unknown): AssetEditPlan {
+export function editPlanFromOperationOutput(
+  output: unknown,
+  localizer: UiLocalizer = DEFAULT_UI_LOCALIZER,
+): AssetEditPlan {
   const value = output as { readonly kind?: unknown; readonly plan?: unknown } | undefined
   if (value?.kind !== 'edit-plan' || typeof value.plan !== 'object' || value.plan === null) {
     throw new TypeError(
-      `the operation returned «${String(value?.kind ?? 'nothing')}», not an edit plan`,
+      localizer.text('edit.operationReturnedWrongKind', {
+        kind: String(value?.kind ?? localizer.text('edit.returnedNothing')),
+      }),
     )
   }
   return value.plan as AssetEditPlan

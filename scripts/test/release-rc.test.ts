@@ -143,6 +143,12 @@ function fixture() {
   ] as const) {
     json(join(root, 'apps', app[0], 'package.json'), packageMetadata(app[1], undefined, true))
   }
+  json(join(root, 'apps', 'vscode', 'package.nls.json'), {
+    'extension.displayName': 'Modkit MK3',
+  })
+  json(join(root, 'apps', 'vscode', 'package.nls.ru.json'), {
+    'extension.displayName': 'Modkit MK3',
+  })
   text(join(root, 'apps', 'cli', 'dist', 'main.js'), 'export const main = true\n')
   const cliBytes = readFileSync(join(root, 'apps', 'cli', 'dist', 'main.js'))
   json(join(root, 'scripts', 'bundle-hashes.json'), {
@@ -195,9 +201,10 @@ describe('focused local RC artifacts', () => {
     expect(readFileSync(join(first, 'artifacts', 'modkitx-common.tar'), 'utf8')).toContain(
       'licenses/MIT.txt',
     )
-    expect(readFileSync(join(first, 'artifacts', 'modkitx-platform.tar'), 'utf8')).toContain(
-      'licenses/MIT.txt',
-    )
+    const platformArtifact = readFileSync(join(first, 'artifacts', 'modkitx-platform.tar'), 'utf8')
+    expect(platformArtifact).toContain('licenses/MIT.txt')
+    expect(platformArtifact).toContain('apps/vscode/package.nls.json')
+    expect(platformArtifact).toContain('apps/vscode/package.nls.ru.json')
 
     const { privateKey, publicKey } = generateKeyPairSync('ed25519')
     const privatePath = join(parent, 'local-private.pem')

@@ -346,10 +346,10 @@ describe('the Edit panel in a real browser', () => {
     expect(
       await page.locator(`${EDIT_PANEL} [data-mk-part="form.select"] option`).allTextContents(),
     ).toEqual([
-      'Add an entry to the archive',
-      'Remove an entry from the archive',
-      'Rename an entry in the archive',
-      "Replace an entry's contents",
+      'Add archive entry',
+      'Remove archive entry',
+      'Rename archive entry',
+      'Replace archive entry',
     ])
 
     await showView('archive')
@@ -357,7 +357,7 @@ describe('the Edit panel in a real browser', () => {
 
     expect(await writes()).toHaveLength(0)
     await applyForm('zip-add-entry', { path: ADDED, content: ADDED_TEXT })
-    await waitForPanelText('Last change: Add an entry to the archive')
+    await waitForPanelText('Last change: Add archive entry')
     // the panel that reports it is the one the reopen mounted, and it says so
     await waitForPanelText('the tab was reopened, so this view is not stale')
 
@@ -381,7 +381,7 @@ describe('the Edit panel in a real browser', () => {
   it('removes the entry again, and the reopened view and the bytes agree it is gone', async () => {
     await waitForEditPanel()
     await applyForm('zip-remove-entry', { path: ADDED })
-    await waitForPanelText('Last change: Remove an entry from the archive')
+    await waitForPanelText('Last change: Remove archive entry')
 
     const log = await writes()
     expect(log).toHaveLength(2)
@@ -412,7 +412,7 @@ describe('the Edit panel in a real browser', () => {
     const status = await page.locator(`${EDIT_PANEL} [data-mk-part="form.status"]`).textContent()
     // the codec's words, verbatim, not "the operation failed"
     expect(status).toContain('was not found')
-    expect(status).toContain('refused by the codec')
+    expect(status).toContain('The codec refused the operation')
     expect(
       await page
         .locator(`${EDIT_PANEL} [data-mk-part="form.status"]`)
@@ -437,7 +437,7 @@ describe('the Edit panel in a real browser', () => {
     )
 
     await applyForm('png-set-text', { keyword: 'Description', text: PNG_TEXT })
-    await waitForPanelText('Last change: Set a PNG text field')
+    await waitForPanelText('Last change: Set PNG text')
 
     const log = await writes()
     expect(log).toHaveLength(3)
@@ -513,7 +513,7 @@ describe('the Edit panel in a real browser', () => {
     expect(duration).toBeLessThan(1.2)
 
     await applyForm('mp3-set-text-frame', { keyword: 'TIT2', text: MP3_TEXT })
-    await waitForPanelText('Last change: Set an ID3v2 text frame')
+    await waitForPanelText('Last change: Set ID3 text frame')
     await waitForPanelText('the tab was reopened, so this view is not stale')
 
     const log = await writes()

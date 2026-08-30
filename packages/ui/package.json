@@ -150,6 +150,8 @@
     "styles"
   ],
   "scripts": {
+    "localization:emit": "node scripts/generate-localization-fallbacks.mjs",
+    "localization:check": "node scripts/generate-localization-fallbacks.mjs --check",
     "manifests:emit": "node scripts/generate-manifests.mjs",
     "manifests:check": "node scripts/generate-manifests.mjs --check",
     "tokens:emit": "node scripts/generate-tokens.mjs",

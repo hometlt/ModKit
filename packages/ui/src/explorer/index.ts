@@ -14,6 +14,9 @@ import { createFileTree, type FileTree, type FileTreeNode } from '../primitives/
 import { createSearchField } from '../primitives/search-field.js'
 import { matches, type CompiledSearch } from '../search/matcher.js'
 import { element, setPart, setState, safeViewerText } from '../viewer/index.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { EXPLORER_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 /** One item in a browsed folder. `id` is opaque — a path, a handle key, whatever the host uses. */
 export interface ExplorerEntry {
@@ -63,6 +66,7 @@ export interface PreviewResolver {
 }
 
 export interface ExplorerOptions {
+  readonly localizer?: UiLocalizer
   readonly preview: PreviewResolver
   /** Largest file the host will read into memory for a preview. */
   readonly maximumBytes?: number
@@ -115,6 +119,7 @@ const formatBytes = (bytes: number): string => {
 }
 
 export function createExplorer(document: Document, options: ExplorerOptions): Explorer {
+  const localizer = withEnglishUiFallback(options.localizer, EXPLORER_FALLBACK_MESSAGES)
   const maximumBytes = options.maximumBytes ?? EXPLORER_MAXIMUM_BYTES
   const supported = new Set(options.preview.supported.map(item => item.toLowerCase()))
 
@@ -123,7 +128,7 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
   setPart(root, 'explorer')
 
   const toolbar = element(root, 'div', { part: 'explorer.toolbar', role: 'toolbar' })
-  toolbar.setAttribute('aria-label', 'Explorer actions')
+  toolbar.setAttribute('aria-label', localizer.text('explorer.actions'))
   if (options.showToolbar === false) toolbar.hidden = true
 
   const sidebar = element(root, 'div', { part: 'explorer.sidebar' })
@@ -133,7 +138,7 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
   const viewPicker = element(previewHeader, 'select', {
     part: 'explorer.viewpicker',
   }) as HTMLSelectElement
-  viewPicker.setAttribute('aria-label', 'Preview view')
+  viewPicker.setAttribute('aria-label', localizer.text('explorer.previewView'))
   previewHeader.hidden = true
   const stage = element(previewPane, 'div', { part: 'explorer.stage' })
   const status = element(root, 'output', { part: 'explorer.status' })
@@ -169,20 +174,24 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
   }
 
   if (options.openFolder !== undefined) {
-    action('Open folder…', 'Grant access to a folder and browse it', () => {
-      void (async () => {
-        try {
-          const next = await options.openFolder?.()
-          if (next !== undefined) await explorer.setAccess(next)
-        } catch (error) {
-          say(`Could not open the folder: ${describe(error)}`, 'error')
-        }
-      })()
-    })
+    action(
+      localizer.text('explorer.openFolder'),
+      localizer.text('explorer.openFolderTitle'),
+      () => {
+        void (async () => {
+          try {
+            const next = await options.openFolder?.()
+            if (next !== undefined) await explorer.setAccess(next)
+          } catch (error) {
+            say(localizer.text('explorer.openFolderError', { reason: describe(error) }), 'error')
+          }
+        })()
+      },
+    )
   }
 
   if (options.openFile !== undefined) {
-    action('Open file…', 'Open a single file for preview', () => {
+    action(localizer.text('explorer.openFile'), localizer.text('explorer.openFileTitle'), () => {
       void (async () => {
         try {
           const picked = await options.openFile?.()
@@ -190,7 +199,7 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
           await explorer.setAccess(picked.access)
           await activate(picked.entry)
         } catch (error) {
-          say(`Could not open the file: ${describe(error)}`, 'error')
+          say(localizer.text('explorer.openFileError', { reason: describe(error) }), 'error')
         }
       })()
     })
@@ -198,21 +207,26 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
 
   const registerFileTypes = options.registerFileTypes
   if (registerFileTypes !== undefined) {
-    action('Set as default app…', 'Register this app for the file types it can preview', () => {
-      void (async () => {
-        try {
-          say(await registerFileTypes())
-        } catch (error) {
-          say(`Could not register file types: ${describe(error)}`, 'error')
-        }
-      })()
-    })
+    action(
+      localizer.text('explorer.defaultApp'),
+      localizer.text('explorer.defaultAppTitle'),
+      () => {
+        void (async () => {
+          try {
+            say(await registerFileTypes())
+          } catch (error) {
+            say(localizer.text('explorer.registerError', { reason: describe(error) }), 'error')
+          }
+        })()
+      },
+    )
   }
 
   // ------------------------------------------------------------------ search
   const search = createSearchField(document, {
-    label: 'Filter files',
-    placeholder: 'Filter',
+    localizer,
+    label: localizer.text('explorer.filterFiles'),
+    placeholder: localizer.text('explorer.filter'),
     onChange(state) {
       // The field compiles the query itself, including the whole-word and regexp toggles.
       query = state.query === '' ? undefined : state.compiled
@@ -238,14 +252,20 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
     const current = mounted
     if (current === undefined) return
     const selected = viewPicker.value
-    say(`Opening ${breadcrumb.textContent ?? 'view'}…`, 'loading')
+    say(
+      localizer.text('explorer.opening', {
+        name: breadcrumb.textContent ?? localizer.text('explorer.view'),
+      }),
+      'loading',
+    )
     void current
       .show(selected)
       .then(() => {
         if (mounted === current) say(`${breadcrumb.textContent ?? ''} · ${selected}`)
       })
       .catch(error => {
-        if (mounted === current) say(`Could not change view: ${describe(error)}`, 'error')
+        if (mounted === current)
+          say(localizer.text('explorer.changeViewError', { reason: describe(error) }), 'error')
       })
   })
 
@@ -256,15 +276,19 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
 
     if (entry.size !== undefined && entry.size > maximumBytes) {
       placeholder(
-        `${entry.name} is ${formatBytes(entry.size)}, over the ${formatBytes(maximumBytes)} preview limit.`,
+        localizer.text('explorer.tooLarge', {
+          name: entry.name,
+          size: formatBytes(entry.size),
+          limit: formatBytes(maximumBytes),
+        }),
       )
-      say(`${entry.name} — too large`, 'error')
+      say(localizer.text('explorer.tooLargeStatus', { name: entry.name }), 'error')
       return
     }
 
     const run = new AbortController()
     previewRun = run
-    say(`Opening ${entry.name}…`, 'loading')
+    say(localizer.text('explorer.opening', { name: entry.name }), 'loading')
     try {
       const bytes = await access.read(entry.id, maximumBytes, run.signal)
       if (run.signal.aborted) return
@@ -274,11 +298,8 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
         return
       }
       if (handle === undefined) {
-        placeholder(
-          `Nothing could render “${entry.name}”. The host publishes no codec for it and no ` +
-            'built-in text or hex viewer was configured.',
-        )
-        say(`${entry.name} — no viewer`)
+        placeholder(localizer.text('explorer.noRenderer', { name: entry.name }))
+        say(localizer.text('explorer.noViewerStatus', { name: entry.name }))
         return
       }
       mounted = handle
@@ -297,8 +318,10 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
       say(`${entry.name} · ${formatBytes(bytes.length)}`)
     } catch (error) {
       if (run.signal.aborted) return
-      placeholder(`Could not preview ${entry.name}: ${describe(error)}`)
-      say(`${entry.name} — failed`, 'error')
+      placeholder(
+        localizer.text('explorer.previewError', { name: entry.name, reason: describe(error) }),
+      )
+      say(localizer.text('explorer.failedStatus', { name: entry.name }), 'error')
     } finally {
       if (previewRun === run) previewRun = undefined
     }
@@ -310,6 +333,7 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
     if (access === undefined) return
     const current = access
     tree = createFileTree(document, {
+      localizer,
       label: current.label,
       async loadChildren(node, signal) {
         const entries = await current.list(node?.id, signal)
@@ -393,17 +417,17 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
       if (transfer === null) return
       void (async () => {
         try {
-          say('Reading dropped item…', 'loading')
+          say(localizer.text('explorer.readingDrop'), 'loading')
           const result = await options.acceptDrop?.(transfer)
           if (result === undefined) {
-            say('The dropped item could not be read.', 'error')
+            say(localizer.text('explorer.dropUnreadable'), 'error')
             return
           }
           if (result.access !== undefined) await explorer.setAccess(result.access)
           if (result.entry !== undefined) await activate(result.entry)
-          else say('Folder opened. Pick a file in the tree.')
+          else say(localizer.text('explorer.folderOpened'))
         } catch (error) {
-          say(`Drop failed: ${describe(error)}`, 'error')
+          say(localizer.text('explorer.dropFailed', { reason: describe(error) }), 'error')
         }
       })()
     })
@@ -411,10 +435,10 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
 
   placeholder(
     options.openFolder === undefined
-      ? 'Drop a file here to preview it.'
-      : 'Open a folder, or drop a file here to preview it.',
+      ? localizer.text('explorer.emptyReadOnly')
+      : localizer.text('explorer.empty'),
   )
-  say('Ready')
+  say(localizer.text('viewer.ready'))
 
   const explorer: Explorer = {
     root,

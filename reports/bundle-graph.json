@@ -3,8 +3,8 @@
   "schemaVersion": "bundle-graph-1",
   "entryCount": 74,
   "totals": {
-    "modules": 652,
-    "bytes": 7360720
+    "modules": 708,
+    "bytes": 7705790
   },
   "entries": [
     {
@@ -388,40 +388,40 @@
     {
       "entry": "packages/ui/dist/audio/index.js",
       "surface": "ui/audio",
-      "modules": 4,
-      "bytes": 20165,
+      "modules": 6,
+      "bytes": 21875,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/calculations/index.js",
       "surface": "ui/calculations",
-      "modules": 3,
-      "bytes": 19130,
+      "modules": 5,
+      "bytes": 21084,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/card/index.js",
       "surface": "ui/card",
-      "modules": 6,
-      "bytes": 46901,
+      "modules": 8,
+      "bytes": 53164,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/code/index.js",
       "surface": "ui/code",
-      "modules": 3,
-      "bytes": 16407,
+      "modules": 5,
+      "bytes": 18255,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/composition/index.js",
       "surface": "ui/composition",
-      "modules": 7,
-      "bytes": 57673,
+      "modules": 9,
+      "bytes": 62979,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/sdk",
@@ -431,8 +431,8 @@
     {
       "entry": "packages/ui/dist/editor/index.js",
       "surface": "ui/editor",
-      "modules": 4,
-      "bytes": 20651,
+      "modules": 6,
+      "bytes": 23444,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/sdk"
@@ -441,8 +441,8 @@
     {
       "entry": "packages/ui/dist/explorer/index.js",
       "surface": "ui/explorer",
-      "modules": 12,
-      "bytes": 74661,
+      "modules": 14,
+      "bytes": 80766,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core"
@@ -451,16 +451,16 @@
     {
       "entry": "packages/ui/dist/graph/index.js",
       "surface": "ui/graph",
-      "modules": 3,
-      "bytes": 32616,
+      "modules": 5,
+      "bytes": 35688,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/hex-editor/index.js",
       "surface": "ui/hex-editor",
-      "modules": 5,
-      "bytes": 26711,
+      "modules": 7,
+      "bytes": 30310,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/sdk"
@@ -469,24 +469,24 @@
     {
       "entry": "packages/ui/dist/hex/index.js",
       "surface": "ui/hex",
-      "modules": 3,
-      "bytes": 16003,
+      "modules": 5,
+      "bytes": 17340,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/image/index.js",
       "surface": "ui/image",
-      "modules": 6,
-      "bytes": 30626,
+      "modules": 8,
+      "bytes": 32903,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/index.js",
       "surface": "ui",
-      "modules": 45,
-      "bytes": 305239,
+      "modules": 47,
+      "bytes": 464889,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -499,7 +499,7 @@
       "entry": "packages/ui/dist/localization/index.js",
       "surface": "ui/localization",
       "modules": 1,
-      "bytes": 9419,
+      "bytes": 127890,
       "reachesUnits": [],
       "externalUnits": []
     },
@@ -514,40 +514,40 @@
     {
       "entry": "packages/ui/dist/metadata/index.js",
       "surface": "ui/metadata",
-      "modules": 3,
-      "bytes": 17445,
+      "modules": 5,
+      "bytes": 20073,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/model/index.js",
       "surface": "ui/model",
-      "modules": 5,
-      "bytes": 36828,
+      "modules": 7,
+      "bytes": 40597,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/namespace/index.js",
       "surface": "ui/namespace",
-      "modules": 3,
-      "bytes": 18359,
+      "modules": 5,
+      "bytes": 19745,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/panels/index.js",
       "surface": "ui/panels",
-      "modules": 3,
-      "bytes": 17614,
+      "modules": 5,
+      "bytes": 19341,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/primitives/search-field.js",
       "surface": "ui/primitives/search-field",
-      "modules": 3,
-      "bytes": 16798,
+      "modules": 5,
+      "bytes": 18685,
       "reachesUnits": [],
       "externalUnits": []
     },
@@ -562,8 +562,8 @@
     {
       "entry": "packages/ui/dist/settings/index.js",
       "surface": "ui/settings",
-      "modules": 4,
-      "bytes": 36348,
+      "modules": 6,
+      "bytes": 40207,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core"
@@ -572,24 +572,24 @@
     {
       "entry": "packages/ui/dist/shell/chrome.js",
       "surface": "ui/shell/chrome",
-      "modules": 3,
-      "bytes": 15585,
+      "modules": 5,
+      "bytes": 16935,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/table/index.js",
       "surface": "ui/table",
-      "modules": 3,
-      "bytes": 20012,
+      "modules": 5,
+      "bytes": 21768,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/template/index.js",
       "surface": "ui/template",
-      "modules": 3,
-      "bytes": 18258,
+      "modules": 5,
+      "bytes": 20150,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/sdk/templates"
@@ -598,8 +598,8 @@
     {
       "entry": "packages/ui/dist/text-virtual/index.js",
       "surface": "ui/text-virtual",
-      "modules": 3,
-      "bytes": 15618,
+      "modules": 5,
+      "bytes": 16965,
       "reachesUnits": [],
       "externalUnits": []
     },
@@ -614,32 +614,32 @@
     {
       "entry": "packages/ui/dist/transport/index.js",
       "surface": "ui/transport",
-      "modules": 3,
-      "bytes": 17191,
+      "modules": 5,
+      "bytes": 18890,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/tree/index.js",
       "surface": "ui/tree",
-      "modules": 3,
-      "bytes": 15965,
+      "modules": 5,
+      "bytes": 17207,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/vector/index.js",
       "surface": "ui/vector",
-      "modules": 3,
-      "bytes": 15405,
+      "modules": 5,
+      "bytes": 16988,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/video/index.js",
       "surface": "ui/video",
-      "modules": 4,
-      "bytes": 16168,
+      "modules": 6,
+      "bytes": 17723,
       "reachesUnits": [],
       "externalUnits": []
     },
@@ -654,16 +654,16 @@
     {
       "entry": "packages/ui/dist/workbench/index.js",
       "surface": "ui/workbench",
-      "modules": 3,
-      "bytes": 12282,
+      "modules": 5,
+      "bytes": 13593,
       "reachesUnits": [],
       "externalUnits": []
     },
     {
       "entry": "packages/ui/dist/world/index.js",
       "surface": "ui/world",
-      "modules": 3,
-      "bytes": 20971,
+      "modules": 5,
+      "bytes": 22665,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/sdk/maps"

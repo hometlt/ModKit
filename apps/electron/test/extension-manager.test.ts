@@ -291,7 +291,9 @@ describe('Electron extension root composition', () => {
       ),
     )
     expect(lifecycle).toContain('if (recompose) report = await options.apply()')
-    expect(page).toContain("manage('Refreshing extension catalog', () => manager.refresh(), false)")
+    expect(page).toContain(
+      "manage(copy.operation('refresh', copy.extensions), () => manager.refresh(), false)",
+    )
   })
 })
 

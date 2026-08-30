@@ -18671,14 +18671,109 @@ function element(parent, tag, options = {}) {
   parent.append(node);
   return node;
 }
+var EXPLORER_EDITORS_FALLBACK_MESSAGES = {
+  "explorer.close": "Close",
+  "explorer.closeAll": "Close All",
+  "explorer.closeFile": "Close {name}",
+  "explorer.closeOthers": "Close Others",
+  "explorer.closeRight": "Close to the Right",
+  "explorer.filePath": "File path",
+  "explorer.noFileOpen": "No file open in this group.",
+  "explorer.noRendererShort": "Nothing could render \u201C{name}\u201D.",
+  "explorer.noViewer": "no viewer",
+  "explorer.openFiles": "Open files",
+  "explorer.opening": "Opening {name}\u2026",
+  "explorer.previewError": "Could not preview {name}: {reason}",
+  "explorer.view": "View"
+};
+var EXPLORER_FALLBACK_MESSAGES = {
+  "explorer.actions": "Explorer actions",
+  "explorer.changeViewError": "Could not change view: {reason}",
+  "explorer.defaultApp": "Set as default app\u2026",
+  "explorer.defaultAppTitle": "Register this app for the file types it can preview",
+  "explorer.dropFailed": "Drop failed: {reason}",
+  "explorer.dropUnreadable": "The dropped item could not be read.",
+  "explorer.empty": "Open a folder, or drop a file here to preview it.",
+  "explorer.emptyReadOnly": "Drop a file here to preview it.",
+  "explorer.failedStatus": "{name} \u2014 failed",
+  "explorer.filter": "Filter",
+  "explorer.filterFiles": "Filter files",
+  "explorer.folderOpened": "Folder opened. Pick a file in the tree.",
+  "explorer.noRenderer": "Nothing could render \u201C{name}\u201D. The host publishes no codec for it and no built-in text or hex viewer was configured.",
+  "explorer.noViewerStatus": "{name} \u2014 no viewer",
+  "explorer.openFile": "Open file\u2026",
+  "explorer.openFileError": "Could not open the file: {reason}",
+  "explorer.openFileTitle": "Open a single file for preview",
+  "explorer.openFolder": "Open folder\u2026",
+  "explorer.openFolderError": "Could not open the folder: {reason}",
+  "explorer.openFolderTitle": "Grant access to a folder and browse it",
+  "explorer.opening": "Opening {name}\u2026",
+  "explorer.previewError": "Could not preview {name}: {reason}",
+  "explorer.previewView": "Preview view",
+  "explorer.readingDrop": "Reading dropped item\u2026",
+  "explorer.registerError": "Could not register file types: {reason}",
+  "explorer.tooLarge": "{name} is {size}, over the {limit} preview limit.",
+  "explorer.tooLargeStatus": "{name} \u2014 too large",
+  "explorer.view": "View",
+  "viewer.ready": "Ready"
+};
+var EXPLORER_PREVIEW_FALLBACK_MESSAGES = {
+  "explorer.hex": "Hex",
+  "explorer.text": "Text"
+};
+var PRIMITIVES_FILE_TREE_FALLBACK_MESSAGES = {
+  "primitives.nothingToShow": "Nothing to show.",
+  "primitives.treeActions": "{label} actions"
+};
+var PRIMITIVES_SEARCH_FIELD_FALLBACK_MESSAGES = {
+  "primitives.filter": "Filter",
+  "primitives.filterOptions": "Filter options",
+  "primitives.glob": "Use glob pattern",
+  "primitives.invalid": "invalid",
+  "primitives.invalidRegex": "Invalid regular expression",
+  "primitives.matchCase": "Match case",
+  "primitives.matchWord": "Match whole word",
+  "primitives.matches": "{count} matches",
+  "primitives.nextMatch": "Next match",
+  "primitives.oneMatch": "1 match",
+  "primitives.previousMatch": "Previous match",
+  "primitives.regex": "Use regular expression"
+};
+function createEnglishUiLocalizer(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
+    }
+  });
+}
+function withEnglishUiFallback(localizer, messages) {
+  const fallback = createEnglishUiLocalizer(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
 function createFileTree(document, options) {
+  const localizer = withEnglishUiFallback(options.localizer, PRIMITIVES_FILE_TREE_FALLBACK_MESSAGES);
   const root = document.createElement("div");
   root.className = "modkit-filetree";
   setPart(root, "filetree");
   const toolbar = document.createElement("div");
   toolbar.className = "modkit-filetree__toolbar";
   toolbar.setAttribute("role", "toolbar");
-  toolbar.setAttribute("aria-label", `${options.label} actions`);
+  toolbar.setAttribute(
+    "aria-label",
+    localizer.text("primitives.treeActions", { label: options.label })
+  );
   setPart(toolbar, "filetree.toolbar");
   root.append(toolbar);
   const list = document.createElement("div");
@@ -18777,7 +18872,7 @@ function createFileTree(document, options) {
     if (children.length === 0 && row === void 0) {
       const empty = document.createElement("p");
       empty.className = "modkit-filetree__empty";
-      empty.textContent = "Nothing to show.";
+      empty.textContent = localizer.text("primitives.nothingToShow");
       setPart(empty, "filetree.empty");
       host.append(empty);
       return;
@@ -19005,13 +19100,21 @@ function matchRanges(text3, compiled, firstOnly = false) {
   }
   return ranges;
 }
-var TOGGLES = [
-  { id: "case", label: "Aa", title: "Match case" },
-  { id: "word", label: "ab", title: "Match whole word" },
-  { id: "regex", label: ".*", title: "Use regular expression" }
-];
-var GLOB_TOGGLE = { id: "glob", label: "*", title: "Use glob pattern" };
 function createSearchField(document, options) {
+  const localizer = withEnglishUiFallback(
+    options.localizer,
+    PRIMITIVES_SEARCH_FIELD_FALLBACK_MESSAGES
+  );
+  const toggles = [
+    { id: "case", label: "Aa", title: localizer.text("primitives.matchCase") },
+    { id: "word", label: "ab", title: localizer.text("primitives.matchWord") },
+    { id: "regex", label: ".*", title: localizer.text("primitives.regex") }
+  ];
+  const globToggle = {
+    id: "glob",
+    label: "*",
+    title: localizer.text("primitives.glob")
+  };
   const root = document.createElement("div");
   root.className = "modkit-search";
   setPart(root, "search");
@@ -19019,8 +19122,8 @@ function createSearchField(document, options) {
   const input = document.createElement("input");
   input.type = "search";
   input.className = "modkit-search__input";
-  input.placeholder = options.placeholder ?? "Filter\u2026";
-  input.setAttribute("aria-label", options.label ?? "Filter");
+  input.placeholder = options.placeholder ?? `${localizer.text("primitives.filter")}\u2026`;
+  input.setAttribute("aria-label", options.label ?? localizer.text("primitives.filter"));
   input.value = options.initial?.query ?? "";
   setPart(input, "search.input");
   root.append(input);
@@ -19028,9 +19131,9 @@ function createSearchField(document, options) {
   toggleBar.className = "modkit-search__toggles";
   setPart(toggleBar, "search.toggles");
   toggleBar.setAttribute("role", "group");
-  toggleBar.setAttribute("aria-label", "Filter options");
+  toggleBar.setAttribute("aria-label", localizer.text("primitives.filterOptions"));
   root.append(toggleBar);
-  const specs = options.allowGlob === true ? [...TOGGLES, GLOB_TOGGLE] : TOGGLES;
+  const specs = options.allowGlob === true ? [...toggles, globToggle] : toggles;
   const buttons = /* @__PURE__ */ new Map();
   for (const spec of specs) {
     const button = document.createElement("button");
@@ -19058,8 +19161,8 @@ function createSearchField(document, options) {
     nav.className = "modkit-search__nav";
     setPart(nav, "search.nav");
     for (const [label, direction, title] of [
-      ["\u2039", -1, "Previous match"],
-      ["\u203A", 1, "Next match"]
+      ["\u2039", -1, localizer.text("primitives.previousMatch")],
+      ["\u203A", 1, localizer.text("primitives.nextMatch")]
     ]) {
       const button = document.createElement("button");
       button.type = "button";
@@ -19099,14 +19202,14 @@ function createSearchField(document, options) {
   function render2() {
     const compiled = current.compiled;
     const invalid2 = compiled.kind === "invalid";
-    message.textContent = compiled.kind === "invalid" ? compiled.message : "";
+    message.textContent = compiled.kind === "invalid" ? localizer.text("primitives.invalidRegex") : "";
     const count2 = options.countMatches?.(current);
     const states = [];
     if (invalid2) states.push("invalid");
     if (!invalid2 && count2 === 0 && compiled.kind !== "empty") states.push("no-match");
     setState(root, states);
     input.setAttribute("aria-invalid", String(invalid2));
-    status.textContent = invalid2 ? "invalid" : compiled.kind === "empty" || count2 === void 0 ? "" : count2 === 1 ? "1 match" : `${count2} matches`;
+    status.textContent = invalid2 ? localizer.text("primitives.invalid") : compiled.kind === "empty" || count2 === void 0 ? "" : count2 === 1 ? localizer.text("primitives.oneMatch") : localizer.text("primitives.matches", { count: count2 });
     if (nav !== void 0) {
       for (const button of nav.querySelectorAll("button")) {
         button.disabled = invalid2 || count2 === void 0 || count2 === 0;
@@ -19369,6 +19472,7 @@ var stageId = (stage) => {
   return id;
 };
 function createCodecPreview(options) {
+  const localizer = withEnglishUiFallback(options.localizer, EXPLORER_PREVIEW_FALLBACK_MESSAGES);
   const supported = [
     ...new Set(
       (options.supported ?? []).map((extension) => extension.replace(/^\./u, "").toLowerCase())
@@ -19386,7 +19490,7 @@ function createCodecPreview(options) {
       const traits = new Set(traitsOf(descriptor));
       const published = new Set(publishedContracts(descriptor));
       const availableOperations = new Set(publishedOperations2(descriptor));
-      const candidates = resolved2 ? options.stages : fallbackStages(options.fallback);
+      const candidates = resolved2 ? options.stages : fallbackStages(options.fallback, localizer);
       const hasPresentationPlan = session.presentation !== void 0;
       const plannedSlots = new Map(
         (session.presentation?.slots ?? []).map((slot) => [slot.slotId, slot])
@@ -19474,12 +19578,12 @@ function createCodecPreview(options) {
     }
   };
 }
-function fallbackStages(fallback) {
+function fallbackStages(fallback, localizer) {
   const stages = [];
   if (fallback?.text !== void 0) {
     stages.push({
       id: "text",
-      label: "Text",
+      label: localizer.text("explorer.text"),
       contract: "common.view/text-data-source",
       module: fallback.text
     });
@@ -19487,7 +19591,7 @@ function fallbackStages(fallback) {
   if (fallback?.hex !== void 0) {
     stages.push({
       id: "hex",
-      label: "Hex",
+      label: localizer.text("explorer.hex"),
       contract: "common.view/byte-range-source",
       module: fallback.hex
     });
@@ -19549,6 +19653,7 @@ var formatBytes = (bytes2) => {
   return `${(bytes2 / (1024 * 1024)).toFixed(1)} MiB`;
 };
 function createEditorArea(document, options) {
+  const localizer = withEnglishUiFallback(options.localizer, EXPLORER_EDITORS_FALLBACK_MESSAGES);
   const root = document.createElement("div");
   setPart(root, "explorer.editors");
   const groups = [];
@@ -19616,7 +19721,11 @@ function createEditorArea(document, options) {
     const run = new AbortController();
     tab.run = run;
     tab.content.replaceChildren();
-    report2({ path: tab.entry.id, detail: `Opening ${tab.entry.name}\u2026`, severity: "busy" });
+    report2({
+      path: tab.entry.id,
+      detail: localizer.text("explorer.opening", { name: tab.entry.name }),
+      severity: "busy"
+    });
     try {
       const bytes2 = await options.read(tab.entry, run.signal);
       if (run.signal.aborted) return;
@@ -19626,8 +19735,15 @@ function createEditorArea(document, options) {
         return;
       }
       if (handle === void 0) {
-        placeholder({ ...group2, stage: tab.content }, `Nothing could render \u201C${tab.entry.name}\u201D.`);
-        report2({ path: tab.entry.id, detail: "no viewer", severity: "error" });
+        placeholder(
+          { ...group2, stage: tab.content },
+          localizer.text("explorer.noRendererShort", { name: tab.entry.name })
+        );
+        report2({
+          path: tab.entry.id,
+          detail: localizer.text("explorer.noViewer"),
+          severity: "error"
+        });
         return;
       }
       tab.handle = handle;
@@ -19642,7 +19758,10 @@ function createEditorArea(document, options) {
       if (run.signal.aborted) return;
       placeholder(
         { ...group2, stage: tab.content },
-        `Could not preview ${tab.entry.name}: ${describe2(error3)}`
+        localizer.text("explorer.previewError", {
+          name: tab.entry.name,
+          reason: describe2(error3)
+        })
       );
       report2({ path: tab.entry.id, detail: describe2(error3), severity: "error" });
     }
@@ -19667,7 +19786,7 @@ function createEditorArea(document, options) {
       } else {
         drawBreadcrumb(group2, void 0);
         syncPicker(group2);
-        placeholder(group2, "No file open in this group.");
+        placeholder(group2, localizer.text("explorer.noFileOpen"));
       }
     }
     if (group2.tabs.length === 0 && groups.length > 1 && group2 !== groups[0]) {
@@ -19707,18 +19826,18 @@ function createEditorArea(document, options) {
     const index = group2.tabs.indexOf(tab);
     const others = group2.tabs.filter((other) => other !== tab);
     const toRight = group2.tabs.slice(index + 1);
-    item("Close", true, () => void closeTab(group2, tab));
-    item("Close Others", others.length > 0, () => {
+    item(localizer.text("explorer.close"), true, () => void closeTab(group2, tab));
+    item(localizer.text("explorer.closeOthers"), others.length > 0, () => {
       void (async () => {
         for (const other of [...others]) await closeTab(group2, other);
       })();
     });
-    item("Close to the Right", toRight.length > 0, () => {
+    item(localizer.text("explorer.closeRight"), toRight.length > 0, () => {
       void (async () => {
         for (const other of [...toRight]) await closeTab(group2, other);
       })();
     });
-    item("Close All", group2.tabs.length > 0, () => {
+    item(localizer.text("explorer.closeAll"), group2.tabs.length > 0, () => {
       void (async () => {
         for (const other of [...group2.tabs]) await closeTab(group2, other);
       })();
@@ -19748,14 +19867,14 @@ function createEditorArea(document, options) {
   function createGroup() {
     const groupRoot = element(root, "div", { part: "explorer.group" });
     const strip = element(groupRoot, "div", { part: "explorer.tabstrip", role: "tablist" });
-    strip.setAttribute("aria-label", "Open files");
+    strip.setAttribute("aria-label", localizer.text("explorer.openFiles"));
     if (options.chrome?.tabs === false) strip.remove();
     const header = element(groupRoot, "div", { part: "explorer.header" });
     const breadcrumb = element(header, "nav", { part: "explorer.breadcrumb" });
-    breadcrumb.setAttribute("aria-label", "File path");
+    breadcrumb.setAttribute("aria-label", localizer.text("explorer.filePath"));
     if (options.chrome?.breadcrumb === false) breadcrumb.remove();
     const picker = element(header, "select", { part: "explorer.viewpicker" });
-    picker.setAttribute("aria-label", "View");
+    picker.setAttribute("aria-label", localizer.text("explorer.view"));
     picker.disabled = true;
     const stage = element(groupRoot, "div", { part: "explorer.stage" });
     const group2 = { root: groupRoot, strip, breadcrumb, picker, stage, tabs: [] };
@@ -19775,7 +19894,7 @@ function createEditorArea(document, options) {
       });
     });
     groups.push(group2);
-    placeholder(group2, "No file open in this group.");
+    placeholder(group2, localizer.text("explorer.noFileOpen"));
     return group2;
   }
   focused = createGroup();
@@ -19827,7 +19946,7 @@ function createEditorArea(document, options) {
       });
       const close = element(button, "button", { part: "explorer.filetab-close", text: "\xD7" });
       close.setAttribute("type", "button");
-      close.setAttribute("aria-label", `Close ${entry2.name}`);
+      close.setAttribute("aria-label", localizer.text("explorer.closeFile", { name: entry2.name }));
       close.addEventListener("click", (event) => {
         event.stopPropagation();
         void closeTab(group2, tab);
@@ -19877,13 +19996,14 @@ var formatBytes2 = (bytes2) => {
   return `${(bytes2 / (1024 * 1024)).toFixed(1)} MiB`;
 };
 function createExplorer(document, options) {
+  const localizer = withEnglishUiFallback(options.localizer, EXPLORER_FALLBACK_MESSAGES);
   const maximumBytes = options.maximumBytes ?? EXPLORER_MAXIMUM_BYTES;
   const supported = new Set(options.preview.supported.map((item) => item.toLowerCase()));
   const root = document.createElement("div");
   root.className = "modkit-viewer modkit-explorer";
   setPart(root, "explorer");
   const toolbar = element(root, "div", { part: "explorer.toolbar", role: "toolbar" });
-  toolbar.setAttribute("aria-label", "Explorer actions");
+  toolbar.setAttribute("aria-label", localizer.text("explorer.actions"));
   if (options.showToolbar === false) toolbar.hidden = true;
   const sidebar = element(root, "div", { part: "explorer.sidebar" });
   const previewPane = element(root, "div", { part: "explorer.preview" });
@@ -19892,7 +20012,7 @@ function createExplorer(document, options) {
   const viewPicker = element(previewHeader, "select", {
     part: "explorer.viewpicker"
   });
-  viewPicker.setAttribute("aria-label", "Preview view");
+  viewPicker.setAttribute("aria-label", localizer.text("explorer.previewView"));
   previewHeader.hidden = true;
   const stage = element(previewPane, "div", { part: "explorer.stage" });
   const status = element(root, "output", { part: "explorer.status" });
@@ -19921,19 +20041,23 @@ function createExplorer(document, options) {
     return node;
   };
   if (options.openFolder !== void 0) {
-    action("Open folder\u2026", "Grant access to a folder and browse it", () => {
-      void (async () => {
-        try {
-          const next = await options.openFolder?.();
-          if (next !== void 0) await explorer.setAccess(next);
-        } catch (error3) {
-          say(`Could not open the folder: ${describe3(error3)}`, "error");
-        }
-      })();
-    });
+    action(
+      localizer.text("explorer.openFolder"),
+      localizer.text("explorer.openFolderTitle"),
+      () => {
+        void (async () => {
+          try {
+            const next = await options.openFolder?.();
+            if (next !== void 0) await explorer.setAccess(next);
+          } catch (error3) {
+            say(localizer.text("explorer.openFolderError", { reason: describe3(error3) }), "error");
+          }
+        })();
+      }
+    );
   }
   if (options.openFile !== void 0) {
-    action("Open file\u2026", "Open a single file for preview", () => {
+    action(localizer.text("explorer.openFile"), localizer.text("explorer.openFileTitle"), () => {
       void (async () => {
         try {
           const picked = await options.openFile?.();
@@ -19941,26 +20065,31 @@ function createExplorer(document, options) {
           await explorer.setAccess(picked.access);
           await activate(picked.entry);
         } catch (error3) {
-          say(`Could not open the file: ${describe3(error3)}`, "error");
+          say(localizer.text("explorer.openFileError", { reason: describe3(error3) }), "error");
         }
       })();
     });
   }
   const registerFileTypes = options.registerFileTypes;
   if (registerFileTypes !== void 0) {
-    action("Set as default app\u2026", "Register this app for the file types it can preview", () => {
-      void (async () => {
-        try {
-          say(await registerFileTypes());
-        } catch (error3) {
-          say(`Could not register file types: ${describe3(error3)}`, "error");
-        }
-      })();
-    });
+    action(
+      localizer.text("explorer.defaultApp"),
+      localizer.text("explorer.defaultAppTitle"),
+      () => {
+        void (async () => {
+          try {
+            say(await registerFileTypes());
+          } catch (error3) {
+            say(localizer.text("explorer.registerError", { reason: describe3(error3) }), "error");
+          }
+        })();
+      }
+    );
   }
   const search = createSearchField(document, {
-    label: "Filter files",
-    placeholder: "Filter",
+    localizer,
+    label: localizer.text("explorer.filterFiles"),
+    placeholder: localizer.text("explorer.filter"),
     onChange(state) {
       query = state.query === "" ? void 0 : state.compiled;
       tree?.applyFilter();
@@ -19982,11 +20111,17 @@ function createExplorer(document, options) {
     const current = mounted;
     if (current === void 0) return;
     const selected = viewPicker.value;
-    say(`Opening ${breadcrumb.textContent ?? "view"}\u2026`, "loading");
+    say(
+      localizer.text("explorer.opening", {
+        name: breadcrumb.textContent ?? localizer.text("explorer.view")
+      }),
+      "loading"
+    );
     void current.show(selected).then(() => {
       if (mounted === current) say(`${breadcrumb.textContent ?? ""} \xB7 ${selected}`);
     }).catch((error3) => {
-      if (mounted === current) say(`Could not change view: ${describe3(error3)}`, "error");
+      if (mounted === current)
+        say(localizer.text("explorer.changeViewError", { reason: describe3(error3) }), "error");
     });
   });
   async function preview2(entry2) {
@@ -19995,14 +20130,18 @@ function createExplorer(document, options) {
     stage.replaceChildren();
     if (entry2.size !== void 0 && entry2.size > maximumBytes) {
       placeholder(
-        `${entry2.name} is ${formatBytes2(entry2.size)}, over the ${formatBytes2(maximumBytes)} preview limit.`
+        localizer.text("explorer.tooLarge", {
+          name: entry2.name,
+          size: formatBytes2(entry2.size),
+          limit: formatBytes2(maximumBytes)
+        })
       );
-      say(`${entry2.name} \u2014 too large`, "error");
+      say(localizer.text("explorer.tooLargeStatus", { name: entry2.name }), "error");
       return;
     }
     const run = new AbortController();
     previewRun = run;
-    say(`Opening ${entry2.name}\u2026`, "loading");
+    say(localizer.text("explorer.opening", { name: entry2.name }), "loading");
     try {
       const bytes2 = await access.read(entry2.id, maximumBytes, run.signal);
       if (run.signal.aborted) return;
@@ -20012,10 +20151,8 @@ function createExplorer(document, options) {
         return;
       }
       if (handle === void 0) {
-        placeholder(
-          `Nothing could render \u201C${entry2.name}\u201D. The host publishes no codec for it and no built-in text or hex viewer was configured.`
-        );
-        say(`${entry2.name} \u2014 no viewer`);
+        placeholder(localizer.text("explorer.noRenderer", { name: entry2.name }));
+        say(localizer.text("explorer.noViewerStatus", { name: entry2.name }));
         return;
       }
       mounted = handle;
@@ -20034,8 +20171,10 @@ function createExplorer(document, options) {
       say(`${entry2.name} \xB7 ${formatBytes2(bytes2.length)}`);
     } catch (error3) {
       if (run.signal.aborted) return;
-      placeholder(`Could not preview ${entry2.name}: ${describe3(error3)}`);
-      say(`${entry2.name} \u2014 failed`, "error");
+      placeholder(
+        localizer.text("explorer.previewError", { name: entry2.name, reason: describe3(error3) })
+      );
+      say(localizer.text("explorer.failedStatus", { name: entry2.name }), "error");
     } finally {
       if (previewRun === run) previewRun = void 0;
     }
@@ -20045,6 +20184,7 @@ function createExplorer(document, options) {
     if (access === void 0) return;
     const current = access;
     tree = createFileTree(document, {
+      localizer,
       label: current.label,
       async loadChildren(node, signal) {
         const entries = await current.list(node?.id, signal);
@@ -20105,25 +20245,25 @@ function createExplorer(document, options) {
       if (transfer === null) return;
       void (async () => {
         try {
-          say("Reading dropped item\u2026", "loading");
+          say(localizer.text("explorer.readingDrop"), "loading");
           const result = await options.acceptDrop?.(transfer);
           if (result === void 0) {
-            say("The dropped item could not be read.", "error");
+            say(localizer.text("explorer.dropUnreadable"), "error");
             return;
           }
           if (result.access !== void 0) await explorer.setAccess(result.access);
           if (result.entry !== void 0) await activate(result.entry);
-          else say("Folder opened. Pick a file in the tree.");
+          else say(localizer.text("explorer.folderOpened"));
         } catch (error3) {
-          say(`Drop failed: ${describe3(error3)}`, "error");
+          say(localizer.text("explorer.dropFailed", { reason: describe3(error3) }), "error");
         }
       })();
     });
   }
   placeholder(
-    options.openFolder === void 0 ? "Drop a file here to preview it." : "Open a folder, or drop a file here to preview it."
+    options.openFolder === void 0 ? localizer.text("explorer.emptyReadOnly") : localizer.text("explorer.empty")
   );
-  say("Ready");
+  say(localizer.text("viewer.ready"));
   const explorer = {
     root,
     async setAccess(next) {
@@ -31852,6 +31992,1708 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
   schemaVersion: 1
 });
 
+// packages/ui/dist/localization/index.js
+var UI_CATALOG_SCHEMA = "org.modkitx/ui-message-catalog@1";
+var UI_CATALOG_RECOMMENDED_MAXIMUM_JSON_BYTES = 8 * 1024 * 1024;
+var UI_CATALOG_MAXIMUM_MESSAGES = 1e4;
+var UI_CATALOG_MAXIMUM_KEY_LENGTH = 256;
+var UI_CATALOG_MAXIMUM_MESSAGE_LENGTH = 2e4;
+var UI_CATALOG_MAXIMUM_DECODED_CODE_UNITS = 4 * 1024 * 1024;
+var EN_MESSAGES = Object.freeze({
+  "app.title": "Modkit MK3",
+  "app.starting": "Starting Modkit MK3\u2026",
+  "action.openFile": "Open file\u2026",
+  "action.openFileTitle": "Open a single file in a new tab",
+  "action.splitEditor": "Split editor",
+  "action.splitEditorTitle": "Open the next file beside this one",
+  "action.enableEditing": "Enable editing",
+  "action.enableEditingTitle": "Ask this browser for permission to write the file or folder you picked",
+  "action.restartSession": "Restart session",
+  "action.restartSessionTitle": "Reload Modkit after the codec worker stopped",
+  "settings.bundled": "Bundled extensions",
+  "settings.bundledExcluded": "Bundled but not served here",
+  "settings.bundledDescription": "{count} extensions were attested at build time and are served from this origin under extensions/. They are listed read-only because {reason}.",
+  "sidebar.host": "Host",
+  "sidebar.facilities": "Facilities",
+  "sidebar.samples": "Served samples",
+  "sidebar.language": "Language",
+  "sidebar.hostSummary": "{extensions} extensions \xB7 {types} detectable types \xB7 codecs run {profiles} in {realm} \xB7 shared memory {sharedMemory}",
+  "locale.en": "English",
+  "locale.ru": "\u0420\u0443\u0441\u0441\u043A\u0438\u0439",
+  "common.yes": "yes",
+  "common.no": "no",
+  "common.enable": "Enable",
+  "common.disable": "Disable",
+  "common.enabled": "Enabled",
+  "common.disabled": "Disabled",
+  "common.install": "Install",
+  "common.update": "Update",
+  "common.remove": "Remove",
+  "common.dismiss": "Dismiss",
+  "common.loading": "Loading\u2026",
+  "common.none": "None",
+  "common.notInstalled": "Not installed",
+  "common.loaded": "Loaded",
+  "common.active": "Active",
+  "common.inactive": "Inactive",
+  "activity.files": "Files",
+  "activity.explorer": "Explorer",
+  "activity.host": "Host",
+  "activity.hostTitle": "Show or hide the host panel",
+  "activity.info": "Info",
+  "activity.infoTitle": "Show or hide diagnostics and operations",
+  "activity.settings": "Settings",
+  "status.noFileEditable": "No file is open yet, so nothing is editable.",
+  "status.workerUnavailable": "Codec worker stopped \xB7 restart the session to continue",
+  "status.ready": "Ready \xB7 {extensions} extensions \xB7 {notices} boot notice(s)",
+  "confirm.discardAndRestart": "Some tabs have unsaved changes. Restart the session and discard them?",
+  "error.openFile": "Could not open the file: {reason}",
+  "error.drop": "Drop failed: {reason}",
+  "error.fetch": "{path} could not be fetched from this origin.",
+  "extensions.title": "Extensions",
+  "extensions.contributions": "Contributions",
+  "extensions.subjects": "Subjects",
+  "extensions.downloadable": "Downloadable",
+  "extensions.connected": "Connected",
+  "extensions.bundled": "Bundled",
+  "extensions.notAdded": "Not added",
+  "extensions.shippedNotLoaded": "Shipped but not loaded",
+  "extensions.addFolder": "Add extension folder\u2026",
+  "extensions.refreshCatalog": "Refresh catalog",
+  "extensions.checkCatalog": "Check catalog",
+  "extensions.grantAccess": "Grant access",
+  "extensions.emptySubjects": "No extension subjects are available.",
+  "extensions.emptyFolders": "No extension folders have been added.",
+  "extensions.emptyManagerProblems": "The extension manager found no problems.",
+  "extensions.group.available": "Available",
+  "extensions.group.installed": "Installed",
+  "extensions.group.enabled": "Enabled",
+  "extensions.group.updates": "Updates",
+  "extensions.group.problems": "Problems",
+  "extensions.contract.codecs": "Codec Contributions",
+  "extensions.contract.editors": "Editor Contributions",
+  "extensions.contract.services": "Service Contributions",
+  "extensions.contract.viewers": "Viewer Contributions",
+  "extensions.contract.languages": "Language Contributions",
+  "extensions.contract.renderers": "Renderer Contributions",
+  "extensions.contract.runtimes": "Runtime Contributions",
+  "extensions.contract.commands": "Command Contributions",
+  "extensions.contract.ui": "UI Contributions",
+  "extensions.contract.contracts": "Contribution Contracts",
+  "extensions.contract.other": "Other Contributions",
+  "extensions.contract.invalid": "Invalid Contributions",
+  "extensions.contract.custom": "{name} Contributions",
+  "extensions.state.reloadPending": "Reload pending",
+  "extensions.state.afterReload": "Takes effect after reload",
+  "extensions.tooltip.invalidContract": "Invalid contribution contract",
+  "extensions.tooltip.exactContract": "Exact contract: {contract}",
+  "extensions.tooltip.contract": "Contract: {contract}",
+  "extensions.tooltip.state": "State: {state}",
+  "extensions.tooltip.origin": "Origin: {origin}",
+  "extensions.tooltip.source": "Source: {source}",
+  "extensions.tooltip.trustedPublisher": "Trusted publisher",
+  "extensions.tooltip.unverifiedPublisher": "Publisher is not verified",
+  "extensions.action.openContributionCard": "Open contribution card",
+  "extensions.action.updateExtension": "Update extension",
+  "extensions.action.openExtensionCard": "Open extension card",
+  "extensions.action.enablePackage": "Enable package",
+  "extensions.action.linkExtension": "Link extension",
+  "extensions.action.disableContribution": "Disable contribution",
+  "extensions.action.enableContribution": "Enable contribution",
+  "extensions.action.disableExtension": "Disable extension",
+  "extensions.action.enableExtension": "Enable extension",
+  "extensions.action.reloadWindow": "Reload window",
+  "extensions.status.configurationUpdated": "Extension configuration updated.",
+  "extensions.status.reloadRequired": "{id} was {state}. Reload the window.",
+  "viewer.audio": "Audio viewer",
+  "viewer.audioControls": "Audio controls",
+  "viewer.audioDecodeError": "The platform decoder cannot render this audio: {reason}. A format-specific decoder provider is required.",
+  "viewer.audioSummary": "{position} / {duration} \xB7 {channels} channels \xB7 {rate} kHz \xB7 {size} KiB",
+  "viewer.text": "Bounded text viewer",
+  "viewer.searchText": "Search text",
+  "viewer.search": "Search",
+  "viewer.ready": "Ready",
+  "viewer.textContent": "Text content",
+  "viewer.enterSearch": "Enter a search term",
+  "viewer.searching": "Searching\u2026",
+  "viewer.searchMatches": "{count} matches",
+  "viewer.searchMatch": "{count} match",
+  "viewer.image": "Image viewer",
+  "viewer.imageControls": "Image controls",
+  "viewer.fit": "Fit",
+  "viewer.fitTitle": "Fit to the stage",
+  "viewer.actualPixels": "Actual pixels",
+  "viewer.zoomOut": "Zoom out",
+  "viewer.zoomIn": "Zoom in",
+  "viewer.cycleBackdrop": "Cycle the backdrop",
+  "viewer.isolateChannel": "Isolate the {channel} channel",
+  "viewer.imageDecodeError": "The platform decoder cannot render these bytes: {reason}. A format-specific decoder provider is required.",
+  "viewer.imageSummary": "{width}\xD7{height} \xB7 {size} KiB \xB7 {scale}%{channel}",
+  "viewer.imageChannel": " \xB7 channel {channel}",
+  "viewer.video": "Video viewer",
+  "viewer.videoSummary": "{video} video \xB7 {audio} audio \xB7 {duration}",
+  "viewer.durationUnknown": "duration unknown",
+  "viewer.videoPlayError": "The platform cannot play this video representation: {reason}",
+  "viewer.vector": "Vector viewer",
+  "viewer.vectorPreview": "Vector scene preview",
+  "viewer.vectorSummary": "{nodes} nodes \xB7 {paths} paths \xB7 {shapes} shapes \xB7 {text} text nodes",
+  "viewer.vectorError": "The vector scene cannot be rendered safely: {reason}",
+  "viewer.world": "World viewer",
+  "viewer.worldPreview": "Top-down world preview",
+  "viewer.worldEmpty": "World metadata is available; no drawable terrain or objects were published.",
+  "viewer.worldError": "The world cannot be rendered: {reason}",
+  "viewer.worldSummary": "{map} \xB7 {layers} layers \xB7 {items} items{bounded}",
+  "viewer.boundedPreview": " \xB7 bounded preview",
+  "viewer.mixedWorkspace": "Mixed visual workspace",
+  "viewer.composition": "Visual-only world and model composition",
+  "viewer.compositionSummary": "{overlays} overlays \xB7 {resources} resources \xB7 visual-only",
+  "viewer.compositionError": "The mixed visual workspace cannot be rendered: {reason}",
+  "viewer.model": "Model viewer",
+  "viewer.modelView": "Model view",
+  "viewer.modelDetails": "Model details",
+  "viewer.modelPrimitive": "Model primitive",
+  "viewer.modelGeometryUnavailable": "Scene metadata is available. A buffer resolver/renderer provider is required for geometry.",
+  "viewer.modelError": "The model scene cannot be rendered: {reason}",
+  "viewer.modelSummary": "{nodes} nodes \xB7 {meshes} meshes \xB7 {primitives} primitives \xB7 {materials} materials \xB7 {animations} animations{facets}",
+  "viewer.reset": "Reset",
+  "viewer.resetCamera": "Reset the camera to its default pose",
+  "viewer.modelResources": "resources",
+  "viewer.modelBones": "bones",
+  "viewer.modelClips": "clips",
+  "viewer.modelCollision": "collision",
+  "viewer.modelMaterials": "materials",
+  "viewer.modelSockets": "sockets",
+  "viewer.modelParent": "parent {parent}",
+  "viewer.modelUnnamed": "(unnamed)",
+  "viewer.modelNoNamedFlags": "no named flags",
+  "viewer.modelClipDetail": "{frames} frames \xB7 {channels} channels \xB7 {samples} samples",
+  "viewer.modelMaterial": "material",
+  "viewer.modelBlendUnknown": "blend unknown",
+  "viewer.modelLayers": "{count} layers",
+  "viewer.viewAxis": "View axis",
+  "viewer.viewFromAxis": "View from {axis}",
+  "viewer.hex": "Hex viewer",
+  "viewer.byteOffset": "Byte offset",
+  "viewer.go": "Go",
+  "viewer.hexEditing": "Hex editing",
+  "viewer.save": "Save",
+  "viewer.revert": "Revert",
+  "viewer.undo": "Undo",
+  "viewer.redo": "Redo",
+  "viewer.editingActions": "Editing actions",
+  "viewer.editableText": "Editable text",
+  "viewer.saveCancelled": "Save cancelled",
+  "viewer.saveRejected": "Save rejected",
+  "viewer.saved": "Saved",
+  "viewer.editText": "Edit text",
+  "viewer.editBytes": "Edit bytes",
+  "editor.text": "Text editor",
+  "editor.hex": "Hex editor",
+  "editor.validating": "Validating\u2026",
+  "editor.validationRejected": "Validation rejected the change",
+  "editor.conflictChanged": "Conflict: source changed",
+  "editor.saving": "Saving\u2026",
+  "editor.savingProgress": "Saving\u2026 {progress}",
+  "editor.notSaved": "Not saved",
+  "editor.rolledBack": "Write failed; changes rolled back",
+  "editor.partiallySaved": "Partially saved; recovery is available",
+  "editor.actionCancelled": "{action} cancelled",
+  "editor.undone": "Undone",
+  "editor.redone": "Redone",
+  "editor.actionRejected": "{action} rejected",
+  "editor.actionFailed": "{action} failed",
+  "editor.sourceUpdated": "Source updated; review before saving",
+  "editor.bytesChanged": "{count} byte(s) changed",
+  "editor.rejectedValidation": "Rejected by validation",
+  "editor.rejectedReason": "Rejected: {reason}",
+  "editor.notAuthorized": "Not authorised",
+  "editor.prepareRejected": "Prepare rejected: {reason}",
+  "editor.saveState": "Save {state}",
+  "editor.committedRanges": "Committed {count} range(s) \u2014 reopen the file before editing it again",
+  "editor.saveFailed": "Save failed: {reason}",
+  "editor.saveRejectedReason": "Save rejected: {reason}",
+  "editor.saved": "saved",
+  "editor.nothingPrepared": "nothing prepared to save",
+  "editor.nothingToSave": "nothing to save",
+  "editor.saveRefused": "save refused: {reason}",
+  "editor.saveRefusedCode": "save refused: {reason} ({code})",
+  "editor.saveConflict": "save refused: the file changed on disk while it was open ({count} conflict(s))",
+  "editor.writerRejected": "the writer rejected the change",
+  "editor.replayUnsupported": "this host does not replay commits yet",
+  "editor.undoRefused": "undo refused: {reason}",
+  "editor.redoRefused": "redo refused: {reason}",
+  "editor.inlinePayloadOnly": "this host does not stage payloads: edits travel inline",
+  "editor.changeSetEditsRequired": "an editor change set must carry an `edits` array",
+  "editor.editObjectRequired": "an edit must be an object",
+  "editor.noEditTarget": "this subject publishes no edit target, so an edit cannot be placed",
+  "editor.legacyPayloadRequired": "a legacy edit must carry an inline or text payload",
+  "editor.refusal.planInvalid": "the change did not describe a valid edit of this file",
+  "editor.refusal.permissionMissing": "this session may not write the file",
+  "editor.refusal.writeScopeMismatch": "the edit named a file outside what this session may write",
+  "editor.refusal.guaranteeUnachievable": "the host cannot promise this write safely enough",
+  "editor.refusal.fidelityUnproven": "no evidence backs the writer fidelity claim for this change",
+  "editor.refusal.confirmationRequired": "a lossy write needs a confirmation this host does not ask for",
+  "editor.refusal.payloadUnavailable": "the edited bytes never reached the writer",
+  "editor.refusal.staleRevision": "the file changed on disk after the change was prepared",
+  "editor.refusal.cancelled": "the save was cancelled",
+  "viewer.byteAt": "byte at {offset}",
+  "viewer.characterAt": "character at {offset}",
+  "viewer.loadNextPage": "Load next page",
+  "viewer.nextRows": "Next rows",
+  "viewer.loading": "Loading",
+  "viewer.loadingTemplate": "Loading template\u2026",
+  "viewer.templateUnavailable": "Template unavailable: {reason}",
+  "viewer.noDisplayItems": "No display items.",
+  "viewer.displayCapped": "Display capped at {maximum} of {count} items.",
+  "viewer.resolvedSemanticTree": "Resolved semantic tree",
+  "viewer.namedRemainder": "{count} named remainder",
+  "card.relatedSubjects": "Related subjects",
+  "card.locale": "Locale",
+  "card.descriptionUnavailable": "Description is not available yet.",
+  "card.loadingDescription": "Loading description\u2026",
+  "card.sections": "{label} sections",
+  "card.subject": "Subject card",
+  "card.factGroupsCapped": "Fact groups are capped.",
+  "card.relatedCapped": "Related subjects are capped.",
+  "card.capped": "{label} (capped)",
+  "card.namedSubject": "{label} subject card",
+  "card.extension.group.overview": "Overview",
+  "card.extension.group.state": "State",
+  "card.extension.group.declaration": "Declaration",
+  "card.extension.group.specification": "Specification",
+  "card.extension.group.contracts": "Contracts",
+  "card.extension.fact.id": "Extension ID",
+  "card.extension.fact.displayName": "Display name",
+  "card.extension.fact.publisher": "Publisher",
+  "card.extension.fact.version": "Version",
+  "card.extension.fact.license": "License",
+  "card.extension.fact.description": "Description",
+  "card.extension.fact.homepage": "Homepage",
+  "card.extension.fact.source": "Source",
+  "card.extension.fact.trusted": "Trusted",
+  "card.extension.fact.enabled": "Extension enabled",
+  "card.extension.fact.contributionCount": "Contributions",
+  "card.extension.fact.contractCount": "Contracts",
+  "card.contribution.fact.id": "Contribution ID",
+  "card.contribution.fact.displayName": "Display name",
+  "card.contribution.fact.ownerExtension": "Owner extension",
+  "card.contribution.fact.contractId": "Contract",
+  "card.contribution.fact.contractMajor": "Contract major",
+  "card.contribution.fact.contractCoordinate": "Contract coordinate",
+  "card.contribution.fact.status": "Status",
+  "card.contribution.fact.enabled": "Contribution enabled",
+  "card.contribution.fact.effectiveEnabled": "Effectively enabled",
+  "card.contribution.fact.dependencies": "Dependencies",
+  "card.contribution.fact.limitations": "Limitations",
+  "card.contribution.fact.runtimeVariants": "Runtime variants",
+  "card.contribution.fact.specification": "Specification",
+  "calculations.label": "Subject calculations",
+  "calculations.summary": "{count} calculations \xB7 {warnings} warnings",
+  "calculations.empty": "This subject publishes no calculations.",
+  "calculations.progress": "{visible} of {total} calculations \xB7 {state}{reason}",
+  "calculations.capped": "capped by the viewer",
+  "calculations.notAvailable": "not available",
+  "calculations.sources": "Sources: {sources}",
+  "graph.nodeTypes": "Node types",
+  "graph.filterNodeTypes": "Filter node types",
+  "graph.controls": "Graph controls",
+  "graph.resetView": "Reset view",
+  "graph.relation": "Relation graph",
+  "graph.status": "{nodes} nodes \xB7 {edges} edges",
+  "graph.statusRenderer": "{nodes} nodes \xB7 {edges} edges \xB7 {renderer}",
+  "graph.hint": "Scroll to zoom \xB7 drag the background to pan \xB7 drag nodes to move them",
+  "graph.all": "All",
+  "graph.none": "None",
+  "graph.filterClasses": "Filter classes\u2026",
+  "graph.labels": "Labels",
+  "graph.nodes": "Nodes",
+  "graph.renderer": "Renderer",
+  "graph.canvas2d": "2D canvas",
+  "graph.hintOpen": "Drag empty space to pan \xB7 drag a node to reposition it \xB7 scroll to zoom \xB7 double-click a node to open its linked subject",
+  "graph.loadedCounts": "loaded {nodes} of {totalNodes} nodes and {edges} of {totalEdges} edges",
+  "graph.completeness": "{owner}{state}{reason}",
+  "graph.source": "source",
+  "graph.view": "view",
+  "graph.visibleCapped": "visible selection capped at {count} nodes",
+  "graph.nodeCount": "{visible} / {total} nodes",
+  "graph.edgeCount": "{count} visible edges",
+  "graph.viewer": "Relation graph viewer",
+  "explorer.actions": "Explorer actions",
+  "explorer.previewView": "Preview view",
+  "explorer.openFolder": "Open folder\u2026",
+  "explorer.openFolderTitle": "Grant access to a folder and browse it",
+  "explorer.openFile": "Open file\u2026",
+  "explorer.openFileTitle": "Open a single file for preview",
+  "explorer.filterFiles": "Filter files",
+  "explorer.filter": "Filter",
+  "explorer.opening": "Opening {name}\u2026",
+  "explorer.noPreview": "No preview is available for {name}. Supported extensions: {extensions}.",
+  "explorer.previewError": "Could not preview {name}: {reason}",
+  "explorer.empty": "Open a folder, or drop a file here to preview it.",
+  "explorer.emptyReadOnly": "Drop a file here to preview it.",
+  "explorer.openFiles": "Open files",
+  "explorer.filePath": "File path",
+  "explorer.view": "View",
+  "explorer.noFileOpen": "No file open in this group.",
+  "explorer.close": "Close",
+  "explorer.closeOthers": "Close Others",
+  "explorer.closeRight": "Close to the Right",
+  "explorer.closeAll": "Close All",
+  "explorer.closeFile": "Close {name}",
+  "explorer.hex": "Hex",
+  "explorer.text": "Text",
+  "explorer.openFolderError": "Could not open the folder: {reason}",
+  "explorer.openFileError": "Could not open the file: {reason}",
+  "explorer.defaultApp": "Set as default app\u2026",
+  "explorer.defaultAppTitle": "Register this app for the file types it can preview",
+  "explorer.registerError": "Could not register file types: {reason}",
+  "explorer.changeViewError": "Could not change view: {reason}",
+  "explorer.tooLarge": "{name} is {size}, over the {limit} preview limit.",
+  "explorer.tooLargeStatus": "{name} \u2014 too large",
+  "explorer.noRenderer": "Nothing could render \u201C{name}\u201D. The host publishes no codec for it and no built-in text or hex viewer was configured.",
+  "explorer.noRendererShort": "Nothing could render \u201C{name}\u201D.",
+  "explorer.noViewer": "no viewer",
+  "explorer.noViewerStatus": "{name} \u2014 no viewer",
+  "explorer.failedStatus": "{name} \u2014 failed",
+  "explorer.readingDrop": "Reading dropped item\u2026",
+  "explorer.dropUnreadable": "The dropped item could not be read.",
+  "explorer.folderOpened": "Folder opened. Pick a file in the tree.",
+  "explorer.dropFailed": "Drop failed: {reason}",
+  "primitives.filter": "Filter",
+  "primitives.filterOptions": "Filter options",
+  "primitives.matchCase": "Match case",
+  "primitives.matchWord": "Match whole word",
+  "primitives.regex": "Use regular expression",
+  "primitives.glob": "Use glob pattern",
+  "primitives.treeActions": "{label} actions",
+  "primitives.nothingToShow": "Nothing to show.",
+  "primitives.previousMatch": "Previous match",
+  "primitives.nextMatch": "Next match",
+  "primitives.invalid": "invalid",
+  "primitives.invalidRegex": "Invalid regular expression",
+  "primitives.oneMatch": "1 match",
+  "primitives.matches": "{count} matches",
+  "shell.subjectPath": "Subject path",
+  "shell.more": "More",
+  "shell.hiddenSegments": "Show {count} hidden segment(s)",
+  "shell.viewMode": "View mode",
+  "shell.viewer": "Viewer",
+  "workbench.activities": "Workbench activities",
+  "workbench.facilities": "{label} \xB7 {count} facilities",
+  "workbench.hostUnavailable": "Host unavailable",
+  "workbench.noHostProfile": "No host profile",
+  "settings.groups": "Settings groups",
+  "settings.back": "\u2190 Back",
+  "settings.appearance": "Appearance",
+  "settings.colorTheme": "Color theme",
+  "settings.density": "Density",
+  "settings.extensions": "Extensions",
+  "settings.extensionsIntro": "Extensions are data-driven packages. Disable one to keep it installed without loading its contributions.",
+  "settings.noExtensions": "No extensions are configured yet.",
+  "settings.enableExtension": "Enable {id}",
+  "settings.extensionId": "Extension id",
+  "settings.extensionLocation": "Extension location",
+  "settings.add": "Add",
+  "settings.browse": "Browse\u2026",
+  "settings.fileAssociations": "File associations",
+  "settings.noCodecs": "No codecs are loaded, so there is nothing to associate.",
+  "settings.associate": "Associate .{type}",
+  "settings.selectAll": "Select all",
+  "settings.selectNone": "Select none",
+  "settings.defaultApp": "Set as default app",
+  "settings.close": "Close settings (Esc)",
+  "settings.savedTo": "Saved to {location}",
+  "settings.saveError": "Could not save: {reason}",
+  "settings.themeDescription": "Applies immediately and to every viewer surface.",
+  "settings.densityDescription": "Compact matches VS Code list metrics; comfortable suits touch and larger displays.",
+  "settings.compact": "Compact",
+  "settings.comfortable": "Comfortable",
+  "settings.extensionsLocationIntro": "Extensions are listed in {location}. Each entry has an id, a location the host loads from, and an enabled state. The same settings are used by desktop, web and headless hosts.",
+  "settings.extensionPathPlaceholder": "path, package or URL",
+  "settings.extensionRequired": "An extension needs both an id and a location.",
+  "settings.associationsDescription": "Make this app the default for the formats its codecs can open. Registration is per-user and reversible from the operating system, and nothing is written until you apply it.",
+  "settings.pickFileType": "Pick at least one file type first.",
+  "settings.nothingToRegister": "Nothing to register.",
+  "settings.registerError": "Could not register: {reason}",
+  "settings.loadedFrom": "Loaded from {location}",
+  "settings.loadedProblems": "Loaded with {count} problem(s): {problems}",
+  "metadata.empty": "No metadata reported by the codec.",
+  "metadata.observedTraits": "Observed traits",
+  "metadata.subject": "subject",
+  "metadata.revision": "revision",
+  "metadata.interpretation": "interpretation",
+  "metadata.format": "format",
+  "metadata.codec": "codec",
+  "metadata.confidence": "confidence",
+  "metadata.identity": "identity",
+  "metadata.detection": "detection",
+  "metadata.trait": "trait",
+  "metadata.operation": "operation",
+  "metadata.unresolved": "unresolved",
+  "metadata.mutatesSource": "mutates source",
+  "panels.ready": "Ready",
+  "panels.diagnostics": "Diagnostics",
+  "panels.operations": "Operations",
+  "panels.working": "Working",
+  "panels.operationComplete": "{operation}: complete",
+  "metadata.title": "Metadata",
+  "metadata.properties": "Properties",
+  "viewer.gameTemplate": "Game template",
+  "viewer.table": "Table viewer",
+  "viewer.tableShape": "{rows} rows, {columns} columns",
+  "viewer.virtualText": "Virtual text viewer",
+  "viewer.transport": "Transport controls",
+  "viewer.namespace": "Namespace tree",
+  "viewer.storedSize": "stored {size}",
+  "viewer.tree": "Tree viewer",
+  "viewer.playPause": "Play or pause",
+  "viewer.seekStart": "Seek to start",
+  "viewer.normalSpeed": "Normal speed",
+  "viewer.operationComplete": "{label}: complete",
+  "imageEdit.tools": "Image tools",
+  "imageEdit.actions": "Image actions",
+  "imageEdit.tool.select": "Select a rectangular region",
+  "imageEdit.tool.brush": "Brush",
+  "imageEdit.tool.eraser": "Erase to transparent",
+  "imageEdit.tool.line": "Line",
+  "imageEdit.tool.rect": "Rectangle",
+  "imageEdit.tool.ellipse": "Ellipse",
+  "imageEdit.tool.fill": "Flood fill",
+  "imageEdit.tool.gradient": "Linear gradient",
+  "imageEdit.tool.eyedropper": "Pick a colour",
+  "imageEdit.colour": "Tool colour",
+  "imageEdit.brushSize": "Brush size",
+  "imageEdit.undoTitle": "Undo the last edit",
+  "imageEdit.redoTitle": "Redo the last undone edit",
+  "imageEdit.crop": "Crop",
+  "imageEdit.cropTitle": "Crop to the current selection",
+  "imageEdit.applyTitle": "Commit the edited pixels",
+  "imageEdit.toolStatus": "tool {tool}",
+  "imageEdit.channelStatus": "channel {channel}",
+  "imageEdit.noSelection": "no selection",
+  "imageEdit.selectionStatus": "selection {width}\xD7{height} at {x},{y}",
+  "imageEdit.undoStatus": "{count} undo",
+  "edit.operation": "Operation",
+  "edit.mutatingOperation": "Editing operation",
+  "edit.apply": "Apply",
+  "edit.lastChange": "Last change: {change}",
+  "edit.unavailable": "Editing is unavailable for this subject.",
+  "edit.noOperations": "This editor provides no operations.",
+  "edit.sessionUnavailable": "The editing session is unavailable.",
+  "edit.applying": "Applying\u2026",
+  "edit.applyFailed": "Could not apply the change: {reason}",
+  "edit.appliedReopening": "Change applied. Reopening the subject\u2026",
+  "edit.appliedReopenFailed": "Change applied, but the subject could not be reopened: {reason}",
+  "edit.operation.pngText": "Set PNG text",
+  "edit.operation.id3Text": "Set ID3 text frame",
+  "edit.operation.jpegComment": "Set JPEG comment",
+  "edit.operation.jpegRemove": "Remove JPEG segment",
+  "edit.operation.archiveAdd": "Add archive entry",
+  "edit.operation.archiveRemove": "Remove archive entry",
+  "edit.operation.archiveRename": "Rename archive entry",
+  "edit.operation.archiveReplace": "Replace archive entry",
+  "edit.field.name": "Name",
+  "edit.field.path": "Path",
+  "edit.field.key": "Key",
+  "edit.field.value": "Value",
+  "edit.field.text": "Text",
+  "edit.field.kind": "Kind",
+  "edit.field.payloadBase64": "Payload (Base64)",
+  "edit.field.segmentIndex": "Segment index",
+  "edit.field.frameId": "Frame ID",
+  "edit.hint.pngTextKey": "1\u201379 Latin-1 characters without NUL (Title, Author, Description, \u2026)",
+  "edit.hint.pngTextValue": "Latin-1 text without NUL",
+  "edit.hint.id3FrameId": "Four-character text frame id: TIT2, TPE1, TALB, \u2026 (TXXX uses another shape)",
+  "edit.hint.id3Text": "ID3 text value",
+  "edit.hint.jpegComment": "JPEG comment text",
+  "edit.hint.jpegSegmentIndex": "Zero-based JPEG segment index",
+  "edit.hint.archivePath": "Path inside the archive",
+  "edit.hint.archiveNewPath": "New path inside the archive",
+  "edit.hint.payloadBase64": "Binary payload encoded as Base64",
+  "edit.summary.pngText": "Sets or replaces one tEXt chunk; every other byte of the file is kept.",
+  "edit.summary.id3Text": "Sets or replaces one ID3v2 text frame, creating the tag when the file has none; the audio is never moved.",
+  "edit.summary.jpegComment": "Writes the COM segment after the APP block, replacing it in place if it exists.",
+  "edit.summary.jpegRemove": "Drops one metadata segment. A marker that carries the image is refused by the codec.",
+  "edit.summary.archiveAdd": "Adds one stored entry and repacks the archive; every kept entry is copied byte for byte.",
+  "edit.summary.archiveRemove": "Removes one entry and repacks; the other entries keep their exact bytes.",
+  "edit.summary.archiveRename": "Renames one entry without touching its data or its compression.",
+  "edit.summary.archiveReplace": "Replaces one file entry's payload (stored, fresh CRC); nothing else moves.",
+  "edit.status.codecRefused": "The codec refused this editing operation.",
+  "edit.status.hostRefusedPlan": "The host refused the edit plan.",
+  "edit.status.formsAvailable": "{count} editing form(s) available.",
+  "edit.status.noneDrivable": "No available operation has a supported editing form.",
+  "edit.status.unsupportedCount": "{count} operation(s) do not yet have a form.",
+  "edit.status.fidelityUnknown": "Writer fidelity is unknown.",
+  "edit.field.keyword": "Keyword",
+  "edit.field.frame": "Frame",
+  "edit.field.comment": "Comment",
+  "edit.field.marker": "Marker",
+  "edit.field.entryPath": "Entry path",
+  "edit.field.contents": "Contents",
+  "edit.field.from": "From",
+  "edit.field.to": "To",
+  "edit.hint.latin1NoNul": "Latin-1 text without NUL characters",
+  "edit.hint.metadataMarker": "Metadata marker name, for example APP0, APP1, or COM",
+  "edit.hint.archiveExistingPath": "Path of an entry the archive already contains",
+  "edit.hint.archiveContent": "Text; this host sends it as UTF-8 bytes",
+  "edit.hint.archiveRenameType": "A file cannot be renamed into a directory marker, or the other way around",
+  "edit.required": "{field} is required",
+  "edit.unsupportedInput": "this host cannot construct the input for \xAB{handler}\xBB yet",
+  "edit.invokeRefused": "refused: {reason}",
+  "edit.invokeRefusedCode": "refused: {reason} ({code})",
+  "edit.invokeRefusedDetail": "{head} \u2014 {detail}",
+  "edit.operationReturnedWrongKind": "the operation returned \xAB{kind}\xBB, not an edit plan",
+  "edit.returnedNothing": "nothing",
+  "edit.fidelityUnknownBytes": " (this rewrite does not keep bytes the format does not account for)",
+  "edit.fidelityNotes": " ({notes})",
+  "edit.refusal.notDeclared": "this codec does not declare that operation",
+  "edit.refusal.disabled": "the codec disabled this operation for this file",
+  "edit.refusal.dependencyRequired": "the operation needs a dependency this host has not resolved",
+  "edit.refusal.permissionMissing": "this session was not opened with permission to write the file",
+  "edit.refusal.inputNotSerializable": "the values could not be sent to the codec",
+  "edit.refusal.handlerUnregistered": "the codec registered no handler for that operation",
+  "edit.refusal.cancelled": "the operation was cancelled",
+  "edit.refusal.staleRevision": "the file changed on disk after it was opened"
+});
+var RU_MESSAGES = Object.freeze({
+  "app.title": "Modkit MK3",
+  "app.starting": "\u0417\u0430\u043F\u0443\u0441\u043A Modkit MK3\u2026",
+  "action.openFile": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0444\u0430\u0439\u043B\u2026",
+  "action.openFileTitle": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043E\u0434\u0438\u043D \u0444\u0430\u0439\u043B \u0432 \u043D\u043E\u0432\u043E\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u0435",
+  "action.splitEditor": "\u0420\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440",
+  "action.splitEditorTitle": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u0444\u0430\u0439\u043B \u0440\u044F\u0434\u043E\u043C \u0441 \u0442\u0435\u043A\u0443\u0449\u0438\u043C",
+  "action.enableEditing": "\u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044C \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435",
+  "action.enableEditingTitle": "\u0417\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u0443 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430 \u043F\u0440\u0430\u0432\u043E \u0437\u0430\u043F\u0438\u0441\u0438 \u0432 \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u0444\u0430\u0439\u043B \u0438\u043B\u0438 \u043F\u0430\u043F\u043A\u0443",
+  "action.restartSession": "\u041F\u0435\u0440\u0435\u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C \u0441\u0435\u0430\u043D\u0441",
+  "action.restartSessionTitle": "\u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C Modkit \u043F\u043E\u0441\u043B\u0435 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0438 \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0430 \u043A\u043E\u0434\u0435\u043A\u043E\u0432",
+  "settings.bundled": "\u0412\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u0435 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
+  "settings.bundledExcluded": "\u0412\u0441\u0442\u0440\u043E\u0435\u043D\u044B, \u043D\u043E \u0437\u0434\u0435\u0441\u044C \u043D\u0435 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u044B",
+  "settings.bundledDescription": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0430\u0442\u0442\u0435\u0441\u0442\u043E\u0432\u0430\u043D\u043E \u043F\u0440\u0438 \u0441\u0431\u043E\u0440\u043A\u0435: {count}. \u041E\u043D\u0438 \u043F\u0443\u0431\u043B\u0438\u043A\u0443\u044E\u0442\u0441\u044F \u0441 \u044D\u0442\u043E\u0433\u043E \u0441\u0435\u0440\u0432\u0435\u0440\u0430 \u0432 extensions/ \u0438 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u043B\u044F \u0447\u0442\u0435\u043D\u0438\u044F: {reason}.",
+  "sidebar.host": "\u0425\u043E\u0441\u0442",
+  "sidebar.facilities": "\u0412\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438",
+  "sidebar.samples": "\u041F\u0440\u0438\u043C\u0435\u0440\u044B \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u0430",
+  "sidebar.language": "\u042F\u0437\u044B\u043A",
+  "sidebar.hostSummary": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439: {extensions} \xB7 \u0440\u0430\u0441\u043F\u043E\u0437\u043D\u0430\u0432\u0430\u0435\u043C\u044B\u0445 \u0442\u0438\u043F\u043E\u0432: {types} \xB7 \u043A\u043E\u0434\u0435\u043A\u0438 \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442 \u043A\u0430\u043A {profiles} \u0432 {realm} \xB7 \u043E\u0431\u0449\u0430\u044F \u043F\u0430\u043C\u044F\u0442\u044C: {sharedMemory}",
+  "locale.en": "English",
+  "locale.ru": "\u0420\u0443\u0441\u0441\u043A\u0438\u0439",
+  "common.yes": "\u0434\u0430",
+  "common.no": "\u043D\u0435\u0442",
+  "common.enable": "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C",
+  "common.disable": "\u041E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C",
+  "common.enabled": "\u0412\u043A\u043B\u044E\u0447\u0435\u043D\u043E",
+  "common.disabled": "\u041E\u0442\u043A\u043B\u044E\u0447\u0435\u043D\u043E",
+  "common.install": "\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C",
+  "common.update": "\u041E\u0431\u043D\u043E\u0432\u0438\u0442\u044C",
+  "common.remove": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C",
+  "common.dismiss": "\u0421\u043A\u0440\u044B\u0442\u044C",
+  "common.loading": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430\u2026",
+  "common.none": "\u041D\u0435\u0442",
+  "common.notInstalled": "\u041D\u0435 \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043E",
+  "common.loaded": "\u0417\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043E",
+  "common.active": "\u0410\u043A\u0442\u0438\u0432\u043D\u043E",
+  "common.inactive": "\u041D\u0435\u0430\u043A\u0442\u0438\u0432\u043D\u043E",
+  "activity.files": "\u0424\u0430\u0439\u043B\u044B",
+  "activity.explorer": "\u041F\u0440\u043E\u0432\u043E\u0434\u043D\u0438\u043A",
+  "activity.host": "\u0425\u043E\u0441\u0442",
+  "activity.hostTitle": "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u044C \u043F\u0430\u043D\u0435\u043B\u044C \u0445\u043E\u0441\u0442\u0430",
+  "activity.info": "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u044F",
+  "activity.infoTitle": "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0438\u043B\u0438 \u0441\u043A\u0440\u044B\u0442\u044C \u0434\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0443 \u0438 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438",
+  "activity.settings": "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438",
+  "status.noFileEditable": "\u0424\u0430\u0439\u043B \u0435\u0449\u0451 \u043D\u0435 \u043E\u0442\u043A\u0440\u044B\u0442 \u2014 \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u043F\u043E\u043A\u0430 \u043D\u0435\u0447\u0435\u0433\u043E.",
+  "status.workerUnavailable": "\u041F\u0440\u043E\u0446\u0435\u0441\u0441 \u043A\u043E\u0434\u0435\u043A\u043E\u0432 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \xB7 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u0435 \u0441\u0435\u0430\u043D\u0441, \u0447\u0442\u043E\u0431\u044B \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0438\u0442\u044C",
+  "status.ready": "\u0413\u043E\u0442\u043E\u0432\u043E \xB7 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439: {extensions} \xB7 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439 \u0437\u0430\u043F\u0443\u0441\u043A\u0430: {notices}",
+  "confirm.discardAndRestart": "\u0412 \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u0445 \u0432\u043A\u043B\u0430\u0434\u043A\u0430\u0445 \u0435\u0441\u0442\u044C \u043D\u0435\u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F. \u041F\u0435\u0440\u0435\u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C \u0441\u0435\u0430\u043D\u0441 \u0438 \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0438\u0445?",
+  "error.openFile": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u0444\u0430\u0439\u043B: {reason}",
+  "error.drop": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u0438\u043D\u044F\u0442\u044C \u0444\u0430\u0439\u043B: {reason}",
+  "error.fetch": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C {path} \u0441 \u044D\u0442\u043E\u0433\u043E \u0441\u0435\u0440\u0432\u0435\u0440\u0430.",
+  "extensions.title": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
+  "extensions.contributions": "\u0412\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438",
+  "extensions.subjects": "\u0421\u0443\u0431\u044A\u0435\u043A\u0442\u044B",
+  "extensions.downloadable": "\u0414\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0434\u043B\u044F \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438",
+  "extensions.connected": "\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u044B",
+  "extensions.bundled": "\u0412\u0441\u0442\u0440\u043E\u0435\u043D\u044B",
+  "extensions.notAdded": "\u041D\u0435 \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u044B",
+  "extensions.shippedNotLoaded": "\u041F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D\u044B, \u043D\u043E \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u044B",
+  "extensions.addFolder": "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043F\u0430\u043F\u043A\u0443 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F\u2026",
+  "extensions.refreshCatalog": "\u041E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u043A\u0430\u0442\u0430\u043B\u043E\u0433",
+  "extensions.checkCatalog": "\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u043A\u0430\u0442\u0430\u043B\u043E\u0433",
+  "extensions.grantAccess": "\u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044C \u0434\u043E\u0441\u0442\u0443\u043F",
+  "extensions.emptySubjects": "\u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B\u0445 \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u043E\u0432 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439.",
+  "extensions.emptyFolders": "\u041F\u0430\u043F\u043A\u0438 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0435\u0449\u0451 \u043D\u0435 \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u044B.",
+  "extensions.emptyManagerProblems": "\u041C\u0435\u043D\u0435\u0434\u0436\u0435\u0440 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u043D\u0435 \u043D\u0430\u0448\u0451\u043B \u043F\u0440\u043E\u0431\u043B\u0435\u043C.",
+  "extensions.group.available": "\u0414\u043E\u0441\u0442\u0443\u043F\u043D\u044B\u0435",
+  "extensions.group.installed": "\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043D\u044B\u0435",
+  "extensions.group.enabled": "\u0412\u043A\u043B\u044E\u0447\u0451\u043D\u043D\u044B\u0435",
+  "extensions.group.updates": "\u041E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F",
+  "extensions.group.problems": "\u041F\u0440\u043E\u0431\u043B\u0435\u043C\u044B",
+  "extensions.contract.codecs": "\u041A\u043E\u0434\u0435\u043A\u0438",
+  "extensions.contract.editors": "\u0420\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u044B",
+  "extensions.contract.services": "\u0421\u0435\u0440\u0432\u0438\u0441\u044B",
+  "extensions.contract.viewers": "\u0421\u0440\u0435\u0434\u0441\u0442\u0432\u0430 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430",
+  "extensions.contract.languages": "\u042F\u0437\u044B\u043A\u0438",
+  "extensions.contract.renderers": "\u0421\u0440\u0435\u0434\u0441\u0442\u0432\u0430 \u0440\u0435\u043D\u0434\u0435\u0440\u0438\u043D\u0433\u0430",
+  "extensions.contract.runtimes": "\u0421\u0440\u0435\u0434\u044B \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u044F",
+  "extensions.contract.commands": "\u041A\u043E\u043C\u0430\u043D\u0434\u044B",
+  "extensions.contract.ui": "\u0418\u043D\u0442\u0435\u0440\u0444\u0435\u0439\u0441",
+  "extensions.contract.contracts": "\u041A\u043E\u043D\u0442\u0440\u0430\u043A\u0442\u044B \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0435\u0439",
+  "extensions.contract.other": "\u0414\u0440\u0443\u0433\u0438\u0435 \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438",
+  "extensions.contract.invalid": "\u041E\u0448\u0438\u0431\u043E\u0447\u043D\u044B\u0435 \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438",
+  "extensions.contract.custom": "\u0412\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438: {name}",
+  "extensions.state.reloadPending": "\u041E\u0436\u0438\u0434\u0430\u0435\u0442 \u043F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438",
+  "extensions.state.afterReload": "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u0432\u0441\u0442\u0443\u043F\u0438\u0442 \u0432 \u0441\u0438\u043B\u0443 \u043F\u043E\u0441\u043B\u0435 \u043F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438",
+  "extensions.tooltip.invalidContract": "\u041D\u0435\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u044B\u0439 \u043A\u043E\u043D\u0442\u0440\u0430\u043A\u0442 \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438",
+  "extensions.tooltip.exactContract": "\u0422\u043E\u0447\u043D\u044B\u0439 \u043A\u043E\u043D\u0442\u0440\u0430\u043A\u0442: {contract}",
+  "extensions.tooltip.contract": "\u041A\u043E\u043D\u0442\u0440\u0430\u043A\u0442: {contract}",
+  "extensions.tooltip.state": "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435: {state}",
+  "extensions.tooltip.origin": "\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A: {origin}",
+  "extensions.tooltip.source": "\u0420\u0430\u0441\u043F\u043E\u043B\u043E\u0436\u0435\u043D\u0438\u0435: {source}",
+  "extensions.tooltip.trustedPublisher": "\u0414\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u044B\u0439 \u0438\u0437\u0434\u0430\u0442\u0435\u043B\u044C",
+  "extensions.tooltip.unverifiedPublisher": "\u0418\u0437\u0434\u0430\u0442\u0435\u043B\u044C \u043D\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D",
+  "extensions.action.openContributionCard": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438",
+  "extensions.action.updateExtension": "\u041E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435",
+  "extensions.action.openExtensionCard": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
+  "extensions.action.enablePackage": "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043F\u0430\u043A\u0435\u0442",
+  "extensions.action.linkExtension": "\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435",
+  "extensions.action.disableContribution": "\u041E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u044C",
+  "extensions.action.enableContribution": "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u044C",
+  "extensions.action.disableExtension": "\u041E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435",
+  "extensions.action.enableExtension": "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435",
+  "extensions.action.reloadWindow": "\u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u043E\u043A\u043D\u043E",
+  "extensions.status.configurationUpdated": "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u044B.",
+  "extensions.status.reloadRequired": "{id}: \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \xAB{state}\xBB \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E. \u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u043E\u043A\u043D\u043E.",
+  "viewer.audio": "\u041F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0430\u0443\u0434\u0438\u043E",
+  "viewer.audioControls": "\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u0430\u0443\u0434\u0438\u043E",
+  "viewer.audioDecodeError": "\u0421\u0438\u0441\u0442\u0435\u043C\u043D\u044B\u0439 \u0434\u0435\u043A\u043E\u0434\u0435\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u044D\u0442\u043E \u0430\u0443\u0434\u0438\u043E: {reason}. \u041D\u0443\u0436\u0435\u043D \u0434\u0435\u043A\u043E\u0434\u0435\u0440 \u044D\u0442\u043E\u0433\u043E \u0444\u043E\u0440\u043C\u0430\u0442\u0430.",
+  "viewer.audioSummary": "{position} / {duration} \xB7 \u043A\u0430\u043D\u0430\u043B\u043E\u0432: {channels} \xB7 {rate} \u043A\u0413\u0446 \xB7 {size} \u041A\u0438\u0411",
+  "viewer.text": "\u041F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0442\u0435\u043A\u0441\u0442\u0430",
+  "viewer.searchText": "\u041F\u043E\u0438\u0441\u043A \u0432 \u0442\u0435\u043A\u0441\u0442\u0435",
+  "viewer.search": "\u041D\u0430\u0439\u0442\u0438",
+  "viewer.ready": "\u0413\u043E\u0442\u043E\u0432\u043E",
+  "viewer.textContent": "\u0421\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435 \u0442\u0435\u043A\u0441\u0442\u0430",
+  "viewer.enterSearch": "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0442\u0435\u043A\u0441\u0442 \u0434\u043B\u044F \u043F\u043E\u0438\u0441\u043A\u0430",
+  "viewer.searching": "\u041F\u043E\u0438\u0441\u043A\u2026",
+  "viewer.searchMatches": "\u0421\u043E\u0432\u043F\u0430\u0434\u0435\u043D\u0438\u0439: {count}",
+  "viewer.searchMatch": "\u0421\u043E\u0432\u043F\u0430\u0434\u0435\u043D\u0438\u0439: {count}",
+  "viewer.image": "\u041F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F",
+  "viewer.imageControls": "\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435\u043C",
+  "viewer.fit": "\u0412\u043C\u0435\u0441\u0442\u0438\u0442\u044C",
+  "viewer.fitTitle": "\u0412\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0432 \u043E\u0431\u043B\u0430\u0441\u0442\u044C \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430",
+  "viewer.actualPixels": "\u041D\u0430\u0441\u0442\u043E\u044F\u0449\u0438\u0439 \u0440\u0430\u0437\u043C\u0435\u0440",
+  "viewer.zoomOut": "\u0423\u043C\u0435\u043D\u044C\u0448\u0438\u0442\u044C",
+  "viewer.zoomIn": "\u0423\u0432\u0435\u043B\u0438\u0447\u0438\u0442\u044C",
+  "viewer.cycleBackdrop": "\u0421\u043C\u0435\u043D\u0438\u0442\u044C \u0444\u043E\u043D",
+  "viewer.isolateChannel": "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0442\u043E\u043B\u044C\u043A\u043E \u043A\u0430\u043D\u0430\u043B {channel}",
+  "viewer.imageDecodeError": "\u0421\u0438\u0441\u0442\u0435\u043C\u043D\u044B\u0439 \u0434\u0435\u043A\u043E\u0434\u0435\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u044D\u0442\u0438 \u0434\u0430\u043D\u043D\u044B\u0435: {reason}. \u041D\u0443\u0436\u0435\u043D \u0434\u0435\u043A\u043E\u0434\u0435\u0440 \u044D\u0442\u043E\u0433\u043E \u0444\u043E\u0440\u043C\u0430\u0442\u0430.",
+  "viewer.imageSummary": "{width}\xD7{height} \xB7 {size} \u041A\u0438\u0411 \xB7 {scale}%{channel}",
+  "viewer.imageChannel": " \xB7 \u043A\u0430\u043D\u0430\u043B {channel}",
+  "viewer.video": "\u041F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0432\u0438\u0434\u0435\u043E",
+  "viewer.videoSummary": "\u0412\u0438\u0434\u0435\u043E: {video} \xB7 \u0430\u0443\u0434\u0438\u043E: {audio} \xB7 {duration}",
+  "viewer.durationUnknown": "\u0434\u043B\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u0430",
+  "viewer.videoPlayError": "\u0421\u0438\u0441\u0442\u0435\u043C\u0430 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0432\u043E\u0441\u043F\u0440\u043E\u0438\u0437\u0432\u0435\u0441\u0442\u0438 \u044D\u0442\u043E \u0432\u0438\u0434\u0435\u043E: {reason}",
+  "viewer.vector": "\u041F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0432\u0435\u043A\u0442\u043E\u0440\u043D\u043E\u0433\u043E \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F",
+  "viewer.vectorPreview": "\u041F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0432\u0435\u043A\u0442\u043E\u0440\u043D\u043E\u0439 \u0441\u0446\u0435\u043D\u044B",
+  "viewer.vectorSummary": "\u0423\u0437\u043B\u043E\u0432: {nodes} \xB7 \u043F\u0443\u0442\u0435\u0439: {paths} \xB7 \u0444\u0438\u0433\u0443\u0440: {shapes} \xB7 \u0442\u0435\u043A\u0441\u0442\u0430: {text}",
+  "viewer.vectorError": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0431\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u043E \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0432\u0435\u043A\u0442\u043E\u0440\u043D\u0443\u044E \u0441\u0446\u0435\u043D\u0443: {reason}",
+  "viewer.world": "\u041F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u043C\u0438\u0440\u0430",
+  "viewer.worldPreview": "\u0412\u0438\u0434 \u043C\u0438\u0440\u0430 \u0441\u0432\u0435\u0440\u0445\u0443",
+  "viewer.worldEmpty": "\u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435 \u043C\u0438\u0440\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B, \u043D\u043E \u043D\u0435\u0442 \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u0432 \u0438\u043B\u0438 \u043F\u043E\u0432\u0435\u0440\u0445\u043D\u043E\u0441\u0442\u0438 \u0434\u043B\u044F \u043F\u043E\u043A\u0430\u0437\u0430.",
+  "viewer.worldError": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u043C\u0438\u0440: {reason}",
+  "viewer.worldSummary": "{map} \xB7 \u0441\u043B\u043E\u0451\u0432: {layers} \xB7 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u043E\u0432: {items}{bounded}",
+  "viewer.boundedPreview": " \xB7 \u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D\u043D\u044B\u0439 \u043F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440",
+  "viewer.mixedWorkspace": "\u0421\u043E\u0432\u043C\u0435\u0441\u0442\u043D\u043E\u0435 \u0440\u0430\u0431\u043E\u0447\u0435\u0435 \u043F\u0440\u043E\u0441\u0442\u0440\u0430\u043D\u0441\u0442\u0432\u043E",
+  "viewer.composition": "\u0421\u043E\u0432\u043C\u0435\u0441\u0442\u043D\u044B\u0439 \u0432\u0438\u0434 \u043C\u0438\u0440\u0430 \u0438 \u043C\u043E\u0434\u0435\u043B\u0438",
+  "viewer.compositionSummary": "\u041D\u0430\u043B\u043E\u0436\u0435\u043D\u0438\u0439: {overlays} \xB7 \u0440\u0435\u0441\u0443\u0440\u0441\u043E\u0432: {resources} \xB7 \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440",
+  "viewer.compositionError": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0441\u043E\u0432\u043C\u0435\u0441\u0442\u043D\u044B\u0439 \u0432\u0438\u0434: {reason}",
+  "viewer.model": "\u041F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u043C\u043E\u0434\u0435\u043B\u0438",
+  "viewer.modelView": "\u0412\u0438\u0434 \u043C\u043E\u0434\u0435\u043B\u0438",
+  "viewer.modelDetails": "\u0421\u0432\u0435\u0434\u0435\u043D\u0438\u044F \u043E \u043C\u043E\u0434\u0435\u043B\u0438",
+  "viewer.modelPrimitive": "\u0427\u0430\u0441\u0442\u044C \u043C\u043E\u0434\u0435\u043B\u0438",
+  "viewer.modelGeometryUnavailable": "\u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435 \u0441\u0446\u0435\u043D\u044B \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B. \u0414\u043B\u044F \u0433\u0435\u043E\u043C\u0435\u0442\u0440\u0438\u0438 \u043D\u0443\u0436\u0435\u043D \u043F\u043E\u0441\u0442\u0430\u0432\u0449\u0438\u043A \u0431\u0443\u0444\u0435\u0440\u043E\u0432 \u0438\u043B\u0438 \u0440\u0435\u043D\u0434\u0435\u0440\u0438\u043D\u0433\u0430.",
+  "viewer.modelError": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0441\u0446\u0435\u043D\u0443 \u043C\u043E\u0434\u0435\u043B\u0438: {reason}",
+  "viewer.modelSummary": "\u0423\u0437\u043B\u043E\u0432: {nodes} \xB7 \u0441\u0435\u0442\u043E\u043A: {meshes} \xB7 \u0447\u0430\u0441\u0442\u0435\u0439: {primitives} \xB7 \u043C\u0430\u0442\u0435\u0440\u0438\u0430\u043B\u043E\u0432: {materials} \xB7 \u0430\u043D\u0438\u043C\u0430\u0446\u0438\u0439: {animations}{facets}",
+  "viewer.reset": "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C",
+  "viewer.resetCamera": "\u0412\u0435\u0440\u043D\u0443\u0442\u044C \u043A\u0430\u043C\u0435\u0440\u0443 \u0432 \u0438\u0441\u0445\u043E\u0434\u043D\u043E\u0435 \u043F\u043E\u043B\u043E\u0436\u0435\u043D\u0438\u0435",
+  "viewer.modelResources": "\u0440\u0435\u0441\u0443\u0440\u0441\u044B",
+  "viewer.modelBones": "\u043A\u043E\u0441\u0442\u0438",
+  "viewer.modelClips": "\u0430\u043D\u0438\u043C\u0430\u0446\u0438\u0438",
+  "viewer.modelCollision": "\u0441\u0442\u043E\u043B\u043A\u043D\u043E\u0432\u0435\u043D\u0438\u044F",
+  "viewer.modelMaterials": "\u043C\u0430\u0442\u0435\u0440\u0438\u0430\u043B\u044B",
+  "viewer.modelSockets": "\u0442\u043E\u0447\u043A\u0438 \u043A\u0440\u0435\u043F\u043B\u0435\u043D\u0438\u044F",
+  "viewer.modelParent": "\u0440\u043E\u0434\u0438\u0442\u0435\u043B\u044C: {parent}",
+  "viewer.modelUnnamed": "(\u0431\u0435\u0437 \u0438\u043C\u0435\u043D\u0438)",
+  "viewer.modelNoNamedFlags": "\u043D\u0435\u0442 \u0438\u043C\u0435\u043D\u043E\u0432\u0430\u043D\u043D\u044B\u0445 \u0444\u043B\u0430\u0433\u043E\u0432",
+  "viewer.modelClipDetail": "\u043A\u0430\u0434\u0440\u043E\u0432: {frames} \xB7 \u043A\u0430\u043D\u0430\u043B\u043E\u0432: {channels} \xB7 \u043E\u0442\u0441\u0447\u0451\u0442\u043E\u0432: {samples}",
+  "viewer.modelMaterial": "\u043C\u0430\u0442\u0435\u0440\u0438\u0430\u043B",
+  "viewer.modelBlendUnknown": "\u0440\u0435\u0436\u0438\u043C \u0441\u043C\u0435\u0448\u0438\u0432\u0430\u043D\u0438\u044F \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u0435\u043D",
+  "viewer.modelLayers": "\u0441\u043B\u043E\u0451\u0432: {count}",
+  "viewer.viewAxis": "\u041E\u0441\u044C \u0432\u0438\u0434\u0430",
+  "viewer.viewFromAxis": "\u0412\u0438\u0434 \u0441\u043E \u0441\u0442\u043E\u0440\u043E\u043D\u044B {axis}",
+  "viewer.hex": "\u041F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0431\u0430\u0439\u0442\u043E\u0432",
+  "viewer.byteOffset": "\u0421\u043C\u0435\u0449\u0435\u043D\u0438\u0435 \u0431\u0430\u0439\u0442\u0430",
+  "viewer.go": "\u041F\u0435\u0440\u0435\u0439\u0442\u0438",
+  "viewer.hexEditing": "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u0431\u0430\u0439\u0442\u043E\u0432",
+  "viewer.save": "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C",
+  "viewer.revert": "\u0412\u0435\u0440\u043D\u0443\u0442\u044C",
+  "viewer.undo": "\u041E\u0442\u043C\u0435\u043D\u0438\u0442\u044C",
+  "viewer.redo": "\u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u044C",
+  "viewer.editingActions": "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u044F \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u0430",
+  "viewer.editableText": "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u0443\u0435\u043C\u044B\u0439 \u0442\u0435\u043A\u0441\u0442",
+  "viewer.saveCancelled": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435 \u043E\u0442\u043C\u0435\u043D\u0435\u043D\u043E",
+  "viewer.saveRejected": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E",
+  "viewer.saved": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E",
+  "viewer.editText": "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u0442\u0435\u043A\u0441\u0442",
+  "viewer.editBytes": "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u0431\u0430\u0439\u0442\u044B",
+  "editor.text": "\u0422\u0435\u043A\u0441\u0442\u043E\u0432\u044B\u0439 \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440",
+  "editor.hex": "\u0420\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0431\u0430\u0439\u0442\u043E\u0432",
+  "editor.validating": "\u041F\u0440\u043E\u0432\u0435\u0440\u043A\u0430\u2026",
+  "editor.validationRejected": "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u043D\u0435 \u043F\u0440\u043E\u0448\u043B\u043E \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0443",
+  "editor.conflictChanged": "\u041A\u043E\u043D\u0444\u043B\u0438\u043A\u0442: \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F",
+  "editor.saving": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435\u2026",
+  "editor.savingProgress": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435\u2026 {progress}",
+  "editor.notSaved": "\u041D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E",
+  "editor.rolledBack": "\u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u043F\u0438\u0441\u0438; \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043E\u0442\u043C\u0435\u043D\u0435\u043D\u044B",
+  "editor.partiallySaved": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E \u0447\u0430\u0441\u0442\u0438\u0447\u043D\u043E; \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435",
+  "editor.actionCancelled": "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \xAB{action}\xBB \u043E\u0442\u043C\u0435\u043D\u0435\u043D\u043E",
+  "editor.undone": "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u043E\u0442\u043C\u0435\u043D\u0435\u043D\u043E",
+  "editor.redone": "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u043F\u043E\u0432\u0442\u043E\u0440\u0435\u043D\u043E",
+  "editor.actionRejected": "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \xAB{action}\xBB \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E",
+  "editor.actionFailed": "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \xAB{action}\xBB \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043B\u043E\u0441\u044C \u043E\u0448\u0438\u0431\u043A\u043E\u0439",
+  "editor.sourceUpdated": "\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u043E\u0431\u043D\u043E\u0432\u043B\u0451\u043D; \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u0435\u0433\u043E \u043F\u0435\u0440\u0435\u0434 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435\u043C",
+  "editor.bytesChanged": "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u043E \u0431\u0430\u0439\u0442\u043E\u0432: {count}",
+  "editor.rejectedValidation": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u043E\u0439",
+  "editor.rejectedReason": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E: {reason}",
+  "editor.notAuthorized": "\u041D\u0435\u0442 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u044F",
+  "editor.prepareRejected": "\u041F\u043E\u0434\u0433\u043E\u0442\u043E\u0432\u043A\u0430 \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u0430: {reason}",
+  "editor.saveState": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435: {state}",
+  "editor.committedRanges": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D\u043E\u0432: {count} \u2014 \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0444\u0430\u0439\u043B \u0437\u0430\u043D\u043E\u0432\u043E \u043F\u0435\u0440\u0435\u0434 \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u043C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435\u043C",
+  "editor.saveFailed": "\u041E\u0448\u0438\u0431\u043A\u0430 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044F: {reason}",
+  "editor.saveRejectedReason": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E: {reason}",
+  "editor.saved": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E",
+  "editor.nothingPrepared": "\u041D\u0435\u0442 \u043F\u043E\u0434\u0433\u043E\u0442\u043E\u0432\u043B\u0435\u043D\u043D\u044B\u0445 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439 \u0434\u043B\u044F \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044F",
+  "editor.nothingToSave": "\u041D\u0435\u0442 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439 \u0434\u043B\u044F \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044F",
+  "editor.saveRefused": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E: {reason}",
+  "editor.saveRefusedCode": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E: {reason} ({code})",
+  "editor.saveConflict": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E: \u0444\u0430\u0439\u043B \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F \u043D\u0430 \u0434\u0438\u0441\u043A\u0435, \u043F\u043E\u043A\u0430 \u0431\u044B\u043B \u043E\u0442\u043A\u0440\u044B\u0442 (\u043A\u043E\u043D\u0444\u043B\u0438\u043A\u0442\u043E\u0432: {count})",
+  "editor.writerRejected": "\u041C\u043E\u0434\u0443\u043B\u044C \u0437\u0430\u043F\u0438\u0441\u0438 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435",
+  "editor.replayUnsupported": "\u042D\u0442\u043E\u0442 \u0445\u043E\u0441\u0442 \u043F\u043E\u043A\u0430 \u043D\u0435 \u0443\u043C\u0435\u0435\u0442 \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u043E \u043F\u0440\u0438\u043C\u0435\u043D\u044F\u0442\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F",
+  "editor.undoRefused": "\u041E\u0442\u043C\u0435\u043D\u0430 \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u0430: {reason}",
+  "editor.redoRefused": "\u041F\u043E\u0432\u0442\u043E\u0440 \u043E\u0442\u043A\u043B\u043E\u043D\u0451\u043D: {reason}",
+  "editor.inlinePayloadOnly": "\u042D\u0442\u043E\u0442 \u0445\u043E\u0441\u0442 \u043D\u0435 \u0445\u0440\u0430\u043D\u0438\u0442 \u0434\u0430\u043D\u043D\u044B\u0435 \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u043E: \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043F\u0435\u0440\u0435\u0434\u0430\u044E\u0442\u0441\u044F \u0432\u043D\u0443\u0442\u0440\u0438 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438",
+  "editor.changeSetEditsRequired": "\u041D\u0430\u0431\u043E\u0440 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439 \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u0430 \u0434\u043E\u043B\u0436\u0435\u043D \u0441\u043E\u0434\u0435\u0440\u0436\u0430\u0442\u044C \u043C\u0430\u0441\u0441\u0438\u0432 `edits`",
+  "editor.editObjectRequired": "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u0434\u043E\u043B\u0436\u043D\u043E \u0431\u044B\u0442\u044C \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u043C",
+  "editor.noEditTarget": "\u0421\u0443\u0431\u044A\u0435\u043A\u0442 \u043D\u0435 \u043F\u0440\u0435\u0434\u043E\u0441\u0442\u0430\u0432\u043B\u044F\u0435\u0442 \u0446\u0435\u043B\u044C, \u043A \u043A\u043E\u0442\u043E\u0440\u043E\u0439 \u043C\u043E\u0436\u043D\u043E \u043F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435",
+  "editor.legacyPayloadRequired": "\u0421\u0442\u0430\u0440\u044B\u0439 \u0444\u043E\u0440\u043C\u0430\u0442 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u0434\u043E\u043B\u0436\u0435\u043D \u0441\u043E\u0434\u0435\u0440\u0436\u0430\u0442\u044C \u0432\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u0435 \u0438\u043B\u0438 \u0442\u0435\u043A\u0441\u0442\u043E\u0432\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435",
+  "editor.refusal.planInvalid": "\u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u043D\u0435\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u043E \u043E\u043F\u0438\u0441\u044B\u0432\u0430\u0435\u0442 \u043F\u0440\u0430\u0432\u043A\u0443 \u044D\u0442\u043E\u0433\u043E \u0444\u0430\u0439\u043B\u0430",
+  "editor.refusal.permissionMissing": "\u044D\u0442\u043E\u043C\u0443 \u0441\u0435\u0430\u043D\u0441\u0443 \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u043E \u0437\u0430\u043F\u0438\u0441\u044B\u0432\u0430\u0442\u044C \u0444\u0430\u0439\u043B",
+  "editor.refusal.writeScopeMismatch": "\u0432 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0438 \u0443\u043A\u0430\u0437\u0430\u043D \u0444\u0430\u0439\u043B \u0432\u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u043E\u0439 \u043E\u0431\u043B\u0430\u0441\u0442\u0438 \u0437\u0430\u043F\u0438\u0441\u0438",
+  "editor.refusal.guaranteeUnachievable": "\u0445\u043E\u0441\u0442 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043E\u0431\u0435\u0441\u043F\u0435\u0447\u0438\u0442\u044C \u0442\u0440\u0435\u0431\u0443\u0435\u043C\u0443\u044E \u0431\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u043E\u0441\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u0438",
+  "editor.refusal.fidelityUnproven": "\u043D\u0435\u0442 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F \u0437\u0430\u044F\u0432\u043B\u0435\u043D\u043D\u043E\u0439 \u0442\u043E\u0447\u043D\u043E\u0441\u0442\u0438 \u0437\u0430\u043F\u0438\u0441\u0438 \u0434\u043B\u044F \u044D\u0442\u043E\u0433\u043E \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F",
+  "editor.refusal.confirmationRequired": "\u0437\u0430\u043F\u0438\u0441\u044C \u0441 \u043F\u043E\u0442\u0435\u0440\u044F\u043C\u0438 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F, \u043A\u043E\u0442\u043E\u0440\u043E\u0435 \u044D\u0442\u043E\u0442 \u0445\u043E\u0441\u0442 \u043F\u043E\u043A\u0430 \u043D\u0435 \u0437\u0430\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0435\u0442",
+  "editor.refusal.payloadUnavailable": "\u0438\u0437\u043C\u0435\u043D\u0451\u043D\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u043D\u0435 \u0434\u043E\u0448\u043B\u0438 \u0434\u043E \u043C\u043E\u0434\u0443\u043B\u044F \u0437\u0430\u043F\u0438\u0441\u0438",
+  "editor.refusal.staleRevision": "\u0444\u0430\u0439\u043B \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F \u043D\u0430 \u0434\u0438\u0441\u043A\u0435 \u043F\u043E\u0441\u043B\u0435 \u043F\u043E\u0434\u0433\u043E\u0442\u043E\u0432\u043A\u0438 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F",
+  "editor.refusal.cancelled": "\u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435 \u043E\u0442\u043C\u0435\u043D\u0435\u043D\u043E",
+  "viewer.byteAt": "\u0431\u0430\u0439\u0442 \u043F\u043E \u0430\u0434\u0440\u0435\u0441\u0443 {offset}",
+  "viewer.characterAt": "\u0441\u0438\u043C\u0432\u043E\u043B \u043F\u043E \u0430\u0434\u0440\u0435\u0441\u0443 {offset}",
+  "viewer.loadNextPage": "\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0443\u044E \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443",
+  "viewer.nextRows": "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0435 \u0441\u0442\u0440\u043E\u043A\u0438",
+  "viewer.loading": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430",
+  "viewer.loadingTemplate": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0448\u0430\u0431\u043B\u043E\u043D\u0430\u2026",
+  "viewer.templateUnavailable": "\u0428\u0430\u0431\u043B\u043E\u043D \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D: {reason}",
+  "viewer.noDisplayItems": "\u041D\u0435\u0442 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u043E\u0432 \u0434\u043B\u044F \u043F\u043E\u043A\u0430\u0437\u0430.",
+  "viewer.displayCapped": "\u041F\u043E\u043A\u0430\u0437\u0430\u043D\u043E \u043D\u0435 \u0431\u043E\u043B\u044C\u0448\u0435 {maximum} \u0438\u0437 {count} \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u043E\u0432.",
+  "viewer.resolvedSemanticTree": "\u0418\u0442\u043E\u0433\u043E\u0432\u043E\u0435 \u0441\u043C\u044B\u0441\u043B\u043E\u0432\u043E\u0435 \u0434\u0435\u0440\u0435\u0432\u043E",
+  "viewer.namedRemainder": "\u041D\u0435\u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0430\u043D\u043D\u044B\u0445 \u0447\u0430\u0441\u0442\u0435\u0439: {count}",
+  "card.relatedSubjects": "\u0421\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0435 \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u044B",
+  "card.locale": "\u042F\u0437\u044B\u043A",
+  "card.descriptionUnavailable": "\u041E\u043F\u0438\u0441\u0430\u043D\u0438\u0435 \u043F\u043E\u043A\u0430 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E.",
+  "card.loadingDescription": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043E\u043F\u0438\u0441\u0430\u043D\u0438\u044F\u2026",
+  "card.sections": "\u0420\u0430\u0437\u0434\u0435\u043B\u044B: {label}",
+  "card.subject": "\u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0430 \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0430",
+  "card.factGroupsCapped": "\u0427\u0438\u0441\u043B\u043E \u0433\u0440\u0443\u043F\u043F \u0441\u0432\u043E\u0439\u0441\u0442\u0432 \u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D\u043E.",
+  "card.relatedCapped": "\u0427\u0438\u0441\u043B\u043E \u0441\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0445 \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u043E\u0432 \u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D\u043E.",
+  "card.capped": "{label} (\u043F\u043E\u043A\u0430\u0437\u0430\u043D\u0430 \u0447\u0430\u0441\u0442\u044C)",
+  "card.namedSubject": "\u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0430 \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0430 \xAB{label}\xBB",
+  "card.extension.group.overview": "\u041E\u0431\u0437\u043E\u0440",
+  "card.extension.group.state": "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435",
+  "card.extension.group.declaration": "\u041E\u043F\u0438\u0441\u0430\u043D\u0438\u0435",
+  "card.extension.group.specification": "\u0421\u043F\u0435\u0446\u0438\u0444\u0438\u043A\u0430\u0446\u0438\u044F",
+  "card.extension.group.contracts": "\u041A\u043E\u043D\u0442\u0440\u0430\u043A\u0442\u044B",
+  "card.extension.fact.id": "\u0418\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
+  "card.extension.fact.displayName": "\u041E\u0442\u043E\u0431\u0440\u0430\u0436\u0430\u0435\u043C\u043E\u0435 \u0438\u043C\u044F",
+  "card.extension.fact.publisher": "\u0418\u0437\u0434\u0430\u0442\u0435\u043B\u044C",
+  "card.extension.fact.version": "\u0412\u0435\u0440\u0441\u0438\u044F",
+  "card.extension.fact.license": "\u041B\u0438\u0446\u0435\u043D\u0437\u0438\u044F",
+  "card.extension.fact.description": "\u041E\u043F\u0438\u0441\u0430\u043D\u0438\u0435",
+  "card.extension.fact.homepage": "\u0414\u043E\u043C\u0430\u0448\u043D\u044F\u044F \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430",
+  "card.extension.fact.source": "\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A",
+  "card.extension.fact.trusted": "\u0414\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u044B\u0439 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A",
+  "card.extension.fact.enabled": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E",
+  "card.extension.fact.contributionCount": "\u0412\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438",
+  "card.extension.fact.contractCount": "\u041A\u043E\u043D\u0442\u0440\u0430\u043A\u0442\u044B",
+  "card.contribution.fact.id": "\u0418\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440 \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438",
+  "card.contribution.fact.displayName": "\u041E\u0442\u043E\u0431\u0440\u0430\u0436\u0430\u0435\u043C\u043E\u0435 \u0438\u043C\u044F",
+  "card.contribution.fact.ownerExtension": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435-\u0432\u043B\u0430\u0434\u0435\u043B\u0435\u0446",
+  "card.contribution.fact.contractId": "\u041A\u043E\u043D\u0442\u0440\u0430\u043A\u0442",
+  "card.contribution.fact.contractMajor": "\u041E\u0441\u043D\u043E\u0432\u043D\u0430\u044F \u0432\u0435\u0440\u0441\u0438\u044F \u043A\u043E\u043D\u0442\u0440\u0430\u043A\u0442\u0430",
+  "card.contribution.fact.contractCoordinate": "\u041A\u043E\u043E\u0440\u0434\u0438\u043D\u0430\u0442\u0430 \u043A\u043E\u043D\u0442\u0440\u0430\u043A\u0442\u0430",
+  "card.contribution.fact.status": "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435",
+  "card.contribution.fact.enabled": "\u0412\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u044C \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430",
+  "card.contribution.fact.effectiveEnabled": "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u043E \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0430",
+  "card.contribution.fact.dependencies": "\u0417\u0430\u0432\u0438\u0441\u0438\u043C\u043E\u0441\u0442\u0438",
+  "card.contribution.fact.limitations": "\u041E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D\u0438\u044F",
+  "card.contribution.fact.runtimeVariants": "\u0412\u0430\u0440\u0438\u0430\u043D\u0442\u044B \u0441\u0440\u0435\u0434\u044B \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u044F",
+  "card.contribution.fact.specification": "\u0421\u043F\u0435\u0446\u0438\u0444\u0438\u043A\u0430\u0446\u0438\u044F",
+  "calculations.label": "\u0420\u0430\u0441\u0447\u0451\u0442\u044B \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0430",
+  "calculations.summary": "\u0420\u0430\u0441\u0447\u0451\u0442\u043E\u0432: {count} \xB7 \u043F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0435\u043D\u0438\u0439: {warnings}",
+  "calculations.empty": "\u042D\u0442\u043E\u0442 \u0441\u0443\u0431\u044A\u0435\u043A\u0442 \u043D\u0435 \u043F\u0440\u0435\u0434\u043E\u0441\u0442\u0430\u0432\u043B\u044F\u0435\u0442 \u0440\u0430\u0441\u0447\u0451\u0442\u043E\u0432.",
+  "calculations.progress": "\u041F\u043E\u043A\u0430\u0437\u0430\u043D\u043E {visible} \u0438\u0437 {total} \u0440\u0430\u0441\u0447\u0451\u0442\u043E\u0432 \xB7 {state}{reason}",
+  "calculations.capped": "\u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D\u043E \u0441\u0440\u0435\u0434\u0441\u0442\u0432\u043E\u043C \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430",
+  "calculations.notAvailable": "\u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E",
+  "calculations.sources": "\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0438: {sources}",
+  "graph.nodeTypes": "\u0422\u0438\u043F\u044B \u0443\u0437\u043B\u043E\u0432",
+  "graph.filterNodeTypes": "\u0424\u0438\u043B\u044C\u0442\u0440 \u0442\u0438\u043F\u043E\u0432 \u0443\u0437\u043B\u043E\u0432",
+  "graph.controls": "\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u0433\u0440\u0430\u0444\u043E\u043C",
+  "graph.resetView": "\u0421\u0431\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u0438\u0434",
+  "graph.relation": "\u0413\u0440\u0430\u0444 \u0441\u0432\u044F\u0437\u0435\u0439",
+  "graph.status": "\u0423\u0437\u043B\u043E\u0432: {nodes} \xB7 \u0441\u0432\u044F\u0437\u0435\u0439: {edges}",
+  "graph.statusRenderer": "\u0423\u0437\u043B\u043E\u0432: {nodes} \xB7 \u0441\u0432\u044F\u0437\u0435\u0439: {edges} \xB7 {renderer}",
+  "graph.hint": "\u041A\u043E\u043B\u0435\u0441\u043E \u043C\u0435\u043D\u044F\u0435\u0442 \u043C\u0430\u0441\u0448\u0442\u0430\u0431 \xB7 \u0444\u043E\u043D \u043F\u0435\u0440\u0435\u043C\u0435\u0449\u0430\u0435\u0442 \u0432\u0438\u0434 \xB7 \u0443\u0437\u043B\u044B \u043C\u043E\u0436\u043D\u043E \u043F\u0435\u0440\u0435\u0442\u0430\u0441\u043A\u0438\u0432\u0430\u0442\u044C",
+  "graph.all": "\u0412\u0441\u0435",
+  "graph.none": "\u041D\u0438\u0447\u0435\u0433\u043E",
+  "graph.filterClasses": "\u0424\u0438\u043B\u044C\u0442\u0440 \u043A\u043B\u0430\u0441\u0441\u043E\u0432\u2026",
+  "graph.labels": "\u041F\u043E\u0434\u043F\u0438\u0441\u0438",
+  "graph.nodes": "\u0423\u0437\u043B\u044B",
+  "graph.renderer": "\u0420\u0435\u043D\u0434\u0435\u0440\u0435\u0440",
+  "graph.canvas2d": "\u0425\u043E\u043B\u0441\u0442 2D",
+  "graph.hintOpen": "\u041F\u0443\u0441\u0442\u043E\u0439 \u0444\u043E\u043D \u043F\u0435\u0440\u0435\u043C\u0435\u0449\u0430\u0435\u0442 \u0432\u0438\u0434 \xB7 \u0443\u0437\u043B\u044B \u043C\u043E\u0436\u043D\u043E \u043F\u0435\u0440\u0435\u0442\u0430\u0441\u043A\u0438\u0432\u0430\u0442\u044C \xB7 \u043A\u043E\u043B\u0435\u0441\u043E \u043C\u0435\u043D\u044F\u0435\u0442 \u043C\u0430\u0441\u0448\u0442\u0430\u0431 \xB7 \u0434\u0432\u043E\u0439\u043D\u043E\u0439 \u0449\u0435\u043B\u0447\u043E\u043A \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442 \u0441\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0439 \u0441\u0443\u0431\u044A\u0435\u043A\u0442",
+  "graph.loadedCounts": "\u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043E \u0443\u0437\u043B\u043E\u0432: {nodes} \u0438\u0437 {totalNodes}, \u0441\u0432\u044F\u0437\u0435\u0439: {edges} \u0438\u0437 {totalEdges}",
+  "graph.completeness": "{owner}{state}{reason}",
+  "graph.source": "\u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A",
+  "graph.view": "\u043F\u0440\u0435\u0434\u0441\u0442\u0430\u0432\u043B\u0435\u043D\u0438\u0435",
+  "graph.visibleCapped": "\u0432\u0438\u0434\u0438\u043C\u0430\u044F \u0432\u044B\u0431\u043E\u0440\u043A\u0430 \u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D\u0430: {count} \u0443\u0437\u043B\u043E\u0432",
+  "graph.nodeCount": "\u0423\u0437\u043B\u043E\u0432: {visible} / {total}",
+  "graph.edgeCount": "\u0412\u0438\u0434\u0438\u043C\u044B\u0445 \u0441\u0432\u044F\u0437\u0435\u0439: {count}",
+  "graph.viewer": "\u041F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0433\u0440\u0430\u0444\u0430 \u0441\u0432\u044F\u0437\u0435\u0439",
+  "explorer.actions": "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u044F \u043F\u0440\u043E\u0432\u043E\u0434\u043D\u0438\u043A\u0430",
+  "explorer.previewView": "\u0412\u0438\u0434 \u043F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430",
+  "explorer.openFolder": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043F\u0430\u043F\u043A\u0443\u2026",
+  "explorer.openFolderTitle": "\u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044C \u0434\u043E\u0441\u0442\u0443\u043F \u043A \u043F\u0430\u043F\u043A\u0435 \u0438 \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u0435\u0451",
+  "explorer.openFile": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0444\u0430\u0439\u043B\u2026",
+  "explorer.openFileTitle": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043E\u0434\u0438\u043D \u0444\u0430\u0439\u043B \u0434\u043B\u044F \u043F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430",
+  "explorer.filterFiles": "\u0424\u0438\u043B\u044C\u0442\u0440 \u0444\u0430\u0439\u043B\u043E\u0432",
+  "explorer.filter": "\u0424\u0438\u043B\u044C\u0442\u0440",
+  "explorer.opening": "\u041E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442\u0441\u044F {name}\u2026",
+  "explorer.noPreview": "\u0414\u043B\u044F {name} \u043D\u0435\u0442 \u043F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430. \u041F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043C\u044B\u0435 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F: {extensions}.",
+  "explorer.previewError": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C {name}: {reason}",
+  "explorer.empty": "\u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u043F\u0430\u043F\u043A\u0443 \u0438\u043B\u0438 \u043F\u0435\u0440\u0435\u0442\u0430\u0449\u0438\u0442\u0435 \u0441\u044E\u0434\u0430 \u0444\u0430\u0439\u043B.",
+  "explorer.emptyReadOnly": "\u041F\u0435\u0440\u0435\u0442\u0430\u0449\u0438\u0442\u0435 \u0441\u044E\u0434\u0430 \u0444\u0430\u0439\u043B \u0434\u043B\u044F \u043F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430.",
+  "explorer.openFiles": "\u041E\u0442\u043A\u0440\u044B\u0442\u044B\u0435 \u0444\u0430\u0439\u043B\u044B",
+  "explorer.filePath": "\u041F\u0443\u0442\u044C \u043A \u0444\u0430\u0439\u043B\u0443",
+  "explorer.view": "\u0412\u0438\u0434",
+  "explorer.noFileOpen": "\u0412 \u044D\u0442\u043E\u0439 \u0433\u0440\u0443\u043F\u043F\u0435 \u043D\u0435\u0442 \u043E\u0442\u043A\u0440\u044B\u0442\u043E\u0433\u043E \u0444\u0430\u0439\u043B\u0430.",
+  "explorer.close": "\u0417\u0430\u043A\u0440\u044B\u0442\u044C",
+  "explorer.closeOthers": "\u0417\u0430\u043A\u0440\u044B\u0442\u044C \u043E\u0441\u0442\u0430\u043B\u044C\u043D\u044B\u0435",
+  "explorer.closeRight": "\u0417\u0430\u043A\u0440\u044B\u0442\u044C \u0441\u043F\u0440\u0430\u0432\u0430",
+  "explorer.closeAll": "\u0417\u0430\u043A\u0440\u044B\u0442\u044C \u0432\u0441\u0435",
+  "explorer.closeFile": "\u0417\u0430\u043A\u0440\u044B\u0442\u044C {name}",
+  "explorer.hex": "\u0411\u0430\u0439\u0442\u044B",
+  "explorer.text": "\u0422\u0435\u043A\u0441\u0442",
+  "explorer.openFolderError": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u043F\u0430\u043F\u043A\u0443: {reason}",
+  "explorer.openFileError": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u0444\u0430\u0439\u043B: {reason}",
+  "explorer.defaultApp": "\u0421\u0434\u0435\u043B\u0430\u0442\u044C \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435\u043C \u043F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E\u2026",
+  "explorer.defaultAppTitle": "\u0421\u0432\u044F\u0437\u0430\u0442\u044C \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u0441 \u0442\u0438\u043F\u0430\u043C\u0438 \u0444\u0430\u0439\u043B\u043E\u0432, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u043E\u043D\u043E \u043F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0435\u0442",
+  "explorer.registerError": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u0432\u044F\u0437\u0430\u0442\u044C \u0442\u0438\u043F\u044B \u0444\u0430\u0439\u043B\u043E\u0432: {reason}",
+  "explorer.changeViewError": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043C\u0435\u043D\u0438\u0442\u044C \u0432\u0438\u0434: {reason}",
+  "explorer.tooLarge": "\u0420\u0430\u0437\u043C\u0435\u0440 {name} \u2014 {size}, \u044D\u0442\u043E \u0431\u043E\u043B\u044C\u0448\u0435 \u043F\u0440\u0435\u0434\u0435\u043B\u0430 \u043F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 {limit}.",
+  "explorer.tooLargeStatus": "{name} \u2014 \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u0431\u043E\u043B\u044C\u0448\u043E\u0439 \u0444\u0430\u0439\u043B",
+  "explorer.noRenderer": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \xAB{name}\xBB: \u0445\u043E\u0441\u0442 \u043D\u0435 \u043F\u0440\u0435\u0434\u043E\u0441\u0442\u0430\u0432\u043B\u044F\u0435\u0442 \u043A\u043E\u0434\u0435\u043A, \u0430 \u0432\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u0439 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0442\u0435\u043A\u0441\u0442\u0430 \u0438\u043B\u0438 \u0431\u0430\u0439\u0442\u043E\u0432 \u043D\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D.",
+  "explorer.noRendererShort": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \xAB{name}\xBB.",
+  "explorer.noViewer": "\u043D\u0435\u0442 \u0441\u0440\u0435\u0434\u0441\u0442\u0432\u0430 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430",
+  "explorer.noViewerStatus": "{name} \u2014 \u043D\u0435\u0442 \u0441\u0440\u0435\u0434\u0441\u0442\u0432\u0430 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430",
+  "explorer.failedStatus": "{name} \u2014 \u043E\u0448\u0438\u0431\u043A\u0430",
+  "explorer.readingDrop": "\u0427\u0442\u0435\u043D\u0438\u0435 \u043F\u0435\u0440\u0435\u0442\u0430\u0449\u0435\u043D\u043D\u043E\u0433\u043E \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u0430\u2026",
+  "explorer.dropUnreadable": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u043F\u0435\u0440\u0435\u0442\u0430\u0449\u0435\u043D\u043D\u044B\u0439 \u044D\u043B\u0435\u043C\u0435\u043D\u0442.",
+  "explorer.folderOpened": "\u041F\u0430\u043F\u043A\u0430 \u043E\u0442\u043A\u0440\u044B\u0442\u0430. \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0444\u0430\u0439\u043B \u0432 \u0434\u0435\u0440\u0435\u0432\u0435.",
+  "explorer.dropFailed": "\u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u0435\u0440\u0435\u0442\u0430\u0441\u043A\u0438\u0432\u0430\u043D\u0438\u044F: {reason}",
+  "primitives.filter": "\u0424\u0438\u043B\u044C\u0442\u0440",
+  "primitives.filterOptions": "\u041F\u0430\u0440\u0430\u043C\u0435\u0442\u0440\u044B \u0444\u0438\u043B\u044C\u0442\u0440\u0430",
+  "primitives.matchCase": "\u0423\u0447\u0438\u0442\u044B\u0432\u0430\u0442\u044C \u0440\u0435\u0433\u0438\u0441\u0442\u0440",
+  "primitives.matchWord": "\u0422\u043E\u043B\u044C\u043A\u043E \u0446\u0435\u043B\u044B\u0435 \u0441\u043B\u043E\u0432\u0430",
+  "primitives.regex": "\u0420\u0435\u0433\u0443\u043B\u044F\u0440\u043D\u043E\u0435 \u0432\u044B\u0440\u0430\u0436\u0435\u043D\u0438\u0435",
+  "primitives.glob": "\u0428\u0430\u0431\u043B\u043E\u043D \u043F\u0443\u0442\u0438",
+  "primitives.treeActions": "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u044F: {label}",
+  "primitives.nothingToShow": "\u041D\u0435\u0447\u0435\u0433\u043E \u043F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0442\u044C.",
+  "primitives.previousMatch": "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0435\u0435 \u0441\u043E\u0432\u043F\u0430\u0434\u0435\u043D\u0438\u0435",
+  "primitives.nextMatch": "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0435 \u0441\u043E\u0432\u043F\u0430\u0434\u0435\u043D\u0438\u0435",
+  "primitives.invalid": "\u043E\u0448\u0438\u0431\u043A\u0430",
+  "primitives.invalidRegex": "\u041D\u0435\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u043E\u0435 \u0440\u0435\u0433\u0443\u043B\u044F\u0440\u043D\u043E\u0435 \u0432\u044B\u0440\u0430\u0436\u0435\u043D\u0438\u0435",
+  "primitives.oneMatch": "1 \u0441\u043E\u0432\u043F\u0430\u0434\u0435\u043D\u0438\u0435",
+  "primitives.matches": "\u0421\u043E\u0432\u043F\u0430\u0434\u0435\u043D\u0438\u0439: {count}",
+  "shell.subjectPath": "\u041F\u0443\u0442\u044C \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0430",
+  "shell.more": "\u0415\u0449\u0451",
+  "shell.hiddenSegments": "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0441\u043A\u0440\u044B\u0442\u044B\u0435 \u0441\u0435\u0433\u043C\u0435\u043D\u0442\u044B: {count}",
+  "shell.viewMode": "\u0420\u0435\u0436\u0438\u043C \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430",
+  "shell.viewer": "\u0421\u0440\u0435\u0434\u0441\u0442\u0432\u043E \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430",
+  "workbench.activities": "\u0420\u0430\u0437\u0434\u0435\u043B\u044B \u0440\u0430\u0431\u043E\u0447\u0435\u0433\u043E \u043F\u0440\u043E\u0441\u0442\u0440\u0430\u043D\u0441\u0442\u0432\u0430",
+  "workbench.facilities": "{label} \xB7 \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0435\u0439: {count}",
+  "workbench.hostUnavailable": "\u0425\u043E\u0441\u0442 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D",
+  "workbench.noHostProfile": "\u041F\u0440\u043E\u0444\u0438\u043B\u044C \u0445\u043E\u0441\u0442\u0430 \u043E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442",
+  "settings.groups": "\u0413\u0440\u0443\u043F\u043F\u044B \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043A",
+  "settings.back": "\u2190 \u041D\u0430\u0437\u0430\u0434",
+  "settings.appearance": "\u0412\u043D\u0435\u0448\u043D\u0438\u0439 \u0432\u0438\u0434",
+  "settings.colorTheme": "\u0426\u0432\u0435\u0442\u043E\u0432\u0430\u044F \u0442\u0435\u043C\u0430",
+  "settings.density": "\u041F\u043B\u043E\u0442\u043D\u043E\u0441\u0442\u044C",
+  "settings.extensions": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
+  "settings.extensionsIntro": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F \u2014 \u044D\u0442\u043E \u043F\u0430\u043A\u0435\u0442\u044B \u0434\u0430\u043D\u043D\u044B\u0445. \u041E\u0442\u043A\u043B\u044E\u0447\u0451\u043D\u043D\u043E\u0435 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435 \u043E\u0441\u0442\u0430\u0451\u0442\u0441\u044F \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043D\u044B\u043C, \u043D\u043E \u0435\u0433\u043E \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438 \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0430\u044E\u0442\u0441\u044F.",
+  "settings.noExtensions": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F \u0435\u0449\u0451 \u043D\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u044B.",
+  "settings.enableExtension": "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C {id}",
+  "settings.extensionId": "\u0418\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
+  "settings.extensionLocation": "\u0420\u0430\u0441\u043F\u043E\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
+  "settings.add": "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C",
+  "settings.browse": "\u041E\u0431\u0437\u043E\u0440\u2026",
+  "settings.fileAssociations": "\u0421\u0432\u044F\u0437\u0438 \u0442\u0438\u043F\u043E\u0432 \u0444\u0430\u0439\u043B\u043E\u0432",
+  "settings.noCodecs": "\u041A\u043E\u0434\u0435\u043A\u0438 \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u044B, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u0441\u0432\u044F\u0437\u044B\u0432\u0430\u0442\u044C \u043F\u043E\u043A\u0430 \u043D\u0435\u0447\u0435\u0433\u043E.",
+  "settings.associate": "\u0421\u0432\u044F\u0437\u0430\u0442\u044C .{type}",
+  "settings.selectAll": "\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0432\u0441\u0435",
+  "settings.selectNone": "\u0421\u043D\u044F\u0442\u044C \u0432\u044B\u0431\u043E\u0440",
+  "settings.defaultApp": "\u0421\u0434\u0435\u043B\u0430\u0442\u044C \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435\u043C \u043F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E",
+  "settings.close": "\u0417\u0430\u043A\u0440\u044B\u0442\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 (Esc)",
+  "settings.savedTo": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E \u0432 {location}",
+  "settings.saveError": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C: {reason}",
+  "settings.themeDescription": "\u041F\u0440\u0438\u043C\u0435\u043D\u044F\u0435\u0442\u0441\u044F \u0441\u0440\u0430\u0437\u0443 \u043A\u043E \u0432\u0441\u0435\u043C \u0441\u0440\u0435\u0434\u0441\u0442\u0432\u0430\u043C \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430.",
+  "settings.densityDescription": "\u041A\u043E\u043C\u043F\u0430\u043A\u0442\u043D\u044B\u0439 \u0440\u0435\u0436\u0438\u043C \u0441\u043E\u043E\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0443\u0435\u0442 \u0441\u043F\u0438\u0441\u043A\u0430\u043C VS Code; \u0443\u0434\u043E\u0431\u043D\u044B\u0439 \u043F\u043E\u0434\u0445\u043E\u0434\u0438\u0442 \u0434\u043B\u044F \u0441\u0435\u043D\u0441\u043E\u0440\u043D\u043E\u0433\u043E \u044D\u043A\u0440\u0430\u043D\u0430 \u0438 \u043A\u0440\u0443\u043F\u043D\u044B\u0445 \u043E\u043A\u043E\u043D.",
+  "settings.compact": "\u041A\u043E\u043C\u043F\u0430\u043A\u0442\u043D\u043E",
+  "settings.comfortable": "\u0423\u0434\u043E\u0431\u043D\u043E",
+  "settings.extensionsLocationIntro": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F \u043F\u0435\u0440\u0435\u0447\u0438\u0441\u043B\u0435\u043D\u044B \u0432 {location}. \u0423 \u043A\u0430\u0436\u0434\u043E\u0439 \u0437\u0430\u043F\u0438\u0441\u0438 \u0435\u0441\u0442\u044C \u0438\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440, \u0440\u0430\u0441\u043F\u043E\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u0434\u043B\u044F \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u0438 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435. \u041E\u0434\u043D\u0438 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u044E\u0442\u0441\u044F \u0432 \u043D\u0430\u0441\u0442\u043E\u043B\u044C\u043D\u043E\u043C \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0438, \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435 \u0438 \u0444\u043E\u043D\u043E\u0432\u043E\u043C \u0440\u0435\u0436\u0438\u043C\u0435.",
+  "settings.extensionPathPlaceholder": "\u043F\u0443\u0442\u044C, \u043F\u0430\u043A\u0435\u0442 \u0438\u043B\u0438 URL",
+  "settings.extensionRequired": "\u0414\u043B\u044F \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F \u043D\u0443\u0436\u043D\u044B \u0438\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440 \u0438 \u0440\u0430\u0441\u043F\u043E\u043B\u043E\u0436\u0435\u043D\u0438\u0435.",
+  "settings.associationsDescription": "\u0421\u0434\u0435\u043B\u0430\u0442\u044C \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043E\u0441\u043D\u043E\u0432\u043D\u044B\u043C \u0434\u043B\u044F \u0444\u043E\u0440\u043C\u0430\u0442\u043E\u0432, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u044E\u0442 \u0435\u0433\u043E \u043A\u043E\u0434\u0435\u043A\u0438. \u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0430 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u0435\u0442 \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u043B\u044F \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F, \u043E\u0442\u043C\u0435\u043D\u044F\u0435\u0442\u0441\u044F \u0441\u0440\u0435\u0434\u0441\u0442\u0432\u0430\u043C\u0438 \u0441\u0438\u0441\u0442\u0435\u043C\u044B \u0438 \u043F\u0440\u0438\u043C\u0435\u043D\u044F\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u043E \u043A\u043D\u043E\u043F\u043A\u0435.",
+  "settings.pickFileType": "\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0445\u043E\u0442\u044F \u0431\u044B \u043E\u0434\u0438\u043D \u0442\u0438\u043F \u0444\u0430\u0439\u043B\u0430.",
+  "settings.nothingToRegister": "\u041D\u0435\u0442 \u0442\u0438\u043F\u043E\u0432 \u0434\u043B\u044F \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438.",
+  "settings.registerError": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C: {reason}",
+  "settings.loadedFrom": "\u0417\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043E \u0438\u0437 {location}",
+  "settings.loadedProblems": "\u0417\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043E \u0441 \u043F\u0440\u043E\u0431\u043B\u0435\u043C\u0430\u043C\u0438 ({count}): {problems}",
+  "metadata.empty": "\u041A\u043E\u0434\u0435\u043A \u043D\u0435 \u0441\u043E\u043E\u0431\u0449\u0438\u043B \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435.",
+  "metadata.observedTraits": "\u041E\u0431\u043D\u0430\u0440\u0443\u0436\u0435\u043D\u043D\u044B\u0435 \u043F\u0440\u0438\u0437\u043D\u0430\u043A\u0438",
+  "metadata.subject": "\u0441\u0443\u0431\u044A\u0435\u043A\u0442",
+  "metadata.revision": "\u0432\u0435\u0440\u0441\u0438\u044F",
+  "metadata.interpretation": "\u043F\u0440\u0435\u0434\u0441\u0442\u0430\u0432\u043B\u0435\u043D\u0438\u0435",
+  "metadata.format": "\u0444\u043E\u0440\u043C\u0430\u0442",
+  "metadata.codec": "\u043A\u043E\u0434\u0435\u043A",
+  "metadata.confidence": "\u0443\u0432\u0435\u0440\u0435\u043D\u043D\u043E\u0441\u0442\u044C",
+  "metadata.identity": "\u0438\u0434\u0435\u043D\u0442\u0438\u0447\u043D\u043E\u0441\u0442\u044C",
+  "metadata.detection": "\u0440\u0430\u0441\u043F\u043E\u0437\u043D\u0430\u0432\u0430\u043D\u0438\u0435",
+  "metadata.trait": "\u043F\u0440\u0438\u0437\u043D\u0430\u043A",
+  "metadata.operation": "\u043E\u043F\u0435\u0440\u0430\u0446\u0438\u044F",
+  "metadata.unresolved": "\u043D\u0435 \u0440\u0430\u0441\u043F\u043E\u0437\u043D\u0430\u043D\u043E",
+  "metadata.mutatesSource": "\u0438\u0437\u043C\u0435\u043D\u044F\u0435\u0442 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A",
+  "panels.ready": "\u0413\u043E\u0442\u043E\u0432\u043E",
+  "panels.diagnostics": "\u0414\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0430",
+  "panels.operations": "\u041E\u043F\u0435\u0440\u0430\u0446\u0438\u0438",
+  "panels.working": "\u0412\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u0435",
+  "panels.operationComplete": "{operation}: \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043E",
+  "metadata.title": "\u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435",
+  "metadata.properties": "\u0421\u0432\u043E\u0439\u0441\u0442\u0432\u0430",
+  "viewer.gameTemplate": "\u0418\u0433\u0440\u043E\u0432\u043E\u0439 \u0448\u0430\u0431\u043B\u043E\u043D",
+  "viewer.table": "\u041F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0442\u0430\u0431\u043B\u0438\u0446\u044B",
+  "viewer.tableShape": "\u0421\u0442\u0440\u043E\u043A: {rows}, \u0441\u0442\u043E\u043B\u0431\u0446\u043E\u0432: {columns}",
+  "viewer.virtualText": "\u041F\u043E\u0441\u0442\u0440\u0430\u043D\u0438\u0447\u043D\u044B\u0439 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0442\u0435\u043A\u0441\u0442\u0430",
+  "viewer.transport": "\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u0432\u043E\u0441\u043F\u0440\u043E\u0438\u0437\u0432\u0435\u0434\u0435\u043D\u0438\u0435\u043C",
+  "viewer.namespace": "\u0414\u0435\u0440\u0435\u0432\u043E \u043F\u0440\u043E\u0441\u0442\u0440\u0430\u043D\u0441\u0442\u0432\u0430 \u0438\u043C\u0451\u043D",
+  "viewer.storedSize": "\u0445\u0440\u0430\u043D\u0438\u0442\u0441\u044F {size}",
+  "viewer.tree": "\u041F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0434\u0435\u0440\u0435\u0432\u0430",
+  "viewer.playPause": "\u0412\u043E\u0441\u043F\u0440\u043E\u0438\u0437\u0432\u0435\u0441\u0442\u0438 \u0438\u043B\u0438 \u043F\u0440\u0438\u043E\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C",
+  "viewer.seekStart": "\u041F\u0435\u0440\u0435\u0439\u0442\u0438 \u0432 \u043D\u0430\u0447\u0430\u043B\u043E",
+  "viewer.normalSpeed": "\u041E\u0431\u044B\u0447\u043D\u0430\u044F \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C",
+  "viewer.operationComplete": "{label}: \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043E",
+  "imageEdit.tools": "\u0418\u043D\u0441\u0442\u0440\u0443\u043C\u0435\u043D\u0442\u044B \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F",
+  "imageEdit.actions": "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u044F \u0441 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435\u043C",
+  "imageEdit.tool.select": "\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u043F\u0440\u044F\u043C\u043E\u0443\u0433\u043E\u043B\u044C\u043D\u0443\u044E \u043E\u0431\u043B\u0430\u0441\u0442\u044C",
+  "imageEdit.tool.brush": "\u041A\u0438\u0441\u0442\u044C",
+  "imageEdit.tool.eraser": "\u0421\u0442\u0435\u0440\u0435\u0442\u044C \u0434\u043E \u043F\u0440\u043E\u0437\u0440\u0430\u0447\u043D\u043E\u0441\u0442\u0438",
+  "imageEdit.tool.line": "\u041B\u0438\u043D\u0438\u044F",
+  "imageEdit.tool.rect": "\u041F\u0440\u044F\u043C\u043E\u0443\u0433\u043E\u043B\u044C\u043D\u0438\u043A",
+  "imageEdit.tool.ellipse": "\u042D\u043B\u043B\u0438\u043F\u0441",
+  "imageEdit.tool.fill": "\u0417\u0430\u043B\u0438\u0432\u043A\u0430",
+  "imageEdit.tool.gradient": "\u041B\u0438\u043D\u0435\u0439\u043D\u044B\u0439 \u0433\u0440\u0430\u0434\u0438\u0435\u043D\u0442",
+  "imageEdit.tool.eyedropper": "\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0446\u0432\u0435\u0442",
+  "imageEdit.colour": "\u0426\u0432\u0435\u0442 \u0438\u043D\u0441\u0442\u0440\u0443\u043C\u0435\u043D\u0442\u0430",
+  "imageEdit.brushSize": "\u0420\u0430\u0437\u043C\u0435\u0440 \u043A\u0438\u0441\u0442\u0438",
+  "imageEdit.undoTitle": "\u041E\u0442\u043C\u0435\u043D\u0438\u0442\u044C \u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0435\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435",
+  "imageEdit.redoTitle": "\u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u044C \u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0435\u0435 \u043E\u0442\u043C\u0435\u043D\u0451\u043D\u043D\u043E\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435",
+  "imageEdit.crop": "\u041E\u0431\u0440\u0435\u0437\u0430\u0442\u044C",
+  "imageEdit.cropTitle": "\u041E\u0431\u0440\u0435\u0437\u0430\u0442\u044C \u0434\u043E \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u043E\u0439 \u043E\u0431\u043B\u0430\u0441\u0442\u0438",
+  "imageEdit.applyTitle": "\u041F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0451\u043D\u043D\u044B\u0435 \u043F\u0438\u043A\u0441\u0435\u043B\u0438",
+  "imageEdit.toolStatus": "\u0438\u043D\u0441\u0442\u0440\u0443\u043C\u0435\u043D\u0442: {tool}",
+  "imageEdit.channelStatus": "\u043A\u0430\u043D\u0430\u043B: {channel}",
+  "imageEdit.noSelection": "\u043D\u0435\u0442 \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u043E\u0439 \u043E\u0431\u043B\u0430\u0441\u0442\u0438",
+  "imageEdit.selectionStatus": "\u0432\u044B\u0431\u0440\u0430\u043D\u043E {width}\xD7{height} \u0432 \u0442\u043E\u0447\u043A\u0435 {x},{y}",
+  "imageEdit.undoStatus": "\u043E\u0442\u043C\u0435\u043D \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E: {count}",
+  "edit.operation": "\u041E\u043F\u0435\u0440\u0430\u0446\u0438\u044F",
+  "edit.mutatingOperation": "\u041E\u043F\u0435\u0440\u0430\u0446\u0438\u044F \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F",
+  "edit.apply": "\u041F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C",
+  "edit.lastChange": "\u041F\u043E\u0441\u043B\u0435\u0434\u043D\u0435\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435: {change}",
+  "edit.unavailable": "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u044D\u0442\u043E\u0433\u043E \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0430 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E.",
+  "edit.noOperations": "\u042D\u0442\u043E\u0442 \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u043D\u0435 \u043F\u0440\u0435\u0434\u043E\u0441\u0442\u0430\u0432\u043B\u044F\u0435\u0442 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439.",
+  "edit.sessionUnavailable": "\u0421\u0435\u0430\u043D\u0441 \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u044F \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D.",
+  "edit.applying": "\u041F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u0438\u0435\u2026",
+  "edit.applyFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435: {reason}",
+  "edit.appliedReopening": "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u043E. \u0421\u0443\u0431\u044A\u0435\u043A\u0442 \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442\u0441\u044F \u0437\u0430\u043D\u043E\u0432\u043E\u2026",
+  "edit.appliedReopenFailed": "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u043E, \u043D\u043E \u0441\u0443\u0431\u044A\u0435\u043A\u0442 \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u0437\u0430\u043D\u043E\u0432\u043E: {reason}",
+  "edit.operation.pngText": "\u0417\u0430\u0434\u0430\u0442\u044C \u0442\u0435\u043A\u0441\u0442 PNG",
+  "edit.operation.id3Text": "\u0417\u0430\u0434\u0430\u0442\u044C \u0442\u0435\u043A\u0441\u0442\u043E\u0432\u044B\u0439 \u043A\u0430\u0434\u0440 ID3",
+  "edit.operation.jpegComment": "\u0417\u0430\u0434\u0430\u0442\u044C \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0439 JPEG",
+  "edit.operation.jpegRemove": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0441\u0435\u0433\u043C\u0435\u043D\u0442 JPEG",
+  "edit.operation.archiveAdd": "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0444\u0430\u0439\u043B \u0432 \u0430\u0440\u0445\u0438\u0432",
+  "edit.operation.archiveRemove": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0444\u0430\u0439\u043B \u0438\u0437 \u0430\u0440\u0445\u0438\u0432\u0430",
+  "edit.operation.archiveRename": "\u041F\u0435\u0440\u0435\u0438\u043C\u0435\u043D\u043E\u0432\u0430\u0442\u044C \u0444\u0430\u0439\u043B \u0432 \u0430\u0440\u0445\u0438\u0432\u0435",
+  "edit.operation.archiveReplace": "\u0417\u0430\u043C\u0435\u043D\u0438\u0442\u044C \u0444\u0430\u0439\u043B \u0432 \u0430\u0440\u0445\u0438\u0432\u0435",
+  "edit.field.name": "\u0418\u043C\u044F",
+  "edit.field.path": "\u041F\u0443\u0442\u044C",
+  "edit.field.key": "\u041A\u043B\u044E\u0447",
+  "edit.field.value": "\u0417\u043D\u0430\u0447\u0435\u043D\u0438\u0435",
+  "edit.field.text": "\u0422\u0435\u043A\u0441\u0442",
+  "edit.field.kind": "\u0422\u0438\u043F",
+  "edit.field.payloadBase64": "\u0414\u0430\u043D\u043D\u044B\u0435 (Base64)",
+  "edit.field.segmentIndex": "\u041D\u043E\u043C\u0435\u0440 \u0441\u0435\u0433\u043C\u0435\u043D\u0442\u0430",
+  "edit.field.frameId": "\u0418\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440 \u043A\u0430\u0434\u0440\u0430",
+  "edit.hint.pngTextKey": "\u041E\u0442 1 \u0434\u043E 79 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432 Latin-1 \u0431\u0435\u0437 NUL (Title, Author, Description, \u2026)",
+  "edit.hint.pngTextValue": "\u0422\u0435\u043A\u0441\u0442 Latin-1 \u0431\u0435\u0437 NUL",
+  "edit.hint.id3FrameId": "\u0427\u0435\u0442\u044B\u0440\u0451\u0445\u0441\u0438\u043C\u0432\u043E\u043B\u044C\u043D\u044B\u0439 id \u0442\u0435\u043A\u0441\u0442\u043E\u0432\u043E\u0433\u043E \u043A\u0430\u0434\u0440\u0430: TIT2, TPE1, TALB, \u2026 (\u0443 TXXX \u0434\u0440\u0443\u0433\u0430\u044F \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430)",
+  "edit.hint.id3Text": "\u0422\u0435\u043A\u0441\u0442\u043E\u0432\u043E\u0435 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435 ID3",
+  "edit.hint.jpegComment": "\u0422\u0435\u043A\u0441\u0442 \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u044F JPEG",
+  "edit.hint.jpegSegmentIndex": "\u041D\u043E\u043C\u0435\u0440 \u0441\u0435\u0433\u043C\u0435\u043D\u0442\u0430 JPEG \u0441 \u043D\u0443\u043B\u044F",
+  "edit.hint.archivePath": "\u041F\u0443\u0442\u044C \u0432\u043D\u0443\u0442\u0440\u0438 \u0430\u0440\u0445\u0438\u0432\u0430",
+  "edit.hint.archiveNewPath": "\u041D\u043E\u0432\u044B\u0439 \u043F\u0443\u0442\u044C \u0432\u043D\u0443\u0442\u0440\u0438 \u0430\u0440\u0445\u0438\u0432\u0430",
+  "edit.hint.payloadBase64": "\u0414\u0432\u043E\u0438\u0447\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u0432 \u043A\u043E\u0434\u0438\u0440\u043E\u0432\u043A\u0435 Base64",
+  "edit.summary.pngText": "\u0417\u0430\u0434\u0430\u0451\u0442 \u0438\u043B\u0438 \u0437\u0430\u043C\u0435\u043D\u044F\u0435\u0442 \u043E\u0434\u0438\u043D \u0431\u043B\u043E\u043A tEXt; \u043E\u0441\u0442\u0430\u043B\u044C\u043D\u044B\u0435 \u0431\u0430\u0439\u0442\u044B \u0444\u0430\u0439\u043B\u0430 \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u044E\u0442\u0441\u044F.",
+  "edit.summary.id3Text": "\u0417\u0430\u0434\u0430\u0451\u0442 \u0438\u043B\u0438 \u0437\u0430\u043C\u0435\u043D\u044F\u0435\u0442 \u0442\u0435\u043A\u0441\u0442\u043E\u0432\u044B\u0439 \u043A\u0430\u0434\u0440 ID3v2 \u0438 \u043F\u0440\u0438 \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E\u0441\u0442\u0438 \u0441\u043E\u0437\u0434\u0430\u0451\u0442 \u0442\u0435\u0433; \u0430\u0443\u0434\u0438\u043E\u0434\u0430\u043D\u043D\u044B\u0435 \u043D\u0435 \u043F\u0435\u0440\u0435\u043C\u0435\u0449\u0430\u044E\u0442\u0441\u044F.",
+  "edit.summary.jpegComment": "\u0417\u0430\u043F\u0438\u0441\u044B\u0432\u0430\u0435\u0442 \u0441\u0435\u0433\u043C\u0435\u043D\u0442 COM \u043F\u043E\u0441\u043B\u0435 \u0431\u043B\u043E\u043A\u0430 APP \u0438\u043B\u0438 \u0437\u0430\u043C\u0435\u043D\u044F\u0435\u0442 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u0439 \u043D\u0430 \u0442\u043E\u043C \u0436\u0435 \u043C\u0435\u0441\u0442\u0435.",
+  "edit.summary.jpegRemove": "\u0423\u0434\u0430\u043B\u044F\u0435\u0442 \u043E\u0434\u0438\u043D \u0441\u0435\u0433\u043C\u0435\u043D\u0442 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445; \u043A\u043E\u0434\u0435\u043A \u043D\u0435 \u043F\u043E\u0437\u0432\u043E\u043B\u0438\u0442 \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u043C\u0430\u0440\u043A\u0435\u0440 \u0441 \u0434\u0430\u043D\u043D\u044B\u043C\u0438 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F.",
+  "edit.summary.archiveAdd": "\u0414\u043E\u0431\u0430\u0432\u043B\u044F\u0435\u0442 \u043E\u0434\u043D\u0443 \u0437\u0430\u043F\u0438\u0441\u044C \u0438 \u043F\u0435\u0440\u0435\u0441\u043E\u0431\u0438\u0440\u0430\u0435\u0442 \u0430\u0440\u0445\u0438\u0432; \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u0437\u0430\u043F\u0438\u0441\u0438 \u043A\u043E\u043F\u0438\u0440\u0443\u044E\u0442\u0441\u044F \u0431\u0430\u0439\u0442 \u0432 \u0431\u0430\u0439\u0442.",
+  "edit.summary.archiveRemove": "\u0423\u0434\u0430\u043B\u044F\u0435\u0442 \u043E\u0434\u043D\u0443 \u0437\u0430\u043F\u0438\u0441\u044C \u0438 \u043F\u0435\u0440\u0435\u0441\u043E\u0431\u0438\u0440\u0430\u0435\u0442 \u0430\u0440\u0445\u0438\u0432; \u0431\u0430\u0439\u0442\u044B \u043E\u0441\u0442\u0430\u043B\u044C\u043D\u044B\u0445 \u0437\u0430\u043F\u0438\u0441\u0435\u0439 \u043D\u0435 \u043C\u0435\u043D\u044F\u044E\u0442\u0441\u044F.",
+  "edit.summary.archiveRename": "\u041F\u0435\u0440\u0435\u0438\u043C\u0435\u043D\u043E\u0432\u044B\u0432\u0430\u0435\u0442 \u0437\u0430\u043F\u0438\u0441\u044C, \u043D\u0435 \u0438\u0437\u043C\u0435\u043D\u044F\u044F \u0435\u0451 \u0434\u0430\u043D\u043D\u044B\u0435 \u0438 \u0441\u043F\u043E\u0441\u043E\u0431 \u0441\u0436\u0430\u0442\u0438\u044F.",
+  "edit.summary.archiveReplace": "\u0417\u0430\u043C\u0435\u043D\u044F\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0435 \u043E\u0434\u043D\u043E\u0439 \u0444\u0430\u0439\u043B\u043E\u0432\u043E\u0439 \u0437\u0430\u043F\u0438\u0441\u0438 \u0441 \u043D\u043E\u0432\u044B\u043C CRC; \u043E\u0441\u0442\u0430\u043B\u044C\u043D\u044B\u0435 \u0437\u0430\u043F\u0438\u0441\u0438 \u043D\u0435 \u043F\u0435\u0440\u0435\u043C\u0435\u0449\u0430\u044E\u0442\u0441\u044F.",
+  "edit.status.codecRefused": "\u041A\u043E\u0434\u0435\u043A \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B \u044D\u0442\u0443 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u044E \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F.",
+  "edit.status.hostRefusedPlan": "\u0425\u043E\u0441\u0442 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B \u043F\u043B\u0430\u043D \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F.",
+  "edit.status.formsAvailable": "\u0414\u043E\u0441\u0442\u0443\u043F\u043D\u043E \u0444\u043E\u0440\u043C \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u044F: {count}.",
+  "edit.status.noneDrivable": "\u0414\u043B\u044F \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B\u0445 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439 \u043F\u043E\u043A\u0430 \u043D\u0435\u0442 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043C\u043E\u0439 \u0444\u043E\u0440\u043C\u044B.",
+  "edit.status.unsupportedCount": "\u041E\u043F\u0435\u0440\u0430\u0446\u0438\u0439 \u0431\u0435\u0437 \u0444\u043E\u0440\u043C\u044B: {count}.",
+  "edit.status.fidelityUnknown": "\u0422\u043E\u0447\u043D\u043E\u0441\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u0438 \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u0430.",
+  "edit.field.keyword": "\u041A\u043B\u044E\u0447\u0435\u0432\u043E\u0435 \u0441\u043B\u043E\u0432\u043E",
+  "edit.field.frame": "\u041A\u0430\u0434\u0440",
+  "edit.field.comment": "\u041A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0439",
+  "edit.field.marker": "\u041C\u0430\u0440\u043A\u0435\u0440",
+  "edit.field.entryPath": "\u041F\u0443\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u0438",
+  "edit.field.contents": "\u0421\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435",
+  "edit.field.from": "\u041E\u0442\u043A\u0443\u0434\u0430",
+  "edit.field.to": "\u041A\u0443\u0434\u0430",
+  "edit.hint.latin1NoNul": "\u0422\u0435\u043A\u0441\u0442 Latin-1 \u0431\u0435\u0437 \u043D\u0443\u043B\u0435\u0432\u044B\u0445 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432",
+  "edit.hint.metadataMarker": "\u0418\u043C\u044F \u043C\u0430\u0440\u043A\u0435\u0440\u0430 \u043C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0445, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440 APP0, APP1 \u0438\u043B\u0438 COM",
+  "edit.hint.archiveExistingPath": "\u041F\u0443\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u0438, \u043A\u043E\u0442\u043E\u0440\u0430\u044F \u0443\u0436\u0435 \u043D\u0430\u0445\u043E\u0434\u0438\u0442\u0441\u044F \u0432 \u0430\u0440\u0445\u0438\u0432\u0435",
+  "edit.hint.archiveContent": "\u0422\u0435\u043A\u0441\u0442; \u0445\u043E\u0441\u0442 \u043F\u0435\u0440\u0435\u0434\u0430\u0441\u0442 \u0435\u0433\u043E \u043A\u0430\u043A \u0431\u0430\u0439\u0442\u044B UTF-8",
+  "edit.hint.archiveRenameType": "\u0424\u0430\u0439\u043B \u043D\u0435\u043B\u044C\u0437\u044F \u043F\u0435\u0440\u0435\u0438\u043C\u0435\u043D\u043E\u0432\u0430\u0442\u044C \u0432 \u043C\u0430\u0440\u043A\u0435\u0440 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430, \u0438 \u043D\u0430\u043E\u0431\u043E\u0440\u043E\u0442",
+  "edit.required": "\u041F\u043E\u043B\u0435 \xAB{field}\xBB \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E",
+  "edit.unsupportedInput": "\u0425\u043E\u0441\u0442 \u043F\u043E\u043A\u0430 \u043D\u0435 \u0443\u043C\u0435\u0435\u0442 \u043F\u043E\u0434\u0433\u043E\u0442\u043E\u0432\u0438\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0435 \u0434\u043B\u044F \xAB{handler}\xBB",
+  "edit.invokeRefused": "\u041E\u043F\u0435\u0440\u0430\u0446\u0438\u044F \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u0430: {reason}",
+  "edit.invokeRefusedCode": "\u041E\u043F\u0435\u0440\u0430\u0446\u0438\u044F \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u0430: {reason} ({code})",
+  "edit.invokeRefusedDetail": "{head} \u2014 {detail}",
+  "edit.operationReturnedWrongKind": "\u041E\u043F\u0435\u0440\u0430\u0446\u0438\u044F \u0432\u0435\u0440\u043D\u0443\u043B\u0430 \xAB{kind}\xBB, \u0430 \u043D\u0435 \u043F\u043B\u0430\u043D \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F",
+  "edit.returnedNothing": "\u043D\u0438\u0447\u0435\u0433\u043E",
+  "edit.fidelityUnknownBytes": " (\u043F\u0440\u0438 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0438\u0441\u0438 \u043D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u044E\u0442\u0441\u044F \u0431\u0430\u0439\u0442\u044B, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u0444\u043E\u0440\u043C\u0430\u0442 \u043D\u0435 \u043E\u043F\u0438\u0441\u044B\u0432\u0430\u0435\u0442)",
+  "edit.fidelityNotes": " ({notes})",
+  "edit.refusal.notDeclared": "\u043A\u043E\u0434\u0435\u043A \u043D\u0435 \u043E\u0431\u044A\u044F\u0432\u043B\u044F\u0435\u0442 \u044D\u0442\u0443 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u044E",
+  "edit.refusal.disabled": "\u043A\u043E\u0434\u0435\u043A \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u043B \u044D\u0442\u0443 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u044E \u0434\u043B\u044F \u0434\u0430\u043D\u043D\u043E\u0433\u043E \u0444\u0430\u0439\u043B\u0430",
+  "edit.refusal.dependencyRequired": "\u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438 \u043D\u0443\u0436\u043D\u0430 \u0437\u0430\u0432\u0438\u0441\u0438\u043C\u043E\u0441\u0442\u044C, \u043A\u043E\u0442\u043E\u0440\u0443\u044E \u0445\u043E\u0441\u0442 \u043D\u0435 \u043D\u0430\u0448\u0451\u043B",
+  "edit.refusal.permissionMissing": "\u0441\u0435\u0430\u043D\u0441 \u043E\u0442\u043A\u0440\u044B\u0442 \u0431\u0435\u0437 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u044F \u043D\u0430 \u0437\u0430\u043F\u0438\u0441\u044C \u0444\u0430\u0439\u043B\u0430",
+  "edit.refusal.inputNotSerializable": "\u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0435\u0440\u0435\u0434\u0430\u0442\u044C \u043A\u043E\u0434\u0435\u043A\u0443",
+  "edit.refusal.handlerUnregistered": "\u043A\u043E\u0434\u0435\u043A \u043D\u0435 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043B \u043E\u0431\u0440\u0430\u0431\u043E\u0442\u0447\u0438\u043A \u044D\u0442\u043E\u0439 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438",
+  "edit.refusal.cancelled": "\u043E\u043F\u0435\u0440\u0430\u0446\u0438\u044F \u043E\u0442\u043C\u0435\u043D\u0435\u043D\u0430",
+  "edit.refusal.staleRevision": "\u0444\u0430\u0439\u043B \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F \u043D\u0430 \u0434\u0438\u0441\u043A\u0435 \u043F\u043E\u0441\u043B\u0435 \u043E\u0442\u043A\u0440\u044B\u0442\u0438\u044F"
+});
+var UI_MESSAGES = Object.freeze({
+  en: EN_MESSAGES,
+  ru: RU_MESSAGES
+});
+var LOCALE_PATTERN = /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/u;
+var NAMESPACE_PATTERN = /^[a-z0-9]+(?:[./-][a-z0-9]+)+$/u;
+var MESSAGE_KEY_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]*(?:\.[a-zA-Z0-9][a-zA-Z0-9_-]*)+$/u;
+var PLACEHOLDER_PATTERN = /\{([a-zA-Z][a-zA-Z0-9]*)\}/gu;
+function canonicalLocale(value2) {
+  const trimmed = value2.trim();
+  if (!LOCALE_PATTERN.test(trimmed)) return void 0;
+  try {
+    return Intl.getCanonicalLocales(trimmed)[0];
+  } catch {
+    return void 0;
+  }
+}
+function localeFallbacks(locale, fallbackLocale = "en") {
+  const result = [];
+  const append = (candidate) => {
+    const canonical = canonicalLocale(candidate);
+    if (canonical === void 0) return;
+    const parts = canonical.split("-");
+    while (parts.length > 0) {
+      const current = parts.join("-");
+      if (!result.some((value2) => value2.toLowerCase() === current.toLowerCase())) {
+        result.push(current);
+      }
+      parts.pop();
+    }
+  };
+  append(locale);
+  append(fallbackLocale);
+  return Object.freeze(result);
+}
+function resolveUiLocale(requested, options = {}) {
+  const available = (options.availableLocales ?? Object.keys(UI_MESSAGES)).map((locale) => canonicalLocale(locale)).filter((locale) => locale !== void 0);
+  const fallback = canonicalLocale(options.fallbackLocale ?? "en") ?? "en";
+  const requestedList = requested === void 0 ? ["auto"] : typeof requested === "string" ? [requested] : requested;
+  const candidates = requestedList.flatMap(
+    (candidate) => candidate.trim().toLowerCase() === "auto" ? options.systemLocales ?? [] : [candidate]
+  );
+  for (const candidate of candidates) {
+    const canonical = canonicalLocale(candidate);
+    if (canonical === void 0) continue;
+    for (const possible of localeFallbacks(canonical, canonical)) {
+      const match = available.find((locale) => locale.toLowerCase() === possible.toLowerCase());
+      if (match !== void 0) return match;
+    }
+  }
+  for (const possible of localeFallbacks(fallback, "en")) {
+    const match = available.find((locale) => locale.toLowerCase() === possible.toLowerCase());
+    if (match !== void 0) return match;
+  }
+  return available[0] ?? fallback;
+}
+function ownDataProperty(object3, key3) {
+  const descriptor = Object.getOwnPropertyDescriptor(object3, key3);
+  if (descriptor === void 0 || !("value" in descriptor)) return void 0;
+  return descriptor.value;
+}
+function namespaceOwnedMessagePrefix(namespace) {
+  const tail = namespace.split(/[./]/u).at(-1) ?? namespace;
+  const owner = tail.replace(/-(?:app|ui|localization|messages)$/u, "") || tail;
+  return `${owner}.`;
+}
+function validateMessagePrefixes(namespace, requested) {
+  const prefixes = requested ?? [namespaceOwnedMessagePrefix(namespace)];
+  if (prefixes.length === 0) {
+    throw new TypeError("UI catalog must have at least one authorised message prefix");
+  }
+  return Object.freeze(
+    prefixes.map((prefix) => {
+      const trimmed = prefix.trim();
+      if (!trimmed.endsWith(".") || !MESSAGE_KEY_PATTERN.test(`${trimmed}message`)) {
+        throw new TypeError(`Invalid authorised UI message prefix: ${prefix}`);
+      }
+      return trimmed;
+    })
+  );
+}
+function placeholderNames(message) {
+  return Object.freeze(
+    [
+      ...new Set([...message.matchAll(PLACEHOLDER_PATTERN)].map((match) => match[1]))
+    ].sort()
+  );
+}
+function sameStrings(left, right) {
+  return left.length === right.length && left.every((value2, index) => value2 === right[index]);
+}
+function parseUiCatalogDocument(value2, options = {}) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2)) {
+    throw new TypeError("UI catalog must be an object");
+  }
+  const schema = ownDataProperty(value2, "schema");
+  const localeValue = ownDataProperty(value2, "locale");
+  const namespace = ownDataProperty(value2, "namespace");
+  const messagesValue = ownDataProperty(value2, "messages");
+  if (schema !== UI_CATALOG_SCHEMA)
+    throw new TypeError(`UI catalog schema must be ${UI_CATALOG_SCHEMA}`);
+  if (typeof localeValue !== "string") throw new TypeError("UI catalog locale must be a string");
+  const locale = canonicalLocale(localeValue);
+  if (locale === void 0) throw new TypeError(`Invalid BCP-47 UI locale: ${localeValue}`);
+  if (typeof namespace !== "string" || !NAMESPACE_PATTERN.test(namespace)) {
+    throw new TypeError("UI catalog namespace must be a lowercase namespaced identifier");
+  }
+  const authorizedMessagePrefixes = validateMessagePrefixes(
+    namespace,
+    options.authorizedMessagePrefixes
+  );
+  if (typeof messagesValue !== "object" || messagesValue === null || Array.isArray(messagesValue)) {
+    throw new TypeError("UI catalog messages must be an object");
+  }
+  const descriptors = Object.getOwnPropertyDescriptors(messagesValue);
+  const entries = Object.entries(descriptors);
+  if (entries.length > UI_CATALOG_MAXIMUM_MESSAGES)
+    throw new TypeError("UI catalog has too many messages");
+  const messages = /* @__PURE__ */ Object.create(null);
+  let decodedCodeUnits = 0;
+  for (const [key3, descriptor] of entries) {
+    if (key3.length > UI_CATALOG_MAXIMUM_KEY_LENGTH) {
+      throw new TypeError(`UI catalog message key is too long: ${key3.slice(0, 64)}`);
+    }
+    if (!MESSAGE_KEY_PATTERN.test(key3))
+      throw new TypeError(`Invalid namespaced UI message key: ${key3}`);
+    if (!authorizedMessagePrefixes.some((prefix) => key3.startsWith(prefix))) {
+      throw new TypeError(`UI catalog namespace ${namespace} is not authorised to publish ${key3}`);
+    }
+    if (!("value" in descriptor) || typeof descriptor.value !== "string") {
+      throw new TypeError(`UI catalog message ${key3} must be a string data property`);
+    }
+    if (descriptor.value.length > UI_CATALOG_MAXIMUM_MESSAGE_LENGTH) {
+      throw new TypeError(`UI catalog message ${key3} is too long`);
+    }
+    decodedCodeUnits += key3.length + descriptor.value.length;
+    if (decodedCodeUnits > UI_CATALOG_MAXIMUM_DECODED_CODE_UNITS) {
+      throw new TypeError("UI catalog decoded messages exceed the size budget");
+    }
+    const fallback = ownDataProperty(options.fallbackCatalog ?? EN_MESSAGES, key3);
+    if (typeof fallback === "string" && !sameStrings(placeholderNames(fallback), placeholderNames(descriptor.value))) {
+      throw new TypeError(`UI catalog message ${key3} changes interpolation placeholders`);
+    }
+    messages[key3] = descriptor.value;
+  }
+  return Object.freeze({
+    schema: UI_CATALOG_SCHEMA,
+    locale,
+    namespace,
+    messages: Object.freeze(messages)
+  });
+}
+function isLocalizerOptions(value2) {
+  return "catalogs" in value2 || "fallbackLocale" in value2 || "overrides" in value2;
+}
+function createUiLocalizer(locale, optionsOrOverrides = {}) {
+  const options = isLocalizerOptions(optionsOrOverrides) ? optionsOrOverrides : { overrides: optionsOrOverrides };
+  const fallbackLocale = options.fallbackLocale ?? "en";
+  const requestedLocale = canonicalLocale(locale) ?? fallbackLocale;
+  const layers = [EN_MESSAGES];
+  const requestedFallbacks = [...localeFallbacks(requestedLocale, fallbackLocale)].reverse();
+  for (const candidate of requestedFallbacks) {
+    const builtin = UI_MESSAGES[candidate.toLowerCase()];
+    if (builtin !== void 0 && builtin !== EN_MESSAGES) layers.push(builtin);
+    for (const catalog2 of options.catalogs ?? []) {
+      if (catalog2.locale.toLowerCase() === candidate.toLowerCase()) layers.push(catalog2.messages);
+    }
+  }
+  if (options.overrides !== void 0) layers.push(options.overrides);
+  const catalog = Object.freeze(Object.assign(/* @__PURE__ */ Object.create(null), ...layers));
+  const localizer = {
+    locale: requestedLocale,
+    text(key3, values = {}) {
+      const message = catalog[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
+    }
+  };
+  return Object.freeze(localizer);
+}
+var DEFAULT_UI_LOCALIZER = createUiLocalizer("en");
+function contributionContractKind(exactContract) {
+  if (exactContract === void 0 || exactContract.trim() === "") return "invalid";
+  const name = exactContract.toLowerCase().replace(/@\d+$/u, "").split("/").at(-1) ?? "";
+  if (name === "codec-contribution") return "codecs";
+  if (name === "editor-contribution") return "editors";
+  if (name === "service-provider-contribution" || name === "service-contribution") return "services";
+  if (name === "viewer-contribution") return "viewers";
+  if (name.includes("language")) return "languages";
+  if (name.includes("renderer")) return "renderers";
+  if (name.includes("runtime")) return "runtimes";
+  if (name.includes("command")) return "commands";
+  if (name === "ui-contribution") return "ui";
+  if (name.includes("contract")) return "contracts";
+  return "other";
+}
+function humanizeContractName(exactContract) {
+  const slug = exactContract.replace(/@\d+$/u, "").split("/").at(-1) ?? exactContract;
+  const withoutSuffix = slug.replace(/-contribution$/u, "");
+  return withoutSuffix.split(/[-_]+/u).filter(Boolean).map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`).join(" ");
+}
+function contributionContractLabel(localizer, exactContract) {
+  const kind = contributionContractKind(exactContract);
+  if (kind !== "other") return localizer.text(`extensions.contract.${kind}`);
+  const name = exactContract === void 0 ? "" : humanizeContractName(exactContract);
+  return name === "" ? localizer.text("extensions.contract.other") : localizer.text("extensions.contract.custom", { name });
+}
+
+// apps/web/src/localization.ts
+var EN = parseUiCatalogDocument(
+  {
+    schema: "org.modkitx/ui-message-catalog@1",
+    locale: "en",
+    namespace: "org.modkitx/web-app",
+    messages: {
+      "web.capability.folder": "This browser grants folder access: pick a folder to browse it in place.",
+      "web.capability.file": "This browser has no folder picker. It can open one file at a time.",
+      "web.capability.input": "This browser has no file-system picker. Files open one at a time through the basic file input.",
+      "web.editing.notice": "Files opened from a granted handle can be saved in place; fetched and dropped files remain read-only.",
+      "web.status.noCodec": "{name} \u2014 no codec claimed it ({reason}); showing raw bytes.",
+      "web.status.noNestedCodec": "{name} \u2014 no codec claimed it inside this container ({reason}).",
+      "web.status.sharedCommandsUnavailable": "{name} \u2014 shared commands unavailable: {reason}",
+      "web.status.unsavedClose": "{name} has unsaved changes. Close the tab and discard them?",
+      "web.status.bootFailed": "Boot failed: {reason}",
+      "web.sample.png": "favicon-32.png \u2014 PNG image",
+      "web.sample.csv": "sample.csv \u2014 delimited table",
+      "web.sample.ini": "sample.ini \u2014 INI tree",
+      "web.sample.svg": "sample.svg \u2014 vector scene",
+      "web.sample.md": "sample.md \u2014 Markdown document",
+      "web.sample.mp3": "sample.mp3 \u2014 one second of MP3 silence",
+      "web.sample.zip": "sample.zip \u2014 container namespace",
+      "web.embed.view": "View",
+      "web.embed.waiting": "Waiting for a file: set the src attribute or assign the file property.",
+      "web.embed.loading": "Loading {name}\u2026",
+      "web.embed.catalog.invalidUrl": "extension-catalog \xAB{url}\xBB is not a valid URL.",
+      "web.embed.catalog.protocol": "extension-catalog must use http or https; {protocol} is not admitted.",
+      "web.embed.catalog.origin": "The extension catalog origin {origin} is not in this embed.js build-time allowlist. The embedding page cannot add an origin; the deployer must rebuild embed.js with it.",
+      "web.embed.catalog.schema": "extension catalog must be a schemaVersion 1 object with array entries",
+      "web.embed.catalog.exclusion": "extension catalog exclusions require string name and reason fields",
+      "web.embed.catalog.malformed": "extension catalog contains a malformed extension entry",
+      "web.embed.asset.invalidUrl": "asset-base \xAB{base}\xBB is not a URL this page can resolve.",
+      "web.embed.asset.crossOrigin": "The modkit assets at {origin} are cross-origin to this page ({pageOrigin}). A module worker script is fetched in same-origin mode, so no CORS header can make that work: serve the modkit assets from this origin (copy or reverse-proxy them) and point asset-base there.",
+      "web.embed.stylesFetch": "modkit-ui.css could not be fetched from {base} ({status})",
+      "web.embed.catalogFetch": "extension catalog {url} could not be fetched: {reason}",
+      "web.embed.catalogHttp": "extension catalog {url} could not be fetched ({status} {statusText})",
+      "web.embed.catalogInvalid": "extension catalog {url} is invalid: {reason}",
+      "web.embed.stageFailed": "\xAB{view}\xBB could not be shown: {reason}",
+      "web.embed.fileFetch": "{url} could not be fetched ({reason}). A cross-origin file needs CORS headers from its own server and an entry for its origin in this page\u2019s content-security-policy connect-src.",
+      "web.embed.fileHttp": "{url} could not be fetched ({status} {statusText})",
+      "web.embed.catalogAttributeInvalid": "extension-catalog \xAB{url}\xBB is not a URL this page can resolve.",
+      "web.embed.tooLarge": "{name} is {size} bytes; this element reads at most {limit}.",
+      "web.embed.noStage": "{name} could not be shown: no stage matched what the codecs published.",
+      "web.archive.openSubject": "Open as subject",
+      "web.archive.entries": "Entries",
+      "web.archive.pick": "Pick an entry in the tree to inspect it.",
+      "web.archive.openFailed": "Opening {path} as a subject failed: {reason}",
+      "web.archive.noReference": "no source reference",
+      "web.archive.noExtract": "this subject has no available extract operation",
+      "web.archive.sessionGone": "The session that opened this container is no longer held.",
+      "web.archive.unknownEntry": "The namespace does not list an entry with id {entry}.",
+      "web.archive.wrongOutput": "The operation returned {kind}, not bytes.",
+      "web.archive.rejected": "Rejected: {reason}",
+      "web.archive.shown": "{path} \xB7 {bytes} bytes \xB7 shown as {mode}",
+      "web.archive.modeHex": "hex",
+      "web.archive.modeText": "text",
+      "web.archive.readFailed": "Entry read failed: {reason}",
+      "web.view.code": "Code",
+      "web.view.video": "Video",
+      "web.view.image": "Image",
+      "web.view.audio": "Audio",
+      "web.view.world": "World",
+      "web.view.model": "Model",
+      "web.view.vector": "Vector",
+      "web.view.archive": "Entries",
+      "web.view.template": "Template",
+      "web.view.card": "Card",
+      "web.view.calculations": "Calculations",
+      "web.view.table": "Table",
+      "web.view.tree": "Tree",
+      "web.view.relations": "Relations",
+      "web.view.text": "Text",
+      "web.view.virtualText": "Text (streaming)",
+      "web.view.metadata": "Metadata",
+      "web.view.hex": "Hex",
+      "web.view.textEditor": "Text (editor)",
+      "web.view.hexEditor": "Hex (editor)",
+      "web.inspector.label": "Inspector",
+      "web.inspector.edit": "Edit",
+      "web.inspector.noFile": "No file is open.",
+      "web.inspector.summary": "{label} \xB7 {read} non-mutating operation(s) \xB7 {forms} edit form(s) over {write} mutating operation(s) \xB7 {diagnostics} diagnostic(s)",
+      "web.inspector.needInput": "{operations}: not in the toolbar \u2014 they require input supplied by another stage or panel.",
+      "web.inspector.noEdit": "{operations}: no Edit panel \u2014 {reason}",
+      "web.inspector.noWritableHandle": "this page holds no writable handle for the file.",
+      "web.inspector.noForm": "{operation}: no editing form \u2014 {reason}.",
+      "web.edit.unsupported": "{operation}: not available in this host yet \u2014 {reason}",
+      "web.edit.invoking": "{operation}: invoking {handler}\u2026",
+      "web.edit.codecRefused": "The codec refused the operation: {reason}",
+      "web.edit.hostRefused": "The host refused the plan: {reason}",
+      "web.edit.appliedReopening": "{outcome}; reopening the file to show the new revision",
+      "web.edit.appliedReopenFailed": "{outcome}; the tab could not be reopened, so this view is stale",
+      "web.edit.noneDrivableCount": "{unsupported} of {declared} mutating operation(s) cannot be driven here.",
+      "web.edit.formsAvailable": "{forms} form(s) over {declared} mutating operation(s)",
+      "web.editability.noHandle": "{name} has no writable handle: it arrived through a file input, a drop or a fetch, so this page can show it but can never save it back. Pick it through \u201COpen file\u2026\u201D or a folder to edit it.",
+      "web.editability.queryFailed": "{name} has a writable handle, but this browser could not report its write permission ({reason}); the first save is where it is decided.",
+      "web.editability.noQuery": "{name} has a writable handle, but this browser exposes no permission query, so whether the write is allowed is decided by the first save.",
+      "web.editability.denied": "Write access was denied for {name}, so its text and hex editors are dropped. This build will not offer a save it already knows the browser refuses.",
+      "web.editability.granted": "{name} can be saved in place: write access is granted.",
+      "web.editability.prompt": "{name} can be saved in place once you allow write access; the browser asks on the first save, or use \u201CEnable editing\u201D to answer it now.",
+      "web.editability.request.noFile": "Open a folder or pick a file before enabling editing.",
+      "web.editability.request.noHandle": "{name} has no writable handle: files opened through a drop, a plain file input or a fetch cannot be written back. Use \u201COpen file\u2026\u201D or a granted folder instead.",
+      "web.editability.request.noSurface": "{name} cannot be asked for write permission in this browser; a save will try directly and report what the browser answers.",
+      "web.editability.request.granted": "Write access granted for {name}: the text and hex editors can save.",
+      "web.editability.request.denied": "Write access denied for {name}; files opened from now on show no editor.",
+      "web.editability.request.notGranted": "Write access was not granted for {name}; nothing was changed.",
+      "web.editability.request.failed": "Asking for write access to {name} failed: {reason}",
+      "web.edit.rejection.staleRevision": "the file changed on disk after this tab read it",
+      "web.edit.rejection.permissionMissing": "the grant this subject was opened under does not carry write permission",
+      "web.edit.rejection.scopeMismatch": "the plan names a source outside this subject",
+      "web.edit.rejection.guarantee": "this backend cannot promise the guarantee the plan asks for",
+      "web.edit.rejection.fidelity": "no evidence proves the writer keeps what the plan claims it keeps",
+      "web.edit.rejection.confirmation": "a lossy write needs an explicit confirmation this host does not collect",
+      "web.edit.rejection.payload": "the edited bytes exceed what this host will hand over inline",
+      "web.edit.rejection.readOnly": "the backend behind this source is read-only",
+      "web.edit.rejection.cancelled": "the save was cancelled",
+      "web.edit.rejection.unknown": "the plan did not describe this subject at its open revision",
+      "web.edit.changeUnsupported": "this editor produced a change this host cannot express as a literal replacement",
+      "web.edit.writerRefused": "the writer refused the change",
+      "web.edit.planUnsupported": "this host cannot plan the change set this editor produced",
+      "web.edit.commit.writtenReopen": "{what} \u2014 written to the file this tab opened. Reopen it before editing again: this tab still holds the revision it read.",
+      "web.edit.commit.refused": "{what} refused \u2014 {reason}{diagnostic}.",
+      "web.edit.commit.rolledBack": "{what} failed and the file was rolled back to what it held before.",
+      "web.edit.commit.partial": "{what} landed only partly; recovery is available in the receipt.",
+      "web.edit.commit.conflict": "refused \u2014 the file changed on disk after this tab read it, so nothing was overwritten. Reopen it and redo the edit.",
+      "web.edit.commit.rejected": "refused before writing \u2014 {reason}.",
+      "web.edit.action.saved": "Saved",
+      "web.edit.action.undo": "Undo",
+      "web.edit.action.redo": "Redo",
+      "web.edit.authorization.denied": "not saved \u2014 this browser denied write access to the file.",
+      "web.edit.authorization.notGranted": "not saved \u2014 write access was not granted ({state}).",
+      "web.edit.apply.noAccess": "{name} was not written: this browser did not grant write access",
+      "web.edit.apply.conflict": "refused before writing: {reason} ({conflicts} conflict(s))",
+      "web.edit.apply.rejected": "refused before writing: {reason} ({code})",
+      "web.edit.apply.committed": "applied and written to {name}",
+      "web.edit.apply.notApplied": "not applied: {reason} ({code})",
+      "web.edit.apply.rolledBack": "not applied: the write failed and {name} was rolled back",
+      "web.edit.apply.partial": "{name} was only partly written; recovery is in the receipt",
+      "web.edit.cannotEdit": "{name} cannot be edited here: {reason}",
+      "web.edit.noWriter": "{name} cannot be edited here: no writer backs this subject.",
+      "web.edit.bytesLabel": "Edit bytes",
+      "web.error.noPicker": "This browser has no folder picker.",
+      "web.map.choose": "Choose a map for the World view by entering its ID:\n\n{candidates}",
+      "web.map.permissionRequired": "{name} \u2014 map preview needs installation resources the browser cannot search; the ordinary archive view remains open.",
+      "web.map.selectionRequired": "{name} \u2014 map preview needs a choice ({candidates}); the ordinary archive view remains open.",
+      "web.map.diagnostic.selectionRequired": "Map preview needs an explicit selection; choose one of the returned map-preview candidates to continue.",
+      "web.map.diagnostic.permissionRequired": "This map needs installation resources that the browser cannot search for automatically; grant or select them in a desktop host.",
+      "web.extensions.subjectsDescription": "Cards come from validated extension and contribution JSON; hover a group to see its exact contract.",
+      "web.extensions.downloadableDescription": "The catalog is checked only when you ask. Installing stores verified package bytes; nothing on this page imports or runs them.",
+      "web.extensions.notInCatalog": "Not in catalog",
+      "web.extensions.updateAvailable": "Update available",
+      "web.extensions.trusted": "Trusted",
+      "web.extensions.notTrusted": "Not trusted",
+      "web.extensions.catalogEmpty": "The catalog contains no extensions.",
+      "web.extensions.noDownloaded": "No downloaded extensions are installed. Check the catalog to see what is available.",
+      "web.extensions.packageDisabled": "The extension is enabled directly, but its distribution package is disabled.",
+      "web.extensions.reloadPending": "Reload the page to rebuild the running host.",
+      "web.extensions.removedPending": "Removed. The extension is gone from the list; reload to rebuild the host.",
+      "web.extensions.trustSentence": "A folder you add here is trusted because you picked it and for no other reason \u2014 nothing is signed and nobody has reviewed it; this page hashes every file as it reads them so that a file changed afterwards is refused instead of run, and user extensions always run in a worker, never on the page.",
+      "web.extensions.provenanceNote": "Bundled extensions carry digests this app recorded when it was built. Folders you added carry digests this page computed itself just now \u2014 a measurement of the bytes it read, not a claim about who wrote them.",
+      "web.extensions.remembered": "Added folders are remembered in {location}.",
+      "web.extensions.added": "Added \xAB{name}\xBB{coordinate}.",
+      "web.extensions.actionFailed": "Extension action failed: {reason}",
+      "web.extensions.addFailed": "Could not add that folder: {reason}",
+      "web.extensions.removeFailed": "Could not remove it: {reason}",
+      "web.extensions.accessFailed": "Could not ask for access: {reason}",
+      "web.extensions.accessGranted": "Access to \xAB{name}\xBB granted again.",
+      "web.extensions.accessDenied": "Access to \xAB{name}\xBB was not granted ({state}).",
+      "web.extensions.catalogChecked": "Extension catalog checked at {location}.",
+      "web.extensions.catalogLoaded": "Catalog loaded from {location}.",
+      "web.extensions.catalogNotContacted": "Catalog {location} has not been contacted in this session.",
+      "web.extensions.installedStatus": "Installed {name}. Reload the page to load the changed extension set.",
+      "web.extensions.updatedStatus": "Updated {name}. Reload the page to load the changed extension set.",
+      "web.extensions.removedStatus": "Removed {name}. Reload the page to load the changed extension set.",
+      "web.extensions.cardFailed": "Could not open extension card: {reason}",
+      "web.extensions.bundledProvenance": "Bundled with this build, served from {root}; its digests were recorded when the app was built.",
+      "web.extensions.userProvenance": "Folder you granted (\xAB{label}\xBB); its digests were computed by this page from the bytes it just read."
+    }
+  },
+  { authorizedMessagePrefixes: ["web."] }
+);
+var RU = parseUiCatalogDocument(
+  {
+    schema: "org.modkitx/ui-message-catalog@1",
+    locale: "ru",
+    namespace: "org.modkitx/web-app",
+    messages: {
+      "web.capability.folder": "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u0440\u0430\u0437\u0440\u0435\u0448\u0430\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F \u043A \u043F\u0430\u043F\u043A\u0430\u043C: \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043F\u0430\u043F\u043A\u0443 \u0434\u043B\u044F \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u043D\u0430 \u043C\u0435\u0441\u0442\u0435.",
+      "web.capability.file": "\u0412 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435 \u043D\u0435\u0442 \u0432\u044B\u0431\u043E\u0440\u0430 \u043F\u0430\u043F\u043A\u0438; \u043C\u043E\u0436\u043D\u043E \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0442\u044C \u043F\u043E \u043E\u0434\u043D\u043E\u043C\u0443 \u0444\u0430\u0439\u043B\u0443.",
+      "web.capability.input": "\u0412 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435 \u043D\u0435\u0442 \u0441\u0438\u0441\u0442\u0435\u043C\u043D\u043E\u0433\u043E \u0432\u044B\u0431\u043E\u0440\u0430 \u0444\u0430\u0439\u043B\u043E\u0432; \u0444\u0430\u0439\u043B\u044B \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u044E\u0442\u0441\u044F \u043F\u043E \u043E\u0434\u043D\u043E\u043C\u0443 \u0447\u0435\u0440\u0435\u0437 \u043E\u0431\u044B\u0447\u043D\u043E\u0435 \u043F\u043E\u043B\u0435 \u0432\u044B\u0431\u043E\u0440\u0430.",
+      "web.editing.notice": "\u0424\u0430\u0439\u043B\u044B \u0438\u0437 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u043E\u0433\u043E \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0442\u044C \u043D\u0430 \u043C\u0435\u0441\u0442\u0435; \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043D\u044B\u0435 \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u0430 \u0438 \u043F\u0435\u0440\u0435\u0442\u0430\u0449\u0435\u043D\u043D\u044B\u0435 \u0444\u0430\u0439\u043B\u044B \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u043B\u044F \u0447\u0442\u0435\u043D\u0438\u044F.",
+      "web.status.noCodec": "{name} \u2014 \u043A\u043E\u0434\u0435\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D ({reason}); \u043F\u043E\u043A\u0430\u0437\u0430\u043D\u044B \u0438\u0441\u0445\u043E\u0434\u043D\u044B\u0435 \u0431\u0430\u0439\u0442\u044B.",
+      "web.status.noNestedCodec": "{name} \u2014 \u0432\u043D\u0443\u0442\u0440\u0438 \u043A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440\u0430 \u043A\u043E\u0434\u0435\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D ({reason}).",
+      "web.status.sharedCommandsUnavailable": "{name} \u2014 \u043E\u0431\u0449\u0438\u0435 \u043A\u043E\u043C\u0430\u043D\u0434\u044B \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B: {reason}",
+      "web.status.unsavedClose": "\u0412 {name} \u0435\u0441\u0442\u044C \u043D\u0435\u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F. \u0417\u0430\u043A\u0440\u044B\u0442\u044C \u0432\u043A\u043B\u0430\u0434\u043A\u0443 \u0438 \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0438\u0445?",
+      "web.status.bootFailed": "\u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u043F\u0443\u0441\u043A\u0430: {reason}",
+      "web.sample.png": "favicon-32.png \u2014 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 PNG",
+      "web.sample.csv": "sample.csv \u2014 \u0442\u0430\u0431\u043B\u0438\u0446\u0430 \u0441 \u0440\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u044F\u043C\u0438",
+      "web.sample.ini": "sample.ini \u2014 \u0434\u0435\u0440\u0435\u0432\u043E INI",
+      "web.sample.svg": "sample.svg \u2014 \u0432\u0435\u043A\u0442\u043E\u0440\u043D\u0430\u044F \u0441\u0446\u0435\u043D\u0430",
+      "web.sample.md": "sample.md \u2014 \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442 Markdown",
+      "web.sample.mp3": "sample.mp3 \u2014 \u0441\u0435\u043A\u0443\u043D\u0434\u0430 \u0442\u0438\u0448\u0438\u043D\u044B MP3",
+      "web.sample.zip": "sample.zip \u2014 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435 \u043A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440\u0430",
+      "web.embed.view": "\u0420\u0435\u0436\u0438\u043C \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430",
+      "web.embed.waiting": "\u041E\u0436\u0438\u0434\u0430\u043D\u0438\u0435 \u0444\u0430\u0439\u043B\u0430: \u0437\u0430\u0434\u0430\u0439\u0442\u0435 \u0430\u0442\u0440\u0438\u0431\u0443\u0442 src \u0438\u043B\u0438 \u0441\u0432\u043E\u0439\u0441\u0442\u0432\u043E file.",
+      "web.embed.loading": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 {name}\u2026",
+      "web.embed.catalog.invalidUrl": "extension-catalog \xAB{url}\xBB \u043D\u0435 \u044F\u0432\u043B\u044F\u0435\u0442\u0441\u044F \u0434\u043E\u043F\u0443\u0441\u0442\u0438\u043C\u044B\u043C URL.",
+      "web.embed.catalog.protocol": "extension-catalog \u0434\u043E\u043B\u0436\u0435\u043D \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u044C http \u0438\u043B\u0438 https; \u043F\u0440\u043E\u0442\u043E\u043A\u043E\u043B {protocol} \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D.",
+      "web.embed.catalog.origin": "\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 {origin} \u043E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442 \u0432 \u0441\u043F\u0438\u0441\u043A\u0435, \u0437\u0430\u0434\u0430\u043D\u043D\u043E\u043C \u043F\u0440\u0438 \u0441\u0431\u043E\u0440\u043A\u0435 embed.js. \u0412\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u044E\u0449\u0430\u044F \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A; \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E \u043F\u0435\u0440\u0435\u0441\u043E\u0431\u0440\u0430\u0442\u044C embed.js.",
+      "web.embed.catalog.schema": "\u043A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u043C schemaVersion 1 \u0441 \u043C\u0430\u0441\u0441\u0438\u0432\u0430\u043C\u0438 \u0437\u0430\u043F\u0438\u0441\u0435\u0439",
+      "web.embed.catalog.exclusion": "\u0438\u0441\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0434\u043E\u043B\u0436\u043D\u044B \u0441\u043E\u0434\u0435\u0440\u0436\u0430\u0442\u044C \u0441\u0442\u0440\u043E\u043A\u043E\u0432\u044B\u0435 \u043F\u043E\u043B\u044F name \u0438 reason",
+      "web.embed.catalog.malformed": "\u043A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u0442 \u043D\u0435\u0432\u0435\u0440\u043D\u0443\u044E \u0437\u0430\u043F\u0438\u0441\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
+      "web.embed.asset.invalidUrl": "asset-base \xAB{base}\xBB \u043D\u0435 \u044F\u0432\u043B\u044F\u0435\u0442\u0441\u044F URL, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u043C\u043E\u0436\u0435\u0442 \u0440\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044C \u044D\u0442\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430.",
+      "web.embed.asset.crossOrigin": "\u0420\u0435\u0441\u0443\u0440\u0441\u044B Modkit \u043D\u0430 {origin} \u043D\u0430\u0445\u043E\u0434\u044F\u0442\u0441\u044F \u0432\u043D\u0435 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u044D\u0442\u043E\u0439 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B ({pageOrigin}). \u041C\u043E\u0434\u0443\u043B\u044C\u043D\u044B\u0439 \u0440\u0430\u0431\u043E\u0447\u0438\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441 \u0437\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u0438\u0437 \u0442\u043E\u0433\u043E \u0436\u0435 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430, \u0438 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0438 CORS \u044D\u0442\u043E \u043D\u0435 \u0438\u0437\u043C\u0435\u043D\u044F\u0442: \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u0443\u0439\u0442\u0435 \u0440\u0435\u0441\u0443\u0440\u0441\u044B Modkit \u0438\u0437 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u0438 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u0435\u0433\u043E \u0432 asset-base.",
+      "web.embed.stylesFetch": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C modkit-ui.css \u0438\u0437 {base} ({status})",
+      "web.embed.catalogFetch": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u043A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 {url}: {reason}",
+      "web.embed.catalogHttp": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u043A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 {url} ({status} {statusText})",
+      "web.embed.catalogInvalid": "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 {url} \u043D\u0435\u0432\u0435\u0440\u0435\u043D: {reason}",
+      "web.embed.stageFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \xAB{view}\xBB: {reason}",
+      "web.embed.fileFetch": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C {url} ({reason}). \u0414\u043B\u044F \u0444\u0430\u0439\u043B\u0430 \u0438\u0437 \u0434\u0440\u0443\u0433\u043E\u0433\u043E \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u043D\u0443\u0436\u043D\u044B \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0438 CORS \u043D\u0430 \u0435\u0433\u043E \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u0438 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u0432 \u0434\u0438\u0440\u0435\u043A\u0442\u0438\u0432\u0435 connect-src \u043F\u043E\u043B\u0438\u0442\u0438\u043A\u0438 \u0431\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u043E\u0441\u0442\u0438 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B.",
+      "web.embed.fileHttp": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C {url} ({status} {statusText})",
+      "web.embed.catalogAttributeInvalid": "extension-catalog \xAB{url}\xBB \u043D\u0435 \u044F\u0432\u043B\u044F\u0435\u0442\u0441\u044F URL, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u043C\u043E\u0436\u0435\u0442 \u0440\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044C \u044D\u0442\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430.",
+      "web.embed.tooLarge": "\u0420\u0430\u0437\u043C\u0435\u0440 {name} \u2014 {size} \u0431\u0430\u0439\u0442; \u044D\u043B\u0435\u043C\u0435\u043D\u0442 \u0447\u0438\u0442\u0430\u0435\u0442 \u043D\u0435 \u0431\u043E\u043B\u0435\u0435 {limit} \u0431\u0430\u0439\u0442.",
+      "web.embed.noStage": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C {name}: \u043D\u0438 \u043E\u0434\u0438\u043D \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u043D\u044B\u0439 \u043A\u043E\u0434\u0435\u043A\u0430\u043C\u0438 \u0440\u0435\u0436\u0438\u043C \u043D\u0435 \u043F\u043E\u0434\u043E\u0448\u0451\u043B.",
+      "web.archive.openSubject": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043A\u0430\u043A \u0441\u0443\u0431\u044A\u0435\u043A\u0442",
+      "web.archive.entries": "\u0421\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435",
+      "web.archive.pick": "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442 \u0432 \u0434\u0435\u0440\u0435\u0432\u0435 \u0434\u043B\u044F \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430.",
+      "web.archive.openFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C {path} \u043A\u0430\u043A \u0441\u0443\u0431\u044A\u0435\u043A\u0442: {reason}",
+      "web.archive.noReference": "\u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u043E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442",
+      "web.archive.noExtract": "\u0443 \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0430 \u043D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E\u0439 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438 \u0438\u0437\u0432\u043B\u0435\u0447\u0435\u043D\u0438\u044F",
+      "web.archive.sessionGone": "\u0421\u0435\u0430\u043D\u0441, \u043E\u0442\u043A\u0440\u044B\u0432\u0448\u0438\u0439 \u044D\u0442\u043E\u0442 \u043A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440, \u0431\u043E\u043B\u044C\u0448\u0435 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D.",
+      "web.archive.unknownEntry": "\u0412 \u043F\u0440\u043E\u0441\u0442\u0440\u0430\u043D\u0441\u0442\u0432\u0435 \u0438\u043C\u0451\u043D \u043D\u0435\u0442 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u0430 \u0441 id {entry}.",
+      "web.archive.wrongOutput": "\u041E\u043F\u0435\u0440\u0430\u0446\u0438\u044F \u0432\u0435\u0440\u043D\u0443\u043B\u0430 {kind} \u0432\u043C\u0435\u0441\u0442\u043E \u0431\u0430\u0439\u0442\u043E\u0432.",
+      "web.archive.rejected": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E: {reason}",
+      "web.archive.shown": "{path} \xB7 {bytes} \u0431\u0430\u0439\u0442 \xB7 \u0440\u0435\u0436\u0438\u043C: {mode}",
+      "web.archive.modeHex": "hex",
+      "web.archive.modeText": "\u0442\u0435\u043A\u0441\u0442",
+      "web.archive.readFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u044D\u043B\u0435\u043C\u0435\u043D\u0442: {reason}",
+      "web.view.code": "\u041A\u043E\u0434",
+      "web.view.video": "\u0412\u0438\u0434\u0435\u043E",
+      "web.view.image": "\u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435",
+      "web.view.audio": "\u0410\u0443\u0434\u0438\u043E",
+      "web.view.world": "\u041C\u0438\u0440",
+      "web.view.model": "\u041C\u043E\u0434\u0435\u043B\u044C",
+      "web.view.vector": "\u0412\u0435\u043A\u0442\u043E\u0440",
+      "web.view.archive": "\u0421\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435",
+      "web.view.template": "\u0428\u0430\u0431\u043B\u043E\u043D",
+      "web.view.card": "\u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0430",
+      "web.view.calculations": "\u0420\u0430\u0441\u0447\u0451\u0442\u044B",
+      "web.view.table": "\u0422\u0430\u0431\u043B\u0438\u0446\u0430",
+      "web.view.tree": "\u0414\u0435\u0440\u0435\u0432\u043E",
+      "web.view.relations": "\u0421\u0432\u044F\u0437\u0438",
+      "web.view.text": "\u0422\u0435\u043A\u0441\u0442",
+      "web.view.virtualText": "\u0422\u0435\u043A\u0441\u0442 (\u043F\u043E\u0442\u043E\u043A)",
+      "web.view.metadata": "\u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435",
+      "web.view.hex": "Hex",
+      "web.view.textEditor": "\u0422\u0435\u043A\u0441\u0442 (\u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435)",
+      "web.view.hexEditor": "Hex (\u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435)",
+      "web.inspector.label": "\u0418\u043D\u0441\u043F\u0435\u043A\u0442\u043E\u0440",
+      "web.inspector.edit": "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435",
+      "web.inspector.noFile": "\u041D\u0435\u0442 \u043E\u0442\u043A\u0440\u044B\u0442\u043E\u0433\u043E \u0444\u0430\u0439\u043B\u0430.",
+      "web.inspector.summary": "{label} \xB7 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439 \u0447\u0442\u0435\u043D\u0438\u044F: {read} \xB7 \u0444\u043E\u0440\u043C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F: {forms} \u0438\u0437 {write} \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439 \xB7 \u0434\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A: {diagnostics}",
+      "web.inspector.needInput": "{operations}: \u043D\u0435\u0442 \u043D\u0430 \u043F\u0430\u043D\u0435\u043B\u0438 \u0438\u043D\u0441\u0442\u0440\u0443\u043C\u0435\u043D\u0442\u043E\u0432 \u2014 \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044F \u0432\u0432\u043E\u0434 \u0438\u0437 \u0434\u0440\u0443\u0433\u043E\u0433\u043E \u0440\u0435\u0436\u0438\u043C\u0430 \u0438\u043B\u0438 \u043F\u0430\u043D\u0435\u043B\u0438.",
+      "web.inspector.noEdit": "{operations}: \u043D\u0435\u0442 \u043F\u0430\u043D\u0435\u043B\u0438 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u2014 {reason}",
+      "web.inspector.noWritableHandle": "\u0443 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u043D\u0435\u0442 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u044F \u043D\u0430 \u0437\u0430\u043F\u0438\u0441\u044C \u0432 \u0444\u0430\u0439\u043B.",
+      "web.inspector.noForm": "{operation}: \u043D\u0435\u0442 \u0444\u043E\u0440\u043C\u044B \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u2014 {reason}.",
+      "web.edit.unsupported": "{operation}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E \u0432 \u044D\u0442\u043E\u043C \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0438 \u2014 {reason}",
+      "web.edit.invoking": "{operation}: \u0437\u0430\u043F\u0443\u0441\u043A {handler}\u2026",
+      "web.edit.codecRefused": "\u041A\u043E\u0434\u0435\u043A \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u044E: {reason}",
+      "web.edit.hostRefused": "\u041F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B\u043E \u043F\u043B\u0430\u043D \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F: {reason}",
+      "web.edit.appliedReopening": "{outcome}; \u0444\u0430\u0439\u043B \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442\u0441\u044F \u0437\u0430\u043D\u043E\u0432\u043E \u0432 \u043D\u043E\u0432\u043E\u0439 \u0432\u0435\u0440\u0441\u0438\u0438",
+      "web.edit.appliedReopenFailed": "{outcome}; \u0432\u043A\u043B\u0430\u0434\u043A\u0443 \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u0437\u0430\u043D\u043E\u0432\u043E, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435 \u0443\u0441\u0442\u0430\u0440\u0435\u043B\u043E",
+      "web.edit.noneDrivableCount": "\u041D\u0435\u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043C\u044B\u0445 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F: {unsupported} \u0438\u0437 {declared}.",
+      "web.edit.formsAvailable": "\u0424\u043E\u0440\u043C: {forms}; \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F: {declared}",
+      "web.editability.noHandle": "\u0423 {name} \u043D\u0435\u0442 \u0434\u0435\u0441\u043A\u0440\u0438\u043F\u0442\u043E\u0440\u0430 \u0434\u043B\u044F \u0437\u0430\u043F\u0438\u0441\u0438: \u0444\u0430\u0439\u043B \u043E\u0442\u043A\u0440\u044B\u0442 \u0447\u0435\u0440\u0435\u0437 \u043F\u043E\u043B\u0435 \u0432\u044B\u0431\u043E\u0440\u0430, \u043F\u0435\u0440\u0435\u0442\u0430\u0441\u043A\u0438\u0432\u0430\u043D\u0438\u0435 \u0438\u043B\u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0443, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u043C\u043E\u0436\u0435\u0442 \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0435\u0433\u043E, \u043D\u043E \u043D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043E\u0431\u0440\u0430\u0442\u043D\u043E. \u0414\u043B\u044F \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0444\u0430\u0439\u043B \u0447\u0435\u0440\u0435\u0437 \xAB\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0444\u0430\u0439\u043B\u2026\xBB \u0438\u043B\u0438 \u043F\u0430\u043F\u043A\u0443.",
+      "web.editability.queryFailed": "\u0423 {name} \u0435\u0441\u0442\u044C \u0434\u0435\u0441\u043A\u0440\u0438\u043F\u0442\u043E\u0440 \u0434\u043B\u044F \u0437\u0430\u043F\u0438\u0441\u0438, \u043D\u043E \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u0441\u043C\u043E\u0433 \u0441\u043E\u043E\u0431\u0449\u0438\u0442\u044C \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435 ({reason}); \u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u0431\u0443\u0434\u0435\u0442 \u043F\u0440\u0438\u043D\u044F\u0442\u043E \u043F\u0440\u0438 \u043F\u0435\u0440\u0432\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0438.",
+      "web.editability.noQuery": "\u0423 {name} \u0435\u0441\u0442\u044C \u0434\u0435\u0441\u043A\u0440\u0438\u043F\u0442\u043E\u0440 \u0434\u043B\u044F \u0437\u0430\u043F\u0438\u0441\u0438, \u043D\u043E \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u0443\u043C\u0435\u0435\u0442 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0442\u044C \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435; \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u0438 \u0432\u044B\u044F\u0441\u043D\u0438\u0442\u0441\u044F \u043F\u0440\u0438 \u043F\u0435\u0440\u0432\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0438.",
+      "web.editability.denied": "\u0417\u0430\u043F\u0438\u0441\u044C {name} \u0437\u0430\u043F\u0440\u0435\u0449\u0435\u043D\u0430, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u044B \u0442\u0435\u043A\u0441\u0442\u0430 \u0438 hex \u0441\u043A\u0440\u044B\u0442\u044B. \u041F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0435 \u043F\u0440\u0435\u0434\u043B\u0430\u0433\u0430\u0435\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435, \u043A\u043E\u0442\u043E\u0440\u043E\u0435 \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u0443\u0436\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B.",
+      "web.editability.granted": "\u0424\u0430\u0439\u043B {name} \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043D\u0430 \u043C\u0435\u0441\u0442\u0435: \u0437\u0430\u043F\u0438\u0441\u044C \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0430.",
+      "web.editability.prompt": "\u0424\u0430\u0439\u043B {name} \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043F\u043E\u0441\u043B\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u044F \u0437\u0430\u043F\u0438\u0441\u0438; \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u0441\u043F\u0440\u043E\u0441\u0438\u0442 \u043F\u0440\u0438 \u043F\u0435\u0440\u0432\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0438, \u043B\u0438\u0431\u043E \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435\xBB \u0441\u0435\u0439\u0447\u0430\u0441.",
+      "web.editability.request.noFile": "\u041F\u0435\u0440\u0435\u0434 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435\u043C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u043F\u0430\u043F\u043A\u0443 \u0438\u043B\u0438 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0444\u0430\u0439\u043B.",
+      "web.editability.request.noHandle": "\u0423 {name} \u043D\u0435\u0442 \u0434\u0435\u0441\u043A\u0440\u0438\u043F\u0442\u043E\u0440\u0430 \u0434\u043B\u044F \u0437\u0430\u043F\u0438\u0441\u0438: \u0444\u0430\u0439\u043B \u0438\u0437 \u043F\u0435\u0440\u0435\u0442\u0430\u0441\u043A\u0438\u0432\u0430\u043D\u0438\u044F, \u043E\u0431\u044B\u0447\u043D\u043E\u0433\u043E \u043F\u043E\u043B\u044F \u0432\u044B\u0431\u043E\u0440\u0430 \u0438\u043B\u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u043D\u0435\u043B\u044C\u0437\u044F \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043E\u0431\u0440\u0430\u0442\u043D\u043E. \u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \xAB\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0444\u0430\u0439\u043B\u2026\xBB \u0438\u043B\u0438 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u0443\u044E \u043F\u0430\u043F\u043A\u0443.",
+      "web.editability.request.noSurface": "\u0412 \u044D\u0442\u043E\u043C \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435 \u043D\u0435\u043B\u044C\u0437\u044F \u0437\u0430\u0440\u0430\u043D\u0435\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u043D\u0430 \u0437\u0430\u043F\u0438\u0441\u044C {name}; \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435 \u043F\u043E\u043F\u0440\u043E\u0431\u0443\u0435\u0442 \u0437\u0430\u043F\u0438\u0441\u0430\u0442\u044C \u043D\u0430\u043F\u0440\u044F\u043C\u0443\u044E \u0438 \u043F\u043E\u043A\u0430\u0436\u0435\u0442 \u043E\u0442\u0432\u0435\u0442 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430.",
+      "web.editability.request.granted": "\u0417\u0430\u043F\u0438\u0441\u044C {name} \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0430: \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u044B \u0442\u0435\u043A\u0441\u0442\u0430 \u0438 hex \u043C\u043E\u0433\u0443\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F.",
+      "web.editability.request.denied": "\u0417\u0430\u043F\u0438\u0441\u044C {name} \u0437\u0430\u043F\u0440\u0435\u0449\u0435\u043D\u0430; \u043D\u043E\u0432\u044B\u0435 \u0444\u0430\u0439\u043B\u044B \u0431\u0443\u0434\u0443\u0442 \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0442\u044C\u0441\u044F \u0431\u0435\u0437 \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u0430.",
+      "web.editability.request.notGranted": "\u0417\u0430\u043F\u0438\u0441\u044C {name} \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0430; \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u043E.",
+      "web.editability.request.failed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u043D\u0430 \u0437\u0430\u043F\u0438\u0441\u044C {name}: {reason}",
+      "web.edit.rejection.staleRevision": "\u0444\u0430\u0439\u043B \u043D\u0430 \u0434\u0438\u0441\u043A\u0435 \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0447\u0442\u0435\u043D\u0438\u044F \u0432 \u044D\u0442\u043E\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u0435",
+      "web.edit.rejection.permissionMissing": "\u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435, \u0441 \u043A\u043E\u0442\u043E\u0440\u044B\u043C \u043E\u0442\u043A\u0440\u044B\u0442 \u0441\u0443\u0431\u044A\u0435\u043A\u0442, \u043D\u0435 \u0434\u043E\u043F\u0443\u0441\u043A\u0430\u0435\u0442 \u0437\u0430\u043F\u0438\u0441\u044C \u0444\u0430\u0439\u043B\u0430",
+      "web.edit.rejection.scopeMismatch": "\u043F\u043B\u0430\u043D \u0443\u043A\u0430\u0437\u044B\u0432\u0430\u0435\u0442 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u0437\u0430 \u043F\u0440\u0435\u0434\u0435\u043B\u0430\u043C\u0438 \u044D\u0442\u043E\u0433\u043E \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0430",
+      "web.edit.rejection.guarantee": "\u0441\u0440\u0435\u0434\u0441\u0442\u0432\u043E \u0437\u0430\u043F\u0438\u0441\u0438 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043E\u0431\u0435\u0441\u043F\u0435\u0447\u0438\u0442\u044C \u0442\u0440\u0435\u0431\u0443\u0435\u043C\u0443\u044E \u043F\u043B\u0430\u043D\u043E\u043C \u0433\u0430\u0440\u0430\u043D\u0442\u0438\u044E",
+      "web.edit.rejection.fidelity": "\u043D\u0435\u0442 \u0434\u043E\u043A\u0430\u0437\u0430\u0442\u0435\u043B\u044C\u0441\u0442\u0432 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044F \u0437\u0430\u044F\u0432\u043B\u0435\u043D\u043D\u044B\u0445 \u043F\u043B\u0430\u043D\u043E\u043C \u0434\u0430\u043D\u043D\u044B\u0445",
+      "web.edit.rejection.confirmation": "\u0437\u0430\u043F\u0438\u0441\u044C \u0441 \u043F\u043E\u0442\u0435\u0440\u044F\u043C\u0438 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u044F\u0432\u043D\u043E\u0433\u043E \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F, \u043A\u043E\u0442\u043E\u0440\u043E\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0435 \u0437\u0430\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0435\u0442",
+      "web.edit.rejection.payload": "\u0438\u0437\u043C\u0435\u043D\u0451\u043D\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u043F\u0440\u0435\u0432\u044B\u0448\u0430\u044E\u0442 \u043F\u0440\u0435\u0434\u0435\u043B \u043F\u0435\u0440\u0435\u0434\u0430\u0447\u0438 \u044D\u0442\u043E\u0433\u043E \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F",
+      "web.edit.rejection.readOnly": "\u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u043B\u044F \u0447\u0442\u0435\u043D\u0438\u044F",
+      "web.edit.rejection.cancelled": "\u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435 \u043E\u0442\u043C\u0435\u043D\u0435\u043D\u043E",
+      "web.edit.rejection.unknown": "\u043F\u043B\u0430\u043D \u043D\u0435 \u043E\u043F\u0438\u0441\u044B\u0432\u0430\u0435\u0442 \u044D\u0442\u043E\u0442 \u0441\u0443\u0431\u044A\u0435\u043A\u0442 \u0432 \u043E\u0442\u043A\u0440\u044B\u0442\u043E\u0439 \u0432\u0435\u0440\u0441\u0438\u0438",
+      "web.edit.changeUnsupported": "\u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0441\u043E\u0437\u0434\u0430\u043B \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435, \u043A\u043E\u0442\u043E\u0440\u043E\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0432\u044B\u0440\u0430\u0437\u0438\u0442\u044C \u043A\u0430\u043A \u0431\u0443\u043A\u0432\u0430\u043B\u044C\u043D\u0443\u044E \u0437\u0430\u043C\u0435\u043D\u0443",
+      "web.edit.writerRefused": "\u0441\u0440\u0435\u0434\u0441\u0442\u0432\u043E \u0437\u0430\u043F\u0438\u0441\u0438 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B\u043E \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435",
+      "web.edit.planUnsupported": "\u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0441\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u043F\u043B\u0430\u043D \u0434\u043B\u044F \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u044D\u0442\u043E\u0433\u043E \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u0430",
+      "web.edit.commit.writtenReopen": "{what} \u2014 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u043E \u0432 \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u043E\u0439 \u0444\u0430\u0439\u043B. \u041F\u0435\u0440\u0435\u0434 \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u043C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435\u043C \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0435\u0433\u043E \u0437\u0430\u043D\u043E\u0432\u043E: \u0432\u043A\u043B\u0430\u0434\u043A\u0430 \u0432\u0441\u0451 \u0435\u0449\u0451 \u0445\u0440\u0430\u043D\u0438\u0442 \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u0443\u044E \u0432\u0435\u0440\u0441\u0438\u044E.",
+      "web.edit.commit.refused": "{what}: \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u2014 {reason}{diagnostic}.",
+      "web.edit.commit.rolledBack": "{what}: \u043E\u0448\u0438\u0431\u043A\u0430; \u0444\u0430\u0439\u043B \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \u0434\u043E \u043F\u0440\u0435\u0436\u043D\u0435\u0433\u043E \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F.",
+      "web.edit.commit.partial": "{what}: \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u043E \u0442\u043E\u043B\u044C\u043A\u043E \u0447\u0430\u0441\u0442\u0438\u0447\u043D\u043E; \u0441\u0432\u0435\u0434\u0435\u043D\u0438\u044F \u043E \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0438 \u043D\u0430\u0445\u043E\u0434\u044F\u0442\u0441\u044F \u0432 \u043A\u0432\u0438\u0442\u0430\u043D\u0446\u0438\u0438.",
+      "web.edit.commit.conflict": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E: \u0444\u0430\u0439\u043B \u043D\u0430 \u0434\u0438\u0441\u043A\u0435 \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0447\u0442\u0435\u043D\u0438\u044F \u0432 \u044D\u0442\u043E\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u0435, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0438\u0441\u0430\u043D\u043E. \u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0444\u0430\u0439\u043B \u0437\u0430\u043D\u043E\u0432\u043E \u0438 \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435.",
+      "web.edit.commit.rejected": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u0434\u043E \u0437\u0430\u043F\u0438\u0441\u0438: {reason}.",
+      "web.edit.action.saved": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435",
+      "web.edit.action.undo": "\u041E\u0442\u043C\u0435\u043D\u0430 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F",
+      "web.edit.action.redo": "\u041F\u043E\u0432\u0442\u043E\u0440 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F",
+      "web.edit.authorization.denied": "\u041D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u0437\u0430\u043F\u0440\u0435\u0442\u0438\u043B \u0437\u0430\u043F\u0438\u0441\u044C \u0444\u0430\u0439\u043B\u0430.",
+      "web.edit.authorization.notGranted": "\u041D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u0437\u0430\u043F\u0438\u0441\u044C \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0430 ({state}).",
+      "web.edit.apply.noAccess": "{name} \u043D\u0435 \u0437\u0430\u043F\u0438\u0441\u0430\u043D: \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0438\u043B \u0437\u0430\u043F\u0438\u0441\u044C",
+      "web.edit.apply.conflict": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u0434\u043E \u0437\u0430\u043F\u0438\u0441\u0438: {reason} (\u043A\u043E\u043D\u0444\u043B\u0438\u043A\u0442\u043E\u0432: {conflicts})",
+      "web.edit.apply.rejected": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u0434\u043E \u0437\u0430\u043F\u0438\u0441\u0438: {reason} ({code})",
+      "web.edit.apply.committed": "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u043E \u0438 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u043E \u0432 {name}",
+      "web.edit.apply.notApplied": "\u041D\u0435 \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u043E: {reason} ({code})",
+      "web.edit.apply.rolledBack": "\u041D\u0435 \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u043E: \u043E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u043F\u0438\u0441\u0438; \u0444\u0430\u0439\u043B {name} \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D",
+      "web.edit.apply.partial": "\u0424\u0430\u0439\u043B {name} \u0437\u0430\u043F\u0438\u0441\u0430\u043D \u0442\u043E\u043B\u044C\u043A\u043E \u0447\u0430\u0441\u0442\u0438\u0447\u043D\u043E; \u0441\u0432\u0435\u0434\u0435\u043D\u0438\u044F \u043E \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0438 \u043D\u0430\u0445\u043E\u0434\u044F\u0442\u0441\u044F \u0432 \u043A\u0432\u0438\u0442\u0430\u043D\u0446\u0438\u0438",
+      "web.edit.cannotEdit": "\u0417\u0434\u0435\u0441\u044C \u043D\u0435\u043B\u044C\u0437\u044F \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u044C {name}: {reason}",
+      "web.edit.noWriter": "\u0417\u0434\u0435\u0441\u044C \u043D\u0435\u043B\u044C\u0437\u044F \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u044C {name}: \u0434\u043B\u044F \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0430 \u043D\u0435\u0442 \u0441\u0440\u0435\u0434\u0441\u0442\u0432\u0430 \u0437\u0430\u043F\u0438\u0441\u0438.",
+      "web.edit.bytesLabel": "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u0431\u0430\u0439\u0442\u044B",
+      "web.error.noPicker": "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u0432\u044B\u0431\u043E\u0440 \u043F\u0430\u043F\u043A\u0438.",
+      "web.map.choose": "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 ID \u043A\u0430\u0440\u0442\u044B \u0434\u043B\u044F \u043E\u0442\u043A\u0440\u044B\u0442\u0438\u044F \u0432 \u0440\u0435\u0436\u0438\u043C\u0435 \u043C\u0438\u0440\u0430:\n\n{candidates}",
+      "web.map.permissionRequired": "{name} \u2014 \u0434\u043B\u044F \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u043A\u0430\u0440\u0442\u044B \u043D\u0443\u0436\u043D\u044B \u0440\u0435\u0441\u0443\u0440\u0441\u044B \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043D\u043E\u0439 \u0438\u0433\u0440\u044B, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043D\u0430\u0439\u0442\u0438 \u0441\u0430\u043C; \u043E\u0431\u044B\u0447\u043D\u044B\u0439 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0430\u0440\u0445\u0438\u0432\u0430 \u043E\u0441\u0442\u0430\u0451\u0442\u0441\u044F \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u043C.",
+      "web.map.selectionRequired": "{name} \u2014 \u0434\u043B\u044F \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u043A\u0430\u0440\u0442\u044B \u043D\u0443\u0436\u043D\u043E \u0432\u044B\u0431\u0440\u0430\u0442\u044C \u0432\u0430\u0440\u0438\u0430\u043D\u0442 ({candidates}); \u043E\u0431\u044B\u0447\u043D\u044B\u0439 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0430\u0440\u0445\u0438\u0432\u0430 \u043E\u0441\u0442\u0430\u0451\u0442\u0441\u044F \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u043C.",
+      "web.map.diagnostic.selectionRequired": "\u0414\u043B\u044F \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u043A\u0430\u0440\u0442\u044B \u043D\u0443\u0436\u043D\u043E \u044F\u0432\u043D\u043E \u0432\u044B\u0431\u0440\u0430\u0442\u044C \u0432\u0430\u0440\u0438\u0430\u043D\u0442; \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043E\u0434\u043D\u0443 \u0438\u0437 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0451\u043D\u043D\u044B\u0445 \u043A\u0430\u0440\u0442 \u0438 \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0438\u0442\u0435.",
+      "web.map.diagnostic.permissionRequired": "\u0414\u043B\u044F \u044D\u0442\u043E\u0439 \u043A\u0430\u0440\u0442\u044B \u043D\u0443\u0436\u043D\u044B \u0440\u0435\u0441\u0443\u0440\u0441\u044B \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043D\u043E\u0439 \u0438\u0433\u0440\u044B, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043D\u0430\u0439\u0442\u0438 \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438; \u043F\u0440\u0435\u0434\u043E\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u0434\u043E\u0441\u0442\u0443\u043F \u0438\u043B\u0438 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u0445 \u0432 \u043D\u0430\u0441\u0442\u043E\u043B\u044C\u043D\u043E\u043C \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0438.",
+      "web.extensions.subjectsDescription": "\u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0438 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D\u044B \u0438\u0437 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u044B\u0445 JSON \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0438 \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0435\u0439; \u0442\u043E\u0447\u043D\u044B\u0439 \u043A\u043E\u043D\u0442\u0440\u0430\u043A\u0442 \u0443\u043A\u0430\u0437\u0430\u043D \u0432\u043E \u0432\u0441\u043F\u043B\u044B\u0432\u0430\u044E\u0449\u0435\u0439 \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0435.",
+      "web.extensions.downloadableDescription": "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u043E \u0432\u0430\u0448\u0435\u0439 \u043A\u043E\u043C\u0430\u043D\u0434\u0435; \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430 \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0435\u0442 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u044B\u0435 \u0444\u0430\u0439\u043B\u044B \u043F\u0430\u043A\u0435\u0442\u0430, \u043D\u043E \u043D\u0435 \u0437\u0430\u043F\u0443\u0441\u043A\u0430\u0435\u0442 \u0438\u0445.",
+      "web.extensions.notInCatalog": "\u041D\u0435\u0442 \u0432 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0435",
+      "web.extensions.updateAvailable": "\u0414\u043E\u0441\u0442\u0443\u043F\u043D\u043E \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435",
+      "web.extensions.trusted": "\u0414\u043E\u0432\u0435\u0440\u0435\u043D\u043E",
+      "web.extensions.notTrusted": "\u041D\u0435 \u0434\u043E\u0432\u0435\u0440\u0435\u043D\u043E",
+      "web.extensions.catalogEmpty": "\u0412 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0435 \u043D\u0435\u0442 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439.",
+      "web.extensions.noDownloaded": "\u0417\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043D\u044B\u0435 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F \u043D\u0435 \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B; \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043A\u0430\u0442\u0430\u043B\u043E\u0433.",
+      "web.extensions.packageDisabled": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E \u043D\u0430\u043F\u0440\u044F\u043C\u0443\u044E, \u043D\u043E \u0435\u0433\u043E \u043F\u0430\u043A\u0435\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D.",
+      "web.extensions.reloadPending": "\u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443, \u0447\u0442\u043E\u0431\u044B \u043F\u0435\u0440\u0435\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u043D\u044B\u0439 \u0445\u043E\u0441\u0442.",
+      "web.extensions.removedPending": "\u0423\u0434\u0430\u043B\u0435\u043D\u043E \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430; \u043F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443, \u0447\u0442\u043E\u0431\u044B \u043F\u0435\u0440\u0435\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u0445\u043E\u0441\u0442.",
+      "web.extensions.trustSentence": "\u041F\u0430\u043F\u043A\u0430, \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u043D\u0430\u044F \u0437\u0434\u0435\u0441\u044C, \u0441\u0447\u0438\u0442\u0430\u0435\u0442\u0441\u044F \u0434\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u043E\u0439 \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u043E\u0442\u043E\u043C\u0443, \u0447\u0442\u043E \u0432\u044B \u0432\u044B\u0431\u0440\u0430\u043B\u0438 \u0435\u0451 \u0441\u0430\u043C\u0438: \u043E\u043D\u0430 \u043D\u0435 \u043F\u043E\u0434\u043F\u0438\u0441\u0430\u043D\u0430 \u0438 \u043D\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D\u0430. \u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u0432\u044B\u0447\u0438\u0441\u043B\u044F\u0435\u0442 \u0445\u0435\u0448 \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u0444\u0430\u0439\u043B\u0430 \u0438 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u0442 \u0435\u0433\u043E, \u0435\u0441\u043B\u0438 \u043E\u043D \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0447\u0442\u0435\u043D\u0438\u044F; \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C\u0441\u043A\u0438\u0435 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F \u0432\u0441\u0435\u0433\u0434\u0430 \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442 \u0432 \u0440\u0430\u0431\u043E\u0447\u0435\u043C \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0435.",
+      "web.extensions.provenanceNote": "\u0425\u0435\u0448\u0438 \u0432\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u0445 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u044B \u043F\u0440\u0438 \u0441\u0431\u043E\u0440\u043A\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F. \u0414\u043B\u044F \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0445 \u043F\u0430\u043F\u043E\u043A \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u0432\u044B\u0447\u0438\u0441\u043B\u044F\u0435\u0442 \u0445\u0435\u0448\u0438 \u0441\u0430\u043C\u0430 \u2014 \u044D\u0442\u043E \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0430 \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u044B\u0445 \u0431\u0430\u0439\u0442\u043E\u0432, \u0430 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u0435 \u0438\u0445 \u0430\u0432\u0442\u043E\u0440\u0430.",
+      "web.extensions.remembered": "\u0414\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0435 \u043F\u0430\u043F\u043A\u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u044E\u0442\u0441\u044F \u0432 {location}.",
+      "web.extensions.added": "\u0414\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u0430 \u043F\u0430\u043F\u043A\u0430 \xAB{name}\xBB{coordinate}.",
+      "web.extensions.actionFailed": "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u0441 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435\u043C \u043D\u0435 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043E: {reason}",
+      "web.extensions.addFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043F\u0430\u043F\u043A\u0443: {reason}",
+      "web.extensions.removeFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435: {reason}",
+      "web.extensions.accessFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u0434\u043E\u0441\u0442\u0443\u043F: {reason}",
+      "web.extensions.accessGranted": "\u0414\u043E\u0441\u0442\u0443\u043F \u043A \xAB{name}\xBB \u0441\u043D\u043E\u0432\u0430 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D.",
+      "web.extensions.accessDenied": "\u0414\u043E\u0441\u0442\u0443\u043F \u043A \xAB{name}\xBB \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D ({state}).",
+      "web.extensions.catalogChecked": "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D: {location}.",
+      "web.extensions.catalogLoaded": "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D \u0438\u0437 {location}.",
+      "web.extensions.catalogNotContacted": "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 {location} \u0435\u0449\u0451 \u043D\u0435 \u0437\u0430\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u043B\u0441\u044F \u0432 \u044D\u0442\u043E\u043C \u0441\u0435\u0430\u043D\u0441\u0435.",
+      "web.extensions.installedStatus": "{name} \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043E. \u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443, \u0447\u0442\u043E\u0431\u044B \u043F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F.",
+      "web.extensions.updatedStatus": "{name} \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u043E. \u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443, \u0447\u0442\u043E\u0431\u044B \u043F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F.",
+      "web.extensions.removedStatus": "{name} \u0443\u0434\u0430\u043B\u0435\u043D\u043E. \u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443, \u0447\u0442\u043E\u0431\u044B \u043F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F.",
+      "web.extensions.cardFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F: {reason}",
+      "web.extensions.bundledProvenance": "\u0412\u0441\u0442\u0440\u043E\u0435\u043D\u043E \u0432 \u044D\u0442\u0443 \u0441\u0431\u043E\u0440\u043A\u0443 \u0438 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u043E \u0438\u0437 {root}; \u0445\u0435\u0448\u0438 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u044B \u043F\u0440\u0438 \u0441\u0431\u043E\u0440\u043A\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F.",
+      "web.extensions.userProvenance": "\u0420\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u0430\u044F \u0432\u0430\u043C\u0438 \u043F\u0430\u043F\u043A\u0430 (\xAB{label}\xBB); \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u0432\u044B\u0447\u0438\u0441\u043B\u0438\u043B\u0430 \u0445\u0435\u0448\u0438 \u0442\u043E\u043B\u044C\u043A\u043E \u0447\u0442\u043E \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u044B\u0445 \u0431\u0430\u0439\u0442\u043E\u0432."
+    }
+  },
+  {
+    authorizedMessagePrefixes: ["web."],
+    fallbackCatalog: EN.messages
+  }
+);
+var WEB_UI_CATALOGS = Object.freeze([EN, RU]);
+function createWebLocalizer(requested, catalogs = []) {
+  const locale = resolveUiLocale(requested, {
+    availableLocales: ["en", "ru", ...catalogs.map((catalog) => catalog.locale)],
+    systemLocales: globalThis.navigator?.languages
+  });
+  return createUiLocalizer(locale, { catalogs: [...WEB_UI_CATALOGS, ...catalogs] });
+}
+
 // apps/web/src/files.ts
 function isWritableHandle(handle) {
   return handle !== void 0 && typeof handle.createWritable === "function";
@@ -39773,7 +41615,37 @@ function safeViewerText3(value2, maximum = 1e6) {
     return `\\u{${code}}`;
   });
 }
+var WORKBENCH_FALLBACK_MESSAGES = {
+  "workbench.activities": "Workbench activities",
+  "workbench.facilities": "{label} \xB7 {count} facilities",
+  "workbench.hostUnavailable": "Host unavailable",
+  "workbench.noHostProfile": "No host profile"
+};
+function createEnglishUiLocalizer2(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
+    }
+  });
+}
+function withEnglishUiFallback2(localizer, messages) {
+  const fallback = createEnglishUiLocalizer2(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
 function createWorkbench(document, options) {
+  const localizer = withEnglishUiFallback2(options.localizer, WORKBENCH_FALLBACK_MESSAGES);
   const root = document.createElement("div");
   root.className = "modkit-viewer modkit-workbench";
   setPart3(root, "workbench");
@@ -39781,7 +41653,7 @@ function createWorkbench(document, options) {
   titlebar.textContent = safeViewerText3(options.title, 256);
   setPart3(titlebar, "workbench.titlebar");
   const activitybar = document.createElement("nav");
-  activitybar.setAttribute("aria-label", "Workbench activities");
+  activitybar.setAttribute("aria-label", localizer.text("workbench.activities"));
   setPart3(activitybar, "workbench.activitybar");
   const sidebar = document.createElement("aside");
   setPart3(sidebar, "workbench.sidebar");
@@ -39797,7 +41669,10 @@ function createWorkbench(document, options) {
   root.append(titlebar, activitybar, sidebar, main, panel, statusbar);
   const setHostState = (state) => {
     const reasons = state.degradedReasons ?? [];
-    hostStatus.textContent = `${safeViewerText3(state.label, 128)} \xB7 ${state.facilities.length} facilities`;
+    hostStatus.textContent = localizer.text("workbench.facilities", {
+      label: safeViewerText3(state.label, 128),
+      count: state.facilities.length
+    });
     hostStatus.title = reasons.length === 0 ? state.facilities.join(", ") : reasons.join("\n");
     const states = reasons.length === 0 ? [] : ["degraded"];
     setState3(hostStatus, states);
@@ -39807,9 +41682,9 @@ function createWorkbench(document, options) {
   };
   setHostState(
     options.host ?? {
-      label: "Host unavailable",
+      label: localizer.text("workbench.hostUnavailable"),
       facilities: [],
-      degradedReasons: ["No host profile"]
+      degradedReasons: [localizer.text("workbench.noHostProfile")]
     }
   );
   return Object.freeze({
@@ -45135,9 +47010,10 @@ function createWebTopology(identity, probe = probeWebFacilities()) {
     ]
   });
 }
-function mountWebWorkbench(document, container, app, title = "Modkit MK3") {
+function mountWebWorkbench(document, container, app, title, localizer = createWebLocalizer(globalThis.navigator?.languages)) {
   const workbench = createWorkbench(document, {
-    title,
+    localizer,
+    title: title ?? localizer.text("app.title"),
     host: {
       label: app.main.profile.realmId,
       facilities: app.main.profile.facilities,
@@ -45330,14 +47206,10 @@ var sourceUriFor = (entryId) => `${WEB_SOURCE_SCHEME}${encodeURIComponent(entryI
 var sourceRevisionToken = (snapshot3) => `provider-token:${snapshot3.size}-${snapshot3.lastModified}`;
 var report = (state, editable, sentence) => Object.freeze({ state, editable, sentence });
 var describe5 = (error3) => error3 instanceof Error ? error3.message : String(error3);
-async function describeEditability(access, entryId, name = entryId) {
+async function describeEditability(access, entryId, name = entryId, localizer = createWebLocalizer("en")) {
   const handle = access?.handleOf(entryId);
   if (!isWritableHandle(handle)) {
-    return report(
-      "no-handle",
-      false,
-      `${name} has no writable handle: it arrived through a file input, a drop or a fetch, so this page can show it but can never save it back. Pick it through "Open file\u2026" or a folder to edit it.`
-    );
+    return report("no-handle", false, localizer.text("web.editability.noHandle", { name }));
   }
   const grant = access?.writeGrant ?? handle;
   let state;
@@ -45347,48 +47219,40 @@ async function describeEditability(access, entryId, name = entryId) {
     return report(
       "no-permission-surface",
       true,
-      `${name} has a writable handle, but this browser could not report its write permission (${describe5(error3)}); the first save is where it is decided.`
+      localizer.text("web.editability.queryFailed", { name, reason: describe5(error3) })
     );
   }
   if (state === void 0) {
     return report(
       "no-permission-surface",
       true,
-      `${name} has a writable handle, but this browser exposes no permission query, so whether the write is allowed is decided by the first save.`
+      localizer.text("web.editability.noQuery", { name })
     );
   }
   if (state === "denied") {
-    return report(
-      "denied",
-      false,
-      `Write access was denied for ${name}, so its text and hex editors are dropped. This build will not offer a save it already knows the browser refuses.`
-    );
+    return report("denied", false, localizer.text("web.editability.denied", { name }));
   }
   if (state === "granted") {
-    return report("granted", true, `${name} can be saved in place: write access is granted.`);
+    return report("granted", true, localizer.text("web.editability.granted", { name }));
   }
-  return report(
-    "prompt",
-    true,
-    `${name} can be saved in place once you allow write access; the browser asks on the first save, or use "Enable editing" to answer it now.`
-  );
+  return report("prompt", true, localizer.text("web.editability.prompt", { name }));
 }
-async function requestWriteAccess(access) {
+async function requestWriteAccess(access, localizer = createWebLocalizer("en")) {
   const grant = access?.writeGrant;
   if (access === void 0) {
-    return { state: "no-handle", sentence: "Open a folder or pick a file before enabling editing." };
+    return { state: "no-handle", sentence: localizer.text("web.editability.request.noFile") };
   }
   if (grant === void 0) {
     return {
       state: "no-handle",
-      sentence: `${access.label} has no writable handle: files opened through a drop, a plain file input or a fetch cannot be written back. Use "Open file\u2026" or a granted folder instead.`
+      sentence: localizer.text("web.editability.request.noHandle", { name: access.label })
     };
   }
   const ask = grant.requestPermission;
   if (ask === void 0) {
     return {
       state: "no-permission-surface",
-      sentence: `${access.label} cannot be asked for write permission in this browser; a save will try directly and report what the browser answers.`
+      sentence: localizer.text("web.editability.request.noSurface", { name: access.label })
     };
   }
   try {
@@ -45396,17 +47260,23 @@ async function requestWriteAccess(access) {
     if (state === "granted") {
       return {
         state: "granted",
-        sentence: `Write access granted for ${access.label}: the text and hex editors can save.`
+        sentence: localizer.text("web.editability.request.granted", { name: access.label })
       };
     }
     return {
       state: state === "denied" ? "denied" : "prompt",
-      sentence: state === "denied" ? `Write access denied for ${access.label}; files opened from now on show no editor.` : `Write access was not granted for ${access.label}; nothing was changed.`
+      sentence: localizer.text(
+        state === "denied" ? "web.editability.request.denied" : "web.editability.request.notGranted",
+        { name: access.label }
+      )
     };
   } catch (error3) {
     return {
       state: "no-permission-surface",
-      sentence: `Asking for write access to ${access.label} failed: ${describe5(error3)}`
+      sentence: localizer.text("web.editability.request.failed", {
+        name: access.label,
+        reason: describe5(error3)
+      })
     };
   }
 }
@@ -45440,7 +47310,7 @@ function mergeByteRuns(runs, original) {
   for (const run of runs) window.set(run.bytes, run.offset - start);
   return { offset: start, bytes: window };
 }
-function normalizeChangeSet(change, targets, original) {
+function normalizeChangeSet(change, targets, original, localizer = createWebLocalizer("en")) {
   if (!isRecord4(change)) return void 0;
   const declared = change["targets"];
   if (Array.isArray(declared) && declared.length > 0) return change;
@@ -45463,34 +47333,34 @@ function normalizeChangeSet(change, targets, original) {
           length: BigInt(merged.bytes.byteLength)
         },
         payload: { kind: "inline", bytes: merged.bytes },
-        label: "Edit bytes"
+        label: localizer.text("web.edit.bytesLabel")
       }
     ],
     provenance: { actor: "user" }
   };
 }
-function describeRejection(reason) {
+function describeRejection(reason, localizer = createWebLocalizer("en")) {
   switch (reason) {
     case "stale-revision":
-      return "the file changed on disk after this tab read it";
+      return localizer.text("web.edit.rejection.staleRevision");
     case "permission-missing":
-      return "the grant this subject was opened under does not carry write permission";
+      return localizer.text("web.edit.rejection.permissionMissing");
     case "write-scope-mismatch":
-      return "the plan names a source outside this subject";
+      return localizer.text("web.edit.rejection.scopeMismatch");
     case "guarantee-unachievable":
-      return "this backend cannot promise the guarantee the plan asks for";
+      return localizer.text("web.edit.rejection.guarantee");
     case "fidelity-unproven":
-      return "no evidence proves the writer keeps what the plan claims it keeps";
+      return localizer.text("web.edit.rejection.fidelity");
     case "confirmation-required":
-      return "a lossy write needs an explicit confirmation this host does not collect";
+      return localizer.text("web.edit.rejection.confirmation");
     case "payload-unavailable":
-      return "the edited bytes exceed what this host will hand over inline";
+      return localizer.text("web.edit.rejection.payload");
     case "source-read-only":
-      return "the backend behind this source is read-only";
+      return localizer.text("web.edit.rejection.readOnly");
     case "cancelled":
-      return "the save was cancelled";
+      return localizer.text("web.edit.rejection.cancelled");
     default:
-      return "the plan did not describe this subject at its open revision";
+      return localizer.text("web.edit.rejection.unknown");
   }
 }
 var firstMessage = (diagnostics) => diagnostics[0]?.message;
@@ -45511,6 +47381,7 @@ function webEditEvidence(inventory, descriptor, selectedWriter) {
   return registry;
 }
 function createWebEditingArm(options) {
+  const localizer = options.localizer ?? createWebLocalizer("en");
   const writer = createRawWriter();
   const backend = createBrowserEditingBackend({
     handleFor: options.handleFor,
@@ -45534,23 +47405,21 @@ function createWebEditingArm(options) {
       targets,
       state: () => base.edit.state(),
       async propose(change) {
-        const normalized = normalizeChangeSet(change, targets, request.bytes);
+        const normalized = normalizeChangeSet(change, targets, request.bytes, localizer);
         if (normalized === void 0) {
-          return refused2(
-            "this editor produced a change this host cannot express as a literal replacement"
-          );
+          return refused2(localizer.text("web.edit.changeUnsupported"));
         }
         options.onDirty(request.entryId, true);
         const result = await base.edit.propose(normalized);
         if (!result.valid) {
-          notice(firstMessage(result.diagnostics) ?? "the writer refused the change");
+          notice(firstMessage(result.diagnostics) ?? localizer.text("web.edit.writerRefused"));
         }
         return result;
       },
       async plan(change) {
-        const normalized = normalizeChangeSet(change, targets, request.bytes);
+        const normalized = normalizeChangeSet(change, targets, request.bytes, localizer);
         if (normalized === void 0) {
-          throw new TypeError("this host cannot plan the change set this editor produced");
+          throw new TypeError(localizer.text("web.edit.planUnsupported"));
         }
         return base.edit.plan(normalized);
       },
@@ -45559,17 +47428,20 @@ function createWebEditingArm(options) {
     const announce = (result, what) => {
       if (result.state === "committed") {
         options.onDirty(request.entryId, false);
-        notice(
-          `${what} \u2014 written to the file this tab opened. Reopen it before editing again: this tab still holds the revision it read.`
-        );
+        notice(localizer.text("web.edit.commit.writtenReopen", { what }));
       } else if (result.state === "not-applied") {
+        const diagnosticMessage = firstMessage(result.diagnostics);
         notice(
-          `${what} refused \u2014 ${describeRejection(result.reason)}${firstMessage(result.diagnostics) === void 0 ? "" : ` (${firstMessage(result.diagnostics) ?? ""})`}.`
+          localizer.text("web.edit.commit.refused", {
+            what,
+            reason: describeRejection(result.reason, localizer),
+            diagnostic: diagnosticMessage === void 0 ? "" : ` (${diagnosticMessage})`
+          })
         );
       } else if (result.state === "rolled-back") {
-        notice(`${what} failed and the file was rolled back to what it held before.`);
+        notice(localizer.text("web.edit.commit.rolledBack", { what }));
       } else {
-        notice(`${what} landed only partly; recovery is available in the receipt.`);
+        notice(localizer.text("web.edit.commit.partial", { what }));
       }
       return result;
     };
@@ -45577,22 +47449,33 @@ function createWebEditingArm(options) {
       async prepare(plan, prepareOptions) {
         const result = await base.commit.prepare(plan, prepareOptions);
         if (result.state === "conflict") {
-          notice(
-            "refused \u2014 the file changed on disk after this tab read it, so nothing was overwritten. Reopen it and redo the edit."
-          );
+          notice(localizer.text("web.edit.commit.conflict"));
         } else if (result.state === "rejected") {
-          notice(`refused before writing \u2014 ${describeRejection(result.reason)}.`);
+          notice(
+            localizer.text("web.edit.commit.rejected", {
+              reason: describeRejection(result.reason, localizer)
+            })
+          );
         }
         return result;
       },
       async commit(prepared, commitOptions) {
-        return announce(await base.commit.commit(prepared, commitOptions), "Saved");
+        return announce(
+          await base.commit.commit(prepared, commitOptions),
+          localizer.text("web.edit.action.saved")
+        );
       },
       async undo(transactionId, undoOptions) {
-        return announce(await base.commit.undo(transactionId, undoOptions), "Undo");
+        return announce(
+          await base.commit.undo(transactionId, undoOptions),
+          localizer.text("web.edit.action.undo")
+        );
       },
       async redo(transactionId, redoOptions) {
-        return announce(await base.commit.redo(transactionId, redoOptions), "Redo");
+        return announce(
+          await base.commit.redo(transactionId, redoOptions),
+          localizer.text("web.edit.action.redo")
+        );
       }
     };
     const authorization = {
@@ -45600,7 +47483,7 @@ function createWebEditingArm(options) {
         const state = await options.ensureWriteAccess(request.entryId);
         if (state !== "granted") {
           notice(
-            state === "denied" ? "not saved \u2014 this browser denied write access to the file." : `not saved \u2014 write access was not granted (${state}).`
+            state === "denied" ? localizer.text("web.edit.authorization.denied") : localizer.text("web.edit.authorization.notGranted", { state })
           );
           return void 0;
         }
@@ -45613,41 +47496,53 @@ function createWebEditingArm(options) {
     const authorized = await ports.authorization.request(plan);
     if (authorized === void 0) {
       return {
-        message: `${request.name} was not written: this browser did not grant write access`,
+        message: localizer.text("web.edit.apply.noAccess", { name: request.name }),
         failed: true
       };
     }
     const prepared = await ports.commit.prepare(plan, { grant: authorized.grant });
     if (prepared.state === "conflict") {
       return {
-        message: `refused before writing: ${describeRejection("stale-revision")} (${prepared.conflicts.length} conflict(s))`,
+        message: localizer.text("web.edit.apply.conflict", {
+          reason: describeRejection("stale-revision", localizer),
+          conflicts: prepared.conflicts.length
+        }),
         failed: true
       };
     }
     if (prepared.state === "rejected") {
       return {
-        message: `refused before writing: ${describeRejection(prepared.reason)} (${prepared.reason})`,
+        message: localizer.text("web.edit.apply.rejected", {
+          reason: describeRejection(prepared.reason, localizer),
+          code: prepared.reason
+        }),
         failed: true
       };
     }
     const result = await ports.commit.commit(prepared.prepared, { grant: authorized.grant });
     if (result.state === "committed") {
-      return { message: `applied and written to ${request.name}`, failed: false };
+      return {
+        message: localizer.text("web.edit.apply.committed", { name: request.name }),
+        failed: false
+      };
     }
     if (result.state === "not-applied") {
       return {
-        message: `not applied: ${describeRejection(result.reason)} (${result.reason})`,
+        message: localizer.text("web.edit.apply.notApplied", {
+          reason: describeRejection(result.reason, localizer),
+          code: result.reason
+        }),
         failed: true
       };
     }
     if (result.state === "rolled-back") {
       return {
-        message: `not applied: the write failed and ${request.name} was rolled back`,
+        message: localizer.text("web.edit.apply.rolledBack", { name: request.name }),
         failed: true
       };
     }
     return {
-      message: `${request.name} was only partly written; recovery is in the receipt`,
+      message: localizer.text("web.edit.apply.partial", { name: request.name }),
       failed: true
     };
   };
@@ -45681,12 +47576,17 @@ function createWebEditingArm(options) {
           ...options.maxInlinePayloadBytes === void 0 ? {} : { maxInlinePayloadBytes: options.maxInlinePayloadBytes }
         });
       } catch (error3) {
-        options.onNotice(`${request.name} cannot be edited here: ${describe5(error3)}`);
+        options.onNotice(
+          localizer.text("web.edit.cannotEdit", {
+            name: request.name,
+            reason: describe5(error3)
+          })
+        );
         return void 0;
       }
       const base = editing.editorPorts;
       if (base === void 0) {
-        options.onNotice(`${request.name} cannot be edited here: no writer backs this subject.`);
+        options.onNotice(localizer.text("web.edit.noWriter", { name: request.name }));
         return void 0;
       }
       const ports = speaking(base, request);
@@ -45709,7 +47609,7 @@ function createWebEditingArm(options) {
   return Object.freeze(arm);
 }
 
-// packages/ui/dist/audio/index.js
+// packages/ui/dist/code/index.js
 var PARTS4 = Object.freeze([
   // shared surface
   "viewer",
@@ -46199,176 +48099,148 @@ function unknownSourceLease2(sources, slot, contract) {
   if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
   return sources.get(binding);
 }
-async function collectEncodedMedia(source2, maximumBytes, signal) {
-  const descriptor = await source2.descriptor();
-  if (descriptor.bytes > BigInt(maximumBytes) || descriptor.bytes > BigInt(Number.MAX_SAFE_INTEGER)) {
-    throw new RangeError(`encoded media exceeds the stage budget: ${descriptor.bytes} bytes`);
-  }
-  const total = Number(descriptor.bytes);
-  const bytes2 = new Uint8Array(total);
-  let offset = 0;
-  while (offset < total) {
-    if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-    const chunk = await source2.read(BigInt(offset), Math.min(1024 * 1024, total - offset), signal);
-    if (chunk.byteLength === 0 || chunk.byteLength > total - offset) {
-      throw new RangeError("encoded media ended outside its declared size");
-    }
-    bytes2.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return { mediaType: descriptor.mediaType, bytes: bytes2 };
-}
-var AUDIO_MAXIMUM_BYTES = 96 * 1024 * 1024;
-var WAVEFORM_BUCKETS = 900;
-function computePeaks(channelData, buckets) {
-  const frames = channelData[0]?.length ?? 0;
-  const peaks = new Float32Array(buckets * 2);
-  if (frames === 0) return peaks;
-  const step = Math.max(1, Math.floor(frames / buckets));
-  for (let bucket = 0; bucket < buckets; bucket += 1) {
-    const from = bucket * step;
-    const to = Math.min(frames, from + step);
-    let minimum = 0;
-    let maximum = 0;
-    for (const channel of channelData) {
-      for (let at = from; at < to; at += 1) {
-        const value2 = channel[at];
-        if (value2 < minimum) minimum = value2;
-        if (value2 > maximum) maximum = value2;
-      }
-    }
-    peaks[bucket * 2] = minimum;
-    peaks[bucket * 2 + 1] = maximum;
-  }
-  return peaks;
-}
-async function loadWaveform(source2, signal) {
-  const encoded = await source2.encoded(void 0, signal);
-  const media = await collectEncodedMedia(encoded, AUDIO_MAXIMUM_BYTES, signal);
-  const AudioContextCtor = globalThis.AudioContext ?? globalThis.webkitAudioContext;
-  if (AudioContextCtor === void 0) throw new TypeError("no platform audio decoder is available");
-  const context = new AudioContextCtor();
-  try {
-    const copy = media.bytes.slice().buffer;
-    const buffer = await context.decodeAudioData(copy);
-    const channels = Array.from(
-      { length: buffer.numberOfChannels },
-      (_, index) => buffer.getChannelData(index)
-    );
-    return {
-      model: {
-        peaks: computePeaks(channels, WAVEFORM_BUCKETS),
-        duration: buffer.duration,
-        channels: buffer.numberOfChannels,
-        sampleRate: buffer.sampleRate,
-        bytes: media.bytes.byteLength
-      },
-      mediaType: media.mediaType,
-      bytes: media.bytes
-    };
-  } finally {
-    await context.close();
-  }
-}
-var clock = (seconds) => {
-  const whole = Math.max(0, Math.floor(seconds));
-  return `${String(Math.floor(whole / 60)).padStart(2, "0")}:${String(whole % 60).padStart(2, "0")}`;
+var CODE_FALLBACK_MESSAGES = {
+  "viewer.enterSearch": "Enter a search term",
+  "viewer.ready": "Ready",
+  "viewer.search": "Search",
+  "viewer.searchMatch": "{count} match",
+  "viewer.searchMatches": "{count} matches",
+  "viewer.searchText": "Search text",
+  "viewer.searching": "Searching\u2026",
+  "viewer.text": "Bounded text viewer",
+  "viewer.textContent": "Text content"
 };
-var audioViewer = defineViewerModule2({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope2(args.signal);
-    const root = createSurface2(args.container, "Audio viewer");
-    const stage = element3(root, "div", { part: "audio" });
-    const toolbar = element3(stage, "div", { part: "audio.toolbar", role: "toolbar" });
-    toolbar.setAttribute("aria-label", "Audio controls");
-    const readout = element3(stage, "output", { part: "audio.readout" });
-    const canvas = element3(stage, "canvas", { part: "audio.waveform" });
-    canvas.setAttribute("role", "img");
-    const player = element3(stage, "audio", { part: "audio.player" });
-    player.controls = true;
-    const lease2 = await unknownSourceLease2(
-      args.sources,
-      args.slot,
-      "common.view/audio-media-source"
-    );
-    if (lease2 === void 0) throw new TypeError("audio binding is unavailable");
-    scope.lease(lease2);
-    let model;
-    let cursor3 = 0;
-    const context = canvas.getContext("2d");
-    if (context === null) throw new TypeError("2d canvas context is unavailable");
-    const paint = () => {
-      if (model === void 0) return;
-      const box = stage.getBoundingClientRect();
-      const width = Math.max(160, Math.round(box.width - 16));
-      const height = 120;
-      canvas.width = width;
-      canvas.height = height;
-      const styles = getComputedStyle(root);
-      const ink = styles.getPropertyValue("--mk-chart-categorical-1").trim() || "#4daafc";
-      const ground = styles.getPropertyValue("--mk-color-sunken").trim() || "#181818";
-      const guide = styles.getPropertyValue("--mk-color-border").trim() || "#2b2b2b";
-      context.fillStyle = ground;
-      context.fillRect(0, 0, width, height);
-      context.strokeStyle = guide;
-      context.beginPath();
-      context.moveTo(0, height / 2);
-      context.lineTo(width, height / 2);
-      context.stroke();
-      context.fillStyle = ink;
-      const buckets = model.peaks.length / 2;
-      for (let x = 0; x < width; x += 1) {
-        const bucket = Math.min(buckets - 1, Math.floor(x / width * buckets));
-        const minimum = model.peaks[bucket * 2];
-        const maximum = model.peaks[bucket * 2 + 1];
-        const top = (1 - maximum) * (height / 2);
-        const bottom = (1 - minimum) * (height / 2);
-        context.fillRect(x, top, 1, Math.max(1, bottom - top));
-      }
-      if (cursor3 > 0 && model.duration > 0) {
-        context.fillStyle = styles.getPropertyValue("--mk-color-accent").trim() || "#0078d4";
-        context.fillRect(Math.round(cursor3 / model.duration * width), 0, 2, height);
-      }
-      setViewerText3(
-        readout,
-        `${clock(cursor3)} / ${clock(model.duration)} \xB7 ${model.channels}ch \xB7 ${(model.sampleRate / 1e3).toFixed(1)} kHz \xB7 ${(model.bytes / 1024).toFixed(0)} KiB`
-      );
-    };
-    canvas.addEventListener("click", (event) => {
-      if (model === void 0) return;
-      const box = canvas.getBoundingClientRect();
-      cursor3 = (event.clientX - box.left) / box.width * model.duration;
-      paint();
-    });
-    setState4(stage, ["loading"]);
-    try {
-      const loaded = await loadWaveform(lease2.value, scope.signal);
-      model = loaded.model;
-      const objectUrl = URL.createObjectURL(
-        new Blob([loaded.bytes], { type: loaded.mediaType })
-      );
-      player.src = objectUrl;
-      scope.cleanup(() => URL.revokeObjectURL(objectUrl));
-      setState4(stage, []);
-      paint();
-    } catch (error3) {
-      setState4(stage, ["error"]);
-      canvas.remove();
-      player.remove();
-      element3(stage, "p", {
-        part: "viewer.empty",
-        text: `The platform decoder cannot render this audio: ${error3 instanceof Error ? error3.message : String(error3)}. A format-specific decoder provider is required.`
+function createEnglishUiLocalizer3(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
       });
     }
-    return createViewerMount(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-      paint();
-    });
+  });
+}
+function withEnglishUiFallback3(localizer, messages) {
+  const fallback = createEnglishUiLocalizer3(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+var MAX_MATERIALIZED_BYTES = 16 * 1024 * 1024;
+var MAX_MATERIALIZED_LINE_BYTES = 1024 * 1024;
+var BoundedTextModel = class {
+  constructor(source2) {
+    this.source = source2;
   }
-});
+  source;
+  async load(signal) {
+    const info = await this.source.info();
+    if (info.bytes > BigInt(MAX_MATERIALIZED_BYTES) || info.longestLineBytes === "unknown" || info.longestLineBytes > MAX_MATERIALIZED_LINE_BYTES) {
+      throw new RangeError("bounded text policy rejected this source");
+    }
+    const slice = await this.source.slice(
+      {
+        kind: "from-line",
+        line: 0,
+        lineCount: info.lines === "unknown" ? Number.MAX_SAFE_INTEGER : Math.max(1, info.lines),
+        maxBytes: MAX_MATERIALIZED_BYTES
+      },
+      signal
+    );
+    if (!slice.complete) throw new RangeError("bounded text source exceeded materialization limit");
+    return slice.text;
+  }
+  async search(pattern, signal) {
+    let matches3 = 0;
+    for await (const range of this.source.search({ pattern }, signal)) {
+      void range;
+      matches3 += 1;
+    }
+    return matches3;
+  }
+};
+function createBoundedTextViewer(options = {}) {
+  const localizer = withEnglishUiFallback3(options.localizer, CODE_FALLBACK_MESSAGES);
+  return defineViewerModule2({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope2(args.signal);
+      const root = createSurface2(args.container, localizer.text("viewer.text"));
+      const lease2 = await unknownSourceLease2(
+        args.sources,
+        args.slot,
+        "common.view/text-data-source"
+      );
+      if (lease2 === void 0) throw new TypeError("bounded text binding is unavailable");
+      scope.lease(lease2);
+      const model = new BoundedTextModel(lease2.value);
+      const toolbar = element3(root, "div", {
+        className: "modkit-viewer__toolbar",
+        role: "search",
+        part: "viewer.toolbar"
+      });
+      const search = element3(toolbar, "input");
+      search.type = "search";
+      search.setAttribute("aria-label", localizer.text("viewer.searchText"));
+      const searchButton = element3(toolbar, "button", {
+        text: localizer.text("viewer.search")
+      });
+      searchButton.type = "button";
+      const status = element3(toolbar, "output", {
+        text: localizer.text("viewer.ready"),
+        part: "viewer.status"
+      });
+      const content = element3(root, "pre", { className: "modkit-viewer__code", part: "text" });
+      content.tabIndex = 0;
+      content.setAttribute("aria-label", localizer.text("viewer.textContent"));
+      setViewerText3(content, await model.load(scope.signal), MAX_MATERIALIZED_BYTES);
+      const runSearch = async () => {
+        const pattern = safeViewerText4(search.value, 4096);
+        setViewerText3(
+          status,
+          pattern === "" ? localizer.text("viewer.enterSearch") : localizer.text("viewer.searching")
+        );
+        if (pattern === "") return;
+        const matches3 = await model.search(pattern, scope.signal);
+        setViewerText3(
+          status,
+          localizer.text(matches3 === 1 ? "viewer.searchMatch" : "viewer.searchMatches", {
+            count: matches3
+          })
+        );
+      };
+      searchButton.addEventListener("click", runSearch);
+      search.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") void runSearch();
+      });
+      scope.cleanup(() => searchButton.removeEventListener("click", runSearch));
+      return createViewerMount(root, scope, args, ({ descriptor }) => {
+        root.dataset["revision"] = descriptor.revision;
+      });
+    }
+  });
+}
+var boundedTextViewer = createBoundedTextViewer();
 
-// packages/ui/dist/code/index.js
+// packages/sdk/dist/templates/index.js
+var GAME_TEMPLATE_PREVIEW_OPERATION_ID = "view.template";
+var GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION = 1;
+var nonEmpty3 = (value2) => typeof value2 === "string" && value2.trim().length > 0;
+function isGameTemplatePreviewResult(value2) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2)) return false;
+  const result = value2;
+  const fidelity = result["fidelity"];
+  return result["schemaVersion"] === GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION && result["operationId"] === GAME_TEMPLATE_PREVIEW_OPERATION_ID && nonEmpty3(result["templateKind"]) && nonEmpty3(result["entryUri"]) && (result["rootPath"] === void 0 || typeof result["rootPath"] === "string") && typeof result["resolvedTree"] === "object" && result["resolvedTree"] !== null && Array.isArray(result["displayItems"]) && Array.isArray(result["diagnostics"]) && ["complete", "partial", "capped", "invalid"].includes(String(result["completeness"])) && typeof fidelity === "object" && fidelity !== null && !Array.isArray(fidelity) && fidelity["comparison"] === "semantic" && Array.isArray(fidelity["unsupported"]) && result["provenance"] !== void 0 && result["digest"] !== void 0;
+}
+
+// packages/ui/dist/template/index.js
 var PARTS5 = Object.freeze([
   // shared surface
   "viewer",
@@ -46803,9 +48675,6 @@ function element4(parent, tag, options = {}) {
   parent.append(node);
   return node;
 }
-function bindingFor3(slot, contract) {
-  return slot.bindings.find((binding) => "contract" in binding && binding.contract === contract);
-}
 var ViewerMountScope3 = class {
   controller = new AbortController();
   signal = this.controller.signal;
@@ -46853,87 +48722,193 @@ function createViewerMount2(root, scope, initial, render2) {
 function defineViewerModule3(module) {
   return Object.freeze(module);
 }
-function unknownSourceLease3(sources, slot, contract) {
-  const binding = bindingFor3(slot, contract);
-  if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
-  return sources.get(binding);
+function operationById(descriptor, operationId4) {
+  return descriptor.operations.find((operation) => operation.id === operationId4);
 }
-var MAX_MATERIALIZED_BYTES = 16 * 1024 * 1024;
-var MAX_MATERIALIZED_LINE_BYTES = 1024 * 1024;
-var BoundedTextModel = class {
-  constructor(source2) {
-    this.source = source2;
-  }
-  source;
-  async load(signal) {
-    const info = await this.source.info();
-    if (info.bytes > BigInt(MAX_MATERIALIZED_BYTES) || info.longestLineBytes === "unknown" || info.longestLineBytes > MAX_MATERIALIZED_LINE_BYTES) {
-      throw new RangeError("bounded text policy rejected this source");
-    }
-    const slice = await this.source.slice(
-      {
-        kind: "from-line",
-        line: 0,
-        lineCount: info.lines === "unknown" ? Number.MAX_SAFE_INTEGER : Math.max(1, info.lines),
-        maxBytes: MAX_MATERIALIZED_BYTES
-      },
-      signal
-    );
-    if (!slice.complete) throw new RangeError("bounded text source exceeded materialization limit");
-    return slice.text;
-  }
-  async search(pattern, signal) {
-    let matches3 = 0;
-    for await (const range of this.source.search({ pattern }, signal)) {
-      void range;
-      matches3 += 1;
-    }
-    return matches3;
-  }
-};
-var boundedTextViewer = defineViewerModule3({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope3(args.signal);
-    const root = createSurface3(args.container, "Bounded text viewer");
-    const lease2 = await unknownSourceLease3(args.sources, args.slot, "common.view/text-data-source");
-    if (lease2 === void 0) throw new TypeError("bounded text binding is unavailable");
-    scope.lease(lease2);
-    const model = new BoundedTextModel(lease2.value);
-    const toolbar = element4(root, "div", {
-      className: "modkit-viewer__toolbar",
-      role: "search",
-      part: "viewer.toolbar"
-    });
-    const search = element4(toolbar, "input");
-    search.type = "search";
-    search.setAttribute("aria-label", "Search text");
-    const searchButton = element4(toolbar, "button", { text: "Search" });
-    searchButton.type = "button";
-    const status = element4(toolbar, "output", { text: "Ready", part: "viewer.status" });
-    const content = element4(root, "pre", { className: "modkit-viewer__code", part: "text" });
-    content.tabIndex = 0;
-    content.setAttribute("aria-label", "Text content");
-    setViewerText4(content, await model.load(scope.signal), MAX_MATERIALIZED_BYTES);
-    const runSearch = async () => {
-      const pattern = safeViewerText5(search.value, 4096);
-      setViewerText4(status, pattern === "" ? "Enter a search term" : "Searching\u2026");
-      if (pattern === "") return;
-      const matches3 = await model.search(pattern, scope.signal);
-      setViewerText4(status, `${matches3} match${matches3 === 1 ? "" : "es"}`);
+async function invokeOperation(descriptor, operations, operationId4, input, options) {
+  const declaration = operationById(descriptor, operationId4);
+  if (declaration === void 0) {
+    return {
+      state: "rejected",
+      reason: "not-declared",
+      diagnostics: []
     };
-    searchButton.addEventListener("click", runSearch);
-    search.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") void runSearch();
+  }
+  if (declaration.state !== "available") {
+    return {
+      state: "rejected",
+      reason: declaration.state === "dependency-required" ? "dependency-required" : "disabled",
+      diagnostics: []
+    };
+  }
+  return operations.invoke(declaration.handlerId, input, {
+    ...options?.signal === void 0 ? {} : { signal: options.signal },
+    ...options?.onProgress === void 0 ? {} : {
+      onProgress: (progress) => options.onProgress?.(progress.completed, progress.total, progress.message)
+    }
+  });
+}
+var TEMPLATE_FALLBACK_MESSAGES = {
+  "viewer.displayCapped": "Display capped at {maximum} of {count} items.",
+  "viewer.gameTemplate": "Game template",
+  "viewer.loadingTemplate": "Loading template\u2026",
+  "viewer.namedRemainder": "{count} named remainder",
+  "viewer.noDisplayItems": "No display items.",
+  "viewer.resolvedSemanticTree": "Resolved semantic tree",
+  "viewer.templateUnavailable": "Template unavailable: {reason}"
+};
+function createEnglishUiLocalizer4(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
+    }
+  });
+}
+function withEnglishUiFallback4(localizer, messages) {
+  const fallback = createEnglishUiLocalizer4(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+var MAXIMUM_DISPLAY_ITEMS = 500;
+var MAXIMUM_TREE_TEXT = 2e5;
+function jsonText(value2, maximum = MAXIMUM_TREE_TEXT) {
+  return safeViewerText5(JSON.stringify(value2, null, 2), maximum);
+}
+function renderGameTemplatePreview(document, host, preview2, localizer = withEnglishUiFallback4(void 0, TEMPLATE_FALLBACK_MESSAGES)) {
+  host.replaceChildren();
+  host.dataset["templateKind"] = preview2.templateKind;
+  host.dataset["completeness"] = preview2.completeness;
+  const header = element4(host, "header", {
+    className: "modkit-template__header",
+    part: "viewer.toolbar"
+  });
+  element4(header, "strong", { text: preview2.templateKind, part: "viewer.status" });
+  element4(header, "span", {
+    text: preview2.completeness,
+    part: "viewer.status"
+  });
+  if (preview2.fidelity.unsupported.length > 0) {
+    element4(header, "span", {
+      text: localizer.text("viewer.namedRemainder", {
+        count: preview2.fidelity.unsupported.length
+      }),
+      part: "viewer.status"
     });
-    scope.cleanup(() => searchButton.removeEventListener("click", runSearch));
-    return createViewerMount2(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
+    const remainder = element4(host, "ul", {
+      className: "modkit-template__diagnostics",
+      part: "diagnostics.list"
+    });
+    for (const item of preview2.fidelity.unsupported) {
+      element4(remainder, "li", { text: item, part: "diagnostics.item" });
+    }
+  }
+  const items = element4(host, "ol", {
+    className: "modkit-template__items",
+    part: "tree.list"
+  });
+  const visible = preview2.displayItems.slice(0, MAXIMUM_DISPLAY_ITEMS);
+  for (const item of visible) {
+    const row = document.createElement("li");
+    row.className = "modkit-template__item";
+    row.setAttribute("data-mk-part", "tree.item");
+    row.textContent = jsonText(item, 4096);
+    items.append(row);
+  }
+  if (visible.length === 0) {
+    element4(items, "li", { text: localizer.text("viewer.noDisplayItems"), part: "viewer.empty" });
+  } else if (visible.length < preview2.displayItems.length) {
+    element4(items, "li", {
+      text: localizer.text("viewer.displayCapped", {
+        maximum: MAXIMUM_DISPLAY_ITEMS,
+        count: preview2.displayItems.length
+      }),
+      part: "viewer.status"
     });
   }
-});
+  const details = document.createElement("details");
+  details.className = "modkit-template__details";
+  const summary = document.createElement("summary");
+  summary.textContent = localizer.text("viewer.resolvedSemanticTree");
+  const tree = document.createElement("pre");
+  tree.setAttribute("data-mk-part", "text");
+  tree.textContent = jsonText(preview2.resolvedTree);
+  details.append(summary, tree);
+  host.append(details);
+  if (preview2.diagnostics.length > 0) {
+    const diagnostics = element4(host, "ul", {
+      className: "modkit-template__diagnostics",
+      part: "diagnostics.list"
+    });
+    for (const item of preview2.diagnostics) {
+      element4(diagnostics, "li", {
+        text: `${item.severity ?? "information"} \xB7 ${item.code} \xB7 ${item.message}`,
+        part: "diagnostics.item"
+      });
+    }
+  }
+}
+function createGameTemplateViewer(options = {}) {
+  const localizer = withEnglishUiFallback4(options.localizer, TEMPLATE_FALLBACK_MESSAGES);
+  return defineViewerModule3({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope3(args.signal);
+      const root = createSurface3(args.container, localizer.text("viewer.gameTemplate"));
+      let renderRevision = 0;
+      const render2 = async (descriptor) => {
+        const revision = ++renderRevision;
+        root.replaceChildren();
+        element4(root, "output", {
+          text: localizer.text("viewer.loadingTemplate"),
+          part: "viewer.status"
+        });
+        const result = await invokeOperation(
+          descriptor,
+          args.operations,
+          GAME_TEMPLATE_PREVIEW_OPERATION_ID,
+          {},
+          { signal: scope.signal }
+        );
+        if (scope.signal.aborted || revision !== renderRevision) return;
+        if (result.state !== "ok") {
+          root.replaceChildren();
+          element4(root, "output", {
+            text: localizer.text("viewer.templateUnavailable", { reason: result.reason }),
+            part: "viewer.status"
+          });
+          return;
+        }
+        if (result.output.kind !== "json" || !isGameTemplatePreviewResult(result.output.value)) {
+          throw new TypeError("view.template returned an invalid game-template-preview result");
+        }
+        renderGameTemplatePreview(root.ownerDocument, root, result.output.value, localizer);
+        root.dataset["revision"] = descriptor.revision;
+      };
+      try {
+        await render2(args.descriptor);
+        return createViewerMount2(root, scope, args, ({ descriptor }) => render2(descriptor));
+      } catch (error3) {
+        await scope.close();
+        root.remove();
+        throw error3;
+      }
+    }
+  });
+}
+var gameTemplateViewer = createGameTemplateViewer();
 
-// packages/ui/dist/card/index.js
+// packages/ui/dist/hex/index.js
 var PARTS6 = Object.freeze([
   // shared surface
   "viewer",
@@ -47283,16 +49258,16 @@ var STATES6 = Object.freeze([
   "drop-target"
 ]);
 var STATE_SET6 = new Set(STATES6);
-function setPart6(element20, part) {
+function setPart6(element22, part) {
   if (!PART_SET6.has(part)) throw new TypeError(`unregistered part: ${part}`);
-  element20.setAttribute(PART_ATTRIBUTE6, part);
+  element22.setAttribute(PART_ATTRIBUTE6, part);
 }
-function setState6(element20, states) {
+function setState6(element22, states) {
   for (const state of states) {
     if (!STATE_SET6.has(state)) throw new TypeError(`unregistered state: ${state}`);
   }
-  if (states.length === 0) element20.removeAttribute(STATE_ATTRIBUTE6);
-  else element20.setAttribute(STATE_ATTRIBUTE6, [...new Set(states)].join(" "));
+  if (states.length === 0) element22.removeAttribute(STATE_ATTRIBUTE6);
+  else element22.setAttribute(STATE_ATTRIBUTE6, [...new Set(states)].join(" "));
 }
 var VIEWER_CSP6 = Object.freeze({
   defaultSrc: "'none'",
@@ -47337,6 +49312,9 @@ function safeViewerText6(value2, maximum = 1e6) {
     return `\\u{${code}}`;
   });
 }
+function setViewerText5(node, value2, maximum) {
+  node.textContent = safeViewerText6(value2, maximum);
+}
 function requireContainer4(value2) {
   if (typeof value2 !== "object" || value2 === null || !("ownerDocument" in value2) || !("replaceChildren" in value2) || typeof value2.replaceChildren !== "function") {
     throw new TypeError("viewer container must be a DOM element");
@@ -47355,7 +49333,17 @@ function createSurface4(container, label) {
   host.replaceChildren(root);
   return root;
 }
-function bindingFor4(slot, contract) {
+function element5(parent, tag, options = {}) {
+  const node = parent.ownerDocument.createElement(tag);
+  if (options.className !== void 0) node.className = options.className;
+  if (options.role !== void 0) node.setAttribute("role", options.role);
+  if (options.text !== void 0) setViewerText5(node, options.text);
+  if (options.part !== void 0) setPart6(node, options.part);
+  if (options.state !== void 0) setState6(node, options.state);
+  parent.append(node);
+  return node;
+}
+function bindingFor3(slot, contract) {
   return slot.bindings.find((binding) => "contract" in binding && binding.contract === contract);
 }
 var ViewerMountScope4 = class {
@@ -47405,826 +49393,113 @@ function createViewerMount3(root, scope, initial, render2) {
 function defineViewerModule4(module) {
   return Object.freeze(module);
 }
-function unknownSourceLease4(sources, slot, contract) {
-  const binding = bindingFor4(slot, contract);
+function unknownSourceLease3(sources, slot, contract) {
+  const binding = bindingFor3(slot, contract);
   if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
   return sources.get(binding);
 }
-function createAccordion(document, options) {
-  const root = document.createElement("div");
-  root.className = "modkit-accordion";
-  root.setAttribute("aria-label", options.label);
-  setPart6(root, "accordion");
-  const entries = /* @__PURE__ */ new Map();
-  const setOpen = async (entry2, open) => {
-    if (options.exclusive === true && open) {
-      for (const other of entries.values()) {
-        if (other !== entry2 && other.expanded) await setOpen(other, false);
-      }
+var HEX_FALLBACK_MESSAGES = {
+  "viewer.byteOffset": "Byte offset",
+  "viewer.go": "Go",
+  "viewer.hex": "Hex viewer"
+};
+function createEnglishUiLocalizer5(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
     }
-    entry2.expanded = open;
-    entry2.header.setAttribute("aria-expanded", String(open));
-    entry2.body.hidden = !open;
-    setState6(entry2.section, open ? ["active"] : []);
-    if (open && !entry2.rendered) {
-      entry2.rendered = true;
-      setState6(entry2.section, ["loading"]);
-      try {
-        await entry2.spec.render(entry2.body);
-        setState6(entry2.section, ["active"]);
-      } catch (error3) {
-        setState6(entry2.section, ["error"]);
-        entry2.body.textContent = safeViewerText6(
-          `section failed: ${error3 instanceof Error ? error3.message : String(error3)}`,
-          512
-        );
-      }
-    }
-  };
-  for (const spec of options.sections) {
-    const section = document.createElement("section");
-    section.className = "modkit-accordion__section";
-    section.dataset["sectionId"] = spec.id;
-    setPart6(section, "accordion.section");
-    const header = document.createElement("button");
-    header.type = "button";
-    header.className = "modkit-accordion__header";
-    header.setAttribute("aria-expanded", "false");
-    setPart6(header, "accordion.header");
-    const twisty = document.createElement("span");
-    twisty.className = "modkit-accordion__twisty";
-    twisty.setAttribute("aria-hidden", "true");
-    twisty.textContent = "\u203A";
-    setPart6(twisty, "accordion.twisty");
-    header.append(twisty);
-    const title = document.createElement("span");
-    title.className = "modkit-accordion__title";
-    title.textContent = safeViewerText6(spec.title, 128);
-    setPart6(title, "accordion.title");
-    header.append(title);
-    if (spec.hint !== void 0) {
-      const hint = document.createElement("span");
-      hint.className = "modkit-accordion__hint";
-      hint.textContent = safeViewerText6(spec.hint, 64);
-      setPart6(hint, "accordion.hint");
-      header.append(hint);
-    }
-    const body = document.createElement("div");
-    body.className = "modkit-accordion__body";
-    body.hidden = true;
-    setPart6(body, "accordion.body");
-    const identifier = `mk-acc-${spec.id}`;
-    body.id = identifier;
-    header.setAttribute("aria-controls", identifier);
-    section.append(header, body);
-    root.append(section);
-    const entry2 = { spec, section, header, body, expanded: false, rendered: false };
-    entries.set(spec.id, entry2);
-    header.addEventListener("click", () => void setOpen(entry2, !entry2.expanded));
-  }
-  for (const spec of options.sections) {
-    if (spec.expanded === true) {
-      const entry2 = entries.get(spec.id);
-      if (entry2 !== void 0) void setOpen(entry2, true);
-    }
-  }
-  return {
-    root,
-    async expand(id) {
-      const entry2 = entries.get(id);
-      if (entry2 !== void 0) await setOpen(entry2, true);
-    },
-    collapse(id) {
-      const entry2 = entries.get(id);
-      if (entry2 !== void 0) void setOpen(entry2, false);
-    },
-    collapseAll() {
-      for (const entry2 of entries.values()) void setOpen(entry2, false);
-    },
-    destroy() {
-      root.remove();
-    }
-  };
-}
-var t3 = (name, tier, type, description, extra = {}) => ({ name, tier, type, isPublic: true, description, ...extra });
-var PALETTE_STEPS2 = [
-  "050",
-  "100",
-  "200",
-  "300",
-  "400",
-  "500",
-  "600",
-  "700",
-  "800",
-  "900"
-];
-var PALETTE_HUES2 = ["neutral", "accent", "ok", "warn", "error", "info"];
-var tier12 = PALETTE_HUES2.flatMap(
-  (hue) => PALETTE_STEPS2.map((step) => t3(`palette.${hue}.${step}`, 1, "color", `${hue} ramp step ${step}`))
-);
-var tier22 = [
-  // surfaces
-  t3("color.bg", 2, "color", "window ground behind everything"),
-  t3("color.surface", 2, "color", "default component surface"),
-  t3("color.raised", 2, "color", "surface above the default plane"),
-  t3("color.sunken", 2, "color", "inset surface such as an input well"),
-  t3("color.overlay", 2, "color", "floating surface: menu, popover, dialog"),
-  t3("color.scrim", 2, "color", "dimming layer behind a modal"),
-  // text
-  t3("color.fg", 2, "color", "primary text"),
-  t3("color.fg-muted", 2, "color", "secondary text"),
-  t3("color.fg-subtle", 2, "color", "tertiary text and placeholders"),
-  t3("color.fg-inverse", 2, "color", "text on an accent fill"),
-  t3("color.fg-disabled", 2, "color", "disabled text"),
-  t3("color.fg-link", 2, "color", "hyperlink text"),
-  t3("color.fg-destructive", 2, "color", "destructive action text"),
-  // lines
-  t3("color.border", 2, "color", "default separator and component border"),
-  t3("color.border-strong", 2, "color", "emphasised border"),
-  t3("color.separator", 2, "color", "hairline between list sections"),
-  // interaction
-  t3("color.accent", 2, "color", "primary action fill"),
-  t3("color.accent-fg", 2, "color", "text on the accent fill"),
-  t3("color.accent-muted", 2, "color", "low-emphasis accent wash"),
-  t3("color.accent-muted-fg", 2, "color", "text on the accent wash"),
-  t3("color.focus", 2, "color", "focus ring"),
-  t3("color.hover", 2, "color", "hover wash"),
-  t3("color.active", 2, "color", "pressed wash"),
-  t3("color.selection", 2, "color", "active selection fill"),
-  t3("color.selection-inactive", 2, "color", "selection fill when the surface is unfocused"),
-  t3("color.selection-fg", 2, "color", "text on a selection fill"),
-  t3("color.match-highlight", 2, "color", "search match highlight"),
-  t3("color.drop-target", 2, "color", "drag-and-drop target indicator"),
-  t3("color.readonly", 2, "color", "read-only field wash"),
-  // status
-  ...["ok", "warn", "error", "info"].flatMap((s2) => [
-    t3(`status.${s2}`, 2, "color", `${s2} indicator colour`),
-    t3(`status.${s2}-fg`, 2, "color", `text on a ${s2} fill`),
-    t3(`status.${s2}-bg`, 2, "color", `${s2} background wash`),
-    t3(`status.${s2}-border`, 2, "color", `${s2} border`)
-  ]),
-  // scrollbars
-  t3("color.scrollbar-track", 2, "color", "scrollbar trough"),
-  t3("color.scrollbar-thumb", 2, "color", "scrollbar thumb"),
-  t3("color.scrollbar-thumb-hover", 2, "color", "scrollbar thumb, hovered"),
-  t3("color.scrollbar-thumb-active", 2, "color", "scrollbar thumb while dragging"),
-  t3("color.scrollbar-shadow", 2, "color", "hairline separating a scrolled pane from its content"),
-  // canvas / GPU surfaces — these are not UI chrome and need their own roles
-  t3("color.canvas-bg", 2, "color", "canvas or WebGL scene ground"),
-  t3("color.canvas-grid", 2, "color", "scene grid lines"),
-  t3("color.canvas-gizmo", 2, "color", "scene gizmo and axis handles"),
-  // Axis identity is a convention users read at a glance (X red, Y green, Z blue), so the three
-  // get their own roles rather than borrowing from the categorical ramp, which a theme may reorder.
-  t3("color.axis-x", 2, "color", "X axis handle and line"),
-  t3("color.axis-y", 2, "color", "Y axis handle and line"),
-  t3("color.axis-z", 2, "color", "Z axis handle and line"),
-  t3("color.canvas-selection", 2, "color", "selected geometry outline"),
-  // graph / chart categorical ramp
-  ...["1", "2", "3", "4", "5", "6"].map(
-    (n2) => t3(`chart.categorical-${n2}`, 2, "color", `categorical series ${n2}`)
-  ),
-  t3("color.graph-node", 2, "color", "relation-graph node fill"),
-  t3("color.graph-edge", 2, "color", "relation-graph edge stroke"),
-  t3("color.graph-edge-dead", 2, "color", "unresolved reference edge"),
-  // diff
-  t3("color.diff-added", 2, "color", "added line or cell wash"),
-  t3("color.diff-removed", 2, "color", "removed line or cell wash"),
-  t3("color.diff-changed", 2, "color", "changed line or cell wash"),
-  // space
-  ...["0", "1", "2", "3", "4", "5", "6", "7", "8"].map(
-    (n2) => t3(`space.${n2}`, 2, "length", `spacing step ${n2}`)
-  ),
-  // radius
-  ...["none", "sm", "md", "lg", "pill"].map(
-    (r2) => t3(`radius.${r2}`, 2, "length", `corner radius ${r2}`)
-  ),
-  // type
-  t3("font.sans", 2, "font-family", "UI typeface stack"),
-  t3("font.mono", 2, "font-family", "monospace stack for IDs, code, offsets"),
-  ...["xs", "sm", "md", "lg", "xl"].map((s2) => t3(`font.size-${s2}`, 2, "length", `font size ${s2}`)),
-  ...["normal", "medium", "bold"].map((w) => t3(`font.weight-${w}`, 2, "number", `font weight ${w}`)),
-  ...["tight", "normal", "loose"].map((l2) => t3(`line.${l2}`, 2, "number", `line height ${l2}`)),
-  // metrics
-  t3("size.row", 2, "length", "list and table row height"),
-  t3("size.control", 2, "length", "default control height"),
-  t3("size.icon", 2, "length", "default icon box"),
-  t3("size.touch", 2, "length", "minimum touch target"),
-  t3("size.scrollbar", 2, "length", "scrollbar thickness"),
-  t3("size.scrollbar-thin", 2, "length", "scrollbar thickness inside dense panes"),
-  // layering
-  ...["base", "sticky", "dropdown", "overlay", "modal", "toast"].map(
-    (z) => t3(`z.${z}`, 2, "z-index", `stacking band: ${z}`)
-  ),
-  // motion
-  ...["fast", "normal", "slow"].map(
-    (d) => t3(`motion.${d}`, 2, "duration", `transition duration ${d}`)
-  ),
-  t3("motion.ease", 2, "easing", "default easing curve"),
-  // elevation
-  ...["1", "2", "3"].map((e2) => t3(`elevation.${e2}`, 2, "shadow", `elevation level ${e2}`)),
-  t3("shadow.focus-ring", 2, "shadow", "focus ring shadow")
-];
-var c3 = (name, component, type, derivesFrom, description) => t3(name, 3, type, description, { component, derivesFrom });
-var runtime2 = (name, component, type, runtimeDefault, description) => t3(name, 3, type, description, { component, runtimeDefault });
-var tier32 = [
-  runtime2("tree.indent-level", "tree", "number", "0", "nesting depth of the current tree row"),
-  runtime2("card.grid-columns", "card", "number", "5", "column count of the current card grid"),
-  // Context-menu placement is per-instance pixel geometry, which C3 routes through tokens.
-  runtime2("explorer.menu-x", "explorer", "length", "0px", "context menu left offset"),
-  runtime2("explorer.menu-y", "explorer", "length", "0px", "context menu top offset"),
-  c3("table.row-height", "table", "length", "size.row", "table row height"),
-  c3("table.header-bg", "table", "color", "color.raised", "table header background"),
-  c3("table.cell-padding-x", "table", "length", "space.2", "table cell horizontal padding"),
-  c3("tree.indent", "tree", "length", "space.4", "tree nesting indent per level"),
-  c3("tree.row-height", "tree", "length", "size.row", "tree row height"),
-  c3("hex.byte-gap", "hex", "length", "space.1", "gap between hex byte columns"),
-  c3("hex.gutter-fg", "hex", "color", "color.fg-subtle", "hex offset gutter text"),
-  c3("text.line-height", "text", "number", "line.normal", "text stage line height"),
-  c3("shell.rail-width", "shell", "length", "space.8", "default side rail width"),
-  c3("shell.splitter-size", "shell", "length", "space.1", "splitter hit area thickness"),
-  c3("toolbar.height", "toolbar", "length", "size.control", "toolbar height"),
-  c3("panel.padding", "panel", "length", "space.3", "panel content padding"),
-  c3("transport.track-height", "transport", "length", "space.2", "transport scrub track height")
-];
-var TOKENS2 = Object.freeze([...tier12, ...tier22, ...tier32]);
-var TOKENS_BY_NAME2 = new Map(
-  TOKENS2.map((token) => [token.name, token])
-);
-function cssVariableName2(tokenName) {
-  return `--mk-${tokenName.replace(/\./gu, "-")}`;
-}
-var HEX2 = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/iu;
-var FUNCTIONAL_COLOR2 = /^(?:rgb|rgba|hsl|hsla|color-mix|oklch|lab|lch)\([^;{}]*\)$/iu;
-var LENGTH2 = /^-?(?:\d+\.?\d*|\.\d+)(?:px|rem|em|ch|%|vh|vw|vmin|vmax)$|^0$/u;
-var DURATION2 = /^(?:\d+\.?\d*|\.\d+)m?s$/u;
-var NUMBER2 = /^-?(?:\d+\.?\d*|\.\d+)$/u;
-var EASING2 = /^(?:linear|ease|ease-in|ease-out|ease-in-out|steps\([^;{}]*\)|cubic-bezier\([^;{}]*\))$/u;
-var SHADOW2 = /^(?:none|[-\w\s.,()#%/]+)$/u;
-var FONT_FAMILY2 = /^[-\w\s.,'"()]+$/u;
-var FORBIDDEN2 = /url\(|expression\(|javascript:|@import|[;{}]|<|>/iu;
-function validateTokenValue2(tokenName, value2) {
-  const token = TOKENS_BY_NAME2.get(tokenName);
-  if (token === void 0) return { valid: false, reason: `unknown token: ${tokenName}` };
-  if (typeof value2 !== "string" || value2.length === 0) {
-    return { valid: false, reason: "value must be a non-empty string" };
-  }
-  if (value2.length > 256) return { valid: false, reason: "value exceeds 256 characters" };
-  if (FORBIDDEN2.test(value2)) {
-    return { valid: false, reason: "value contains a resource load or declaration escape" };
-  }
-  const ok2 = (() => {
-    switch (token.type) {
-      case "color":
-        return HEX2.test(value2) || FUNCTIONAL_COLOR2.test(value2) || /^[a-z-]+$/iu.test(value2);
-      case "length":
-        return LENGTH2.test(value2);
-      case "number":
-        return NUMBER2.test(value2);
-      case "duration":
-        return DURATION2.test(value2);
-      case "easing":
-        return EASING2.test(value2);
-      case "font-family":
-        return FONT_FAMILY2.test(value2);
-      case "shadow":
-        return SHADOW2.test(value2);
-      case "z-index":
-        return NUMBER2.test(value2);
-      default:
-        return false;
-    }
-  })();
-  return ok2 ? { valid: true } : { valid: false, reason: `value is not a valid ${token.type}` };
-}
-function requireElement2(value2) {
-  if (typeof value2 !== "object" || value2 === null || !("style" in value2) || typeof value2.style !== "object") {
-    throw new TypeError("token target must be a DOM element");
-  }
-  return value2;
-}
-function setToken2(element20, name, value2) {
-  const target = requireElement2(element20);
-  const result = validateTokenValue2(name, value2);
-  if (!result.valid) {
-    throw new TypeError(`invalid value for token ${name}: ${result.reason ?? "unknown reason"}`);
-  }
-  target.style.setProperty(cssVariableName2(name), value2);
-}
-function cardLoadLimit(value2, label) {
-  if (!Number.isSafeInteger(value2) || value2 <= 0) throw new RangeError(`${label} must be positive`);
-  return value2;
-}
-async function loadCardPages(read, maximum, pageSize) {
-  const items = [];
-  let cursor3;
-  const seen = /* @__PURE__ */ new Set();
-  while (items.length < maximum) {
-    const result = await read(cursor3, Math.min(pageSize, maximum - items.length));
-    items.push(...result.items);
-    if (result.nextCursor === void 0) return { items: Object.freeze(items), capped: false };
-    if (seen.has(result.nextCursor)) throw new Error("subject facts source repeated a page cursor");
-    seen.add(result.nextCursor);
-    cursor3 = result.nextCursor;
-  }
-  return { items: Object.freeze(items), capped: cursor3 !== void 0 };
-}
-function factValue(value2) {
-  if (typeof value2 === "string") return value2;
-  if (value2 === null || typeof value2 === "number" || typeof value2 === "boolean")
-    return String(value2);
-  return JSON.stringify(value2);
-}
-function factField(fact3) {
-  const provenance = fact3.provenance.map((item) => item.label);
-  return {
-    name: fact3.label,
-    value: factValue(fact3.value),
-    ...provenance.length === 0 ? {} : { badge: provenance[0] },
-    ...provenance.length <= 1 ? {} : { title: provenance.join(" \xB7 ") },
-    ...fact3.knowledgeTarget === void 0 ? {} : { knowledgeTarget: fact3.knowledgeTarget }
-  };
-}
-async function loadSubjectCardSections(source2, options = {}) {
-  const groupLimit = cardLoadLimit(options.groupLimit ?? 32, "groupLimit");
-  const factsPerGroup = cardLoadLimit(options.factsPerGroup ?? 256, "factsPerGroup");
-  const relationLimit = cardLoadLimit(options.relationLimit ?? 256, "relationLimit");
-  const pageSize = cardLoadLimit(options.pageSize ?? 64, "pageSize");
-  const summary = await source2.summary(options.signal);
-  const [groups, relations] = await Promise.all([
-    loadCardPages(
-      (cursor3, limit) => source2.groups({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal),
-      groupLimit,
-      pageSize
-    ),
-    loadCardPages(
-      (cursor3, limit) => source2.relations({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal),
-      relationLimit,
-      pageSize
-    )
-  ]);
-  const notes = [];
-  if (groups.capped || groups.items.length < summary.groupCount)
-    notes.push("Fact groups are capped.");
-  if (relations.capped || relations.items.length < summary.relationCount)
-    notes.push("Related subjects are capped.");
-  const sections = [
-    {
-      kind: "header",
-      title: summary.identity.label,
-      refs: summary.identity.origins.map((origin) => ({
-        label: origin.label,
-        ...origin.source === void 0 ? {} : { href: origin.source.uri }
-      })),
-      chips: [
-        { label: summary.identity.kind },
-        ...summary.identity.type === void 0 ? [] : [{ label: summary.identity.type }]
-      ],
-      ...notes.length === 0 ? {} : { notes }
-    }
-  ];
-  const factGroups = await Promise.all(
-    groups.items.map(async (group2) => ({
-      group: group2,
-      page: await loadCardPages(
-        (cursor3, limit) => source2.facts(
-          group2.id,
-          { ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit },
-          options.signal
-        ),
-        factsPerGroup,
-        pageSize
-      )
-    }))
-  );
-  for (const { group: group2, page: page2 } of factGroups) {
-    sections.push({
-      kind: "fields",
-      id: group2.id,
-      title: page2.capped || page2.items.length < group2.factCount ? `${group2.label} (capped)` : group2.label,
-      fields: page2.items.map(factField),
-      expanded: true
-    });
-  }
-  if (relations.items.length > 0) {
-    sections.push({
-      kind: "links",
-      id: "related-subjects",
-      title: "Related subjects",
-      links: relations.items.map((item) => ({
-        label: item.label,
-        href: item.subjectId,
-        title: `${item.role} \xB7 ${item.kind}`
-      }))
-    });
-  }
-  return Object.freeze(sections);
-}
-function ref(document, item, onNavigate) {
-  const node = document.createElement(onNavigate === void 0 ? "span" : "button");
-  node.className = "modkit-card__ref";
-  setPart6(node, "card.ref");
-  node.textContent = safeViewerText6(item.label, 256);
-  if (item.title !== void 0) node.title = item.title;
-  if (onNavigate !== void 0) {
-    ;
-    node.type = "button";
-    node.addEventListener("click", () => onNavigate(item));
-  }
-  return node;
-}
-function renderHeader(document, host, section, onNavigate) {
-  const header = document.createElement("div");
-  header.className = "modkit-card__header";
-  setPart6(header, "card.header");
-  if (section.portrait !== void 0) {
-    const portrait = document.createElement("div");
-    portrait.className = "modkit-card__portrait";
-    portrait.setAttribute("aria-hidden", "true");
-    portrait.textContent = safeViewerText6(section.portrait, 8);
-    setPart6(portrait, "card.portrait");
-    header.append(portrait);
-  }
-  const identity = document.createElement("div");
-  identity.className = "modkit-card__identity";
-  setPart6(identity, "card.identity");
-  header.append(identity);
-  const title = document.createElement("h2");
-  title.className = "modkit-card__title";
-  title.textContent = safeViewerText6(section.title, 256);
-  setPart6(title, "card.title");
-  identity.append(title);
-  if (section.refs !== void 0 && section.refs.length > 0) {
-    const subtitle = document.createElement("div");
-    subtitle.className = "modkit-card__subtitle";
-    setPart6(subtitle, "card.subtitle");
-    for (const item of section.refs) subtitle.append(ref(document, item, onNavigate));
-    identity.append(subtitle);
-  }
-  if (section.chips !== void 0 && section.chips.length > 0) {
-    const chips = document.createElement("div");
-    chips.className = "modkit-card__chips";
-    setPart6(chips, "card.chips");
-    for (const chip of section.chips) {
-      const node = document.createElement("span");
-      node.className = "modkit-card__chip";
-      node.textContent = safeViewerText6(chip.label, 64);
-      node.dataset["tone"] = chip.tone ?? "accent";
-      setPart6(node, "card.chip");
-      chips.append(node);
-    }
-    identity.append(chips);
-  }
-  if (section.description !== void 0) {
-    const description = document.createElement("p");
-    description.className = "modkit-card__description";
-    description.textContent = safeViewerText6(section.description, 2048);
-    setPart6(description, "card.description");
-    identity.append(description);
-  }
-  for (const note of section.notes ?? []) {
-    const node = document.createElement("p");
-    node.className = "modkit-card__note";
-    node.textContent = safeViewerText6(note, 512);
-    setPart6(node, "card.note");
-    identity.append(node);
-  }
-  if (section.stats !== void 0 && section.stats.length > 0) {
-    const row = document.createElement("div");
-    row.className = "modkit-card__statrow";
-    setPart6(row, "card.statrow");
-    for (const stat of section.stats) {
-      const cell = document.createElement("span");
-      cell.className = "modkit-card__stat";
-      cell.dataset["tone"] = stat.tone ?? "neutral";
-      if (stat.title !== void 0) cell.title = stat.title;
-      setPart6(cell, "card.stat");
-      const icon = document.createElement("span");
-      icon.setAttribute("aria-hidden", "true");
-      icon.textContent = safeViewerText6(stat.icon, 4);
-      setPart6(icon, "card.stat-icon");
-      const value2 = document.createElement("span");
-      value2.textContent = safeViewerText6(stat.value, 32);
-      setPart6(value2, "card.stat-value");
-      cell.append(icon, value2);
-      if (stat.delta !== void 0) {
-        const delta = document.createElement("span");
-        delta.textContent = safeViewerText6(stat.delta, 32);
-        setPart6(delta, "card.stat-delta");
-        cell.append(delta);
-      }
-      row.append(cell);
-    }
-    identity.append(row);
-  }
-  if (section.aside !== void 0) {
-    const select = document.createElement("select");
-    select.className = "modkit-card__locale";
-    select.setAttribute("aria-label", "Locale");
-    setPart6(select, "card.locale");
-    for (const option of section.aside.options) {
-      const node = document.createElement("option");
-      node.value = option;
-      node.textContent = safeViewerText6(option, 32);
-      select.append(node);
-    }
-    if (section.aside.value !== void 0) select.value = section.aside.value;
-    select.addEventListener("change", () => section.aside?.onChange?.(select.value));
-    header.append(select);
-  }
-  host.append(header);
-}
-function renderFields(document, host, fields, inspectKnowledge) {
-  const list = document.createElement("div");
-  list.className = "modkit-card__fields";
-  list.setAttribute("role", "table");
-  setPart6(list, "card.fields");
-  for (const field of fields) {
-    const row = document.createElement("div");
-    row.className = "modkit-card__field";
-    setPart6(row, "card.field");
-    row.tabIndex = 0;
-    if (field.title !== void 0) row.title = field.title;
-    const name = document.createElement("span");
-    name.textContent = safeViewerText6(field.name, 128);
-    setPart6(name, "card.field-name");
-    const value2 = document.createElement("span");
-    value2.textContent = safeViewerText6(field.value, 2048);
-    setPart6(value2, "card.field-value");
-    row.append(name, value2);
-    if (field.badge !== void 0) {
-      const badge = document.createElement("span");
-      badge.className = "modkit-card__chip";
-      badge.dataset["tone"] = "neutral";
-      badge.textContent = safeViewerText6(field.badge, 48);
-      setPart6(badge, "card.chip");
-      row.append(badge);
-    }
-    if (inspectKnowledge !== void 0) {
-      const inspect = () => inspectKnowledge(field.knowledgeTarget);
-      row.addEventListener("focus", inspect);
-      row.addEventListener("mouseenter", inspect);
-    }
-    list.append(row);
-  }
-  host.append(list);
-}
-function createSubjectCard(document, options) {
-  const root = document.createElement("article");
-  root.className = "modkit-card";
-  root.setAttribute("aria-label", options.label);
-  setPart6(root, "card");
-  const header = options.sections.find((section) => section.kind === "header");
-  if (header !== void 0) renderHeader(document, root, header, options.onNavigate);
-  const knowledge = document.createElement("aside");
-  knowledge.className = "modkit-card__knowledge";
-  knowledge.setAttribute("role", "status");
-  knowledge.setAttribute("aria-live", "polite");
-  knowledge.dataset["knowledgeState"] = "missing";
-  setPart6(knowledge, "card.knowledge");
-  knowledge.textContent = "Description is not available yet.";
-  root.append(knowledge);
-  let lookupRevision = 0;
-  let lookupController;
-  const cancelLookup = (reason) => {
-    lookupRevision += 1;
-    lookupController?.abort(reason);
-    lookupController = void 0;
-    return lookupRevision;
-  };
-  const showMissingKnowledge = () => {
-    knowledge.dataset["knowledgeState"] = "missing";
-    knowledge.replaceChildren();
-    knowledge.textContent = "Description is not available yet.";
-  };
-  const directSource = (hit) => {
-    for (const source2 of hit.entry.sources) {
-      if (source2.url === void 0) continue;
-      try {
-        const url = new URL(source2.url);
-        if (url.protocol === "https:") return { title: source2.title, url };
-      } catch {
-      }
-    }
-    return void 0;
-  };
-  const showKnowledge = (hit) => {
-    knowledge.dataset["knowledgeState"] = "resolved";
-    knowledge.replaceChildren();
-    const summary = document.createElement("span");
-    summary.textContent = safeViewerText6(hit.entry.summary, 512);
-    knowledge.append(summary);
-    const source2 = directSource(hit);
-    if (source2 === void 0) return;
-    knowledge.append(document.createTextNode(" "));
-    const link = document.createElement("a");
-    link.href = source2.url.href;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.referrerPolicy = "no-referrer";
-    link.textContent = safeViewerText6(source2.title, 160);
-    knowledge.append(link);
-  };
-  const inspectKnowledge = (target) => {
-    const revision = cancelLookup("card-field-changed");
-    if (target === void 0 || options.knowledge === void 0) {
-      showMissingKnowledge();
-      return;
-    }
-    const controller = new AbortController();
-    lookupController = controller;
-    knowledge.dataset["knowledgeState"] = "loading";
-    knowledge.replaceChildren();
-    knowledge.textContent = "Loading description\u2026";
-    void (async () => {
-      try {
-        const page2 = await options.knowledge?.resolve(
-          { target, locales: options.knowledgeLocales ?? [], limit: 1 },
-          controller.signal
-        );
-        if (controller.signal.aborted || revision !== lookupRevision) return;
-        const hit = page2?.items[0];
-        if (hit === void 0) showMissingKnowledge();
-        else showKnowledge(hit);
-      } catch {
-        if (!controller.signal.aborted && revision === lookupRevision) showMissingKnowledge();
-      } finally {
-        if (revision === lookupRevision) lookupController = void 0;
-      }
-    })();
-  };
-  const collapsible = options.sections.filter((section) => section.kind !== "header");
-  const accordion = createAccordion(document, {
-    label: `${options.label} sections`,
-    sections: collapsible.map((section) => ({
-      id: section.id,
-      title: section.title,
-      ...section.expanded === void 0 ? {} : { expanded: section.expanded },
-      render(panel) {
-        setPart6(panel.parentElement ?? panel, "accordion.section");
-        switch (section.kind) {
-          case "fields":
-            renderFields(document, panel, section.fields, inspectKnowledge);
-            return;
-          case "links": {
-            const list = document.createElement("div");
-            list.className = "modkit-card__links";
-            setPart6(list, "card.links");
-            if (section.lead !== void 0) {
-              const lead = document.createElement("span");
-              lead.textContent = safeViewerText6(section.lead, 256);
-              setPart6(lead, "card.link-item");
-              list.append(lead);
-            }
-            for (const link of section.links) list.append(ref(document, link, options.onNavigate));
-            panel.append(list);
-            return;
-          }
-          case "grid": {
-            const grid = document.createElement("div");
-            grid.className = "modkit-card__grid";
-            grid.setAttribute("role", "grid");
-            setPart6(grid, "card.grid");
-            setToken2(grid, "card.grid-columns", String(section.columns));
-            for (const cell of section.cells) {
-              const node = document.createElement("button");
-              node.type = "button";
-              node.className = "modkit-card__grid-cell";
-              node.disabled = cell.empty === true;
-              setPart6(node, "card.grid-cell");
-              if (cell.empty === true) setState6(node, ["disabled"]);
-              if (cell.label !== void 0) node.title = cell.label;
-              if (cell.hotkey !== void 0) {
-                const hotkey = document.createElement("span");
-                hotkey.setAttribute("aria-hidden", "true");
-                hotkey.textContent = safeViewerText6(cell.hotkey, 2);
-                setPart6(hotkey, "card.grid-hotkey");
-                node.append(hotkey);
-              }
-              if (cell.icon !== void 0) {
-                const icon = document.createElement("span");
-                icon.textContent = safeViewerText6(cell.icon, 4);
-                setPart6(icon, "card.grid-icon");
-                node.append(icon);
-              }
-              node.setAttribute("aria-label", cell.label ?? cell.id);
-              grid.append(node);
-            }
-            panel.append(grid);
-            return;
-          }
-          case "cards": {
-            const list = document.createElement("div");
-            list.className = "modkit-card__subcards";
-            setPart6(list, "card.subcards");
-            for (const card of section.cards) {
-              const item = document.createElement("div");
-              item.className = "modkit-card__subcard";
-              setPart6(item, "card.subcard");
-              const head = document.createElement("div");
-              head.className = "modkit-card__subcard-head";
-              setPart6(head, "card.subcard-head");
-              if (card.icon !== void 0) {
-                const icon = document.createElement("span");
-                icon.setAttribute("aria-hidden", "true");
-                icon.textContent = safeViewerText6(card.icon, 4);
-                setPart6(icon, "card.stat-icon");
-                head.append(icon);
-              }
-              head.append(
-                card.ref === void 0 ? (() => {
-                  const title = document.createElement("span");
-                  title.textContent = safeViewerText6(card.title, 128);
-                  setPart6(title, "card.ref");
-                  return title;
-                })() : ref(document, { ...card.ref, label: card.title }, options.onNavigate)
-              );
-              if (card.badge !== void 0) {
-                const badge = document.createElement("span");
-                badge.className = "modkit-card__chip";
-                badge.dataset["tone"] = "neutral";
-                badge.textContent = safeViewerText6(card.badge, 64);
-                setPart6(badge, "card.chip");
-                head.append(badge);
-              }
-              const body = document.createElement("div");
-              body.className = "modkit-card__subcard-body";
-              setPart6(body, "card.subcard-body");
-              renderFields(document, body, card.fields, inspectKnowledge);
-              item.append(head, body);
-              list.append(item);
-            }
-            panel.append(list);
-            return;
-          }
-          case "text": {
-            const pre = document.createElement("pre");
-            pre.className = "modkit-card__text";
-            pre.textContent = safeViewerText6(section.text, 2e5);
-            setPart6(pre, "text");
-            panel.append(pre);
-            return;
-          }
-          case "custom": {
-            const host = document.createElement("div");
-            host.className = "modkit-card__custom";
-            setPart6(host, "card.custom");
-            panel.append(host);
-            void section.render(host);
-            return;
-          }
-          default:
-            return;
-        }
-      }
-    }))
   });
-  root.append(accordion.root);
-  return {
-    root,
-    destroy() {
-      cancelLookup("card-destroyed");
-      accordion.destroy();
-      root.remove();
-    }
-  };
 }
-var subjectCardViewer = defineViewerModule4({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope4(args.signal);
-    const root = createSurface4(args.container, "Subject card");
-    try {
-      const lease2 = await unknownSourceLease4(
+function withEnglishUiFallback5(localizer, messages) {
+  const fallback = createEnglishUiLocalizer5(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+var HEX_WINDOW_BYTES = 4096;
+var HexWindowModel = class {
+  constructor(source2) {
+    this.source = source2;
+  }
+  source;
+  async read(offset, signal) {
+    if (offset < 0n) throw new RangeError("hex offset must be non-negative");
+    const size = await this.source.size();
+    if (offset > size) throw new RangeError("hex offset exceeds source size");
+    const length = Number(
+      size - offset > BigInt(HEX_WINDOW_BYTES) ? HEX_WINDOW_BYTES : size - offset
+    );
+    const bytes2 = await this.source.read(offset, length, signal);
+    const lines = [];
+    for (let index = 0; index < bytes2.length; index += 16) {
+      const chunk = bytes2.slice(index, index + 16);
+      const address = (offset + BigInt(index)).toString(16).padStart(16, "0");
+      const hex = [...chunk].map((value2) => value2.toString(16).padStart(2, "0")).join(" ");
+      const ascii = [...chunk].map((value2) => value2 >= 32 && value2 <= 126 ? String.fromCharCode(value2) : ".").join("");
+      lines.push(`${address}  ${hex.padEnd(47)}  ${ascii}`);
+    }
+    return { offset, bytes: bytes2, text: lines.join("\n") };
+  }
+};
+function createHexViewer(options = {}) {
+  const localizer = withEnglishUiFallback5(options.localizer, HEX_FALLBACK_MESSAGES);
+  return defineViewerModule4({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope4(args.signal);
+      const root = createSurface4(args.container, localizer.text("viewer.hex"));
+      const lease2 = await unknownSourceLease3(
         args.sources,
         args.slot,
-        "common.view/subject-facts-source"
+        "common.view/byte-range-source"
       );
-      if (lease2 === void 0) throw new TypeError("subject facts binding is unavailable");
+      if (lease2 === void 0) throw new TypeError("hex binding is unavailable");
       scope.lease(lease2);
-      const sections = await loadSubjectCardSections(lease2.value, {
-        signal: scope.signal
+      const model = new HexWindowModel(lease2.value);
+      const controls = element5(root, "div", {
+        className: "modkit-viewer__toolbar",
+        part: "hex.toolbar"
       });
-      const card = createSubjectCard(root.ownerDocument, {
-        label: "Subject card",
-        sections,
-        ...args.knowledge === void 0 ? {} : { knowledge: args.knowledge }
+      const offset = element5(controls, "input", { part: "hex.offset-input" });
+      offset.type = "text";
+      offset.inputMode = "numeric";
+      offset.value = "0";
+      offset.setAttribute("aria-label", localizer.text("viewer.byteOffset"));
+      const go = element5(controls, "button", {
+        text: localizer.text("viewer.go"),
+        part: "hex.go"
       });
-      root.append(card.root);
-      scope.cleanup(() => card.destroy());
-      root.dataset["revision"] = args.descriptor.revision;
+      go.type = "button";
+      const content = element5(root, "pre", { className: "modkit-viewer__hex", part: "hex.content" });
+      content.tabIndex = 0;
+      const render2 = async () => {
+        const value2 = /^(?:0x)?[0-9a-f]+$/iu.test(offset.value.trim()) ? BigInt(offset.value.trim()) : -1n;
+        const window = await model.read(value2, scope.signal);
+        setViewerText5(content, window.text);
+        content.dataset["offset"] = window.offset.toString(10);
+      };
+      await render2();
+      go.addEventListener("click", render2);
+      scope.cleanup(() => go.removeEventListener("click", render2));
       return createViewerMount3(root, scope, args, ({ descriptor }) => {
         root.dataset["revision"] = descriptor.revision;
       });
-    } catch (error3) {
-      await scope.close();
-      root.remove();
-      throw error3;
     }
-  }
-});
+  });
+}
+var hexViewer = createHexViewer();
 
-// packages/ui/dist/calculations/index.js
+// packages/ui/dist/hex-editor/index.js
 var PARTS7 = Object.freeze([
   // shared surface
   "viewer",
@@ -48574,16 +49849,16 @@ var STATES7 = Object.freeze([
   "drop-target"
 ]);
 var STATE_SET7 = new Set(STATES7);
-function setPart7(element20, part) {
+function setPart7(element22, part) {
   if (!PART_SET7.has(part)) throw new TypeError(`unregistered part: ${part}`);
-  element20.setAttribute(PART_ATTRIBUTE7, part);
+  element22.setAttribute(PART_ATTRIBUTE7, part);
 }
-function setState7(element20, states) {
+function setState7(element22, states) {
   for (const state of states) {
     if (!STATE_SET7.has(state)) throw new TypeError(`unregistered state: ${state}`);
   }
-  if (states.length === 0) element20.removeAttribute(STATE_ATTRIBUTE7);
-  else element20.setAttribute(STATE_ATTRIBUTE7, [...new Set(states)].join(" "));
+  if (states.length === 0) element22.removeAttribute(STATE_ATTRIBUTE7);
+  else element22.setAttribute(STATE_ATTRIBUTE7, [...new Set(states)].join(" "));
 }
 var VIEWER_CSP7 = Object.freeze({
   defaultSrc: "'none'",
@@ -48621,12 +49896,15 @@ var VIEWER_CSP_TEXT7 = policyText7(VIEWER_CSP7);
 var VIEWER_CSP_TRUSTED_EDITOR_TEXT7 = policyText7(VIEWER_CSP_TRUSTED_EDITOR7);
 var HOSTILE_TEXT7 = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/gu;
 function safeViewerText7(value2, maximum = 1e6) {
-  const text22 = String(value2);
-  const bounded = text22.length > maximum ? `${text22.slice(0, maximum)}\u2026` : text22;
+  const text3 = String(value2);
+  const bounded = text3.length > maximum ? `${text3.slice(0, maximum)}\u2026` : text3;
   return bounded.replace(HOSTILE_TEXT7, (character) => {
     const code = character.codePointAt(0)?.toString(16).toUpperCase().padStart(4, "0") ?? "0000";
     return `\\u{${code}}`;
   });
+}
+function setViewerText6(node, value2, maximum) {
+  node.textContent = safeViewerText7(value2, maximum);
 }
 function requireContainer5(value2) {
   if (typeof value2 !== "object" || value2 === null || !("ownerDocument" in value2) || !("replaceChildren" in value2) || typeof value2.replaceChildren !== "function") {
@@ -48646,7 +49924,17 @@ function createSurface5(container, label) {
   host.replaceChildren(root);
   return root;
 }
-function bindingFor5(slot, contract) {
+function element6(parent, tag, options = {}) {
+  const node = parent.ownerDocument.createElement(tag);
+  if (options.className !== void 0) node.className = options.className;
+  if (options.role !== void 0) node.setAttribute("role", options.role);
+  if (options.text !== void 0) setViewerText6(node, options.text);
+  if (options.part !== void 0) setPart7(node, options.part);
+  if (options.state !== void 0) setState7(node, options.state);
+  parent.append(node);
+  return node;
+}
+function bindingFor4(slot, contract) {
   return slot.bindings.find((binding) => "contract" in binding && binding.contract === contract);
 }
 var ViewerMountScope5 = class {
@@ -48696,173 +49984,426 @@ function createViewerMount4(root, scope, initial, render2) {
 function defineViewerModule5(module) {
   return Object.freeze(module);
 }
-function unknownSourceLease5(sources, slot, contract) {
-  const binding = bindingFor5(slot, contract);
+function unknownSourceLease4(sources, slot, contract) {
+  const binding = bindingFor4(slot, contract);
   if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
   return sources.get(binding);
 }
-function positiveLimit3(value2, label) {
-  if (!Number.isSafeInteger(value2) || value2 <= 0) throw new RangeError(`${label} must be positive`);
-  return value2;
-}
-async function loadPages(source2, maximum, pageSize, signal) {
-  const items = [];
-  let cursor3;
-  const seen = /* @__PURE__ */ new Set();
-  while (items.length < maximum) {
-    const page2 = await source2.calculations(
-      {
-        ...cursor3 === void 0 ? {} : { cursor: cursor3 },
-        limit: Math.min(pageSize, maximum - items.length)
-      },
-      signal
-    );
-    items.push(...page2.items);
-    if (page2.nextCursor === void 0) return { items: Object.freeze(items), capped: false };
-    if (seen.has(page2.nextCursor))
-      throw new Error("subject calculations source repeated a page cursor");
-    seen.add(page2.nextCursor);
-    cursor3 = page2.nextCursor;
-  }
-  return { items: Object.freeze(items), capped: cursor3 !== void 0 };
-}
-async function loadSubjectCalculations(source2, options = {}) {
-  const maximum = positiveLimit3(options.maximum ?? 512, "maximum");
-  const pageSize = positiveLimit3(options.pageSize ?? 64, "pageSize");
-  const [summary, page2] = await Promise.all([
-    source2.summary(options.signal),
-    loadPages(source2, maximum, pageSize, options.signal)
-  ]);
-  return Object.freeze({ summary, calculations: page2.items, capped: page2.capped });
-}
-function displayValue(value2) {
-  if (value2 === void 0) return "not available";
-  if (typeof value2 === "string") return value2;
-  if (value2 === null || typeof value2 === "number" || typeof value2 === "boolean")
-    return String(value2);
-  return JSON.stringify(value2);
-}
-function text2(document, part, value2) {
-  const node = document.createElement("span");
-  setPart7(node, part);
-  node.textContent = safeViewerText7(value2, 2048);
-  return node;
-}
-function createSubjectCalculationsView(document, snapshot3) {
-  const root = document.createElement("article");
-  root.className = "modkit-calculations";
-  root.setAttribute("aria-label", "Subject calculations");
-  setPart7(root, "calculations");
-  const summary = document.createElement("p");
-  setPart7(summary, "calculations.summary");
-  const visible = snapshot3.calculations.length;
-  summary.textContent = safeViewerText7(
-    `${visible} of ${snapshot3.summary.totalCalculations} calculations \xB7 ${snapshot3.capped ? "capped by the viewer" : snapshot3.summary.completeness}${snapshot3.summary.reason === void 0 ? "" : ` \xB7 ${snapshot3.summary.reason}`}`,
-    1024
-  );
-  if (snapshot3.capped || snapshot3.summary.completeness !== "complete")
-    setState7(summary, ["degraded"]);
-  root.append(summary);
-  const list = document.createElement("div");
-  setPart7(list, "calculations.list");
-  root.append(list);
-  for (const calculation of snapshot3.calculations) {
-    const item = document.createElement("section");
-    setPart7(item, "calculations.item");
-    item.dataset["status"] = calculation.status;
-    const heading = document.createElement("h3");
-    setPart7(heading, "calculations.heading");
-    heading.textContent = safeViewerText7(calculation.label, 256);
-    const result = text2(
-      document,
-      "calculations.result",
-      `${displayValue(calculation.value)}${calculation.unit === void 0 ? "" : ` ${calculation.unit}`} \xB7 ${calculation.status}`
-    );
-    const formula = text2(
-      document,
-      "calculations.formula",
-      `${calculation.formula.name} ${calculation.formula.version}: ${calculation.formula.expression}`
-    );
-    item.append(heading, result, formula);
-    if (calculation.provenance.length > 0) {
-      item.append(
-        text2(
-          document,
-          "calculations.formula",
-          `Sources: ${calculation.provenance.map((origin) => origin.label).join(" \xB7 ")}`
-        )
-      );
+var HEX_EDITOR_FALLBACK_MESSAGES = {
+  "editor.bytesChanged": "{count} byte(s) changed",
+  "editor.committedRanges": "Committed {count} range(s) \u2014 reopen the file before editing it again",
+  "editor.conflictChanged": "Conflict: source changed",
+  "editor.hex": "Hex editor",
+  "editor.notAuthorized": "Not authorised",
+  "editor.prepareRejected": "Prepare rejected: {reason}",
+  "editor.rejectedReason": "Rejected: {reason}",
+  "editor.rejectedValidation": "Rejected by validation",
+  "editor.saveFailed": "Save failed: {reason}",
+  "editor.saveRejectedReason": "Save rejected: {reason}",
+  "editor.saveState": "Save {state}",
+  "editor.validating": "Validating\u2026",
+  "viewer.byteAt": "byte at {offset}",
+  "viewer.byteOffset": "Byte offset",
+  "viewer.characterAt": "character at {offset}",
+  "viewer.go": "Go",
+  "viewer.hexEditing": "Hex editing",
+  "viewer.ready": "Ready",
+  "viewer.revert": "Revert",
+  "viewer.save": "Save"
+};
+var HEX_FALLBACK_MESSAGES2 = {
+  "viewer.byteOffset": "Byte offset",
+  "viewer.go": "Go",
+  "viewer.hex": "Hex viewer"
+};
+function createEnglishUiLocalizer6(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
     }
-    if (calculation.inputs.length > 0) {
-      const inputs = document.createElement("dl");
-      setPart7(inputs, "calculations.inputs");
-      for (const input of calculation.inputs) {
-        const row = document.createElement("div");
-        setPart7(row, "calculations.input");
-        const label = document.createElement("dt");
-        label.textContent = safeViewerText7(input.label, 256);
-        const value2 = document.createElement("dd");
-        value2.textContent = safeViewerText7(
-          `${displayValue(input.value)}${input.unit === void 0 ? "" : ` ${input.unit}`} \xB7 ${input.state}${input.provenance.length === 0 ? "" : ` \xB7 ${input.provenance.map((origin) => origin.label).join(" \xB7 ")}`}`,
-          2048
-        );
-        row.append(label, value2);
-        inputs.append(row);
-      }
-      item.append(inputs);
-    }
-    if (calculation.warnings.length > 0) {
-      const warnings = document.createElement("ul");
-      setPart7(warnings, "calculations.warnings");
-      for (const warning of calculation.warnings) {
-        const entry2 = document.createElement("li");
-        entry2.textContent = safeViewerText7(`${warning.code}: ${warning.message}`, 2048);
-        warnings.append(entry2);
-      }
-      item.append(warnings);
-    }
-    list.append(item);
-  }
-  if (snapshot3.calculations.length === 0) {
-    const empty = document.createElement("p");
-    setPart7(empty, "viewer.empty");
-    empty.textContent = "This subject publishes no calculations.";
-    list.append(empty);
-  }
-  return { root, destroy: () => root.remove() };
+  });
 }
-var subjectCalculationsViewer = defineViewerModule5({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope5(args.signal);
-    const root = createSurface5(args.container, "Subject calculations");
-    try {
-      const lease2 = await unknownSourceLease5(
+function withEnglishUiFallback6(localizer, messages) {
+  const fallback = createEnglishUiLocalizer6(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+var HEX_WINDOW_BYTES2 = 4096;
+var HexWindowModel2 = class {
+  constructor(source2) {
+    this.source = source2;
+  }
+  source;
+  async read(offset, signal) {
+    if (offset < 0n) throw new RangeError("hex offset must be non-negative");
+    const size = await this.source.size();
+    if (offset > size) throw new RangeError("hex offset exceeds source size");
+    const length = Number(
+      size - offset > BigInt(HEX_WINDOW_BYTES2) ? HEX_WINDOW_BYTES2 : size - offset
+    );
+    const bytes2 = await this.source.read(offset, length, signal);
+    const lines = [];
+    for (let index = 0; index < bytes2.length; index += 16) {
+      const chunk = bytes2.slice(index, index + 16);
+      const address = (offset + BigInt(index)).toString(16).padStart(16, "0");
+      const hex = [...chunk].map((value2) => value2.toString(16).padStart(2, "0")).join(" ");
+      const ascii = [...chunk].map((value2) => value2 >= 32 && value2 <= 126 ? String.fromCharCode(value2) : ".").join("");
+      lines.push(`${address}  ${hex.padEnd(47)}  ${ascii}`);
+    }
+    return { offset, bytes: bytes2, text: lines.join("\n") };
+  }
+};
+function createHexViewer2(options = {}) {
+  const localizer = withEnglishUiFallback6(options.localizer, HEX_FALLBACK_MESSAGES2);
+  return defineViewerModule5({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope5(args.signal);
+      const root = createSurface5(args.container, localizer.text("viewer.hex"));
+      const lease2 = await unknownSourceLease4(
         args.sources,
         args.slot,
-        "common.view/subject-calculations-source"
+        "common.view/byte-range-source"
       );
-      if (lease2 === void 0) throw new TypeError("subject calculations binding is unavailable");
+      if (lease2 === void 0) throw new TypeError("hex binding is unavailable");
       scope.lease(lease2);
-      const snapshot3 = await loadSubjectCalculations(lease2.value, {
-        signal: scope.signal
+      const model = new HexWindowModel2(lease2.value);
+      const controls = element6(root, "div", {
+        className: "modkit-viewer__toolbar",
+        part: "hex.toolbar"
       });
-      const view = createSubjectCalculationsView(root.ownerDocument, snapshot3);
-      root.append(view.root);
-      scope.cleanup(() => view.destroy());
-      root.dataset["revision"] = args.descriptor.revision;
+      const offset = element6(controls, "input", { part: "hex.offset-input" });
+      offset.type = "text";
+      offset.inputMode = "numeric";
+      offset.value = "0";
+      offset.setAttribute("aria-label", localizer.text("viewer.byteOffset"));
+      const go = element6(controls, "button", {
+        text: localizer.text("viewer.go"),
+        part: "hex.go"
+      });
+      go.type = "button";
+      const content = element6(root, "pre", { className: "modkit-viewer__hex", part: "hex.content" });
+      content.tabIndex = 0;
+      const render2 = async () => {
+        const value2 = /^(?:0x)?[0-9a-f]+$/iu.test(offset.value.trim()) ? BigInt(offset.value.trim()) : -1n;
+        const window = await model.read(value2, scope.signal);
+        setViewerText6(content, window.text);
+        content.dataset["offset"] = window.offset.toString(10);
+      };
+      await render2();
+      go.addEventListener("click", render2);
+      scope.cleanup(() => go.removeEventListener("click", render2));
       return createViewerMount4(root, scope, args, ({ descriptor }) => {
         root.dataset["revision"] = descriptor.revision;
       });
-    } catch (error3) {
-      await scope.close();
-      root.remove();
-      throw error3;
     }
-  }
+  });
+}
+var hexViewer2 = createHexViewer2();
+var EDITOR_SAVE_REQUEST2 = "modkit-editor-save-request";
+function handleEditorSaveRequest(root, save) {
+  const listener = (event) => {
+    const request = event;
+    request.detail.waitUntil(save());
+  };
+  root.addEventListener(EDITOR_SAVE_REQUEST2, listener);
+  return () => root.removeEventListener(EDITOR_SAVE_REQUEST2, listener);
+}
+var BYTE_RANGE_SOURCE = Object.freeze({
+  bindingId: bindingId("editor-hex"),
+  contract: "common.view/byte-range-source",
+  major: 1
 });
+var HEX_BYTE = /^[0-9a-f]{1,2}$/iu;
+function hexChangeSet(runs, targets) {
+  const target = targets[0];
+  if (target === void 0) throw new TypeError("the edit session carries no target to write to");
+  return {
+    targets,
+    edits: runs.map((run) => ({
+      operation: "replace",
+      targetId: target.targetId,
+      source: target.ownerSource,
+      range: { kind: "bytes", offset: run.offset, length: BigInt(run.bytes.length) },
+      payload: { kind: "inline", bytes: run.bytes },
+      label: "Edit bytes"
+    })),
+    provenance: { actor: "user" }
+  };
+}
+function coalesceHexEdits(edits) {
+  const sorted = [...edits].sort((left, right) => left.offset < right.offset ? -1 : 1);
+  const runs = [];
+  for (const edit of sorted) {
+    const last = runs[runs.length - 1];
+    if (last !== void 0 && last.offset + BigInt(last.values.length) === edit.offset) {
+      last.values.push(edit.after);
+      continue;
+    }
+    runs.push({ offset: edit.offset, values: [edit.after] });
+  }
+  return runs.map((run) => ({ offset: run.offset, bytes: new Uint8Array(run.values) }));
+}
+function createHexEditor(options = {}) {
+  const localizer = withEnglishUiFallback6(options.localizer, HEX_EDITOR_FALLBACK_MESSAGES);
+  return {
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope5(args.signal);
+      const root = createSurface5(args.container, localizer.text("editor.hex"));
+      root.dataset["modkitEditor"] = "hex";
+      const lease2 = await args.sources.get(BYTE_RANGE_SOURCE);
+      if (lease2 === void 0) throw new TypeError("hex editor binding is unavailable");
+      scope.lease(lease2);
+      const source2 = lease2.value;
+      const model = new HexWindowModel2(source2);
+      const toolbar = element6(root, "div", { part: "hex.toolbar", role: "toolbar" });
+      toolbar.setAttribute("aria-label", localizer.text("viewer.hexEditing"));
+      const offsetInput = element6(toolbar, "input", {
+        part: "hex.offset-input"
+      });
+      offsetInput.type = "text";
+      offsetInput.value = "0";
+      offsetInput.setAttribute("aria-label", localizer.text("viewer.byteOffset"));
+      const go = element6(toolbar, "button", {
+        text: localizer.text("viewer.go"),
+        part: "hex.go"
+      });
+      go.type = "button";
+      const save = element6(toolbar, "button", {
+        text: localizer.text("viewer.save"),
+        part: "operations.button"
+      });
+      save.type = "button";
+      save.dataset["modkitAction"] = "save";
+      save.disabled = true;
+      const revert = element6(toolbar, "button", {
+        text: localizer.text("viewer.revert"),
+        part: "operations.button"
+      });
+      revert.type = "button";
+      revert.disabled = true;
+      const status = element6(toolbar, "output", {
+        text: localizer.text("viewer.ready"),
+        part: "viewer.status"
+      });
+      const grid = element6(root, "div", { part: "hex.content" });
+      grid.setAttribute("role", "grid");
+      let windowOffset = 0n;
+      let original = new Uint8Array();
+      const pending = /* @__PURE__ */ new Map();
+      const hexCells = /* @__PURE__ */ new Map();
+      const asciiCells = /* @__PURE__ */ new Map();
+      const printable = (value2) => value2 >= 32 && value2 <= 126 ? String.fromCharCode(value2) : ".";
+      const announce = () => {
+        if (pending.size === 0) return;
+        const runs = coalesceHexEdits([...pending.values()]);
+        void args.edit.propose(hexChangeSet(runs, args.edit.targets));
+      };
+      const setByte = (absolute, base, next) => {
+        const key3 = absolute.toString(10);
+        if (next === base) pending.delete(key3);
+        else pending.set(key3, { offset: absolute, before: base, after: next });
+        const hex = hexCells.get(key3);
+        if (hex !== void 0) {
+          hex.textContent = next.toString(16).padStart(2, "0");
+          setState7(hex, next === base ? [] : ["mutating"]);
+        }
+        const ascii = asciiCells.get(key3);
+        if (ascii !== void 0) {
+          ascii.textContent = printable(next);
+          setState7(ascii, next === base ? [] : ["mutating"]);
+        }
+        syncDirty();
+        announce();
+      };
+      const syncDirty = () => {
+        const dirty = pending.size > 0;
+        save.disabled = !dirty;
+        revert.disabled = !dirty;
+        setState7(root, dirty ? ["mutating"] : []);
+        setViewerText6(
+          status,
+          dirty ? localizer.text("editor.bytesChanged", { count: pending.size }) : localizer.text("viewer.ready")
+        );
+      };
+      const renderWindow = async () => {
+        const raw = offsetInput.value.trim();
+        const parsed = /^(?:0x)?[0-9a-f]+$/iu.test(raw) ? BigInt(raw) : 0n;
+        const view = await model.read(parsed, scope.signal);
+        windowOffset = view.offset;
+        original = view.bytes;
+        pending.clear();
+        drawWindow();
+      };
+      const drawWindow = () => {
+        grid.replaceChildren();
+        for (let row = 0; row < original.length; row += 16) {
+          const line = element6(grid, "div", { part: "hex.row" });
+          line.setAttribute("role", "row");
+          const address = (windowOffset + BigInt(row)).toString(16).padStart(16, "0");
+          element6(line, "span", { text: address, part: "hex.gutter" });
+          const chunk = original.slice(row, row + 16);
+          for (const [column, value2] of [...chunk].entries()) {
+            const absolute = windowOffset + BigInt(row + column);
+            const cell = element6(line, "span", { part: "hex.cell" });
+            cell.setAttribute("role", "gridcell");
+            cell.contentEditable = "true";
+            cell.spellcheck = false;
+            cell.dataset["offset"] = absolute.toString(10);
+            cell.textContent = value2.toString(16).padStart(2, "0");
+            cell.setAttribute(
+              "aria-label",
+              localizer.text("viewer.byteAt", { offset: absolute.toString() })
+            );
+            hexCells.set(absolute.toString(10), cell);
+            cell.addEventListener("beforeinput", (event) => {
+              const data = event.data;
+              if (data === null) return;
+              const current = (cell.textContent ?? "").replace(/\s/gu, "");
+              if (!/^[0-9a-f]$/iu.test(data) || current.length >= 2) event.preventDefault();
+            });
+            cell.addEventListener("blur", () => {
+              const text3 = (cell.textContent ?? "").trim();
+              if (!HEX_BYTE.test(text3)) {
+                const key3 = absolute.toString(10);
+                const known = pending.get(key3)?.after ?? value2;
+                setByte(absolute, value2, known);
+                return;
+              }
+              setByte(absolute, value2, Number.parseInt(text3, 16));
+            });
+          }
+          const ascii = element6(line, "span", { part: "hex.ascii" });
+          for (const [column, value2] of [...chunk].entries()) {
+            const absolute = windowOffset + BigInt(row + column);
+            const glyph = element6(ascii, "span");
+            glyph.contentEditable = "true";
+            glyph.spellcheck = false;
+            glyph.textContent = printable(value2);
+            glyph.setAttribute(
+              "aria-label",
+              localizer.text("viewer.characterAt", { offset: absolute.toString() })
+            );
+            asciiCells.set(absolute.toString(10), glyph);
+            glyph.addEventListener("beforeinput", (event) => {
+              const data = event.data;
+              if (data === null) return;
+              if (data.length !== 1 || data.charCodeAt(0) < 32 || data.charCodeAt(0) > 126) {
+                event.preventDefault();
+              }
+            });
+            glyph.addEventListener("blur", () => {
+              const text3 = glyph.textContent ?? "";
+              const code = text3.length === 1 ? text3.charCodeAt(0) : Number.NaN;
+              if (Number.isNaN(code) || code < 32 || code > 126) {
+                const known = pending.get(absolute.toString(10))?.after ?? value2;
+                setByte(absolute, value2, known);
+                return;
+              }
+              setByte(absolute, value2, code);
+            });
+          }
+        }
+        syncDirty();
+      };
+      const commit = async () => {
+        if (pending.size === 0) return true;
+        const runs = coalesceHexEdits([...pending.values()]);
+        const change = hexChangeSet(runs, args.edit.targets);
+        setViewerText6(status, localizer.text("editor.validating"));
+        const validation = await args.edit.propose(change);
+        if (!validation.valid) {
+          setState7(root, ["error"]);
+          const first = validation.diagnostics[0];
+          setViewerText6(
+            status,
+            first === void 0 ? localizer.text("editor.rejectedValidation") : localizer.text("editor.rejectedReason", { reason: first.message })
+          );
+          return false;
+        }
+        const plan = await args.edit.plan(change);
+        const authorization = await args.authorization.request(plan);
+        if (authorization === void 0) {
+          setViewerText6(status, localizer.text("editor.notAuthorized"));
+          return false;
+        }
+        const prepared = await args.commit.prepare(plan, { grant: authorization.grant });
+        if (prepared.state !== "ready") {
+          setState7(root, ["error"]);
+          setViewerText6(
+            status,
+            prepared.state === "conflict" ? localizer.text("editor.conflictChanged") : localizer.text("editor.prepareRejected", { reason: prepared.reason ?? "" })
+          );
+          return false;
+        }
+        const receipt = await args.commit.commit(prepared.prepared, {
+          grant: authorization.grant
+        });
+        if (receipt.state !== "committed") {
+          setState7(root, ["error"]);
+          setViewerText6(
+            status,
+            receipt.state === "not-applied" ? localizer.text("editor.saveRejectedReason", { reason: receipt.reason ?? "" }) : localizer.text("editor.saveState", { state: receipt.state })
+          );
+          return false;
+        }
+        const updated = new Uint8Array(original);
+        for (const run of runs) {
+          const start = Number(run.offset - windowOffset);
+          if (start >= 0 && start + run.bytes.length <= updated.length)
+            updated.set(run.bytes, start);
+        }
+        original = updated;
+        pending.clear();
+        drawWindow();
+        setState7(root, []);
+        setViewerText6(status, localizer.text("editor.committedRanges", { count: runs.length }));
+        return true;
+      };
+      go.addEventListener("click", () => void renderWindow());
+      revert.addEventListener("click", () => void renderWindow());
+      save.addEventListener("click", () => {
+        commit().catch((error3) => {
+          setState7(root, ["error"]);
+          setViewerText6(
+            status,
+            localizer.text("editor.saveFailed", {
+              reason: error3 instanceof Error ? error3.message : String(error3)
+            })
+          );
+        });
+      });
+      const removeSaveRequest = handleEditorSaveRequest(root, commit);
+      await renderWindow();
+      return {
+        async update(next) {
+          root.dataset["revision"] = String(next.revision);
+          await renderWindow();
+        },
+        async unmount() {
+          removeSaveRequest();
+          await scope.close();
+          root.remove();
+        }
+      };
+    }
+  };
+}
+var hexEditor = createHexEditor();
 
-// packages/ui/dist/editor/index.js
+// packages/ui/dist/image/index.js
 var PARTS8 = Object.freeze([
   // shared surface
   "viewer",
@@ -49266,7 +50807,7 @@ function safeViewerText8(value2, maximum = 1e6) {
     return `\\u{${code}}`;
   });
 }
-function setViewerText5(node, value2, maximum) {
+function setViewerText7(node, value2, maximum) {
   node.textContent = safeViewerText8(value2, maximum);
 }
 function requireContainer6(value2) {
@@ -49287,15 +50828,18 @@ function createSurface6(container, label) {
   host.replaceChildren(root);
   return root;
 }
-function element5(parent, tag, options = {}) {
+function element7(parent, tag, options = {}) {
   const node = parent.ownerDocument.createElement(tag);
   if (options.className !== void 0) node.className = options.className;
   if (options.role !== void 0) node.setAttribute("role", options.role);
-  if (options.text !== void 0) setViewerText5(node, options.text);
+  if (options.text !== void 0) setViewerText7(node, options.text);
   if (options.part !== void 0) setPart8(node, options.part);
   if (options.state !== void 0) setState8(node, options.state);
   parent.append(node);
   return node;
+}
+function bindingFor5(slot, contract) {
+  return slot.bindings.find((binding) => "contract" in binding && binding.contract === contract);
 }
 var ViewerMountScope6 = class {
   controller = new AbortController();
@@ -49326,200 +50870,472 @@ var ViewerMountScope6 = class {
     for (const lease2 of this.#leases.reverse()) await lease2.release();
   }
 };
-var EDITOR_SAVE_REQUEST2 = "modkit-editor-save-request";
-function handleEditorSaveRequest(root, save) {
-  const listener = (event) => {
-    const request = event;
-    request.detail.waitUntil(save());
-  };
-  root.addEventListener(EDITOR_SAVE_REQUEST2, listener);
-  return () => root.removeEventListener(EDITOR_SAVE_REQUEST2, listener);
+function createViewerMount5(root, scope, initial, render2) {
+  let state = initial;
+  return Object.freeze({
+    async update(args) {
+      if (scope.signal.aborted) return;
+      state = args;
+      root.setAttribute("aria-label", safeViewerText8(args.slot.contributionId, 512));
+      await render2(state);
+    },
+    async unmount() {
+      await scope.close();
+      root.remove();
+    }
+  });
 }
-var TEXT_DATA_SOURCE = Object.freeze({
-  bindingId: bindingId("editor-text"),
-  contract: "common.view/text-data-source",
-  major: 1
-});
-function defineEditorModule(module) {
+function defineViewerModule6(module) {
   return Object.freeze(module);
 }
-async function loadText(source2, maximum, signal) {
-  const info = await source2.info();
-  if (info.bytes > BigInt(maximum))
-    throw new RangeError("editor source exceeds bounded text budget");
-  const slice = await source2.slice(
-    {
-      kind: "from-line",
-      line: 0,
-      lineCount: info.lines === "unknown" ? Number.MAX_SAFE_INTEGER : Math.max(1, info.lines),
-      maxBytes: maximum
-    },
-    signal
-  );
-  if (!slice.complete) throw new RangeError("editor source requires a streaming editor");
-  return slice.text;
+function unknownSourceLease5(sources, slot, contract) {
+  const binding = bindingFor5(slot, contract);
+  if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
+  return sources.get(binding);
 }
-function defaultChangeSet(text3, targets) {
-  return {
-    targets,
-    edits: targets.map((target) => ({
-      operation: "replace",
-      targetId: target.targetId,
-      source: target.ownerSource,
-      payload: { kind: "text", text: text3 },
-      label: "Edit text"
-    })),
-    provenance: { actor: "user" }
-  };
+var t3 = (name, tier, type, description, extra = {}) => ({ name, tier, type, isPublic: true, description, ...extra });
+var PALETTE_STEPS2 = [
+  "050",
+  "100",
+  "200",
+  "300",
+  "400",
+  "500",
+  "600",
+  "700",
+  "800",
+  "900"
+];
+var PALETTE_HUES2 = ["neutral", "accent", "ok", "warn", "error", "info"];
+var tier12 = PALETTE_HUES2.flatMap(
+  (hue) => PALETTE_STEPS2.map((step) => t3(`palette.${hue}.${step}`, 1, "color", `${hue} ramp step ${step}`))
+);
+var tier22 = [
+  // surfaces
+  t3("color.bg", 2, "color", "window ground behind everything"),
+  t3("color.surface", 2, "color", "default component surface"),
+  t3("color.raised", 2, "color", "surface above the default plane"),
+  t3("color.sunken", 2, "color", "inset surface such as an input well"),
+  t3("color.overlay", 2, "color", "floating surface: menu, popover, dialog"),
+  t3("color.scrim", 2, "color", "dimming layer behind a modal"),
+  // text
+  t3("color.fg", 2, "color", "primary text"),
+  t3("color.fg-muted", 2, "color", "secondary text"),
+  t3("color.fg-subtle", 2, "color", "tertiary text and placeholders"),
+  t3("color.fg-inverse", 2, "color", "text on an accent fill"),
+  t3("color.fg-disabled", 2, "color", "disabled text"),
+  t3("color.fg-link", 2, "color", "hyperlink text"),
+  t3("color.fg-destructive", 2, "color", "destructive action text"),
+  // lines
+  t3("color.border", 2, "color", "default separator and component border"),
+  t3("color.border-strong", 2, "color", "emphasised border"),
+  t3("color.separator", 2, "color", "hairline between list sections"),
+  // interaction
+  t3("color.accent", 2, "color", "primary action fill"),
+  t3("color.accent-fg", 2, "color", "text on the accent fill"),
+  t3("color.accent-muted", 2, "color", "low-emphasis accent wash"),
+  t3("color.accent-muted-fg", 2, "color", "text on the accent wash"),
+  t3("color.focus", 2, "color", "focus ring"),
+  t3("color.hover", 2, "color", "hover wash"),
+  t3("color.active", 2, "color", "pressed wash"),
+  t3("color.selection", 2, "color", "active selection fill"),
+  t3("color.selection-inactive", 2, "color", "selection fill when the surface is unfocused"),
+  t3("color.selection-fg", 2, "color", "text on a selection fill"),
+  t3("color.match-highlight", 2, "color", "search match highlight"),
+  t3("color.drop-target", 2, "color", "drag-and-drop target indicator"),
+  t3("color.readonly", 2, "color", "read-only field wash"),
+  // status
+  ...["ok", "warn", "error", "info"].flatMap((s2) => [
+    t3(`status.${s2}`, 2, "color", `${s2} indicator colour`),
+    t3(`status.${s2}-fg`, 2, "color", `text on a ${s2} fill`),
+    t3(`status.${s2}-bg`, 2, "color", `${s2} background wash`),
+    t3(`status.${s2}-border`, 2, "color", `${s2} border`)
+  ]),
+  // scrollbars
+  t3("color.scrollbar-track", 2, "color", "scrollbar trough"),
+  t3("color.scrollbar-thumb", 2, "color", "scrollbar thumb"),
+  t3("color.scrollbar-thumb-hover", 2, "color", "scrollbar thumb, hovered"),
+  t3("color.scrollbar-thumb-active", 2, "color", "scrollbar thumb while dragging"),
+  t3("color.scrollbar-shadow", 2, "color", "hairline separating a scrolled pane from its content"),
+  // canvas / GPU surfaces — these are not UI chrome and need their own roles
+  t3("color.canvas-bg", 2, "color", "canvas or WebGL scene ground"),
+  t3("color.canvas-grid", 2, "color", "scene grid lines"),
+  t3("color.canvas-gizmo", 2, "color", "scene gizmo and axis handles"),
+  // Axis identity is a convention users read at a glance (X red, Y green, Z blue), so the three
+  // get their own roles rather than borrowing from the categorical ramp, which a theme may reorder.
+  t3("color.axis-x", 2, "color", "X axis handle and line"),
+  t3("color.axis-y", 2, "color", "Y axis handle and line"),
+  t3("color.axis-z", 2, "color", "Z axis handle and line"),
+  t3("color.canvas-selection", 2, "color", "selected geometry outline"),
+  // graph / chart categorical ramp
+  ...["1", "2", "3", "4", "5", "6"].map(
+    (n2) => t3(`chart.categorical-${n2}`, 2, "color", `categorical series ${n2}`)
+  ),
+  t3("color.graph-node", 2, "color", "relation-graph node fill"),
+  t3("color.graph-edge", 2, "color", "relation-graph edge stroke"),
+  t3("color.graph-edge-dead", 2, "color", "unresolved reference edge"),
+  // diff
+  t3("color.diff-added", 2, "color", "added line or cell wash"),
+  t3("color.diff-removed", 2, "color", "removed line or cell wash"),
+  t3("color.diff-changed", 2, "color", "changed line or cell wash"),
+  // space
+  ...["0", "1", "2", "3", "4", "5", "6", "7", "8"].map(
+    (n2) => t3(`space.${n2}`, 2, "length", `spacing step ${n2}`)
+  ),
+  // radius
+  ...["none", "sm", "md", "lg", "pill"].map(
+    (r2) => t3(`radius.${r2}`, 2, "length", `corner radius ${r2}`)
+  ),
+  // type
+  t3("font.sans", 2, "font-family", "UI typeface stack"),
+  t3("font.mono", 2, "font-family", "monospace stack for IDs, code, offsets"),
+  ...["xs", "sm", "md", "lg", "xl"].map((s2) => t3(`font.size-${s2}`, 2, "length", `font size ${s2}`)),
+  ...["normal", "medium", "bold"].map((w) => t3(`font.weight-${w}`, 2, "number", `font weight ${w}`)),
+  ...["tight", "normal", "loose"].map((l2) => t3(`line.${l2}`, 2, "number", `line height ${l2}`)),
+  // metrics
+  t3("size.row", 2, "length", "list and table row height"),
+  t3("size.control", 2, "length", "default control height"),
+  t3("size.icon", 2, "length", "default icon box"),
+  t3("size.touch", 2, "length", "minimum touch target"),
+  t3("size.scrollbar", 2, "length", "scrollbar thickness"),
+  t3("size.scrollbar-thin", 2, "length", "scrollbar thickness inside dense panes"),
+  // layering
+  ...["base", "sticky", "dropdown", "overlay", "modal", "toast"].map(
+    (z) => t3(`z.${z}`, 2, "z-index", `stacking band: ${z}`)
+  ),
+  // motion
+  ...["fast", "normal", "slow"].map(
+    (d) => t3(`motion.${d}`, 2, "duration", `transition duration ${d}`)
+  ),
+  t3("motion.ease", 2, "easing", "default easing curve"),
+  // elevation
+  ...["1", "2", "3"].map((e2) => t3(`elevation.${e2}`, 2, "shadow", `elevation level ${e2}`)),
+  t3("shadow.focus-ring", 2, "shadow", "focus ring shadow")
+];
+var c3 = (name, component, type, derivesFrom, description) => t3(name, 3, type, description, { component, derivesFrom });
+var runtime2 = (name, component, type, runtimeDefault, description) => t3(name, 3, type, description, { component, runtimeDefault });
+var tier32 = [
+  runtime2("tree.indent-level", "tree", "number", "0", "nesting depth of the current tree row"),
+  runtime2("card.grid-columns", "card", "number", "5", "column count of the current card grid"),
+  // Context-menu placement is per-instance pixel geometry, which C3 routes through tokens.
+  runtime2("explorer.menu-x", "explorer", "length", "0px", "context menu left offset"),
+  runtime2("explorer.menu-y", "explorer", "length", "0px", "context menu top offset"),
+  c3("table.row-height", "table", "length", "size.row", "table row height"),
+  c3("table.header-bg", "table", "color", "color.raised", "table header background"),
+  c3("table.cell-padding-x", "table", "length", "space.2", "table cell horizontal padding"),
+  c3("tree.indent", "tree", "length", "space.4", "tree nesting indent per level"),
+  c3("tree.row-height", "tree", "length", "size.row", "tree row height"),
+  c3("hex.byte-gap", "hex", "length", "space.1", "gap between hex byte columns"),
+  c3("hex.gutter-fg", "hex", "color", "color.fg-subtle", "hex offset gutter text"),
+  c3("text.line-height", "text", "number", "line.normal", "text stage line height"),
+  c3("shell.rail-width", "shell", "length", "space.8", "default side rail width"),
+  c3("shell.splitter-size", "shell", "length", "space.1", "splitter hit area thickness"),
+  c3("toolbar.height", "toolbar", "length", "size.control", "toolbar height"),
+  c3("panel.padding", "panel", "length", "space.3", "panel content padding"),
+  c3("transport.track-height", "transport", "length", "space.2", "transport scrub track height")
+];
+var TOKENS2 = Object.freeze([...tier12, ...tier22, ...tier32]);
+var TOKENS_BY_NAME2 = new Map(
+  TOKENS2.map((token) => [token.name, token])
+);
+function cssVariableName2(tokenName) {
+  return `--mk-${tokenName.replace(/\./gu, "-")}`;
 }
-function rejectionText(state, reason) {
-  return safeViewerText8(reason === void 0 ? state : `${state}: ${reason}`, 1024);
+var HEX2 = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/iu;
+var FUNCTIONAL_COLOR2 = /^(?:rgb|rgba|hsl|hsla|color-mix|oklch|lab|lch)\([^;{}]*\)$/iu;
+var LENGTH2 = /^-?(?:\d+\.?\d*|\.\d+)(?:px|rem|em|ch|%|vh|vw|vmin|vmax)$|^0$/u;
+var DURATION2 = /^(?:\d+\.?\d*|\.\d+)m?s$/u;
+var NUMBER2 = /^-?(?:\d+\.?\d*|\.\d+)$/u;
+var EASING2 = /^(?:linear|ease|ease-in|ease-out|ease-in-out|steps\([^;{}]*\)|cubic-bezier\([^;{}]*\))$/u;
+var SHADOW2 = /^(?:none|[-\w\s.,()#%/]+)$/u;
+var FONT_FAMILY2 = /^[-\w\s.,'"()]+$/u;
+var FORBIDDEN2 = /url\(|expression\(|javascript:|@import|[;{}]|<|>/iu;
+function validateTokenValue2(tokenName, value2) {
+  const token = TOKENS_BY_NAME2.get(tokenName);
+  if (token === void 0) return { valid: false, reason: `unknown token: ${tokenName}` };
+  if (typeof value2 !== "string" || value2.length === 0) {
+    return { valid: false, reason: "value must be a non-empty string" };
+  }
+  if (value2.length > 256) return { valid: false, reason: "value exceeds 256 characters" };
+  if (FORBIDDEN2.test(value2)) {
+    return { valid: false, reason: "value contains a resource load or declaration escape" };
+  }
+  const ok2 = (() => {
+    switch (token.type) {
+      case "color":
+        return HEX2.test(value2) || FUNCTIONAL_COLOR2.test(value2) || /^[a-z-]+$/iu.test(value2);
+      case "length":
+        return LENGTH2.test(value2);
+      case "number":
+        return NUMBER2.test(value2);
+      case "duration":
+        return DURATION2.test(value2);
+      case "easing":
+        return EASING2.test(value2);
+      case "font-family":
+        return FONT_FAMILY2.test(value2);
+      case "shadow":
+        return SHADOW2.test(value2);
+      case "z-index":
+        return NUMBER2.test(value2);
+      default:
+        return false;
+    }
+  })();
+  return ok2 ? { valid: true } : { valid: false, reason: `value is not a valid ${token.type}` };
 }
-function createTextEditorModule(options = {}) {
-  const maximum = options.maximumSourceBytes ?? 16 * 1024 * 1024;
-  return defineEditorModule({
-    abiVersion: 1,
-    async mount(args) {
-      const scope = new ViewerMountScope6(args.signal);
-      const root = createSurface6(args.container, "Text editor");
-      root.dataset["modkitEditor"] = "text";
-      root.dataset["revision"] = args.descriptor.revision;
-      const lease2 = await args.sources.get(TEXT_DATA_SOURCE);
-      if (lease2 === void 0) throw new TypeError("text editor data-source binding is unavailable");
-      scope.lease(lease2);
-      const toolbar = element5(root, "div", {
-        className: "modkit-editor__toolbar",
-        role: "toolbar",
-        part: "editor.toolbar"
-      });
-      toolbar.setAttribute("aria-label", "Editing actions");
-      const save = element5(toolbar, "button", { text: "Save" });
-      save.dataset["modkitAction"] = "save";
-      const undo = element5(toolbar, "button", { text: "Undo" });
-      const redo = element5(toolbar, "button", { text: "Redo" });
-      const status = element5(toolbar, "output", { text: "Ready", part: "viewer.status" });
-      save.type = undo.type = redo.type = "button";
-      undo.disabled = true;
-      redo.disabled = true;
-      const input = element5(root, "textarea", {
-        className: "modkit-editor__text",
-        part: "editor.text"
-      });
-      input.setAttribute("aria-label", "Editable text");
-      input.spellcheck = false;
-      input.value = await loadText(lease2.value, maximum, scope.signal);
-      let busy = false;
-      let lastPlan;
-      let lastReceipt;
-      const request = async (plan) => args.authorization.request(plan, { signal: scope.signal });
-      const saveChange = async () => {
-        if (busy || scope.signal.aborted) return false;
-        busy = true;
-        save.disabled = true;
-        setViewerText5(status, "Validating\u2026");
-        try {
-          const change = options.createChangeSet?.({ text: input.value, targets: args.edit.targets }) ?? defaultChangeSet(input.value, args.edit.targets);
-          const validation = await args.edit.propose(change);
-          if (!validation.valid) {
-            setViewerText5(status, "Validation rejected the change");
-            return false;
-          }
-          const plan = await args.edit.plan(change);
-          const authorization = await request(plan);
-          if (authorization === void 0) {
-            setViewerText5(status, "Save cancelled");
-            return false;
-          }
-          const prepared = await args.commit.prepare(plan, {
-            grant: authorization.grant,
-            ...authorization.confirmationToken === void 0 ? {} : { confirmationToken: authorization.confirmationToken },
-            signal: scope.signal
-          });
-          if (prepared.state !== "ready") {
-            setViewerText5(
-              status,
-              prepared.state === "conflict" ? "Conflict: source changed" : rejectionText("Save rejected", prepared.reason)
-            );
-            return false;
-          }
-          setViewerText5(status, "Saving\u2026");
-          const result = await args.commit.commit(prepared.prepared, {
-            grant: authorization.grant,
-            signal: scope.signal,
-            onProgress: (done) => setViewerText5(status, `Saving\u2026 ${done}`)
-          });
-          if (result.state === "committed") {
-            lastPlan = plan;
-            lastReceipt = result.receipt;
-            undo.disabled = result.receipt.undo === "none";
-            redo.disabled = true;
-            setViewerText5(status, "Saved");
-            return true;
-          } else {
-            setViewerText5(
-              status,
-              result.state === "not-applied" ? rejectionText("Not saved", result.reason) : result.state === "rolled-back" ? "Write failed; changes rolled back" : "Partially saved; recovery is available"
-            );
-            return false;
-          }
-        } catch (error3) {
-          setViewerText5(status, error3 instanceof Error ? error3.message : String(error3));
-          return false;
-        } finally {
-          busy = false;
-          save.disabled = false;
-        }
-      };
-      const replay = async (kind) => {
-        if (busy || lastPlan === void 0 || lastReceipt === void 0) return;
-        busy = true;
-        const authorization = await request(lastPlan);
-        if (authorization === void 0) {
-          setViewerText5(status, `${kind === "undo" ? "Undo" : "Redo"} cancelled`);
-          busy = false;
-          return;
-        }
-        const result = await args.commit[kind](lastReceipt.transactionId, {
-          grant: authorization.grant,
-          signal: scope.signal
-        });
-        if (result.state === "committed") {
-          undo.disabled = kind === "undo";
-          redo.disabled = kind === "redo";
-          setViewerText5(status, kind === "undo" ? "Undone" : "Redone");
-        } else {
-          setViewerText5(
-            status,
-            result.state === "not-applied" ? rejectionText(`${kind === "undo" ? "Undo" : "Redo"} rejected`, result.reason) : `${kind === "undo" ? "Undo" : "Redo"} failed`
-          );
-        }
-        busy = false;
-      };
-      save.addEventListener("click", saveChange);
-      const removeSaveRequest = handleEditorSaveRequest(root, saveChange);
-      undo.addEventListener("click", () => void replay("undo"));
-      redo.addEventListener("click", () => void replay("redo"));
-      scope.cleanup(() => {
-        save.removeEventListener("click", saveChange);
-        removeSaveRequest();
-      });
-      return Object.freeze({
-        async update(update) {
-          root.dataset["revision"] = update.descriptor.revision;
-          setViewerText5(status, "Source updated; review before saving");
-        },
-        async unmount() {
-          await scope.close();
-          await args.edit.dispose();
-          root.remove();
-        }
+function requireElement2(value2) {
+  if (typeof value2 !== "object" || value2 === null || !("style" in value2) || typeof value2.style !== "object") {
+    throw new TypeError("token target must be a DOM element");
+  }
+  return value2;
+}
+function setToken2(element22, name, value2) {
+  const target = requireElement2(element22);
+  const result = validateTokenValue2(name, value2);
+  if (!result.valid) {
+    throw new TypeError(`invalid value for token ${name}: ${result.reason ?? "unknown reason"}`);
+  }
+  target.style.setProperty(cssVariableName2(name), value2);
+}
+async function collectEncodedMedia(source2, maximumBytes, signal) {
+  const descriptor = await source2.descriptor();
+  if (descriptor.bytes > BigInt(maximumBytes) || descriptor.bytes > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError(`encoded media exceeds the stage budget: ${descriptor.bytes} bytes`);
+  }
+  const total = Number(descriptor.bytes);
+  const bytes2 = new Uint8Array(total);
+  let offset = 0;
+  while (offset < total) {
+    if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+    const chunk = await source2.read(BigInt(offset), Math.min(1024 * 1024, total - offset), signal);
+    if (chunk.byteLength === 0 || chunk.byteLength > total - offset) {
+      throw new RangeError("encoded media ended outside its declared size");
+    }
+    bytes2.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return { mediaType: descriptor.mediaType, bytes: bytes2 };
+}
+var IMAGE_FALLBACK_MESSAGES = {
+  "viewer.actualPixels": "Actual pixels",
+  "viewer.cycleBackdrop": "Cycle the backdrop",
+  "viewer.fit": "Fit",
+  "viewer.fitTitle": "Fit to the stage",
+  "viewer.image": "Image viewer",
+  "viewer.imageChannel": " \xB7 channel {channel}",
+  "viewer.imageControls": "Image controls",
+  "viewer.imageDecodeError": "The platform decoder cannot render these bytes: {reason}. A format-specific decoder provider is required.",
+  "viewer.imageSummary": "{width}\xD7{height} \xB7 {size} KiB \xB7 {scale}%{channel}",
+  "viewer.isolateChannel": "Isolate the {channel} channel",
+  "viewer.zoomIn": "Zoom in",
+  "viewer.zoomOut": "Zoom out"
+};
+function createEnglishUiLocalizer7(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
       });
     }
   });
 }
-var textEditor = createTextEditorModule();
+function withEnglishUiFallback7(localizer, messages) {
+  const fallback = createEnglishUiLocalizer7(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+var IMAGE_MAXIMUM_BYTES = 64 * 1024 * 1024;
+async function loadBitmap(source2, signal) {
+  const info = await source2.info(signal);
+  const decodedBytes = info.width * info.height * 4;
+  if (info.decodedAccess && source2.readRegion !== void 0 && Number.isSafeInteger(decodedBytes) && decodedBytes <= IMAGE_MAXIMUM_BYTES) {
+    const region = await source2.readRegion(
+      {
+        x: 0,
+        y: 0,
+        width: info.width,
+        height: info.height,
+        frame: 0,
+        mipLevel: 0,
+        layer: 0,
+        face: 0,
+        slice: 0,
+        pixelFormat: "rgba8",
+        maxBytes: IMAGE_MAXIMUM_BYTES
+      },
+      signal
+    );
+    const pixels = new Uint8ClampedArray(region.pixels.byteLength);
+    pixels.set(region.pixels);
+    const bitmap2 = await createImageBitmap(new ImageData(pixels, region.width, region.height));
+    return { bitmap: bitmap2, bytes: region.pixels.byteLength };
+  }
+  const encoded = await source2.encoded(signal);
+  const media = await collectEncodedMedia(encoded, IMAGE_MAXIMUM_BYTES, signal);
+  const bitmap = await createImageBitmap(
+    new Blob([media.bytes], { type: media.mediaType })
+  );
+  return { bitmap, bytes: media.bytes.byteLength };
+}
+function drawChecker(context, width, height) {
+  const cell = 8;
+  for (let y = 0; y < height; y += cell) {
+    for (let x = 0; x < width; x += cell) {
+      const even = (x / cell | 0) % 2 === (y / cell | 0) % 2;
+      context.fillStyle = even ? "#808080" : "#a0a0a0";
+      context.fillRect(x, y, cell, cell);
+    }
+  }
+}
+function isolateChannel(context, width, height, channel) {
+  if (channel === "rgb") return;
+  const frame = context.getImageData(0, 0, width, height);
+  const data = frame.data;
+  const index = channel === "r" ? 0 : channel === "g" ? 1 : channel === "b" ? 2 : 3;
+  for (let at = 0; at < data.length; at += 4) {
+    const value2 = data[at + index];
+    data[at] = value2;
+    data[at + 1] = value2;
+    data[at + 2] = value2;
+    data[at + 3] = 255;
+  }
+  context.putImageData(frame, 0, 0);
+}
+function createImageViewer(options = {}) {
+  const localizer = withEnglishUiFallback7(options.localizer, IMAGE_FALLBACK_MESSAGES);
+  return defineViewerModule6({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope6(args.signal);
+      const root = createSurface6(args.container, localizer.text("viewer.image"));
+      const stage = element7(root, "div", { part: "image" });
+      const toolbar = element7(stage, "div", { part: "image.toolbar", role: "toolbar" });
+      toolbar.setAttribute("aria-label", localizer.text("viewer.imageControls"));
+      const readout = element7(stage, "output", { part: "image.readout" });
+      const canvas = element7(stage, "canvas", { part: "image.canvas" });
+      canvas.tabIndex = 0;
+      const lease2 = await unknownSourceLease5(
+        args.sources,
+        args.slot,
+        "common.view/raster-image-source"
+      );
+      if (lease2 === void 0) throw new TypeError("image binding is unavailable");
+      scope.lease(lease2);
+      let model;
+      let zoom = 1;
+      let fit = true;
+      let background = "checker";
+      let channel = "rgb";
+      const context = canvas.getContext("2d");
+      if (context === null) throw new TypeError("2d canvas context is unavailable");
+      const paint = () => {
+        if (model === void 0) return;
+        const { bitmap } = model;
+        const box = stage.getBoundingClientRect();
+        const available = {
+          width: Math.max(64, box.width - 8),
+          height: Math.max(64, box.height - 96)
+        };
+        const scale = fit ? Math.min(available.width / bitmap.width, available.height / bitmap.height, 1) : zoom;
+        const width = Math.max(1, Math.round(bitmap.width * scale));
+        const height = Math.max(1, Math.round(bitmap.height * scale));
+        canvas.width = width;
+        canvas.height = height;
+        setToken2(canvas, "size.icon", `${Math.min(width, 4096)}px`);
+        context.imageSmoothingEnabled = scale < 1;
+        if (background === "checker") drawChecker(context, width, height);
+        else {
+          context.fillStyle = background === "dark" ? "#141414" : "#f4f4f4";
+          context.fillRect(0, 0, width, height);
+        }
+        context.drawImage(bitmap, 0, 0, width, height);
+        isolateChannel(context, width, height, channel);
+        setViewerText7(
+          readout,
+          localizer.text("viewer.imageSummary", {
+            width: bitmap.width,
+            height: bitmap.height,
+            size: (model.bytes / 1024).toFixed(1),
+            scale: Math.round(scale * 100),
+            channel: channel === "rgb" ? "" : localizer.text("viewer.imageChannel", { channel: channel.toUpperCase() })
+          })
+        );
+      };
+      const button = (label, title, onClick) => {
+        const node = element7(toolbar, "button", {
+          text: label,
+          part: "operations.button"
+        });
+        node.type = "button";
+        node.title = title;
+        node.addEventListener("click", () => {
+          onClick();
+          paint();
+        });
+        scope.cleanup(() => node.replaceWith(node.cloneNode(true)));
+      };
+      button(localizer.text("viewer.fit"), localizer.text("viewer.fitTitle"), () => {
+        fit = true;
+      });
+      button("1:1", localizer.text("viewer.actualPixels"), () => {
+        fit = false;
+        zoom = 1;
+      });
+      button("\u2212", localizer.text("viewer.zoomOut"), () => {
+        fit = false;
+        zoom = Math.max(0.1, zoom / 1.5);
+      });
+      button("+", localizer.text("viewer.zoomIn"), () => {
+        fit = false;
+        zoom = Math.min(32, zoom * 1.5);
+      });
+      button("BG", localizer.text("viewer.cycleBackdrop"), () => {
+        background = background === "checker" ? "dark" : background === "dark" ? "light" : "checker";
+      });
+      for (const value2 of ["rgb", "r", "g", "b", "a"]) {
+        button(
+          value2.toUpperCase(),
+          localizer.text("viewer.isolateChannel", { channel: value2.toUpperCase() }),
+          () => {
+            channel = value2;
+          }
+        );
+      }
+      setState8(stage, ["loading"]);
+      try {
+        model = await loadBitmap(lease2.value, scope.signal);
+        setState8(stage, []);
+        paint();
+      } catch (error3) {
+        setState8(stage, ["error"]);
+        canvas.remove();
+        element7(stage, "p", {
+          part: "viewer.empty",
+          text: localizer.text("viewer.imageDecodeError", {
+            reason: error3 instanceof Error ? error3.message : String(error3)
+          })
+        });
+      }
+      return createViewerMount5(root, scope, args, ({ descriptor }) => {
+        root.dataset["revision"] = descriptor.revision;
+        paint();
+      });
+    }
+  });
+}
+var imageViewer = createImageViewer();
 
-// packages/ui/dist/graph/index.js
+// packages/ui/dist/metadata/index.js
 var PARTS9 = Object.freeze([
   // shared surface
   "viewer",
@@ -49869,16 +51685,16 @@ var STATES9 = Object.freeze([
   "drop-target"
 ]);
 var STATE_SET9 = new Set(STATES9);
-function setPart9(element20, part) {
+function setPart9(element22, part) {
   if (!PART_SET9.has(part)) throw new TypeError(`unregistered part: ${part}`);
-  element20.setAttribute(PART_ATTRIBUTE9, part);
+  element22.setAttribute(PART_ATTRIBUTE9, part);
 }
-function setState9(element20, states) {
+function setState9(element22, states) {
   for (const state of states) {
     if (!STATE_SET9.has(state)) throw new TypeError(`unregistered state: ${state}`);
   }
-  if (states.length === 0) element20.removeAttribute(STATE_ATTRIBUTE9);
-  else element20.setAttribute(STATE_ATTRIBUTE9, [...new Set(states)].join(" "));
+  if (states.length === 0) element22.removeAttribute(STATE_ATTRIBUTE9);
+  else element22.setAttribute(STATE_ATTRIBUTE9, [...new Set(states)].join(" "));
 }
 var VIEWER_CSP9 = Object.freeze({
   defaultSrc: "'none'",
@@ -49923,6 +51739,9 @@ function safeViewerText9(value2, maximum = 1e6) {
     return `\\u{${code}}`;
   });
 }
+function setViewerText8(node, value2, maximum) {
+  node.textContent = safeViewerText9(value2, maximum);
+}
 function requireContainer7(value2) {
   if (typeof value2 !== "object" || value2 === null || !("ownerDocument" in value2) || !("replaceChildren" in value2) || typeof value2.replaceChildren !== "function") {
     throw new TypeError("viewer container must be a DOM element");
@@ -49941,8 +51760,15 @@ function createSurface7(container, label) {
   host.replaceChildren(root);
   return root;
 }
-function bindingFor6(slot, contract) {
-  return slot.bindings.find((binding) => "contract" in binding && binding.contract === contract);
+function element8(parent, tag, options = {}) {
+  const node = parent.ownerDocument.createElement(tag);
+  if (options.className !== void 0) node.className = options.className;
+  if (options.role !== void 0) node.setAttribute("role", options.role);
+  if (options.text !== void 0) setViewerText8(node, options.text);
+  if (options.part !== void 0) setPart9(node, options.part);
+  if (options.state !== void 0) setState9(node, options.state);
+  parent.append(node);
+  return node;
 }
 var ViewerMountScope7 = class {
   controller = new AbortController();
@@ -49973,7 +51799,7 @@ var ViewerMountScope7 = class {
     for (const lease2 of this.#leases.reverse()) await lease2.release();
   }
 };
-function createViewerMount5(root, scope, initial, render2) {
+function createViewerMount6(root, scope, initial, render2) {
   let state = initial;
   return Object.freeze({
     async update(args) {
@@ -49988,539 +51814,194 @@ function createViewerMount5(root, scope, initial, render2) {
     }
   });
 }
-function defineViewerModule6(module) {
+function defineViewerModule7(module) {
   return Object.freeze(module);
 }
-function unknownSourceLease6(sources, slot, contract) {
-  const binding = bindingFor6(slot, contract);
-  if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
-  return sources.get(binding);
-}
-function positiveLimit4(value2, label) {
-  if (!Number.isSafeInteger(value2) || value2 <= 0) throw new RangeError(`${label} must be positive`);
-  return value2;
-}
-async function loadPages2(read, maximum, pageSize, signal) {
-  const items = [];
-  let cursor3;
-  const seen = /* @__PURE__ */ new Set();
-  while (items.length < maximum) {
-    signal?.throwIfAborted();
-    const remaining = maximum - items.length;
-    const requested = Math.min(pageSize, remaining);
-    const page2 = await read(cursor3, requested);
-    signal?.throwIfAborted();
-    items.push(...page2.items.slice(0, requested));
-    if (page2.items.length > requested) {
-      return { items: Object.freeze(items), completeness: "capped" };
-    }
-    if (page2.nextCursor === void 0) {
-      return { items: Object.freeze(items), completeness: "complete" };
-    }
-    if (page2.items.length === 0) {
-      throw new Error("relation graph source returned an empty page with a continuation cursor");
-    }
-    if (seen.has(page2.nextCursor)) throw new Error("relation graph source repeated a page cursor");
-    seen.add(page2.nextCursor);
-    cursor3 = page2.nextCursor;
-  }
-  return { items: Object.freeze(items), completeness: "capped" };
-}
-function loadedCountReason(nodeCount, totalNodes, edgeCount, totalEdges) {
-  return `loaded ${nodeCount.toLocaleString("en-US")} of ${totalNodes.toLocaleString("en-US")} nodes and ${edgeCount.toLocaleString("en-US")} of ${totalEdges.toLocaleString("en-US")} edges`;
-}
-async function loadRelationGraphOptions(source2, options) {
-  const nodeLimit = positiveLimit4(options.nodeLimit ?? 500, "nodeLimit");
-  const edgeLimit = positiveLimit4(options.edgeLimit ?? 5e3, "edgeLimit");
-  const pageSize = positiveLimit4(options.pageSize ?? 250, "pageSize");
-  options.signal?.throwIfAborted();
-  const summary = await source2.summary(options.signal);
-  options.signal?.throwIfAborted();
-  const [nodeLoad, edgeLoad] = await Promise.all([
-    loadPages2(
-      (cursor3, limit) => source2.nodes({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal),
-      nodeLimit,
-      pageSize,
-      options.signal
-    ),
-    loadPages2(
-      (cursor3, limit) => source2.edges({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal),
-      edgeLimit,
-      pageSize,
-      options.signal
-    )
-  ]);
-  options.signal?.throwIfAborted();
-  const consumerCapped = nodeLoad.completeness === "capped" || edgeLoad.completeness === "capped" || nodeLoad.items.length >= nodeLimit && nodeLoad.items.length < summary.totalNodes || edgeLoad.items.length >= edgeLimit && edgeLoad.items.length < summary.totalEdges;
-  const consumerPartial = !consumerCapped && (nodeLoad.items.length < summary.totalNodes || edgeLoad.items.length < summary.totalEdges);
-  const consumerCompleteness = consumerCapped ? "capped" : consumerPartial ? "partial" : "complete";
-  return {
-    label: options.label,
-    nodes: nodeLoad.items,
-    edges: edgeLoad.items,
-    types: summary.types,
-    totalNodes: summary.totalNodes,
-    totalEdges: summary.totalEdges,
-    sourceCompleteness: summary.completeness,
-    ...summary.reason === void 0 ? {} : { sourceReason: summary.reason },
-    consumerCompleteness,
-    ...consumerCompleteness === "complete" ? {} : {
-      consumerReason: loadedCountReason(
-        nodeLoad.items.length,
-        summary.totalNodes,
-        edgeLoad.items.length,
-        summary.totalEdges
-      )
-    },
-    cap: nodeLimit
-  };
-}
-var CATEGORICAL = 6;
-function createRelationGraph(document, options) {
-  const cap = options.cap ?? 500;
-  const root = document.createElement("div");
-  root.className = "modkit-graph";
-  root.setAttribute("aria-label", options.label);
-  setPart9(root, "graph");
-  const sidebar = document.createElement("aside");
-  sidebar.className = "modkit-graph__sidebar";
-  setPart9(sidebar, "graph.sidebar");
-  const sidebarHead = document.createElement("div");
-  sidebarHead.className = "modkit-graph__sidebar-head";
-  setPart9(sidebarHead, "graph.sidebar-head");
-  const heading = document.createElement("span");
-  heading.textContent = "Node types";
-  sidebarHead.append(heading);
-  for (const [label, all] of [
-    ["All", true],
-    ["None", false]
-  ]) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = label;
-    button.addEventListener("click", () => {
-      for (const id of hidden.keys()) hidden.set(id, !all);
-      syncTypes();
-      draw();
-    });
-    sidebarHead.append(button);
-  }
-  sidebar.append(sidebarHead);
-  const filter = document.createElement("input");
-  filter.type = "search";
-  filter.placeholder = "Filter classes\u2026";
-  filter.setAttribute("aria-label", "Filter node types");
-  filter.className = "modkit-graph__filter";
-  sidebar.append(filter);
-  const typeList = document.createElement("div");
-  typeList.className = "modkit-graph__types";
-  typeList.setAttribute("role", "group");
-  setPart9(typeList, "graph.types");
-  sidebar.append(typeList);
-  const hidden = new Map(options.types.map((type) => [type.id, false]));
-  const typeRows = /* @__PURE__ */ new Map();
-  for (const type of options.types) {
-    const row = document.createElement("button");
-    row.type = "button";
-    row.className = "modkit-graph__type";
-    row.dataset["tone"] = String(type.tone % CATEGORICAL);
-    setPart9(row, "graph.type");
-    const swatch = document.createElement("span");
-    swatch.setAttribute("aria-hidden", "true");
-    setPart9(swatch, "graph.type-swatch");
-    const label = document.createElement("span");
-    label.textContent = safeViewerText9(type.label, 64);
-    const count2 = document.createElement("span");
-    count2.textContent = String(type.count);
-    setPart9(count2, "graph.type-count");
-    row.append(swatch, label, count2);
-    row.addEventListener("click", () => {
-      hidden.set(type.id, !(hidden.get(type.id) ?? false));
-      syncTypes();
-      draw();
-    });
-    typeList.append(row);
-    typeRows.set(type.id, row);
-  }
-  filter.addEventListener("input", () => {
-    const needle = filter.value.trim().toLowerCase();
-    for (const type of options.types) {
-      const row = typeRows.get(type.id);
-      if (row !== void 0)
-        row.hidden = needle !== "" && !type.label.toLowerCase().includes(needle);
-    }
-  });
-  const syncTypes = () => {
-    for (const [id, row] of typeRows) {
-      const off = hidden.get(id) ?? false;
-      row.setAttribute("aria-pressed", String(!off));
-      setState9(row, off ? ["disabled"] : ["active"]);
-    }
-  };
-  const main = document.createElement("div");
-  main.className = "modkit-graph__main";
-  setPart9(main, "graph.main");
-  const controls = document.createElement("div");
-  controls.className = "modkit-graph__controls";
-  controls.setAttribute("role", "toolbar");
-  controls.setAttribute("aria-label", "Graph controls");
-  setPart9(controls, "graph.controls");
-  const status = document.createElement("output");
-  status.className = "modkit-graph__status";
-  setPart9(status, "graph.status");
-  controls.append(status);
-  const control = (labelText, values, value2) => {
-    const wrapper = document.createElement("label");
-    wrapper.className = "modkit-graph__control";
-    setPart9(wrapper, "graph.control");
-    wrapper.append(document.createTextNode(labelText));
-    const select = document.createElement("select");
-    for (const item of values) {
-      const option = document.createElement("option");
-      option.value = item;
-      option.textContent = item;
-      select.append(option);
-    }
-    select.value = value2;
-    wrapper.append(select);
-    controls.append(wrapper);
-    return select;
-  };
-  const labelsWrapper = document.createElement("label");
-  labelsWrapper.className = "modkit-graph__control";
-  setPart9(labelsWrapper, "graph.control");
-  const labels = document.createElement("input");
-  labels.type = "checkbox";
-  labels.checked = true;
-  labelsWrapper.append(labels, document.createTextNode("Labels"));
-  controls.append(labelsWrapper);
-  const nodeChoices = [.../* @__PURE__ */ new Set([100, 250, 500, 1e3, cap])].sort((left, right) => left - right).map(String);
-  const nodesCap = control("Nodes", nodeChoices, String(cap));
-  const rendererIds = ["canvas-2d", ...(options.renderers ?? []).map((item) => item.id)];
-  const rendererSelect = control(
-    "Renderer",
-    ["2D canvas", ...(options.renderers ?? []).map((item) => item.label)],
-    "2D canvas"
-  );
-  const reset = document.createElement("button");
-  reset.type = "button";
-  reset.textContent = "Reset view";
-  reset.addEventListener("click", () => {
-    if (external !== void 0) {
-      external.reset();
-      return;
-    }
-    layout();
-    draw();
-  });
-  controls.append(reset);
-  const canvas = document.createElement("canvas");
-  canvas.className = "modkit-graph__canvas";
-  canvas.setAttribute("role", "img");
-  canvas.tabIndex = 0;
-  setPart9(canvas, "graph.canvas");
-  const hint = document.createElement("p");
-  hint.className = "modkit-graph__hint";
-  hint.textContent = [
-    "Drag empty space to pan",
-    "drag a node to reposition it",
-    "scroll to zoom",
-    ...options.onOpen === void 0 ? [] : ["double-click a node to open its linked subject"]
-  ].join(" \xB7 ");
-  setPart9(hint, "graph.hint");
-  main.append(controls, canvas, hint);
-  const footer = document.createElement("div");
-  footer.className = "modkit-graph__footer";
-  setPart9(footer, "graph.footer");
-  for (const group2 of options.footer ?? []) {
-    const box = document.createElement("section");
-    box.className = "modkit-graph__footer-group";
-    setPart9(box, "graph.footer-group");
-    const title = document.createElement("h4");
-    title.textContent = safeViewerText9(group2.title, 64);
-    box.append(title);
-    for (const item of group2.items) {
-      const row = document.createElement("div");
-      row.className = "modkit-graph__footer-item";
-      setPart9(row, "graph.footer-item");
-      row.textContent = `${safeViewerText9(item.label, 64)} (${item.count})`;
-      box.append(row);
-    }
-    footer.append(box);
-  }
-  root.append(sidebar, main, footer);
-  const context = canvas.getContext("2d");
-  let placed = [];
-  let zoom = 1;
-  let originX = 0;
-  let originY = 0;
-  let dragging;
-  let panning = false;
-  let last = { x: 0, y: 0 };
-  const visibleNodes = () => {
-    const limit = Number(nodesCap.value);
-    return options.nodes.filter((node) => !(hidden.get(node.type) ?? false)).slice(0, limit);
-  };
-  const completenessNotice = (owner, completeness, reason) => {
-    if (completeness === void 0 || completeness === "complete" && reason === void 0) {
-      return void 0;
-    }
-    const state = completeness === void 0 || completeness === "complete" ? "" : ` ${completeness}`;
-    const explanation = reason === void 0 ? "" : `: ${safeViewerText9(reason, 240)}`;
-    return `${owner}${state}${explanation}`;
-  };
-  const statusText = (drawnEdges, renderer) => {
-    const totalNodes = options.totalNodes ?? options.nodes.length;
-    const visibleCandidates = options.nodes.filter((node) => !(hidden.get(node.type) ?? false));
-    const notices = [
-      completenessNotice("source", options.sourceCompleteness, options.sourceReason),
-      completenessNotice("view", options.consumerCompleteness, options.consumerReason),
-      ...placed.length < visibleCandidates.length ? [`visible selection capped at ${placed.length.toLocaleString("en-US")} nodes`] : []
-    ].filter((item) => item !== void 0);
-    return [
-      `${placed.length.toLocaleString("en-US")} / ${totalNodes.toLocaleString("en-US")} nodes`,
-      `${drawnEdges.toLocaleString("en-US")} visible edges`,
-      renderer,
-      ...notices
-    ].filter((item) => item !== void 0).join(" \xB7 ");
-  };
-  function layout() {
-    const nodes = visibleNodes();
-    const radius = Math.min(canvas.width, canvas.height) / 2.6;
-    placed = nodes.map((node, index) => {
-      const angle = index / Math.max(1, nodes.length) * Math.PI * 2;
-      const spread = radius * (0.35 + 0.65 * (index * 0.61803398875 % 1));
-      return {
-        node,
-        x: Math.cos(angle) * spread,
-        y: Math.sin(angle) * spread,
-        vx: 0,
-        vy: 0
-      };
-    });
-    zoom = 1;
-    originX = 0;
-    originY = 0;
-  }
-  function draw() {
-    if (context === null) {
-      status.textContent = statusText(0);
-      return;
-    }
-    const styles = getComputedStyle(root);
-    const token = (name, fallback) => styles.getPropertyValue(name).trim() || fallback;
-    const width = canvas.width;
-    const height = canvas.height;
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.fillStyle = token("--mk-color-canvas-bg", "#141414");
-    context.fillRect(0, 0, width, height);
-    context.translate(width / 2 + originX, height / 2 + originY);
-    context.scale(zoom, zoom);
-    const index = new Map(placed.map((item) => [item.node.id, item]));
-    let drawnEdges = 0;
-    context.lineWidth = 1 / zoom;
-    for (const edge of options.edges) {
-      const from = index.get(edge.from);
-      const to = index.get(edge.to);
-      if (from === void 0 || to === void 0) continue;
-      context.strokeStyle = edge.dead === true ? token("--mk-color-graph-edge-dead", "#f14c4c") : token("--mk-color-graph-edge", "#5a5a5a");
-      context.globalAlpha = edge.dead === true ? 0.9 : 0.45;
-      context.beginPath();
-      context.moveTo(from.x, from.y);
-      context.lineTo(to.x, to.y);
-      context.stroke();
-      drawnEdges += 1;
-    }
-    context.globalAlpha = 1;
-    const showLabels = labels.checked;
-    for (const item of placed) {
-      const bucket = options.types.find((type) => type.id === item.node.type);
-      const tone = (bucket?.tone ?? 0) % CATEGORICAL + 1;
-      context.fillStyle = token(`--mk-chart-categorical-${tone}`, "#4daafc");
-      context.beginPath();
-      context.arc(item.x, item.y, 4 / zoom + 1, 0, Math.PI * 2);
-      context.fill();
-      if (showLabels && placed.length <= 120) {
-        context.fillStyle = token("--mk-color-fg-muted", "#9d9d9d");
-        context.font = `${11 / zoom}px ${token("--mk-font-sans", "sans-serif")}`;
-        context.fillText(safeViewerText9(item.node.label, 40), item.x + 7 / zoom, item.y + 3 / zoom);
-      }
-    }
-    status.textContent = statusText(drawnEdges);
-  }
-  const pick = (event) => {
-    const box = canvas.getBoundingClientRect();
-    const x = (event.clientX - box.left - canvas.width / 2 - originX) / zoom;
-    const y = (event.clientY - box.top - canvas.height / 2 - originY) / zoom;
-    return placed.find((item) => Math.hypot(item.x - x, item.y - y) < 8 / zoom);
-  };
-  canvas.addEventListener("pointerdown", (event) => {
-    canvas.setPointerCapture(event.pointerId);
-    dragging = pick(event);
-    panning = dragging === void 0;
-    last = { x: event.clientX, y: event.clientY };
-  });
-  canvas.addEventListener("pointermove", (event) => {
-    if (dragging === void 0 && !panning) return;
-    const dx = event.clientX - last.x;
-    const dy = event.clientY - last.y;
-    last = { x: event.clientX, y: event.clientY };
-    if (dragging !== void 0) {
-      dragging.x += dx / zoom;
-      dragging.y += dy / zoom;
-    } else {
-      originX += dx;
-      originY += dy;
-    }
-    draw();
-  });
-  const release = (event) => {
-    if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
-    dragging = void 0;
-    panning = false;
-  };
-  canvas.addEventListener("pointerup", release);
-  canvas.addEventListener("pointercancel", release);
-  canvas.addEventListener("wheel", (event) => {
-    event.preventDefault();
-    zoom = Math.max(0.2, Math.min(6, zoom * (event.deltaY < 0 ? 1.12 : 0.89)));
-    draw();
-  });
-  if (options.onOpen !== void 0) {
-    canvas.addEventListener("dblclick", (event) => {
-      const box = canvas.getBoundingClientRect();
-      const x = (event.clientX - box.left - canvas.width / 2 - originX) / zoom;
-      const y = (event.clientY - box.top - canvas.height / 2 - originY) / zoom;
-      const hit = placed.find((item) => Math.hypot(item.x - x, item.y - y) < 8 / zoom);
-      if (hit !== void 0) options.onOpen?.(hit.node);
-    });
-  }
-  for (const input of [nodesCap]) {
-    input.addEventListener("change", () => {
-      layout();
-      draw();
-    });
-  }
-  labels.addEventListener("change", draw);
-  let external;
-  const externalHost = document.createElement("div");
-  externalHost.className = "modkit-graph__external";
-  externalHost.hidden = true;
-  setPart9(externalHost, "graph.canvas");
-  canvas.after(externalHost);
-  const paletteSnapshot = () => {
-    const styles = getComputedStyle(root);
-    const read = (name) => styles.getPropertyValue(name).trim();
-    const palette = {
-      background: read("--mk-color-canvas-bg") || "#141414",
-      edge: read("--mk-color-graph-edge") || "#5a5a5a",
-      edgeDead: read("--mk-color-graph-edge-dead") || "#f14c4c",
-      label: read("--mk-color-fg-muted") || "#9d9d9d"
-    };
-    for (let index = 1; index <= CATEGORICAL; index += 1) {
-      palette[`categorical-${index}`] = read(`--mk-chart-categorical-${index}`) || "#4daafc";
-    }
-    return palette;
-  };
-  const externalState = () => ({
-    nodes: placed.map((item) => item.node),
-    edges: options.edges,
-    types: options.types,
-    labels: labels.checked,
-    palette: paletteSnapshot()
-  });
-  const selectRenderer = () => {
-    const index = rendererSelect.selectedIndex;
-    const id = rendererIds[index] ?? "canvas-2d";
-    external?.destroy();
-    external = void 0;
-    if (id === "canvas-2d") {
-      canvas.hidden = false;
-      externalHost.hidden = true;
-      resize();
-      return;
-    }
-    const factory = (options.renderers ?? []).find((item) => item.id === id);
-    if (factory === void 0) return;
-    canvas.hidden = true;
-    externalHost.hidden = false;
-    const hooks = options.onOpen === void 0 ? {} : { onOpen: options.onOpen };
-    external = factory.create(externalHost, hooks);
-    const box = externalHost.getBoundingClientRect();
-    external.resize(Math.max(240, Math.round(box.width)), Math.max(200, Math.round(box.height)));
-    external.render(externalState());
-    const drawn = external.drawnEdges?.() ?? options.edges.length;
-    status.textContent = statusText(drawn, factory.label);
-  };
-  rendererSelect.addEventListener("change", selectRenderer);
-  const resize = () => {
-    if (external !== void 0) {
-      const box2 = externalHost.getBoundingClientRect();
-      external.resize(Math.max(240, Math.round(box2.width)), Math.max(200, Math.round(box2.height)));
-      external.render(externalState());
-      return;
-    }
-    const box = canvas.getBoundingClientRect();
-    canvas.width = Math.max(240, Math.round(box.width));
-    canvas.height = Math.max(200, Math.round(box.height));
-    layout();
-    draw();
-  };
-  syncTypes();
-  queueMicrotask(resize);
-  return {
-    root,
-    resize,
-    destroy() {
-      external?.destroy();
-      root.remove();
-    }
-  };
-}
-var relationGraphViewer = defineViewerModule6({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope7(args.signal);
-    const root = createSurface7(args.container, "Relation graph viewer");
-    try {
-      const lease2 = await unknownSourceLease6(
-        args.sources,
-        args.slot,
-        "common.view/relation-graph-source"
-      );
-      if (lease2 === void 0) throw new TypeError("relation graph binding is unavailable");
-      scope.lease(lease2);
-      const options = await loadRelationGraphOptions(lease2.value, {
-        label: "Relation graph",
-        signal: scope.signal
+var METADATA_FALLBACK_MESSAGES = {
+  "metadata.codec": "codec",
+  "metadata.confidence": "confidence",
+  "metadata.detection": "detection",
+  "metadata.empty": "No metadata reported by the codec.",
+  "metadata.format": "format",
+  "metadata.identity": "identity",
+  "metadata.interpretation": "interpretation",
+  "metadata.mutatesSource": "mutates source",
+  "metadata.observedTraits": "Observed traits",
+  "metadata.operation": "operation",
+  "metadata.properties": "Properties",
+  "metadata.revision": "revision",
+  "metadata.subject": "subject",
+  "metadata.title": "Metadata",
+  "metadata.trait": "trait",
+  "metadata.unresolved": "unresolved"
+};
+function createEnglishUiLocalizer8(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
       });
-      const graph = createRelationGraph(root.ownerDocument, options);
-      root.append(graph.root);
-      scope.cleanup(() => graph.destroy());
-      root.dataset["revision"] = args.descriptor.revision;
-      return createViewerMount5(root, scope, args, ({ descriptor }) => {
+    }
+  });
+}
+function withEnglishUiFallback8(localizer, messages) {
+  const fallback = createEnglishUiLocalizer8(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+function resolved(descriptor) {
+  return "identity" in descriptor ? descriptor : void 0;
+}
+function traitValue(trait) {
+  const parameters = Object.entries(trait.parameters ?? {});
+  if (parameters.length === 0) return trait.state;
+  const stated = parameters.map(([key3, item]) => `${key3}=${String(item)}`).join(", ");
+  return `${trait.state} \xB7 ${stated}`;
+}
+function renderMetadata(root, descriptor, localizer) {
+  root.replaceChildren();
+  const groups = resolved(descriptor)?.metadata ?? [];
+  const traits = descriptor.traits;
+  if (groups.length === 0 && traits.length === 0) {
+    element8(root, "p", { text: localizer.text("metadata.empty"), part: "viewer.empty" });
+    return;
+  }
+  for (const group2 of groups) {
+    const section2 = element8(root, "section", { part: "metadata.group" });
+    element8(section2, "h3", { text: group2.label, part: "metadata.heading" });
+    const list2 = element8(section2, "dl");
+    for (const entry2 of group2.entries) {
+      const row = element8(list2, "div", { part: "metadata.row" });
+      element8(row, "dt", { text: entry2.key, part: "metadata.label" });
+      const value2 = element8(row, "dd", { part: "metadata.value" });
+      setViewerText8(value2, entry2.value, 4096);
+      value2.title = String(entry2.value);
+    }
+  }
+  if (traits.length === 0) return;
+  const section = element8(root, "section", { part: "metadata.group" });
+  element8(section, "h3", {
+    text: localizer.text("metadata.observedTraits"),
+    part: "metadata.heading"
+  });
+  const list = element8(section, "dl");
+  for (const trait of traits) {
+    const row = element8(list, "div", { part: "metadata.row" });
+    element8(row, "dt", { text: trait.id, part: "metadata.label" });
+    const value2 = element8(row, "dd", { part: "metadata.value" });
+    const text3 = traitValue(trait);
+    setViewerText8(value2, text3, 4096);
+    value2.title = text3;
+  }
+}
+function createMetadataPanel(options = {}) {
+  const localizer = withEnglishUiFallback8(options.localizer, METADATA_FALLBACK_MESSAGES);
+  return defineViewerModule7({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope7(args.signal);
+      const root = createSurface7(args.container, localizer.text("metadata.title"));
+      const body = element8(root, "div", { part: "metadata" });
+      renderMetadata(body, args.descriptor, localizer);
+      return createViewerMount6(root, scope, args, ({ descriptor }) => {
         root.dataset["revision"] = descriptor.revision;
+        renderMetadata(body, descriptor, localizer);
       });
-    } catch (error3) {
-      await scope.close();
-      root.remove();
-      throw error3;
     }
-  }
-});
-
-// packages/sdk/dist/templates/index.js
-var GAME_TEMPLATE_PREVIEW_OPERATION_ID = "view.template";
-var GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION = 1;
-var nonEmpty3 = (value2) => typeof value2 === "string" && value2.trim().length > 0;
-function isGameTemplatePreviewResult(value2) {
-  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2)) return false;
-  const result = value2;
-  const fidelity = result["fidelity"];
-  return result["schemaVersion"] === GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION && result["operationId"] === GAME_TEMPLATE_PREVIEW_OPERATION_ID && nonEmpty3(result["templateKind"]) && nonEmpty3(result["entryUri"]) && (result["rootPath"] === void 0 || typeof result["rootPath"] === "string") && typeof result["resolvedTree"] === "object" && result["resolvedTree"] !== null && Array.isArray(result["displayItems"]) && Array.isArray(result["diagnostics"]) && ["complete", "partial", "capped", "invalid"].includes(String(result["completeness"])) && typeof fidelity === "object" && fidelity !== null && !Array.isArray(fidelity) && fidelity["comparison"] === "semantic" && Array.isArray(fidelity["unsupported"]) && result["provenance"] !== void 0 && result["digest"] !== void 0;
+  });
 }
+var metadataPanel = createMetadataPanel();
+function renderProperties(root, descriptor, localizer) {
+  root.replaceChildren();
+  const rows = [
+    {
+      name: localizer.text("metadata.subject"),
+      value: descriptor.subjectUri,
+      origin: localizer.text("metadata.identity")
+    },
+    {
+      name: localizer.text("metadata.revision"),
+      value: descriptor.revision,
+      origin: localizer.text("metadata.identity")
+    },
+    {
+      name: localizer.text("metadata.interpretation"),
+      value: String(resolved(descriptor)?.interpretation ?? localizer.text("metadata.unresolved")),
+      origin: localizer.text("metadata.identity")
+    }
+  ];
+  const identity = resolved(descriptor)?.identity;
+  if (identity !== void 0) {
+    if (identity.formatId !== void 0)
+      rows.push({
+        name: localizer.text("metadata.format"),
+        value: identity.formatId,
+        origin: localizer.text("metadata.identity")
+      });
+    if (identity.codecId !== void 0)
+      rows.push({
+        name: localizer.text("metadata.codec"),
+        value: identity.codecId,
+        origin: localizer.text("metadata.identity")
+      });
+    if (identity.confidence !== void 0)
+      rows.push({
+        name: localizer.text("metadata.confidence"),
+        value: identity.confidence.toFixed(2),
+        origin: localizer.text("metadata.detection")
+      });
+  }
+  for (const trait of descriptor.traits) {
+    const parameters = Object.entries(trait.parameters ?? {});
+    rows.push({
+      name: trait.id,
+      value: parameters.length === 0 ? trait.state : `${trait.state} \xB7 ${parameters.map(([key3, item]) => `${key3}=${String(item)}`).join(", ")}`,
+      origin: localizer.text("metadata.trait")
+    });
+  }
+  for (const operation of descriptor.operations) {
+    rows.push({
+      name: operation.id,
+      value: `${operation.state}${operation.mutatesSource ? ` \xB7 ${localizer.text("metadata.mutatesSource")}` : ""}`,
+      origin: localizer.text("metadata.operation")
+    });
+  }
+  for (const row of rows) {
+    const line = element8(root, "div", { part: "properties.row" });
+    element8(line, "span", { text: row.name, part: "properties.name" });
+    element8(line, "span", { text: row.value, part: "properties.value" });
+    element8(line, "span", { text: row.origin, part: "properties.origin" });
+  }
+}
+function createPropertiesTable(options = {}) {
+  const localizer = withEnglishUiFallback8(options.localizer, METADATA_FALLBACK_MESSAGES);
+  return defineViewerModule7({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope7(args.signal);
+      const root = createSurface7(args.container, localizer.text("metadata.properties"));
+      const body = element8(root, "div", { part: "properties" });
+      body.setAttribute("role", "table");
+      renderProperties(body, args.descriptor, localizer);
+      return createViewerMount6(root, scope, args, ({ descriptor }) => {
+        root.dataset["revision"] = descriptor.revision;
+        renderProperties(body, descriptor, localizer);
+      });
+    }
+  });
+}
+var propertiesTable = createPropertiesTable();
 
-// packages/ui/dist/template/index.js
+// packages/ui/dist/model/index.js
 var PARTS10 = Object.freeze([
   // shared surface
   "viewer",
@@ -50924,7 +52405,7 @@ function safeViewerText10(value2, maximum = 1e6) {
     return `\\u{${code}}`;
   });
 }
-function setViewerText6(node, value2, maximum) {
+function setViewerText9(node, value2, maximum) {
   node.textContent = safeViewerText10(value2, maximum);
 }
 function requireContainer8(value2) {
@@ -50945,15 +52426,18 @@ function createSurface8(container, label) {
   host.replaceChildren(root);
   return root;
 }
-function element6(parent, tag, options = {}) {
+function element9(parent, tag, options = {}) {
   const node = parent.ownerDocument.createElement(tag);
   if (options.className !== void 0) node.className = options.className;
   if (options.role !== void 0) node.setAttribute("role", options.role);
-  if (options.text !== void 0) setViewerText6(node, options.text);
+  if (options.text !== void 0) setViewerText9(node, options.text);
   if (options.part !== void 0) setPart10(node, options.part);
   if (options.state !== void 0) setState10(node, options.state);
   parent.append(node);
   return node;
+}
+function bindingFor6(slot, contract) {
+  return slot.bindings.find((binding) => "contract" in binding && binding.contract === contract);
 }
 var ViewerMountScope8 = class {
   controller = new AbortController();
@@ -50984,7 +52468,7 @@ var ViewerMountScope8 = class {
     for (const lease2 of this.#leases.reverse()) await lease2.release();
   }
 };
-function createViewerMount6(root, scope, initial, render2) {
+function createViewerMount7(root, scope, initial, render2) {
   let state = initial;
   return Object.freeze({
     async update(args) {
@@ -50999,152 +52483,704 @@ function createViewerMount6(root, scope, initial, render2) {
     }
   });
 }
-function defineViewerModule7(module) {
+function defineViewerModule8(module) {
   return Object.freeze(module);
 }
-function operationById(descriptor, operationId4) {
-  return descriptor.operations.find((operation) => operation.id === operationId4);
+function unknownSourceLease6(sources, slot, contract) {
+  const binding = bindingFor6(slot, contract);
+  if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
+  return sources.get(binding);
 }
-async function invokeOperation(descriptor, operations, operationId4, input, options) {
-  const declaration = operationById(descriptor, operationId4);
-  if (declaration === void 0) {
-    return {
-      state: "rejected",
-      reason: "not-declared",
-      diagnostics: []
-    };
-  }
-  if (declaration.state !== "available") {
-    return {
-      state: "rejected",
-      reason: declaration.state === "dependency-required" ? "dependency-required" : "disabled",
-      diagnostics: []
-    };
-  }
-  return operations.invoke(declaration.handlerId, input, {
-    ...options?.signal === void 0 ? {} : { signal: options.signal },
-    ...options?.onProgress === void 0 ? {} : {
-      onProgress: (progress) => options.onProgress?.(progress.completed, progress.total, progress.message)
+var PITCH_MINIMUM = -1.4;
+var PITCH_MAXIMUM = 1.5;
+var DRAG_RADIANS_PER_PIXEL = 8e-3;
+var WHEEL_IN = 0.9;
+var WHEEL_OUT = 1.1;
+var DISTANCE_MINIMUM = 0.15;
+var DISTANCE_MAXIMUM = 8;
+var RESET_YAW = 0.7;
+var RESET_PITCH = 0.45;
+var clamp2 = (value2, low, high) => Math.min(Math.max(value2, low), high);
+var POLE = Math.PI / 2 - 1e-3;
+var AXIS_POSE = Object.freeze({
+  "+x": [Math.PI / 2, 0],
+  "-x": [-Math.PI / 2, 0],
+  "+y": [0, POLE],
+  "-y": [0, -POLE],
+  "+z": [0, 0],
+  "-z": [Math.PI, 0]
+});
+function createOrbitController(initial = {}) {
+  let yaw = initial.yaw ?? RESET_YAW;
+  let pitch = clamp2(initial.pitch ?? RESET_PITCH, PITCH_MINIMUM, PITCH_MAXIMUM);
+  let distanceScale = clamp2(initial.distanceScale ?? 1, DISTANCE_MINIMUM, DISTANCE_MAXIMUM);
+  const listeners = /* @__PURE__ */ new Set();
+  const emit = () => {
+    const pose = { yaw, pitch, distanceScale };
+    for (const listener of listeners) listener(pose);
+  };
+  const controller = {
+    get pose() {
+      return { yaw, pitch, distanceScale };
+    },
+    position(target, radius) {
+      const scaled = radius * distanceScale;
+      return [
+        target[0] + Math.sin(yaw) * Math.cos(pitch) * scaled,
+        target[1] + Math.sin(pitch) * scaled,
+        target[2] + Math.cos(yaw) * Math.cos(pitch) * scaled
+      ];
+    },
+    basis() {
+      const backward = [
+        Math.sin(yaw) * Math.cos(pitch),
+        Math.sin(pitch),
+        Math.cos(yaw) * Math.cos(pitch)
+      ];
+      const horizontal = Math.hypot(backward[0], backward[2]) || 1;
+      const right = [backward[2] / horizontal, 0, -backward[0] / horizontal];
+      const up = [
+        backward[1] * right[2],
+        backward[2] * right[0] - backward[0] * right[2],
+        -backward[1] * right[0]
+      ];
+      return { backward, right, up };
+    },
+    orbit(deltaX, deltaY) {
+      yaw += deltaX * DRAG_RADIANS_PER_PIXEL;
+      pitch = clamp2(pitch + deltaY * DRAG_RADIANS_PER_PIXEL, PITCH_MINIMUM, PITCH_MAXIMUM);
+      emit();
+    },
+    zoom(wheelDelta) {
+      distanceScale = clamp2(
+        distanceScale * (wheelDelta > 0 ? WHEEL_OUT : WHEEL_IN),
+        DISTANCE_MINIMUM,
+        DISTANCE_MAXIMUM
+      );
+      emit();
+    },
+    snapTo(axis) {
+      const pose = AXIS_POSE[axis];
+      if (pose === void 0) throw new TypeError(`unknown view axis: ${String(axis)}`);
+      yaw = pose[0];
+      pitch = pose[1];
+      emit();
+    },
+    reset() {
+      yaw = RESET_YAW;
+      pitch = RESET_PITCH;
+      distanceScale = 1;
+      emit();
+    },
+    set(pose) {
+      if (pose.yaw !== void 0) yaw = pose.yaw;
+      if (pose.pitch !== void 0) pitch = clamp2(pose.pitch, PITCH_MINIMUM, PITCH_MAXIMUM);
+      if (pose.distanceScale !== void 0) {
+        distanceScale = clamp2(pose.distanceScale, DISTANCE_MINIMUM, DISTANCE_MAXIMUM);
+      }
+      emit();
+    },
+    attach(host, signal) {
+      let dragging = false;
+      let lastX = 0;
+      let lastY = 0;
+      const options = signal === void 0 ? {} : { signal };
+      host.addEventListener(
+        "pointerdown",
+        (event) => {
+          dragging = true;
+          lastX = event.clientX;
+          lastY = event.clientY;
+          host.setPointerCapture(event.pointerId);
+        },
+        options
+      );
+      host.addEventListener(
+        "pointermove",
+        (event) => {
+          if (!dragging) return;
+          controller.orbit(event.clientX - lastX, event.clientY - lastY);
+          lastX = event.clientX;
+          lastY = event.clientY;
+        },
+        options
+      );
+      const stop = () => {
+        dragging = false;
+      };
+      host.addEventListener("pointerup", stop, options);
+      host.addEventListener("pointercancel", stop, options);
+      host.addEventListener(
+        "wheel",
+        (event) => {
+          event.preventDefault();
+          controller.zoom(event.deltaY);
+        },
+        { passive: false, ...options }
+      );
+      host.addEventListener(
+        "keydown",
+        (event) => {
+          const step = event.shiftKey ? 40 : 12;
+          if (event.key === "ArrowLeft") controller.orbit(-step, 0);
+          else if (event.key === "ArrowRight") controller.orbit(step, 0);
+          else if (event.key === "ArrowUp") controller.orbit(0, -step);
+          else if (event.key === "ArrowDown") controller.orbit(0, step);
+          else if (event.key === "+" || event.key === "=") controller.zoom(-1);
+          else if (event.key === "-") controller.zoom(1);
+          else if (event.key === "0") controller.reset();
+          else return;
+          event.preventDefault();
+        },
+        options
+      );
+      return stop;
+    },
+    onChange(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
     }
-  });
+  };
+  return controller;
 }
-var MAXIMUM_DISPLAY_ITEMS = 500;
-var MAXIMUM_TREE_TEXT = 2e5;
-function jsonText(value2, maximum = MAXIMUM_TREE_TEXT) {
-  return safeViewerText10(JSON.stringify(value2, null, 2), maximum);
-}
-function renderGameTemplatePreview(document, host, preview2) {
-  host.replaceChildren();
-  host.dataset["templateKind"] = preview2.templateKind;
-  host.dataset["completeness"] = preview2.completeness;
-  const header = element6(host, "header", {
-    className: "modkit-template__header",
-    part: "viewer.toolbar"
-  });
-  element6(header, "strong", { text: preview2.templateKind, part: "viewer.status" });
-  element6(header, "span", {
-    text: preview2.completeness,
-    part: "viewer.status"
-  });
-  if (preview2.fidelity.unsupported.length > 0) {
-    element6(header, "span", {
-      text: `${preview2.fidelity.unsupported.length} named remainder`,
-      part: "viewer.status"
-    });
-    const remainder = element6(host, "ul", {
-      className: "modkit-template__diagnostics",
-      part: "diagnostics.list"
-    });
-    for (const item of preview2.fidelity.unsupported) {
-      element6(remainder, "li", { text: item, part: "diagnostics.item" });
-    }
-  }
-  const items = element6(host, "ol", {
-    className: "modkit-template__items",
-    part: "tree.list"
-  });
-  const visible = preview2.displayItems.slice(0, MAXIMUM_DISPLAY_ITEMS);
-  for (const item of visible) {
-    const row = document.createElement("li");
-    row.className = "modkit-template__item";
-    row.setAttribute("data-mk-part", "tree.item");
-    row.textContent = jsonText(item, 4096);
-    items.append(row);
-  }
-  if (visible.length === 0) {
-    element6(items, "li", { text: "No display items.", part: "viewer.empty" });
-  } else if (visible.length < preview2.displayItems.length) {
-    element6(items, "li", {
-      text: `Display capped at ${MAXIMUM_DISPLAY_ITEMS} of ${preview2.displayItems.length} items.`,
-      part: "viewer.status"
-    });
-  }
-  const details = document.createElement("details");
-  details.className = "modkit-template__details";
-  const summary = document.createElement("summary");
-  summary.textContent = "Resolved semantic tree";
-  const tree = document.createElement("pre");
-  tree.setAttribute("data-mk-part", "text");
-  tree.textContent = jsonText(preview2.resolvedTree);
-  details.append(summary, tree);
-  host.append(details);
-  if (preview2.diagnostics.length > 0) {
-    const diagnostics = element6(host, "ul", {
-      className: "modkit-template__diagnostics",
-      part: "diagnostics.list"
-    });
-    for (const item of preview2.diagnostics) {
-      element6(diagnostics, "li", {
-        text: `${item.severity ?? "information"} \xB7 ${item.code} \xB7 ${item.message}`,
-        part: "diagnostics.item"
+var MODEL_FALLBACK_MESSAGES = {
+  "viewer.model": "Model viewer",
+  "viewer.modelBlendUnknown": "blend unknown",
+  "viewer.modelBones": "bones",
+  "viewer.modelClipDetail": "{frames} frames \xB7 {channels} channels \xB7 {samples} samples",
+  "viewer.modelClips": "clips",
+  "viewer.modelCollision": "collision",
+  "viewer.modelDetails": "Model details",
+  "viewer.modelError": "The model scene cannot be rendered: {reason}",
+  "viewer.modelGeometryUnavailable": "Scene metadata is available. A buffer resolver/renderer provider is required for geometry.",
+  "viewer.modelLayers": "{count} layers",
+  "viewer.modelMaterial": "material",
+  "viewer.modelMaterials": "materials",
+  "viewer.modelNoNamedFlags": "no named flags",
+  "viewer.modelParent": "parent {parent}",
+  "viewer.modelPrimitive": "Model primitive",
+  "viewer.modelResources": "resources",
+  "viewer.modelSockets": "sockets",
+  "viewer.modelSummary": "{nodes} nodes \xB7 {meshes} meshes \xB7 {primitives} primitives \xB7 {materials} materials \xB7 {animations} animations{facets}",
+  "viewer.modelUnnamed": "(unnamed)",
+  "viewer.modelView": "Model view",
+  "viewer.reset": "Reset",
+  "viewer.resetCamera": "Reset the camera to its default pose",
+  "viewer.zoomIn": "Zoom in",
+  "viewer.zoomOut": "Zoom out"
+};
+var MODEL_GIZMO_FALLBACK_MESSAGES = {
+  "viewer.viewAxis": "View axis",
+  "viewer.viewFromAxis": "View from {axis}"
+};
+function createEnglishUiLocalizer9(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
       });
     }
-  }
+  });
 }
-var gameTemplateViewer = defineViewerModule7({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope8(args.signal);
-    const root = createSurface8(args.container, "Game template");
-    let renderRevision = 0;
-    const render2 = async (descriptor) => {
-      const revision = ++renderRevision;
-      root.replaceChildren();
-      element6(root, "output", { text: "Loading template\u2026", part: "viewer.status" });
-      const result = await invokeOperation(
-        descriptor,
-        args.operations,
-        GAME_TEMPLATE_PREVIEW_OPERATION_ID,
-        {},
-        { signal: scope.signal }
-      );
-      if (scope.signal.aborted || revision !== renderRevision) return;
-      if (result.state !== "ok") {
-        root.replaceChildren();
-        element6(root, "output", {
-          text: `Template unavailable: ${result.reason}`,
-          part: "viewer.status"
-        });
-        return;
-      }
-      if (result.output.kind !== "json" || !isGameTemplatePreviewResult(result.output.value)) {
-        throw new TypeError("view.template returned an invalid game-template-preview result");
-      }
-      renderGameTemplatePreview(root.ownerDocument, root, result.output.value);
-      root.dataset["revision"] = descriptor.revision;
-    };
-    try {
-      await render2(args.descriptor);
-      return createViewerMount6(root, scope, args, ({ descriptor }) => render2(descriptor));
-    } catch (error3) {
-      await scope.close();
+function withEnglishUiFallback9(localizer, messages) {
+  const fallback = createEnglishUiLocalizer9(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+var SVG_NS = "http://www.w3.org/2000/svg";
+var GIZMO_SIZE = 80;
+var CENTER = GIZMO_SIZE / 2;
+var RADIUS_FRONT = 28;
+var RADIUS_BACK = 18;
+var HANDLE_FRONT = 11;
+var HANDLE_BACK = 6;
+var AXES = Object.freeze([
+  { key: "+x", label: "X", vector: [1, 0, 0], token: "--mk-color-axis-x" },
+  { key: "-x", label: "", vector: [-1, 0, 0], token: "--mk-color-axis-x" },
+  { key: "+y", label: "Y", vector: [0, 1, 0], token: "--mk-color-axis-y" },
+  { key: "-y", label: "", vector: [0, -1, 0], token: "--mk-color-axis-y" },
+  { key: "+z", label: "Z", vector: [0, 0, 1], token: "--mk-color-axis-z" },
+  { key: "-z", label: "", vector: [0, 0, -1], token: "--mk-color-axis-z" }
+]);
+function createViewGizmo(host, options = {}) {
+  const localizer = withEnglishUiFallback9(options.localizer, MODEL_GIZMO_FALLBACK_MESSAGES);
+  const document = host.ownerDocument;
+  const root = element9(host, "div", { part: "gizmo" });
+  root.setAttribute("aria-label", localizer.text("viewer.viewAxis"));
+  root.setAttribute("role", "group");
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("width", String(GIZMO_SIZE));
+  svg.setAttribute("height", String(GIZMO_SIZE));
+  svg.setAttribute("viewBox", `0 0 ${GIZMO_SIZE} ${GIZMO_SIZE}`);
+  setPart10(svg, "gizmo.svg");
+  root.append(svg);
+  const pivot = document.createElementNS(SVG_NS, "circle");
+  pivot.setAttribute("cx", String(CENTER));
+  pivot.setAttribute("cy", String(CENTER));
+  pivot.setAttribute("r", "3");
+  pivot.setAttribute("fill", "var(--mk-color-canvas-gizmo)");
+  svg.append(pivot);
+  const nodes = [];
+  for (const spec of AXES) {
+    const line = document.createElementNS(SVG_NS, "line");
+    line.setAttribute("x1", String(CENTER));
+    line.setAttribute("y1", String(CENTER));
+    line.setAttribute("stroke", `var(${spec.token})`);
+    line.setAttribute("stroke-linecap", "round");
+    setPart10(line, "gizmo.axis");
+    svg.append(line);
+    const hit = document.createElementNS(SVG_NS, "g");
+    hit.setAttribute("role", "button");
+    hit.setAttribute("tabindex", "0");
+    hit.setAttribute(
+      "aria-label",
+      localizer.text("viewer.viewFromAxis", { axis: spec.key.toUpperCase() })
+    );
+    setPart10(hit, "gizmo.handle");
+    const handle = document.createElementNS(SVG_NS, "circle");
+    handle.setAttribute("fill", `var(${spec.token})`);
+    hit.append(handle);
+    const label = document.createElementNS(SVG_NS, "text");
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("dominant-baseline", "central");
+    label.setAttribute("fill", "var(--mk-color-fg-inverse)");
+    label.textContent = spec.label;
+    setPart10(label, "gizmo.label");
+    hit.append(label);
+    const activate = () => options.onAxis?.(spec.key);
+    hit.addEventListener("click", activate);
+    hit.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      activate();
+    });
+    svg.append(hit);
+    nodes.push({ spec, line, handle, label, hit });
+  }
+  const update = (yaw, pitch) => {
+    const backward = [
+      Math.sin(yaw) * Math.cos(pitch),
+      Math.sin(pitch),
+      Math.cos(yaw) * Math.cos(pitch)
+    ];
+    const horizontal = Math.hypot(backward[0], backward[2]) || 1;
+    const right = [backward[2] / horizontal, 0, -backward[0] / horizontal];
+    const up = [
+      backward[1] * right[2],
+      backward[2] * right[0] - backward[0] * right[2],
+      -backward[1] * right[0]
+    ];
+    for (const { spec, line, handle, label, hit } of nodes) {
+      const screenX = spec.vector[0] * right[0] + spec.vector[2] * right[2];
+      const screenY = spec.vector[0] * up[0] + spec.vector[1] * up[1] + spec.vector[2] * up[2];
+      const depth = spec.vector[0] * backward[0] + spec.vector[1] * backward[1] + spec.vector[2] * backward[2];
+      const front = depth >= 0;
+      const x = CENTER + screenX * (front ? RADIUS_FRONT : RADIUS_BACK);
+      const y = CENTER - screenY * (front ? RADIUS_FRONT : RADIUS_BACK);
+      line.setAttribute("x2", String(x));
+      line.setAttribute("y2", String(y));
+      line.setAttribute("stroke-width", front ? "2.5" : "1.5");
+      line.setAttribute("opacity", front ? "1" : "0.35");
+      handle.setAttribute("cx", String(x));
+      handle.setAttribute("cy", String(y));
+      handle.setAttribute("r", String((front ? HANDLE_FRONT : HANDLE_BACK) / 2 + 3));
+      label.setAttribute("x", String(x));
+      label.setAttribute("y", String(y));
+      label.setAttribute("font-size", front ? "9" : "0");
+      hit.setAttribute("opacity", front ? "1" : "0.5");
+    }
+  };
+  update(0.7, 0.45);
+  return {
+    root,
+    update,
+    destroy() {
       root.remove();
-      throw error3;
+    }
+  };
+}
+var MODEL_MAXIMUM_PRIMITIVE_BYTES = 64 * 1024 * 1024;
+var MODEL_MAXIMUM_PRIMITIVES = 4096;
+var MODEL_FACET_DETAIL_LIMIT = 64;
+var MODEL_FACET_CONTRACTS = Object.freeze([
+  "common.view/model-resource-refs-source",
+  "common.view/model-skeleton-source",
+  "common.view/model-animation-source",
+  "common.view/model-collision-source",
+  "common.view/model-material-source",
+  "common.view/model-socket-source"
+]);
+var FACET_READOUT = Object.freeze({
+  "common.view/model-resource-refs-source": {
+    labelKey: "viewer.modelResources",
+    key: "references"
+  },
+  "common.view/model-skeleton-source": { labelKey: "viewer.modelBones", key: "bindings" },
+  "common.view/model-animation-source": { labelKey: "viewer.modelClips", key: "clips" },
+  "common.view/model-collision-source": { labelKey: "viewer.modelCollision", key: "volumes" },
+  "common.view/model-material-source": { labelKey: "viewer.modelMaterials", key: "materials" },
+  "common.view/model-socket-source": { labelKey: "viewer.modelSockets", key: "sockets" }
+});
+async function readModelFacets(sources, slot, scope, signal, localizer = withEnglishUiFallback9(void 0, MODEL_FALLBACK_MESSAGES)) {
+  const parts = [];
+  for (const contract of MODEL_FACET_CONTRACTS) {
+    const lease2 = await unknownSourceLease6(sources, slot, contract);
+    if (lease2 === void 0) continue;
+    scope.lease(lease2);
+    const readout = FACET_READOUT[contract];
+    const source2 = lease2.value;
+    const info = await source2.info(signal);
+    const value2 = info[readout?.key ?? ""];
+    if (typeof value2 === "number") {
+      parts.push(`${value2} ${readout === void 0 ? contract : localizer.text(readout.labelKey)}`);
     }
   }
-});
+  return parts;
+}
+async function loadModelStage(source2, signal) {
+  const info = await source2.info(signal);
+  const primitiveIds = [];
+  let cursor3;
+  do {
+    const page2 = await source2.meshes(
+      {
+        limit: Math.min(256, MODEL_MAXIMUM_PRIMITIVES - primitiveIds.length),
+        ...cursor3 === void 0 ? {} : { cursor: cursor3 }
+      },
+      signal
+    );
+    for (const mesh of page2.items) {
+      for (const id of mesh.primitiveIds) {
+        if (primitiveIds.length >= MODEL_MAXIMUM_PRIMITIVES) break;
+        primitiveIds.push(id);
+      }
+    }
+    cursor3 = primitiveIds.length >= MODEL_MAXIMUM_PRIMITIVES ? void 0 : page2.nextCursor;
+  } while (cursor3 !== void 0);
+  const primitiveId = primitiveIds[0];
+  const primitive = primitiveId === void 0 || source2.primitive === void 0 ? void 0 : await source2.primitive(primitiveId, { maxBytes: MODEL_MAXIMUM_PRIMITIVE_BYTES }, signal);
+  return {
+    info,
+    primitiveIds: Object.freeze(primitiveIds),
+    ...primitive === void 0 ? {} : { primitive }
+  };
+}
+function short(value2) {
+  const text3 = String(value2 ?? "").trim();
+  return text3.length <= 160 ? text3 : `${text3.slice(0, 157)}\u2026`;
+}
+function facetItem(contract, value2, localizer) {
+  if (contract === "common.view/model-resource-refs-source") {
+    const item2 = value2;
+    return `${short(item2.id)} \xB7 ${item2.role} \xB7 ${item2.provenance}`;
+  }
+  if (contract === "common.view/model-skeleton-source") {
+    const item2 = value2;
+    const parent = item2.parentBoneIndex === void 0 ? "?" : item2.parentBoneIndex ?? "root";
+    return `#${item2.boneIndex} ${short(item2.boneName ?? localizer.text("viewer.modelUnnamed"))} \xB7 ${localizer.text("viewer.modelParent", { parent })} \xB7 ${item2.flagNames?.join(", ") || localizer.text("viewer.modelNoNamedFlags")}`;
+  }
+  if (contract === "common.view/model-animation-source") {
+    const item2 = value2;
+    const samples = item2.channels.reduce(
+      (total, channel) => total + (channel.samples?.length ?? 0),
+      0
+    );
+    return `${short(item2.name)} \xB7 ${localizer.text("viewer.modelClipDetail", {
+      frames: item2.frames,
+      channels: item2.channels.length,
+      samples
+    })}`;
+  }
+  if (contract === "common.view/model-collision-source") {
+    const item2 = value2;
+    return `${short(item2.id)} \xB7 ${item2.kind} \xB7 ${item2.origin}`;
+  }
+  if (contract === "common.view/model-material-source") {
+    const item2 = value2;
+    return `${short(item2.name ?? item2.id)} \xB7 ${item2.type ?? localizer.text("viewer.modelMaterial")} \xB7 ${item2.blendMode ?? localizer.text("viewer.modelBlendUnknown")} \xB7 ${localizer.text("viewer.modelLayers", { count: item2.layers?.length ?? 0 })}`;
+  }
+  const item = value2;
+  return `${short(item.sourceName ?? item.id)} \xB7 ${item.role} \xB7 ${item.nodeId}`;
+}
+async function readModelFacetDetails(sources, slot, scope, signal, localizer = withEnglishUiFallback9(void 0, MODEL_FALLBACK_MESSAGES)) {
+  const methods = {
+    "common.view/model-resource-refs-source": "references",
+    "common.view/model-skeleton-source": "bindings",
+    "common.view/model-animation-source": "clips",
+    "common.view/model-collision-source": "volumes",
+    "common.view/model-material-source": "materials",
+    "common.view/model-socket-source": "sockets"
+  };
+  const details = [];
+  for (const contract of MODEL_FACET_CONTRACTS) {
+    const lease2 = await unknownSourceLease6(sources, slot, contract);
+    if (lease2 === void 0) continue;
+    scope.lease(lease2);
+    const method = methods[contract];
+    const source2 = lease2.value;
+    const page2 = await source2[method]?.({ limit: MODEL_FACET_DETAIL_LIMIT }, signal);
+    if (page2 === void 0) continue;
+    const readout = FACET_READOUT[contract];
+    details.push(
+      Object.freeze({
+        contract,
+        label: readout === void 0 ? contract : localizer.text(readout.labelKey),
+        items: Object.freeze(page2.items.map((item) => facetItem(contract, item, localizer))),
+        truncated: page2.nextCursor !== void 0
+      })
+    );
+  }
+  return Object.freeze(details);
+}
+function drawPrimitive(canvas, primitive, basis, distanceScale) {
+  const context = canvas.getContext("2d");
+  if (context === null) throw new TypeError("2d canvas context is unavailable");
+  const width = 720;
+  const height = 480;
+  canvas.width = width;
+  canvas.height = height;
+  context.clearRect(0, 0, width, height);
+  const positions = primitive.positions;
+  if (positions.length < 3) return;
+  if (positions.length % 3 !== 0 || !positions.every(Number.isFinite)) {
+    throw new TypeError("model primitive positions are malformed");
+  }
+  const { right, up } = basis;
+  const flat = new Float64Array(positions.length / 3 * 2);
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (let index = 0, vertex = 0; index + 2 < positions.length; index += 3, vertex += 1) {
+    const x = positions[index];
+    const y = positions[index + 1];
+    const z = positions[index + 2];
+    const screenX = x * right[0] + y * right[1] + z * right[2];
+    const screenY = x * up[0] + y * up[1] + z * up[2];
+    flat[vertex * 2] = screenX;
+    flat[vertex * 2 + 1] = screenY;
+    minX = Math.min(minX, screenX);
+    maxX = Math.max(maxX, screenX);
+    minY = Math.min(minY, screenY);
+    maxY = Math.max(maxY, screenY);
+  }
+  const extentX = Math.max(1e-9, maxX - minX);
+  const extentY = Math.max(1e-9, maxY - minY);
+  const margin = 16;
+  const fit = Math.min((width - margin * 2) / extentX, (height - margin * 2) / extentY);
+  const scale = fit / Math.max(0.15, distanceScale);
+  const offsetX = width / 2 - (minX + maxX) / 2 * scale;
+  const offsetY = height / 2 + (minY + maxY) / 2 * scale;
+  const point = (vertex) => [
+    offsetX + flat[vertex * 2] * scale,
+    offsetY - flat[vertex * 2 + 1] * scale
+  ];
+  const indices = primitive.indices ?? Uint32Array.from({ length: positions.length / 3 }, (_, i2) => i2);
+  const vertexCount = positions.length / 3;
+  if (indices.some((index) => index >= vertexCount)) {
+    throw new RangeError("model primitive index is outside the position buffer");
+  }
+  const stroke = getComputedStyle(canvas).getPropertyValue("--mk-chart-categorical-1").trim() || "#4daafc";
+  context.strokeStyle = stroke;
+  context.fillStyle = stroke;
+  context.lineWidth = 1;
+  const edge = (from, to) => {
+    const a2 = point(from);
+    const b2 = point(to);
+    context.beginPath();
+    context.moveTo(a2[0], a2[1]);
+    context.lineTo(b2[0], b2[1]);
+    context.stroke();
+  };
+  const triangle = (first, second, third) => {
+    const a2 = point(first);
+    const b2 = point(second);
+    const c5 = point(third);
+    context.beginPath();
+    context.moveTo(a2[0], a2[1]);
+    context.lineTo(b2[0], b2[1]);
+    context.lineTo(c5[0], c5[1]);
+    context.closePath();
+    context.stroke();
+  };
+  if (primitive.topology === "points") {
+    for (const vertex of indices) {
+      const value2 = point(vertex);
+      context.fillRect(value2[0] - 1, value2[1] - 1, 3, 3);
+    }
+  } else if (primitive.topology === "lines") {
+    for (let index = 0; index + 1 < indices.length; index += 2) {
+      edge(indices[index], indices[index + 1]);
+    }
+  } else if (primitive.topology === "line-strip") {
+    for (let index = 0; index + 1 < indices.length; index += 1) {
+      edge(indices[index], indices[index + 1]);
+    }
+  } else if (primitive.topology === "triangles") {
+    for (let index = 0; index + 2 < indices.length; index += 3) {
+      triangle(indices[index], indices[index + 1], indices[index + 2]);
+    }
+  } else if (primitive.topology === "triangle-strip") {
+    for (let index = 0; index + 2 < indices.length; index += 1) {
+      triangle(indices[index], indices[index + 1], indices[index + 2]);
+    }
+  } else {
+    for (let index = 1; index + 1 < indices.length; index += 1) {
+      triangle(indices[0], indices[index], indices[index + 1]);
+    }
+  }
+}
+function createModelViewer(options = {}) {
+  const localizer = withEnglishUiFallback9(options.localizer, MODEL_FALLBACK_MESSAGES);
+  return defineViewerModule8({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope8(args.signal);
+      const root = createSurface8(args.container, localizer.text("viewer.model"));
+      const stage = element9(root, "div", { part: "model" });
+      const readout = element9(stage, "output", { part: "model.readout" });
+      const toolbar = element9(stage, "div", { part: "model.toolbar", role: "toolbar" });
+      toolbar.setAttribute("aria-label", localizer.text("viewer.modelView"));
+      const canvas = element9(stage, "canvas", { part: "model.canvas" });
+      canvas.setAttribute("role", "img");
+      canvas.tabIndex = 0;
+      const camera = createOrbitController();
+      const gizmo = createViewGizmo(stage, { localizer, onAxis: (axis) => camera.snapTo(axis) });
+      const lease2 = await unknownSourceLease6(
+        args.sources,
+        args.slot,
+        "common.view/model-scene-source"
+      );
+      if (lease2 === void 0) throw new TypeError("model binding is unavailable");
+      scope.lease(lease2);
+      setState10(stage, ["loading"]);
+      try {
+        const sceneSource = lease2.value;
+        const model = await loadModelStage(sceneSource, scope.signal);
+        const [facets, facetDetails] = await Promise.all([
+          readModelFacets(args.sources, args.slot, scope, scope.signal, localizer),
+          readModelFacetDetails(args.sources, args.slot, scope, scope.signal, localizer)
+        ]);
+        setViewerText9(
+          readout,
+          localizer.text("viewer.modelSummary", {
+            nodes: model.info.nodes,
+            meshes: model.info.meshes,
+            primitives: model.info.primitives,
+            materials: model.info.materials,
+            animations: model.info.animations,
+            facets: facets.length === 0 ? "" : ` \xB7 ${facets.join(" \xB7 ")}`
+          })
+        );
+        if (facetDetails.length > 0) {
+          const panel = element9(stage, "section", { part: "model.facets" });
+          panel.setAttribute("aria-label", localizer.text("viewer.modelDetails"));
+          for (const detail of facetDetails) {
+            const group2 = element9(panel, "details", { part: "model.facet" });
+            element9(group2, "summary", {
+              part: "model.facet-summary",
+              text: `${detail.label} (${detail.items.length}${detail.truncated ? "+" : ""})`
+            });
+            const list = element9(group2, "ul", { part: "model.facet-list" });
+            for (const item of detail.items) {
+              element9(list, "li", { part: "model.facet-item", text: item });
+            }
+          }
+        }
+        if (model.primitive === void 0) {
+          canvas.remove();
+          gizmo.destroy();
+          toolbar.remove();
+          element9(stage, "p", {
+            part: "viewer.empty",
+            text: localizer.text("viewer.modelGeometryUnavailable")
+          });
+        } else {
+          let primitive = model.primitive;
+          const redraw = () => {
+            const pose = camera.pose;
+            drawPrimitive(canvas, primitive, camera.basis(), pose.distanceScale);
+            gizmo.update(pose.yaw, pose.pitch);
+          };
+          scope.cleanup(camera.onChange(redraw));
+          camera.attach(canvas, scope.signal);
+          const button = (label, title, run) => {
+            const node = element9(toolbar, "button", { part: "operations.button", text: label });
+            node.setAttribute("type", "button");
+            node.title = title;
+            node.addEventListener("click", run, { signal: scope.signal });
+          };
+          button(
+            localizer.text("viewer.reset"),
+            localizer.text("viewer.resetCamera"),
+            () => camera.reset()
+          );
+          button("\u2212", localizer.text("viewer.zoomOut"), () => camera.zoom(1));
+          button("+", localizer.text("viewer.zoomIn"), () => camera.zoom(-1));
+          if (model.primitiveIds.length > 1 && sceneSource.primitive !== void 0) {
+            const selector = element9(toolbar, "select", {
+              part: "model.primitive-selector"
+            });
+            selector.setAttribute("aria-label", localizer.text("viewer.modelPrimitive"));
+            for (const id of model.primitiveIds) {
+              const option = element9(selector, "option", { text: id });
+              option.value = id;
+            }
+            let selection = 0;
+            selector.addEventListener(
+              "change",
+              async () => {
+                const request = ++selection;
+                selector.disabled = true;
+                try {
+                  const selected = await sceneSource.primitive?.(
+                    selector.value,
+                    { maxBytes: MODEL_MAXIMUM_PRIMITIVE_BYTES },
+                    scope.signal
+                  );
+                  if (selected !== void 0 && request === selection) {
+                    primitive = selected;
+                    redraw();
+                  }
+                } finally {
+                  if (request === selection) selector.disabled = false;
+                }
+              },
+              { signal: scope.signal }
+            );
+          }
+          scope.cleanup(() => gizmo.destroy());
+          redraw();
+        }
+        setState10(stage, []);
+      } catch (error3) {
+        setState10(stage, ["error"]);
+        canvas.remove();
+        element9(stage, "p", {
+          part: "viewer.empty",
+          text: localizer.text("viewer.modelError", {
+            reason: error3 instanceof Error ? error3.message : String(error3)
+          })
+        });
+      }
+      return createViewerMount7(root, scope, args, ({ descriptor }) => {
+        root.dataset["revision"] = descriptor.revision;
+      });
+    }
+  });
+}
+var modelViewer = createModelViewer();
 
-// packages/ui/dist/hex/index.js
+// packages/ui/dist/namespace/index.js
 var PARTS11 = Object.freeze([
   // shared surface
   "viewer",
@@ -51548,7 +53584,7 @@ function safeViewerText11(value2, maximum = 1e6) {
     return `\\u{${code}}`;
   });
 }
-function setViewerText7(node, value2, maximum) {
+function setViewerText10(node, value2, maximum) {
   node.textContent = safeViewerText11(value2, maximum);
 }
 function requireContainer9(value2) {
@@ -51569,11 +53605,11 @@ function createSurface9(container, label) {
   host.replaceChildren(root);
   return root;
 }
-function element7(parent, tag, options = {}) {
+function element10(parent, tag, options = {}) {
   const node = parent.ownerDocument.createElement(tag);
   if (options.className !== void 0) node.className = options.className;
   if (options.role !== void 0) node.setAttribute("role", options.role);
-  if (options.text !== void 0) setViewerText7(node, options.text);
+  if (options.text !== void 0) setViewerText10(node, options.text);
   if (options.part !== void 0) setPart11(node, options.part);
   if (options.state !== void 0) setState11(node, options.state);
   parent.append(node);
@@ -51611,7 +53647,7 @@ var ViewerMountScope9 = class {
     for (const lease2 of this.#leases.reverse()) await lease2.release();
   }
 };
-function createViewerMount7(root, scope, initial, render2) {
+function createViewerMount8(root, scope, initial, render2) {
   let state = initial;
   return Object.freeze({
     async update(args) {
@@ -51626,7 +53662,7 @@ function createViewerMount7(root, scope, initial, render2) {
     }
   });
 }
-function defineViewerModule8(module) {
+function defineViewerModule9(module) {
   return Object.freeze(module);
 }
 function unknownSourceLease7(sources, slot, contract) {
@@ -51634,69 +53670,171 @@ function unknownSourceLease7(sources, slot, contract) {
   if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
   return sources.get(binding);
 }
-var HEX_WINDOW_BYTES = 4096;
-var HexWindowModel = class {
+var NAMESPACE_FALLBACK_MESSAGES = {
+  "viewer.namespace": "Namespace tree",
+  "viewer.storedSize": "stored {size}"
+};
+function createEnglishUiLocalizer10(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
+    }
+  });
+}
+function withEnglishUiFallback10(localizer, messages) {
+  const fallback = createEnglishUiLocalizer10(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+function normalizeNamespacePath(value2) {
+  if (value2.includes("\\") || value2.startsWith("/") || value2.includes("\0")) {
+    throw new TypeError("namespace path is not relative and portable");
+  }
+  const parts = value2.split("/").filter((part) => part !== "" && part !== ".");
+  if (parts.some((part) => part === "..")) throw new TypeError("namespace traversal is forbidden");
+  return parts.join("/");
+}
+var NamespaceModel = class {
   constructor(source2) {
     this.source = source2;
   }
   source;
-  async read(offset, signal) {
-    if (offset < 0n) throw new RangeError("hex offset must be non-negative");
-    const size = await this.source.size();
-    if (offset > size) throw new RangeError("hex offset exceeds source size");
-    const length = Number(
-      size - offset > BigInt(HEX_WINDOW_BYTES) ? HEX_WINDOW_BYTES : size - offset
+  #identities = /* @__PURE__ */ new Map();
+  async list(prefix, cursor3, signal) {
+    const normalized = normalizeNamespacePath(prefix);
+    const page2 = await this.source.list(
+      normalized,
+      { limit: 200, ...cursor3 === void 0 ? {} : { cursor: cursor3 } },
+      signal
     );
-    const bytes2 = await this.source.read(offset, length, signal);
-    const lines = [];
-    for (let index = 0; index < bytes2.length; index += 16) {
-      const chunk = bytes2.slice(index, index + 16);
-      const address = (offset + BigInt(index)).toString(16).padStart(16, "0");
-      const hex = [...chunk].map((value2) => value2.toString(16).padStart(2, "0")).join(" ");
-      const ascii = [...chunk].map((value2) => value2 >= 32 && value2 <= 126 ? String.fromCharCode(value2) : ".").join("");
-      lines.push(`${address}  ${hex.padEnd(47)}  ${ascii}`);
+    for (const entry2 of page2.items) {
+      const path = normalizeNamespacePath(entry2.path);
+      const identity = `${path}\0${entry2.revision}`;
+      const existing = this.#identities.get(entry2.id);
+      if (existing !== void 0 && existing !== identity) {
+        throw new TypeError(`namespace entry identity changed: ${entry2.id}`);
+      }
+      this.#identities.set(entry2.id, identity);
     }
-    return { offset, bytes: bytes2, text: lines.join("\n") };
+    return page2;
   }
 };
-var hexViewer = defineViewerModule8({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope9(args.signal);
-    const root = createSurface9(args.container, "Hex viewer");
-    const lease2 = await unknownSourceLease7(args.sources, args.slot, "common.view/byte-range-source");
-    if (lease2 === void 0) throw new TypeError("hex binding is unavailable");
-    scope.lease(lease2);
-    const model = new HexWindowModel(lease2.value);
-    const controls = element7(root, "div", {
-      className: "modkit-viewer__toolbar",
-      part: "hex.toolbar"
-    });
-    const offset = element7(controls, "input", { part: "hex.offset-input" });
-    offset.type = "text";
-    offset.inputMode = "numeric";
-    offset.value = "0";
-    offset.setAttribute("aria-label", "Byte offset");
-    const go = element7(controls, "button", { text: "Go", part: "hex.go" });
-    go.type = "button";
-    const content = element7(root, "pre", { className: "modkit-viewer__hex", part: "hex.content" });
-    content.tabIndex = 0;
-    const render2 = async () => {
-      const value2 = /^(?:0x)?[0-9a-f]+$/iu.test(offset.value.trim()) ? BigInt(offset.value.trim()) : -1n;
-      const window = await model.read(value2, scope.signal);
-      setViewerText7(content, window.text);
-      content.dataset["offset"] = window.offset.toString(10);
-    };
-    await render2();
-    go.addEventListener("click", render2);
-    scope.cleanup(() => go.removeEventListener("click", render2));
-    return createViewerMount7(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-    });
+function createNamespaceViewer(options = {}) {
+  const localizer = withEnglishUiFallback10(options.localizer, NAMESPACE_FALLBACK_MESSAGES);
+  return defineViewerModule9({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope9(args.signal);
+      const root = createSurface9(args.container, localizer.text("viewer.namespace"));
+      root.setAttribute("role", "tree");
+      const lease2 = await unknownSourceLease7(
+        args.sources,
+        args.slot,
+        "common.view/namespace-entry-source"
+      );
+      if (lease2 === void 0) throw new TypeError("namespace binding is unavailable");
+      scope.lease(lease2);
+      const source2 = lease2.value;
+      const model = new NamespaceModel(source2);
+      const list = element10(root, "ul", { part: "namespace.list" });
+      list.setAttribute("role", "group");
+      const renderPrefix = async (prefix, parent) => {
+        const page2 = await model.list(prefix, void 0, scope.signal);
+        const seen = /* @__PURE__ */ new Set();
+        for (const entry2 of page2.items) {
+          if (seen.has(entry2.id)) throw new TypeError(`duplicate namespace entry id: ${entry2.id}`);
+          seen.add(entry2.id);
+          const item = element10(parent, "li", { part: "namespace.item" });
+          item.setAttribute("role", "treeitem");
+          item.dataset["entryId"] = entry2.id;
+          item.dataset["revision"] = entry2.revision;
+          const button = element10(item, "button", {
+            text: entry2.name,
+            part: "namespace.label"
+          });
+          button.type = "button";
+          const detail = describeEntry(entry2, localizer);
+          if (detail !== "") {
+            setViewerText10(element10(item, "span", { part: "namespace.detail" }), detail);
+          }
+          const activate = async () => {
+            if (entry2.kind === "directory") {
+              let nested = item.querySelector(":scope > ul");
+              if (nested === null) {
+                nested = element10(item, "ul", { part: "namespace.children" });
+                nested.setAttribute("role", "group");
+                await renderPrefix(entry2.path, nested);
+              }
+              nested.hidden = !nested.hidden;
+              return;
+            }
+            const opened = await source2.openEntry(entry2.id, scope.signal);
+            try {
+              root.dispatchEvent(
+                new CustomEvent("modkit-open-source", {
+                  bubbles: true,
+                  detail: { source: opened.value, entryId: entry2.id, revision: entry2.revision }
+                })
+              );
+            } finally {
+              await opened.release();
+            }
+          };
+          button.addEventListener("click", activate);
+          scope.cleanup(() => button.removeEventListener("click", activate));
+          setViewerText10(button, entry2.name);
+        }
+      };
+      await renderPrefix("", list);
+      return createViewerMount8(root, scope, args, ({ descriptor }) => {
+        root.dataset["revision"] = descriptor.revision;
+      });
+    }
+  });
+}
+var namespaceViewer = createNamespaceViewer();
+function formatEntryBytes(value2) {
+  if (value2 < 1024n) return `${value2} B`;
+  const units = ["KiB", "MiB", "GiB", "TiB"];
+  let scaled = Number(value2) / 1024;
+  let unit = 0;
+  while (scaled >= 1024 && unit < units.length - 1) {
+    scaled /= 1024;
+    unit += 1;
   }
-});
+  return `${scaled.toFixed(1)} ${units[unit]}`;
+}
+function describeEntry(entry2, localizer) {
+  if (entry2.kind === "directory") return "";
+  const parts = [];
+  if (entry2.size !== void 0) parts.push(formatEntryBytes(entry2.size));
+  if (entry2.compression !== void 0) {
+    parts.push(
+      entry2.storedSize === void 0 ? entry2.compression : `${entry2.compression} ${formatEntryBytes(entry2.storedSize)}`
+    );
+  } else if (entry2.storedSize !== void 0) {
+    parts.push(localizer.text("viewer.storedSize", { size: formatEntryBytes(entry2.storedSize) }));
+  }
+  if (entry2.modifiedAt !== void 0) {
+    parts.push(`${new Date(entry2.modifiedAt).toISOString().replace("T", " ").slice(0, 19)} UTC`);
+  }
+  if (entry2.checksum !== void 0)
+    parts.push(`${entry2.checksum.algorithm} ${entry2.checksum.value}`);
+  return parts.join(" \xB7 ");
+}
 
-// packages/ui/dist/hex-editor/index.js
+// packages/ui/dist/graph/index.js
 var PARTS12 = Object.freeze([
   // shared surface
   "viewer",
@@ -52046,16 +54184,16 @@ var STATES12 = Object.freeze([
   "drop-target"
 ]);
 var STATE_SET12 = new Set(STATES12);
-function setPart12(element22, part) {
+function setPart12(element20, part) {
   if (!PART_SET12.has(part)) throw new TypeError(`unregistered part: ${part}`);
-  element22.setAttribute(PART_ATTRIBUTE12, part);
+  element20.setAttribute(PART_ATTRIBUTE12, part);
 }
-function setState12(element22, states) {
+function setState12(element20, states) {
   for (const state of states) {
     if (!STATE_SET12.has(state)) throw new TypeError(`unregistered state: ${state}`);
   }
-  if (states.length === 0) element22.removeAttribute(STATE_ATTRIBUTE12);
-  else element22.setAttribute(STATE_ATTRIBUTE12, [...new Set(states)].join(" "));
+  if (states.length === 0) element20.removeAttribute(STATE_ATTRIBUTE12);
+  else element20.setAttribute(STATE_ATTRIBUTE12, [...new Set(states)].join(" "));
 }
 var VIEWER_CSP12 = Object.freeze({
   defaultSrc: "'none'",
@@ -52100,9 +54238,6 @@ function safeViewerText12(value2, maximum = 1e6) {
     return `\\u{${code}}`;
   });
 }
-function setViewerText8(node, value2, maximum) {
-  node.textContent = safeViewerText12(value2, maximum);
-}
 function requireContainer10(value2) {
   if (typeof value2 !== "object" || value2 === null || !("ownerDocument" in value2) || !("replaceChildren" in value2) || typeof value2.replaceChildren !== "function") {
     throw new TypeError("viewer container must be a DOM element");
@@ -52120,16 +54255,6 @@ function createSurface10(container, label) {
   setPart12(root, "viewer");
   host.replaceChildren(root);
   return root;
-}
-function element8(parent, tag, options = {}) {
-  const node = parent.ownerDocument.createElement(tag);
-  if (options.className !== void 0) node.className = options.className;
-  if (options.role !== void 0) node.setAttribute("role", options.role);
-  if (options.text !== void 0) setViewerText8(node, options.text);
-  if (options.part !== void 0) setPart12(node, options.part);
-  if (options.state !== void 0) setState12(node, options.state);
-  parent.append(node);
-  return node;
 }
 function bindingFor8(slot, contract) {
   return slot.bindings.find((binding) => "contract" in binding && binding.contract === contract);
@@ -52163,7 +54288,7 @@ var ViewerMountScope10 = class {
     for (const lease2 of this.#leases.reverse()) await lease2.release();
   }
 };
-function createViewerMount8(root, scope, initial, render2) {
+function createViewerMount9(root, scope, initial, render2) {
   let state = initial;
   return Object.freeze({
     async update(args) {
@@ -52178,7 +54303,7 @@ function createViewerMount8(root, scope, initial, render2) {
     }
   });
 }
-function defineViewerModule9(module) {
+function defineViewerModule10(module) {
   return Object.freeze(module);
 }
 function unknownSourceLease8(sources, slot, contract) {
@@ -52186,339 +54311,590 @@ function unknownSourceLease8(sources, slot, contract) {
   if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
   return sources.get(binding);
 }
-var HEX_WINDOW_BYTES2 = 4096;
-var HexWindowModel2 = class {
-  constructor(source2) {
-    this.source = source2;
-  }
-  source;
-  async read(offset, signal) {
-    if (offset < 0n) throw new RangeError("hex offset must be non-negative");
-    const size = await this.source.size();
-    if (offset > size) throw new RangeError("hex offset exceeds source size");
-    const length = Number(
-      size - offset > BigInt(HEX_WINDOW_BYTES2) ? HEX_WINDOW_BYTES2 : size - offset
-    );
-    const bytes2 = await this.source.read(offset, length, signal);
-    const lines = [];
-    for (let index = 0; index < bytes2.length; index += 16) {
-      const chunk = bytes2.slice(index, index + 16);
-      const address = (offset + BigInt(index)).toString(16).padStart(16, "0");
-      const hex = [...chunk].map((value2) => value2.toString(16).padStart(2, "0")).join(" ");
-      const ascii = [...chunk].map((value2) => value2 >= 32 && value2 <= 126 ? String.fromCharCode(value2) : ".").join("");
-      lines.push(`${address}  ${hex.padEnd(47)}  ${ascii}`);
-    }
-    return { offset, bytes: bytes2, text: lines.join("\n") };
-  }
+var GRAPH_FALLBACK_MESSAGES = {
+  "graph.all": "All",
+  "graph.canvas2d": "2D canvas",
+  "graph.completeness": "{owner}{state}{reason}",
+  "graph.controls": "Graph controls",
+  "graph.edgeCount": "{count} visible edges",
+  "graph.filterClasses": "Filter classes\u2026",
+  "graph.filterNodeTypes": "Filter node types",
+  "graph.hint": "Scroll to zoom \xB7 drag the background to pan \xB7 drag nodes to move them",
+  "graph.hintOpen": "Drag empty space to pan \xB7 drag a node to reposition it \xB7 scroll to zoom \xB7 double-click a node to open its linked subject",
+  "graph.labels": "Labels",
+  "graph.loadedCounts": "loaded {nodes} of {totalNodes} nodes and {edges} of {totalEdges} edges",
+  "graph.nodeCount": "{visible} / {total} nodes",
+  "graph.nodeTypes": "Node types",
+  "graph.nodes": "Nodes",
+  "graph.none": "None",
+  "graph.relation": "Relation graph",
+  "graph.renderer": "Renderer",
+  "graph.resetView": "Reset view",
+  "graph.source": "source",
+  "graph.status": "{nodes} nodes \xB7 {edges} edges",
+  "graph.view": "view",
+  "graph.viewer": "Relation graph viewer",
+  "graph.visibleCapped": "visible selection capped at {count} nodes"
 };
-var hexViewer2 = defineViewerModule9({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope10(args.signal);
-    const root = createSurface10(args.container, "Hex viewer");
-    const lease2 = await unknownSourceLease8(args.sources, args.slot, "common.view/byte-range-source");
-    if (lease2 === void 0) throw new TypeError("hex binding is unavailable");
-    scope.lease(lease2);
-    const model = new HexWindowModel2(lease2.value);
-    const controls = element8(root, "div", {
-      className: "modkit-viewer__toolbar",
-      part: "hex.toolbar"
-    });
-    const offset = element8(controls, "input", { part: "hex.offset-input" });
-    offset.type = "text";
-    offset.inputMode = "numeric";
-    offset.value = "0";
-    offset.setAttribute("aria-label", "Byte offset");
-    const go = element8(controls, "button", { text: "Go", part: "hex.go" });
-    go.type = "button";
-    const content = element8(root, "pre", { className: "modkit-viewer__hex", part: "hex.content" });
-    content.tabIndex = 0;
-    const render2 = async () => {
-      const value2 = /^(?:0x)?[0-9a-f]+$/iu.test(offset.value.trim()) ? BigInt(offset.value.trim()) : -1n;
-      const window = await model.read(value2, scope.signal);
-      setViewerText8(content, window.text);
-      content.dataset["offset"] = window.offset.toString(10);
-    };
-    await render2();
-    go.addEventListener("click", render2);
-    scope.cleanup(() => go.removeEventListener("click", render2));
-    return createViewerMount8(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-    });
-  }
-});
-var EDITOR_SAVE_REQUEST3 = "modkit-editor-save-request";
-function handleEditorSaveRequest2(root, save) {
-  const listener = (event) => {
-    const request = event;
-    request.detail.waitUntil(save());
-  };
-  root.addEventListener(EDITOR_SAVE_REQUEST3, listener);
-  return () => root.removeEventListener(EDITOR_SAVE_REQUEST3, listener);
-}
-var BYTE_RANGE_SOURCE = Object.freeze({
-  bindingId: bindingId("editor-hex"),
-  contract: "common.view/byte-range-source",
-  major: 1
-});
-var HEX_BYTE = /^[0-9a-f]{1,2}$/iu;
-function hexChangeSet(runs, targets) {
-  const target = targets[0];
-  if (target === void 0) throw new TypeError("the edit session carries no target to write to");
-  return {
-    targets,
-    edits: runs.map((run) => ({
-      operation: "replace",
-      targetId: target.targetId,
-      source: target.ownerSource,
-      range: { kind: "bytes", offset: run.offset, length: BigInt(run.bytes.length) },
-      payload: { kind: "inline", bytes: run.bytes },
-      label: "Edit bytes"
-    })),
-    provenance: { actor: "user" }
-  };
-}
-function coalesceHexEdits(edits) {
-  const sorted = [...edits].sort((left, right) => left.offset < right.offset ? -1 : 1);
-  const runs = [];
-  for (const edit of sorted) {
-    const last = runs[runs.length - 1];
-    if (last !== void 0 && last.offset + BigInt(last.values.length) === edit.offset) {
-      last.values.push(edit.after);
-      continue;
+function createEnglishUiLocalizer11(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
     }
-    runs.push({ offset: edit.offset, values: [edit.after] });
-  }
-  return runs.map((run) => ({ offset: run.offset, bytes: new Uint8Array(run.values) }));
+  });
 }
-var hexEditor = {
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope10(args.signal);
-    const root = createSurface10(args.container, "Hex editor");
-    root.dataset["modkitEditor"] = "hex";
-    const lease2 = await args.sources.get(BYTE_RANGE_SOURCE);
-    if (lease2 === void 0) throw new TypeError("hex editor binding is unavailable");
-    scope.lease(lease2);
-    const source2 = lease2.value;
-    const model = new HexWindowModel2(source2);
-    const toolbar = element8(root, "div", { part: "hex.toolbar", role: "toolbar" });
-    toolbar.setAttribute("aria-label", "Hex editing");
-    const offsetInput = element8(toolbar, "input", { part: "hex.offset-input" });
-    offsetInput.type = "text";
-    offsetInput.value = "0";
-    offsetInput.setAttribute("aria-label", "Byte offset");
-    const go = element8(toolbar, "button", { text: "Go", part: "hex.go" });
-    go.type = "button";
-    const save = element8(toolbar, "button", {
-      text: "Save",
-      part: "operations.button"
+function withEnglishUiFallback11(localizer, messages) {
+  const fallback = createEnglishUiLocalizer11(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+function positiveLimit3(value2, label) {
+  if (!Number.isSafeInteger(value2) || value2 <= 0) throw new RangeError(`${label} must be positive`);
+  return value2;
+}
+async function loadPages(read, maximum, pageSize, signal) {
+  const items = [];
+  let cursor3;
+  const seen = /* @__PURE__ */ new Set();
+  while (items.length < maximum) {
+    signal?.throwIfAborted();
+    const remaining = maximum - items.length;
+    const requested = Math.min(pageSize, remaining);
+    const page2 = await read(cursor3, requested);
+    signal?.throwIfAborted();
+    items.push(...page2.items.slice(0, requested));
+    if (page2.items.length > requested) {
+      return { items: Object.freeze(items), completeness: "capped" };
+    }
+    if (page2.nextCursor === void 0) {
+      return { items: Object.freeze(items), completeness: "complete" };
+    }
+    if (page2.items.length === 0) {
+      throw new Error("relation graph source returned an empty page with a continuation cursor");
+    }
+    if (seen.has(page2.nextCursor)) throw new Error("relation graph source repeated a page cursor");
+    seen.add(page2.nextCursor);
+    cursor3 = page2.nextCursor;
+  }
+  return { items: Object.freeze(items), completeness: "capped" };
+}
+function loadedCountReason(nodeCount, totalNodes, edgeCount, totalEdges, localizer) {
+  return localizer.text("graph.loadedCounts", {
+    nodes: nodeCount.toLocaleString(localizer.locale),
+    totalNodes: totalNodes.toLocaleString(localizer.locale),
+    edges: edgeCount.toLocaleString(localizer.locale),
+    totalEdges: totalEdges.toLocaleString(localizer.locale)
+  });
+}
+async function loadRelationGraphOptions(source2, options) {
+  const localizer = withEnglishUiFallback11(options.localizer, GRAPH_FALLBACK_MESSAGES);
+  const nodeLimit = positiveLimit3(options.nodeLimit ?? 500, "nodeLimit");
+  const edgeLimit = positiveLimit3(options.edgeLimit ?? 5e3, "edgeLimit");
+  const pageSize = positiveLimit3(options.pageSize ?? 250, "pageSize");
+  options.signal?.throwIfAborted();
+  const summary = await source2.summary(options.signal);
+  options.signal?.throwIfAborted();
+  const [nodeLoad, edgeLoad] = await Promise.all([
+    loadPages(
+      (cursor3, limit) => source2.nodes({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal),
+      nodeLimit,
+      pageSize,
+      options.signal
+    ),
+    loadPages(
+      (cursor3, limit) => source2.edges({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal),
+      edgeLimit,
+      pageSize,
+      options.signal
+    )
+  ]);
+  options.signal?.throwIfAborted();
+  const consumerCapped = nodeLoad.completeness === "capped" || edgeLoad.completeness === "capped" || nodeLoad.items.length >= nodeLimit && nodeLoad.items.length < summary.totalNodes || edgeLoad.items.length >= edgeLimit && edgeLoad.items.length < summary.totalEdges;
+  const consumerPartial = !consumerCapped && (nodeLoad.items.length < summary.totalNodes || edgeLoad.items.length < summary.totalEdges);
+  const consumerCompleteness = consumerCapped ? "capped" : consumerPartial ? "partial" : "complete";
+  return {
+    label: options.label,
+    localizer,
+    nodes: nodeLoad.items,
+    edges: edgeLoad.items,
+    types: summary.types,
+    totalNodes: summary.totalNodes,
+    totalEdges: summary.totalEdges,
+    sourceCompleteness: summary.completeness,
+    ...summary.reason === void 0 ? {} : { sourceReason: summary.reason },
+    consumerCompleteness,
+    ...consumerCompleteness === "complete" ? {} : {
+      consumerReason: loadedCountReason(
+        nodeLoad.items.length,
+        summary.totalNodes,
+        edgeLoad.items.length,
+        summary.totalEdges,
+        localizer
+      )
+    },
+    cap: nodeLimit
+  };
+}
+var CATEGORICAL = 6;
+function createRelationGraph(document, options) {
+  const localizer = withEnglishUiFallback11(options.localizer, GRAPH_FALLBACK_MESSAGES);
+  const cap = options.cap ?? 500;
+  const root = document.createElement("div");
+  root.className = "modkit-graph";
+  root.setAttribute("aria-label", options.label);
+  setPart12(root, "graph");
+  const sidebar = document.createElement("aside");
+  sidebar.className = "modkit-graph__sidebar";
+  setPart12(sidebar, "graph.sidebar");
+  const sidebarHead = document.createElement("div");
+  sidebarHead.className = "modkit-graph__sidebar-head";
+  setPart12(sidebarHead, "graph.sidebar-head");
+  const heading = document.createElement("span");
+  heading.textContent = localizer.text("graph.nodeTypes");
+  sidebarHead.append(heading);
+  for (const [label, all] of [
+    [localizer.text("graph.all"), true],
+    [localizer.text("graph.none"), false]
+  ]) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    button.addEventListener("click", () => {
+      for (const id of hidden.keys()) hidden.set(id, !all);
+      syncTypes();
+      draw();
     });
-    save.type = "button";
-    save.dataset["modkitAction"] = "save";
-    save.disabled = true;
-    const revert = element8(toolbar, "button", {
-      text: "Revert",
-      part: "operations.button"
+    sidebarHead.append(button);
+  }
+  sidebar.append(sidebarHead);
+  const filter = document.createElement("input");
+  filter.type = "search";
+  filter.placeholder = localizer.text("graph.filterClasses");
+  filter.setAttribute("aria-label", localizer.text("graph.filterNodeTypes"));
+  filter.className = "modkit-graph__filter";
+  sidebar.append(filter);
+  const typeList = document.createElement("div");
+  typeList.className = "modkit-graph__types";
+  typeList.setAttribute("role", "group");
+  setPart12(typeList, "graph.types");
+  sidebar.append(typeList);
+  const hidden = new Map(options.types.map((type) => [type.id, false]));
+  const typeRows = /* @__PURE__ */ new Map();
+  for (const type of options.types) {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "modkit-graph__type";
+    row.dataset["tone"] = String(type.tone % CATEGORICAL);
+    setPart12(row, "graph.type");
+    const swatch = document.createElement("span");
+    swatch.setAttribute("aria-hidden", "true");
+    setPart12(swatch, "graph.type-swatch");
+    const label = document.createElement("span");
+    label.textContent = safeViewerText12(type.label, 64);
+    const count2 = document.createElement("span");
+    count2.textContent = String(type.count);
+    setPart12(count2, "graph.type-count");
+    row.append(swatch, label, count2);
+    row.addEventListener("click", () => {
+      hidden.set(type.id, !(hidden.get(type.id) ?? false));
+      syncTypes();
+      draw();
     });
-    revert.type = "button";
-    revert.disabled = true;
-    const status = element8(toolbar, "output", { text: "Ready", part: "viewer.status" });
-    const grid = element8(root, "div", { part: "hex.content" });
-    grid.setAttribute("role", "grid");
-    let windowOffset = 0n;
-    let original = new Uint8Array();
-    const pending = /* @__PURE__ */ new Map();
-    const hexCells = /* @__PURE__ */ new Map();
-    const asciiCells = /* @__PURE__ */ new Map();
-    const printable = (value2) => value2 >= 32 && value2 <= 126 ? String.fromCharCode(value2) : ".";
-    const announce = () => {
-      if (pending.size === 0) return;
-      const runs = coalesceHexEdits([...pending.values()]);
-      void args.edit.propose(hexChangeSet(runs, args.edit.targets));
-    };
-    const setByte = (absolute, base, next) => {
-      const key3 = absolute.toString(10);
-      if (next === base) pending.delete(key3);
-      else pending.set(key3, { offset: absolute, before: base, after: next });
-      const hex = hexCells.get(key3);
-      if (hex !== void 0) {
-        hex.textContent = next.toString(16).padStart(2, "0");
-        setState12(hex, next === base ? [] : ["mutating"]);
-      }
-      const ascii = asciiCells.get(key3);
-      if (ascii !== void 0) {
-        ascii.textContent = printable(next);
-        setState12(ascii, next === base ? [] : ["mutating"]);
-      }
-      syncDirty();
-      announce();
-    };
-    const syncDirty = () => {
-      const dirty = pending.size > 0;
-      save.disabled = !dirty;
-      revert.disabled = !dirty;
-      setState12(root, dirty ? ["mutating"] : []);
-      setViewerText8(status, dirty ? `${pending.size} byte(s) changed` : "Ready");
-    };
-    const renderWindow = async () => {
-      const raw = offsetInput.value.trim();
-      const parsed = /^(?:0x)?[0-9a-f]+$/iu.test(raw) ? BigInt(raw) : 0n;
-      const view = await model.read(parsed, scope.signal);
-      windowOffset = view.offset;
-      original = view.bytes;
-      pending.clear();
-      drawWindow();
-    };
-    const drawWindow = () => {
-      grid.replaceChildren();
-      for (let row = 0; row < original.length; row += 16) {
-        const line = element8(grid, "div", { part: "hex.row" });
-        line.setAttribute("role", "row");
-        const address = (windowOffset + BigInt(row)).toString(16).padStart(16, "0");
-        element8(line, "span", { text: address, part: "hex.gutter" });
-        const chunk = original.slice(row, row + 16);
-        for (const [column, value2] of [...chunk].entries()) {
-          const absolute = windowOffset + BigInt(row + column);
-          const cell = element8(line, "span", { part: "hex.cell" });
-          cell.setAttribute("role", "gridcell");
-          cell.contentEditable = "true";
-          cell.spellcheck = false;
-          cell.dataset["offset"] = absolute.toString(10);
-          cell.textContent = value2.toString(16).padStart(2, "0");
-          cell.setAttribute("aria-label", `byte at ${absolute}`);
-          hexCells.set(absolute.toString(10), cell);
-          cell.addEventListener("beforeinput", (event) => {
-            const data = event.data;
-            if (data === null) return;
-            const current = (cell.textContent ?? "").replace(/\s/gu, "");
-            if (!/^[0-9a-f]$/iu.test(data) || current.length >= 2) event.preventDefault();
-          });
-          cell.addEventListener("blur", () => {
-            const text3 = (cell.textContent ?? "").trim();
-            if (!HEX_BYTE.test(text3)) {
-              const key3 = absolute.toString(10);
-              const known = pending.get(key3)?.after ?? value2;
-              setByte(absolute, value2, known);
-              return;
-            }
-            setByte(absolute, value2, Number.parseInt(text3, 16));
-          });
-        }
-        const ascii = element8(line, "span", { part: "hex.ascii" });
-        for (const [column, value2] of [...chunk].entries()) {
-          const absolute = windowOffset + BigInt(row + column);
-          const glyph = element8(ascii, "span");
-          glyph.contentEditable = "true";
-          glyph.spellcheck = false;
-          glyph.textContent = printable(value2);
-          glyph.setAttribute("aria-label", `character at ${absolute}`);
-          asciiCells.set(absolute.toString(10), glyph);
-          glyph.addEventListener("beforeinput", (event) => {
-            const data = event.data;
-            if (data === null) return;
-            if (data.length !== 1 || data.charCodeAt(0) < 32 || data.charCodeAt(0) > 126) {
-              event.preventDefault();
-            }
-          });
-          glyph.addEventListener("blur", () => {
-            const text3 = glyph.textContent ?? "";
-            const code = text3.length === 1 ? text3.charCodeAt(0) : Number.NaN;
-            if (Number.isNaN(code) || code < 32 || code > 126) {
-              const known = pending.get(absolute.toString(10))?.after ?? value2;
-              setByte(absolute, value2, known);
-              return;
-            }
-            setByte(absolute, value2, code);
-          });
-        }
-      }
-      syncDirty();
-    };
-    const commit = async () => {
-      if (pending.size === 0) return true;
-      const runs = coalesceHexEdits([...pending.values()]);
-      const change = hexChangeSet(runs, args.edit.targets);
-      setViewerText8(status, "Validating\u2026");
-      const validation = await args.edit.propose(change);
-      if (!validation.valid) {
-        setState12(root, ["error"]);
-        const first = validation.diagnostics[0];
-        setViewerText8(
-          status,
-          first === void 0 ? "Rejected by validation" : `Rejected: ${first.message}`
-        );
-        return false;
-      }
-      const plan = await args.edit.plan(change);
-      const authorization = await args.authorization.request(plan);
-      if (authorization === void 0) {
-        setViewerText8(status, "Not authorised");
-        return false;
-      }
-      const prepared = await args.commit.prepare(plan, { grant: authorization.grant });
-      if (prepared.state !== "ready") {
-        setState12(root, ["error"]);
-        setViewerText8(
-          status,
-          prepared.state === "conflict" ? "Conflict: the source changed" : `Prepare rejected: ${prepared.reason}`
-        );
-        return false;
-      }
-      const receipt = await args.commit.commit(prepared.prepared, {
-        grant: authorization.grant
-      });
-      if (receipt.state !== "committed") {
-        setState12(root, ["error"]);
-        setViewerText8(
-          status,
-          receipt.state === "not-applied" ? `Save rejected: ${receipt.reason}` : `Save ${receipt.state}`
-        );
-        return false;
-      }
-      const updated = new Uint8Array(original);
-      for (const run of runs) {
-        const start = Number(run.offset - windowOffset);
-        if (start >= 0 && start + run.bytes.length <= updated.length) updated.set(run.bytes, start);
-      }
-      original = updated;
-      pending.clear();
-      drawWindow();
-      setState12(root, []);
-      setViewerText8(
-        status,
-        `Committed ${runs.length} range(s) \u2014 reopen the file before editing it again`
-      );
-      return true;
-    };
-    go.addEventListener("click", () => void renderWindow());
-    revert.addEventListener("click", () => void renderWindow());
-    save.addEventListener("click", () => {
-      commit().catch((error3) => {
-        setState12(root, ["error"]);
-        setViewerText8(
-          status,
-          `Save failed: ${error3 instanceof Error ? error3.message : String(error3)}`
-        );
-      });
+    typeList.append(row);
+    typeRows.set(type.id, row);
+  }
+  filter.addEventListener("input", () => {
+    const needle = filter.value.trim().toLowerCase();
+    for (const type of options.types) {
+      const row = typeRows.get(type.id);
+      if (row !== void 0)
+        row.hidden = needle !== "" && !type.label.toLowerCase().includes(needle);
+    }
+  });
+  const syncTypes = () => {
+    for (const [id, row] of typeRows) {
+      const off = hidden.get(id) ?? false;
+      row.setAttribute("aria-pressed", String(!off));
+      setState12(row, off ? ["disabled"] : ["active"]);
+    }
+  };
+  const main = document.createElement("div");
+  main.className = "modkit-graph__main";
+  setPart12(main, "graph.main");
+  const controls = document.createElement("div");
+  controls.className = "modkit-graph__controls";
+  controls.setAttribute("role", "toolbar");
+  controls.setAttribute("aria-label", localizer.text("graph.controls"));
+  setPart12(controls, "graph.controls");
+  const status = document.createElement("output");
+  status.className = "modkit-graph__status";
+  setPart12(status, "graph.status");
+  controls.append(status);
+  const control = (labelText, values, value2) => {
+    const wrapper = document.createElement("label");
+    wrapper.className = "modkit-graph__control";
+    setPart12(wrapper, "graph.control");
+    wrapper.append(document.createTextNode(labelText));
+    const select = document.createElement("select");
+    for (const item of values) {
+      const option = document.createElement("option");
+      option.value = item;
+      option.textContent = item;
+      select.append(option);
+    }
+    select.value = value2;
+    wrapper.append(select);
+    controls.append(wrapper);
+    return select;
+  };
+  const labelsWrapper = document.createElement("label");
+  labelsWrapper.className = "modkit-graph__control";
+  setPart12(labelsWrapper, "graph.control");
+  const labels = document.createElement("input");
+  labels.type = "checkbox";
+  labels.checked = true;
+  labelsWrapper.append(labels, document.createTextNode(localizer.text("graph.labels")));
+  controls.append(labelsWrapper);
+  const nodeChoices = [.../* @__PURE__ */ new Set([100, 250, 500, 1e3, cap])].sort((left, right) => left - right).map(String);
+  const nodesCap = control(localizer.text("graph.nodes"), nodeChoices, String(cap));
+  const rendererIds = ["canvas-2d", ...(options.renderers ?? []).map((item) => item.id)];
+  const rendererSelect = control(
+    localizer.text("graph.renderer"),
+    [localizer.text("graph.canvas2d"), ...(options.renderers ?? []).map((item) => item.label)],
+    localizer.text("graph.canvas2d")
+  );
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.textContent = localizer.text("graph.resetView");
+  reset.addEventListener("click", () => {
+    if (external !== void 0) {
+      external.reset();
+      return;
+    }
+    layout();
+    draw();
+  });
+  controls.append(reset);
+  const canvas = document.createElement("canvas");
+  canvas.className = "modkit-graph__canvas";
+  canvas.setAttribute("role", "img");
+  canvas.tabIndex = 0;
+  setPart12(canvas, "graph.canvas");
+  const hint = document.createElement("p");
+  hint.className = "modkit-graph__hint";
+  hint.textContent = localizer.text(options.onOpen === void 0 ? "graph.hint" : "graph.hintOpen");
+  setPart12(hint, "graph.hint");
+  main.append(controls, canvas, hint);
+  const footer = document.createElement("div");
+  footer.className = "modkit-graph__footer";
+  setPart12(footer, "graph.footer");
+  for (const group2 of options.footer ?? []) {
+    const box = document.createElement("section");
+    box.className = "modkit-graph__footer-group";
+    setPart12(box, "graph.footer-group");
+    const title = document.createElement("h4");
+    title.textContent = safeViewerText12(group2.title, 64);
+    box.append(title);
+    for (const item of group2.items) {
+      const row = document.createElement("div");
+      row.className = "modkit-graph__footer-item";
+      setPart12(row, "graph.footer-item");
+      row.textContent = `${safeViewerText12(item.label, 64)} (${item.count})`;
+      box.append(row);
+    }
+    footer.append(box);
+  }
+  root.append(sidebar, main, footer);
+  const context = canvas.getContext("2d");
+  let placed = [];
+  let zoom = 1;
+  let originX = 0;
+  let originY = 0;
+  let dragging;
+  let panning = false;
+  let last = { x: 0, y: 0 };
+  const visibleNodes = () => {
+    const limit = Number(nodesCap.value);
+    return options.nodes.filter((node) => !(hidden.get(node.type) ?? false)).slice(0, limit);
+  };
+  const completenessNotice = (owner, completeness, reason) => {
+    if (completeness === void 0 || completeness === "complete" && reason === void 0) {
+      return void 0;
+    }
+    const state = completeness === void 0 || completeness === "complete" ? "" : ` ${completeness}`;
+    const explanation = reason === void 0 ? "" : `: ${safeViewerText12(reason, 240)}`;
+    return localizer.text("graph.completeness", {
+      owner: localizer.text(owner === "source" ? "graph.source" : "graph.view"),
+      state,
+      reason: explanation
     });
-    const removeSaveRequest = handleEditorSaveRequest2(root, commit);
-    await renderWindow();
-    return {
-      async update(next) {
-        root.dataset["revision"] = String(next.revision);
-        await renderWindow();
-      },
-      async unmount() {
-        removeSaveRequest();
+  };
+  const statusText = (drawnEdges, renderer) => {
+    const totalNodes = options.totalNodes ?? options.nodes.length;
+    const visibleCandidates = options.nodes.filter((node) => !(hidden.get(node.type) ?? false));
+    const notices = [
+      completenessNotice("source", options.sourceCompleteness, options.sourceReason),
+      completenessNotice("view", options.consumerCompleteness, options.consumerReason),
+      ...placed.length < visibleCandidates.length ? [
+        localizer.text("graph.visibleCapped", {
+          count: placed.length.toLocaleString(localizer.locale)
+        })
+      ] : []
+    ].filter((item) => item !== void 0);
+    return [
+      localizer.text("graph.nodeCount", {
+        visible: placed.length.toLocaleString(localizer.locale),
+        total: totalNodes.toLocaleString(localizer.locale)
+      }),
+      localizer.text("graph.edgeCount", {
+        count: drawnEdges.toLocaleString(localizer.locale)
+      }),
+      renderer,
+      ...notices
+    ].filter((item) => item !== void 0).join(" \xB7 ");
+  };
+  function layout() {
+    const nodes = visibleNodes();
+    const radius = Math.min(canvas.width, canvas.height) / 2.6;
+    placed = nodes.map((node, index) => {
+      const angle = index / Math.max(1, nodes.length) * Math.PI * 2;
+      const spread = radius * (0.35 + 0.65 * (index * 0.61803398875 % 1));
+      return {
+        node,
+        x: Math.cos(angle) * spread,
+        y: Math.sin(angle) * spread,
+        vx: 0,
+        vy: 0
+      };
+    });
+    zoom = 1;
+    originX = 0;
+    originY = 0;
+  }
+  function draw() {
+    if (context === null) {
+      status.textContent = statusText(0);
+      return;
+    }
+    const styles = getComputedStyle(root);
+    const token = (name, fallback) => styles.getPropertyValue(name).trim() || fallback;
+    const width = canvas.width;
+    const height = canvas.height;
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.fillStyle = token("--mk-color-canvas-bg", "#141414");
+    context.fillRect(0, 0, width, height);
+    context.translate(width / 2 + originX, height / 2 + originY);
+    context.scale(zoom, zoom);
+    const index = new Map(placed.map((item) => [item.node.id, item]));
+    let drawnEdges = 0;
+    context.lineWidth = 1 / zoom;
+    for (const edge of options.edges) {
+      const from = index.get(edge.from);
+      const to = index.get(edge.to);
+      if (from === void 0 || to === void 0) continue;
+      context.strokeStyle = edge.dead === true ? token("--mk-color-graph-edge-dead", "#f14c4c") : token("--mk-color-graph-edge", "#5a5a5a");
+      context.globalAlpha = edge.dead === true ? 0.9 : 0.45;
+      context.beginPath();
+      context.moveTo(from.x, from.y);
+      context.lineTo(to.x, to.y);
+      context.stroke();
+      drawnEdges += 1;
+    }
+    context.globalAlpha = 1;
+    const showLabels = labels.checked;
+    for (const item of placed) {
+      const bucket = options.types.find((type) => type.id === item.node.type);
+      const tone = (bucket?.tone ?? 0) % CATEGORICAL + 1;
+      context.fillStyle = token(`--mk-chart-categorical-${tone}`, "#4daafc");
+      context.beginPath();
+      context.arc(item.x, item.y, 4 / zoom + 1, 0, Math.PI * 2);
+      context.fill();
+      if (showLabels && placed.length <= 120) {
+        context.fillStyle = token("--mk-color-fg-muted", "#9d9d9d");
+        context.font = `${11 / zoom}px ${token("--mk-font-sans", "sans-serif")}`;
+        context.fillText(safeViewerText12(item.node.label, 40), item.x + 7 / zoom, item.y + 3 / zoom);
+      }
+    }
+    status.textContent = statusText(drawnEdges);
+  }
+  const pick = (event) => {
+    const box = canvas.getBoundingClientRect();
+    const x = (event.clientX - box.left - canvas.width / 2 - originX) / zoom;
+    const y = (event.clientY - box.top - canvas.height / 2 - originY) / zoom;
+    return placed.find((item) => Math.hypot(item.x - x, item.y - y) < 8 / zoom);
+  };
+  canvas.addEventListener("pointerdown", (event) => {
+    canvas.setPointerCapture(event.pointerId);
+    dragging = pick(event);
+    panning = dragging === void 0;
+    last = { x: event.clientX, y: event.clientY };
+  });
+  canvas.addEventListener("pointermove", (event) => {
+    if (dragging === void 0 && !panning) return;
+    const dx = event.clientX - last.x;
+    const dy = event.clientY - last.y;
+    last = { x: event.clientX, y: event.clientY };
+    if (dragging !== void 0) {
+      dragging.x += dx / zoom;
+      dragging.y += dy / zoom;
+    } else {
+      originX += dx;
+      originY += dy;
+    }
+    draw();
+  });
+  const release = (event) => {
+    if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    dragging = void 0;
+    panning = false;
+  };
+  canvas.addEventListener("pointerup", release);
+  canvas.addEventListener("pointercancel", release);
+  canvas.addEventListener("wheel", (event) => {
+    event.preventDefault();
+    zoom = Math.max(0.2, Math.min(6, zoom * (event.deltaY < 0 ? 1.12 : 0.89)));
+    draw();
+  });
+  if (options.onOpen !== void 0) {
+    canvas.addEventListener("dblclick", (event) => {
+      const box = canvas.getBoundingClientRect();
+      const x = (event.clientX - box.left - canvas.width / 2 - originX) / zoom;
+      const y = (event.clientY - box.top - canvas.height / 2 - originY) / zoom;
+      const hit = placed.find((item) => Math.hypot(item.x - x, item.y - y) < 8 / zoom);
+      if (hit !== void 0) options.onOpen?.(hit.node);
+    });
+  }
+  for (const input of [nodesCap]) {
+    input.addEventListener("change", () => {
+      layout();
+      draw();
+    });
+  }
+  labels.addEventListener("change", draw);
+  let external;
+  const externalHost = document.createElement("div");
+  externalHost.className = "modkit-graph__external";
+  externalHost.hidden = true;
+  setPart12(externalHost, "graph.canvas");
+  canvas.after(externalHost);
+  const paletteSnapshot = () => {
+    const styles = getComputedStyle(root);
+    const read = (name) => styles.getPropertyValue(name).trim();
+    const palette = {
+      background: read("--mk-color-canvas-bg") || "#141414",
+      edge: read("--mk-color-graph-edge") || "#5a5a5a",
+      edgeDead: read("--mk-color-graph-edge-dead") || "#f14c4c",
+      label: read("--mk-color-fg-muted") || "#9d9d9d"
+    };
+    for (let index = 1; index <= CATEGORICAL; index += 1) {
+      palette[`categorical-${index}`] = read(`--mk-chart-categorical-${index}`) || "#4daafc";
+    }
+    return palette;
+  };
+  const externalState = () => ({
+    nodes: placed.map((item) => item.node),
+    edges: options.edges,
+    types: options.types,
+    labels: labels.checked,
+    palette: paletteSnapshot()
+  });
+  const selectRenderer = () => {
+    const index = rendererSelect.selectedIndex;
+    const id = rendererIds[index] ?? "canvas-2d";
+    external?.destroy();
+    external = void 0;
+    if (id === "canvas-2d") {
+      canvas.hidden = false;
+      externalHost.hidden = true;
+      resize();
+      return;
+    }
+    const factory = (options.renderers ?? []).find((item) => item.id === id);
+    if (factory === void 0) return;
+    canvas.hidden = true;
+    externalHost.hidden = false;
+    const hooks = options.onOpen === void 0 ? {} : { onOpen: options.onOpen };
+    external = factory.create(externalHost, hooks);
+    const box = externalHost.getBoundingClientRect();
+    external.resize(Math.max(240, Math.round(box.width)), Math.max(200, Math.round(box.height)));
+    external.render(externalState());
+    const drawn = external.drawnEdges?.() ?? options.edges.length;
+    status.textContent = statusText(drawn, factory.label);
+  };
+  rendererSelect.addEventListener("change", selectRenderer);
+  const resize = () => {
+    if (external !== void 0) {
+      const box2 = externalHost.getBoundingClientRect();
+      external.resize(Math.max(240, Math.round(box2.width)), Math.max(200, Math.round(box2.height)));
+      external.render(externalState());
+      return;
+    }
+    const box = canvas.getBoundingClientRect();
+    canvas.width = Math.max(240, Math.round(box.width));
+    canvas.height = Math.max(200, Math.round(box.height));
+    layout();
+    draw();
+  };
+  syncTypes();
+  queueMicrotask(resize);
+  return {
+    root,
+    resize,
+    destroy() {
+      external?.destroy();
+      root.remove();
+    }
+  };
+}
+function createRelationGraphViewer(options = {}) {
+  const localizer = withEnglishUiFallback11(options.localizer, GRAPH_FALLBACK_MESSAGES);
+  return defineViewerModule10({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope10(args.signal);
+      const root = createSurface10(args.container, localizer.text("graph.viewer"));
+      try {
+        const lease2 = await unknownSourceLease8(
+          args.sources,
+          args.slot,
+          "common.view/relation-graph-source"
+        );
+        if (lease2 === void 0) throw new TypeError("relation graph binding is unavailable");
+        scope.lease(lease2);
+        const options2 = await loadRelationGraphOptions(lease2.value, {
+          label: localizer.text("graph.relation"),
+          localizer,
+          signal: scope.signal
+        });
+        const graph = createRelationGraph(root.ownerDocument, options2);
+        root.append(graph.root);
+        scope.cleanup(() => graph.destroy());
+        root.dataset["revision"] = args.descriptor.revision;
+        return createViewerMount9(root, scope, args, ({ descriptor }) => {
+          root.dataset["revision"] = descriptor.revision;
+        });
+      } catch (error3) {
         await scope.close();
         root.remove();
+        throw error3;
       }
-    };
-  }
-};
+    }
+  });
+}
+var relationGraphViewer = createRelationGraphViewer();
 
-// packages/ui/dist/image/index.js
+// packages/ui/dist/calculations/index.js
 var PARTS13 = Object.freeze([
   // shared surface
   "viewer",
@@ -52868,16 +55244,16 @@ var STATES13 = Object.freeze([
   "drop-target"
 ]);
 var STATE_SET13 = new Set(STATES13);
-function setPart13(element22, part) {
+function setPart13(element20, part) {
   if (!PART_SET13.has(part)) throw new TypeError(`unregistered part: ${part}`);
-  element22.setAttribute(PART_ATTRIBUTE13, part);
+  element20.setAttribute(PART_ATTRIBUTE13, part);
 }
-function setState13(element22, states) {
+function setState13(element20, states) {
   for (const state of states) {
     if (!STATE_SET13.has(state)) throw new TypeError(`unregistered state: ${state}`);
   }
-  if (states.length === 0) element22.removeAttribute(STATE_ATTRIBUTE13);
-  else element22.setAttribute(STATE_ATTRIBUTE13, [...new Set(states)].join(" "));
+  if (states.length === 0) element20.removeAttribute(STATE_ATTRIBUTE13);
+  else element20.setAttribute(STATE_ATTRIBUTE13, [...new Set(states)].join(" "));
 }
 var VIEWER_CSP13 = Object.freeze({
   defaultSrc: "'none'",
@@ -52915,15 +55291,12 @@ var VIEWER_CSP_TEXT13 = policyText13(VIEWER_CSP13);
 var VIEWER_CSP_TRUSTED_EDITOR_TEXT13 = policyText13(VIEWER_CSP_TRUSTED_EDITOR13);
 var HOSTILE_TEXT13 = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/gu;
 function safeViewerText13(value2, maximum = 1e6) {
-  const text3 = String(value2);
-  const bounded = text3.length > maximum ? `${text3.slice(0, maximum)}\u2026` : text3;
+  const text22 = String(value2);
+  const bounded = text22.length > maximum ? `${text22.slice(0, maximum)}\u2026` : text22;
   return bounded.replace(HOSTILE_TEXT13, (character) => {
     const code = character.codePointAt(0)?.toString(16).toUpperCase().padStart(4, "0") ?? "0000";
     return `\\u{${code}}`;
   });
-}
-function setViewerText9(node, value2, maximum) {
-  node.textContent = safeViewerText13(value2, maximum);
 }
 function requireContainer11(value2) {
   if (typeof value2 !== "object" || value2 === null || !("ownerDocument" in value2) || !("replaceChildren" in value2) || typeof value2.replaceChildren !== "function") {
@@ -52942,16 +55315,6 @@ function createSurface11(container, label) {
   setPart13(root, "viewer");
   host.replaceChildren(root);
   return root;
-}
-function element9(parent, tag, options = {}) {
-  const node = parent.ownerDocument.createElement(tag);
-  if (options.className !== void 0) node.className = options.className;
-  if (options.role !== void 0) node.setAttribute("role", options.role);
-  if (options.text !== void 0) setViewerText9(node, options.text);
-  if (options.part !== void 0) setPart13(node, options.part);
-  if (options.state !== void 0) setState13(node, options.state);
-  parent.append(node);
-  return node;
 }
 function bindingFor9(slot, contract) {
   return slot.bindings.find((binding) => "contract" in binding && binding.contract === contract);
@@ -52985,7 +55348,7 @@ var ViewerMountScope11 = class {
     for (const lease2 of this.#leases.reverse()) await lease2.release();
   }
 };
-function createViewerMount9(root, scope, initial, render2) {
+function createViewerMount10(root, scope, initial, render2) {
   let state = initial;
   return Object.freeze({
     async update(args) {
@@ -53000,7 +55363,7 @@ function createViewerMount9(root, scope, initial, render2) {
     }
   });
 }
-function defineViewerModule10(module) {
+function defineViewerModule11(module) {
   return Object.freeze(module);
 }
 function unknownSourceLease9(sources, slot, contract) {
@@ -53008,396 +55371,212 @@ function unknownSourceLease9(sources, slot, contract) {
   if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
   return sources.get(binding);
 }
-var t4 = (name, tier, type, description, extra = {}) => ({ name, tier, type, isPublic: true, description, ...extra });
-var PALETTE_STEPS3 = [
-  "050",
-  "100",
-  "200",
-  "300",
-  "400",
-  "500",
-  "600",
-  "700",
-  "800",
-  "900"
-];
-var PALETTE_HUES3 = ["neutral", "accent", "ok", "warn", "error", "info"];
-var tier13 = PALETTE_HUES3.flatMap(
-  (hue) => PALETTE_STEPS3.map((step) => t4(`palette.${hue}.${step}`, 1, "color", `${hue} ramp step ${step}`))
-);
-var tier23 = [
-  // surfaces
-  t4("color.bg", 2, "color", "window ground behind everything"),
-  t4("color.surface", 2, "color", "default component surface"),
-  t4("color.raised", 2, "color", "surface above the default plane"),
-  t4("color.sunken", 2, "color", "inset surface such as an input well"),
-  t4("color.overlay", 2, "color", "floating surface: menu, popover, dialog"),
-  t4("color.scrim", 2, "color", "dimming layer behind a modal"),
-  // text
-  t4("color.fg", 2, "color", "primary text"),
-  t4("color.fg-muted", 2, "color", "secondary text"),
-  t4("color.fg-subtle", 2, "color", "tertiary text and placeholders"),
-  t4("color.fg-inverse", 2, "color", "text on an accent fill"),
-  t4("color.fg-disabled", 2, "color", "disabled text"),
-  t4("color.fg-link", 2, "color", "hyperlink text"),
-  t4("color.fg-destructive", 2, "color", "destructive action text"),
-  // lines
-  t4("color.border", 2, "color", "default separator and component border"),
-  t4("color.border-strong", 2, "color", "emphasised border"),
-  t4("color.separator", 2, "color", "hairline between list sections"),
-  // interaction
-  t4("color.accent", 2, "color", "primary action fill"),
-  t4("color.accent-fg", 2, "color", "text on the accent fill"),
-  t4("color.accent-muted", 2, "color", "low-emphasis accent wash"),
-  t4("color.accent-muted-fg", 2, "color", "text on the accent wash"),
-  t4("color.focus", 2, "color", "focus ring"),
-  t4("color.hover", 2, "color", "hover wash"),
-  t4("color.active", 2, "color", "pressed wash"),
-  t4("color.selection", 2, "color", "active selection fill"),
-  t4("color.selection-inactive", 2, "color", "selection fill when the surface is unfocused"),
-  t4("color.selection-fg", 2, "color", "text on a selection fill"),
-  t4("color.match-highlight", 2, "color", "search match highlight"),
-  t4("color.drop-target", 2, "color", "drag-and-drop target indicator"),
-  t4("color.readonly", 2, "color", "read-only field wash"),
-  // status
-  ...["ok", "warn", "error", "info"].flatMap((s2) => [
-    t4(`status.${s2}`, 2, "color", `${s2} indicator colour`),
-    t4(`status.${s2}-fg`, 2, "color", `text on a ${s2} fill`),
-    t4(`status.${s2}-bg`, 2, "color", `${s2} background wash`),
-    t4(`status.${s2}-border`, 2, "color", `${s2} border`)
-  ]),
-  // scrollbars
-  t4("color.scrollbar-track", 2, "color", "scrollbar trough"),
-  t4("color.scrollbar-thumb", 2, "color", "scrollbar thumb"),
-  t4("color.scrollbar-thumb-hover", 2, "color", "scrollbar thumb, hovered"),
-  t4("color.scrollbar-thumb-active", 2, "color", "scrollbar thumb while dragging"),
-  t4("color.scrollbar-shadow", 2, "color", "hairline separating a scrolled pane from its content"),
-  // canvas / GPU surfaces — these are not UI chrome and need their own roles
-  t4("color.canvas-bg", 2, "color", "canvas or WebGL scene ground"),
-  t4("color.canvas-grid", 2, "color", "scene grid lines"),
-  t4("color.canvas-gizmo", 2, "color", "scene gizmo and axis handles"),
-  // Axis identity is a convention users read at a glance (X red, Y green, Z blue), so the three
-  // get their own roles rather than borrowing from the categorical ramp, which a theme may reorder.
-  t4("color.axis-x", 2, "color", "X axis handle and line"),
-  t4("color.axis-y", 2, "color", "Y axis handle and line"),
-  t4("color.axis-z", 2, "color", "Z axis handle and line"),
-  t4("color.canvas-selection", 2, "color", "selected geometry outline"),
-  // graph / chart categorical ramp
-  ...["1", "2", "3", "4", "5", "6"].map(
-    (n2) => t4(`chart.categorical-${n2}`, 2, "color", `categorical series ${n2}`)
-  ),
-  t4("color.graph-node", 2, "color", "relation-graph node fill"),
-  t4("color.graph-edge", 2, "color", "relation-graph edge stroke"),
-  t4("color.graph-edge-dead", 2, "color", "unresolved reference edge"),
-  // diff
-  t4("color.diff-added", 2, "color", "added line or cell wash"),
-  t4("color.diff-removed", 2, "color", "removed line or cell wash"),
-  t4("color.diff-changed", 2, "color", "changed line or cell wash"),
-  // space
-  ...["0", "1", "2", "3", "4", "5", "6", "7", "8"].map(
-    (n2) => t4(`space.${n2}`, 2, "length", `spacing step ${n2}`)
-  ),
-  // radius
-  ...["none", "sm", "md", "lg", "pill"].map(
-    (r2) => t4(`radius.${r2}`, 2, "length", `corner radius ${r2}`)
-  ),
-  // type
-  t4("font.sans", 2, "font-family", "UI typeface stack"),
-  t4("font.mono", 2, "font-family", "monospace stack for IDs, code, offsets"),
-  ...["xs", "sm", "md", "lg", "xl"].map((s2) => t4(`font.size-${s2}`, 2, "length", `font size ${s2}`)),
-  ...["normal", "medium", "bold"].map((w) => t4(`font.weight-${w}`, 2, "number", `font weight ${w}`)),
-  ...["tight", "normal", "loose"].map((l2) => t4(`line.${l2}`, 2, "number", `line height ${l2}`)),
-  // metrics
-  t4("size.row", 2, "length", "list and table row height"),
-  t4("size.control", 2, "length", "default control height"),
-  t4("size.icon", 2, "length", "default icon box"),
-  t4("size.touch", 2, "length", "minimum touch target"),
-  t4("size.scrollbar", 2, "length", "scrollbar thickness"),
-  t4("size.scrollbar-thin", 2, "length", "scrollbar thickness inside dense panes"),
-  // layering
-  ...["base", "sticky", "dropdown", "overlay", "modal", "toast"].map(
-    (z) => t4(`z.${z}`, 2, "z-index", `stacking band: ${z}`)
-  ),
-  // motion
-  ...["fast", "normal", "slow"].map(
-    (d) => t4(`motion.${d}`, 2, "duration", `transition duration ${d}`)
-  ),
-  t4("motion.ease", 2, "easing", "default easing curve"),
-  // elevation
-  ...["1", "2", "3"].map((e2) => t4(`elevation.${e2}`, 2, "shadow", `elevation level ${e2}`)),
-  t4("shadow.focus-ring", 2, "shadow", "focus ring shadow")
-];
-var c4 = (name, component, type, derivesFrom, description) => t4(name, 3, type, description, { component, derivesFrom });
-var runtime3 = (name, component, type, runtimeDefault, description) => t4(name, 3, type, description, { component, runtimeDefault });
-var tier33 = [
-  runtime3("tree.indent-level", "tree", "number", "0", "nesting depth of the current tree row"),
-  runtime3("card.grid-columns", "card", "number", "5", "column count of the current card grid"),
-  // Context-menu placement is per-instance pixel geometry, which C3 routes through tokens.
-  runtime3("explorer.menu-x", "explorer", "length", "0px", "context menu left offset"),
-  runtime3("explorer.menu-y", "explorer", "length", "0px", "context menu top offset"),
-  c4("table.row-height", "table", "length", "size.row", "table row height"),
-  c4("table.header-bg", "table", "color", "color.raised", "table header background"),
-  c4("table.cell-padding-x", "table", "length", "space.2", "table cell horizontal padding"),
-  c4("tree.indent", "tree", "length", "space.4", "tree nesting indent per level"),
-  c4("tree.row-height", "tree", "length", "size.row", "tree row height"),
-  c4("hex.byte-gap", "hex", "length", "space.1", "gap between hex byte columns"),
-  c4("hex.gutter-fg", "hex", "color", "color.fg-subtle", "hex offset gutter text"),
-  c4("text.line-height", "text", "number", "line.normal", "text stage line height"),
-  c4("shell.rail-width", "shell", "length", "space.8", "default side rail width"),
-  c4("shell.splitter-size", "shell", "length", "space.1", "splitter hit area thickness"),
-  c4("toolbar.height", "toolbar", "length", "size.control", "toolbar height"),
-  c4("panel.padding", "panel", "length", "space.3", "panel content padding"),
-  c4("transport.track-height", "transport", "length", "space.2", "transport scrub track height")
-];
-var TOKENS3 = Object.freeze([...tier13, ...tier23, ...tier33]);
-var TOKENS_BY_NAME3 = new Map(
-  TOKENS3.map((token) => [token.name, token])
-);
-function cssVariableName3(tokenName) {
-  return `--mk-${tokenName.replace(/\./gu, "-")}`;
-}
-var HEX3 = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/iu;
-var FUNCTIONAL_COLOR3 = /^(?:rgb|rgba|hsl|hsla|color-mix|oklch|lab|lch)\([^;{}]*\)$/iu;
-var LENGTH3 = /^-?(?:\d+\.?\d*|\.\d+)(?:px|rem|em|ch|%|vh|vw|vmin|vmax)$|^0$/u;
-var DURATION3 = /^(?:\d+\.?\d*|\.\d+)m?s$/u;
-var NUMBER3 = /^-?(?:\d+\.?\d*|\.\d+)$/u;
-var EASING3 = /^(?:linear|ease|ease-in|ease-out|ease-in-out|steps\([^;{}]*\)|cubic-bezier\([^;{}]*\))$/u;
-var SHADOW3 = /^(?:none|[-\w\s.,()#%/]+)$/u;
-var FONT_FAMILY3 = /^[-\w\s.,'"()]+$/u;
-var FORBIDDEN3 = /url\(|expression\(|javascript:|@import|[;{}]|<|>/iu;
-function validateTokenValue3(tokenName, value2) {
-  const token = TOKENS_BY_NAME3.get(tokenName);
-  if (token === void 0) return { valid: false, reason: `unknown token: ${tokenName}` };
-  if (typeof value2 !== "string" || value2.length === 0) {
-    return { valid: false, reason: "value must be a non-empty string" };
-  }
-  if (value2.length > 256) return { valid: false, reason: "value exceeds 256 characters" };
-  if (FORBIDDEN3.test(value2)) {
-    return { valid: false, reason: "value contains a resource load or declaration escape" };
-  }
-  const ok2 = (() => {
-    switch (token.type) {
-      case "color":
-        return HEX3.test(value2) || FUNCTIONAL_COLOR3.test(value2) || /^[a-z-]+$/iu.test(value2);
-      case "length":
-        return LENGTH3.test(value2);
-      case "number":
-        return NUMBER3.test(value2);
-      case "duration":
-        return DURATION3.test(value2);
-      case "easing":
-        return EASING3.test(value2);
-      case "font-family":
-        return FONT_FAMILY3.test(value2);
-      case "shadow":
-        return SHADOW3.test(value2);
-      case "z-index":
-        return NUMBER3.test(value2);
-      default:
-        return false;
+var CALCULATIONS_FALLBACK_MESSAGES = {
+  "calculations.capped": "capped by the viewer",
+  "calculations.empty": "This subject publishes no calculations.",
+  "calculations.label": "Subject calculations",
+  "calculations.notAvailable": "not available",
+  "calculations.progress": "{visible} of {total} calculations \xB7 {state}{reason}",
+  "calculations.sources": "Sources: {sources}",
+  "calculations.summary": "{count} calculations \xB7 {warnings} warnings"
+};
+function createEnglishUiLocalizer12(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
     }
-  })();
-  return ok2 ? { valid: true } : { valid: false, reason: `value is not a valid ${token.type}` };
+  });
 }
-function requireElement3(value2) {
-  if (typeof value2 !== "object" || value2 === null || !("style" in value2) || typeof value2.style !== "object") {
-    throw new TypeError("token target must be a DOM element");
-  }
+function withEnglishUiFallback12(localizer, messages) {
+  const fallback = createEnglishUiLocalizer12(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+function positiveLimit4(value2, label) {
+  if (!Number.isSafeInteger(value2) || value2 <= 0) throw new RangeError(`${label} must be positive`);
   return value2;
 }
-function setToken3(element22, name, value2) {
-  const target = requireElement3(element22);
-  const result = validateTokenValue3(name, value2);
-  if (!result.valid) {
-    throw new TypeError(`invalid value for token ${name}: ${result.reason ?? "unknown reason"}`);
-  }
-  target.style.setProperty(cssVariableName3(name), value2);
-}
-async function collectEncodedMedia2(source2, maximumBytes, signal) {
-  const descriptor = await source2.descriptor();
-  if (descriptor.bytes > BigInt(maximumBytes) || descriptor.bytes > BigInt(Number.MAX_SAFE_INTEGER)) {
-    throw new RangeError(`encoded media exceeds the stage budget: ${descriptor.bytes} bytes`);
-  }
-  const total = Number(descriptor.bytes);
-  const bytes2 = new Uint8Array(total);
-  let offset = 0;
-  while (offset < total) {
-    if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-    const chunk = await source2.read(BigInt(offset), Math.min(1024 * 1024, total - offset), signal);
-    if (chunk.byteLength === 0 || chunk.byteLength > total - offset) {
-      throw new RangeError("encoded media ended outside its declared size");
-    }
-    bytes2.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return { mediaType: descriptor.mediaType, bytes: bytes2 };
-}
-var IMAGE_MAXIMUM_BYTES = 64 * 1024 * 1024;
-async function loadBitmap(source2, signal) {
-  const info = await source2.info(signal);
-  const decodedBytes = info.width * info.height * 4;
-  if (info.decodedAccess && source2.readRegion !== void 0 && Number.isSafeInteger(decodedBytes) && decodedBytes <= IMAGE_MAXIMUM_BYTES) {
-    const region = await source2.readRegion(
+async function loadPages2(source2, maximum, pageSize, signal) {
+  const items = [];
+  let cursor3;
+  const seen = /* @__PURE__ */ new Set();
+  while (items.length < maximum) {
+    const page2 = await source2.calculations(
       {
-        x: 0,
-        y: 0,
-        width: info.width,
-        height: info.height,
-        frame: 0,
-        mipLevel: 0,
-        layer: 0,
-        face: 0,
-        slice: 0,
-        pixelFormat: "rgba8",
-        maxBytes: IMAGE_MAXIMUM_BYTES
+        ...cursor3 === void 0 ? {} : { cursor: cursor3 },
+        limit: Math.min(pageSize, maximum - items.length)
       },
       signal
     );
-    const pixels = new Uint8ClampedArray(region.pixels.byteLength);
-    pixels.set(region.pixels);
-    const bitmap2 = await createImageBitmap(new ImageData(pixels, region.width, region.height));
-    return { bitmap: bitmap2, bytes: region.pixels.byteLength };
+    items.push(...page2.items);
+    if (page2.nextCursor === void 0) return { items: Object.freeze(items), capped: false };
+    if (seen.has(page2.nextCursor))
+      throw new Error("subject calculations source repeated a page cursor");
+    seen.add(page2.nextCursor);
+    cursor3 = page2.nextCursor;
   }
-  const encoded = await source2.encoded(signal);
-  const media = await collectEncodedMedia2(encoded, IMAGE_MAXIMUM_BYTES, signal);
-  const bitmap = await createImageBitmap(
-    new Blob([media.bytes], { type: media.mediaType })
+  return { items: Object.freeze(items), capped: cursor3 !== void 0 };
+}
+async function loadSubjectCalculations(source2, options = {}) {
+  const maximum = positiveLimit4(options.maximum ?? 512, "maximum");
+  const pageSize = positiveLimit4(options.pageSize ?? 64, "pageSize");
+  const [summary, page2] = await Promise.all([
+    source2.summary(options.signal),
+    loadPages2(source2, maximum, pageSize, options.signal)
+  ]);
+  return Object.freeze({ summary, calculations: page2.items, capped: page2.capped });
+}
+function displayValue(value2, localizer) {
+  if (value2 === void 0) return localizer.text("calculations.notAvailable");
+  if (typeof value2 === "string") return value2;
+  if (value2 === null || typeof value2 === "number" || typeof value2 === "boolean")
+    return String(value2);
+  return JSON.stringify(value2);
+}
+function text2(document, part, value2) {
+  const node = document.createElement("span");
+  setPart13(node, part);
+  node.textContent = safeViewerText13(value2, 2048);
+  return node;
+}
+function createSubjectCalculationsView(document, snapshot3, options = {}) {
+  const localizer = withEnglishUiFallback12(options.localizer, CALCULATIONS_FALLBACK_MESSAGES);
+  const root = document.createElement("article");
+  root.className = "modkit-calculations";
+  root.setAttribute("aria-label", localizer.text("calculations.label"));
+  setPart13(root, "calculations");
+  const summary = document.createElement("p");
+  setPart13(summary, "calculations.summary");
+  const visible = snapshot3.calculations.length;
+  summary.textContent = safeViewerText13(
+    localizer.text("calculations.progress", {
+      visible,
+      total: snapshot3.summary.totalCalculations,
+      state: snapshot3.capped ? localizer.text("calculations.capped") : snapshot3.summary.completeness,
+      reason: snapshot3.summary.reason === void 0 ? "" : ` \xB7 ${snapshot3.summary.reason}`
+    }),
+    1024
   );
-  return { bitmap, bytes: media.bytes.byteLength };
-}
-function drawChecker(context, width, height) {
-  const cell = 8;
-  for (let y = 0; y < height; y += cell) {
-    for (let x = 0; x < width; x += cell) {
-      const even = (x / cell | 0) % 2 === (y / cell | 0) % 2;
-      context.fillStyle = even ? "#808080" : "#a0a0a0";
-      context.fillRect(x, y, cell, cell);
-    }
-  }
-}
-function isolateChannel(context, width, height, channel) {
-  if (channel === "rgb") return;
-  const frame = context.getImageData(0, 0, width, height);
-  const data = frame.data;
-  const index = channel === "r" ? 0 : channel === "g" ? 1 : channel === "b" ? 2 : 3;
-  for (let at = 0; at < data.length; at += 4) {
-    const value2 = data[at + index];
-    data[at] = value2;
-    data[at + 1] = value2;
-    data[at + 2] = value2;
-    data[at + 3] = 255;
-  }
-  context.putImageData(frame, 0, 0);
-}
-var imageViewer = defineViewerModule10({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope11(args.signal);
-    const root = createSurface11(args.container, "Image viewer");
-    const stage = element9(root, "div", { part: "image" });
-    const toolbar = element9(stage, "div", { part: "image.toolbar", role: "toolbar" });
-    toolbar.setAttribute("aria-label", "Image controls");
-    const readout = element9(stage, "output", { part: "image.readout" });
-    const canvas = element9(stage, "canvas", { part: "image.canvas" });
-    canvas.tabIndex = 0;
-    const lease2 = await unknownSourceLease9(
-      args.sources,
-      args.slot,
-      "common.view/raster-image-source"
+  if (snapshot3.capped || snapshot3.summary.completeness !== "complete")
+    setState13(summary, ["degraded"]);
+  root.append(summary);
+  const list = document.createElement("div");
+  setPart13(list, "calculations.list");
+  root.append(list);
+  for (const calculation of snapshot3.calculations) {
+    const item = document.createElement("section");
+    setPart13(item, "calculations.item");
+    item.dataset["status"] = calculation.status;
+    const heading = document.createElement("h3");
+    setPart13(heading, "calculations.heading");
+    heading.textContent = safeViewerText13(calculation.label, 256);
+    const result = text2(
+      document,
+      "calculations.result",
+      `${displayValue(calculation.value, localizer)}${calculation.unit === void 0 ? "" : ` ${calculation.unit}`} \xB7 ${calculation.status}`
     );
-    if (lease2 === void 0) throw new TypeError("image binding is unavailable");
-    scope.lease(lease2);
-    let model;
-    let zoom = 1;
-    let fit = true;
-    let background = "checker";
-    let channel = "rgb";
-    const context = canvas.getContext("2d");
-    if (context === null) throw new TypeError("2d canvas context is unavailable");
-    const paint = () => {
-      if (model === void 0) return;
-      const { bitmap } = model;
-      const box = stage.getBoundingClientRect();
-      const available = {
-        width: Math.max(64, box.width - 8),
-        height: Math.max(64, box.height - 96)
-      };
-      const scale = fit ? Math.min(available.width / bitmap.width, available.height / bitmap.height, 1) : zoom;
-      const width = Math.max(1, Math.round(bitmap.width * scale));
-      const height = Math.max(1, Math.round(bitmap.height * scale));
-      canvas.width = width;
-      canvas.height = height;
-      setToken3(canvas, "size.icon", `${Math.min(width, 4096)}px`);
-      context.imageSmoothingEnabled = scale < 1;
-      if (background === "checker") drawChecker(context, width, height);
-      else {
-        context.fillStyle = background === "dark" ? "#141414" : "#f4f4f4";
-        context.fillRect(0, 0, width, height);
-      }
-      context.drawImage(bitmap, 0, 0, width, height);
-      isolateChannel(context, width, height, channel);
-      setViewerText9(
-        readout,
-        `${bitmap.width}\xD7${bitmap.height} \xB7 ${(model.bytes / 1024).toFixed(1)} KiB \xB7 ${Math.round(scale * 100)}%${channel === "rgb" ? "" : ` \xB7 channel ${channel.toUpperCase()}`}`
+    const formula = text2(
+      document,
+      "calculations.formula",
+      `${calculation.formula.name} ${calculation.formula.version}: ${calculation.formula.expression}`
+    );
+    item.append(heading, result, formula);
+    if (calculation.provenance.length > 0) {
+      item.append(
+        text2(
+          document,
+          "calculations.formula",
+          localizer.text("calculations.sources", {
+            sources: calculation.provenance.map((origin) => origin.label).join(" \xB7 ")
+          })
+        )
       );
-    };
-    const button = (label, title, onClick) => {
-      const node = element9(toolbar, "button", {
-        text: label,
-        part: "operations.button"
-      });
-      node.type = "button";
-      node.title = title;
-      node.addEventListener("click", () => {
-        onClick();
-        paint();
-      });
-      scope.cleanup(() => node.replaceWith(node.cloneNode(true)));
-    };
-    button("Fit", "Fit to the stage", () => {
-      fit = true;
-    });
-    button("1:1", "Actual pixels", () => {
-      fit = false;
-      zoom = 1;
-    });
-    button("\u2212", "Zoom out", () => {
-      fit = false;
-      zoom = Math.max(0.1, zoom / 1.5);
-    });
-    button("+", "Zoom in", () => {
-      fit = false;
-      zoom = Math.min(32, zoom * 1.5);
-    });
-    button("BG", "Cycle the backdrop", () => {
-      background = background === "checker" ? "dark" : background === "dark" ? "light" : "checker";
-    });
-    for (const value2 of ["rgb", "r", "g", "b", "a"]) {
-      button(value2.toUpperCase(), `Isolate the ${value2.toUpperCase()} channel`, () => {
-        channel = value2;
-      });
     }
-    setState13(stage, ["loading"]);
-    try {
-      model = await loadBitmap(lease2.value, scope.signal);
-      setState13(stage, []);
-      paint();
-    } catch (error3) {
-      setState13(stage, ["error"]);
-      canvas.remove();
-      element9(stage, "p", {
-        part: "viewer.empty",
-        text: `The platform decoder cannot render these bytes: ${error3 instanceof Error ? error3.message : String(error3)}. A format-specific decoder provider is required.`
-      });
+    if (calculation.inputs.length > 0) {
+      const inputs = document.createElement("dl");
+      setPart13(inputs, "calculations.inputs");
+      for (const input of calculation.inputs) {
+        const row = document.createElement("div");
+        setPart13(row, "calculations.input");
+        const label = document.createElement("dt");
+        label.textContent = safeViewerText13(input.label, 256);
+        const value2 = document.createElement("dd");
+        value2.textContent = safeViewerText13(
+          `${displayValue(input.value, localizer)}${input.unit === void 0 ? "" : ` ${input.unit}`} \xB7 ${input.state}${input.provenance.length === 0 ? "" : ` \xB7 ${input.provenance.map((origin) => origin.label).join(" \xB7 ")}`}`,
+          2048
+        );
+        row.append(label, value2);
+        inputs.append(row);
+      }
+      item.append(inputs);
     }
-    return createViewerMount9(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-      paint();
-    });
+    if (calculation.warnings.length > 0) {
+      const warnings = document.createElement("ul");
+      setPart13(warnings, "calculations.warnings");
+      for (const warning of calculation.warnings) {
+        const entry2 = document.createElement("li");
+        entry2.textContent = safeViewerText13(`${warning.code}: ${warning.message}`, 2048);
+        warnings.append(entry2);
+      }
+      item.append(warnings);
+    }
+    list.append(item);
   }
-});
+  if (snapshot3.calculations.length === 0) {
+    const empty = document.createElement("p");
+    setPart13(empty, "viewer.empty");
+    empty.textContent = localizer.text("calculations.empty");
+    list.append(empty);
+  }
+  return { root, destroy: () => root.remove() };
+}
+function createSubjectCalculationsViewer(options = {}) {
+  const localizer = withEnglishUiFallback12(options.localizer, CALCULATIONS_FALLBACK_MESSAGES);
+  return defineViewerModule11({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope11(args.signal);
+      const root = createSurface11(args.container, localizer.text("calculations.label"));
+      try {
+        const lease2 = await unknownSourceLease9(
+          args.sources,
+          args.slot,
+          "common.view/subject-calculations-source"
+        );
+        if (lease2 === void 0) throw new TypeError("subject calculations binding is unavailable");
+        scope.lease(lease2);
+        const snapshot3 = await loadSubjectCalculations(lease2.value, {
+          signal: scope.signal
+        });
+        const view = createSubjectCalculationsView(root.ownerDocument, snapshot3, { localizer });
+        root.append(view.root);
+        scope.cleanup(() => view.destroy());
+        root.dataset["revision"] = args.descriptor.revision;
+        return createViewerMount10(root, scope, args, ({ descriptor }) => {
+          root.dataset["revision"] = descriptor.revision;
+        });
+      } catch (error3) {
+        await scope.close();
+        root.remove();
+        throw error3;
+      }
+    }
+  });
+}
+var subjectCalculationsViewer = createSubjectCalculationsViewer();
 
-// packages/ui/dist/metadata/index.js
+// packages/ui/dist/card/index.js
 var PARTS14 = Object.freeze([
   // shared surface
   "viewer",
@@ -53747,16 +55926,16 @@ var STATES14 = Object.freeze([
   "drop-target"
 ]);
 var STATE_SET14 = new Set(STATES14);
-function setPart14(element22, part) {
+function setPart14(element20, part) {
   if (!PART_SET14.has(part)) throw new TypeError(`unregistered part: ${part}`);
-  element22.setAttribute(PART_ATTRIBUTE14, part);
+  element20.setAttribute(PART_ATTRIBUTE14, part);
 }
-function setState14(element22, states) {
+function setState14(element20, states) {
   for (const state of states) {
     if (!STATE_SET14.has(state)) throw new TypeError(`unregistered state: ${state}`);
   }
-  if (states.length === 0) element22.removeAttribute(STATE_ATTRIBUTE14);
-  else element22.setAttribute(STATE_ATTRIBUTE14, [...new Set(states)].join(" "));
+  if (states.length === 0) element20.removeAttribute(STATE_ATTRIBUTE14);
+  else element20.setAttribute(STATE_ATTRIBUTE14, [...new Set(states)].join(" "));
 }
 var VIEWER_CSP14 = Object.freeze({
   defaultSrc: "'none'",
@@ -53801,9 +55980,6 @@ function safeViewerText14(value2, maximum = 1e6) {
     return `\\u{${code}}`;
   });
 }
-function setViewerText10(node, value2, maximum) {
-  node.textContent = safeViewerText14(value2, maximum);
-}
 function requireContainer12(value2) {
   if (typeof value2 !== "object" || value2 === null || !("ownerDocument" in value2) || !("replaceChildren" in value2) || typeof value2.replaceChildren !== "function") {
     throw new TypeError("viewer container must be a DOM element");
@@ -53822,15 +55998,8 @@ function createSurface12(container, label) {
   host.replaceChildren(root);
   return root;
 }
-function element10(parent, tag, options = {}) {
-  const node = parent.ownerDocument.createElement(tag);
-  if (options.className !== void 0) node.className = options.className;
-  if (options.role !== void 0) node.setAttribute("role", options.role);
-  if (options.text !== void 0) setViewerText10(node, options.text);
-  if (options.part !== void 0) setPart14(node, options.part);
-  if (options.state !== void 0) setState14(node, options.state);
-  parent.append(node);
-  return node;
+function bindingFor10(slot, contract) {
+  return slot.bindings.find((binding) => "contract" in binding && binding.contract === contract);
 }
 var ViewerMountScope12 = class {
   controller = new AbortController();
@@ -53861,7 +56030,7 @@ var ViewerMountScope12 = class {
     for (const lease2 of this.#leases.reverse()) await lease2.release();
   }
 };
-function createViewerMount10(root, scope, initial, render2) {
+function createViewerMount11(root, scope, initial, render2) {
   let state = initial;
   return Object.freeze({
     async update(args) {
@@ -53876,122 +56045,956 @@ function createViewerMount10(root, scope, initial, render2) {
     }
   });
 }
-function defineViewerModule11(module) {
+function defineViewerModule12(module) {
   return Object.freeze(module);
 }
-function resolved(descriptor) {
-  return "identity" in descriptor ? descriptor : void 0;
+function unknownSourceLease10(sources, slot, contract) {
+  const binding = bindingFor10(slot, contract);
+  if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
+  return sources.get(binding);
 }
-function traitValue(trait) {
-  const parameters = Object.entries(trait.parameters ?? {});
-  if (parameters.length === 0) return trait.state;
-  const stated = parameters.map(([key3, item]) => `${key3}=${String(item)}`).join(", ");
-  return `${trait.state} \xB7 ${stated}`;
-}
-function renderMetadata(root, descriptor) {
-  root.replaceChildren();
-  const groups = resolved(descriptor)?.metadata ?? [];
-  const traits = descriptor.traits;
-  if (groups.length === 0 && traits.length === 0) {
-    element10(root, "p", { text: "No metadata reported by the codec.", part: "viewer.empty" });
-    return;
+function createAccordion(document, options) {
+  const root = document.createElement("div");
+  root.className = "modkit-accordion";
+  root.setAttribute("aria-label", options.label);
+  setPart14(root, "accordion");
+  const entries = /* @__PURE__ */ new Map();
+  const setOpen = async (entry2, open) => {
+    if (options.exclusive === true && open) {
+      for (const other of entries.values()) {
+        if (other !== entry2 && other.expanded) await setOpen(other, false);
+      }
+    }
+    entry2.expanded = open;
+    entry2.header.setAttribute("aria-expanded", String(open));
+    entry2.body.hidden = !open;
+    setState14(entry2.section, open ? ["active"] : []);
+    if (open && !entry2.rendered) {
+      entry2.rendered = true;
+      setState14(entry2.section, ["loading"]);
+      try {
+        await entry2.spec.render(entry2.body);
+        setState14(entry2.section, ["active"]);
+      } catch (error3) {
+        setState14(entry2.section, ["error"]);
+        entry2.body.textContent = safeViewerText14(
+          `section failed: ${error3 instanceof Error ? error3.message : String(error3)}`,
+          512
+        );
+      }
+    }
+  };
+  for (const spec of options.sections) {
+    const section = document.createElement("section");
+    section.className = "modkit-accordion__section";
+    section.dataset["sectionId"] = spec.id;
+    setPart14(section, "accordion.section");
+    const header = document.createElement("button");
+    header.type = "button";
+    header.className = "modkit-accordion__header";
+    header.setAttribute("aria-expanded", "false");
+    setPart14(header, "accordion.header");
+    const twisty = document.createElement("span");
+    twisty.className = "modkit-accordion__twisty";
+    twisty.setAttribute("aria-hidden", "true");
+    twisty.textContent = "\u203A";
+    setPart14(twisty, "accordion.twisty");
+    header.append(twisty);
+    const title = document.createElement("span");
+    title.className = "modkit-accordion__title";
+    title.textContent = safeViewerText14(spec.title, 128);
+    setPart14(title, "accordion.title");
+    header.append(title);
+    if (spec.hint !== void 0) {
+      const hint = document.createElement("span");
+      hint.className = "modkit-accordion__hint";
+      hint.textContent = safeViewerText14(spec.hint, 64);
+      setPart14(hint, "accordion.hint");
+      header.append(hint);
+    }
+    const body = document.createElement("div");
+    body.className = "modkit-accordion__body";
+    body.hidden = true;
+    setPart14(body, "accordion.body");
+    const identifier = `mk-acc-${spec.id}`;
+    body.id = identifier;
+    header.setAttribute("aria-controls", identifier);
+    section.append(header, body);
+    root.append(section);
+    const entry2 = { spec, section, header, body, expanded: false, rendered: false };
+    entries.set(spec.id, entry2);
+    header.addEventListener("click", () => void setOpen(entry2, !entry2.expanded));
   }
-  for (const group2 of groups) {
-    const section2 = element10(root, "section", { part: "metadata.group" });
-    element10(section2, "h3", { text: group2.label, part: "metadata.heading" });
-    const list2 = element10(section2, "dl");
-    for (const entry2 of group2.entries) {
-      const row = element10(list2, "div", { part: "metadata.row" });
-      element10(row, "dt", { text: entry2.key, part: "metadata.label" });
-      const value2 = element10(row, "dd", { part: "metadata.value" });
-      setViewerText10(value2, entry2.value, 4096);
-      value2.title = String(entry2.value);
+  for (const spec of options.sections) {
+    if (spec.expanded === true) {
+      const entry2 = entries.get(spec.id);
+      if (entry2 !== void 0) void setOpen(entry2, true);
     }
   }
-  if (traits.length === 0) return;
-  const section = element10(root, "section", { part: "metadata.group" });
-  element10(section, "h3", { text: "Observed traits", part: "metadata.heading" });
-  const list = element10(section, "dl");
-  for (const trait of traits) {
-    const row = element10(list, "div", { part: "metadata.row" });
-    element10(row, "dt", { text: trait.id, part: "metadata.label" });
-    const value2 = element10(row, "dd", { part: "metadata.value" });
-    const text3 = traitValue(trait);
-    setViewerText10(value2, text3, 4096);
-    value2.title = text3;
-  }
+  return {
+    root,
+    async expand(id) {
+      const entry2 = entries.get(id);
+      if (entry2 !== void 0) await setOpen(entry2, true);
+    },
+    collapse(id) {
+      const entry2 = entries.get(id);
+      if (entry2 !== void 0) void setOpen(entry2, false);
+    },
+    collapseAll() {
+      for (const entry2 of entries.values()) void setOpen(entry2, false);
+    },
+    destroy() {
+      root.remove();
+    }
+  };
 }
-var metadataPanel = defineViewerModule11({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope12(args.signal);
-    const root = createSurface12(args.container, "Metadata");
-    const body = element10(root, "div", { part: "metadata" });
-    renderMetadata(body, args.descriptor);
-    return createViewerMount10(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-      renderMetadata(body, descriptor);
-    });
+var t4 = (name, tier, type, description, extra = {}) => ({ name, tier, type, isPublic: true, description, ...extra });
+var PALETTE_STEPS3 = [
+  "050",
+  "100",
+  "200",
+  "300",
+  "400",
+  "500",
+  "600",
+  "700",
+  "800",
+  "900"
+];
+var PALETTE_HUES3 = ["neutral", "accent", "ok", "warn", "error", "info"];
+var tier13 = PALETTE_HUES3.flatMap(
+  (hue) => PALETTE_STEPS3.map((step) => t4(`palette.${hue}.${step}`, 1, "color", `${hue} ramp step ${step}`))
+);
+var tier23 = [
+  // surfaces
+  t4("color.bg", 2, "color", "window ground behind everything"),
+  t4("color.surface", 2, "color", "default component surface"),
+  t4("color.raised", 2, "color", "surface above the default plane"),
+  t4("color.sunken", 2, "color", "inset surface such as an input well"),
+  t4("color.overlay", 2, "color", "floating surface: menu, popover, dialog"),
+  t4("color.scrim", 2, "color", "dimming layer behind a modal"),
+  // text
+  t4("color.fg", 2, "color", "primary text"),
+  t4("color.fg-muted", 2, "color", "secondary text"),
+  t4("color.fg-subtle", 2, "color", "tertiary text and placeholders"),
+  t4("color.fg-inverse", 2, "color", "text on an accent fill"),
+  t4("color.fg-disabled", 2, "color", "disabled text"),
+  t4("color.fg-link", 2, "color", "hyperlink text"),
+  t4("color.fg-destructive", 2, "color", "destructive action text"),
+  // lines
+  t4("color.border", 2, "color", "default separator and component border"),
+  t4("color.border-strong", 2, "color", "emphasised border"),
+  t4("color.separator", 2, "color", "hairline between list sections"),
+  // interaction
+  t4("color.accent", 2, "color", "primary action fill"),
+  t4("color.accent-fg", 2, "color", "text on the accent fill"),
+  t4("color.accent-muted", 2, "color", "low-emphasis accent wash"),
+  t4("color.accent-muted-fg", 2, "color", "text on the accent wash"),
+  t4("color.focus", 2, "color", "focus ring"),
+  t4("color.hover", 2, "color", "hover wash"),
+  t4("color.active", 2, "color", "pressed wash"),
+  t4("color.selection", 2, "color", "active selection fill"),
+  t4("color.selection-inactive", 2, "color", "selection fill when the surface is unfocused"),
+  t4("color.selection-fg", 2, "color", "text on a selection fill"),
+  t4("color.match-highlight", 2, "color", "search match highlight"),
+  t4("color.drop-target", 2, "color", "drag-and-drop target indicator"),
+  t4("color.readonly", 2, "color", "read-only field wash"),
+  // status
+  ...["ok", "warn", "error", "info"].flatMap((s2) => [
+    t4(`status.${s2}`, 2, "color", `${s2} indicator colour`),
+    t4(`status.${s2}-fg`, 2, "color", `text on a ${s2} fill`),
+    t4(`status.${s2}-bg`, 2, "color", `${s2} background wash`),
+    t4(`status.${s2}-border`, 2, "color", `${s2} border`)
+  ]),
+  // scrollbars
+  t4("color.scrollbar-track", 2, "color", "scrollbar trough"),
+  t4("color.scrollbar-thumb", 2, "color", "scrollbar thumb"),
+  t4("color.scrollbar-thumb-hover", 2, "color", "scrollbar thumb, hovered"),
+  t4("color.scrollbar-thumb-active", 2, "color", "scrollbar thumb while dragging"),
+  t4("color.scrollbar-shadow", 2, "color", "hairline separating a scrolled pane from its content"),
+  // canvas / GPU surfaces — these are not UI chrome and need their own roles
+  t4("color.canvas-bg", 2, "color", "canvas or WebGL scene ground"),
+  t4("color.canvas-grid", 2, "color", "scene grid lines"),
+  t4("color.canvas-gizmo", 2, "color", "scene gizmo and axis handles"),
+  // Axis identity is a convention users read at a glance (X red, Y green, Z blue), so the three
+  // get their own roles rather than borrowing from the categorical ramp, which a theme may reorder.
+  t4("color.axis-x", 2, "color", "X axis handle and line"),
+  t4("color.axis-y", 2, "color", "Y axis handle and line"),
+  t4("color.axis-z", 2, "color", "Z axis handle and line"),
+  t4("color.canvas-selection", 2, "color", "selected geometry outline"),
+  // graph / chart categorical ramp
+  ...["1", "2", "3", "4", "5", "6"].map(
+    (n2) => t4(`chart.categorical-${n2}`, 2, "color", `categorical series ${n2}`)
+  ),
+  t4("color.graph-node", 2, "color", "relation-graph node fill"),
+  t4("color.graph-edge", 2, "color", "relation-graph edge stroke"),
+  t4("color.graph-edge-dead", 2, "color", "unresolved reference edge"),
+  // diff
+  t4("color.diff-added", 2, "color", "added line or cell wash"),
+  t4("color.diff-removed", 2, "color", "removed line or cell wash"),
+  t4("color.diff-changed", 2, "color", "changed line or cell wash"),
+  // space
+  ...["0", "1", "2", "3", "4", "5", "6", "7", "8"].map(
+    (n2) => t4(`space.${n2}`, 2, "length", `spacing step ${n2}`)
+  ),
+  // radius
+  ...["none", "sm", "md", "lg", "pill"].map(
+    (r2) => t4(`radius.${r2}`, 2, "length", `corner radius ${r2}`)
+  ),
+  // type
+  t4("font.sans", 2, "font-family", "UI typeface stack"),
+  t4("font.mono", 2, "font-family", "monospace stack for IDs, code, offsets"),
+  ...["xs", "sm", "md", "lg", "xl"].map((s2) => t4(`font.size-${s2}`, 2, "length", `font size ${s2}`)),
+  ...["normal", "medium", "bold"].map((w) => t4(`font.weight-${w}`, 2, "number", `font weight ${w}`)),
+  ...["tight", "normal", "loose"].map((l2) => t4(`line.${l2}`, 2, "number", `line height ${l2}`)),
+  // metrics
+  t4("size.row", 2, "length", "list and table row height"),
+  t4("size.control", 2, "length", "default control height"),
+  t4("size.icon", 2, "length", "default icon box"),
+  t4("size.touch", 2, "length", "minimum touch target"),
+  t4("size.scrollbar", 2, "length", "scrollbar thickness"),
+  t4("size.scrollbar-thin", 2, "length", "scrollbar thickness inside dense panes"),
+  // layering
+  ...["base", "sticky", "dropdown", "overlay", "modal", "toast"].map(
+    (z) => t4(`z.${z}`, 2, "z-index", `stacking band: ${z}`)
+  ),
+  // motion
+  ...["fast", "normal", "slow"].map(
+    (d) => t4(`motion.${d}`, 2, "duration", `transition duration ${d}`)
+  ),
+  t4("motion.ease", 2, "easing", "default easing curve"),
+  // elevation
+  ...["1", "2", "3"].map((e2) => t4(`elevation.${e2}`, 2, "shadow", `elevation level ${e2}`)),
+  t4("shadow.focus-ring", 2, "shadow", "focus ring shadow")
+];
+var c4 = (name, component, type, derivesFrom, description) => t4(name, 3, type, description, { component, derivesFrom });
+var runtime3 = (name, component, type, runtimeDefault, description) => t4(name, 3, type, description, { component, runtimeDefault });
+var tier33 = [
+  runtime3("tree.indent-level", "tree", "number", "0", "nesting depth of the current tree row"),
+  runtime3("card.grid-columns", "card", "number", "5", "column count of the current card grid"),
+  // Context-menu placement is per-instance pixel geometry, which C3 routes through tokens.
+  runtime3("explorer.menu-x", "explorer", "length", "0px", "context menu left offset"),
+  runtime3("explorer.menu-y", "explorer", "length", "0px", "context menu top offset"),
+  c4("table.row-height", "table", "length", "size.row", "table row height"),
+  c4("table.header-bg", "table", "color", "color.raised", "table header background"),
+  c4("table.cell-padding-x", "table", "length", "space.2", "table cell horizontal padding"),
+  c4("tree.indent", "tree", "length", "space.4", "tree nesting indent per level"),
+  c4("tree.row-height", "tree", "length", "size.row", "tree row height"),
+  c4("hex.byte-gap", "hex", "length", "space.1", "gap between hex byte columns"),
+  c4("hex.gutter-fg", "hex", "color", "color.fg-subtle", "hex offset gutter text"),
+  c4("text.line-height", "text", "number", "line.normal", "text stage line height"),
+  c4("shell.rail-width", "shell", "length", "space.8", "default side rail width"),
+  c4("shell.splitter-size", "shell", "length", "space.1", "splitter hit area thickness"),
+  c4("toolbar.height", "toolbar", "length", "size.control", "toolbar height"),
+  c4("panel.padding", "panel", "length", "space.3", "panel content padding"),
+  c4("transport.track-height", "transport", "length", "space.2", "transport scrub track height")
+];
+var TOKENS3 = Object.freeze([...tier13, ...tier23, ...tier33]);
+var TOKENS_BY_NAME3 = new Map(
+  TOKENS3.map((token) => [token.name, token])
+);
+function cssVariableName3(tokenName) {
+  return `--mk-${tokenName.replace(/\./gu, "-")}`;
+}
+var HEX3 = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/iu;
+var FUNCTIONAL_COLOR3 = /^(?:rgb|rgba|hsl|hsla|color-mix|oklch|lab|lch)\([^;{}]*\)$/iu;
+var LENGTH3 = /^-?(?:\d+\.?\d*|\.\d+)(?:px|rem|em|ch|%|vh|vw|vmin|vmax)$|^0$/u;
+var DURATION3 = /^(?:\d+\.?\d*|\.\d+)m?s$/u;
+var NUMBER3 = /^-?(?:\d+\.?\d*|\.\d+)$/u;
+var EASING3 = /^(?:linear|ease|ease-in|ease-out|ease-in-out|steps\([^;{}]*\)|cubic-bezier\([^;{}]*\))$/u;
+var SHADOW3 = /^(?:none|[-\w\s.,()#%/]+)$/u;
+var FONT_FAMILY3 = /^[-\w\s.,'"()]+$/u;
+var FORBIDDEN3 = /url\(|expression\(|javascript:|@import|[;{}]|<|>/iu;
+function validateTokenValue3(tokenName, value2) {
+  const token = TOKENS_BY_NAME3.get(tokenName);
+  if (token === void 0) return { valid: false, reason: `unknown token: ${tokenName}` };
+  if (typeof value2 !== "string" || value2.length === 0) {
+    return { valid: false, reason: "value must be a non-empty string" };
   }
+  if (value2.length > 256) return { valid: false, reason: "value exceeds 256 characters" };
+  if (FORBIDDEN3.test(value2)) {
+    return { valid: false, reason: "value contains a resource load or declaration escape" };
+  }
+  const ok2 = (() => {
+    switch (token.type) {
+      case "color":
+        return HEX3.test(value2) || FUNCTIONAL_COLOR3.test(value2) || /^[a-z-]+$/iu.test(value2);
+      case "length":
+        return LENGTH3.test(value2);
+      case "number":
+        return NUMBER3.test(value2);
+      case "duration":
+        return DURATION3.test(value2);
+      case "easing":
+        return EASING3.test(value2);
+      case "font-family":
+        return FONT_FAMILY3.test(value2);
+      case "shadow":
+        return SHADOW3.test(value2);
+      case "z-index":
+        return NUMBER3.test(value2);
+      default:
+        return false;
+    }
+  })();
+  return ok2 ? { valid: true } : { valid: false, reason: `value is not a valid ${token.type}` };
+}
+function requireElement3(value2) {
+  if (typeof value2 !== "object" || value2 === null || !("style" in value2) || typeof value2.style !== "object") {
+    throw new TypeError("token target must be a DOM element");
+  }
+  return value2;
+}
+function setToken3(element20, name, value2) {
+  const target = requireElement3(element20);
+  const result = validateTokenValue3(name, value2);
+  if (!result.valid) {
+    throw new TypeError(`invalid value for token ${name}: ${result.reason ?? "unknown reason"}`);
+  }
+  target.style.setProperty(cssVariableName3(name), value2);
+}
+var CARD_FALLBACK_MESSAGES = {
+  "card.capped": "{label} (capped)",
+  "card.contribution.fact.contractCoordinate": "Contract coordinate",
+  "card.contribution.fact.contractId": "Contract",
+  "card.contribution.fact.contractMajor": "Contract major",
+  "card.contribution.fact.dependencies": "Dependencies",
+  "card.contribution.fact.displayName": "Display name",
+  "card.contribution.fact.effectiveEnabled": "Effectively enabled",
+  "card.contribution.fact.enabled": "Contribution enabled",
+  "card.contribution.fact.id": "Contribution ID",
+  "card.contribution.fact.limitations": "Limitations",
+  "card.contribution.fact.ownerExtension": "Owner extension",
+  "card.contribution.fact.runtimeVariants": "Runtime variants",
+  "card.contribution.fact.specification": "Specification",
+  "card.contribution.fact.status": "Status",
+  "card.descriptionUnavailable": "Description is not available yet.",
+  "card.extension.fact.contractCount": "Contracts",
+  "card.extension.fact.contributionCount": "Contributions",
+  "card.extension.fact.description": "Description",
+  "card.extension.fact.displayName": "Display name",
+  "card.extension.fact.enabled": "Extension enabled",
+  "card.extension.fact.homepage": "Homepage",
+  "card.extension.fact.id": "Extension ID",
+  "card.extension.fact.license": "License",
+  "card.extension.fact.publisher": "Publisher",
+  "card.extension.fact.source": "Source",
+  "card.extension.fact.trusted": "Trusted",
+  "card.extension.fact.version": "Version",
+  "card.extension.group.contracts": "Contracts",
+  "card.extension.group.declaration": "Declaration",
+  "card.extension.group.overview": "Overview",
+  "card.extension.group.specification": "Specification",
+  "card.extension.group.state": "State",
+  "card.factGroupsCapped": "Fact groups are capped.",
+  "card.loadingDescription": "Loading description\u2026",
+  "card.locale": "Locale",
+  "card.namedSubject": "{label} subject card",
+  "card.relatedCapped": "Related subjects are capped.",
+  "card.relatedSubjects": "Related subjects",
+  "card.sections": "{label} sections",
+  "card.subject": "Subject card"
+};
+function createEnglishUiLocalizer13(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
+    }
+  });
+}
+function withEnglishUiFallback13(localizer, messages) {
+  const fallback = createEnglishUiLocalizer13(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+function cardLoadLimit(value2, label) {
+  if (!Number.isSafeInteger(value2) || value2 <= 0) throw new RangeError(`${label} must be positive`);
+  return value2;
+}
+async function loadCardPages(read, maximum, pageSize) {
+  const items = [];
+  let cursor3;
+  const seen = /* @__PURE__ */ new Set();
+  while (items.length < maximum) {
+    const result = await read(cursor3, Math.min(pageSize, maximum - items.length));
+    items.push(...result.items);
+    if (result.nextCursor === void 0) return { items: Object.freeze(items), capped: false };
+    if (seen.has(result.nextCursor)) throw new Error("subject facts source repeated a page cursor");
+    seen.add(result.nextCursor);
+    cursor3 = result.nextCursor;
+  }
+  return { items: Object.freeze(items), capped: cursor3 !== void 0 };
+}
+function factValue(value2) {
+  if (typeof value2 === "string") return value2;
+  if (value2 === null || typeof value2 === "number" || typeof value2 === "boolean")
+    return String(value2);
+  return JSON.stringify(value2);
+}
+var EXTENSION_SUBJECT_KIND2 = "org.modkitx/extension";
+var CONTRIBUTION_SUBJECT_KIND2 = "org.modkitx/contribution";
+var EXTENSION_GROUP_MESSAGE_KEYS = Object.freeze({
+  overview: "card.extension.group.overview",
+  state: "card.extension.group.state",
+  declaration: "card.extension.group.declaration",
+  specification: "card.extension.group.specification",
+  contracts: "card.extension.group.contracts"
 });
-function renderProperties(root, descriptor) {
-  root.replaceChildren();
-  const rows = [
-    { name: "subject", value: descriptor.subjectUri, origin: "identity" },
-    { name: "revision", value: descriptor.revision, origin: "identity" },
+var EXTENSION_FACT_MESSAGE_KEYS = Object.freeze({
+  id: "card.extension.fact.id",
+  "display-name": "card.extension.fact.displayName",
+  publisher: "card.extension.fact.publisher",
+  version: "card.extension.fact.version",
+  license: "card.extension.fact.license",
+  description: "card.extension.fact.description",
+  homepage: "card.extension.fact.homepage",
+  source: "card.extension.fact.source",
+  trusted: "card.extension.fact.trusted",
+  enabled: "card.extension.fact.enabled",
+  "contribution-count": "card.extension.fact.contributionCount",
+  "contract-count": "card.extension.fact.contractCount"
+});
+var CONTRIBUTION_FACT_MESSAGE_KEYS = Object.freeze({
+  id: "card.contribution.fact.id",
+  "display-name": "card.contribution.fact.displayName",
+  "owner-extension": "card.contribution.fact.ownerExtension",
+  "contract-id": "card.contribution.fact.contractId",
+  "contract-major": "card.contribution.fact.contractMajor",
+  "contract-coordinate": "card.contribution.fact.contractCoordinate",
+  status: "card.contribution.fact.status",
+  enabled: "card.contribution.fact.enabled",
+  "effective-enabled": "card.contribution.fact.effectiveEnabled",
+  "depends-on": "card.contribution.fact.dependencies",
+  limitations: "card.contribution.fact.limitations",
+  "runtime-variants": "card.contribution.fact.runtimeVariants",
+  spec: "card.contribution.fact.specification"
+});
+var NO_FACT_MESSAGE_KEYS = Object.freeze({});
+function systemSubjectLabel(localizer, subjectKind, keys, id, fallback) {
+  if (subjectKind !== EXTENSION_SUBJECT_KIND2 && subjectKind !== CONTRIBUTION_SUBJECT_KIND2) {
+    return fallback;
+  }
+  const key3 = keys[id];
+  return key3 === void 0 ? fallback : localizer.text(key3);
+}
+function factField(fact3, subjectKind, localizer) {
+  const provenance = fact3.provenance.map((item) => item.label);
+  const keys = subjectKind === EXTENSION_SUBJECT_KIND2 ? EXTENSION_FACT_MESSAGE_KEYS : subjectKind === CONTRIBUTION_SUBJECT_KIND2 ? CONTRIBUTION_FACT_MESSAGE_KEYS : NO_FACT_MESSAGE_KEYS;
+  return {
+    name: systemSubjectLabel(localizer, subjectKind, keys, fact3.id, fact3.label),
+    value: factValue(fact3.value),
+    ...provenance.length === 0 ? {} : { badge: provenance[0] },
+    ...provenance.length <= 1 ? {} : { title: provenance.join(" \xB7 ") },
+    ...fact3.knowledgeTarget === void 0 ? {} : { knowledgeTarget: fact3.knowledgeTarget }
+  };
+}
+async function loadSubjectCardSections(source2, options = {}) {
+  const localizer = withEnglishUiFallback13(options.localizer, CARD_FALLBACK_MESSAGES);
+  const groupLimit = cardLoadLimit(options.groupLimit ?? 32, "groupLimit");
+  const factsPerGroup = cardLoadLimit(options.factsPerGroup ?? 256, "factsPerGroup");
+  const relationLimit = cardLoadLimit(options.relationLimit ?? 256, "relationLimit");
+  const pageSize = cardLoadLimit(options.pageSize ?? 64, "pageSize");
+  const summary = await source2.summary(options.signal);
+  const [groups, relations] = await Promise.all([
+    loadCardPages(
+      (cursor3, limit) => source2.groups({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal),
+      groupLimit,
+      pageSize
+    ),
+    loadCardPages(
+      (cursor3, limit) => source2.relations({ ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit }, options.signal),
+      relationLimit,
+      pageSize
+    )
+  ]);
+  const notes = [];
+  if (groups.capped || groups.items.length < summary.groupCount)
+    notes.push(localizer.text("card.factGroupsCapped"));
+  if (relations.capped || relations.items.length < summary.relationCount)
+    notes.push(localizer.text("card.relatedCapped"));
+  const sections = [
     {
-      name: "interpretation",
-      value: String(resolved(descriptor)?.interpretation ?? "unresolved"),
-      origin: "identity"
+      kind: "header",
+      title: summary.identity.label,
+      refs: summary.identity.origins.map((origin) => ({
+        label: origin.label,
+        ...origin.source === void 0 ? {} : { href: origin.source.uri }
+      })),
+      chips: [
+        { label: summary.identity.kind },
+        ...summary.identity.type === void 0 ? [] : [{ label: summary.identity.type }]
+      ],
+      ...notes.length === 0 ? {} : { notes }
     }
   ];
-  const identity = resolved(descriptor)?.identity;
-  if (identity !== void 0) {
-    if (identity.formatId !== void 0)
-      rows.push({ name: "format", value: identity.formatId, origin: "identity" });
-    if (identity.codecId !== void 0)
-      rows.push({ name: "codec", value: identity.codecId, origin: "identity" });
-    if (identity.confidence !== void 0)
-      rows.push({ name: "confidence", value: identity.confidence.toFixed(2), origin: "detection" });
-  }
-  for (const trait of descriptor.traits) {
-    const parameters = Object.entries(trait.parameters ?? {});
-    rows.push({
-      name: trait.id,
-      value: parameters.length === 0 ? trait.state : `${trait.state} \xB7 ${parameters.map(([key3, item]) => `${key3}=${String(item)}`).join(", ")}`,
-      origin: "trait"
+  const factGroups = await Promise.all(
+    groups.items.map(async (group2) => ({
+      group: group2,
+      page: await loadCardPages(
+        (cursor3, limit) => source2.facts(
+          group2.id,
+          { ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit },
+          options.signal
+        ),
+        factsPerGroup,
+        pageSize
+      )
+    }))
+  );
+  for (const { group: group2, page: page2 } of factGroups) {
+    const groupLabel = systemSubjectLabel(
+      localizer,
+      summary.identity.kind,
+      EXTENSION_GROUP_MESSAGE_KEYS,
+      group2.id,
+      group2.label
+    );
+    sections.push({
+      kind: "fields",
+      id: group2.id,
+      title: page2.capped || page2.items.length < group2.factCount ? localizer.text("card.capped", { label: groupLabel }) : groupLabel,
+      fields: page2.items.map((fact3) => factField(fact3, summary.identity.kind, localizer)),
+      expanded: true
     });
   }
-  for (const operation of descriptor.operations) {
-    rows.push({
-      name: operation.id,
-      value: `${operation.state}${operation.mutatesSource ? " \xB7 mutates source" : ""}`,
-      origin: "operation"
+  if (relations.items.length > 0) {
+    sections.push({
+      kind: "links",
+      id: "related-subjects",
+      title: localizer.text("card.relatedSubjects"),
+      links: relations.items.map((item) => ({
+        label: item.label,
+        href: item.subjectId,
+        title: `${item.role} \xB7 ${item.kind}`
+      }))
     });
   }
-  for (const row of rows) {
-    const line = element10(root, "div", { part: "properties.row" });
-    element10(line, "span", { text: row.name, part: "properties.name" });
-    element10(line, "span", { text: row.value, part: "properties.value" });
-    element10(line, "span", { text: row.origin, part: "properties.origin" });
-  }
+  return Object.freeze(sections);
 }
-var propertiesTable = defineViewerModule11({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope12(args.signal);
-    const root = createSurface12(args.container, "Properties");
-    const body = element10(root, "div", { part: "properties" });
-    body.setAttribute("role", "table");
-    renderProperties(body, args.descriptor);
-    return createViewerMount10(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-      renderProperties(body, descriptor);
-    });
+function ref(document, item, onNavigate) {
+  const node = document.createElement(onNavigate === void 0 ? "span" : "button");
+  node.className = "modkit-card__ref";
+  setPart14(node, "card.ref");
+  node.textContent = safeViewerText14(item.label, 256);
+  if (item.title !== void 0) node.title = item.title;
+  if (onNavigate !== void 0) {
+    ;
+    node.type = "button";
+    node.addEventListener("click", () => onNavigate(item));
   }
-});
+  return node;
+}
+function renderHeader(document, host, section, localizer, onNavigate) {
+  const header = document.createElement("div");
+  header.className = "modkit-card__header";
+  setPart14(header, "card.header");
+  if (section.portrait !== void 0) {
+    const portrait = document.createElement("div");
+    portrait.className = "modkit-card__portrait";
+    portrait.setAttribute("aria-hidden", "true");
+    portrait.textContent = safeViewerText14(section.portrait, 8);
+    setPart14(portrait, "card.portrait");
+    header.append(portrait);
+  }
+  const identity = document.createElement("div");
+  identity.className = "modkit-card__identity";
+  setPart14(identity, "card.identity");
+  header.append(identity);
+  const title = document.createElement("h2");
+  title.className = "modkit-card__title";
+  title.textContent = safeViewerText14(section.title, 256);
+  setPart14(title, "card.title");
+  identity.append(title);
+  if (section.refs !== void 0 && section.refs.length > 0) {
+    const subtitle = document.createElement("div");
+    subtitle.className = "modkit-card__subtitle";
+    setPart14(subtitle, "card.subtitle");
+    for (const item of section.refs) subtitle.append(ref(document, item, onNavigate));
+    identity.append(subtitle);
+  }
+  if (section.chips !== void 0 && section.chips.length > 0) {
+    const chips = document.createElement("div");
+    chips.className = "modkit-card__chips";
+    setPart14(chips, "card.chips");
+    for (const chip of section.chips) {
+      const node = document.createElement("span");
+      node.className = "modkit-card__chip";
+      node.textContent = safeViewerText14(chip.label, 64);
+      node.dataset["tone"] = chip.tone ?? "accent";
+      setPart14(node, "card.chip");
+      chips.append(node);
+    }
+    identity.append(chips);
+  }
+  if (section.description !== void 0) {
+    const description = document.createElement("p");
+    description.className = "modkit-card__description";
+    description.textContent = safeViewerText14(section.description, 2048);
+    setPart14(description, "card.description");
+    identity.append(description);
+  }
+  for (const note of section.notes ?? []) {
+    const node = document.createElement("p");
+    node.className = "modkit-card__note";
+    node.textContent = safeViewerText14(note, 512);
+    setPart14(node, "card.note");
+    identity.append(node);
+  }
+  if (section.stats !== void 0 && section.stats.length > 0) {
+    const row = document.createElement("div");
+    row.className = "modkit-card__statrow";
+    setPart14(row, "card.statrow");
+    for (const stat of section.stats) {
+      const cell = document.createElement("span");
+      cell.className = "modkit-card__stat";
+      cell.dataset["tone"] = stat.tone ?? "neutral";
+      if (stat.title !== void 0) cell.title = stat.title;
+      setPart14(cell, "card.stat");
+      const icon = document.createElement("span");
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = safeViewerText14(stat.icon, 4);
+      setPart14(icon, "card.stat-icon");
+      const value2 = document.createElement("span");
+      value2.textContent = safeViewerText14(stat.value, 32);
+      setPart14(value2, "card.stat-value");
+      cell.append(icon, value2);
+      if (stat.delta !== void 0) {
+        const delta = document.createElement("span");
+        delta.textContent = safeViewerText14(stat.delta, 32);
+        setPart14(delta, "card.stat-delta");
+        cell.append(delta);
+      }
+      row.append(cell);
+    }
+    identity.append(row);
+  }
+  if (section.aside !== void 0) {
+    const select = document.createElement("select");
+    select.className = "modkit-card__locale";
+    select.setAttribute("aria-label", localizer.text("card.locale"));
+    setPart14(select, "card.locale");
+    for (const option of section.aside.options) {
+      const node = document.createElement("option");
+      node.value = option;
+      node.textContent = safeViewerText14(option, 32);
+      select.append(node);
+    }
+    if (section.aside.value !== void 0) select.value = section.aside.value;
+    select.addEventListener("change", () => section.aside?.onChange?.(select.value));
+    header.append(select);
+  }
+  host.append(header);
+}
+function renderFields(document, host, fields, inspectKnowledge) {
+  const list = document.createElement("div");
+  list.className = "modkit-card__fields";
+  list.setAttribute("role", "table");
+  setPart14(list, "card.fields");
+  for (const field of fields) {
+    const row = document.createElement("div");
+    row.className = "modkit-card__field";
+    setPart14(row, "card.field");
+    row.tabIndex = 0;
+    if (field.title !== void 0) row.title = field.title;
+    const name = document.createElement("span");
+    name.textContent = safeViewerText14(field.name, 128);
+    setPart14(name, "card.field-name");
+    const value2 = document.createElement("span");
+    value2.textContent = safeViewerText14(field.value, 2048);
+    setPart14(value2, "card.field-value");
+    row.append(name, value2);
+    if (field.badge !== void 0) {
+      const badge = document.createElement("span");
+      badge.className = "modkit-card__chip";
+      badge.dataset["tone"] = "neutral";
+      badge.textContent = safeViewerText14(field.badge, 48);
+      setPart14(badge, "card.chip");
+      row.append(badge);
+    }
+    if (inspectKnowledge !== void 0) {
+      const inspect = () => inspectKnowledge(field.knowledgeTarget);
+      row.addEventListener("focus", inspect);
+      row.addEventListener("mouseenter", inspect);
+    }
+    list.append(row);
+  }
+  host.append(list);
+}
+function createSubjectCard(document, options) {
+  const localizer = withEnglishUiFallback13(options.localizer, CARD_FALLBACK_MESSAGES);
+  const root = document.createElement("article");
+  root.className = "modkit-card";
+  root.setAttribute("aria-label", localizer.text("card.namedSubject", { label: options.label }));
+  setPart14(root, "card");
+  const header = options.sections.find((section) => section.kind === "header");
+  if (header !== void 0) renderHeader(document, root, header, localizer, options.onNavigate);
+  const knowledge = document.createElement("aside");
+  knowledge.className = "modkit-card__knowledge";
+  knowledge.setAttribute("role", "status");
+  knowledge.setAttribute("aria-live", "polite");
+  knowledge.dataset["knowledgeState"] = "missing";
+  setPart14(knowledge, "card.knowledge");
+  knowledge.textContent = localizer.text("card.descriptionUnavailable");
+  root.append(knowledge);
+  let lookupRevision = 0;
+  let lookupController;
+  const cancelLookup = (reason) => {
+    lookupRevision += 1;
+    lookupController?.abort(reason);
+    lookupController = void 0;
+    return lookupRevision;
+  };
+  const showMissingKnowledge = () => {
+    knowledge.dataset["knowledgeState"] = "missing";
+    knowledge.replaceChildren();
+    knowledge.textContent = localizer.text("card.descriptionUnavailable");
+  };
+  const directSource = (hit) => {
+    for (const source2 of hit.entry.sources) {
+      if (source2.url === void 0) continue;
+      try {
+        const url = new URL(source2.url);
+        if (url.protocol === "https:") return { title: source2.title, url };
+      } catch {
+      }
+    }
+    return void 0;
+  };
+  const showKnowledge = (hit) => {
+    knowledge.dataset["knowledgeState"] = "resolved";
+    knowledge.replaceChildren();
+    const summary = document.createElement("span");
+    summary.textContent = safeViewerText14(hit.entry.summary, 512);
+    knowledge.append(summary);
+    const source2 = directSource(hit);
+    if (source2 === void 0) return;
+    knowledge.append(document.createTextNode(" "));
+    const link = document.createElement("a");
+    link.href = source2.url.href;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.referrerPolicy = "no-referrer";
+    link.textContent = safeViewerText14(source2.title, 160);
+    knowledge.append(link);
+  };
+  const inspectKnowledge = (target) => {
+    const revision = cancelLookup("card-field-changed");
+    if (target === void 0 || options.knowledge === void 0) {
+      showMissingKnowledge();
+      return;
+    }
+    const controller = new AbortController();
+    lookupController = controller;
+    knowledge.dataset["knowledgeState"] = "loading";
+    knowledge.replaceChildren();
+    knowledge.textContent = localizer.text("card.loadingDescription");
+    void (async () => {
+      try {
+        const page2 = await options.knowledge?.resolve(
+          { target, locales: options.knowledgeLocales ?? [], limit: 1 },
+          controller.signal
+        );
+        if (controller.signal.aborted || revision !== lookupRevision) return;
+        const hit = page2?.items[0];
+        if (hit === void 0) showMissingKnowledge();
+        else showKnowledge(hit);
+      } catch {
+        if (!controller.signal.aborted && revision === lookupRevision) showMissingKnowledge();
+      } finally {
+        if (revision === lookupRevision) lookupController = void 0;
+      }
+    })();
+  };
+  const collapsible = options.sections.filter((section) => section.kind !== "header");
+  const accordion = createAccordion(document, {
+    label: localizer.text("card.sections", { label: options.label }),
+    sections: collapsible.map((section) => ({
+      id: section.id,
+      title: section.title,
+      ...section.expanded === void 0 ? {} : { expanded: section.expanded },
+      render(panel) {
+        setPart14(panel.parentElement ?? panel, "accordion.section");
+        switch (section.kind) {
+          case "fields":
+            renderFields(document, panel, section.fields, inspectKnowledge);
+            return;
+          case "links": {
+            const list = document.createElement("div");
+            list.className = "modkit-card__links";
+            setPart14(list, "card.links");
+            if (section.lead !== void 0) {
+              const lead = document.createElement("span");
+              lead.textContent = safeViewerText14(section.lead, 256);
+              setPart14(lead, "card.link-item");
+              list.append(lead);
+            }
+            for (const link of section.links) list.append(ref(document, link, options.onNavigate));
+            panel.append(list);
+            return;
+          }
+          case "grid": {
+            const grid = document.createElement("div");
+            grid.className = "modkit-card__grid";
+            grid.setAttribute("role", "grid");
+            setPart14(grid, "card.grid");
+            setToken3(grid, "card.grid-columns", String(section.columns));
+            for (const cell of section.cells) {
+              const node = document.createElement("button");
+              node.type = "button";
+              node.className = "modkit-card__grid-cell";
+              node.disabled = cell.empty === true;
+              setPart14(node, "card.grid-cell");
+              if (cell.empty === true) setState14(node, ["disabled"]);
+              if (cell.label !== void 0) node.title = cell.label;
+              if (cell.hotkey !== void 0) {
+                const hotkey = document.createElement("span");
+                hotkey.setAttribute("aria-hidden", "true");
+                hotkey.textContent = safeViewerText14(cell.hotkey, 2);
+                setPart14(hotkey, "card.grid-hotkey");
+                node.append(hotkey);
+              }
+              if (cell.icon !== void 0) {
+                const icon = document.createElement("span");
+                icon.textContent = safeViewerText14(cell.icon, 4);
+                setPart14(icon, "card.grid-icon");
+                node.append(icon);
+              }
+              node.setAttribute("aria-label", cell.label ?? cell.id);
+              grid.append(node);
+            }
+            panel.append(grid);
+            return;
+          }
+          case "cards": {
+            const list = document.createElement("div");
+            list.className = "modkit-card__subcards";
+            setPart14(list, "card.subcards");
+            for (const card of section.cards) {
+              const item = document.createElement("div");
+              item.className = "modkit-card__subcard";
+              setPart14(item, "card.subcard");
+              const head = document.createElement("div");
+              head.className = "modkit-card__subcard-head";
+              setPart14(head, "card.subcard-head");
+              if (card.icon !== void 0) {
+                const icon = document.createElement("span");
+                icon.setAttribute("aria-hidden", "true");
+                icon.textContent = safeViewerText14(card.icon, 4);
+                setPart14(icon, "card.stat-icon");
+                head.append(icon);
+              }
+              head.append(
+                card.ref === void 0 ? (() => {
+                  const title = document.createElement("span");
+                  title.textContent = safeViewerText14(card.title, 128);
+                  setPart14(title, "card.ref");
+                  return title;
+                })() : ref(document, { ...card.ref, label: card.title }, options.onNavigate)
+              );
+              if (card.badge !== void 0) {
+                const badge = document.createElement("span");
+                badge.className = "modkit-card__chip";
+                badge.dataset["tone"] = "neutral";
+                badge.textContent = safeViewerText14(card.badge, 64);
+                setPart14(badge, "card.chip");
+                head.append(badge);
+              }
+              const body = document.createElement("div");
+              body.className = "modkit-card__subcard-body";
+              setPart14(body, "card.subcard-body");
+              renderFields(document, body, card.fields, inspectKnowledge);
+              item.append(head, body);
+              list.append(item);
+            }
+            panel.append(list);
+            return;
+          }
+          case "text": {
+            const pre = document.createElement("pre");
+            pre.className = "modkit-card__text";
+            pre.textContent = safeViewerText14(section.text, 2e5);
+            setPart14(pre, "text");
+            panel.append(pre);
+            return;
+          }
+          case "custom": {
+            const host = document.createElement("div");
+            host.className = "modkit-card__custom";
+            setPart14(host, "card.custom");
+            panel.append(host);
+            void section.render(host);
+            return;
+          }
+          default:
+            return;
+        }
+      }
+    }))
+  });
+  root.append(accordion.root);
+  return {
+    root,
+    destroy() {
+      cancelLookup("card-destroyed");
+      accordion.destroy();
+      root.remove();
+    }
+  };
+}
+function createSubjectCardViewer(options = {}) {
+  const localizer = withEnglishUiFallback13(options.localizer, CARD_FALLBACK_MESSAGES);
+  return defineViewerModule12({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope12(args.signal);
+      const root = createSurface12(args.container, localizer.text("card.subject"));
+      try {
+        const lease2 = await unknownSourceLease10(
+          args.sources,
+          args.slot,
+          "common.view/subject-facts-source"
+        );
+        if (lease2 === void 0) throw new TypeError("subject facts binding is unavailable");
+        scope.lease(lease2);
+        const sections = await loadSubjectCardSections(lease2.value, {
+          localizer,
+          signal: scope.signal
+        });
+        const card = createSubjectCard(root.ownerDocument, {
+          label: localizer.text("card.subject"),
+          localizer,
+          sections,
+          ...args.knowledge === void 0 ? {} : { knowledge: args.knowledge }
+        });
+        root.append(card.root);
+        scope.cleanup(() => card.destroy());
+        root.dataset["revision"] = args.descriptor.revision;
+        return createViewerMount11(root, scope, args, ({ descriptor }) => {
+          root.dataset["revision"] = descriptor.revision;
+        });
+      } catch (error3) {
+        await scope.close();
+        root.remove();
+        throw error3;
+      }
+    }
+  });
+}
+var subjectCardViewer = createSubjectCardViewer();
 
-// packages/ui/dist/model/index.js
+// packages/ui/dist/editor/index.js
 var PARTS15 = Object.freeze([
   // shared surface
   "viewer",
@@ -54426,9 +57429,6 @@ function element11(parent, tag, options = {}) {
   parent.append(node);
   return node;
 }
-function bindingFor10(slot, contract) {
-  return slot.bindings.find((binding) => "contract" in binding && binding.contract === contract);
-}
 var ViewerMountScope13 = class {
   controller = new AbortController();
   signal = this.controller.signal;
@@ -54458,635 +57458,271 @@ var ViewerMountScope13 = class {
     for (const lease2 of this.#leases.reverse()) await lease2.release();
   }
 };
-function createViewerMount11(root, scope, initial, render2) {
-  let state = initial;
+var EDITOR_SAVE_REQUEST3 = "modkit-editor-save-request";
+function handleEditorSaveRequest2(root, save) {
+  const listener = (event) => {
+    const request = event;
+    request.detail.waitUntil(save());
+  };
+  root.addEventListener(EDITOR_SAVE_REQUEST3, listener);
+  return () => root.removeEventListener(EDITOR_SAVE_REQUEST3, listener);
+}
+var EDITOR_FALLBACK_MESSAGES = {
+  "editor.actionCancelled": "{action} cancelled",
+  "editor.actionFailed": "{action} failed",
+  "editor.actionRejected": "{action} rejected",
+  "editor.conflictChanged": "Conflict: source changed",
+  "editor.notSaved": "Not saved",
+  "editor.partiallySaved": "Partially saved; recovery is available",
+  "editor.redone": "Redone",
+  "editor.rolledBack": "Write failed; changes rolled back",
+  "editor.saving": "Saving\u2026",
+  "editor.savingProgress": "Saving\u2026 {progress}",
+  "editor.sourceUpdated": "Source updated; review before saving",
+  "editor.text": "Text editor",
+  "editor.undone": "Undone",
+  "editor.validating": "Validating\u2026",
+  "editor.validationRejected": "Validation rejected the change",
+  "viewer.editableText": "Editable text",
+  "viewer.editingActions": "Editing actions",
+  "viewer.ready": "Ready",
+  "viewer.redo": "Redo",
+  "viewer.save": "Save",
+  "viewer.saveCancelled": "Save cancelled",
+  "viewer.saveRejected": "Save rejected",
+  "viewer.saved": "Saved",
+  "viewer.undo": "Undo"
+};
+function createEnglishUiLocalizer14(messages) {
   return Object.freeze({
-    async update(args) {
-      if (scope.signal.aborted) return;
-      state = args;
-      root.setAttribute("aria-label", safeViewerText15(args.slot.contributionId, 512));
-      await render2(state);
-    },
-    async unmount() {
-      await scope.close();
-      root.remove();
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
     }
   });
 }
-function defineViewerModule12(module) {
+function withEnglishUiFallback14(localizer, messages) {
+  const fallback = createEnglishUiLocalizer14(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+var TEXT_DATA_SOURCE = Object.freeze({
+  bindingId: bindingId("editor-text"),
+  contract: "common.view/text-data-source",
+  major: 1
+});
+function defineEditorModule(module) {
   return Object.freeze(module);
 }
-function unknownSourceLease10(sources, slot, contract) {
-  const binding = bindingFor10(slot, contract);
-  if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
-  return sources.get(binding);
+async function loadText(source2, maximum, signal) {
+  const info = await source2.info();
+  if (info.bytes > BigInt(maximum))
+    throw new RangeError("editor source exceeds bounded text budget");
+  const slice = await source2.slice(
+    {
+      kind: "from-line",
+      line: 0,
+      lineCount: info.lines === "unknown" ? Number.MAX_SAFE_INTEGER : Math.max(1, info.lines),
+      maxBytes: maximum
+    },
+    signal
+  );
+  if (!slice.complete) throw new RangeError("editor source requires a streaming editor");
+  return slice.text;
 }
-var PITCH_MINIMUM = -1.4;
-var PITCH_MAXIMUM = 1.5;
-var DRAG_RADIANS_PER_PIXEL = 8e-3;
-var WHEEL_IN = 0.9;
-var WHEEL_OUT = 1.1;
-var DISTANCE_MINIMUM = 0.15;
-var DISTANCE_MAXIMUM = 8;
-var RESET_YAW = 0.7;
-var RESET_PITCH = 0.45;
-var clamp2 = (value2, low, high) => Math.min(Math.max(value2, low), high);
-var POLE = Math.PI / 2 - 1e-3;
-var AXIS_POSE = Object.freeze({
-  "+x": [Math.PI / 2, 0],
-  "-x": [-Math.PI / 2, 0],
-  "+y": [0, POLE],
-  "-y": [0, -POLE],
-  "+z": [0, 0],
-  "-z": [Math.PI, 0]
-});
-function createOrbitController(initial = {}) {
-  let yaw = initial.yaw ?? RESET_YAW;
-  let pitch = clamp2(initial.pitch ?? RESET_PITCH, PITCH_MINIMUM, PITCH_MAXIMUM);
-  let distanceScale = clamp2(initial.distanceScale ?? 1, DISTANCE_MINIMUM, DISTANCE_MAXIMUM);
-  const listeners = /* @__PURE__ */ new Set();
-  const emit = () => {
-    const pose = { yaw, pitch, distanceScale };
-    for (const listener of listeners) listener(pose);
-  };
-  const controller = {
-    get pose() {
-      return { yaw, pitch, distanceScale };
-    },
-    position(target, radius) {
-      const scaled = radius * distanceScale;
-      return [
-        target[0] + Math.sin(yaw) * Math.cos(pitch) * scaled,
-        target[1] + Math.sin(pitch) * scaled,
-        target[2] + Math.cos(yaw) * Math.cos(pitch) * scaled
-      ];
-    },
-    basis() {
-      const backward = [
-        Math.sin(yaw) * Math.cos(pitch),
-        Math.sin(pitch),
-        Math.cos(yaw) * Math.cos(pitch)
-      ];
-      const horizontal = Math.hypot(backward[0], backward[2]) || 1;
-      const right = [backward[2] / horizontal, 0, -backward[0] / horizontal];
-      const up = [
-        backward[1] * right[2],
-        backward[2] * right[0] - backward[0] * right[2],
-        -backward[1] * right[0]
-      ];
-      return { backward, right, up };
-    },
-    orbit(deltaX, deltaY) {
-      yaw += deltaX * DRAG_RADIANS_PER_PIXEL;
-      pitch = clamp2(pitch + deltaY * DRAG_RADIANS_PER_PIXEL, PITCH_MINIMUM, PITCH_MAXIMUM);
-      emit();
-    },
-    zoom(wheelDelta) {
-      distanceScale = clamp2(
-        distanceScale * (wheelDelta > 0 ? WHEEL_OUT : WHEEL_IN),
-        DISTANCE_MINIMUM,
-        DISTANCE_MAXIMUM
-      );
-      emit();
-    },
-    snapTo(axis) {
-      const pose = AXIS_POSE[axis];
-      if (pose === void 0) throw new TypeError(`unknown view axis: ${String(axis)}`);
-      yaw = pose[0];
-      pitch = pose[1];
-      emit();
-    },
-    reset() {
-      yaw = RESET_YAW;
-      pitch = RESET_PITCH;
-      distanceScale = 1;
-      emit();
-    },
-    set(pose) {
-      if (pose.yaw !== void 0) yaw = pose.yaw;
-      if (pose.pitch !== void 0) pitch = clamp2(pose.pitch, PITCH_MINIMUM, PITCH_MAXIMUM);
-      if (pose.distanceScale !== void 0) {
-        distanceScale = clamp2(pose.distanceScale, DISTANCE_MINIMUM, DISTANCE_MAXIMUM);
-      }
-      emit();
-    },
-    attach(host, signal) {
-      let dragging = false;
-      let lastX = 0;
-      let lastY = 0;
-      const options = signal === void 0 ? {} : { signal };
-      host.addEventListener(
-        "pointerdown",
-        (event) => {
-          dragging = true;
-          lastX = event.clientX;
-          lastY = event.clientY;
-          host.setPointerCapture(event.pointerId);
-        },
-        options
-      );
-      host.addEventListener(
-        "pointermove",
-        (event) => {
-          if (!dragging) return;
-          controller.orbit(event.clientX - lastX, event.clientY - lastY);
-          lastX = event.clientX;
-          lastY = event.clientY;
-        },
-        options
-      );
-      const stop = () => {
-        dragging = false;
-      };
-      host.addEventListener("pointerup", stop, options);
-      host.addEventListener("pointercancel", stop, options);
-      host.addEventListener(
-        "wheel",
-        (event) => {
-          event.preventDefault();
-          controller.zoom(event.deltaY);
-        },
-        { passive: false, ...options }
-      );
-      host.addEventListener(
-        "keydown",
-        (event) => {
-          const step = event.shiftKey ? 40 : 12;
-          if (event.key === "ArrowLeft") controller.orbit(-step, 0);
-          else if (event.key === "ArrowRight") controller.orbit(step, 0);
-          else if (event.key === "ArrowUp") controller.orbit(0, -step);
-          else if (event.key === "ArrowDown") controller.orbit(0, step);
-          else if (event.key === "+" || event.key === "=") controller.zoom(-1);
-          else if (event.key === "-") controller.zoom(1);
-          else if (event.key === "0") controller.reset();
-          else return;
-          event.preventDefault();
-        },
-        options
-      );
-      return stop;
-    },
-    onChange(listener) {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    }
-  };
-  return controller;
-}
-var SVG_NS = "http://www.w3.org/2000/svg";
-var GIZMO_SIZE = 80;
-var CENTER = GIZMO_SIZE / 2;
-var RADIUS_FRONT = 28;
-var RADIUS_BACK = 18;
-var HANDLE_FRONT = 11;
-var HANDLE_BACK = 6;
-var AXES = Object.freeze([
-  { key: "+x", label: "X", vector: [1, 0, 0], token: "--mk-color-axis-x" },
-  { key: "-x", label: "", vector: [-1, 0, 0], token: "--mk-color-axis-x" },
-  { key: "+y", label: "Y", vector: [0, 1, 0], token: "--mk-color-axis-y" },
-  { key: "-y", label: "", vector: [0, -1, 0], token: "--mk-color-axis-y" },
-  { key: "+z", label: "Z", vector: [0, 0, 1], token: "--mk-color-axis-z" },
-  { key: "-z", label: "", vector: [0, 0, -1], token: "--mk-color-axis-z" }
-]);
-function createViewGizmo(host, options = {}) {
-  const document = host.ownerDocument;
-  const root = element11(host, "div", { part: "gizmo" });
-  root.setAttribute("aria-label", "View axis");
-  root.setAttribute("role", "group");
-  const svg = document.createElementNS(SVG_NS, "svg");
-  svg.setAttribute("width", String(GIZMO_SIZE));
-  svg.setAttribute("height", String(GIZMO_SIZE));
-  svg.setAttribute("viewBox", `0 0 ${GIZMO_SIZE} ${GIZMO_SIZE}`);
-  setPart15(svg, "gizmo.svg");
-  root.append(svg);
-  const pivot = document.createElementNS(SVG_NS, "circle");
-  pivot.setAttribute("cx", String(CENTER));
-  pivot.setAttribute("cy", String(CENTER));
-  pivot.setAttribute("r", "3");
-  pivot.setAttribute("fill", "var(--mk-color-canvas-gizmo)");
-  svg.append(pivot);
-  const nodes = [];
-  for (const spec of AXES) {
-    const line = document.createElementNS(SVG_NS, "line");
-    line.setAttribute("x1", String(CENTER));
-    line.setAttribute("y1", String(CENTER));
-    line.setAttribute("stroke", `var(${spec.token})`);
-    line.setAttribute("stroke-linecap", "round");
-    setPart15(line, "gizmo.axis");
-    svg.append(line);
-    const hit = document.createElementNS(SVG_NS, "g");
-    hit.setAttribute("role", "button");
-    hit.setAttribute("tabindex", "0");
-    hit.setAttribute("aria-label", `View from ${spec.key.toUpperCase()}`);
-    setPart15(hit, "gizmo.handle");
-    const handle = document.createElementNS(SVG_NS, "circle");
-    handle.setAttribute("fill", `var(${spec.token})`);
-    hit.append(handle);
-    const label = document.createElementNS(SVG_NS, "text");
-    label.setAttribute("text-anchor", "middle");
-    label.setAttribute("dominant-baseline", "central");
-    label.setAttribute("fill", "var(--mk-color-fg-inverse)");
-    label.textContent = spec.label;
-    setPart15(label, "gizmo.label");
-    hit.append(label);
-    const activate = () => options.onAxis?.(spec.key);
-    hit.addEventListener("click", activate);
-    hit.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      event.preventDefault();
-      activate();
-    });
-    svg.append(hit);
-    nodes.push({ spec, line, handle, label, hit });
-  }
-  const update = (yaw, pitch) => {
-    const backward = [
-      Math.sin(yaw) * Math.cos(pitch),
-      Math.sin(pitch),
-      Math.cos(yaw) * Math.cos(pitch)
-    ];
-    const horizontal = Math.hypot(backward[0], backward[2]) || 1;
-    const right = [backward[2] / horizontal, 0, -backward[0] / horizontal];
-    const up = [
-      backward[1] * right[2],
-      backward[2] * right[0] - backward[0] * right[2],
-      -backward[1] * right[0]
-    ];
-    for (const { spec, line, handle, label, hit } of nodes) {
-      const screenX = spec.vector[0] * right[0] + spec.vector[2] * right[2];
-      const screenY = spec.vector[0] * up[0] + spec.vector[1] * up[1] + spec.vector[2] * up[2];
-      const depth = spec.vector[0] * backward[0] + spec.vector[1] * backward[1] + spec.vector[2] * backward[2];
-      const front = depth >= 0;
-      const x = CENTER + screenX * (front ? RADIUS_FRONT : RADIUS_BACK);
-      const y = CENTER - screenY * (front ? RADIUS_FRONT : RADIUS_BACK);
-      line.setAttribute("x2", String(x));
-      line.setAttribute("y2", String(y));
-      line.setAttribute("stroke-width", front ? "2.5" : "1.5");
-      line.setAttribute("opacity", front ? "1" : "0.35");
-      handle.setAttribute("cx", String(x));
-      handle.setAttribute("cy", String(y));
-      handle.setAttribute("r", String((front ? HANDLE_FRONT : HANDLE_BACK) / 2 + 3));
-      label.setAttribute("x", String(x));
-      label.setAttribute("y", String(y));
-      label.setAttribute("font-size", front ? "9" : "0");
-      hit.setAttribute("opacity", front ? "1" : "0.5");
-    }
-  };
-  update(0.7, 0.45);
+function defaultChangeSet(text3, targets) {
   return {
-    root,
-    update,
-    destroy() {
-      root.remove();
-    }
+    targets,
+    edits: targets.map((target) => ({
+      operation: "replace",
+      targetId: target.targetId,
+      source: target.ownerSource,
+      payload: { kind: "text", text: text3 },
+      label: "Edit text"
+    })),
+    provenance: { actor: "user" }
   };
 }
-var MODEL_MAXIMUM_PRIMITIVE_BYTES = 64 * 1024 * 1024;
-var MODEL_MAXIMUM_PRIMITIVES = 4096;
-var MODEL_FACET_DETAIL_LIMIT = 64;
-var MODEL_FACET_CONTRACTS = Object.freeze([
-  "common.view/model-resource-refs-source",
-  "common.view/model-skeleton-source",
-  "common.view/model-animation-source",
-  "common.view/model-collision-source",
-  "common.view/model-material-source",
-  "common.view/model-socket-source"
-]);
-var FACET_READOUT = Object.freeze({
-  "common.view/model-resource-refs-source": { label: "resources", key: "references" },
-  "common.view/model-skeleton-source": { label: "bones", key: "bindings" },
-  "common.view/model-animation-source": { label: "clips", key: "clips" },
-  "common.view/model-collision-source": { label: "collision", key: "volumes" },
-  "common.view/model-material-source": { label: "materials", key: "materials" },
-  "common.view/model-socket-source": { label: "sockets", key: "sockets" }
-});
-async function readModelFacets(sources, slot, scope, signal) {
-  const parts = [];
-  for (const contract of MODEL_FACET_CONTRACTS) {
-    const lease2 = await unknownSourceLease10(sources, slot, contract);
-    if (lease2 === void 0) continue;
-    scope.lease(lease2);
-    const readout = FACET_READOUT[contract];
-    const source2 = lease2.value;
-    const info = await source2.info(signal);
-    const value2 = info[readout?.key ?? ""];
-    if (typeof value2 === "number") parts.push(`${value2} ${readout?.label ?? contract}`);
-  }
-  return parts;
+function rejectionText(state, reason) {
+  return safeViewerText15(reason === void 0 ? state : `${state}: ${reason}`, 1024);
 }
-async function loadModelStage(source2, signal) {
-  const info = await source2.info(signal);
-  const primitiveIds = [];
-  let cursor3;
-  do {
-    const page2 = await source2.meshes(
-      {
-        limit: Math.min(256, MODEL_MAXIMUM_PRIMITIVES - primitiveIds.length),
-        ...cursor3 === void 0 ? {} : { cursor: cursor3 }
-      },
-      signal
-    );
-    for (const mesh of page2.items) {
-      for (const id of mesh.primitiveIds) {
-        if (primitiveIds.length >= MODEL_MAXIMUM_PRIMITIVES) break;
-        primitiveIds.push(id);
-      }
-    }
-    cursor3 = primitiveIds.length >= MODEL_MAXIMUM_PRIMITIVES ? void 0 : page2.nextCursor;
-  } while (cursor3 !== void 0);
-  const primitiveId = primitiveIds[0];
-  const primitive = primitiveId === void 0 || source2.primitive === void 0 ? void 0 : await source2.primitive(primitiveId, { maxBytes: MODEL_MAXIMUM_PRIMITIVE_BYTES }, signal);
-  return {
-    info,
-    primitiveIds: Object.freeze(primitiveIds),
-    ...primitive === void 0 ? {} : { primitive }
-  };
-}
-function short(value2) {
-  const text3 = String(value2 ?? "").trim();
-  return text3.length <= 160 ? text3 : `${text3.slice(0, 157)}\u2026`;
-}
-function facetItem(contract, value2) {
-  if (contract === "common.view/model-resource-refs-source") {
-    const item2 = value2;
-    return `${short(item2.id)} \xB7 ${item2.role} \xB7 ${item2.provenance}`;
-  }
-  if (contract === "common.view/model-skeleton-source") {
-    const item2 = value2;
-    const parent = item2.parentBoneIndex === void 0 ? "?" : item2.parentBoneIndex ?? "root";
-    return `#${item2.boneIndex} ${short(item2.boneName ?? "(unnamed)")} \xB7 parent ${parent} \xB7 ${item2.flagNames?.join(", ") || "no named flags"}`;
-  }
-  if (contract === "common.view/model-animation-source") {
-    const item2 = value2;
-    const samples = item2.channels.reduce(
-      (total, channel) => total + (channel.samples?.length ?? 0),
-      0
-    );
-    return `${short(item2.name)} \xB7 ${item2.frames} frames \xB7 ${item2.channels.length} channels \xB7 ${samples} samples`;
-  }
-  if (contract === "common.view/model-collision-source") {
-    const item2 = value2;
-    return `${short(item2.id)} \xB7 ${item2.kind} \xB7 ${item2.origin}`;
-  }
-  if (contract === "common.view/model-material-source") {
-    const item2 = value2;
-    return `${short(item2.name ?? item2.id)} \xB7 ${item2.type ?? "material"} \xB7 ${item2.blendMode ?? "blend unknown"} \xB7 ${item2.layers?.length ?? 0} layers`;
-  }
-  const item = value2;
-  return `${short(item.sourceName ?? item.id)} \xB7 ${item.role} \xB7 ${item.nodeId}`;
-}
-async function readModelFacetDetails(sources, slot, scope, signal) {
-  const methods = {
-    "common.view/model-resource-refs-source": "references",
-    "common.view/model-skeleton-source": "bindings",
-    "common.view/model-animation-source": "clips",
-    "common.view/model-collision-source": "volumes",
-    "common.view/model-material-source": "materials",
-    "common.view/model-socket-source": "sockets"
-  };
-  const details = [];
-  for (const contract of MODEL_FACET_CONTRACTS) {
-    const lease2 = await unknownSourceLease10(sources, slot, contract);
-    if (lease2 === void 0) continue;
-    scope.lease(lease2);
-    const method = methods[contract];
-    const source2 = lease2.value;
-    const page2 = await source2[method]?.({ limit: MODEL_FACET_DETAIL_LIMIT }, signal);
-    if (page2 === void 0) continue;
-    details.push(
-      Object.freeze({
-        contract,
-        label: FACET_READOUT[contract]?.label ?? contract,
-        items: Object.freeze(page2.items.map((item) => facetItem(contract, item))),
-        truncated: page2.nextCursor !== void 0
-      })
-    );
-  }
-  return Object.freeze(details);
-}
-function drawPrimitive(canvas, primitive, basis, distanceScale) {
-  const context = canvas.getContext("2d");
-  if (context === null) throw new TypeError("2d canvas context is unavailable");
-  const width = 720;
-  const height = 480;
-  canvas.width = width;
-  canvas.height = height;
-  context.clearRect(0, 0, width, height);
-  const positions = primitive.positions;
-  if (positions.length < 3) return;
-  if (positions.length % 3 !== 0 || !positions.every(Number.isFinite)) {
-    throw new TypeError("model primitive positions are malformed");
-  }
-  const { right, up } = basis;
-  const flat = new Float64Array(positions.length / 3 * 2);
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let minY = Infinity;
-  let maxY = -Infinity;
-  for (let index = 0, vertex = 0; index + 2 < positions.length; index += 3, vertex += 1) {
-    const x = positions[index];
-    const y = positions[index + 1];
-    const z = positions[index + 2];
-    const screenX = x * right[0] + y * right[1] + z * right[2];
-    const screenY = x * up[0] + y * up[1] + z * up[2];
-    flat[vertex * 2] = screenX;
-    flat[vertex * 2 + 1] = screenY;
-    minX = Math.min(minX, screenX);
-    maxX = Math.max(maxX, screenX);
-    minY = Math.min(minY, screenY);
-    maxY = Math.max(maxY, screenY);
-  }
-  const extentX = Math.max(1e-9, maxX - minX);
-  const extentY = Math.max(1e-9, maxY - minY);
-  const margin = 16;
-  const fit = Math.min((width - margin * 2) / extentX, (height - margin * 2) / extentY);
-  const scale = fit / Math.max(0.15, distanceScale);
-  const offsetX = width / 2 - (minX + maxX) / 2 * scale;
-  const offsetY = height / 2 + (minY + maxY) / 2 * scale;
-  const point = (vertex) => [
-    offsetX + flat[vertex * 2] * scale,
-    offsetY - flat[vertex * 2 + 1] * scale
-  ];
-  const indices = primitive.indices ?? Uint32Array.from({ length: positions.length / 3 }, (_, i2) => i2);
-  const vertexCount = positions.length / 3;
-  if (indices.some((index) => index >= vertexCount)) {
-    throw new RangeError("model primitive index is outside the position buffer");
-  }
-  const stroke = getComputedStyle(canvas).getPropertyValue("--mk-chart-categorical-1").trim() || "#4daafc";
-  context.strokeStyle = stroke;
-  context.fillStyle = stroke;
-  context.lineWidth = 1;
-  const edge = (from, to) => {
-    const a2 = point(from);
-    const b2 = point(to);
-    context.beginPath();
-    context.moveTo(a2[0], a2[1]);
-    context.lineTo(b2[0], b2[1]);
-    context.stroke();
-  };
-  const triangle = (first, second, third) => {
-    const a2 = point(first);
-    const b2 = point(second);
-    const c5 = point(third);
-    context.beginPath();
-    context.moveTo(a2[0], a2[1]);
-    context.lineTo(b2[0], b2[1]);
-    context.lineTo(c5[0], c5[1]);
-    context.closePath();
-    context.stroke();
-  };
-  if (primitive.topology === "points") {
-    for (const vertex of indices) {
-      const value2 = point(vertex);
-      context.fillRect(value2[0] - 1, value2[1] - 1, 3, 3);
-    }
-  } else if (primitive.topology === "lines") {
-    for (let index = 0; index + 1 < indices.length; index += 2) {
-      edge(indices[index], indices[index + 1]);
-    }
-  } else if (primitive.topology === "line-strip") {
-    for (let index = 0; index + 1 < indices.length; index += 1) {
-      edge(indices[index], indices[index + 1]);
-    }
-  } else if (primitive.topology === "triangles") {
-    for (let index = 0; index + 2 < indices.length; index += 3) {
-      triangle(indices[index], indices[index + 1], indices[index + 2]);
-    }
-  } else if (primitive.topology === "triangle-strip") {
-    for (let index = 0; index + 2 < indices.length; index += 1) {
-      triangle(indices[index], indices[index + 1], indices[index + 2]);
-    }
-  } else {
-    for (let index = 1; index + 1 < indices.length; index += 1) {
-      triangle(indices[0], indices[index], indices[index + 1]);
-    }
-  }
-}
-var modelViewer = defineViewerModule12({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope13(args.signal);
-    const root = createSurface13(args.container, "Model viewer");
-    const stage = element11(root, "div", { part: "model" });
-    const readout = element11(stage, "output", { part: "model.readout" });
-    const toolbar = element11(stage, "div", { part: "model.toolbar", role: "toolbar" });
-    toolbar.setAttribute("aria-label", "Model view");
-    const canvas = element11(stage, "canvas", { part: "model.canvas" });
-    canvas.setAttribute("role", "img");
-    canvas.tabIndex = 0;
-    const camera = createOrbitController();
-    const gizmo = createViewGizmo(stage, { onAxis: (axis) => camera.snapTo(axis) });
-    const lease2 = await unknownSourceLease10(
-      args.sources,
-      args.slot,
-      "common.view/model-scene-source"
-    );
-    if (lease2 === void 0) throw new TypeError("model binding is unavailable");
-    scope.lease(lease2);
-    setState15(stage, ["loading"]);
-    try {
-      const sceneSource = lease2.value;
-      const model = await loadModelStage(sceneSource, scope.signal);
-      const [facets, facetDetails] = await Promise.all([
-        readModelFacets(args.sources, args.slot, scope, scope.signal),
-        readModelFacetDetails(args.sources, args.slot, scope, scope.signal)
-      ]);
-      setViewerText11(
-        readout,
-        `${model.info.nodes} nodes \xB7 ${model.info.meshes} meshes \xB7 ${model.info.primitives} primitives \xB7 ${model.info.materials} materials \xB7 ${model.info.animations} animations` + (facets.length === 0 ? "" : ` \xB7 ${facets.join(" \xB7 ")}`)
-      );
-      if (facetDetails.length > 0) {
-        const panel = element11(stage, "section", { part: "model.facets" });
-        panel.setAttribute("aria-label", "Model details");
-        for (const detail of facetDetails) {
-          const group2 = element11(panel, "details", { part: "model.facet" });
-          element11(group2, "summary", {
-            part: "model.facet-summary",
-            text: `${detail.label} (${detail.items.length}${detail.truncated ? "+" : ""})`
-          });
-          const list = element11(group2, "ul", { part: "model.facet-list" });
-          for (const item of detail.items) {
-            element11(list, "li", { part: "model.facet-item", text: item });
+function createTextEditorModule(options = {}) {
+  const localizer = withEnglishUiFallback14(options.localizer, EDITOR_FALLBACK_MESSAGES);
+  const maximum = options.maximumSourceBytes ?? 16 * 1024 * 1024;
+  return defineEditorModule({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope13(args.signal);
+      const root = createSurface13(args.container, localizer.text("editor.text"));
+      root.dataset["modkitEditor"] = "text";
+      root.dataset["revision"] = args.descriptor.revision;
+      const lease2 = await args.sources.get(TEXT_DATA_SOURCE);
+      if (lease2 === void 0) throw new TypeError("text editor data-source binding is unavailable");
+      scope.lease(lease2);
+      const toolbar = element11(root, "div", {
+        className: "modkit-editor__toolbar",
+        role: "toolbar",
+        part: "editor.toolbar"
+      });
+      toolbar.setAttribute("aria-label", localizer.text("viewer.editingActions"));
+      const save = element11(toolbar, "button", {
+        text: localizer.text("viewer.save")
+      });
+      save.dataset["modkitAction"] = "save";
+      const undo = element11(toolbar, "button", {
+        text: localizer.text("viewer.undo")
+      });
+      const redo = element11(toolbar, "button", {
+        text: localizer.text("viewer.redo")
+      });
+      const status = element11(toolbar, "output", {
+        text: localizer.text("viewer.ready"),
+        part: "viewer.status"
+      });
+      save.type = undo.type = redo.type = "button";
+      undo.disabled = true;
+      redo.disabled = true;
+      const input = element11(root, "textarea", {
+        className: "modkit-editor__text",
+        part: "editor.text"
+      });
+      input.setAttribute("aria-label", localizer.text("viewer.editableText"));
+      input.spellcheck = false;
+      input.value = await loadText(lease2.value, maximum, scope.signal);
+      let busy = false;
+      let lastPlan;
+      let lastReceipt;
+      const request = async (plan) => args.authorization.request(plan, { signal: scope.signal });
+      const saveChange = async () => {
+        if (busy || scope.signal.aborted) return false;
+        busy = true;
+        save.disabled = true;
+        setViewerText11(status, localizer.text("editor.validating"));
+        try {
+          const change = options.createChangeSet?.({ text: input.value, targets: args.edit.targets }) ?? defaultChangeSet(input.value, args.edit.targets);
+          const validation = await args.edit.propose(change);
+          if (!validation.valid) {
+            setViewerText11(status, localizer.text("editor.validationRejected"));
+            return false;
           }
+          const plan = await args.edit.plan(change);
+          const authorization = await request(plan);
+          if (authorization === void 0) {
+            setViewerText11(status, localizer.text("viewer.saveCancelled"));
+            return false;
+          }
+          const prepared = await args.commit.prepare(plan, {
+            grant: authorization.grant,
+            ...authorization.confirmationToken === void 0 ? {} : { confirmationToken: authorization.confirmationToken },
+            signal: scope.signal
+          });
+          if (prepared.state !== "ready") {
+            setViewerText11(
+              status,
+              prepared.state === "conflict" ? localizer.text("editor.conflictChanged") : rejectionText(localizer.text("viewer.saveRejected"), prepared.reason)
+            );
+            return false;
+          }
+          setViewerText11(status, localizer.text("editor.saving"));
+          const result = await args.commit.commit(prepared.prepared, {
+            grant: authorization.grant,
+            signal: scope.signal,
+            onProgress: (done) => setViewerText11(status, localizer.text("editor.savingProgress", { progress: done }))
+          });
+          if (result.state === "committed") {
+            lastPlan = plan;
+            lastReceipt = result.receipt;
+            undo.disabled = result.receipt.undo === "none";
+            redo.disabled = true;
+            setViewerText11(status, localizer.text("viewer.saved"));
+            return true;
+          } else {
+            setViewerText11(
+              status,
+              result.state === "not-applied" ? rejectionText(localizer.text("editor.notSaved"), result.reason) : result.state === "rolled-back" ? localizer.text("editor.rolledBack") : localizer.text("editor.partiallySaved")
+            );
+            return false;
+          }
+        } catch (error3) {
+          setViewerText11(status, error3 instanceof Error ? error3.message : String(error3));
+          return false;
+        } finally {
+          busy = false;
+          save.disabled = false;
         }
-      }
-      if (model.primitive === void 0) {
-        canvas.remove();
-        gizmo.destroy();
-        toolbar.remove();
-        element11(stage, "p", {
-          part: "viewer.empty",
-          text: "Scene metadata is available. A buffer resolver/renderer provider is required for geometry."
+      };
+      const replay = async (kind) => {
+        if (busy || lastPlan === void 0 || lastReceipt === void 0) return;
+        busy = true;
+        const authorization = await request(lastPlan);
+        if (authorization === void 0) {
+          setViewerText11(
+            status,
+            localizer.text("editor.actionCancelled", {
+              action: localizer.text(kind === "undo" ? "viewer.undo" : "viewer.redo")
+            })
+          );
+          busy = false;
+          return;
+        }
+        const result = await args.commit[kind](lastReceipt.transactionId, {
+          grant: authorization.grant,
+          signal: scope.signal
         });
-      } else {
-        let primitive = model.primitive;
-        const redraw = () => {
-          const pose = camera.pose;
-          drawPrimitive(canvas, primitive, camera.basis(), pose.distanceScale);
-          gizmo.update(pose.yaw, pose.pitch);
-        };
-        scope.cleanup(camera.onChange(redraw));
-        camera.attach(canvas, scope.signal);
-        const button = (label, title, run) => {
-          const node = element11(toolbar, "button", { part: "operations.button", text: label });
-          node.setAttribute("type", "button");
-          node.title = title;
-          node.addEventListener("click", run, { signal: scope.signal });
-        };
-        button("Reset", "Reset the camera to its default pose", () => camera.reset());
-        button("\u2212", "Zoom out", () => camera.zoom(1));
-        button("+", "Zoom in", () => camera.zoom(-1));
-        if (model.primitiveIds.length > 1 && sceneSource.primitive !== void 0) {
-          const selector = element11(toolbar, "select", {
-            part: "model.primitive-selector"
-          });
-          selector.setAttribute("aria-label", "Model primitive");
-          for (const id of model.primitiveIds) {
-            const option = element11(selector, "option", { text: id });
-            option.value = id;
-          }
-          let selection = 0;
-          selector.addEventListener(
-            "change",
-            async () => {
-              const request = ++selection;
-              selector.disabled = true;
-              try {
-                const selected = await sceneSource.primitive?.(
-                  selector.value,
-                  { maxBytes: MODEL_MAXIMUM_PRIMITIVE_BYTES },
-                  scope.signal
-                );
-                if (selected !== void 0 && request === selection) {
-                  primitive = selected;
-                  redraw();
-                }
-              } finally {
-                if (request === selection) selector.disabled = false;
-              }
-            },
-            { signal: scope.signal }
+        if (result.state === "committed") {
+          undo.disabled = kind === "undo";
+          redo.disabled = kind === "redo";
+          setViewerText11(status, localizer.text(kind === "undo" ? "editor.undone" : "editor.redone"));
+        } else {
+          setViewerText11(
+            status,
+            result.state === "not-applied" ? rejectionText(
+              localizer.text("editor.actionRejected", {
+                action: localizer.text(kind === "undo" ? "viewer.undo" : "viewer.redo")
+              }),
+              result.reason
+            ) : localizer.text("editor.actionFailed", {
+              action: localizer.text(kind === "undo" ? "viewer.undo" : "viewer.redo")
+            })
           );
         }
-        scope.cleanup(() => gizmo.destroy());
-        redraw();
-      }
-      setState15(stage, []);
-    } catch (error3) {
-      setState15(stage, ["error"]);
-      canvas.remove();
-      element11(stage, "p", {
-        part: "viewer.empty",
-        text: `The model scene cannot be rendered: ${error3 instanceof Error ? error3.message : String(error3)}`
+        busy = false;
+      };
+      save.addEventListener("click", saveChange);
+      const removeSaveRequest = handleEditorSaveRequest2(root, saveChange);
+      undo.addEventListener("click", () => void replay("undo"));
+      redo.addEventListener("click", () => void replay("redo"));
+      scope.cleanup(() => {
+        save.removeEventListener("click", saveChange);
+        removeSaveRequest();
+      });
+      return Object.freeze({
+        async update(update) {
+          root.dataset["revision"] = update.descriptor.revision;
+          setViewerText11(status, localizer.text("editor.sourceUpdated"));
+        },
+        async unmount() {
+          await scope.close();
+          await args.edit.dispose();
+          root.remove();
+        }
       });
     }
-    return createViewerMount11(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-    });
-  }
-});
+  });
+}
+var textEditor = createTextEditorModule();
 
-// packages/ui/dist/namespace/index.js
+// packages/ui/dist/table/index.js
 var PARTS16 = Object.freeze([
   // shared surface
   "viewer",
@@ -55576,140 +58212,229 @@ function unknownSourceLease11(sources, slot, contract) {
   if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
   return sources.get(binding);
 }
-function normalizeNamespacePath(value2) {
-  if (value2.includes("\\") || value2.startsWith("/") || value2.includes("\0")) {
-    throw new TypeError("namespace path is not relative and portable");
-  }
-  const parts = value2.split("/").filter((part) => part !== "" && part !== ".");
-  if (parts.some((part) => part === "..")) throw new TypeError("namespace traversal is forbidden");
-  return parts.join("/");
+var TABLE_FALLBACK_MESSAGES = {
+  "card.descriptionUnavailable": "Description is not available yet.",
+  "card.loadingDescription": "Loading description\u2026",
+  "viewer.nextRows": "Next rows",
+  "viewer.table": "Table viewer",
+  "viewer.tableShape": "{rows} rows, {columns} columns"
+};
+function createEnglishUiLocalizer15(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
+    }
+  });
 }
-var NamespaceModel = class {
+function withEnglishUiFallback15(localizer, messages) {
+  const fallback = createEnglishUiLocalizer15(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+var TABLE_PAGE_ROWS = 200;
+var TABLE_KNOWLEDGE_SUMMARY_CHARACTERS = 512;
+var TABLE_KNOWLEDGE_SOURCE_TITLE_CHARACTERS = 160;
+var LazyTableModel = class {
   constructor(source2) {
     this.source = source2;
   }
   source;
-  #identities = /* @__PURE__ */ new Map();
-  async list(prefix, cursor3, signal) {
-    const normalized = normalizeNamespacePath(prefix);
-    const page2 = await this.source.list(
-      normalized,
-      { limit: 200, ...cursor3 === void 0 ? {} : { cursor: cursor3 } },
+  #cursor;
+  shape() {
+    return this.source.shape();
+  }
+  cell(coord, signal) {
+    return this.source.cell(coord, signal);
+  }
+  async first(from = 0, signal) {
+    const page2 = await this.source.rows({ kind: "range", from, count: TABLE_PAGE_ROWS }, signal);
+    this.#cursor = page2.nextCursor;
+    return page2;
+  }
+  async next(signal) {
+    if (this.#cursor === void 0) return void 0;
+    const page2 = await this.source.rows(
+      { kind: "cursor", cursor: this.#cursor, count: TABLE_PAGE_ROWS },
       signal
     );
-    for (const entry2 of page2.items) {
-      const path = normalizeNamespacePath(entry2.path);
-      const identity = `${path}\0${entry2.revision}`;
-      const existing = this.#identities.get(entry2.id);
-      if (existing !== void 0 && existing !== identity) {
-        throw new TypeError(`namespace entry identity changed: ${entry2.id}`);
-      }
-      this.#identities.set(entry2.id, identity);
-    }
+    this.#cursor = page2.nextCursor;
     return page2;
   }
 };
-var namespaceViewer = defineViewerModule13({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope14(args.signal);
-    const root = createSurface14(args.container, "Namespace tree");
-    root.setAttribute("role", "tree");
-    const lease2 = await unknownSourceLease11(
-      args.sources,
-      args.slot,
-      "common.view/namespace-entry-source"
-    );
-    if (lease2 === void 0) throw new TypeError("namespace binding is unavailable");
-    scope.lease(lease2);
-    const source2 = lease2.value;
-    const model = new NamespaceModel(source2);
-    const list = element12(root, "ul", { part: "namespace.list" });
-    list.setAttribute("role", "group");
-    const renderPrefix = async (prefix, parent) => {
-      const page2 = await model.list(prefix, void 0, scope.signal);
-      const seen = /* @__PURE__ */ new Set();
-      for (const entry2 of page2.items) {
-        if (seen.has(entry2.id)) throw new TypeError(`duplicate namespace entry id: ${entry2.id}`);
-        seen.add(entry2.id);
-        const item = element12(parent, "li", { part: "namespace.item" });
-        item.setAttribute("role", "treeitem");
-        item.dataset["entryId"] = entry2.id;
-        item.dataset["revision"] = entry2.revision;
-        const button = element12(item, "button", {
-          text: entry2.name,
-          part: "namespace.label"
-        });
-        button.type = "button";
-        const detail = describeEntry(entry2);
-        if (detail !== "") {
-          setViewerText12(element12(item, "span", { part: "namespace.detail" }), detail);
-        }
-        const activate = async () => {
-          if (entry2.kind === "directory") {
-            let nested = item.querySelector(":scope > ul");
-            if (nested === null) {
-              nested = element12(item, "ul", { part: "namespace.children" });
-              nested.setAttribute("role", "group");
-              await renderPrefix(entry2.path, nested);
-            }
-            nested.hidden = !nested.hidden;
-            return;
-          }
-          const opened = await source2.openEntry(entry2.id, scope.signal);
+function createTableViewer(options = {}) {
+  const localizer = withEnglishUiFallback15(options.localizer, TABLE_FALLBACK_MESSAGES);
+  return defineViewerModule13({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope14(args.signal);
+      const root = createSurface14(args.container, localizer.text("viewer.table"));
+      const lease2 = await unknownSourceLease11(
+        args.sources,
+        args.slot,
+        "common.view/table-data-source"
+      );
+      if (lease2 === void 0) throw new TypeError("table binding is unavailable");
+      scope.lease(lease2);
+      const model = new LazyTableModel(lease2.value);
+      const table = element12(root, "table", {
+        className: "modkit-viewer__table",
+        part: "table"
+      });
+      const caption = table.createCaption();
+      setPart16(caption, "table.caption");
+      const shape = await model.shape();
+      setViewerText12(
+        caption,
+        localizer.text("viewer.tableShape", { rows: shape.rows, columns: shape.columns })
+      );
+      const body = table.createTBody();
+      setPart16(body, "table.body");
+      const knowledge = element12(root, "aside", {
+        className: "modkit-viewer__table-knowledge",
+        part: "viewer.status",
+        role: "status",
+        text: localizer.text("card.descriptionUnavailable")
+      });
+      knowledge.setAttribute("aria-live", "polite");
+      knowledge.dataset["knowledgeState"] = "missing";
+      let lookupRevision = 0;
+      let lookupController;
+      const cancelLookup = (reason) => {
+        lookupRevision += 1;
+        lookupController?.abort(reason);
+        lookupController = void 0;
+      };
+      scope.cleanup(() => cancelLookup("viewer-unmounted"));
+      const showMissingKnowledge = () => {
+        knowledge.dataset["knowledgeState"] = "missing";
+        knowledge.replaceChildren();
+        setViewerText12(knowledge, localizer.text("card.descriptionUnavailable"));
+      };
+      const directSource = (hit) => {
+        for (const source2 of hit.entry.sources) {
+          if (source2.url === void 0) continue;
           try {
-            root.dispatchEvent(
-              new CustomEvent("modkit-open-source", {
-                bubbles: true,
-                detail: { source: opened.value, entryId: entry2.id, revision: entry2.revision }
-              })
-            );
-          } finally {
-            await opened.release();
+            const url = new URL(source2.url);
+            if (url.protocol === "https:") return { title: source2.title, url };
+          } catch {
           }
-        };
-        button.addEventListener("click", activate);
-        scope.cleanup(() => button.removeEventListener("click", activate));
-        setViewerText12(button, entry2.name);
-      }
-    };
-    await renderPrefix("", list);
-    return createViewerMount12(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-    });
-  }
-});
-function formatEntryBytes(value2) {
-  if (value2 < 1024n) return `${value2} B`;
-  const units = ["KiB", "MiB", "GiB", "TiB"];
-  let scaled = Number(value2) / 1024;
-  let unit = 0;
-  while (scaled >= 1024 && unit < units.length - 1) {
-    scaled /= 1024;
-    unit += 1;
-  }
-  return `${scaled.toFixed(1)} ${units[unit]}`;
+        }
+        return void 0;
+      };
+      const showKnowledge = (hit) => {
+        knowledge.dataset["knowledgeState"] = "resolved";
+        knowledge.replaceChildren();
+        const summary = knowledge.ownerDocument.createElement("span");
+        setViewerText12(summary, hit.entry.summary, TABLE_KNOWLEDGE_SUMMARY_CHARACTERS);
+        knowledge.append(summary);
+        const source2 = directSource(hit);
+        if (source2 === void 0) return;
+        knowledge.append(knowledge.ownerDocument.createTextNode(" "));
+        const link = knowledge.ownerDocument.createElement("a");
+        link.href = source2.url.href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.referrerPolicy = "no-referrer";
+        setViewerText12(link, source2.title, TABLE_KNOWLEDGE_SOURCE_TITLE_CHARACTERS);
+        knowledge.append(link);
+      };
+      const inspectCell = (coord) => {
+        if (scope.signal.aborted) return;
+        cancelLookup("table-cell-changed");
+        const revision = lookupRevision;
+        const catalog = args.knowledge;
+        if (catalog === void 0) {
+          showMissingKnowledge();
+          return;
+        }
+        const controller = new AbortController();
+        lookupController = controller;
+        knowledge.dataset["knowledgeState"] = "loading";
+        knowledge.replaceChildren();
+        setViewerText12(knowledge, localizer.text("card.loadingDescription"));
+        void (async () => {
+          try {
+            const facts = await model.cell(coord, controller.signal);
+            if (controller.signal.aborted || revision !== lookupRevision) return;
+            if (facts.knowledgeTarget === void 0) {
+              showMissingKnowledge();
+              return;
+            }
+            const page2 = await catalog.resolve(
+              { target: facts.knowledgeTarget, locales: [], limit: 1 },
+              controller.signal
+            );
+            if (controller.signal.aborted || revision !== lookupRevision) return;
+            const hit = page2.items[0];
+            if (hit === void 0) showMissingKnowledge();
+            else showKnowledge(hit);
+          } catch {
+            if (!controller.signal.aborted && revision === lookupRevision) showMissingKnowledge();
+          } finally {
+            if (revision === lookupRevision) lookupController = void 0;
+          }
+        })();
+      };
+      const render2 = (rows) => {
+        cancelLookup("table-page-changed");
+        showMissingKnowledge();
+        body.replaceChildren();
+        for (const row of rows) {
+          const tr = body.insertRow();
+          setPart16(tr, "table.row");
+          tr.dataset["row"] = String(row.index);
+          for (const [column, value2] of row.cells.entries()) {
+            const cell = tr.insertCell();
+            setPart16(cell, "table.cell");
+            cell.tabIndex = 0;
+            setViewerText12(cell, value2);
+            const inspect = () => inspectCell({ row: row.index, column });
+            cell.addEventListener("focus", inspect);
+            cell.addEventListener("mouseenter", inspect);
+          }
+        }
+      };
+      const first = await model.first(0, scope.signal);
+      render2(first.items);
+      const next = element12(root, "button", {
+        text: localizer.text("viewer.nextRows"),
+        part: "table.next"
+      });
+      next.type = "button";
+      next.disabled = first.nextCursor === void 0;
+      const advance = async () => {
+        const page2 = await model.next(scope.signal);
+        if (page2 === void 0) {
+          next.disabled = true;
+          return;
+        }
+        render2(page2.items);
+        next.disabled = page2.nextCursor === void 0;
+      };
+      next.addEventListener("click", advance);
+      scope.cleanup(() => next.removeEventListener("click", advance));
+      return createViewerMount12(root, scope, args, ({ descriptor }) => {
+        cancelLookup("viewer-updated");
+        showMissingKnowledge();
+        root.dataset["revision"] = descriptor.revision;
+      });
+    }
+  });
 }
-function describeEntry(entry2) {
-  if (entry2.kind === "directory") return "";
-  const parts = [];
-  if (entry2.size !== void 0) parts.push(formatEntryBytes(entry2.size));
-  if (entry2.compression !== void 0) {
-    parts.push(
-      entry2.storedSize === void 0 ? entry2.compression : `${entry2.compression} ${formatEntryBytes(entry2.storedSize)}`
-    );
-  } else if (entry2.storedSize !== void 0) {
-    parts.push(`stored ${formatEntryBytes(entry2.storedSize)}`);
-  }
-  if (entry2.modifiedAt !== void 0) {
-    parts.push(`${new Date(entry2.modifiedAt).toISOString().replace("T", " ").slice(0, 19)} UTC`);
-  }
-  if (entry2.checksum !== void 0)
-    parts.push(`${entry2.checksum.algorithm} ${entry2.checksum.value}`);
-  return parts.join(" \xB7 ");
-}
+var tableViewer = createTableViewer();
 
-// packages/ui/dist/table/index.js
+// packages/ui/dist/text-virtual/index.js
 var PARTS17 = Object.freeze([
   // shared surface
   "viewer",
@@ -56199,190 +58924,106 @@ function unknownSourceLease12(sources, slot, contract) {
   if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
   return sources.get(binding);
 }
-var TABLE_PAGE_ROWS = 200;
-var TABLE_KNOWLEDGE_SUMMARY_CHARACTERS = 512;
-var TABLE_KNOWLEDGE_SOURCE_TITLE_CHARACTERS = 160;
-var TABLE_KNOWLEDGE_MISSING = "Description is not available yet.";
-var TABLE_KNOWLEDGE_LOADING = "Loading description\u2026";
-var LazyTableModel = class {
+var TEXT_VIRTUAL_FALLBACK_MESSAGES = {
+  "viewer.loadNextPage": "Load next page",
+  "viewer.virtualText": "Virtual text viewer"
+};
+function createEnglishUiLocalizer16(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
+    }
+  });
+}
+function withEnglishUiFallback16(localizer, messages) {
+  const fallback = createEnglishUiLocalizer16(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+var VIRTUAL_TEXT_PAGE_BYTES = 64 * 1024;
+var VirtualTextModel = class {
   constructor(source2) {
     this.source = source2;
   }
   source;
   #cursor;
-  shape() {
-    return this.source.shape();
-  }
-  cell(coord, signal) {
-    return this.source.cell(coord, signal);
-  }
-  async first(from = 0, signal) {
-    const page2 = await this.source.rows({ kind: "range", from, count: TABLE_PAGE_ROWS }, signal);
-    this.#cursor = page2.nextCursor;
+  async first(line = 0, signal) {
+    const page2 = await this.source.slice(
+      { kind: "from-line", line, lineCount: 200, maxBytes: VIRTUAL_TEXT_PAGE_BYTES },
+      signal
+    );
+    this.#cursor = page2.complete ? void 0 : page2.nextCursor;
     return page2;
   }
   async next(signal) {
     if (this.#cursor === void 0) return void 0;
-    const page2 = await this.source.rows(
-      { kind: "cursor", cursor: this.#cursor, count: TABLE_PAGE_ROWS },
+    const page2 = await this.source.slice(
+      { kind: "from-cursor", cursor: this.#cursor, maxBytes: VIRTUAL_TEXT_PAGE_BYTES },
       signal
     );
-    this.#cursor = page2.nextCursor;
+    this.#cursor = page2.complete ? void 0 : page2.nextCursor;
     return page2;
   }
 };
-var tableViewer = defineViewerModule14({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope15(args.signal);
-    const root = createSurface15(args.container, "Table viewer");
-    const lease2 = await unknownSourceLease12(args.sources, args.slot, "common.view/table-data-source");
-    if (lease2 === void 0) throw new TypeError("table binding is unavailable");
-    scope.lease(lease2);
-    const model = new LazyTableModel(lease2.value);
-    const table = element13(root, "table", {
-      className: "modkit-viewer__table",
-      part: "table"
-    });
-    const caption = table.createCaption();
-    setPart17(caption, "table.caption");
-    const shape = await model.shape();
-    setViewerText13(caption, `${shape.rows} rows, ${shape.columns} columns`);
-    const body = table.createTBody();
-    setPart17(body, "table.body");
-    const knowledge = element13(root, "aside", {
-      className: "modkit-viewer__table-knowledge",
-      part: "viewer.status",
-      role: "status",
-      text: TABLE_KNOWLEDGE_MISSING
-    });
-    knowledge.setAttribute("aria-live", "polite");
-    knowledge.dataset["knowledgeState"] = "missing";
-    let lookupRevision = 0;
-    let lookupController;
-    const cancelLookup = (reason) => {
-      lookupRevision += 1;
-      lookupController?.abort(reason);
-      lookupController = void 0;
-    };
-    scope.cleanup(() => cancelLookup("viewer-unmounted"));
-    const showMissingKnowledge = () => {
-      knowledge.dataset["knowledgeState"] = "missing";
-      knowledge.replaceChildren();
-      setViewerText13(knowledge, TABLE_KNOWLEDGE_MISSING);
-    };
-    const directSource = (hit) => {
-      for (const source2 of hit.entry.sources) {
-        if (source2.url === void 0) continue;
-        try {
-          const url = new URL(source2.url);
-          if (url.protocol === "https:") return { title: source2.title, url };
-        } catch {
+function createVirtualTextViewer(options = {}) {
+  const localizer = withEnglishUiFallback16(options.localizer, TEXT_VIRTUAL_FALLBACK_MESSAGES);
+  return defineViewerModule14({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope15(args.signal);
+      const root = createSurface15(args.container, localizer.text("viewer.virtualText"));
+      const lease2 = await unknownSourceLease12(
+        args.sources,
+        args.slot,
+        "common.view/text-data-source"
+      );
+      if (lease2 === void 0) throw new TypeError("virtual text binding is unavailable");
+      scope.lease(lease2);
+      const model = new VirtualTextModel(lease2.value);
+      const viewport = element13(root, "pre", {
+        className: "modkit-viewer__virtual-text",
+        part: "virtual-text"
+      });
+      viewport.tabIndex = 0;
+      viewport.setAttribute("aria-live", "polite");
+      const more = element13(root, "button", {
+        text: localizer.text("viewer.loadNextPage")
+      });
+      more.type = "button";
+      const renderPage = (page2, append) => {
+        if (page2 === void 0) {
+          more.disabled = true;
+          return;
         }
-      }
-      return void 0;
-    };
-    const showKnowledge = (hit) => {
-      knowledge.dataset["knowledgeState"] = "resolved";
-      knowledge.replaceChildren();
-      const summary = knowledge.ownerDocument.createElement("span");
-      setViewerText13(summary, hit.entry.summary, TABLE_KNOWLEDGE_SUMMARY_CHARACTERS);
-      knowledge.append(summary);
-      const source2 = directSource(hit);
-      if (source2 === void 0) return;
-      knowledge.append(knowledge.ownerDocument.createTextNode(" "));
-      const link = knowledge.ownerDocument.createElement("a");
-      link.href = source2.url.href;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.referrerPolicy = "no-referrer";
-      setViewerText13(link, source2.title, TABLE_KNOWLEDGE_SOURCE_TITLE_CHARACTERS);
-      knowledge.append(link);
-    };
-    const inspectCell = (coord) => {
-      if (scope.signal.aborted) return;
-      cancelLookup("table-cell-changed");
-      const revision = lookupRevision;
-      const catalog = args.knowledge;
-      if (catalog === void 0) {
-        showMissingKnowledge();
-        return;
-      }
-      const controller = new AbortController();
-      lookupController = controller;
-      knowledge.dataset["knowledgeState"] = "loading";
-      knowledge.replaceChildren();
-      setViewerText13(knowledge, TABLE_KNOWLEDGE_LOADING);
-      void (async () => {
-        try {
-          const facts = await model.cell(coord, controller.signal);
-          if (controller.signal.aborted || revision !== lookupRevision) return;
-          if (facts.knowledgeTarget === void 0) {
-            showMissingKnowledge();
-            return;
-          }
-          const page2 = await catalog.resolve(
-            { target: facts.knowledgeTarget, locales: [], limit: 1 },
-            controller.signal
-          );
-          if (controller.signal.aborted || revision !== lookupRevision) return;
-          const hit = page2.items[0];
-          if (hit === void 0) showMissingKnowledge();
-          else showKnowledge(hit);
-        } catch {
-          if (!controller.signal.aborted && revision === lookupRevision) showMissingKnowledge();
-        } finally {
-          if (revision === lookupRevision) lookupController = void 0;
-        }
-      })();
-    };
-    const render2 = (rows) => {
-      cancelLookup("table-page-changed");
-      showMissingKnowledge();
-      body.replaceChildren();
-      for (const row of rows) {
-        const tr = body.insertRow();
-        setPart17(tr, "table.row");
-        tr.dataset["row"] = String(row.index);
-        for (const [column, value2] of row.cells.entries()) {
-          const cell = tr.insertCell();
-          setPart17(cell, "table.cell");
-          cell.tabIndex = 0;
-          setViewerText13(cell, value2);
-          const inspect = () => inspectCell({ row: row.index, column });
-          cell.addEventListener("focus", inspect);
-          cell.addEventListener("mouseenter", inspect);
-        }
-      }
-    };
-    const first = await model.first(0, scope.signal);
-    render2(first.items);
-    const next = element13(root, "button", {
-      text: "Next rows",
-      part: "table.next"
-    });
-    next.type = "button";
-    next.disabled = first.nextCursor === void 0;
-    const advance = async () => {
-      const page2 = await model.next(scope.signal);
-      if (page2 === void 0) {
-        next.disabled = true;
-        return;
-      }
-      render2(page2.items);
-      next.disabled = page2.nextCursor === void 0;
-    };
-    next.addEventListener("click", advance);
-    scope.cleanup(() => next.removeEventListener("click", advance));
-    return createViewerMount13(root, scope, args, ({ descriptor }) => {
-      cancelLookup("viewer-updated");
-      showMissingKnowledge();
-      root.dataset["revision"] = descriptor.revision;
-    });
-  }
-});
+        const text3 = append ? `${viewport.textContent ?? ""}${page2.text}` : page2.text;
+        setViewerText13(viewport, text3, 2 * VIRTUAL_TEXT_PAGE_BYTES);
+        more.disabled = page2.complete;
+        viewport.dataset["fromLine"] = String(page2.fromLine);
+      };
+      renderPage(await model.first(0, scope.signal), false);
+      const next = async () => renderPage(await model.next(scope.signal), true);
+      more.addEventListener("click", next);
+      scope.cleanup(() => more.removeEventListener("click", next));
+      return createViewerMount13(root, scope, args, ({ descriptor }) => {
+        root.dataset["revision"] = descriptor.revision;
+      });
+    }
+  });
+}
+var virtualTextViewer = createVirtualTextViewer();
 
-// packages/ui/dist/text-virtual/index.js
+// packages/ui/dist/transport/index.js
 var PARTS18 = Object.freeze([
   // shared surface
   "viewer",
@@ -56867,74 +59508,165 @@ function createViewerMount14(root, scope, initial, render2) {
 function defineViewerModule15(module) {
   return Object.freeze(module);
 }
+function operationById2(descriptor, operationId4) {
+  return descriptor.operations.find((operation) => operation.id === operationId4);
+}
+async function invokeOperation2(descriptor, operations, operationId4, input, options) {
+  const declaration = operationById2(descriptor, operationId4);
+  if (declaration === void 0) {
+    return {
+      state: "rejected",
+      reason: "not-declared",
+      diagnostics: []
+    };
+  }
+  if (declaration.state !== "available") {
+    return {
+      state: "rejected",
+      reason: declaration.state === "dependency-required" ? "dependency-required" : "disabled",
+      diagnostics: []
+    };
+  }
+  return operations.invoke(declaration.handlerId, input, {
+    ...options?.signal === void 0 ? {} : { signal: options.signal },
+    ...options?.onProgress === void 0 ? {} : {
+      onProgress: (progress) => options.onProgress?.(progress.completed, progress.total, progress.message)
+    }
+  });
+}
 function unknownSourceLease13(sources, slot, contract) {
   const binding = bindingFor13(slot, contract);
   if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
   return sources.get(binding);
 }
-var VIRTUAL_TEXT_PAGE_BYTES = 64 * 1024;
-var VirtualTextModel = class {
+var TRANSPORT_FALLBACK_MESSAGES = {
+  "viewer.loading": "Loading",
+  "viewer.normalSpeed": "Normal speed",
+  "viewer.operationComplete": "{label}: complete",
+  "viewer.playPause": "Play or pause",
+  "viewer.seekStart": "Seek to start",
+  "viewer.transport": "Transport controls"
+};
+function createEnglishUiLocalizer17(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
+    }
+  });
+}
+function withEnglishUiFallback17(localizer, messages) {
+  const fallback = createEnglishUiLocalizer17(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+var TransportModel = class {
   constructor(source2) {
     this.source = source2;
   }
   source;
-  #cursor;
-  async first(line = 0, signal) {
-    const page2 = await this.source.slice(
-      { kind: "from-line", line, lineCount: 200, maxBytes: VIRTUAL_TEXT_PAGE_BYTES },
-      signal
-    );
-    this.#cursor = page2.complete ? void 0 : page2.nextCursor;
-    return page2;
+  snapshot(signal) {
+    return this.source.snapshot(signal);
   }
-  async next(signal) {
-    if (this.#cursor === void 0) return void 0;
-    const page2 = await this.source.slice(
-      { kind: "from-cursor", cursor: this.#cursor, maxBytes: VIRTUAL_TEXT_PAGE_BYTES },
-      signal
-    );
-    this.#cursor = page2.complete ? void 0 : page2.nextCursor;
-    return page2;
+  events(signal) {
+    return this.source.events(signal);
   }
 };
-var virtualTextViewer = defineViewerModule15({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope16(args.signal);
-    const root = createSurface16(args.container, "Virtual text viewer");
-    const lease2 = await unknownSourceLease13(args.sources, args.slot, "common.view/text-data-source");
-    if (lease2 === void 0) throw new TypeError("virtual text binding is unavailable");
-    scope.lease(lease2);
-    const model = new VirtualTextModel(lease2.value);
-    const viewport = element14(root, "pre", {
-      className: "modkit-viewer__virtual-text",
-      part: "virtual-text"
-    });
-    viewport.tabIndex = 0;
-    viewport.setAttribute("aria-live", "polite");
-    const more = element14(root, "button", { text: "Load next page" });
-    more.type = "button";
-    const renderPage = (page2, append) => {
-      if (page2 === void 0) {
-        more.disabled = true;
-        return;
-      }
-      const text3 = append ? `${viewport.textContent ?? ""}${page2.text}` : page2.text;
-      setViewerText14(viewport, text3, 2 * VIRTUAL_TEXT_PAGE_BYTES);
-      more.disabled = page2.complete;
-      viewport.dataset["fromLine"] = String(page2.fromLine);
-    };
-    renderPage(await model.first(0, scope.signal), false);
-    const next = async () => renderPage(await model.next(scope.signal), true);
-    more.addEventListener("click", next);
-    scope.cleanup(() => more.removeEventListener("click", next));
-    return createViewerMount14(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-    });
-  }
-});
+function createTransportViewer(options = {}) {
+  const localizer = withEnglishUiFallback17(options.localizer, TRANSPORT_FALLBACK_MESSAGES);
+  return defineViewerModule15({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope16(args.signal);
+      const root = createSurface16(args.container, localizer.text("viewer.transport"));
+      const lease2 = await unknownSourceLease13(
+        args.sources,
+        args.slot,
+        "common.view/transport-source"
+      );
+      if (lease2 === void 0) throw new TypeError("transport binding is unavailable");
+      scope.lease(lease2);
+      const model = new TransportModel(lease2.value);
+      const status = element14(root, "output", {
+        text: localizer.text("viewer.loading"),
+        part: "transport.status"
+      });
+      const controls = element14(root, "div", {
+        className: "modkit-viewer__transport",
+        part: "transport.controls"
+      });
+      let descriptor = args.descriptor;
+      let snapshot3;
+      const render2 = (value2) => {
+        snapshot3 = value2;
+        controls.replaceChildren();
+        setViewerText14(status, `${value2.state} \xB7 ${value2.positionMs} / ${value2.durationMs} ms`);
+        const commands = [
+          [localizer.text("viewer.playPause"), value2.controls.playPause, null],
+          [localizer.text("viewer.seekStart"), value2.controls.seek, { positionMs: 0 }],
+          [localizer.text("viewer.normalSpeed"), value2.controls.setRate, { rate: 1 }]
+        ];
+        for (const [label, operation, input] of commands) {
+          if (operation === void 0) continue;
+          const button = element14(controls, "button", {
+            text: label,
+            part: "transport.button"
+          });
+          button.type = "button";
+          const invoke2 = async () => {
+            const result = await invokeOperation2(descriptor, args.operations, operation, input, {
+              signal: scope.signal
+            });
+            setViewerText14(
+              status,
+              result.state === "ok" ? localizer.text("viewer.operationComplete", { label }) : result.reason
+            );
+          };
+          button.addEventListener("click", invoke2);
+          scope.cleanup(() => button.removeEventListener("click", invoke2));
+        }
+        for (const track of value2.tracks) {
+          const item = element14(controls, "span", {
+            text: track.label ?? track.id,
+            part: "transport.track"
+          });
+          item.setAttribute("role", "status");
+          item.dataset["selected"] = String(track.selected);
+        }
+      };
+      render2(await model.snapshot(scope.signal));
+      const consume = async () => {
+        try {
+          for await (const event of model.events(scope.signal)) {
+            if (event.kind === "snapshot") render2(event.snapshot);
+            else setViewerText14(status, event.diagnostic.message);
+          }
+        } catch (error3) {
+          if (!scope.signal.aborted) throw error3;
+        }
+      };
+      void consume();
+      return createViewerMount14(root, scope, args, (update) => {
+        descriptor = update.descriptor;
+        root.dataset["revision"] = descriptor.revision;
+        render2(snapshot3);
+      });
+    }
+  });
+}
+var transportViewer = createTransportViewer();
 
-// packages/ui/dist/transport/index.js
+// packages/ui/dist/audio/index.js
 var PARTS19 = Object.freeze([
   // shared surface
   "viewer",
@@ -57419,118 +60151,220 @@ function createViewerMount15(root, scope, initial, render2) {
 function defineViewerModule16(module) {
   return Object.freeze(module);
 }
-function operationById2(descriptor, operationId4) {
-  return descriptor.operations.find((operation) => operation.id === operationId4);
-}
-async function invokeOperation2(descriptor, operations, operationId4, input, options) {
-  const declaration = operationById2(descriptor, operationId4);
-  if (declaration === void 0) {
-    return {
-      state: "rejected",
-      reason: "not-declared",
-      diagnostics: []
-    };
-  }
-  if (declaration.state !== "available") {
-    return {
-      state: "rejected",
-      reason: declaration.state === "dependency-required" ? "dependency-required" : "disabled",
-      diagnostics: []
-    };
-  }
-  return operations.invoke(declaration.handlerId, input, {
-    ...options?.signal === void 0 ? {} : { signal: options.signal },
-    ...options?.onProgress === void 0 ? {} : {
-      onProgress: (progress) => options.onProgress?.(progress.completed, progress.total, progress.message)
-    }
-  });
-}
 function unknownSourceLease14(sources, slot, contract) {
   const binding = bindingFor14(slot, contract);
   if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
   return sources.get(binding);
 }
-var TransportModel = class {
-  constructor(source2) {
-    this.source = source2;
+async function collectEncodedMedia2(source2, maximumBytes, signal) {
+  const descriptor = await source2.descriptor();
+  if (descriptor.bytes > BigInt(maximumBytes) || descriptor.bytes > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError(`encoded media exceeds the stage budget: ${descriptor.bytes} bytes`);
   }
-  source;
-  snapshot(signal) {
-    return this.source.snapshot(signal);
+  const total = Number(descriptor.bytes);
+  const bytes2 = new Uint8Array(total);
+  let offset = 0;
+  while (offset < total) {
+    if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+    const chunk = await source2.read(BigInt(offset), Math.min(1024 * 1024, total - offset), signal);
+    if (chunk.byteLength === 0 || chunk.byteLength > total - offset) {
+      throw new RangeError("encoded media ended outside its declared size");
+    }
+    bytes2.set(chunk, offset);
+    offset += chunk.byteLength;
   }
-  events(signal) {
-    return this.source.events(signal);
-  }
+  return { mediaType: descriptor.mediaType, bytes: bytes2 };
+}
+var AUDIO_FALLBACK_MESSAGES = {
+  "viewer.audio": "Audio viewer",
+  "viewer.audioControls": "Audio controls",
+  "viewer.audioDecodeError": "The platform decoder cannot render this audio: {reason}. A format-specific decoder provider is required.",
+  "viewer.audioSummary": "{position} / {duration} \xB7 {channels} channels \xB7 {rate} kHz \xB7 {size} KiB"
 };
-var transportViewer = defineViewerModule16({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope17(args.signal);
-    const root = createSurface17(args.container, "Transport controls");
-    const lease2 = await unknownSourceLease14(args.sources, args.slot, "common.view/transport-source");
-    if (lease2 === void 0) throw new TypeError("transport binding is unavailable");
-    scope.lease(lease2);
-    const model = new TransportModel(lease2.value);
-    const status = element15(root, "output", { text: "Loading", part: "transport.status" });
-    const controls = element15(root, "div", {
-      className: "modkit-viewer__transport",
-      part: "transport.controls"
-    });
-    let descriptor = args.descriptor;
-    let snapshot3;
-    const render2 = (value2) => {
-      snapshot3 = value2;
-      controls.replaceChildren();
-      setViewerText15(status, `${value2.state} \xB7 ${value2.positionMs} / ${value2.durationMs} ms`);
-      const commands = [
-        ["Play or pause", value2.controls.playPause, null],
-        ["Seek to start", value2.controls.seek, { positionMs: 0 }],
-        ["Normal speed", value2.controls.setRate, { rate: 1 }]
-      ];
-      for (const [label, operation, input] of commands) {
-        if (operation === void 0) continue;
-        const button = element15(controls, "button", {
-          text: label,
-          part: "transport.button"
-        });
-        button.type = "button";
-        const invoke2 = async () => {
-          const result = await invokeOperation2(descriptor, args.operations, operation, input, {
-            signal: scope.signal
-          });
-          setViewerText15(status, result.state === "ok" ? `${label}: complete` : result.reason);
-        };
-        button.addEventListener("click", invoke2);
-        scope.cleanup(() => button.removeEventListener("click", invoke2));
+function createEnglishUiLocalizer18(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
+    }
+  });
+}
+function withEnglishUiFallback18(localizer, messages) {
+  const fallback = createEnglishUiLocalizer18(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+var AUDIO_MAXIMUM_BYTES = 96 * 1024 * 1024;
+var WAVEFORM_BUCKETS = 900;
+function computePeaks(channelData, buckets) {
+  const frames = channelData[0]?.length ?? 0;
+  const peaks = new Float32Array(buckets * 2);
+  if (frames === 0) return peaks;
+  const step = Math.max(1, Math.floor(frames / buckets));
+  for (let bucket = 0; bucket < buckets; bucket += 1) {
+    const from = bucket * step;
+    const to = Math.min(frames, from + step);
+    let minimum = 0;
+    let maximum = 0;
+    for (const channel of channelData) {
+      for (let at = from; at < to; at += 1) {
+        const value2 = channel[at];
+        if (value2 < minimum) minimum = value2;
+        if (value2 > maximum) maximum = value2;
       }
-      for (const track of value2.tracks) {
-        const item = element15(controls, "span", {
-          text: track.label ?? track.id,
-          part: "transport.track"
-        });
-        item.setAttribute("role", "status");
-        item.dataset["selected"] = String(track.selected);
-      }
-    };
-    render2(await model.snapshot(scope.signal));
-    const consume = async () => {
-      try {
-        for await (const event of model.events(scope.signal)) {
-          if (event.kind === "snapshot") render2(event.snapshot);
-          else setViewerText15(status, event.diagnostic.message);
-        }
-      } catch (error3) {
-        if (!scope.signal.aborted) throw error3;
-      }
-    };
-    void consume();
-    return createViewerMount15(root, scope, args, (update) => {
-      descriptor = update.descriptor;
-      root.dataset["revision"] = descriptor.revision;
-      render2(snapshot3);
-    });
+    }
+    peaks[bucket * 2] = minimum;
+    peaks[bucket * 2 + 1] = maximum;
   }
-});
+  return peaks;
+}
+async function loadWaveform(source2, signal) {
+  const encoded = await source2.encoded(void 0, signal);
+  const media = await collectEncodedMedia2(encoded, AUDIO_MAXIMUM_BYTES, signal);
+  const AudioContextCtor = globalThis.AudioContext ?? globalThis.webkitAudioContext;
+  if (AudioContextCtor === void 0) throw new TypeError("no platform audio decoder is available");
+  const context = new AudioContextCtor();
+  try {
+    const copy = media.bytes.slice().buffer;
+    const buffer = await context.decodeAudioData(copy);
+    const channels = Array.from(
+      { length: buffer.numberOfChannels },
+      (_, index) => buffer.getChannelData(index)
+    );
+    return {
+      model: {
+        peaks: computePeaks(channels, WAVEFORM_BUCKETS),
+        duration: buffer.duration,
+        channels: buffer.numberOfChannels,
+        sampleRate: buffer.sampleRate,
+        bytes: media.bytes.byteLength
+      },
+      mediaType: media.mediaType,
+      bytes: media.bytes
+    };
+  } finally {
+    await context.close();
+  }
+}
+var clock = (seconds) => {
+  const whole = Math.max(0, Math.floor(seconds));
+  return `${String(Math.floor(whole / 60)).padStart(2, "0")}:${String(whole % 60).padStart(2, "0")}`;
+};
+function createAudioViewer(options = {}) {
+  const localizer = withEnglishUiFallback18(options.localizer, AUDIO_FALLBACK_MESSAGES);
+  return defineViewerModule16({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope17(args.signal);
+      const root = createSurface17(args.container, localizer.text("viewer.audio"));
+      const stage = element15(root, "div", { part: "audio" });
+      const toolbar = element15(stage, "div", { part: "audio.toolbar", role: "toolbar" });
+      toolbar.setAttribute("aria-label", localizer.text("viewer.audioControls"));
+      const readout = element15(stage, "output", { part: "audio.readout" });
+      const canvas = element15(stage, "canvas", { part: "audio.waveform" });
+      canvas.setAttribute("role", "img");
+      const player = element15(stage, "audio", { part: "audio.player" });
+      player.controls = true;
+      const lease2 = await unknownSourceLease14(
+        args.sources,
+        args.slot,
+        "common.view/audio-media-source"
+      );
+      if (lease2 === void 0) throw new TypeError("audio binding is unavailable");
+      scope.lease(lease2);
+      let model;
+      let cursor3 = 0;
+      const context = canvas.getContext("2d");
+      if (context === null) throw new TypeError("2d canvas context is unavailable");
+      const paint = () => {
+        if (model === void 0) return;
+        const box = stage.getBoundingClientRect();
+        const width = Math.max(160, Math.round(box.width - 16));
+        const height = 120;
+        canvas.width = width;
+        canvas.height = height;
+        const styles = getComputedStyle(root);
+        const ink = styles.getPropertyValue("--mk-chart-categorical-1").trim() || "#4daafc";
+        const ground = styles.getPropertyValue("--mk-color-sunken").trim() || "#181818";
+        const guide = styles.getPropertyValue("--mk-color-border").trim() || "#2b2b2b";
+        context.fillStyle = ground;
+        context.fillRect(0, 0, width, height);
+        context.strokeStyle = guide;
+        context.beginPath();
+        context.moveTo(0, height / 2);
+        context.lineTo(width, height / 2);
+        context.stroke();
+        context.fillStyle = ink;
+        const buckets = model.peaks.length / 2;
+        for (let x = 0; x < width; x += 1) {
+          const bucket = Math.min(buckets - 1, Math.floor(x / width * buckets));
+          const minimum = model.peaks[bucket * 2];
+          const maximum = model.peaks[bucket * 2 + 1];
+          const top = (1 - maximum) * (height / 2);
+          const bottom = (1 - minimum) * (height / 2);
+          context.fillRect(x, top, 1, Math.max(1, bottom - top));
+        }
+        if (cursor3 > 0 && model.duration > 0) {
+          context.fillStyle = styles.getPropertyValue("--mk-color-accent").trim() || "#0078d4";
+          context.fillRect(Math.round(cursor3 / model.duration * width), 0, 2, height);
+        }
+        setViewerText15(
+          readout,
+          localizer.text("viewer.audioSummary", {
+            position: clock(cursor3),
+            duration: clock(model.duration),
+            channels: model.channels,
+            rate: (model.sampleRate / 1e3).toFixed(1),
+            size: (model.bytes / 1024).toFixed(0)
+          })
+        );
+      };
+      canvas.addEventListener("click", (event) => {
+        if (model === void 0) return;
+        const box = canvas.getBoundingClientRect();
+        cursor3 = (event.clientX - box.left) / box.width * model.duration;
+        paint();
+      });
+      setState19(stage, ["loading"]);
+      try {
+        const loaded = await loadWaveform(lease2.value, scope.signal);
+        model = loaded.model;
+        const objectUrl = URL.createObjectURL(
+          new Blob([loaded.bytes], { type: loaded.mediaType })
+        );
+        player.src = objectUrl;
+        scope.cleanup(() => URL.revokeObjectURL(objectUrl));
+        setState19(stage, []);
+        paint();
+      } catch (error3) {
+        setState19(stage, ["error"]);
+        canvas.remove();
+        player.remove();
+        element15(stage, "p", {
+          part: "viewer.empty",
+          text: localizer.text("viewer.audioDecodeError", {
+            reason: error3 instanceof Error ? error3.message : String(error3)
+          })
+        });
+      }
+      return createViewerMount15(root, scope, args, ({ descriptor }) => {
+        root.dataset["revision"] = descriptor.revision;
+        paint();
+      });
+    }
+  });
+}
+var audioViewer = createAudioViewer();
 
 // packages/ui/dist/tree/index.js
 var PARTS20 = Object.freeze([
@@ -58022,6 +60856,32 @@ function unknownSourceLease15(sources, slot, contract) {
   if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
   return sources.get(binding);
 }
+var TREE_FALLBACK_MESSAGES = {
+  "viewer.tree": "Tree viewer"
+};
+function createEnglishUiLocalizer19(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
+    }
+  });
+}
+function withEnglishUiFallback19(localizer, messages) {
+  const fallback = createEnglishUiLocalizer19(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
 var LazyTreeModel = class {
   constructor(source2) {
     this.source = source2;
@@ -58046,54 +60906,62 @@ var LazyTreeModel = class {
     );
   }
 };
-var treeViewer = defineViewerModule17({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope18(args.signal);
-    const root = createSurface18(args.container, "Tree viewer");
-    root.setAttribute("role", "tree");
-    const lease2 = await unknownSourceLease15(args.sources, args.slot, "common.view/tree-data-source");
-    if (lease2 === void 0) throw new TypeError("tree binding is unavailable");
-    scope.lease(lease2);
-    const model = new LazyTreeModel(lease2.value);
-    const list = element16(root, "ul", { className: "modkit-viewer__tree", part: "tree.list" });
-    list.setAttribute("role", "group");
-    const renderNode = async (node, parent) => {
-      const facts = await model.facts(node);
-      const item = element16(parent, "li", { part: "tree.item" });
-      item.setAttribute("role", "treeitem");
-      item.dataset["nodeId"] = node.id;
-      item.setAttribute("aria-expanded", node.hasChildren ? "false" : "undefined");
-      const label = element16(item, "button", {
-        text: facts.label,
-        part: "tree.label"
-      });
-      label.type = "button";
-      label.disabled = !node.hasChildren;
-      if (facts.preview !== void 0) label.title = facts.preview;
-      const children = element16(item, "ul", { part: "tree.children" });
-      children.hidden = true;
-      children.setAttribute("role", "group");
-      let loaded = false;
-      const expand = async () => {
-        if (!loaded) {
-          const page2 = await model.children(node, void 0, scope.signal);
-          for (const child of page2.items) await renderNode(child, children);
-          loaded = true;
-        }
-        children.hidden = !children.hidden;
-        item.setAttribute("aria-expanded", String(!children.hidden));
+function createTreeViewer(options = {}) {
+  const localizer = withEnglishUiFallback19(options.localizer, TREE_FALLBACK_MESSAGES);
+  return defineViewerModule17({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope18(args.signal);
+      const root = createSurface18(args.container, localizer.text("viewer.tree"));
+      root.setAttribute("role", "tree");
+      const lease2 = await unknownSourceLease15(
+        args.sources,
+        args.slot,
+        "common.view/tree-data-source"
+      );
+      if (lease2 === void 0) throw new TypeError("tree binding is unavailable");
+      scope.lease(lease2);
+      const model = new LazyTreeModel(lease2.value);
+      const list = element16(root, "ul", { className: "modkit-viewer__tree", part: "tree.list" });
+      list.setAttribute("role", "group");
+      const renderNode = async (node, parent) => {
+        const facts = await model.facts(node);
+        const item = element16(parent, "li", { part: "tree.item" });
+        item.setAttribute("role", "treeitem");
+        item.dataset["nodeId"] = node.id;
+        item.setAttribute("aria-expanded", node.hasChildren ? "false" : "undefined");
+        const label = element16(item, "button", {
+          text: facts.label,
+          part: "tree.label"
+        });
+        label.type = "button";
+        label.disabled = !node.hasChildren;
+        if (facts.preview !== void 0) label.title = facts.preview;
+        const children = element16(item, "ul", { part: "tree.children" });
+        children.hidden = true;
+        children.setAttribute("role", "group");
+        let loaded = false;
+        const expand = async () => {
+          if (!loaded) {
+            const page2 = await model.children(node, void 0, scope.signal);
+            for (const child of page2.items) await renderNode(child, children);
+            loaded = true;
+          }
+          children.hidden = !children.hidden;
+          item.setAttribute("aria-expanded", String(!children.hidden));
+        };
+        label.addEventListener("click", expand);
+        scope.cleanup(() => label.removeEventListener("click", expand));
+        setViewerText16(label, facts.label);
       };
-      label.addEventListener("click", expand);
-      scope.cleanup(() => label.removeEventListener("click", expand));
-      setViewerText16(label, facts.label);
-    };
-    await renderNode(await model.root(), list);
-    return createViewerMount16(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-    });
-  }
-});
+      await renderNode(await model.root(), list);
+      return createViewerMount16(root, scope, args, ({ descriptor }) => {
+        root.dataset["revision"] = descriptor.revision;
+      });
+    }
+  });
+}
+var treeViewer = createTreeViewer();
 
 // packages/ui/dist/vector/index.js
 var PARTS21 = Object.freeze([
@@ -58585,60 +61453,100 @@ function unknownSourceLease16(sources, slot, contract) {
   if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
   return sources.get(binding);
 }
-var VECTOR_MAXIMUM_TEXT_BYTES = 32 * 1024 * 1024;
-var vectorViewer = defineViewerModule18({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope19(args.signal);
-    const root = createSurface19(args.container, "Vector viewer");
-    const stage = element17(root, "div", { part: "vector" });
-    const readout = element17(stage, "output", { part: "vector.readout" });
-    const image = element17(stage, "img", { part: "vector.image" });
-    image.alt = "Vector scene preview";
-    const lease2 = await unknownSourceLease16(
-      args.sources,
-      args.slot,
-      "common.view/vector-scene-source"
-    );
-    if (lease2 === void 0) throw new TypeError("vector binding is unavailable");
-    scope.lease(lease2);
-    setState21(stage, ["loading"]);
-    try {
-      const source2 = lease2.value;
-      const [info, document] = await Promise.all([
-        source2.info(scope.signal),
-        source2.document(scope.signal)
-      ]);
-      if (document.profile !== "uvg.secure-static.v1") {
-        throw new TypeError(`unsupported vector security profile ${document.profile}`);
-      }
-      const textBytes = new TextEncoder().encode(document.text).byteLength;
-      if (textBytes > VECTOR_MAXIMUM_TEXT_BYTES) {
-        throw new RangeError(`vector document exceeds the stage budget: ${textBytes} bytes`);
-      }
-      const objectUrl = URL.createObjectURL(
-        new Blob([document.text], { type: `${document.mediaType};charset=utf-8` })
-      );
-      image.src = objectUrl;
-      scope.cleanup(() => URL.revokeObjectURL(objectUrl));
-      setViewerText17(
-        readout,
-        `${info.nodes} nodes \xB7 ${info.paths} paths \xB7 ${info.shapes} shapes \xB7 ${info.textNodes} text nodes`
-      );
-      setState21(stage, []);
-    } catch (error3) {
-      setState21(stage, ["error"]);
-      image.remove();
-      element17(stage, "p", {
-        part: "viewer.empty",
-        text: `The vector scene cannot be rendered safely: ${error3 instanceof Error ? error3.message : String(error3)}`
+var VECTOR_FALLBACK_MESSAGES = {
+  "viewer.vector": "Vector viewer",
+  "viewer.vectorError": "The vector scene cannot be rendered safely: {reason}",
+  "viewer.vectorPreview": "Vector scene preview",
+  "viewer.vectorSummary": "{nodes} nodes \xB7 {paths} paths \xB7 {shapes} shapes \xB7 {text} text nodes"
+};
+function createEnglishUiLocalizer20(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
       });
     }
-    return createViewerMount17(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-    });
-  }
-});
+  });
+}
+function withEnglishUiFallback20(localizer, messages) {
+  const fallback = createEnglishUiLocalizer20(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
+var VECTOR_MAXIMUM_TEXT_BYTES = 32 * 1024 * 1024;
+function createVectorViewer(options = {}) {
+  const localizer = withEnglishUiFallback20(options.localizer, VECTOR_FALLBACK_MESSAGES);
+  return defineViewerModule18({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope19(args.signal);
+      const root = createSurface19(args.container, localizer.text("viewer.vector"));
+      const stage = element17(root, "div", { part: "vector" });
+      const readout = element17(stage, "output", { part: "vector.readout" });
+      const image = element17(stage, "img", { part: "vector.image" });
+      image.alt = localizer.text("viewer.vectorPreview");
+      const lease2 = await unknownSourceLease16(
+        args.sources,
+        args.slot,
+        "common.view/vector-scene-source"
+      );
+      if (lease2 === void 0) throw new TypeError("vector binding is unavailable");
+      scope.lease(lease2);
+      setState21(stage, ["loading"]);
+      try {
+        const source2 = lease2.value;
+        const [info, document] = await Promise.all([
+          source2.info(scope.signal),
+          source2.document(scope.signal)
+        ]);
+        if (document.profile !== "uvg.secure-static.v1") {
+          throw new TypeError(`unsupported vector security profile ${document.profile}`);
+        }
+        const textBytes = new TextEncoder().encode(document.text).byteLength;
+        if (textBytes > VECTOR_MAXIMUM_TEXT_BYTES) {
+          throw new RangeError(`vector document exceeds the stage budget: ${textBytes} bytes`);
+        }
+        const objectUrl = URL.createObjectURL(
+          new Blob([document.text], { type: `${document.mediaType};charset=utf-8` })
+        );
+        image.src = objectUrl;
+        scope.cleanup(() => URL.revokeObjectURL(objectUrl));
+        setViewerText17(
+          readout,
+          localizer.text("viewer.vectorSummary", {
+            nodes: info.nodes,
+            paths: info.paths,
+            shapes: info.shapes,
+            text: info.textNodes
+          })
+        );
+        setState21(stage, []);
+      } catch (error3) {
+        setState21(stage, ["error"]);
+        image.remove();
+        element17(stage, "p", {
+          part: "viewer.empty",
+          text: localizer.text("viewer.vectorError", {
+            reason: error3 instanceof Error ? error3.message : String(error3)
+          })
+        });
+      }
+      return createViewerMount17(root, scope, args, ({ descriptor }) => {
+        root.dataset["revision"] = descriptor.revision;
+      });
+    }
+  });
+}
+var vectorViewer = createVectorViewer();
 
 // packages/ui/dist/video/index.js
 async function collectEncodedMedia3(source2, maximumBytes, signal) {
@@ -58659,6 +61567,35 @@ async function collectEncodedMedia3(source2, maximumBytes, signal) {
     offset += chunk.byteLength;
   }
   return { mediaType: descriptor.mediaType, bytes: bytes2 };
+}
+var VIDEO_FALLBACK_MESSAGES = {
+  "viewer.durationUnknown": "duration unknown",
+  "viewer.video": "Video viewer",
+  "viewer.videoPlayError": "The platform cannot play this video representation: {reason}",
+  "viewer.videoSummary": "{video} video \xB7 {audio} audio \xB7 {duration}"
+};
+function createEnglishUiLocalizer21(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
+    }
+  });
+}
+function withEnglishUiFallback21(localizer, messages) {
+  const fallback = createEnglishUiLocalizer21(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
 }
 var PARTS22 = Object.freeze([
   // shared surface
@@ -59150,54 +62087,64 @@ function unknownSourceLease17(sources, slot, contract) {
   return sources.get(binding);
 }
 var VIDEO_MAXIMUM_BYTES = 256 * 1024 * 1024;
-var videoViewer = defineViewerModule19({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope20(args.signal);
-    const root = createSurface20(args.container, "Video viewer");
-    const stage = element18(root, "div", { part: "video" });
-    const readout = element18(stage, "output", { part: "video.readout" });
-    const player = element18(stage, "video", { part: "video.player" });
-    player.controls = true;
-    player.preload = "metadata";
-    const lease2 = await unknownSourceLease17(
-      args.sources,
-      args.slot,
-      "common.view/video-media-source"
-    );
-    if (lease2 === void 0) throw new TypeError("video binding is unavailable");
-    scope.lease(lease2);
-    setState22(stage, ["loading"]);
-    try {
-      const source2 = lease2.value;
-      const [info, encoded] = await Promise.all([
-        source2.info(scope.signal),
-        source2.encoded(scope.signal)
-      ]);
-      const media = await collectEncodedMedia3(encoded, VIDEO_MAXIMUM_BYTES, scope.signal);
-      const objectUrl = URL.createObjectURL(
-        new Blob([media.bytes], { type: media.mediaType })
+function createVideoViewer(options = {}) {
+  const localizer = withEnglishUiFallback21(options.localizer, VIDEO_FALLBACK_MESSAGES);
+  return defineViewerModule19({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope20(args.signal);
+      const root = createSurface20(args.container, localizer.text("viewer.video"));
+      const stage = element18(root, "div", { part: "video" });
+      const readout = element18(stage, "output", { part: "video.readout" });
+      const player = element18(stage, "video", { part: "video.player" });
+      player.controls = true;
+      player.preload = "metadata";
+      const lease2 = await unknownSourceLease17(
+        args.sources,
+        args.slot,
+        "common.view/video-media-source"
       );
-      player.src = objectUrl;
-      scope.cleanup(() => URL.revokeObjectURL(objectUrl));
-      setViewerText18(
-        readout,
-        `${info.tracks.filter((track) => track.kind === "video").length} video \xB7 ${info.tracks.filter((track) => track.kind === "audio").length} audio \xB7 ${info.durationMs === "unknown" ? "duration unknown" : `${info.durationMs} ms`}`
-      );
-      setState22(stage, []);
-    } catch (error3) {
-      setState22(stage, ["error"]);
-      player.remove();
-      element18(stage, "p", {
-        part: "viewer.empty",
-        text: `The platform cannot play this video representation: ${error3 instanceof Error ? error3.message : String(error3)}`
+      if (lease2 === void 0) throw new TypeError("video binding is unavailable");
+      scope.lease(lease2);
+      setState22(stage, ["loading"]);
+      try {
+        const source2 = lease2.value;
+        const [info, encoded] = await Promise.all([
+          source2.info(scope.signal),
+          source2.encoded(scope.signal)
+        ]);
+        const media = await collectEncodedMedia3(encoded, VIDEO_MAXIMUM_BYTES, scope.signal);
+        const objectUrl = URL.createObjectURL(
+          new Blob([media.bytes], { type: media.mediaType })
+        );
+        player.src = objectUrl;
+        scope.cleanup(() => URL.revokeObjectURL(objectUrl));
+        setViewerText18(
+          readout,
+          localizer.text("viewer.videoSummary", {
+            video: info.tracks.filter((track) => track.kind === "video").length,
+            audio: info.tracks.filter((track) => track.kind === "audio").length,
+            duration: info.durationMs === "unknown" ? localizer.text("viewer.durationUnknown") : `${info.durationMs} ms`
+          })
+        );
+        setState22(stage, []);
+      } catch (error3) {
+        setState22(stage, ["error"]);
+        player.remove();
+        element18(stage, "p", {
+          part: "viewer.empty",
+          text: localizer.text("viewer.videoPlayError", {
+            reason: error3 instanceof Error ? error3.message : String(error3)
+          })
+        });
+      }
+      return createViewerMount18(root, scope, args, ({ descriptor }) => {
+        root.dataset["revision"] = descriptor.revision;
       });
     }
-    return createViewerMount18(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-    });
-  }
-});
+  });
+}
+var videoViewer = createVideoViewer();
 
 // packages/ui/dist/world/index.js
 var PARTS23 = Object.freeze([
@@ -59689,6 +62636,37 @@ function unknownSourceLease18(sources, slot, contract) {
   if (binding === void 0 || !("contract" in binding)) return Promise.resolve(void 0);
   return sources.get(binding);
 }
+var WORLD_FALLBACK_MESSAGES = {
+  "viewer.boundedPreview": " \xB7 bounded preview",
+  "viewer.world": "World viewer",
+  "viewer.worldEmpty": "World metadata is available; no drawable terrain or objects were published.",
+  "viewer.worldError": "The world cannot be rendered: {reason}",
+  "viewer.worldPreview": "Top-down world preview",
+  "viewer.worldSummary": "{map} \xB7 {layers} layers \xB7 {items} items{bounded}"
+};
+function createEnglishUiLocalizer22(messages) {
+  return Object.freeze({
+    locale: "en",
+    text(key3, values = {}) {
+      const message = messages[key3] ?? key3;
+      return message.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/gu, (_match, name) => {
+        const value2 = values[name];
+        return value2 === void 0 ? `{${name}}` : String(value2);
+      });
+    }
+  });
+}
+function withEnglishUiFallback22(localizer, messages) {
+  const fallback = createEnglishUiLocalizer22(messages);
+  if (localizer === void 0) return fallback;
+  return Object.freeze({
+    locale: localizer.locale,
+    text(key3, values = {}) {
+      const translated = localizer.text(key3, values);
+      return translated === key3 ? fallback.text(key3, values) : translated;
+    }
+  });
+}
 var WORLD_VIEWER_MAX_LAYERS = 16;
 var WORLD_VIEWER_MAX_ITEMS_PER_LAYER = 1024;
 function positiveLimit5(value2, label) {
@@ -59843,57 +62821,68 @@ function drawCandidateWorld(canvas, model) {
     context.fill();
   }
 }
-var worldViewer = defineViewerModule20({
-  abiVersion: 1,
-  async mount(args) {
-    const scope = new ViewerMountScope21(args.signal);
-    const root = createSurface21(args.container, "World viewer");
-    const stage = element19(root, "div", { part: "model" });
-    const readout = element19(stage, "output", { part: "model.readout" });
-    const canvas = element19(stage, "canvas", { part: "model.canvas" });
-    canvas.setAttribute("role", "img");
-    canvas.setAttribute("aria-label", "Top-down world preview");
-    const lease2 = await unknownSourceLease18(args.sources, args.slot, WORLD_SCENE_SOURCE_CONTRACT);
-    if (lease2 === void 0) throw new TypeError("world binding is unavailable");
-    scope.lease(lease2);
-    setState23(stage, ["loading"]);
-    try {
-      const model = await inspectCandidateWorld(lease2.value, {
-        maxLayers: WORLD_VIEWER_MAX_LAYERS,
-        maxItemsPerLayer: WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
-        signal: scope.signal
-      });
-      const available = model.layers.filter((layer) => layer.page.state === "available");
-      const itemCount = available.reduce((total, layer) => total + layer.page.items.length, 0);
-      const partial = model.nextLayerCursor !== void 0 || model.layers.some(
-        (layer) => layer.page.nextCursor !== void 0 || layer.layer.state !== "available"
-      );
-      setViewerText19(
-        readout,
-        `${model.info.mapId} \xB7 ${available.length} layers \xB7 ${itemCount} items` + (partial ? " \xB7 bounded preview" : "")
-      );
-      drawCandidateWorld(canvas, model);
-      if (itemCount === 0) {
+function createWorldViewer(options = {}) {
+  const localizer = withEnglishUiFallback22(options.localizer, WORLD_FALLBACK_MESSAGES);
+  return defineViewerModule20({
+    abiVersion: 1,
+    async mount(args) {
+      const scope = new ViewerMountScope21(args.signal);
+      const root = createSurface21(args.container, localizer.text("viewer.world"));
+      const stage = element19(root, "div", { part: "model" });
+      const readout = element19(stage, "output", { part: "model.readout" });
+      const canvas = element19(stage, "canvas", { part: "model.canvas" });
+      canvas.setAttribute("role", "img");
+      canvas.setAttribute("aria-label", localizer.text("viewer.worldPreview"));
+      const lease2 = await unknownSourceLease18(args.sources, args.slot, WORLD_SCENE_SOURCE_CONTRACT);
+      if (lease2 === void 0) throw new TypeError("world binding is unavailable");
+      scope.lease(lease2);
+      setState23(stage, ["loading"]);
+      try {
+        const model = await inspectCandidateWorld(lease2.value, {
+          maxLayers: WORLD_VIEWER_MAX_LAYERS,
+          maxItemsPerLayer: WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
+          signal: scope.signal
+        });
+        const available = model.layers.filter((layer) => layer.page.state === "available");
+        const itemCount = available.reduce((total, layer) => total + layer.page.items.length, 0);
+        const partial = model.nextLayerCursor !== void 0 || model.layers.some(
+          (layer) => layer.page.nextCursor !== void 0 || layer.layer.state !== "available"
+        );
+        setViewerText19(
+          readout,
+          localizer.text("viewer.worldSummary", {
+            map: model.info.mapId,
+            layers: available.length,
+            items: itemCount,
+            bounded: partial ? localizer.text("viewer.boundedPreview") : ""
+          })
+        );
+        drawCandidateWorld(canvas, model);
+        if (itemCount === 0) {
+          canvas.remove();
+          element19(stage, "p", {
+            part: "viewer.empty",
+            text: localizer.text("viewer.worldEmpty")
+          });
+        }
+        setState23(stage, []);
+      } catch (error3) {
+        setState23(stage, ["error"]);
         canvas.remove();
         element19(stage, "p", {
           part: "viewer.empty",
-          text: "World metadata is available; no drawable terrain or objects were published."
+          text: localizer.text("viewer.worldError", {
+            reason: error3 instanceof Error ? error3.message : String(error3)
+          })
         });
       }
-      setState23(stage, []);
-    } catch (error3) {
-      setState23(stage, ["error"]);
-      canvas.remove();
-      element19(stage, "p", {
-        part: "viewer.empty",
-        text: `The world cannot be rendered: ${error3 instanceof Error ? error3.message : String(error3)}`
+      return createViewerMount19(root, scope, args, ({ descriptor }) => {
+        root.dataset["revision"] = descriptor.revision;
       });
     }
-    return createViewerMount19(root, scope, args, ({ descriptor }) => {
-      root.dataset["revision"] = descriptor.revision;
-    });
-  }
-});
+  });
+}
+var worldViewer = createWorldViewer();
 
 // apps/web/src/views.ts
 var ARCHIVE_ENTRY_PREVIEW_BYTES = 64 * 1024;
@@ -59948,8 +62937,12 @@ function compositeStage(parts) {
     }
   });
 }
-var audioStage = compositeStage([
-  { id: "audio", module: audioViewer, contract: "common.view/audio-media-source" },
+var audioStage = (localizer) => compositeStage([
+  {
+    id: "audio",
+    module: createAudioViewer({ localizer }),
+    contract: "common.view/audio-media-source"
+  },
   { id: "transport", module: transportViewer, contract: "common.view/transport-source" }
 ]);
 var previewText = (bytes2) => {
@@ -59972,6 +62965,8 @@ var hexDump = (bytes2) => {
   return lines.join("\n");
 };
 function archiveStage(context) {
+  const localizer = context.localizer ?? DEFAULT_UI_LOCALIZER;
+  const text3 = localizer.text;
   return defineViewerModule({
     abiVersion: 1,
     async mount(args) {
@@ -59983,12 +62978,16 @@ function archiveStage(context) {
       entryHost.className = "web-stage-part web-archive-entry";
       container.append(treeHost, entryHost);
       const slot = partSlot("entries", "common.view/namespace-entry-source");
-      const tree = await namespaceViewer.mount({ ...args, container: treeHost, slot });
+      const tree = await createNamespaceViewer({ localizer }).mount({
+        ...args,
+        container: treeHost,
+        slot
+      });
       const status = element2(entryHost, "output", { part: "viewer.status" });
       const openAsSubject = entryHost.ownerDocument.createElement("button");
       openAsSubject.className = "web-archive-open-subject";
       openAsSubject.type = "button";
-      openAsSubject.textContent = "Open as subject";
+      openAsSubject.textContent = text3("web.archive.openSubject");
       entryHost.append(openAsSubject);
       openAsSubject.disabled = true;
       if (context.openNestedEntry === void 0) openAsSubject.hidden = true;
@@ -60003,14 +63002,17 @@ function archiveStage(context) {
         }).catch((error3) => {
           setViewerText2(
             status,
-            `opening ${target.path} as a subject failed: ${error3 instanceof Error ? error3.message : String(error3)}`
+            text3("web.archive.openFailed", {
+              path: target.path,
+              reason: error3 instanceof Error ? error3.message : String(error3)
+            })
           );
         }).finally(() => {
           openAsSubject.disabled = picked === void 0;
         });
       });
       const body = element2(entryHost, "pre", { part: "hex.content" });
-      setViewerText2(status, "Pick an entry in the tree to inspect it.");
+      setViewerText2(status, text3("web.archive.pick"));
       const lease2 = await unknownSourceLease(
         args.sources,
         slot,
@@ -60044,7 +63046,7 @@ function archiveStage(context) {
         const entryId = String(detail.entryId ?? "");
         setViewerText2(
           status,
-          `${entryId} \u2192 ${reference?.uri ?? "no source reference"}${extract === void 0 ? " \xB7 this subject declares no available container.extract operation, so the bytes cannot be read in this host yet" : ""}`
+          `${entryId} \u2192 ${reference?.uri ?? text3("web.archive.noReference")}${extract === void 0 ? ` \xB7 ${text3("web.archive.noExtract")}` : ""}`
         );
         if (extract === void 0) {
           setViewerText2(body, "");
@@ -60052,14 +63054,14 @@ function archiveStage(context) {
         }
         const operations = context.operationsFor(args.descriptor);
         if (operations === void 0) {
-          setViewerText2(body, "The session that opened this container is no longer held.");
+          setViewerText2(body, text3("web.archive.sessionGone"));
           return;
         }
         void (async () => {
           try {
             const path = await pathFor(entryId);
             if (path === void 0) {
-              setViewerText2(body, `the namespace does not list an entry with id ${entryId}`);
+              setViewerText2(body, text3("web.archive.unknownEntry", { entry: entryId }));
               return;
             }
             const input = { entryId };
@@ -60069,23 +63071,29 @@ function archiveStage(context) {
             if (result.state !== "ok" || result.output.kind !== "bytes") {
               setViewerText2(
                 body,
-                result.state === "ok" ? `the operation answered ${result.output.kind}, not bytes` : `rejected: ${result.reason}`
+                result.state === "ok" ? text3("web.archive.wrongOutput", { kind: result.output.kind }) : text3("web.archive.rejected", { reason: result.reason })
               );
               return;
             }
             const bytes2 = result.output.value.slice(0, ARCHIVE_ENTRY_PREVIEW_BYTES);
-            const text3 = previewText(bytes2);
-            setViewerText2(body, text3 ?? hexDump(bytes2), ARCHIVE_ENTRY_PREVIEW_BYTES * 4);
+            const preview2 = previewText(bytes2);
+            setViewerText2(body, preview2 ?? hexDump(bytes2), ARCHIVE_ENTRY_PREVIEW_BYTES * 4);
             setViewerText2(
               status,
-              `${path} \xB7 ${result.output.value.length} bytes \xB7 shown as ${text3 === void 0 ? "hex" : "text"}`
+              text3("web.archive.shown", {
+                path,
+                bytes: result.output.value.length,
+                mode: preview2 === void 0 ? localizer.text("web.archive.modeHex") : localizer.text("web.archive.modeText")
+              })
             );
             picked = { entryId, path };
             openAsSubject.disabled = context.openNestedEntry === void 0;
           } catch (error3) {
             setViewerText2(
               body,
-              `entry read failed: ${error3 instanceof Error ? error3.message : String(error3)}`
+              text3("web.archive.readFailed", {
+                reason: error3 instanceof Error ? error3.message : String(error3)
+              })
             );
           }
         })();
@@ -60109,82 +63117,99 @@ function archiveStage(context) {
   });
 }
 function createWebPreviewStages(context) {
+  const localizer = context.localizer ?? DEFAULT_UI_LOCALIZER;
+  const text3 = localizer.text;
   return Object.freeze([
     {
       id: "image",
-      label: "Image",
+      label: text3("web.view.image"),
       contract: "common.view/raster-image-source",
-      module: imageViewer
+      module: createImageViewer({ localizer })
     },
     {
       id: "vector",
-      label: "Vector",
+      label: text3("web.view.vector"),
       contract: "common.view/vector-scene-source",
-      module: vectorViewer
+      module: createVectorViewer({ localizer })
     },
     {
       id: "world",
-      label: "World",
+      label: text3("web.view.world"),
       contract: "common.view/world-scene-source",
-      module: worldViewer
+      module: createWorldViewer({ localizer })
     },
     {
       id: "model",
-      label: "Model",
+      label: text3("web.view.model"),
       contract: "common.view/model-scene-source",
-      module: modelViewer,
+      module: createModelViewer({ localizer }),
       // optional, never a selection rule: a codec publishing none of these still gets the stage
       optionalContracts: MODEL_FACET_CONTRACTS
     },
-    { id: "audio", label: "Audio", contract: "common.view/audio-media-source", module: audioStage },
+    {
+      id: "audio",
+      label: text3("web.view.audio"),
+      contract: "common.view/audio-media-source",
+      module: audioStage(localizer)
+    },
     {
       id: "video",
-      label: "Video",
+      label: text3("web.view.video"),
       contract: "common.view/video-media-source",
-      module: videoViewer
+      module: createVideoViewer({ localizer })
     },
     {
       id: "archive",
-      label: "Entries",
+      label: text3("web.view.archive"),
       contract: "common.view/namespace-entry-source",
       module: archiveStage(context)
     },
     {
       id: "template",
-      label: "Template",
+      label: text3("web.view.template"),
       operation: "view.template",
       module: gameTemplateViewer
     },
     {
       id: "card",
-      label: "Card",
+      label: text3("web.view.card"),
       contract: "common.view/subject-facts-source",
-      module: subjectCardViewer
+      module: createSubjectCardViewer({ localizer })
     },
     {
       id: "calculations",
-      label: "Calculations",
+      label: text3("web.view.calculations"),
       contract: "common.view/subject-calculations-source",
-      module: subjectCalculationsViewer
+      module: createSubjectCalculationsViewer({ localizer })
     },
-    { id: "table", label: "Table", contract: "common.view/table-data-source", module: tableViewer },
-    { id: "tree", label: "Tree", contract: "common.view/tree-data-source", module: treeViewer },
+    {
+      id: "table",
+      label: text3("web.view.table"),
+      contract: "common.view/table-data-source",
+      module: tableViewer
+    },
+    {
+      id: "tree",
+      label: text3("web.view.tree"),
+      contract: "common.view/tree-data-source",
+      module: createTreeViewer({ localizer })
+    },
     {
       id: "relations",
-      label: "Relations",
+      label: text3("web.view.relations"),
       contract: "common.view/relation-graph-source",
-      module: relationGraphViewer
+      module: createRelationGraphViewer({ localizer })
     },
     {
       id: "text",
-      label: "Text",
+      label: text3("web.view.text"),
       contract: "common.view/text-data-source",
-      module: boundedTextViewer,
+      module: createBoundedTextViewer({ localizer }),
       trait: "content.text"
     },
     {
       id: "virtual-text",
-      label: "Text (streaming)",
+      label: text3("web.view.virtualText"),
       contract: "common.view/text-data-source",
       module: virtualTextViewer,
       trait: "content.text"
@@ -60198,38 +63223,48 @@ function createWebPreviewStages(context) {
      */
     {
       id: "metadata",
-      label: "Metadata",
+      label: text3("web.view.metadata"),
       contract: "common.view/byte-range-source",
       module: metadataPanel,
       appLocal: true
     },
-    { id: "hex", label: "Hex", contract: "common.view/byte-range-source", module: hexViewer },
+    {
+      id: "hex",
+      label: text3("web.view.hex"),
+      contract: "common.view/byte-range-source",
+      module: createHexViewer({ localizer })
+    },
     /*
      * Mounted only for a subject the shell handed `editorPorts` for — a file with a File System
      * Access handle whose write permission the browser has not refused. See the module comment.
      */
     {
       id: "text-editor",
-      label: "Text (editor)",
+      label: text3("web.view.textEditor"),
       contract: "common.view/text-data-source",
-      module: textEditor,
+      module: createTextEditorModule({ localizer }),
       trait: "content.text",
       editable: true,
       appLocal: true
     },
     {
       id: "hex-editor",
-      label: "Hex (editor)",
+      label: text3("web.view.hexEditor"),
       contract: "common.view/byte-range-source",
-      module: hexEditor,
+      module: createHexEditor({ localizer }),
       editable: true,
       appLocal: true
     }
   ]);
 }
 var WEB_PREVIEW_FALLBACK = Object.freeze({ text: boundedTextViewer, hex: hexViewer });
+function createWebPreviewFallback(localizer) {
+  return Object.freeze({
+    text: createBoundedTextViewer({ localizer }),
+    hex: createHexViewer({ localizer })
+  });
+}
 var EDITABLE_STAGE_IDS = Object.freeze(["text-editor", "hex-editor"]);
-var WEB_EDITING_NOTICE = "Editing: a file opened through the file or folder picker has a writable handle, so it gets the text and hex editors, an Edit panel for the change operations its codec declares, and saves in place once you allow write access. A file that arrived by drop, by a plain file input or by a same-origin fetch has no handle and stays view-only.";
 
 export {
   isQualifiedId,
@@ -60282,6 +63317,9 @@ export {
   ViewerMountScope,
   defineViewerModule,
   WEB_EXTENSION_CATALOG,
+  DEFAULT_UI_LOCALIZER,
+  contributionContractLabel,
+  createWebLocalizer,
   isWritableHandle,
   describeFileCapability,
   createDirectoryAccess,
@@ -60313,6 +63351,5 @@ export {
   createWebEditingArm,
   stageIdOf,
   createWebPreviewStages,
-  WEB_PREVIEW_FALLBACK,
-  WEB_EDITING_NOTICE
+  createWebPreviewFallback
 };

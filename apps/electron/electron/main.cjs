@@ -42,11 +42,13 @@ const MAXIMUM_SUBJECT_BYTES = 64 * 1024 * 1024
  *
  * Called only from the renderer's explicit "Set as default app" action. Nothing here runs at start.
  */
-async function registerFileTypes(extensions) {
+async function registerFileTypes(extensions, localizer) {
   if (process.platform !== 'win32') {
     return {
       supported: false,
-      message: `File association is not implemented for ${process.platform}.`,
+      message: localizer.text('electron.main.fileAssociation.unsupported', {
+        platform: process.platform,
+      }),
     }
   }
   const { execFile } = require('node:child_process')
@@ -65,7 +67,11 @@ async function registerFileTypes(extensions) {
     .map(value => String(value).replace(/^\./u, '').toLowerCase())
     .filter(value => /^[a-z0-9]{1,16}$/u.test(value))
   if (clean.length === 0)
-    return { supported: true, registered: [], message: 'No valid extensions.' }
+    return {
+      supported: true,
+      registered: [],
+      message: localizer.text('electron.main.fileAssociation.noValid'),
+    }
 
   const registered = []
   for (const extension of clean) {
@@ -77,7 +83,9 @@ async function registerFileTypes(extensions) {
         `HKCU\\Software\\Classes\\${progId}`,
         '/ve',
         '/d',
-        `Modkit ${extension.toUpperCase()} file`,
+        localizer.text('electron.main.fileAssociation.description', {
+          extension: extension.toUpperCase(),
+        }),
         '/f',
       ])
       await run([
@@ -93,16 +101,20 @@ async function registerFileTypes(extensions) {
       return {
         supported: true,
         registered,
-        message: `Failed on .${extension}: ${error.message}`,
+        message: localizer.text('electron.main.fileAssociation.failed', {
+          extension,
+          reason: error instanceof Error ? error.message : String(error),
+        }),
       }
     }
   }
   return {
     supported: true,
     registered,
-    message:
-      `Registered ${registered.length} type(s) for this user: ${registered.join(', ')}. ` +
-      'Windows may still ask you to confirm the default the first time you open one.',
+    message: localizer.text('electron.main.fileAssociation.registered', {
+      count: registered.length,
+      types: registered.join(', '),
+    }),
   }
 }
 
@@ -120,6 +132,7 @@ async function createWindow() {
     composeElectronExtensionRoots,
     parseElectronMapPreviewSelectionRequest,
     prepareElectronMapPreview,
+    createElectronLocalizer,
     resolveElectronPresentationPlan,
     createGrantedRoots,
     exposeElectronSubjectRpc,
@@ -138,6 +151,7 @@ async function createWindow() {
     createElectronExtensionManagerBackend,
     readElectronManagedExtensionState,
   } = await root
+  const localizer = createElectronLocalizer(app.getLocale())
 
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
   const BUNDLED_ROOTS = BUNDLED_EXTENSION_DIRECTORIES.map(directory =>
@@ -434,7 +448,9 @@ async function createWindow() {
     try {
       await fsp.access(file, fs.constants.W_OK)
     } catch (error) {
-      notEditable.push(`the file is not writable (${error.code ?? 'EACCES'})`)
+      notEditable.push(
+        localizer.text('electron.main.subject.notWritable', { code: error.code ?? 'EACCES' }),
+      )
     }
     const writable = notEditable.length === 0
     const budget = {
@@ -524,6 +540,7 @@ async function createWindow() {
       opened: result,
       grant: openGrant,
       budgets: budget,
+      localizer,
       resourcePlanResolver: mapPreviewResourcePlanResolver,
       ...(mapSelection === undefined ? {} : { selectionId: mapSelection.selectionId }),
       ...(signal === undefined ? {} : { signal }),
@@ -578,7 +595,7 @@ async function createWindow() {
         console.log(`[writer] ${diagnostic.code}: ${diagnostic.message}`)
       }
       if (formatId === 'png' && formatWriter.writer === undefined) {
-        notEditable.push('the PNG/RGBA8 semantic writer did not resolve')
+        notEditable.push(localizer.text('electron.main.subject.pngWriterUnavailable'))
       }
     }
     if (writable && (formatId !== 'png' || formatWriter?.writer !== undefined)) {
@@ -816,7 +833,7 @@ async function createWindow() {
       case 'dialog.open-directory': {
         const picked = await dialog.showOpenDialog(window, {
           properties: ['openDirectory'],
-          title: 'Open a folder in Modkit',
+          title: localizer.text('electron.main.dialog.openFolder'),
         })
         if (picked.canceled || picked.filePaths[0] === undefined) return { canceled: true }
         const root = roots.grant(picked.filePaths[0])
@@ -826,7 +843,7 @@ async function createWindow() {
       case 'dialog.open-file': {
         const picked = await dialog.showOpenDialog(window, {
           properties: ['openFile'],
-          title: 'Open a file in Modkit',
+          title: localizer.text('electron.main.dialog.openFile'),
         })
         if (picked.canceled || picked.filePaths[0] === undefined) return { canceled: true }
         return { canceled: false, ...(await grantAndDescribe(picked.filePaths[0])) }
@@ -846,7 +863,8 @@ async function createWindow() {
             // A path that no longer exists is skipped rather than failing the whole drop.
           }
         }
-        if (described.length === 0) throw new Error('none of the dropped paths could be read')
+        if (described.length === 0)
+          throw new Error(localizer.text('electron.main.drop.noneReadable'))
         return { accepted: described }
       }
 
@@ -867,7 +885,7 @@ async function createWindow() {
             typeof entry?.path === 'string' &&
             path.resolve(entry.path).toLowerCase() === wanted.toLowerCase(),
         )
-        if (!known) throw new Error('path is not in the recent list')
+        if (!known) throw new Error(localizer.text('electron.main.recent.notListed'))
 
         const stats = await fsp.stat(wanted)
         const directory = stats.isDirectory() ? wanted : path.dirname(wanted)
@@ -907,7 +925,10 @@ async function createWindow() {
         const stats = await fsp.stat(file)
         if (stats.size > request.payload.maxBytes) {
           throw new Error(
-            `file is ${stats.size} bytes, over the ${request.payload.maxBytes} byte limit`,
+            localizer.text('electron.main.file.tooLarge', {
+              size: stats.size,
+              limit: request.payload.maxBytes,
+            }),
           )
         }
         const bytes = await fsp.readFile(file)
@@ -926,7 +947,7 @@ async function createWindow() {
         return {
           channel: request.channel,
           accepted: true,
-          note: 'Validated by the main process. No native effect is wired for this channel yet.',
+          note: localizer.text('electron.main.broker.noNativeEffect'),
         }
     }
   })
@@ -968,7 +989,7 @@ async function createWindow() {
   // Registering file associations writes to the user's registry, so it is never automatic: the
   // renderer asks only when the user activates the action.
   ipcMain.handle('modkit.register-file-types', async (_event, extensions) =>
-    registerFileTypes(Array.isArray(extensions) ? extensions : []),
+    registerFileTypes(Array.isArray(extensions) ? extensions : [], localizer),
   )
 
   /*
@@ -1013,11 +1034,15 @@ async function createWindow() {
   ipcMain.handle('modkit.confirm-close', async (_event, name) => {
     const answer = await dialog.showMessageBox(window, {
       type: 'warning',
-      buttons: ['Save', "Don't save", 'Cancel'],
+      buttons: [
+        localizer.text('electron.main.close.save'),
+        localizer.text('electron.main.close.discard'),
+        localizer.text('electron.main.close.cancel'),
+      ],
       defaultId: 0,
       cancelId: 2,
-      message: `Save changes to ${String(name)}?`,
-      detail: 'Your changes will be lost if you do not save them.',
+      message: localizer.text('electron.main.close.message', { name: String(name) }),
+      detail: localizer.text('electron.main.close.detail'),
     })
     return ['save', 'discard', 'cancel'][answer.response] ?? 'cancel'
   })
@@ -1228,8 +1253,8 @@ async function createWindow() {
       scripted === undefined
         ? await dialog.showOpenDialog(window, {
             properties: ['openDirectory'],
-            title: 'Add an extension folder',
-            buttonLabel: 'Add extension',
+            title: localizer.text('electron.main.dialog.addExtensionFolder'),
+            buttonLabel: localizer.text('electron.main.dialog.addExtension'),
           })
         : { canceled: false, filePaths: [scripted] }
     if (picked.canceled || picked.filePaths[0] === undefined) return { canceled: true }
@@ -1277,41 +1302,54 @@ async function createWindow() {
    */
   const buildMenu = (recent = []) => {
     const recentItems = recent.map(entry => ({
-      label: `${entry.kind === 'file' ? 'File' : 'Folder'} — ${entry.path}`,
+      label: localizer.text(
+        entry.kind === 'file' ? 'electron.menu.recentFile' : 'electron.menu.recentFolder',
+        { path: entry.path },
+      ),
       click: send('modkit.menu.open-recent', entry),
     }))
 
     Menu.setApplicationMenu(
       Menu.buildFromTemplate([
         {
-          label: 'File',
+          label: localizer.text('electron.menu.file'),
           submenu: [
             {
-              label: 'Open Folder…',
+              label: localizer.text('electron.menu.openFolder'),
               accelerator: 'CmdOrCtrl+K',
               click: send('modkit.menu.open-folder'),
             },
             {
-              label: 'Open File…',
+              label: localizer.text('electron.menu.openFile'),
               accelerator: 'CmdOrCtrl+O',
               click: send('modkit.menu.open-file'),
             },
             {
-              label: 'Open Recent',
+              label: localizer.text('electron.main.menu.openRecent'),
               submenu:
                 recentItems.length > 0
                   ? [
                       ...recentItems,
                       { type: 'separator' },
-                      { label: 'Clear Recent', click: send('modkit.menu.clear-recent') },
+                      {
+                        label: localizer.text('electron.menu.clearRecent'),
+                        click: send('modkit.menu.clear-recent'),
+                      },
                     ]
-                  : [{ label: 'Nothing yet', enabled: false }],
+                  : [{ label: localizer.text('electron.menu.noRecent'), enabled: false }],
             },
             { type: 'separator' },
-            { label: 'Set as Default App…', click: send('modkit.menu.default-app') },
-            { label: 'Settings', accelerator: 'CmdOrCtrl+,', click: send('modkit.menu.settings') },
             {
-              label: 'Extensions & Codecs…',
+              label: localizer.text('electron.menu.defaultApp'),
+              click: send('modkit.menu.default-app'),
+            },
+            {
+              label: localizer.text('electron.menu.settings'),
+              accelerator: 'CmdOrCtrl+,',
+              click: send('modkit.menu.settings'),
+            },
+            {
+              label: localizer.text('electron.menu.extensions'),
               accelerator: 'CmdOrCtrl+Shift+X',
               click: send('modkit.menu.extensions'),
             },
@@ -1320,10 +1358,10 @@ async function createWindow() {
           ],
         },
         {
-          label: 'View',
+          label: localizer.text('electron.menu.view'),
           submenu: [
             {
-              label: 'Split Editor',
+              label: localizer.text('electron.menu.splitEditor'),
               accelerator: 'CmdOrCtrl+\\',
               click: send('modkit.menu.split'),
             },

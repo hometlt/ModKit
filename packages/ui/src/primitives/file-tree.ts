@@ -11,6 +11,9 @@
 import { setPart, setState, type StateName } from '../parts.js'
 import { setToken } from '../tokens/index.js'
 import { safeViewerText } from '../viewer/index.js'
+import { type UiLocalizer } from '../localization/index.js'
+import { PRIMITIVES_FILE_TREE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
+import { withEnglishUiFallback } from '../localization/fallback.js'
 
 export interface FileTreeNode {
   readonly id: string
@@ -31,6 +34,7 @@ export interface FileTreeNode {
 }
 
 export interface FileTreeOptions {
+  readonly localizer?: UiLocalizer
   readonly label: string
   loadChildren(
     node: FileTreeNode | undefined,
@@ -64,6 +68,7 @@ interface Row {
 }
 
 export function createFileTree(document: Document, options: FileTreeOptions): FileTree {
+  const localizer = withEnglishUiFallback(options.localizer, PRIMITIVES_FILE_TREE_FALLBACK_MESSAGES)
   const root = document.createElement('div')
   root.className = 'modkit-filetree'
   setPart(root, 'filetree')
@@ -71,7 +76,10 @@ export function createFileTree(document: Document, options: FileTreeOptions): Fi
   const toolbar = document.createElement('div')
   toolbar.className = 'modkit-filetree__toolbar'
   toolbar.setAttribute('role', 'toolbar')
-  toolbar.setAttribute('aria-label', `${options.label} actions`)
+  toolbar.setAttribute(
+    'aria-label',
+    localizer.text('primitives.treeActions', { label: options.label }),
+  )
   setPart(toolbar, 'filetree.toolbar')
   root.append(toolbar)
 
@@ -193,7 +201,7 @@ export function createFileTree(document: Document, options: FileTreeOptions): Fi
     if (children.length === 0 && row === undefined) {
       const empty = document.createElement('p')
       empty.className = 'modkit-filetree__empty'
-      empty.textContent = 'Nothing to show.'
+      empty.textContent = localizer.text('primitives.nothingToShow')
       setPart(empty, 'filetree.empty')
       host.append(empty)
       return

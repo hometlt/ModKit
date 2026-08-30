@@ -23,6 +23,9 @@ import type {
   SubjectEditTarget,
   ValidationResult,
 } from '@modkitx-x3/sdk'
+import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+
+import { createVscodeLocalizer } from './localization.js'
 
 /** The four ports `createCodecPreview` hands an editable stage, plus what the shell needs. */
 export interface WebviewEditorPorts {
@@ -49,28 +52,35 @@ const WEBVIEW_GRANT = Object.freeze({ snapshotId: 'webview', permissions: [], so
 
 export interface WebviewEditorPortsOptions {
   readonly arm: SubjectEditingArm
+  readonly localizer?: UiLocalizer
   /** Reports save progress and refusals to the shell (status line, tab dirty marker). */
   readonly onStatus?: (message: string) => void
   /** Marks the tab as having unsaved work the moment a change is proposed. */
   readonly onDirty?: (dirty: boolean) => void
 }
 
-const REFUSAL_REASONS: Readonly<Record<string, string>> = Object.freeze({
-  'plan-invalid': 'the change did not describe a valid edit of this file',
-  'permission-missing': 'this session may not write the file',
-  'write-scope-mismatch': 'the edit named a file outside what this session may write',
-  'guarantee-unachievable': 'the host cannot promise this write safely enough',
-  'fidelity-unproven': 'no evidence backs the writer fidelity claim for this change',
-  'confirmation-required': 'a lossy write needs a confirmation this host does not ask for',
-  'payload-unavailable': 'the edited bytes never reached the writer',
-  'stale-revision': 'the file changed on disk after the change was prepared',
-  cancelled: 'the save was cancelled',
+const REFUSAL_REASON_KEYS: Readonly<Record<string, string>> = Object.freeze({
+  'plan-invalid': 'planInvalid',
+  'permission-missing': 'permissionMissing',
+  'write-scope-mismatch': 'writeScopeMismatch',
+  'guarantee-unachievable': 'guaranteeUnachievable',
+  'fidelity-unproven': 'fidelityUnproven',
+  'confirmation-required': 'confirmationRequired',
+  'payload-unavailable': 'payloadUnavailable',
+  'stale-revision': 'staleRevision',
+  cancelled: 'cancelled',
 })
 
 /** Keep the coordinator's raw reason code in every human-readable refusal. */
-export function refusalMessage(reason: string): string {
-  const plain = REFUSAL_REASONS[reason]
-  return plain === undefined ? `save refused: ${reason}` : `save refused: ${plain} (${reason})`
+export function refusalMessage(
+  reason: string,
+  localizer: UiLocalizer = createVscodeLocalizer('en'),
+): string {
+  const key = REFUSAL_REASON_KEYS[reason]
+  const plain = key === undefined ? undefined : localizer.text(`vscode.edit.refusal.${key}`)
+  return localizer.text('vscode.edit.saveRefused', {
+    reason: plain === undefined ? reason : `${plain} (${reason})`,
+  })
 }
 
 const diagnosticDetail = (
@@ -82,42 +92,49 @@ const diagnosticDetail = (
 
 export function prepareStatus(
   result: SubjectEditingPrepareResult,
+  localizer: UiLocalizer = createVscodeLocalizer('en'),
 ): WebviewEditorStatus | undefined {
   if (result.state === 'ready') return undefined
   if (result.state === 'conflict') {
     return {
-      message: `save refused: the file changed on disk while it was open (${result.conflicts.length} conflict(s))`,
+      message: localizer.text('vscode.edit.saveConflict', { count: result.conflicts.length }),
       failed: true,
     }
   }
   return {
-    message: `${refusalMessage(result.reason)}${diagnosticDetail(result.diagnostics)}`,
+    message: `${refusalMessage(result.reason, localizer)}${diagnosticDetail(result.diagnostics)}`,
     failed: true,
   }
 }
 
-export function commitStatus(result: {
-  readonly state: string
-  readonly reason?: string
-  readonly diagnostics?: readonly { readonly message: string }[]
-}): WebviewEditorStatus {
+export function commitStatus(
+  result: {
+    readonly state: string
+    readonly reason?: string
+    readonly diagnostics?: readonly { readonly message: string }[]
+  },
+  localizer: UiLocalizer = createVscodeLocalizer('en'),
+): WebviewEditorStatus {
   switch (result.state) {
     case 'committed':
-      return { message: 'saved', failed: false }
+      return { message: localizer.text('vscode.edit.saved'), failed: false }
     case 'not-applied':
       return {
-        message: `${refusalMessage(result.reason ?? 'unknown')}${diagnosticDetail(result.diagnostics)}`,
+        message: `${refusalMessage(result.reason ?? 'unknown', localizer)}${diagnosticDetail(result.diagnostics)}`,
         failed: true,
       }
     case 'rolled-back':
       return {
-        message: 'save failed: the write was rolled back and the file is unchanged',
+        message: localizer.text('vscode.edit.saveRolledBack'),
         failed: true,
       }
     case 'partially-applied':
-      return { message: 'save partially applied: recovery is available', failed: true }
+      return { message: localizer.text('vscode.edit.savePartial'), failed: true }
     default:
-      return { message: `save ${result.state}`, failed: true }
+      return {
+        message: localizer.text('vscode.edit.saveState', { state: result.state }),
+        failed: true,
+      }
   }
 }
 
@@ -125,6 +142,7 @@ export async function createWebviewEditorPorts(
   options: WebviewEditorPortsOptions,
 ): Promise<WebviewEditorPorts> {
   const { arm } = options
+  const localizer = options.localizer ?? createVscodeLocalizer('en')
   const state = await arm.state()
   const targets: readonly SubjectEditTarget[] = state.targets
   /** `prepare` answers with an id; the ui carries the object it was given straight back to us. */
@@ -138,7 +156,7 @@ export async function createWebviewEditorPorts(
 
   const preparePlan = async (plan: AssetEditPlan): Promise<SubjectEditingPrepareResult> => {
     const result = await arm.prepare(plan)
-    const refusal = prepareStatus(result)
+    const refusal = prepareStatus(result, localizer)
     if (refusal !== undefined) report(refusal)
     return result
   }
@@ -151,7 +169,7 @@ export async function createWebviewEditorPorts(
     readonly status: WebviewEditorStatus
   }> => {
     const result = await arm.commit(preparedId)
-    const status = commitStatus(result)
+    const status = commitStatus(result, localizer)
     report(status)
     if (result.state === 'committed') {
       pending = undefined
@@ -193,7 +211,7 @@ export async function createWebviewEditorPorts(
       const preparedId =
         preparedIds.get(prepared) ?? (prepared as { preparedId?: string }).preparedId
       if (preparedId === undefined) {
-        options.onStatus?.('nothing prepared to save')
+        options.onStatus?.(localizer.text('vscode.edit.nothingPrepared'))
         return { state: 'not-applied' }
       }
       const result = await commitPrepared(preparedId)
@@ -202,11 +220,11 @@ export async function createWebviewEditorPorts(
         : { state: result.state, receipt: result.receipt }
     },
     async undo(): Promise<{ state: string }> {
-      options.onStatus?.('undo is not available in this host yet')
+      options.onStatus?.(localizer.text('vscode.edit.undoUnavailable'))
       return { state: 'not-applied' }
     },
     async redo(): Promise<{ state: string }> {
-      options.onStatus?.('redo is not available in this host yet')
+      options.onStatus?.(localizer.text('vscode.edit.redoUnavailable'))
       return { state: 'not-applied' }
     },
   }
@@ -215,7 +233,7 @@ export async function createWebviewEditorPorts(
     async open(): Promise<never> {
       // staged payloads would need a byte channel of their own; inline payloads cover today's
       // editors, and pretending otherwise would fail at commit instead of here
-      throw new Error('this host does not stage payloads: edits travel inline')
+      throw new Error(localizer.text('vscode.edit.noPayloads'))
     },
   }
 
@@ -241,12 +259,19 @@ export async function createWebviewEditorPorts(
       try {
         const prepared = await preparePlan(plan)
         if (prepared.state !== 'ready') {
-          return prepareStatus(prepared) ?? { message: 'save refused', failed: true }
+          return (
+            prepareStatus(prepared, localizer) ?? {
+              message: localizer.text('vscode.edit.saveRefused', { reason: '' }),
+              failed: true,
+            }
+          )
         }
         return (await commitPrepared(prepared.preparedId)).status
       } catch (error) {
         const status = {
-          message: `the host refused the plan: ${error instanceof Error ? error.message : String(error)}`,
+          message: localizer.text('vscode.edit.hostRefusedPlan', {
+            reason: error instanceof Error ? error.message : String(error),
+          }),
           failed: true,
         }
         report(status)
