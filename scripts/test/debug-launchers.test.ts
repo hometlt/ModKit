@@ -55,7 +55,7 @@ function waitForReady(child: ChildProcessWithoutNullStreams): Promise<string> {
 }
 
 describe('VS Code debug launchers', () => {
-  it('keeps launch configurations and tasks connected to every application adapter', () => {
+  it('keeps the user-facing launch configurations connected to their tasks', () => {
     const launch = json('.vscode/launch.json') as {
       configurations: readonly {
         readonly name: string
@@ -72,10 +72,6 @@ describe('VS Code debug launchers', () => {
       'Modkit Core: CLI',
       'Modkit Core: MCP Server (stdio)',
       'Modkit Core: PWA (Chrome)',
-      'Modkit Core: Electron Composition Adapter (headless)',
-      'Modkit Core: VS Code Composition Adapter (headless)',
-      // The adapters above compose topologies headlessly. These two launch the real shells, which
-      // is a different thing to debug — a window and an extension host, not a Node process.
       'Modkit Core: Electron App (real window)',
       'Modkit Core: VS Code Extension (Extension Host)',
       'Modkit Core: Web Composition (Node)',

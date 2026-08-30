@@ -69,32 +69,6 @@
       }
     },
     {
-      "name": "Modkit Core: Electron Composition Adapter (headless)",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/scripts/debug/app-runner.mjs",
-      "args": ["--app", "electron", "--set", "${input:extensionSet}", "--stay-open"],
-      "cwd": "${workspaceFolder}",
-      "preLaunchTask": "Modkit Core: Build",
-      "console": "integratedTerminal",
-      "sourceMaps": true,
-      "outFiles": ["${workspaceFolder}/**/dist/**/*.js"],
-      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
-    },
-    {
-      "name": "Modkit Core: VS Code Composition Adapter (headless)",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/scripts/debug/app-runner.mjs",
-      "args": ["--app", "vscode", "--set", "${input:extensionSet}", "--stay-open"],
-      "cwd": "${workspaceFolder}",
-      "preLaunchTask": "Modkit Core: Build",
-      "console": "integratedTerminal",
-      "sourceMaps": true,
-      "outFiles": ["${workspaceFolder}/**/dist/**/*.js"],
-      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
-    },
-    {
       "name": "Modkit Core: Electron App (real window)",
       "type": "node",
       "request": "launch",
