@@ -17,10 +17,11 @@
  * Runs after `pnpm bundle` (imports the built host); byte-stable; `--check` for the gate.
  */
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { format } from 'prettier'
+import { authoredExtensionRootsRelativeTo } from './lib/authored-extension-roots.mjs'
 
 const scriptPath = fileURLToPath(import.meta.url)
 const defaultRoot = resolve(dirname(scriptPath), '..')
@@ -63,9 +64,7 @@ export function selectWebExtensions(root) {
   const commonRoot = join(root, 'extensions', 'common')
   const included = []
   const excluded = []
-  for (const name of readdirSync(commonRoot).sort()) {
-    const dir = join(commonRoot, name)
-    if (!statSync(dir).isDirectory()) continue
+  for (const { directory: dir, relativePath } of authoredExtensionRootsRelativeTo(commonRoot)) {
     const packagePath = join(dir, 'package.json')
     if (!existsSync(packagePath)) continue
     const pkg = json(packagePath)
@@ -86,6 +85,7 @@ export function selectWebExtensions(root) {
     if (!hasCodec) continue
     const dependencies = Object.keys(pkg.dependencies ?? {}).sort()
     const missing = dependencies.filter(dep => !WEB_WORKER_VENDORED.includes(dep))
+    const name = pkg.modkit.id
     if (missing.length > 0) {
       excluded.push({
         name,
@@ -93,9 +93,16 @@ export function selectWebExtensions(root) {
       })
       continue
     }
-    included.push(name)
+    included.push({ directory: dir, name, relativePath })
   }
-  return { included, excluded }
+  return {
+    included: included.sort((left, right) =>
+      left.relativePath < right.relativePath ? -1 : left.relativePath > right.relativePath ? 1 : 0,
+    ),
+    excluded: excluded.sort((left, right) =>
+      left.name < right.name ? -1 : left.name > right.name ? 1 : 0,
+    ),
+  }
 }
 
 async function buildCatalog(root) {
@@ -104,11 +111,12 @@ async function buildCatalog(root) {
   )
   const { included, excluded } = selectWebExtensions(root)
   const extensions = []
-  for (const name of included) {
-    const input = await loadExtensionDirectory(join(root, 'extensions', 'common', name))
+  for (const extension of included) {
+    const { directory, name, relativePath } = extension
+    const input = await loadExtensionDirectory(directory)
     extensions.push({
       name,
-      source: `extensions/common/${name}`,
+      source: `extensions/common/${relativePath}`,
       artifactRoot: `extensions/${name}/`,
       containers: input.containers,
       files: input.files,

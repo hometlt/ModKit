@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs'
@@ -141,5 +142,28 @@ describe('deterministic Electron app catalog emission', () => {
     const block = slot.slice(0, slot.indexOf('}),'))
     expect(block).toContain('priority: 361')
     expect(block).not.toContain('priority: 360')
+  })
+
+  it('finds a codec root below grouping directories but ignores grouping package.json files', () => {
+    const root = fixtureRoot()
+    const common = join(root, 'extensions', 'common')
+    const group = join(common, 'data')
+    mkdirSync(group, { recursive: true })
+    writeFileSync(
+      join(group, 'package.json'),
+      `${JSON.stringify({ name: 'grouping-only', private: true }, undefined, 2)}\n`,
+      'utf8',
+    )
+    renameSync(join(common, 'text-json'), join(group, 'text-json'))
+
+    const emitted = run(root)
+    expect(emitted.status, emitted.stderr).toBe(0)
+    const bundled = readFileSync(
+      join(root, 'apps', 'electron', 'generated', 'bundled-catalog.cjs'),
+      'utf8',
+    )
+    expect(bundled).toContain("  'data/text-json',")
+    expect(bundled).not.toContain("  'text-json',")
+    expect(bundled).not.toContain("  'data',")
   })
 })

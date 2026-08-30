@@ -1,7 +1,8 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { format } from 'prettier'
+import { authoredExtensionRootsRelativeTo } from './lib/authored-extension-roots.mjs'
 
 const scriptPath = fileURLToPath(import.meta.url)
 const defaultRoot = resolve(dirname(scriptPath), '..')
@@ -180,10 +181,8 @@ function contributionPaths(extensionRoot, patterns) {
 
 function bundledExtensionDirectories(root) {
   const commonRoot = join(root, 'extensions', 'common')
-  return readdirSync(commonRoot)
-    .filter(name => statSync(join(commonRoot, name)).isDirectory())
-    .filter(name => {
-      const extensionRoot = join(commonRoot, name)
+  return authoredExtensionRootsRelativeTo(commonRoot)
+    .filter(({ directory: extensionRoot }) => {
       const packagePath = join(extensionRoot, 'package.json')
       if (!existsSync(packagePath)) return false
       const packageJson = json(packagePath)
@@ -197,6 +196,7 @@ function bundledExtensionDirectories(root) {
         )
       })
     })
+    .map(({ relativePath }) => relativePath)
     .sort()
 }
 

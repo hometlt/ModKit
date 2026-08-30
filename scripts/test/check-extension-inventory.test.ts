@@ -1,11 +1,18 @@
 import { spawnSync } from 'node:child_process'
+import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 const scriptsDir = fileURLToPath(new URL('..', import.meta.url))
 const gate = join(scriptsDir, 'check-extension-inventory.mjs')
 const fixturesRoot = join(scriptsDir, 'test', 'fixtures', 'extension-inventory-gate')
+const temporaryRoots: string[] = []
+
+afterEach(() => {
+  for (const root of temporaryRoots.splice(0)) rmSync(root, { recursive: true, force: true })
+})
 
 function runGate(extra: readonly string[] = []) {
   const result = spawnSync(process.execPath, [gate, ...extra], { encoding: 'utf8' })
@@ -27,6 +34,41 @@ describe('extension inventory gate (MK3/27 §0.2/§5.1, 24 §8 data-only read)',
     expect(stderr).toContain('x3.sdk/pattern-without-matches')
     // an example with a demo contract only warns (unknown-contract) and is not listed
     expect(stderr).not.toContain('examples/demo')
+  })
+
+  it('discovers nested authored roots and ignores nested package directories without modkit', () => {
+    const root = mkdtempSync(join(tmpdir(), 'x3-extension-inventory-nested-'))
+    temporaryRoots.push(root)
+    const group = join(root, 'extensions', 'common', 'data')
+    mkdirSync(group, { recursive: true })
+    writeFileSync(
+      join(group, 'package.json'),
+      `${JSON.stringify({ name: 'grouping-only', private: true }, undefined, 2)}\n`,
+      'utf8',
+    )
+    cpSync(join(fixturesRoot, 'valid', 'extensions', 'common', 'ok'), join(group, 'nested', 'ok'), {
+      recursive: true,
+    })
+
+    const { status, stdout, stderr } = runGate(['--root', root])
+    expect(stderr).toBe('')
+    expect(status).toBe(0)
+    expect(stdout).toContain('1 extension director(y/ies) checked')
+  })
+
+  it('fails a broken authored root even when grouping directories place it below the old depth', () => {
+    const root = mkdtempSync(join(tmpdir(), 'x3-extension-inventory-nested-broken-'))
+    temporaryRoots.push(root)
+    cpSync(
+      join(fixturesRoot, 'broken', 'extensions', 'common', 'broken'),
+      join(root, 'extensions', 'common', 'data', 'text', 'broken'),
+      { recursive: true },
+    )
+
+    const { status, stderr } = runGate(['--root', root])
+    expect(status).toBe(1)
+    expect(stderr).toContain('extensions/common/data/text/broken')
+    expect(stderr).toContain('x3.sdk/pattern-without-matches')
   })
 
   it('known debt is a ratchet: tracked directories pass, stale entries fail', () => {

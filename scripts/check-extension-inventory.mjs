@@ -2,7 +2,7 @@
 // Extension inventory gate (MK3/27 §0.2/§5.1/§12.2, 24 §8; gap G-APP-1 in IMPLEMENTATION_NOTES,
 // 2026-08-17).
 //
-// Every directory under extensions/*/* and examples/* that carries an authored extension
+// Every directory anywhere under extensions/ and examples/ that carries an authored extension
 // container (package.json#modkit or modkit.extension.json) must produce an inventory the
 // data-only loader accepts — no error diagnostics, and for the bundled `common` family every
 // contribution must be inventory-eligible (a bundled unit with an unknown/invalid contract is
@@ -17,10 +17,11 @@
 //
 // Usage: node scripts/check-extension-inventory.mjs [--root <dir>] [--debt-file <json>] [--quiet]
 
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, relative, resolve, sep } from 'node:path'
+import { readFileSync, statSync } from 'node:fs'
+import { join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import process from 'node:process'
+import { discoverAuthoredExtensionRoots, toPosixPath } from './lib/authored-extension-roots.mjs'
 
 const args = process.argv.slice(2)
 const argValue = flag => {
@@ -34,49 +35,11 @@ const quiet = args.includes('--quiet')
 /** Directories allowed to fail today; a stale entry (directory gone or clean) fails the gate. */
 const KNOWN_DEBT = []
 
-/** Scan groups: [directory prefix, package depth, strict eligibility?]. */
+/** Scan groups: directory prefix and whether every contribution must be inventory-eligible. */
 const SCAN_GROUPS = [
-  { name: 'extensions', depth: 2, strict: true }, // extensions/<group>/<ext>
-  { name: 'examples', depth: 1, strict: false }, // examples/<ext>: demo contracts allowed
+  { name: 'extensions', strict: true },
+  { name: 'examples', strict: false }, // demo contracts are allowed
 ]
-
-const toPosix = path => path.split(sep).join('/')
-
-function packageDirs(group) {
-  const base = join(root, group.name)
-  if (!existsSync(base)) return []
-  const out = []
-  const walk = (dir, depth) => {
-    let entries
-    try {
-      entries = readdirSync(dir, { withFileTypes: true })
-    } catch {
-      return
-    }
-    entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
-    for (const entry of entries) {
-      if (!entry.isDirectory() || entry.name === 'node_modules' || entry.name.startsWith('.'))
-        continue
-      const path = join(dir, entry.name)
-      if (depth === 1) out.push(path)
-      else walk(path, depth - 1)
-    }
-  }
-  walk(base, group.depth)
-  return out
-}
-
-function hasAuthoredContainer(dir) {
-  if (existsSync(join(dir, 'modkit.extension.json'))) return true
-  const manifestPath = join(dir, 'package.json')
-  if (!existsSync(manifestPath)) return false
-  try {
-    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
-    return manifest !== null && typeof manifest === 'object' && 'modkit' in manifest
-  } catch {
-    return true // unparseable package.json in an extension dir is itself worth failing on
-  }
-}
 
 function loadDebt() {
   const override = argValue('--debt-file')
@@ -105,9 +68,8 @@ const failures = [] // { dir, problems: string[] }
 let checked = 0
 
 for (const group of SCAN_GROUPS) {
-  for (const dir of packageDirs(group)) {
-    if (!hasAuthoredContainer(dir)) continue
-    const rel = toPosix(relative(root, dir))
+  for (const dir of discoverAuthoredExtensionRoots(join(root, group.name))) {
+    const rel = toPosixPath(relative(root, dir))
     checked += 1
     const problems = []
     try {
