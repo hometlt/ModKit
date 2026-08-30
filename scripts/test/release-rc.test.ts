@@ -132,6 +132,10 @@ function fixture() {
   text(join(root, 'apps', 'web', 'generated', 'extension-catalog.js'), 'export const catalog=[]\n')
   text(join(root, 'scripts', 'app-extension-sets.mjs'), 'export const fixture=true\n')
   text(join(root, 'scripts', 'release', 'INSTALL.md'), '# Fixture install guide\n')
+  text(
+    join(root, 'licenses', 'MIT.txt'),
+    'MIT License\n\nPermission is hereby granted for this fixture.\n',
+  )
 
   extension(
     root,
@@ -239,6 +243,21 @@ describe('focused local RC artifacts', () => {
     expect([...secondFiles.keys()].sort()).toEqual([...firstFiles.keys()].sort())
     for (const [name, bytes] of firstFiles) expect(secondFiles.get(name), name).toEqual(bytes)
     expect(readFileSync(join(first, 'LICENSE-NOTICES.txt'), 'utf8')).not.toMatch(/[ \t]+$/mu)
+    expect(readFileSync(join(first, 'LICENSE-NOTICES.txt'), 'utf8')).toContain(
+      'License document: licenses/MIT.txt',
+    )
+    const sbom = JSON.parse(readFileSync(join(first, 'sbom.cdx.json'), 'utf8'))
+    expect(
+      sbom.components
+        .filter((component: { name: string }) => component.name === '@modkitx-x3/workspace-root')
+        .every((component: { licenses?: unknown }) => component.licenses === undefined),
+    ).toBe(true)
+    expect(readFileSync(join(first, 'artifacts', 'modkitx-common.tar'), 'utf8')).toContain(
+      'licenses/MIT.txt',
+    )
+    expect(readFileSync(join(first, 'artifacts', 'modkitx-platform.tar'), 'utf8')).toContain(
+      'licenses/MIT.txt',
+    )
 
     const { privateKey, publicKey } = generateKeyPairSync('ed25519')
     const privatePath = join(parent, 'local-private.pem')
@@ -289,6 +308,21 @@ describe('focused local RC artifacts', () => {
     json(catalogPath, catalog)
     expect(() => buildRc({ repoRoot: root, outDir: join(parent, 'missing-license') })).toThrow(
       /release component has no declared license: extensions\/common\/images\/package.json/u,
+    )
+  })
+
+  it('fails closed on unknown first-party license declarations', () => {
+    const { parent, root } = fixture()
+    const packagePath = join(root, 'extensions', 'common', 'images', 'package.json')
+    const metadata = JSON.parse(readFileSync(packagePath, 'utf8')) as Record<string, unknown>
+    metadata.license = 'LicenseRef-Unknown'
+    json(packagePath, metadata)
+    const catalogPath = join(root, 'apps', 'vscode', 'generated', 'bundled-catalog.json')
+    const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'))
+    catalog.roots[0].digest = canonicalExtensionDigest(root, 'extensions/common/images')
+    json(catalogPath, catalog)
+    expect(() => buildRc({ repoRoot: root, outDir: join(parent, 'unknown-license') })).toThrow(
+      /unsupported first-party license LicenseRef-Unknown/u,
     )
   })
 

@@ -31,12 +31,12 @@
     "./schemas/registry": "./schemas/modkit.registry.schema.json"
   },
   "files": [
-    "LICENSE",
     "README.md",
     "schemas",
     "src"
   ],
   "scripts": {
+    "pack:standalone": "node ../../scripts/pack-first-party.mjs --package .",
     "test": "node --test",
     "check": "node --check src/index.js && node --check src/catalog.js && node --check src/client.js && node --check src/node.js && node --check src/node-adapters.js && node --check src/browser.js && node --check src/cli.js && pnpm test"
   },

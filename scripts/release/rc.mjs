@@ -445,6 +445,7 @@ function mergeEntries(target, additions) {
 function commonArtifact(repoRoot, composition) {
   const entries = new Map()
   for (const root of composition.commonRoots) mergeEntries(entries, extensionFiles(repoRoot, root))
+  addFile(entries, 'licenses/MIT.txt', join(repoRoot, 'licenses', 'MIT.txt'))
   return entries
 }
 
@@ -534,6 +535,7 @@ function platformArtifact(repoRoot, composition) {
   }
   for (const path of [
     'package.json',
+    'licenses/MIT.txt',
     'pnpm-lock.yaml',
     'pnpm-workspace.yaml',
     'migration/product-profiles.json',
@@ -581,13 +583,24 @@ function extensionCatalogEntry(repoRoot, root, existingCatalog) {
 }
 
 function normalizeLicense(metadata, sourceLabel) {
+  const firstParty = !sourceLabel.startsWith('npm:')
   const declared = metadata.license
-  if (typeof declared === 'string' && declared.trim() !== '') return declared.trim()
+  if (typeof declared === 'string' && declared.trim() !== '') {
+    const value = declared.trim()
+    if (firstParty && !['MIT', 'UNLICENSED', 'NOASSERTION'].includes(value)) {
+      throw new Error(`unsupported first-party license ${value}: ${sourceLabel}`)
+    }
+    return value
+  }
   if (Array.isArray(metadata.licenses)) {
     const values = metadata.licenses
       .map(item => (typeof item === 'string' ? item : item?.type))
       .filter(item => typeof item === 'string' && item.trim() !== '')
-    if (values.length > 0) return values.join(' OR ')
+    if (values.length > 0) {
+      const value = values.join(' OR ')
+      if (firstParty) throw new Error(`unsupported first-party license ${value}: ${sourceLabel}`)
+      return value
+    }
   }
   if (
     metadata.private === true &&
@@ -632,7 +645,7 @@ function normalizeNoticeText(value) {
     .trim()
 }
 
-function licenseText(packageRoot) {
+function packageLicenseText(packageRoot) {
   const names = readdirSync(packageRoot).sort()
   const selected = names.find(name => /^(?:licen[cs]e|copying|notice)(?:\.|$)/iu.test(name))
   if (selected === undefined) return undefined
@@ -755,13 +768,17 @@ export function buildLicenseDocuments({ repoRoot, artifacts, releaseVersion }) {
     .sort((left, right) => left.ref.localeCompare(right.ref, 'en'))
     .map(component => ({
       'bom-ref': component.ref,
-      licenses: [
-        component.license === 'MIT' ||
-        component.license === 'GPL-2.0-only' ||
-        component.license === 'GPL-2.0-or-later'
-          ? { license: { id: component.license } }
-          : { license: { name: component.license } },
-      ],
+      ...(!['UNLICENSED', 'NOASSERTION'].includes(component.license)
+        ? {
+            licenses: [
+              component.license === 'MIT' ||
+              component.license === 'GPL-2.0-only' ||
+              component.license === 'GPL-2.0-or-later'
+                ? { license: { id: component.license } }
+                : { license: { name: component.license } },
+            ],
+          }
+        : {}),
       name: component.metadata.name,
       properties: [
         { name: 'modkitx:artifacts', value: [...component.artifacts].sort().join(',') },
@@ -794,16 +811,27 @@ export function buildLicenseDocuments({ repoRoot, artifacts, releaseVersion }) {
     'MODKIT MK3 LOCAL RC LICENSE NOTICES',
     '',
     'Generated from the package metadata used by the focused local RC.',
-    'NOASSERTION denotes a private first-party application shell with no published license.',
+    'UNLICENSED and NOASSERTION components are statuses, not license grants.',
     '',
   ]
   for (const component of [...components.values()].sort((left, right) =>
     left.ref.localeCompare(right.ref, 'en'),
   )) {
     notices.push(`${component.metadata.name}@${component.metadata.version}`)
-    notices.push(`License: ${component.license}`)
+    if (['UNLICENSED', 'NOASSERTION'].includes(component.license)) {
+      notices.push(`Status: ${component.license}`)
+    } else {
+      notices.push(`License: ${component.license}`)
+    }
     notices.push(`Metadata: ${component.sourceLabel}`)
-    const text = component.sourceRoot === undefined ? undefined : licenseText(component.sourceRoot)
+    const firstParty = !component.sourceLabel.startsWith('npm:')
+    if (firstParty && component.license === 'MIT') {
+      notices.push('License document: licenses/MIT.txt')
+    }
+    const text =
+      firstParty || component.sourceRoot === undefined
+        ? undefined
+        : packageLicenseText(component.sourceRoot)
     if (text !== undefined) {
       notices.push('', text)
     }
@@ -812,7 +840,11 @@ export function buildLicenseDocuments({ repoRoot, artifacts, releaseVersion }) {
   const embeddedNotices = new Map()
   for (const artifact of artifacts) {
     for (const [path, bytes] of artifact.entries) {
-      if (!/(?:^|\/)(?:licen[cs]e|copying|notice|ofl)(?:\.|$)/iu.test(path)) continue
+      if (
+        !/(?:^|\/)(?:licen[cs]e|copying|notice|ofl)(?:\.|$)/iu.test(path) &&
+        !/^licenses\/MIT\.txt$/u.test(path)
+      )
+        continue
       const digest = sha256(bytes)
       const record = embeddedNotices.get(digest) ?? { bytes, locations: [] }
       record.locations.push(`${artifact.id}:${path}`)

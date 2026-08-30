@@ -6,7 +6,7 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:5dcd84f17a288b85d38fb60cfcb7d815e02bc9edec046efc4dd540cc693fd437",
+      "sha256": "sha256:f20695969e08a28458897eee5f4e6d4598dbef8854d0df36b594b3f044f70057",
       "size": 40058880
     },
     {
@@ -248,8 +248,8 @@
       "file": "artifacts/modkitx-common.tar",
       "id": "common",
       "kind": "common-extension-bundle",
-      "sha256": "sha256:d49af56018dccb9c5c47679574dad7ab84cf56c65042ecda391425a9fe38e0d8",
-      "size": 1724416
+      "sha256": "sha256:abe3b33cac9cd26cda20c816d73fe83aa8e2caed414993b4d776db0aa9526ef0",
+      "size": 1726464
     }
   ],
   "composition": {
@@ -369,7 +369,7 @@
   },
   "licenseNotices": {
     "file": "LICENSE-NOTICES.txt",
-    "sha256": "sha256:26c22fd4be2693b603e7015a6646e8717a519aa416186885b89d6276c3ecbd81"
+    "sha256": "sha256:635d2d89aee9f49c91c9d1952812bafc73cf4aab7a658e4566b9075b7deba42c"
   },
   "release": {
     "authenticode": false,
@@ -390,7 +390,7 @@
   "sbom": {
     "file": "sbom.cdx.json",
     "format": "CycloneDX-1.5",
-    "sha256": "sha256:94f97ff00d7463410d91e15109ed55e23f2cf10062fa7caaa01c782752923672"
+    "sha256": "sha256:28ca24d47ffe06712f6f0f333505dfdda9a029054f0d7ac2a29d8ecdc2f21e3e"
   },
   "schemaVersion": "release-manifest-1",
   "signing": {

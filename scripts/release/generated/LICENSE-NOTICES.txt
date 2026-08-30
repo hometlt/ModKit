@@ -1,10 +1,10 @@
 MODKIT MK3 LOCAL RC LICENSE NOTICES
 
 Generated from the package metadata used by the focused local RC.
-NOASSERTION denotes a private first-party application shell with no published license.
+UNLICENSED and NOASSERTION components are statuses, not license grants.
 
 @modkitx-x3/automation-host@0.1.0
-License: NOASSERTION
+Status: NOASSERTION
 Metadata: apps/automation-host/package.json
 
 ---
@@ -12,71 +12,72 @@ Metadata: apps/automation-host/package.json
 @modkitx-x3/codec-kit@1.0.0
 License: MIT
 Metadata: packages/codec-kit/package.json
+License document: licenses/MIT.txt
 
 ---
 
 @modkitx-x3/core@0.1.0
-License: UNLICENSED
+Status: UNLICENSED
 Metadata: packages/core/package.json
 
 ---
 
 @modkitx-x3/electron-app@0.1.0
-License: NOASSERTION
+Status: NOASSERTION
 Metadata: apps/electron/package.json
 
 ---
 
 @modkitx-x3/host@0.1.0
-License: UNLICENSED
+Status: UNLICENSED
 Metadata: packages/host/package.json
 
 ---
 
 @modkitx-x3/modkit-cli@0.1.0
-License: UNLICENSED
+Status: UNLICENSED
 Metadata: apps/cli/package.json
 
 ---
 
 @modkitx-x3/modkit-vscode@0.1.0
-License: NOASSERTION
+Status: NOASSERTION
 Metadata: apps/vscode/package.json
 
 ---
 
 @modkitx-x3/sdk@0.1.0
-License: UNLICENSED
+Status: UNLICENSED
 Metadata: packages/sdk/package.json
 
 ---
 
 @modkitx-x3/server@0.1.0
-License: NOASSERTION
+Status: NOASSERTION
 Metadata: apps/server/package.json
 
 ---
 
 @modkitx-x3/ui@0.1.0
-License: UNLICENSED
+Status: UNLICENSED
 Metadata: packages/ui/package.json
 
 ---
 
 @modkitx-x3/vfs@0.1.0
-License: UNLICENSED
+Status: UNLICENSED
 Metadata: packages/vfs/package.json
 
 ---
 
 @modkitx-x3/web-app@0.1.0
-License: NOASSERTION
+Status: NOASSERTION
 Metadata: apps/web/package.json
 
 ---
 
 @modkitx-x3/workspace-root@0.0.0
-License: NOASSERTION
+Status: NOASSERTION
 Metadata: package.json
 
 ---
@@ -84,28 +85,7 @@ Metadata: package.json
 @modkitx/extension-manager@0.1.0
 License: MIT
 Metadata: packages/extension-manager/package.json
-
-MIT License
-
-Copyright (c) 2026 Modkit contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+License document: licenses/MIT.txt
 
 ---
 
@@ -587,108 +567,126 @@ This software is provided by the copyright holders and contributors “as is” 
 modkit-extension-x3-archives@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/archives/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-audio@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/audio/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-documents@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/documents/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-images@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/images/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-models@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/models/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-plain-text@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/plain-text/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-ps1@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/ps1/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-rendering-3d@1.0.0
 License: MIT
 Metadata: extensions/common/rendering/rendering-3d/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-text-delimited@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/text-delimited/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-text-ini@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/text-ini/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-text-json@1.0.0
 License: MIT
 Metadata: extensions/common/data/text-json/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-text-toml@1.0.0
 License: MIT
 Metadata: extensions/common/data/text-toml/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-text-xml@1.0.0
 License: MIT
 Metadata: extensions/common/data/text-xml/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-text-yaml@1.0.0
 License: MIT
 Metadata: extensions/common/data/text-yaml/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-ui-monaco@1.0.0
 License: MIT
 Metadata: extensions/common/ui/monaco/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-uv-materializer@1.0.0
 License: MIT
 Metadata: extensions/common/uv-materializer/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-vector@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/vector/package.json
+License document: licenses/MIT.txt
 
 ---
 
 modkit-extension-x3-video@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/video/package.json
+License document: licenses/MIT.txt
 
 ---
 
@@ -903,7 +901,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 ---
 
 SHA-256: e9677405ed70537ce2411efc2b9998166809536d5f3fc541e0bd65606ae61be9
-Locations: platform:packages/extension-manager/LICENSE
+Locations: common:licenses/MIT.txt, platform:licenses/MIT.txt
 
 MIT License
 

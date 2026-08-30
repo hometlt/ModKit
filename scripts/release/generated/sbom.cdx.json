@@ -3,13 +3,6 @@
   "components": [
     {
       "bom-ref": "pkg:npm/%40modkitx-x3/automation-host@0.1.0",
-      "licenses": [
-        {
-          "license": {
-            "name": "NOASSERTION"
-          }
-        }
-      ],
       "name": "@modkitx-x3/automation-host",
       "properties": [
         {
@@ -51,13 +44,6 @@
     },
     {
       "bom-ref": "pkg:npm/%40modkitx-x3/core@0.1.0",
-      "licenses": [
-        {
-          "license": {
-            "name": "UNLICENSED"
-          }
-        }
-      ],
       "name": "@modkitx-x3/core",
       "properties": [
         {
@@ -75,13 +61,6 @@
     },
     {
       "bom-ref": "pkg:npm/%40modkitx-x3/electron-app@0.1.0",
-      "licenses": [
-        {
-          "license": {
-            "name": "NOASSERTION"
-          }
-        }
-      ],
       "name": "@modkitx-x3/electron-app",
       "properties": [
         {
@@ -99,13 +78,6 @@
     },
     {
       "bom-ref": "pkg:npm/%40modkitx-x3/host@0.1.0",
-      "licenses": [
-        {
-          "license": {
-            "name": "UNLICENSED"
-          }
-        }
-      ],
       "name": "@modkitx-x3/host",
       "properties": [
         {
@@ -123,13 +95,6 @@
     },
     {
       "bom-ref": "pkg:npm/%40modkitx-x3/modkit-cli@0.1.0",
-      "licenses": [
-        {
-          "license": {
-            "name": "UNLICENSED"
-          }
-        }
-      ],
       "name": "@modkitx-x3/modkit-cli",
       "properties": [
         {
@@ -147,13 +112,6 @@
     },
     {
       "bom-ref": "pkg:npm/%40modkitx-x3/modkit-vscode@0.1.0",
-      "licenses": [
-        {
-          "license": {
-            "name": "NOASSERTION"
-          }
-        }
-      ],
       "name": "@modkitx-x3/modkit-vscode",
       "properties": [
         {
@@ -171,13 +129,6 @@
     },
     {
       "bom-ref": "pkg:npm/%40modkitx-x3/sdk@0.1.0",
-      "licenses": [
-        {
-          "license": {
-            "name": "UNLICENSED"
-          }
-        }
-      ],
       "name": "@modkitx-x3/sdk",
       "properties": [
         {
@@ -195,13 +146,6 @@
     },
     {
       "bom-ref": "pkg:npm/%40modkitx-x3/server@0.1.0",
-      "licenses": [
-        {
-          "license": {
-            "name": "NOASSERTION"
-          }
-        }
-      ],
       "name": "@modkitx-x3/server",
       "properties": [
         {
@@ -219,13 +163,6 @@
     },
     {
       "bom-ref": "pkg:npm/%40modkitx-x3/ui@0.1.0",
-      "licenses": [
-        {
-          "license": {
-            "name": "UNLICENSED"
-          }
-        }
-      ],
       "name": "@modkitx-x3/ui",
       "properties": [
         {
@@ -243,13 +180,6 @@
     },
     {
       "bom-ref": "pkg:npm/%40modkitx-x3/vfs@0.1.0",
-      "licenses": [
-        {
-          "license": {
-            "name": "UNLICENSED"
-          }
-        }
-      ],
       "name": "@modkitx-x3/vfs",
       "properties": [
         {
@@ -267,13 +197,6 @@
     },
     {
       "bom-ref": "pkg:npm/%40modkitx-x3/web-app@0.1.0",
-      "licenses": [
-        {
-          "license": {
-            "name": "NOASSERTION"
-          }
-        }
-      ],
       "name": "@modkitx-x3/web-app",
       "properties": [
         {
@@ -291,13 +214,6 @@
     },
     {
       "bom-ref": "pkg:npm/%40modkitx-x3/workspace-root@0.0.0",
-      "licenses": [
-        {
-          "license": {
-            "name": "NOASSERTION"
-          }
-        }
-      ],
       "name": "@modkitx-x3/workspace-root",
       "properties": [
         {
