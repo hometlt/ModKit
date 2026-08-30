@@ -1,0 +1,19 @@
+{
+  "$schema": "../../packages/extension-manager/schemas/modkit.workspace.schema.json",
+  "schemaVersion": 1,
+  "activeProfile": "desktop",
+  "lockFile": "./modkit.extensions.lock.json",
+  "sources": [
+    {
+      "id": "local-tools",
+      "uri": "./extensions-local",
+      "environment": "MODKIT_LOCAL_EXTENSION_ROOT"
+    },
+    { "id": "cdn-tools", "uri": "https://cdn.example.invalid/extensions/repository.json" },
+    { "id": "memory-tools", "uri": "memory://workspace/repository.json" }
+  ],
+  "profiles": {
+    "desktop": { "sources": ["local-tools"], "extensions": ["*"], "locked": true },
+    "browser": { "sources": ["cdn-tools", "memory-tools"], "extensions": ["*"], "locked": true }
+  }
+}

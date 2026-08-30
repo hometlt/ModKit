@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "extensions": [
+    {
+      "id": "example.tools/sample",
+      "source": "local-tools",
+      "version": "1.0.0",
+      "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

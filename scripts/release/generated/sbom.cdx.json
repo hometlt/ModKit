@@ -278,30 +278,6 @@
       "version": "4.2.3"
     },
     {
-      "bom-ref": "pkg:npm/%40types/trusted-types@2.0.7",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "name": "@types/trusted-types",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "common"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "npm:@types/trusted-types"
-        }
-      ],
-      "purl": "pkg:npm/%40types/trusted-types@2.0.7",
-      "type": "library",
-      "version": "2.0.7"
-    },
-    {
       "bom-ref": "pkg:npm/ajv@8.20.0",
       "licenses": [
         {
@@ -324,30 +300,6 @@
       "purl": "pkg:npm/ajv@8.20.0",
       "type": "library",
       "version": "8.20.0"
-    },
-    {
-      "bom-ref": "pkg:npm/dompurify@3.4.8",
-      "licenses": [
-        {
-          "license": {
-            "name": "(MPL-2.0 OR Apache-2.0)"
-          }
-        }
-      ],
-      "name": "dompurify",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "common"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "npm:dompurify"
-        }
-      ],
-      "purl": "pkg:npm/dompurify@3.4.8",
-      "type": "library",
-      "version": "3.4.8"
     },
     {
       "bom-ref": "pkg:npm/es-module-lexer@1.7.0",
@@ -468,30 +420,6 @@
       "purl": "pkg:npm/jsonc-parser@3.3.1",
       "type": "library",
       "version": "3.3.1"
-    },
-    {
-      "bom-ref": "pkg:npm/marked@14.0.0",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "name": "marked",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "common"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "npm:marked"
-        }
-      ],
-      "purl": "pkg:npm/marked@14.0.0",
-      "type": "library",
-      "version": "14.0.0"
     },
     {
       "bom-ref": "pkg:npm/modkit-extension-x3-archives@1.0.0",
@@ -830,30 +758,6 @@
       "version": "1.0.0"
     },
     {
-      "bom-ref": "pkg:npm/modkit-extension-x3-ui-monaco@1.0.0",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "name": "modkit-extension-x3-ui-monaco",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "common"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "extensions/common/ui/monaco/package.json"
-        }
-      ],
-      "purl": "pkg:npm/modkit-extension-x3-ui-monaco@1.0.0",
-      "type": "library",
-      "version": "1.0.0"
-    },
-    {
       "bom-ref": "pkg:npm/modkit-extension-x3-uv-materializer@1.0.0",
       "licenses": [
         {
@@ -924,30 +828,6 @@
       "purl": "pkg:npm/modkit-extension-x3-video@1.0.0",
       "type": "library",
       "version": "1.0.0"
-    },
-    {
-      "bom-ref": "pkg:npm/monaco-editor@0.56.0",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "name": "monaco-editor",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "common"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "npm:monaco-editor"
-        }
-      ],
-      "purl": "pkg:npm/monaco-editor@0.56.0",
-      "type": "library",
-      "version": "0.56.0"
     },
     {
       "bom-ref": "pkg:npm/require-from-string@2.0.2",
@@ -1133,10 +1013,6 @@
       "ref": "pkg:npm/%40rgrove/parse-xml@4.2.3"
     },
     {
-      "dependsOn": [],
-      "ref": "pkg:npm/%40types/trusted-types@2.0.7"
-    },
-    {
       "dependsOn": [
         "pkg:npm/fast-deep-equal@3.1.3",
         "pkg:npm/fast-uri@3.1.5",
@@ -1144,12 +1020,6 @@
         "pkg:npm/require-from-string@2.0.2"
       ],
       "ref": "pkg:npm/ajv@8.20.0"
-    },
-    {
-      "dependsOn": [
-        "pkg:npm/%40types/trusted-types@2.0.7"
-      ],
-      "ref": "pkg:npm/dompurify@3.4.8"
     },
     {
       "dependsOn": [],
@@ -1170,10 +1040,6 @@
     {
       "dependsOn": [],
       "ref": "pkg:npm/jsonc-parser@3.3.1"
-    },
-    {
-      "dependsOn": [],
-      "ref": "pkg:npm/marked@14.0.0"
     },
     {
       "dependsOn": [
@@ -1297,12 +1163,6 @@
     },
     {
       "dependsOn": [
-        "pkg:npm/monaco-editor@0.56.0"
-      ],
-      "ref": "pkg:npm/modkit-extension-x3-ui-monaco@1.0.0"
-    },
-    {
-      "dependsOn": [
         "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
         "pkg:npm/%40modkitx-x3/host@0.1.0",
         "pkg:npm/%40modkitx-x3/sdk@0.1.0"
@@ -1324,13 +1184,6 @@
         "pkg:npm/%40modkitx-x3/sdk@0.1.0"
       ],
       "ref": "pkg:npm/modkit-extension-x3-video@1.0.0"
-    },
-    {
-      "dependsOn": [
-        "pkg:npm/dompurify@3.4.8",
-        "pkg:npm/marked@14.0.0"
-      ],
-      "ref": "pkg:npm/monaco-editor@0.56.0"
     },
     {
       "dependsOn": [],

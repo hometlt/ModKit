@@ -6,8 +6,8 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:f20695969e08a28458897eee5f4e6d4598dbef8854d0df36b594b3f044f70057",
-      "size": 40058880
+      "sha256": "sha256:db2ad737cde843bce2cf7c721bb11db863e69d2baf181f9ad0a68d4caf5dc240",
+      "size": 40032256
     },
     {
       "catalog": [
@@ -193,14 +193,6 @@
         },
         {
           "contributions": [
-            "org.modkitx.ui-monaco/code-stage"
-          ],
-          "coordinate": "org.modkitx/ui-monaco",
-          "root": "extensions/common/ui/monaco",
-          "sourceDigest": "sha256:b62bf7d9c8fbb9c4f844924dffdc066beb2745f7a3a4506abaa21c59bf2fde3a"
-        },
-        {
-          "contributions": [
             "org.modkitx/uv-model-materializer-contract",
             "org.modkitx/uv-texture-materializer-contract",
             "org.modkitx/uvm-materializer",
@@ -248,17 +240,13 @@
       "file": "artifacts/modkitx-common.tar",
       "id": "common",
       "kind": "common-extension-bundle",
-      "sha256": "sha256:abe3b33cac9cd26cda20c816d73fe83aa8e2caed414993b4d776db0aa9526ef0",
-      "size": 1726464
+      "sha256": "sha256:4348bc4bd825491ca24795ac32edabe7397e50cd2aee9ce6ee20dc6d1fc071de",
+      "size": 1704448
     }
   ],
   "composition": {
     "activeProfiles": [
-      "common-documents",
-      "headless-mod-ci",
-      "sc2-mod-studio",
-      "universal-asset-explorer",
-      "warzone-2100-studio"
+      "full-codecs"
     ],
     "catalogSources": [
       {
@@ -274,12 +262,12 @@
         "sha256": "sha256:ef6d4112b1a0333f0e101dadd5eccb7d4208a5a2194a59051e38634cec5bd5e5"
       },
       {
-        "path": "migration/product-profiles.json",
-        "sha256": "sha256:8d9b5c48ceb631db76cf6b46b867660981218dc03704cdb40f666d323440752e"
+        "path": "config/build-composition.json",
+        "sha256": "sha256:64b1b0af581b32b04c778e19e388f7d7a86ffa112a2417acfd431ef3785be8c5"
       },
       {
         "path": "scripts/app-extension-sets.mjs",
-        "sha256": "sha256:a01437b7778f388493d8cc460af6f34d7ace06e366c321b9f10e375817ebdb50"
+        "sha256": "sha256:02ff494931168173d911d7d3c9d92f399f2036fd3f60ea4362389559e66ed916"
       },
       {
         "path": "scripts/bundle-hashes.json",
@@ -301,75 +289,17 @@
       "extensions/common/images",
       "extensions/common/models",
       "extensions/common/rendering/rendering-3d",
-      "extensions/common/ui/monaco",
       "extensions/common/uv-materializer",
       "extensions/common/vector",
       "extensions/common/video",
       "extensions/ps1"
     ],
-    "deferredProfiles": [
-      "bar-spring-studio",
-      "cnc-sage-studio"
-    ],
-    "gameExtensionFamilies": [
-      {
-        "externalExtensions": [
-          {
-            "coordinate": "org.modkitx.blizzard/casc",
-            "environment": "MODKIT_BLIZZARD_ROOT",
-            "family": "blizzard-casc",
-            "path": "casc",
-            "repository": "blizzard",
-            "sibling": "modkit-blizzard"
-          },
-          {
-            "coordinate": "org.modkitx.blizzard/models",
-            "environment": "MODKIT_BLIZZARD_ROOT",
-            "family": "blizzard-models",
-            "path": "models",
-            "repository": "blizzard",
-            "sibling": "modkit-blizzard"
-          },
-          {
-            "coordinate": "org.modkitx.blizzard/mpq",
-            "environment": "MODKIT_BLIZZARD_ROOT",
-            "family": "blizzard-mpq",
-            "path": "mpq",
-            "repository": "blizzard",
-            "sibling": "modkit-blizzard"
-          },
-          {
-            "coordinate": "org.modkitx.blizzard/starcraft2",
-            "environment": "MODKIT_BLIZZARD_ROOT",
-            "family": "blizzard-starcraft2",
-            "path": "starcraft2",
-            "repository": "blizzard",
-            "sibling": "modkit-blizzard"
-          }
-        ],
-        "id": "sc2-mod-studio",
-        "roots": []
-      },
-      {
-        "externalExtensions": [
-          {
-            "coordinate": "org.modkitx.opensource/warzone-2100",
-            "environment": "MODKIT_WARZONE_ROOT",
-            "family": "opensource-warzone-2100",
-            "path": "",
-            "repository": "warzone",
-            "sibling": "modkit-warzone"
-          }
-        ],
-        "id": "warzone-2100-studio",
-        "roots": []
-      }
-    ],
-    "source": "migration/product-profiles.json"
+    "externalExtensions": [],
+    "source": "config/build-composition.json"
   },
   "licenseNotices": {
     "file": "LICENSE-NOTICES.txt",
-    "sha256": "sha256:635d2d89aee9f49c91c9d1952812bafc73cf4aab7a658e4566b9075b7deba42c"
+    "sha256": "sha256:7268e49b79805e7efd2a15d424a9519a87fbbe6166e653e9adb4f69e79d490b4"
   },
   "release": {
     "authenticode": false,
@@ -379,7 +309,7 @@
       "cleanMachineInstaller": true,
       "instructions": {
         "file": "INSTALL.md",
-        "sha256": "sha256:9b58bd2f253b2b5e62635a01b0ff3687b961e7348bd7d7d1a076dec23cce0653"
+        "sha256": "sha256:3481b4a72dff5b9fc18646108a4baa31c631b5d169f24f78774fa75b5191f8a7"
       },
       "kind": "verified-versioned-local-store",
       "remainder": null
@@ -390,7 +320,7 @@
   "sbom": {
     "file": "sbom.cdx.json",
     "format": "CycloneDX-1.5",
-    "sha256": "sha256:28ca24d47ffe06712f6f0f333505dfdda9a029054f0d7ac2a29d8ecdc2f21e3e"
+    "sha256": "sha256:a6a50dc015d79d433358387ed4c016578cdda9c7dc780e20f7609ef5ba171caa"
   },
   "schemaVersion": "release-manifest-1",
   "signing": {

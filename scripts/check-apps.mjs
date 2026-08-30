@@ -9,30 +9,22 @@ import {
   READY_APP_EXTENSIONS,
   expectedContributionIds,
   expectedExtensionCoordinates,
-  extensionLocation,
+  extensionDirectory,
   extensionSet,
 } from './app-extension-sets.mjs'
 import { checkAppContractMatrix } from './check-app-contract-matrix.mjs'
-import { resolveExternalExtensionDirectory } from './lib/external-extension-roots.mjs'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 
-const extensionPath = name => {
-  const location = extensionLocation(name)
-  return location.kind === 'internal'
-    ? join(root, 'extensions', ...location.path)
-    : resolveExternalExtensionDirectory(root, location)
-}
+const extensionPath = name => join(root, 'extensions', ...extensionDirectory(name))
 
-const [{ createServerApp }, { createAutomationHost }, electron, vscode, web, cli] =
-  await Promise.all([
-    import('../apps/server/dist/index.js'),
-    import('../apps/automation-host/dist/index.js'),
-    import('../apps/electron/dist/index.js'),
-    import('../apps/vscode/dist/index.js'),
-    import('../apps/web/dist/index.js'),
-    import('../apps/cli/dist/profile.js'),
-  ])
+const [{ createServerApp }, { createAutomationHost }, electron, vscode, web] = await Promise.all([
+  import('../apps/server/dist/index.js'),
+  import('../apps/automation-host/dist/index.js'),
+  import('../apps/electron/dist/index.js'),
+  import('../apps/vscode/dist/index.js'),
+  import('../apps/web/dist/index.js'),
+])
 const [{ loadExtensionDirectory }, { inventoryHasErrors, offersFromInventory, resolveProvider }] =
   await Promise.all([
     import('../packages/host/dist/node/index.js'),
@@ -254,28 +246,10 @@ await checkApplicationSet(
   { main: { offers: 16, active: 16 } },
 )
 await checkApplicationSet(
-  'cli',
-  'mk2-extended',
-  async extensions => ({ main: await cli.createModkitCliComposition(extensions) }),
-  { main: { offers: 97, active: 97 } },
-)
-await checkApplicationSet(
   'headless',
   'full-codecs',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
   { main: { offers: 85, active: 85 } },
-)
-await checkApplicationSet(
-  'headless',
-  'blizzard-models',
-  async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 2, active: 2 } },
-)
-await checkApplicationSet(
-  'headless',
-  'mk2-extended',
-  async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 97, active: 97 } },
 )
 await checkApplicationSet(
   'pwa',
@@ -309,23 +283,6 @@ await checkApplicationSet(
     main: { offers: 'none', active: 'none' },
     // 7 codecs + the PNG encoder writer provider (A5, browser-worker variant)
     worker: { offers: 38, active: 38 },
-  },
-)
-await checkApplicationSet(
-  'pwa',
-  'mk2-extended',
-  async extensions => {
-    const app = await web.createWebApp(
-      { operatingSystem: 'linux', architecture: 'x64' },
-      extensions,
-      { main: ['worker.module'], worker: [], sharedMemory: false },
-    )
-    return { main: app.main, worker: app.worker }
-  },
-  {
-    main: { offers: 'none', active: 'none' },
-    // The Warzone WZ writer is worker-brokered; the SC2 playable runtime remains trusted-node.
-    worker: { offers: 98, active: 98 },
   },
 )
 await checkApplicationSet(
@@ -370,18 +327,6 @@ await checkApplicationSet(
   },
 )
 await checkApplicationSet(
-  'vscode',
-  'mk2-extended',
-  async extensions => {
-    const app = await vscode.createVsCodeDesktopApp(extensions)
-    return { extensionHost: app.extensionHost, webview: app.webview }
-  },
-  {
-    extensionHost: { offers: 97, active: 97 },
-    webview: { offers: 'none', active: 'none' },
-  },
-)
-await checkApplicationSet(
   'electron',
   'models-and-archives',
   async extensions => {
@@ -389,7 +334,7 @@ await checkApplicationSet(
     return { main: app.main, renderer: app.renderer }
   },
   {
-    main: { offers: 22, active: 22 },
+    main: { offers: 21, active: 21 },
     renderer: { offers: 'none', active: 'none' },
   },
 )
@@ -402,18 +347,6 @@ await checkApplicationSet(
   },
   {
     main: { offers: 85, active: 85 },
-    renderer: { offers: 'none', active: 'none' },
-  },
-)
-await checkApplicationSet(
-  'electron',
-  'mk2-extended',
-  async extensions => {
-    const app = await electron.createElectronApp(extensions)
-    return { main: app.main, renderer: app.renderer }
-  },
-  {
-    main: { offers: 97, active: 97 },
     renderer: { offers: 'none', active: 'none' },
   },
 )

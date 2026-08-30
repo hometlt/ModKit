@@ -3,8 +3,7 @@
 import { join } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { extensionLocation, extensionSet } from '../app-extension-sets.mjs'
-import { resolveExternalExtensionDirectory } from '../lib/external-extension-roots.mjs'
+import { extensionDirectory, extensionSet } from '../app-extension-sets.mjs'
 
 const root = fileURLToPath(new URL('../..', import.meta.url))
 
@@ -24,11 +23,7 @@ const [{ loadExtensionDirectory }, { offersFromInventory }] = await Promise.all(
 
 const extensions = await Promise.all(
   extensionSet(setName).map(directory =>
-    loadExtensionDirectory(
-      extensionLocation(directory).kind === 'internal'
-        ? join(root, 'extensions', ...extensionLocation(directory).path)
-        : resolveExternalExtensionDirectory(root, extensionLocation(directory)),
-    ),
+    loadExtensionDirectory(join(root, 'extensions', ...extensionDirectory(directory))),
   ),
 )
 

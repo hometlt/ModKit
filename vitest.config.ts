@@ -10,15 +10,9 @@ export default defineConfig({
       'apps/*/test/**/*.test.ts',
       // tooling self-tests (legacy-gate regression suite)
       'scripts/test/**/*.test.ts',
-      // Internal extension-owned tests plus the two Product-GA game repositories. Blizzard and
-      // Warzone are deliberately outside this repository; their paths may be overridden for CI.
+      // The core suite owns only core packages, applications, tooling and bundled extensions.
+      // External repositories run their own suites from their resolved workspace composition.
       'extensions/*/*/test/**/*.test.ts',
-      process.env.MODKIT_BLIZZARD_ROOT === undefined
-        ? '../modkit-blizzard/*/test/**/*.test.ts'
-        : `${process.env.MODKIT_BLIZZARD_ROOT.replaceAll('\\', '/')}/*/test/**/*.test.ts`,
-      process.env.MODKIT_WARZONE_ROOT === undefined
-        ? '../modkit-warzone/test/**/*.test.ts'
-        : `${process.env.MODKIT_WARZONE_ROOT.replaceAll('\\', '/')}/test/**/*.test.ts`,
     ],
     exclude: ['**/node_modules/**', '**/dist/**', 'scripts/test/fixtures/**'],
   },

@@ -10,12 +10,9 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
-import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 
 import { READY_APP_EXTENSIONS } from '../app-extension-sets.mjs'
-import { externalRepositoryRoot } from '../lib/external-extension-roots.mjs'
 import {
   buildRc,
   canonicalExtensionDigest,
@@ -26,8 +23,6 @@ import {
 import { activeRc, installRc, rollbackRc } from '../release/install-rc.mjs'
 
 const temporaryRoots: string[] = []
-const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
-
 afterEach(() => {
   for (const root of temporaryRoots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
@@ -81,6 +76,12 @@ function fixture() {
   mkdirSync(root, { recursive: true })
   const images = READY_APP_EXTENSIONS.images
   if (images === undefined) throw new Error('the fixture requires the images extension family')
+  json(join(root, 'config', 'build-composition.json'), {
+    schemaVersion: 1,
+    bundledBaseRoots: ['extensions/common'],
+    extensionSets: { release: ['images'] },
+    releaseSet: 'release',
+  })
 
   const active = [
     ['common-documents', []],
@@ -226,17 +227,7 @@ describe('focused local RC artifacts', () => {
     const firstBuild = buildRc({ repoRoot: root, outDir: first })
     buildRc({ repoRoot: root, outDir: second })
 
-    const sc2 = firstBuild.manifest.composition.gameExtensionFamilies.find(
-      profile => profile.id === 'sc2-mod-studio',
-    )
-    expect(sc2?.externalExtensions).toEqual([
-      expect.objectContaining({
-        environment: 'MODKIT_BLIZZARD_ROOT',
-        family: 'blizzard-starcraft2',
-        repository: 'blizzard',
-        sibling: 'modkit-blizzard',
-      }),
-    ])
+    expect(firstBuild.manifest.composition.externalExtensions).toEqual([])
 
     const firstFiles = outputFiles(first)
     const secondFiles = outputFiles(second)
@@ -326,14 +317,7 @@ describe('focused local RC artifacts', () => {
     )
   })
 
-  it('matches the public host digest and rejects a stale generated catalog', async () => {
-    const blizzardRoot = externalRepositoryRoot(repoRoot, 'blizzard')
-    const sc2Root = join(blizzardRoot, 'starcraft2')
-    const loaded = await loadExtensionDirectory(sc2Root)
-    expect(canonicalExtensionDigest(blizzardRoot, 'starcraft2')).toBe(
-      loaded.artifact.artifactDigest,
-    )
-
+  it('rejects a stale generated catalog', () => {
     const { parent, root } = fixture()
     const catalogPath = join(root, 'apps', 'vscode', 'generated', 'bundled-catalog.json')
     const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'))
@@ -344,13 +328,11 @@ describe('focused local RC artifacts', () => {
     )
   })
 
-  it('keeps C&C and Spring after the STOP out of every focused artifact', () => {
+  it('keeps roots outside the selected composition out of every artifact', () => {
     const { parent, root } = fixture()
     const output = join(parent, 'focused')
     const { manifest } = buildRc({ repoRoot: root, outDir: output })
     const rendered = JSON.stringify(manifest)
-    expect(rendered).toContain('cnc-sage-studio')
-    expect(rendered).toContain('bar-spring-studio')
     expect(rendered).not.toContain('extensions/ea/')
     expect(rendered).not.toContain('extensions/opensource/spring')
     for (const artifact of manifest.artifacts) {
@@ -363,9 +345,8 @@ describe('focused local RC artifacts', () => {
     const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'))
     catalog.roots.push({ name: 'sage', directory: 'ea/sage', digest: 'sha256:bad' })
     json(catalogPath, catalog)
-    expect(() => buildRc({ repoRoot: root, outDir: join(parent, 'leaked') })).toThrow(
-      /deferred C&C or Spring extension entered the focused RC/u,
-    )
+    const second = buildRc({ repoRoot: root, outDir: join(parent, 'unselected') })
+    expect(JSON.stringify(second.manifest)).not.toContain('extensions/ea/sage')
   })
 
   it('ratchets manifest, SBOM and notices against two clean unsigned builds', () => {
@@ -399,16 +380,7 @@ describe('focused local RC artifacts', () => {
     const firstManifest = JSON.parse(
       readFileSync(join(first.root, 'release', 'release-manifest.json'), 'utf8'),
     )
-    expect(firstManifest.composition.gameExtensionFamilies).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: 'sc2-mod-studio',
-          externalExtensions: expect.arrayContaining([
-            expect.objectContaining({ sibling: 'modkit-blizzard' }),
-          ]),
-        }),
-      ]),
-    )
+    expect(firstManifest.composition.externalExtensions).toEqual([])
 
     const cliPath = join(root, 'apps', 'cli', 'dist', 'main.js')
     text(cliPath, 'export const main = "v2"\n')

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkit.dev/schemas/modkit.composition.schema.json",
+  "title": "Modkit build composition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "bundledBaseRoots", "extensionSets", "releaseSet"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "bundledBaseRoots": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "extensionSets": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string", "minLength": 1 },
+        "uniqueItems": true
+      }
+    },
+    "releaseSet": { "type": "string", "minLength": 1 }
+  }
+}

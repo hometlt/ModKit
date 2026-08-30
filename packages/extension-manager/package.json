@@ -28,6 +28,7 @@
     "./schemas/workspace": "./schemas/modkit.workspace.schema.json",
     "./schemas/repository": "./schemas/modkit.repository.schema.json",
     "./schemas/lock": "./schemas/modkit.extensions.lock.schema.json",
+    "./schemas/composition": "./schemas/modkit.composition.schema.json",
     "./schemas/registry": "./schemas/modkit.registry.schema.json"
   },
   "files": [

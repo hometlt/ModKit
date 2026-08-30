@@ -15,19 +15,19 @@ options are repeatable:
 pnpm mcp:start -- `
   --root 'C:\FILES\SC2Files\Games and programs files' `
   --extension 'C:\FILES\SC2Files\coding\modkit-core\extensions\common\images' `
-  --extension 'C:\FILES\SC2Files\coding\modkit-blizzard\starcraft2' `
-  --extension 'C:\FILES\SC2Files\coding\modkit-warzone'
+  --extension 'C:\extensions\publisher-one\tools' `
+  --extension 'C:\extensions\publisher-two\assets'
 ```
 
 Each `--extension` value names one package directory containing a `package.json` with a `modkit`
-manifest. Add the other required common or Blizzard packages in the same way; naming a parent
+manifest. Add other required packages in the same way; naming a parent
 repository does not grant every child package implicitly.
 
 The equivalent Windows environment fallback uses semicolon-separated absolute paths:
 
 ```powershell
 $env:MODKIT_MCP_ROOTS = 'C:\FILES\SC2Files\Games and programs files'
-$env:MODKIT_MCP_EXTENSIONS = 'C:\FILES\SC2Files\coding\modkit-core\extensions\common\images;C:\FILES\SC2Files\coding\modkit-blizzard\starcraft2;C:\FILES\SC2Files\coding\modkit-warzone'
+$env:MODKIT_MCP_EXTENSIONS = 'C:\extensions\common\images;C:\extensions\publisher-one\tools'
 pnpm mcp:start
 ```
 

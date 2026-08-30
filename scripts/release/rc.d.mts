@@ -20,18 +20,10 @@ export interface RcBuildResult {
   readonly manifest: {
     readonly artifacts: readonly RcArtifactDescriptor[]
     readonly composition: {
-      readonly gameExtensionFamilies: readonly {
-        readonly id: string
-        readonly roots: readonly string[]
-        readonly externalExtensions: readonly {
-          readonly coordinate: string
-          readonly environment: string
-          readonly family: string
-          readonly path: readonly string[]
-          readonly repository: string
-          readonly sibling: string
-        }[]
-      }[]
+      readonly activeProfiles: readonly string[]
+      readonly commonExtensionRoots: readonly string[]
+      readonly externalExtensions: readonly unknown[]
+      readonly source: string
     }
   }
   readonly signature?: unknown

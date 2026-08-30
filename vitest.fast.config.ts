@@ -1,15 +1,5 @@
 import { defineConfig } from 'vitest/config'
 
-const blizzardRoot =
-  process.env.MODKIT_BLIZZARD_ROOT === undefined
-    ? '../modkit-blizzard'
-    : process.env.MODKIT_BLIZZARD_ROOT.replaceAll('\\', '/')
-
-const warzoneRoot =
-  process.env.MODKIT_WARZONE_ROOT === undefined
-    ? '../modkit-warzone'
-    : process.env.MODKIT_WARZONE_ROOT.replaceAll('\\', '/')
-
 export default defineConfig({
   test: {
     // This lane excludes tests that mutate shared dist output, launch product shells,
@@ -46,17 +36,6 @@ export default defineConfig({
       'apps/web/test/managed-extension-roots.test.ts',
       'apps/web/test/managed-extension-storage.test.ts',
       'apps/web/test/managed-extensions-controller.test.ts',
-      `${blizzardRoot}/models/test/m3-writer.test.ts`,
-      `${blizzardRoot}/starcraft2/test/subject-facts.test.ts`,
-      `${blizzardRoot}/starcraft2/test/full-data-schema.test.ts`,
-      `${blizzardRoot}/starcraft2/test/sc2-bank-product-ga.test.ts`,
-      `${blizzardRoot}/starcraft2/test/sc2-data-language.test.ts`,
-      `${blizzardRoot}/starcraft2/test/sc2-layout-language.test.ts`,
-      `${warzoneRoot}/test/codec.test.ts`,
-      `${warzoneRoot}/test/wz-codec.test.ts`,
-      `${warzoneRoot}/test/map-provider.test.ts`,
-      `${warzoneRoot}/test/language-provider.test.ts`,
-      `${warzoneRoot}/test/wz-legacy-semantics.test.ts`,
     ],
     exclude: [
       '**/node_modules/**',

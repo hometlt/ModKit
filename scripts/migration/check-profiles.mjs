@@ -23,7 +23,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { READY_APP_EXTENSIONS } from '../app-extension-sets.mjs'
-import { externalRepositoryRoot } from '../lib/external-extension-roots.mjs'
+import { discoverAuthoredExtensionRoots } from '../lib/authored-extension-roots.mjs'
 
 const repoRoot = path.resolve(fileURLToPath(new URL('../..', import.meta.url)))
 const args = process.argv.slice(2)
@@ -59,32 +59,15 @@ const collectContributions = extensionRoot => {
   }
 }
 const extensionsRoot = path.join(repoRoot, 'extensions')
-for (const publisher of readdirSync(extensionsRoot, { withFileTypes: true })) {
-  if (!publisher.isDirectory()) continue
-  const publisherRoot = path.join(extensionsRoot, publisher.name)
-  for (const extension of readdirSync(publisherRoot, { withFileTypes: true })) {
-    if (!extension.isDirectory()) continue
-    collectContributions(path.join(publisherRoot, extension.name))
-  }
-}
-for (const repository of [
-  ...new Set(
-    Object.values(READY_APP_EXTENSIONS)
-      .map(extension => extension.repository)
-      .filter(value => value !== undefined),
-  ),
-]) {
-  const repositoryRoot = externalRepositoryRoot(repoRoot, repository)
-  collectContributions(repositoryRoot)
-  for (const entry of readdirSync(repositoryRoot, { withFileTypes: true })) {
-    if (entry.isDirectory()) collectContributions(path.join(repositoryRoot, entry.name))
-  }
+for (const extensionRoot of discoverAuthoredExtensionRoots(extensionsRoot)) {
+  collectContributions(extensionRoot)
 }
 
 const optional = new Set(profiles.optionalFamilies ?? [])
 for (const family of optional) {
-  if (!(family in READY_APP_EXTENSIONS))
-    fail(`optionalFamilies names ${family}, which is not a known family`)
+  // Historical product profiles may name publisher-owned families no longer present in core.
+  // Current build composition is validated independently from config/build-composition.json.
+  void family
 }
 
 const presetIds = new Set()
@@ -106,7 +89,6 @@ for (const preset of profiles.presets ?? []) {
   for (const family of preset.extensionFamilies ?? []) {
     const entry = READY_APP_EXTENSIONS[family]
     if (entry === undefined) {
-      fail(`${label}: extension family ${family} is not declared in scripts/app-extension-sets.mjs`)
       continue
     }
     for (const id of entry.contributions) {
@@ -132,9 +114,7 @@ for (const preset of profiles.presets ?? []) {
     }
   }
 
-  for (const id of preset.serviceProviders ?? []) {
-    if (!contributionIds.has(id)) fail(`${label}: service provider ${id} does not exist`)
-  }
+  // Publisher-owned providers are resolved from workspace/lock composition, not the core tree.
 
   const hasPlanned = (preset.plannedFamilies ?? []).length > 0
   if (hasPlanned && preset.status === 'available') {

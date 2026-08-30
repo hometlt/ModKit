@@ -70,7 +70,7 @@ at), leaving the `.vsix` with no bundled catalog at all.
 ## Recommendation
 
 **B for the bundled `common` catalog, C for everything else.** The roots the product claims to ship
-should be inside the `.vsix` and self-contained; the game-specific catalogs (`ea/`, `blizzard/`) are
+should be inside the `.vsix` and self-contained; publisher-specific catalogs are
 already opt-in through a setting and match C's shape without any new mechanism. A is the fallback if
 the manifest transform in B turns out to be worse than the duplication it avoids.
 

@@ -14,23 +14,9 @@ import {
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { tmpdir } from 'node:os'
 
-import {
-  READY_APP_EXTENSIONS,
-  extensionDirectory,
-  extensionLocation,
-} from '../app-extension-sets.mjs'
 import { extensionArtifactDigest } from '../lib/extension-artifact-digest.mjs'
-import { externalRepositoryDescriptor } from '../lib/external-extension-roots.mjs'
 
 const RELEASE_ID = 'modkitx-mk3-focused-local-rc'
-const REQUIRED_PROFILE_IDS = Object.freeze([
-  'common-documents',
-  'headless-mod-ci',
-  'sc2-mod-studio',
-  'universal-asset-explorer',
-  'warzone-2100-studio',
-])
-const DEFERRED_PATH_PREFIXES = Object.freeze(['extensions/ea/', 'extensions/opensource/spring/'])
 const GENERATED_NAMES = Object.freeze([
   'LICENSE-NOTICES.txt',
   'release-manifest.json',
@@ -262,144 +248,30 @@ function workspacePackageIndex(repoRoot) {
   return index
 }
 
-function contributionOwners(repoRoot, packageIndex) {
-  const owners = new Map()
-  for (const packageRoot of packageIndex.values()) {
-    const metadata = readJson(join(packageRoot, 'package.json'))
-    const patterns = metadata.modkit?.contributionManifests
-    if (!Array.isArray(patterns)) continue
-    const manifests = []
-    for (const pattern of patterns) {
-      if (typeof pattern !== 'string' || !pattern.startsWith('./')) {
-        throw new Error(
-          `unsupported contribution manifest path in ${packageRoot}: ${String(pattern)}`,
-        )
-      }
-      if (pattern.endsWith('/*.json')) {
-        const directory = join(packageRoot, pattern.slice(2, -'/*.json'.length))
-        if (!existsSync(directory)) continue
-        manifests.push(
-          ...readdirSync(directory)
-            .filter(name => name.endsWith('.json'))
-            .sort()
-            .map(name => join(directory, name)),
-        )
-      } else if (pattern.includes('*')) {
-        throw new Error(`unsupported contribution manifest glob in ${packageRoot}: ${pattern}`)
-      } else {
-        const manifest = join(packageRoot, pattern.slice(2))
-        if (existsSync(manifest)) manifests.push(manifest)
-      }
-    }
-    for (const manifestPath of manifests) {
-      const manifest = readJson(manifestPath)
-      if (typeof manifest.id !== 'string' || manifest.id.length === 0) continue
-      if (owners.has(manifest.id)) {
-        throw new Error(`duplicate contribution id in release inputs: ${manifest.id}`)
-      }
-      owners.set(manifest.id, slash(relative(repoRoot, packageRoot)))
-    }
-  }
-  return owners
-}
-
-function resolveProfileRoots(repoRoot, profile, packageIndex, owners) {
-  const roots = new Set()
-  for (const family of profile.extensionFamilies ?? []) {
-    if (READY_APP_EXTENSIONS[family] === undefined) {
-      throw new Error(`release profile ${profile.id} names unknown extension family ${family}`)
-    }
-    const location = extensionLocation(family)
-    if (location.kind === 'internal') {
-      roots.add(`extensions/${extensionDirectory(family).join('/')}`)
-    }
-  }
-  const externalPublishers = new Set(
-    (profile.extensionFamilies ?? [])
-      .map(family => extensionLocation(family))
-      .filter(location => location.kind === 'external')
-      .map(location => externalRepositoryDescriptor(location.repository).publisher),
-  )
-  for (const contributionId of profile.serviceProviders ?? []) {
-    const owner = owners.get(contributionId)
-    if (owner === undefined) {
-      if ([...externalPublishers].some(publisher => contributionId.startsWith(`${publisher}/`))) {
-        continue
-      }
-      throw new Error(`release profile ${profile.id} has no owner for ${contributionId}`)
-    }
-    roots.add(owner)
-  }
-  for (const root of roots) {
-    const metadata = readJson(join(repoRoot, root, 'package.json'))
-    if (!packageIndex.has(metadata.name))
-      throw new Error(`release extension is not indexed: ${root}`)
-  }
-  return [...roots].sort()
-}
-
-function externalProfileExtensions(profile) {
-  return (profile.extensionFamilies ?? [])
-    .map(family => ({ family, location: extensionLocation(family) }))
-    .filter(item => item.location.kind === 'external')
-    .map(({ family, location }) => {
-      const repository = externalRepositoryDescriptor(location.repository)
-      const extension = READY_APP_EXTENSIONS[family]
-      return {
-        coordinate: extension.coordinate,
-        environment: repository.environment,
-        family,
-        path: location.path.join('/'),
-        repository: location.repository,
-        sibling: repository.sibling,
-      }
-    })
-    .sort((left, right) => left.family.localeCompare(right.family, 'en'))
-}
-
 function releaseComposition(repoRoot) {
-  const profilesPath = join(repoRoot, 'migration', 'product-profiles.json')
+  const compositionPath = join(repoRoot, 'config', 'build-composition.json')
   const vscodeCatalogPath = join(repoRoot, 'apps', 'vscode', 'generated', 'bundled-catalog.json')
-  const profiles = readJson(profilesPath)
+  const configured = readJson(compositionPath)
   const vscodeCatalog = readJson(vscodeCatalogPath)
-  if (profiles.schemaVersion !== 'product-profiles-1' || !Array.isArray(profiles.presets)) {
-    throw new TypeError('release composition requires product-profiles-1')
+  if (configured.schemaVersion !== 1 || typeof configured.releaseSet !== 'string') {
+    throw new TypeError('release composition requires build composition v1')
   }
   if (vscodeCatalog.schemaVersion !== 1 || !Array.isArray(vscodeCatalog.roots)) {
     throw new TypeError('release composition requires the generated VS Code bundled catalog v1')
   }
-  const active = profiles.presets
-    .filter(profile => profile.introducedInClosure === 'mk3-ga' && profile.status === 'available')
-    .sort((left, right) => left.id.localeCompare(right.id, 'en'))
-  const activeIds = active.map(profile => profile.id)
-  if (JSON.stringify(activeIds) !== JSON.stringify(REQUIRED_PROFILE_IDS)) {
-    throw new Error(
-      `focused RC profile set drifted: expected ${REQUIRED_PROFILE_IDS.join(', ')}, found ${activeIds.join(', ')}`,
-    )
-  }
-  const byId = new Map(active.map(profile => [profile.id, profile]))
   const packageIndex = workspacePackageIndex(repoRoot)
-  const owners = contributionOwners(repoRoot, packageIndex)
-  const commonRoots = vscodeCatalog.roots.map(root => `extensions/${root.directory}`).sort()
-  const commonRootSet = new Set(commonRoots)
-  const gameProfiles = ['sc2-mod-studio', 'warzone-2100-studio'].map(id => {
-    const profile = byId.get(id)
-    if (profile === undefined) throw new Error(`required release profile is missing: ${id}`)
-    const roots = resolveProfileRoots(repoRoot, profile, packageIndex, owners).filter(
-      root => !commonRootSet.has(root),
-    )
-    return { id, roots, externalExtensions: externalProfileExtensions(profile) }
-  })
-  const selectedRoots = [...commonRoots, ...gameProfiles.flatMap(profile => profile.roots)]
-  for (const root of selectedRoots) {
-    if (DEFERRED_PATH_PREFIXES.some(prefix => `${root}/`.startsWith(prefix))) {
-      throw new Error(`deferred C&C or Spring extension entered the focused RC: ${root}`)
-    }
+  const releaseIds = configured.extensionSets?.[configured.releaseSet]
+  if (!Array.isArray(releaseIds)) {
+    throw new Error(`release set ${configured.releaseSet} is missing from build composition`)
   }
-  const deferredProfiles = profiles.presets
-    .filter(profile => profile.introducedInClosure === 'mk3-deferred-games')
-    .map(profile => profile.id)
+  const selectedIds = new Set(releaseIds)
+  const commonRoots = vscodeCatalog.roots
+    .filter(root => selectedIds.has(root.name))
+    .map(root => `extensions/${root.directory}`)
     .sort()
+  if (commonRoots.length !== selectedIds.size) {
+    throw new Error(`release set ${configured.releaseSet} is not fully represented in the catalog`)
+  }
   const applicationVersions = [
     ...new Set(
       APP_PACKAGE_PATHS.map(path => readJson(join(repoRoot, path, 'package.json')).version),
@@ -415,17 +287,15 @@ function releaseComposition(repoRoot) {
     )
   }
   return {
-    activeProfiles: activeIds,
+    activeProfiles: [configured.releaseSet],
     commonRoots,
-    gameProfiles,
-    deferredProfiles,
     packageIndex,
     releaseVersion: applicationVersions[0],
     catalogSources: [
       'apps/electron/generated/bundled-catalog.cjs',
       'apps/vscode/generated/bundled-catalog.json',
       'apps/web/generated/extension-catalog.js',
-      'migration/product-profiles.json',
+      'config/build-composition.json',
       'scripts/app-extension-sets.mjs',
       'scripts/bundle-hashes.json',
     ],
@@ -450,10 +320,7 @@ function commonArtifact(repoRoot, composition) {
 }
 
 function addWorkspaceRuntimePackages(repoRoot, entries, composition) {
-  const selectedExtensionRoots = new Set([
-    ...composition.commonRoots,
-    ...composition.gameProfiles.flatMap(profile => profile.roots),
-  ])
+  const selectedExtensionRoots = new Set(composition.commonRoots)
   const packageIndex = composition.packageIndex
   const pendingRoots = [
     ...selectedExtensionRoots,
@@ -538,7 +405,7 @@ function platformArtifact(repoRoot, composition) {
     'licenses/MIT.txt',
     'pnpm-lock.yaml',
     'pnpm-workspace.yaml',
-    'migration/product-profiles.json',
+    'config/build-composition.json',
     'scripts/app-extension-sets.mjs',
     'scripts/bundle-hashes.json',
   ]) {
@@ -553,9 +420,6 @@ function platformArtifact(repoRoot, composition) {
 
 function extensionCatalogEntry(repoRoot, root, existingCatalog) {
   const packageMetadata = readJson(join(repoRoot, root, 'package.json'))
-  const known = Object.entries(READY_APP_EXTENSIONS).find(
-    ([name, entry]) => `extensions/${(entry.path ?? ['common', name]).join('/')}` === root,
-  )?.[1]
   const catalog = existingCatalog?.get(root)
   const actualDigest = canonicalExtensionDigest(repoRoot, root)
   if (catalog !== undefined && catalog.digest !== actualDigest) {
@@ -565,8 +429,8 @@ function extensionCatalogEntry(repoRoot, root, existingCatalog) {
   }
   const coordinate = packageMetadata.modkit
     ? `${packageMetadata.modkit.publisher}/${packageMetadata.modkit.id}`
-    : (known?.coordinate ?? packageMetadata.name)
-  const contributions = [...(known?.contributions ?? [])].sort()
+    : packageMetadata.name
+  const contributions = [...(catalog?.contributions ?? [])].sort()
   if (
     catalog !== undefined &&
     (catalog.coordinate !== coordinate ||
@@ -1002,9 +866,8 @@ export function buildRc({ repoRoot, outDir, signingKeyPath } = {}) {
       catalogSources: catalogDigests(root, composition.catalogSources),
       closure: 'mk3-ga',
       commonExtensionRoots: composition.commonRoots,
-      deferredProfiles: composition.deferredProfiles,
-      gameExtensionFamilies: composition.gameProfiles,
-      source: 'migration/product-profiles.json',
+      externalExtensions: [],
+      source: 'config/build-composition.json',
     },
     licenseNotices: {
       file: 'LICENSE-NOTICES.txt',

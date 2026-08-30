@@ -18,6 +18,7 @@
     "check:legacy": "node scripts/check-legacy.mjs",
     "check:imports": "node scripts/check-app-imports.mjs",
     "check:extensions": "node scripts/check-extension-inventory.mjs",
+    "composition:check": "node scripts/check-external-composition.mjs",
     "licenses:check": "node scripts/check-license-policy.mjs",
     "convert:mk2": "node scripts/convert-mk2.mjs",
     "check:mk2": "node scripts/convert-mk2.mjs --check",
