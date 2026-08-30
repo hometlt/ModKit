@@ -9,14 +9,14 @@
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
-      "entrypoint": "./src/formats/ini/codec.js",
+      "entrypoint": "./src/ini/codec.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
       "requestedPermissionClasses": ["read-source"]
     },
     {
       "variantId": "portable",
-      "entrypoint": "./src/formats/ini/codec.js",
+      "entrypoint": "./src/ini/codec.js",
       "target": {
         "environments": ["browser-worker", "node-worker"]
       },

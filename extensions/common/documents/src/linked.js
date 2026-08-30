@@ -7,8 +7,8 @@ import odsManifest from '../contributions/codec-ods.json' with { type: 'json' }
 import odtManifest from '../contributions/codec-odt.json' with { type: 'json' }
 import rtfManifest from '../contributions/codec-rtf.json' with { type: 'json' }
 import packageJson from '../package.json' with { type: 'json' }
-import * as markdown from './formats/markdown/codec.js'
-import * as odg from './formats/odg/codec.js'
+import * as markdown from './markdown/codec.js'
+import * as odg from './odg/codec.js'
 import * as odp from './odp/codec.js'
 import * as ods from './ods/codec.js'
 import * as odt from './odt/codec.js'
@@ -26,8 +26,8 @@ export const documents = defineLinkedExtension({
     { path: 'contributions/codec-rtf.json', manifest: rtfManifest },
   ],
   modules: {
-    './src/formats/markdown/codec.js': markdown,
-    './src/formats/odg/codec.js': odg,
+    './src/markdown/codec.js': markdown,
+    './src/odg/codec.js': odg,
     './src/odp/codec.js': odp,
     './src/ods/codec.js': ods,
     './src/odt/codec.js': odt,

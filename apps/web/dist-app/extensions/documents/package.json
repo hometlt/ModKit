@@ -7,13 +7,13 @@
   "exports": {
     ".": "./src/index.js",
     "./linked": "./src/linked.js",
-    "./formats/markdown/codec": "./src/formats/markdown/codec.js",
-    "./formats/odg/codec": "./src/formats/odg/codec.js",
+    "./formats/markdown/codec": "./src/markdown/codec.js",
+    "./formats/odg/codec": "./src/odg/codec.js",
     "./odp/codec": "./src/odp/codec.js",
     "./ods/codec": "./src/ods/codec.js",
     "./odt/codec": "./src/odt/codec.js",
     "./rtf/codec": "./src/rtf/codec.js",
-    "./formats/*/codec": "./src/formats/*/codec.js",
+    "./formats/*/codec": "./src/*/codec.js",
     "./package.json": "./package.json"
   },
   "files": [

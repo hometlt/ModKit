@@ -5,8 +5,8 @@ import contractManifest from '../contributions/contract-xml-syntax.json' with { 
 import providerManifest from '../contributions/provider-xml-default.json' with { type: 'json' }
 import writerManifest from '../contributions/writer-xml.json' with { type: 'json' }
 import packageJson from '../package.json' with { type: 'json' }
-import * as codec from './formats/xml/codec.js'
-import * as provider from './formats/xml/provider.js'
+import * as codec from './xml/codec.js'
+import * as provider from './xml/provider.js'
 
 export const textXml = defineLinkedExtension({
   source: 'linked:extensions/common/data/text-xml',
@@ -18,7 +18,7 @@ export const textXml = defineLinkedExtension({
     { path: 'contributions/writer-xml.json', manifest: writerManifest },
   ],
   modules: {
-    './src/formats/xml/codec.js': codec,
-    './src/formats/xml/provider.js': provider,
+    './src/xml/codec.js': codec,
+    './src/xml/provider.js': provider,
   },
 })

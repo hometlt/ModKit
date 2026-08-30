@@ -20,7 +20,7 @@ import * as brotli from './brotli/codec.js'
 import * as bzip2 from './bzip2/codec.js'
 import * as cab from './cab/codec.js'
 import * as dmg from './dmg/codec.js'
-import * as zip from './formats/zip/codec.js'
+import * as zip from './zip/codec.js'
 import * as gzip from './gzip/codec.js'
 import * as iso from './iso/codec.js'
 import * as lzma from './lzma/codec.js'
@@ -55,7 +55,7 @@ export const archives = defineLinkedExtension({
     './src/bzip2/codec.js': bzip2,
     './src/cab/codec.js': cab,
     './src/dmg/codec.js': dmg,
-    './src/formats/zip/codec.js': zip,
+    './src/zip/codec.js': zip,
     './src/gzip/codec.js': gzip,
     './src/iso/codec.js': iso,
     './src/lzma/codec.js': lzma,

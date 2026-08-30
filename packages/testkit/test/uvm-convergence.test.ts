@@ -27,7 +27,7 @@ import { runMinimalHost } from '@modkitx-x3/testkit'
 const here = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(here, '..', '..', '..')
 const modelsDir = join(repoRoot, 'extensions', 'common', 'models')
-const uvmEntrypoint = join(modelsDir, 'src', 'formats', 'uvm', 'codec.js')
+const uvmEntrypoint = join(modelsDir, 'src', 'uvm', 'codec.js')
 const m3UvmFixture = join(here, 'fixtures', 'uvm', 'm3-native-triangle.uvm.glb.b64')
 
 const budget: ResourceBudget = {
@@ -391,7 +391,7 @@ describe('UVM convergence through A-2 inventory and A-3 sessions', () => {
     })
     expect(run.activation.variant).toMatchObject({
       variantId: 'trusted-node',
-      entrypoint: './src/formats/uvm/codec.js',
+      entrypoint: './src/uvm/codec.js',
       executionProfile: 'trusted-in-process',
     })
     expect(run.activation.effectiveGrant.classes).toEqual(['read-source'])
@@ -626,8 +626,8 @@ describe('UVM convergence through A-2 inventory and A-3 sessions', () => {
     const inputs = Object.keys(result.metafile?.inputs ?? {}).map(path =>
       path.replaceAll('\\', '/'),
     )
-    expect(inputs.some(path => path.includes('/formats/obj/'))).toBe(false)
-    expect(inputs.some(path => path.includes('/formats/gltf/'))).toBe(false)
-    expect(inputs).toContain('extensions/common/models/src/formats/uvm/codec.js')
+    expect(inputs.some(path => path.includes('/obj/'))).toBe(false)
+    expect(inputs.some(path => path.includes('/gltf/'))).toBe(false)
+    expect(inputs).toContain('extensions/common/models/src/uvm/codec.js')
   })
 })

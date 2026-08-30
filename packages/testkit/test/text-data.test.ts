@@ -85,14 +85,14 @@ const familyByFormat: Readonly<Partial<Record<string, string>>> = Object.freeze(
 function sourceEntrypoint(format: string, kind: 'codec' | 'provider'): string {
   const family = familyByFormat[format]
   return family === undefined
-    ? `src/formats/${format}/${kind}.js`
+    ? `src/${format}/${kind}.js`
     : `src/families/${family}/entrypoints/${format}-${kind}.js`
 }
 
 function sourceProfile(format: string): string {
   const family = familyByFormat[format]
   return family === undefined
-    ? `src/formats/${format}/definition.js`
+    ? `src/${format}/definition.js`
     : `src/families/${family}/profiles/${format}.js`
 }
 

@@ -33,7 +33,6 @@ const nativeModule = join(
   'common',
   'documents',
   'src',
-  'formats',
   'markdown',
   'codec.js',
 )

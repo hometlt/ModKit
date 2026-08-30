@@ -5,8 +5,8 @@ import contractManifest from '../contributions/contract-yaml-syntax.json' with {
 import providerManifest from '../contributions/provider-yaml-default.json' with { type: 'json' }
 import writerManifest from '../contributions/writer-yaml.json' with { type: 'json' }
 import packageJson from '../package.json' with { type: 'json' }
-import * as codec from './formats/yaml/codec.js'
-import * as provider from './formats/yaml/provider.js'
+import * as codec from './yaml/codec.js'
+import * as provider from './yaml/provider.js'
 
 export const textYaml = defineLinkedExtension({
   source: 'linked:extensions/common/data/text-yaml',
@@ -18,7 +18,7 @@ export const textYaml = defineLinkedExtension({
     { path: 'contributions/writer-yaml.json', manifest: writerManifest },
   ],
   modules: {
-    './src/formats/yaml/codec.js': codec,
-    './src/formats/yaml/provider.js': provider,
+    './src/yaml/codec.js': codec,
+    './src/yaml/provider.js': provider,
   },
 })

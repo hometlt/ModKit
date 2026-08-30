@@ -128,14 +128,14 @@ function inputFor(source: ArtifactByteSource): AssetInput {
 
 /**
  * Where a codec's module lives says what it is, and the MK2 port ratchet counts on it: a relocated
- * port keeps `src/<codec>/codec.js`, a codec authored for MK3 lives at `src/formats/<codec>/`.
+ * port keeps `src/<codec>/codec.js`, a codec authored for MK3 lives at `src/<codec>/`.
  * ODT, ODS and ODP moved in from staging; ODG was written here.
  */
 const MODULE_OF: Readonly<Record<Format, readonly string[]>> = {
   odt: ['src', 'odt', 'codec.js'],
   ods: ['src', 'ods', 'codec.js'],
   odp: ['src', 'odp', 'codec.js'],
-  odg: ['src', 'formats', 'odg', 'codec.js'],
+  odg: ['src', 'odg', 'codec.js'],
 }
 
 async function codecFor(format: Format): Promise<Codec> {

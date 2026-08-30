@@ -7,7 +7,7 @@
   "exports": {
     ".": "./src/index.js",
     "./linked": "./src/linked.js",
-    "./formats": "./src/formats/index.js",
+    "./formats": "./src/formats.js",
     "./formats/csv/codec": "./src/families/delimited/entrypoints/csv-codec.js",
     "./formats/csv/provider": "./src/families/delimited/entrypoints/csv-provider.js",
     "./formats/tsv/codec": "./src/families/delimited/entrypoints/tsv-codec.js",

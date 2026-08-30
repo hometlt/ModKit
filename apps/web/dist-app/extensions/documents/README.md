@@ -24,7 +24,7 @@ so it is deliberately unstyled and is not a rendering of the page. No writer is 
 repack and round-trip are unproved, so nothing here claims that an unknown package entry survives an
 edit.
 
-Where a module lives is meaningful. A codec relocated from the MK2 staging area keeps
-`src/<codec>/codec.js` and is counted by the MK2 port ratchet; a codec authored for MK3 lives at
-`src/formats/<codec>/codec.js` and is not, because it was never a port to lose. ODT, ODS and ODP
-came from `extensions/mk2/uncommon-documents`; Markdown, RTF and ODG were written here.
+Codec provenance is explicit rather than inferred from its source directory. The MK2 port ratchet
+reads `migration/codec-origins.json`, where MK3-authored codecs preserve their former paths while
+all runtime modules use the flat `src/<codec>/codec.js` layout. ODT, ODS and ODP came from
+`extensions/mk2/uncommon-documents`; Markdown, RTF and ODG were written here.

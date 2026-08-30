@@ -103,8 +103,8 @@ const CODECS = {
   w3d: 'extensions/ea/models/src/westwood-w3d/codec.js',
   w3x: 'extensions/ea/models/src/sage-w3x/codec.js',
   vxl: 'extensions/ea/tiberian-sun/src/red-alert2-vxl/codec.js',
-  obj: 'extensions/common/models/src/formats/obj/codec.js',
-  uvm: 'extensions/common/models/src/formats/uvm/codec.js',
+  obj: 'extensions/common/models/src/obj/codec.js',
+  uvm: 'extensions/common/models/src/uvm/codec.js',
 } as const
 
 async function openCodec(

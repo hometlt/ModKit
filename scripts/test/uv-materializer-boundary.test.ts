@@ -25,9 +25,9 @@ const repoRoot = resolve(import.meta.dirname, '..', '..')
 /** Every entrypoint that reads a native model and publishes a live projection. */
 const MODEL_CODECS = [
   join(externalRepositoryRoot(repoRoot, 'blizzard'), 'models', 'src', 'm3', 'codec.js'),
-  'extensions/common/models/src/formats/gltf/codec.js',
-  'extensions/common/models/src/formats/obj/codec.js',
-  'extensions/common/models/src/formats/uvm/codec.js',
+  'extensions/common/models/src/gltf/codec.js',
+  'extensions/common/models/src/obj/codec.js',
+  'extensions/common/models/src/uvm/codec.js',
   'extensions/common/models/src/dae/codec.js',
   'extensions/common/models/src/ply/codec.js',
   'extensions/common/models/src/stl/codec.js',
@@ -40,7 +40,7 @@ const MODEL_CODECS = [
 const IMAGE_CODECS = [
   'extensions/common/images/src/bmp/codec.js',
   'extensions/common/images/src/tga/codec.js',
-  'extensions/common/images/src/formats/png/codec.js',
+  'extensions/common/images/src/png/codec.js',
   'extensions/common/images/src/dds/codec.js',
   'extensions/common/images/src/ktx2/codec.js',
 ]

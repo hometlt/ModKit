@@ -7,9 +7,9 @@
   "exports": {
     ".": "./src/index.js",
     "./linked": "./src/linked.js",
-    "./formats": "./src/formats/index.js",
-    "./formats/yaml/codec": "./src/formats/yaml/codec.js",
-    "./formats/yaml/provider": "./src/formats/yaml/provider.js",
+    "./formats": "./src/formats.js",
+    "./formats/yaml/codec": "./src/yaml/codec.js",
+    "./formats/yaml/provider": "./src/yaml/provider.js",
     "./package.json": "./package.json"
   },
   "files": [

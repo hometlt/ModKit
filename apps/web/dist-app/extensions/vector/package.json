@@ -7,8 +7,8 @@
   "exports": {
     ".": "./src/index.js",
     "./linked": "./src/linked.js",
-    "./formats/svg/codec": "./src/formats/svg/codec.js",
-    "./formats/*/codec": "./src/formats/*/codec.js",
+    "./formats/svg/codec": "./src/svg/codec.js",
+    "./formats/*/codec": "./src/*/codec.js",
     "./package.json": "./package.json"
   },
   "files": [

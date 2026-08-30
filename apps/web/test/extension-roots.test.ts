@@ -692,7 +692,7 @@ describe('user extension folders — the whole path', () => {
     const loaded = await load([request('root-images', directoryHandle('images', files))])
 
     // the user (or something else) edits the codec after the page hashed the folder
-    const codecPath = 'src/formats/png/codec.js'
+    const codecPath = 'src/png/codec.js'
     const original = files.get(codecPath)
     if (original === undefined) throw new Error('fixture moved')
     files.set(codecPath, encoder.encode(`${decoder.decode(original)}\n// edited\n`))
@@ -717,7 +717,7 @@ describe('user extension folders — the whole path', () => {
 
   it('a bare specifier outside the host module map is refused with the specifier named', async () => {
     const files = treeFromDisk(imagesRoot)
-    const codecPath = 'src/formats/png/codec.js'
+    const codecPath = 'src/png/codec.js'
     const original = files.get(codecPath)
     if (original === undefined) throw new Error('fixture moved')
     /*

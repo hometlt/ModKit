@@ -5,8 +5,8 @@ import contractManifest from '../contributions/contract-ini-syntax.json' with { 
 import providerManifest from '../contributions/provider-ini-default.json' with { type: 'json' }
 import writerManifest from '../contributions/writer-ini.json' with { type: 'json' }
 import packageJson from '../package.json' with { type: 'json' }
-import * as codec from './formats/ini/codec.js'
-import * as provider from './formats/ini/provider.js'
+import * as codec from './ini/codec.js'
+import * as provider from './ini/provider.js'
 
 export const textIni = defineLinkedExtension({
   source: 'linked:extensions/common/data/text-ini',
@@ -18,7 +18,7 @@ export const textIni = defineLinkedExtension({
     { path: 'contributions/writer-ini.json', manifest: writerManifest },
   ],
   modules: {
-    './src/formats/ini/codec.js': codec,
-    './src/formats/ini/provider.js': provider,
+    './src/ini/codec.js': codec,
+    './src/ini/provider.js': provider,
   },
 })

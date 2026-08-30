@@ -7,9 +7,9 @@
   "exports": {
     ".": "./src/index.js",
     "./linked": "./src/linked.js",
-    "./formats": "./src/formats/index.js",
-    "./formats/ini/codec": "./src/formats/ini/codec.js",
-    "./formats/ini/provider": "./src/formats/ini/provider.js",
+    "./formats": "./src/formats.js",
+    "./formats/ini/codec": "./src/ini/codec.js",
+    "./formats/ini/provider": "./src/ini/provider.js",
     "./package.json": "./package.json"
   },
   "files": [

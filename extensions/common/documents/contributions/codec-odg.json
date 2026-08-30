@@ -10,7 +10,7 @@
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
-      "entrypoint": "./src/formats/odg/codec.js",
+      "entrypoint": "./src/odg/codec.js",
       "target": {
         "environments": ["node"]
       },
@@ -19,7 +19,7 @@
     },
     {
       "variantId": "portable",
-      "entrypoint": "./src/formats/odg/codec.js",
+      "entrypoint": "./src/odg/codec.js",
       "target": {
         "environments": ["browser-worker", "node-worker"]
       },

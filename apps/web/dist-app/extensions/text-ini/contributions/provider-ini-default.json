@@ -9,14 +9,14 @@
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
-      "entrypoint": "./src/formats/ini/provider.js",
+      "entrypoint": "./src/ini/provider.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
       "requestedPermissionClasses": []
     },
     {
       "variantId": "portable",
-      "entrypoint": "./src/formats/ini/provider.js",
+      "entrypoint": "./src/ini/provider.js",
       "target": {
         "environments": ["browser-worker", "node-worker"]
       },

@@ -260,17 +260,17 @@ const samples = Object.freeze({
 })
 
 const entrypoints = Object.freeze({
-  zip: 'src/formats/zip/codec.js',
-  mp3: 'src/formats/mp3/codec.js',
-  ogg: 'src/formats/ogg/codec.js',
-  png: 'src/formats/png/codec.js',
-  jpeg: 'src/formats/jpeg/codec.js',
-  svg: 'src/formats/svg/codec.js',
-  obj: 'src/formats/obj/codec.js',
-  gltf: 'src/formats/gltf/codec.js',
-  mp4: 'src/formats/mp4/codec.js',
-  webm: 'src/formats/webm/codec.js',
-  markdown: 'src/formats/markdown/codec.js',
+  zip: 'src/zip/codec.js',
+  mp3: 'src/mp3/codec.js',
+  ogg: 'src/ogg/codec.js',
+  png: 'src/png/codec.js',
+  jpeg: 'src/jpeg/codec.js',
+  svg: 'src/svg/codec.js',
+  obj: 'src/obj/codec.js',
+  gltf: 'src/gltf/codec.js',
+  mp4: 'src/mp4/codec.js',
+  webm: 'src/webm/codec.js',
+  markdown: 'src/markdown/codec.js',
   // slice 12-2 relocated the RTF port to the counted path when it retired the staging route
   rtf: 'src/rtf/codec.js',
 })

@@ -9,7 +9,7 @@
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
-      "entrypoint": "./src/formats/zip/codec.js",
+      "entrypoint": "./src/zip/codec.js",
       "target": {
         "environments": ["node"]
       },
@@ -18,7 +18,7 @@
     },
     {
       "variantId": "portable",
-      "entrypoint": "./src/formats/zip/codec.js",
+      "entrypoint": "./src/zip/codec.js",
       "target": {
         "environments": ["browser-worker", "node-worker"]
       },

@@ -8,8 +8,8 @@ import webmManifest from '../contributions/codec-webm.json' with { type: 'json' 
 import wmvManifest from '../contributions/codec-wmv.json' with { type: 'json' }
 import packageJson from '../package.json' with { type: 'json' }
 import * as avi from './avi/codec.js'
-import * as mp4 from './formats/mp4/codec.js'
-import * as webm from './formats/webm/codec.js'
+import * as mp4 from './mp4/codec.js'
+import * as webm from './webm/codec.js'
 import * as mpeg from './mpeg/codec.js'
 import * as ogv from './ogv/codec.js'
 import * as wmv from './wmv/codec.js'
@@ -27,8 +27,8 @@ export const video = defineLinkedExtension({
   ],
   modules: {
     './src/avi/codec.js': avi,
-    './src/formats/mp4/codec.js': mp4,
-    './src/formats/webm/codec.js': webm,
+    './src/mp4/codec.js': mp4,
+    './src/webm/codec.js': webm,
     './src/mpeg/codec.js': mpeg,
     './src/ogv/codec.js': ogv,
     './src/wmv/codec.js': wmv,

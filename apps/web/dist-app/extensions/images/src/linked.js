@@ -32,8 +32,8 @@ import * as bmp from './bmp/codec.js'
 import * as cur from './cur/codec.js'
 import * as dds from './dds/codec.js'
 import * as exr from './exr/codec.js'
-import * as jpeg from './formats/jpeg/codec.js'
-import * as png from './formats/png/codec.js'
+import * as jpeg from './jpeg/codec.js'
+import * as png from './png/codec.js'
 import * as gif from './gif/codec.js'
 import * as hdr from './hdr/codec.js'
 import * as ico from './ico/codec.js'
@@ -85,8 +85,8 @@ export const images = defineLinkedExtension({
     './src/cur/codec.js': cur,
     './src/dds/codec.js': dds,
     './src/exr/codec.js': exr,
-    './src/formats/jpeg/codec.js': jpeg,
-    './src/formats/png/codec.js': png,
+    './src/jpeg/codec.js': jpeg,
+    './src/png/codec.js': png,
     './src/gif/codec.js': gif,
     './src/hdr/codec.js': hdr,
     './src/ico/codec.js': ico,

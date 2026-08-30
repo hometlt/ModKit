@@ -7,9 +7,9 @@
   "exports": {
     ".": "./src/index.js",
     "./linked": "./src/linked.js",
-    "./formats/mp4/codec": "./src/formats/mp4/codec.js",
-    "./formats/webm/codec": "./src/formats/webm/codec.js",
-    "./formats/*/codec": "./src/formats/*/codec.js",
+    "./formats/mp4/codec": "./src/mp4/codec.js",
+    "./formats/webm/codec": "./src/webm/codec.js",
+    "./formats/*/codec": "./src/*/codec.js",
     "./package.json": "./package.json"
   },
   "files": [

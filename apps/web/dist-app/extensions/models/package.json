@@ -7,9 +7,9 @@
   "exports": {
     ".": "./src/index.js",
     "./linked": "./src/linked.js",
-    "./formats/obj/codec": "./src/formats/obj/codec.js",
-    "./formats/gltf/codec": "./src/formats/gltf/codec.js",
-    "./formats/*/codec": "./src/formats/*/codec.js",
+    "./formats/obj/codec": "./src/obj/codec.js",
+    "./formats/gltf/codec": "./src/gltf/codec.js",
+    "./formats/*/codec": "./src/*/codec.js",
     "./package.json": "./package.json"
   },
   "files": [

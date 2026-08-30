@@ -26,7 +26,7 @@
         "org.modkitx/xz",
         "org.modkitx/zstd"
       ],
-      "digest": "sha256:4c6179fa1312497fcd336e7f665a445d0284c22c74a3e18b9ead6c2e32680420"
+      "digest": "sha256:f2d4a21ba9468c7828eaee1663ad8532c338aad5958c3e0fe20b47f38079efa6"
     },
     {
       "name": "audio",
@@ -41,7 +41,7 @@
         "org.modkitx/m4a",
         "org.modkitx/wav"
       ],
-      "digest": "sha256:b10cd5dfa723bf901ccc5be74a388d7b2f43e6dbdbf3dbe517cdbae7c9527db5"
+      "digest": "sha256:d1ddae73f90fcb0b51cee5985e4f92855a9f9bc68dac28c9f65bf16315f5cdab"
     },
     {
       "name": "plain-text",
@@ -65,7 +65,7 @@
         "org.modkitx/tsv-syntax-contract",
         "org.modkitx/tsv-syntax-default"
       ],
-      "digest": "sha256:34007b2288074d9b43b3e9db1552fc5656baa8962afdaa335bd620ae7d06e384"
+      "digest": "sha256:cc9995bfcfe7a1873ac8d20c47bcd28780257fe42b794ef2d3e9687474c10dfb"
     },
     {
       "name": "text-ini",
@@ -78,7 +78,7 @@
         "org.modkitx/text-ini",
         "org.modkitx/text-ini-writer"
       ],
-      "digest": "sha256:0674985c9dca6293d5b0a9e7128e6f66f3137803528f9a0acab0b0f389dffe33"
+      "digest": "sha256:8ac6ede610fa4c7d86a9cd1eb664cfef413836fc11f2f7be61ee75436fbcb0af"
     },
     {
       "name": "text-json",
@@ -94,7 +94,7 @@
         "org.modkitx/text-json-writer",
         "org.modkitx/text-jsonc"
       ],
-      "digest": "sha256:4cef3e1df6ff174a29705620ce488a96f05d715d791c63148bc2759d7d8cd4f0"
+      "digest": "sha256:62cdbd55f44b3ec61bec337be66606b261abffa9bdbbd8d15875e5853087532f"
     },
     {
       "name": "text-toml",
@@ -107,7 +107,7 @@
         "org.modkitx/toml-syntax-contract",
         "org.modkitx/toml-syntax-default"
       ],
-      "digest": "sha256:55095a3fc4f3c72d9fdca5395a0d3c6123f91fdbb7488d0b477ddebd9bb55d8c"
+      "digest": "sha256:6838ecb3a924d444d264bb6688bdee98f633f3f680aad42d85c86dfdc3a25e03"
     },
     {
       "name": "text-xml",
@@ -120,7 +120,7 @@
         "org.modkitx/xml-syntax-contract",
         "org.modkitx/xml-syntax-default"
       ],
-      "digest": "sha256:dbd2a8597b7f1ecd8ae36f4347e08af073e443c036cb837829fb16291e08076f"
+      "digest": "sha256:9d2495975076fcf0a7c8b7d3e70908d9b7852e775674adb63e1b34e452a7d4fb"
     },
     {
       "name": "text-yaml",
@@ -133,7 +133,7 @@
         "org.modkitx/yaml-syntax-contract",
         "org.modkitx/yaml-syntax-default"
       ],
-      "digest": "sha256:23b3c3a92c8bc252f353405f3c93fe24bc61d7c0a6d66a84b32a87caf7bcebf8"
+      "digest": "sha256:4e053aee7a7ef5896d4c607c42fd242f834005afc573a35dec2ebdc7ae1a7c65"
     },
     {
       "name": "documents",
@@ -148,7 +148,7 @@
         "org.modkitx/ods",
         "org.modkitx/odt"
       ],
-      "digest": "sha256:9cec2312db6904fbe6f5f0009e818db44d9868c4a8f8781ca61cc4c3be9b5303"
+      "digest": "sha256:c73afd8d299a711b465cc74ebacaae1e20cfb3f38bfa1835a2e21cc00b760b8e"
     },
     {
       "name": "images",
@@ -180,7 +180,7 @@
         "org.modkitx/tiff",
         "org.modkitx/webp"
       ],
-      "digest": "sha256:a343cab85187b5836a3e2e680109851ebe39618ddae1a214d19b6c58d2c68ed0"
+      "digest": "sha256:fc059d3e64c7569f801f3a19b28c1b797a38b13d9f3c87846c4ebbb764e8aaf1"
     },
     {
       "name": "models",
@@ -195,7 +195,7 @@
         "org.modkitx/ply",
         "org.modkitx/stl"
       ],
-      "digest": "sha256:147d474f3120917ec2154881d12af81b7f0302777af8ec21c2cc149d3ac486f7"
+      "digest": "sha256:1f440ed060165fe5309ff23937060d05a265753669ec5ca81a97c1ecdb4419b0"
     },
     {
       "name": "rendering-3d",
@@ -234,7 +234,7 @@
       "declared": true,
       "coordinate": "org.modkitx/vector",
       "contributions": ["org.modkitx/emf", "org.modkitx/vector-svg", "org.modkitx/wmf"],
-      "digest": "sha256:ee6f528df432fdce40f4e0eb0dc781cc26f1ccf7d0110aaf7244e1d799bba865"
+      "digest": "sha256:cbf58d572426b37728b0f00f4e71847323c98b1712d9e24a12611560b34cb024"
     },
     {
       "name": "video",
@@ -249,7 +249,7 @@
         "org.modkitx/video-webm",
         "org.modkitx/wmv"
       ],
-      "digest": "sha256:de7c8b4a93ff80eaa9c73e6932863461120037efc8954dcb652782092d7fce31"
+      "digest": "sha256:8572b81e40cf60a6f34dafccb6dc1cbe3a616c28665ab7670a346c379ffce81c"
     },
     {
       "name": "ps1",

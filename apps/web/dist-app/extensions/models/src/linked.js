@@ -8,9 +8,9 @@ import stlManifest from '../contributions/codec-stl.json' with { type: 'json' }
 import uvmManifest from '../contributions/codec-uvm.json' with { type: 'json' }
 import packageJson from '../package.json' with { type: 'json' }
 import * as dae from './dae/codec.js'
-import * as gltf from './formats/gltf/codec.js'
-import * as obj from './formats/obj/codec.js'
-import * as uvm from './formats/uvm/codec.js'
+import * as gltf from './gltf/codec.js'
+import * as obj from './obj/codec.js'
+import * as uvm from './uvm/codec.js'
 import * as ply from './ply/codec.js'
 import * as stl from './stl/codec.js'
 
@@ -27,9 +27,9 @@ export const models = defineLinkedExtension({
   ],
   modules: {
     './src/dae/codec.js': dae,
-    './src/formats/gltf/codec.js': gltf,
-    './src/formats/obj/codec.js': obj,
-    './src/formats/uvm/codec.js': uvm,
+    './src/gltf/codec.js': gltf,
+    './src/obj/codec.js': obj,
+    './src/uvm/codec.js': uvm,
     './src/ply/codec.js': ply,
     './src/stl/codec.js': stl,
   },

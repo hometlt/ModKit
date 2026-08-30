@@ -9,14 +9,14 @@
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
-      "entrypoint": "./src/formats/yaml/provider.js",
+      "entrypoint": "./src/yaml/provider.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
       "requestedPermissionClasses": []
     },
     {
       "variantId": "portable",
-      "entrypoint": "./src/formats/yaml/provider.js",
+      "entrypoint": "./src/yaml/provider.js",
       "target": {
         "environments": ["browser-worker", "node-worker"]
       },

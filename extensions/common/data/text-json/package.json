@@ -7,7 +7,7 @@
   "exports": {
     ".": "./src/index.js",
     "./linked": "./src/linked.js",
-    "./formats": "./src/formats/index.js",
+    "./formats": "./src/formats.js",
     "./formats/json/codec": "./src/families/json/entrypoints/json-codec.js",
     "./formats/json/provider": "./src/families/json/entrypoints/json-provider.js",
     "./formats/jsonc/codec": "./src/families/json/entrypoints/jsonc-codec.js",

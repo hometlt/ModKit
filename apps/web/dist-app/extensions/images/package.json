@@ -7,9 +7,9 @@
   "exports": {
     ".": "./src/index.js",
     "./linked": "./src/linked.js",
-    "./formats/png/codec": "./src/formats/png/codec.js",
-    "./formats/jpeg/codec": "./src/formats/jpeg/codec.js",
-    "./formats/*/codec": "./src/formats/*/codec.js",
+    "./formats/png/codec": "./src/png/codec.js",
+    "./formats/jpeg/codec": "./src/jpeg/codec.js",
+    "./formats/*/codec": "./src/*/codec.js",
     "./writers/png-encoder": "./src/writers/png-encoder.js",
     "./package.json": "./package.json"
   },
