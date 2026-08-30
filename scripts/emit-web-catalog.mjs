@@ -59,12 +59,20 @@ function sortKeys(value) {
   return value
 }
 
-/** Codec extensions under extensions/common, split into vendored (catalogued) and excluded. */
+/** Product codec extensions, split into vendored (catalogued) and excluded. */
 export function selectWebExtensions(root) {
-  const commonRoot = join(root, 'extensions', 'common')
+  const extensionsRoot = join(root, 'extensions')
+  const roots = authoredExtensionRootsRelativeTo(join(extensionsRoot, 'common')).map(entry => ({
+    ...entry,
+    relativePath: `common/${entry.relativePath}`,
+  }))
+  const ps1Root = join(extensionsRoot, 'ps1')
+  if (existsSync(join(ps1Root, 'package.json'))) {
+    roots.push({ directory: ps1Root, relativePath: 'ps1' })
+  }
   const included = []
   const excluded = []
-  for (const { directory: dir, relativePath } of authoredExtensionRootsRelativeTo(commonRoot)) {
+  for (const { directory: dir, relativePath } of roots) {
     const packagePath = join(dir, 'package.json')
     if (!existsSync(packagePath)) continue
     const pkg = json(packagePath)
@@ -116,7 +124,7 @@ async function buildCatalog(root) {
     const input = await loadExtensionDirectory(directory)
     extensions.push({
       name,
-      source: `extensions/common/${relativePath}`,
+      source: `extensions/${relativePath}`,
       artifactRoot: `extensions/${name}/`,
       containers: input.containers,
       files: input.files,

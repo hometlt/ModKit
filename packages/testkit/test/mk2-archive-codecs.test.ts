@@ -14,6 +14,7 @@ import {
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const archiveRoot = join(repoRoot, 'extensions', 'common', 'archives')
+const ps1Root = join(repoRoot, 'extensions', 'ps1')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 
 const cases = Object.freeze([
@@ -98,7 +99,14 @@ function inputFor(source: ArtifactByteSource): AssetInput {
 
 async function codecFor(testCase: Case): Promise<Codec> {
   const module = (await import(
-    pathToFileURL(join(archiveRoot, 'src', testCase.format, 'codec.js')).href
+    pathToFileURL(
+      join(
+        testCase.format === 'ps1-xa' ? ps1Root : archiveRoot,
+        'src',
+        testCase.format,
+        'codec.js',
+      ),
+    ).href
   )) as { createCodec(context: ContributionContext): Codec }
   return module.createCodec(context)
 }

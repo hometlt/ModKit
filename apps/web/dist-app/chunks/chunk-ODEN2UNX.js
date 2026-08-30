@@ -20,9 +20,9 @@ import {
   uint64,
   uniqueSortedUtf8,
   versionRangeTargetsMajor
-} from "./chunk-BKHLBCDQ.js";
+} from "./chunk-GZ3IOGQJ.js";
 
-// packages/sdk/dist/schemas/patterns.js
+// packages/sdk/dist/index.js
 var DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
 var NAMESPACED_DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
 var OPERATION_PATTERN = "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$";
@@ -39,8 +39,6 @@ var RANGE_ATOM = `(?:${RANGE_EXACT}|${RANGE_WILDCARD}|${RANGE_CARET}|${RANGE_COM
 var VERSION_RANGE_PATTERN = `^(?:\\*|x|${RANGE_ATOM}(?: ${RANGE_ATOM})*)$`;
 var RELATIVE_ENTRYPOINT_PATTERN = "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$";
 var METHOD_NAME_PATTERN = "^[a-z][a-zA-Z0-9]{0,63}$";
-
-// packages/sdk/dist/schemas/extension-manifest.js
 var REQUIREMENT_SCOPE_KINDS = Object.freeze([
   "contribution",
   "offer",
@@ -111,8 +109,6 @@ deepFreeze(requirementScopeSchema);
 deepFreeze(extensionRequirementSchema);
 deepFreeze(extensionManifestSchema);
 deepFreeze(modkitBlockSchema);
-
-// packages/sdk/dist/schemas/contribution-manifest.js
 var EXECUTION_PROFILES = Object.freeze([
   "browser-sandbox",
   "worker-brokered",
@@ -230,8 +226,6 @@ deepFreeze(runtimeTargetConstraintSchema);
 deepFreeze(runtimeVariantDeclarationSchema);
 deepFreeze(scopedContractRequirementSchema);
 deepFreeze(contributionManifestSchema);
-
-// packages/sdk/dist/asset-capabilities/data-source-ids.js
 var STANDARD_DATA_SOURCE_CONTRACTS = Object.freeze([
   "common.view/text-data-source",
   "common.view/byte-range-source",
@@ -283,12 +277,14 @@ var DATA_SOURCE_MATURITY = Object.freeze({
   "common.view/subject-calculations-source": "admitted",
   "common.view/slide-deck-source": "publisher-candidate"
 });
-var ADMITTED_DATA_SOURCE_CONTRACTS = Object.freeze(STANDARD_DATA_SOURCE_CONTRACTS.filter((contract) => DATA_SOURCE_MATURITY[contract] === "admitted"));
+var ADMITTED_DATA_SOURCE_CONTRACTS = Object.freeze(
+  STANDARD_DATA_SOURCE_CONTRACTS.filter(
+    (contract) => DATA_SOURCE_MATURITY[contract] === "admitted"
+  )
+);
 function dataSourceMaturity(contract) {
   return STANDARD_DATA_SOURCE_CONTRACTS.includes(contract) ? DATA_SOURCE_MATURITY[contract] : void 0;
 }
-
-// packages/sdk/dist/knowledge/index.js
 var KNOWLEDGE_LOCALE_PATTERN = "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$";
 var knowledgeLocalePattern = new RegExp(KNOWLEDGE_LOCALE_PATTERN, "u");
 var isKnowledgeLocaleTag = (value2) => typeof value2 === "string" && value2.length <= 64 && knowledgeLocalePattern.test(value2);
@@ -300,14 +296,12 @@ var hasOnlyKeys = (value2, allowed) => {
   return Object.keys(value2).every((key2) => accepted.has(key2));
 };
 var isKnowledgeSchemaCoordinate = (value2) => {
-  if (!isRecord(value2) || !hasOnlyKeys(value2, ["contract", "major", "revision"]))
-    return false;
+  if (!isRecord(value2) || !hasOnlyKeys(value2, ["contract", "major", "revision"])) return false;
   return isBoundedString(value2["contract"], 256) && isQualifiedId(value2["contract"]) && typeof value2["major"] === "number" && Number.isSafeInteger(value2["major"]) && value2["major"] >= 0 && isBoundedString(value2["revision"], 256);
 };
 function isKnowledgeTarget(value2) {
   try {
-    if (!isRecord(value2) || !isBoundedString(value2["ecosystem"], 128))
-      return false;
+    if (!isRecord(value2) || !isBoundedString(value2["ecosystem"], 128)) return false;
     switch (value2["kind"]) {
       case "field":
         return hasOnlyKeys(value2, ["kind", "ecosystem", "schema", "typeId", "canonicalPath"]) && isKnowledgeSchemaCoordinate(value2["schema"]) && isBoundedString(value2["typeId"], 128) && Array.isArray(value2["canonicalPath"]) && value2["canonicalPath"].length >= 1 && value2["canonicalPath"].length <= 32 && value2["canonicalPath"].every((item) => isBoundedString(item, 128));
@@ -330,36 +324,31 @@ function knowledgeLocaleFallbacks(requested, userFallbacks, sourceLocale) {
   const candidates = [];
   const append = (locale) => {
     const trimmed = locale.trim();
-    if (trimmed === "")
-      return;
+    if (trimmed === "") return;
     const subtags = trimmed.split("-");
     while (subtags.length > 0) {
       candidates.push(subtags.join("-"));
       subtags.pop();
-      if (subtags.length > 1 && subtags[subtags.length - 1]?.length === 1)
-        subtags.pop();
+      if (subtags.length > 1 && subtags[subtags.length - 1]?.length === 1) subtags.pop();
     }
   };
   append(requested);
-  for (const locale of userFallbacks)
-    append(locale);
+  for (const locale of userFallbacks) append(locale);
   append(sourceLocale);
   const seen = /* @__PURE__ */ new Set();
-  return Object.freeze(candidates.filter((locale) => {
-    const key2 = localeKey(locale);
-    if (seen.has(key2))
-      return false;
-    seen.add(key2);
-    return true;
-  }));
+  return Object.freeze(
+    candidates.filter((locale) => {
+      const key2 = localeKey(locale);
+      if (seen.has(key2)) return false;
+      seen.add(key2);
+      return true;
+    })
+  );
 }
 function knowledgeTargetKey(target) {
-  if (!isKnowledgeTarget(target))
-    throw new TypeError("knowledge target is malformed or unbounded");
+  if (!isKnowledgeTarget(target)) throw new TypeError("knowledge target is malformed or unbounded");
   return canonicalJsonStringify(target);
 }
-
-// packages/sdk/dist/schemas/contribution-specs.js
 var nonEmptyString = { type: "string", minLength: 1 };
 var qualifiedId = { type: "string", pattern: QUALIFIED_PATTERN };
 var namespacedDottedId = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN };
@@ -1358,8 +1347,6 @@ deepFreeze(dataSourceMethodSurfaceV1Schema);
 deepFreeze(dataSourceSurfaceV1Schema);
 deepFreeze(dataSourceContractDefinitionSpecV1Schema);
 deepFreeze(contractDefinitionSpecV1Schema);
-
-// packages/sdk/dist/editing.js
 var WRITER_CONTRACT_ID = "common.edit/writer";
 var WRITER_FACET_MATCHER_PROFILE = "org.modkitx/writer-facet-matcher";
 var writerSurface = {
@@ -1383,15 +1370,11 @@ function writerOfferSatisfies(request, offer) {
 function writerSelectionKey(request) {
   return `writer:${request.formatId}:${request.representationId}:${request.mutationMode}:${request.minimumRoundTrip}`;
 }
-
-// packages/sdk/dist/manifest/operation-permissions.js
 function operationScopedPermissionClasses(operations) {
   const out = /* @__PURE__ */ new Set();
   for (const operation of operations ?? []) {
-    for (const item of operation.requiredPermissions ?? [])
-      out.add(item);
-    if (operation.mutatesSource === true)
-      out.add("write-source");
+    for (const item of operation.requiredPermissions ?? []) out.add(item);
+    if (operation.mutatesSource === true) out.add("write-source");
   }
   out.delete("read-source");
   return out;
@@ -1400,8 +1383,6 @@ function activationRequiredPermissionClasses(requested, operations) {
   const scoped = operationScopedPermissionClasses(operations);
   return Object.freeze(requested.filter((item) => !scoped.has(item)));
 }
-
-// packages/sdk/dist/subjects/refs.js
 var REVISION_KINDS = Object.freeze([
   "content-hash",
   "git-object",
@@ -1419,16 +1400,14 @@ function serializeRevisionRef(ref) {
   if (!REVISION_KINDS.includes(ref.kind)) {
     throw new TypeError(`invalid revision kind: ${String(ref.kind)}`);
   }
-  if (ref.value.length === 0)
-    throw new TypeError("revision value must be non-empty");
+  if (ref.value.length === 0) throw new TypeError("revision value must be non-empty");
   if (ref.algorithm !== void 0 && !new RegExp(`^${REVISION_ALGORITHM_PATTERN}$`).test(ref.algorithm)) {
     throw new TypeError(`invalid revision algorithm: ${ref.algorithm}`);
   }
   return `${ref.kind}${ref.algorithm === void 0 ? "" : `.${ref.algorithm}`}:${encodeURIComponent(ref.value)}`;
 }
 function parseRevisionRef(value2) {
-  if (!REVISION_ID.test(value2))
-    return void 0;
+  if (!REVISION_ID.test(value2)) return void 0;
   const colon = value2.indexOf(":");
   const coordinate = value2.slice(0, colon);
   const dot = coordinate.indexOf(".");
@@ -1437,8 +1416,7 @@ function parseRevisionRef(value2) {
   const encoded = value2.slice(colon + 1);
   try {
     const decoded = decodeURIComponent(encoded);
-    if (decoded.length === 0 || encodeURIComponent(decoded) !== encoded)
-      return void 0;
+    if (decoded.length === 0 || encodeURIComponent(decoded) !== encoded) return void 0;
     return Object.freeze({
       kind,
       value: decoded,
@@ -1459,8 +1437,7 @@ function assertSubjectIdentity(identity) {
   if (typeof identity.kind !== "string" || typeof identity.key !== "string") {
     throw new TypeError("subject identity kind and key must be strings");
   }
-  if (identity.kind === "" && identity.key === "")
-    return;
+  if (identity.kind === "" && identity.key === "") return;
   if (!isQualifiedId(identity.kind)) {
     throw new TypeError(`nested subject kind must be a qualified id: ${identity.kind}`);
   }
@@ -1490,8 +1467,7 @@ function sourceIdChain(source) {
   return chain.reverse();
 }
 function sourceFromIdChain(chain) {
-  if (chain.length === 0)
-    throw new TypeError("subject source chain must be non-empty");
+  if (chain.length === 0) throw new TypeError("subject source chain must be non-empty");
   let source;
   for (const id of chain) {
     if (typeof id !== "string" || id.length === 0) {
@@ -1514,14 +1490,15 @@ function serializeSubjectRef(ref) {
     ];
     return `${EXTENDED_SUBJECT_PREFIX}${encodeURIComponent(JSON.stringify(payload))}`;
   }
-  if (ref.identity.key === "" && ref.identity.kind === "")
-    return ref.source.id;
+  if (ref.identity.key === "" && ref.identity.kind === "") return ref.source.id;
   return `${ref.source.id}#${encodeURIComponent(ref.identity.kind)}/${encodeURIComponent(ref.identity.key)}`;
 }
 function parseSubjectRef(uri, workspace) {
   if (uri.startsWith(EXTENDED_SUBJECT_PREFIX)) {
     try {
-      const payload = JSON.parse(decodeURIComponent(uri.slice(EXTENDED_SUBJECT_PREFIX.length)));
+      const payload = JSON.parse(
+        decodeURIComponent(uri.slice(EXTENDED_SUBJECT_PREFIX.length))
+      );
       if (!Array.isArray(payload) || payload.length !== 5 || payload[0] !== 1) {
         throw new TypeError("invalid extended subject reference");
       }
@@ -1540,32 +1517,32 @@ function parseSubjectRef(uri, workspace) {
         identity
       };
     } catch (error) {
-      throw new TypeError(`invalid extended subject reference: ${error instanceof Error ? error.message : String(error)}`);
+      throw new TypeError(
+        `invalid extended subject reference: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
   const hash = uri.indexOf("#");
-  if (hash === -1)
-    return rootSubject({ id: uri }, workspace);
+  if (hash === -1) return rootSubject({ id: uri }, workspace);
   const fragment = uri.slice(hash + 1);
   const slash = fragment.indexOf("/");
-  if (slash === -1)
-    throw new TypeError("nested subject reference must include a non-empty key");
+  if (slash === -1) throw new TypeError("nested subject reference must include a non-empty key");
   try {
     const kind = decodeURIComponent(fragment.slice(0, slash));
     const key2 = decodeURIComponent(fragment.slice(slash + 1));
     return nestedSubject(rootSubject({ id: uri.slice(0, hash) }, workspace), kind, key2);
   } catch (error) {
-    throw new TypeError(`invalid nested subject reference: ${error instanceof Error ? error.message : String(error)}`);
+    throw new TypeError(
+      `invalid nested subject reference: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
-
-// packages/sdk/dist/schemas/subject-descriptor.js
 var sourceSpanValueSchema = { oneOf: sourceSpanSchema.oneOf };
 var nonEmptyString2 = { type: "string", minLength: 1 };
 var nonWhitespaceString = { type: "string", pattern: "\\S" };
 var revisionString = { type: "string", pattern: REVISION_ID_PATTERN };
 var namespacedDottedId2 = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN };
-var operationId3 = { type: "string", pattern: OPERATION_PATTERN };
+var operationId22 = { type: "string", pattern: OPERATION_PATTERN };
 var stringArray = { type: "array", items: { type: "string" } };
 var jsonValueRef = { $ref: "#/$defs/jsonValue" };
 var jsonValueSchema = {
@@ -1623,7 +1600,7 @@ var derivationRecipeSchema = {
     extensionId: { type: "string", pattern: QUALIFIED_PATTERN },
     extensionVersion: { type: "string", pattern: SEMVER_PATTERN },
     contributionId: { type: "string", pattern: QUALIFIED_PATTERN },
-    operation: operationId3,
+    operation: operationId22,
     parameters: jsonValueRef
   }
 };
@@ -1759,7 +1736,7 @@ var jsonSchemaRefSchema2 = {
   properties: { $ref: nonEmptyString2 }
 };
 var operationProperties = {
-  id: operationId3,
+  id: operationId22,
   handlerId: nonEmptyString2,
   mutatesSource: { type: "boolean" },
   inputSchema: jsonSchemaRefSchema2
@@ -2053,18 +2030,28 @@ var subjectDescriptorV2InferenceSchema = {
 var anyDescriptorV2Schema = subjectDescriptorV2Schema;
 deepFreeze(subjectDescriptorV2Schema);
 deepFreeze(subjectDescriptorV2InferenceSchema);
-
-// packages/sdk/dist/manifest/validate.js
 var platformValidatorsPromise;
 function platformValidators() {
-  platformValidatorsPromise ??= import("./validators.generated-EJWSEY3P.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
+  platformValidatorsPromise ??= import("./validators.generated-TOE2RMVC.js").then(
+    (module) => module.PRECOMPILED_SCHEMA_VALIDATORS
+  );
   return platformValidatorsPromise;
 }
 function toPath(error) {
-  return error.instancePath.split("/").filter((part) => part.length > 0).map((part) => /^\d+$/.test(part) ? Number(part) : part.replaceAll("~1", "/").replaceAll("~0", "~"));
+  return error.instancePath.split("/").filter((part) => part.length > 0).map(
+    (part) => /^\d+$/.test(part) ? Number(part) : part.replaceAll("~1", "/").replaceAll("~0", "~")
+  );
 }
 function schemaDiagnostics(errors, code) {
-  return (errors ?? []).map((error) => diagnostic("error", code, `${error.instancePath || "/"} ${error.message ?? "schema violation"}`, toPath(error), { keyword: error.keyword, params: error.params }));
+  return (errors ?? []).map(
+    (error) => diagnostic(
+      "error",
+      code,
+      `${error.instancePath || "/"} ${error.message ?? "schema violation"}`,
+      toPath(error),
+      { keyword: error.keyword, params: error.params }
+    )
+  );
 }
 function isPromiseLike(value2) {
   return (typeof value2 === "object" || typeof value2 === "function") && value2 !== null && typeof value2.then === "function";
@@ -2078,7 +2065,13 @@ function materializePath(node) {
   return reversed.reverse();
 }
 function nonJsonDiagnostic(path, reason) {
-  return diagnostic("error", "x3.sdk/non-json-wire-value", `${path.length === 0 ? "/" : `/${path.join("/")}`} is not JSON-wire-safe: ${reason}`, path, { reason });
+  return diagnostic(
+    "error",
+    "x3.sdk/non-json-wire-value",
+    `${path.length === 0 ? "/" : `/${path.join("/")}`} is not JSON-wire-safe: ${reason}`,
+    path,
+    { reason }
+  );
 }
 function assignJsonValue(parent, key2, value2) {
   Object.defineProperty(parent, key2, {
@@ -2097,15 +2090,13 @@ function snapshotJsonWireValue(root) {
   const active = /* @__PURE__ */ new WeakSet();
   while (pending.length > 0) {
     const current = pending.pop();
-    if (current === void 0)
-      break;
+    if (current === void 0) break;
     if (current.exit !== void 0) {
       active.delete(current.exit);
       continue;
     }
     const { value: value2, path, parent, key: key2 } = current;
-    if (parent === void 0 || key2 === void 0)
-      continue;
+    if (parent === void 0 || key2 === void 0) continue;
     if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean") {
       assignJsonValue(parent, key2, value2);
       continue;
@@ -2141,7 +2132,10 @@ function snapshotJsonWireValue(root) {
       if (ownNames.length !== value2.length + 1 || !ownNames.includes("length")) {
         return {
           diagnostics: [
-            nonJsonDiagnostic(materializePath(path), "arrays must be dense and have no extra properties")
+            nonJsonDiagnostic(
+              materializePath(path),
+              "arrays must be dense and have no extra properties"
+            )
           ]
         };
       }
@@ -2158,7 +2152,10 @@ function snapshotJsonWireValue(root) {
         if (!descriptor.enumerable || !("value" in descriptor)) {
           return {
             diagnostics: [
-              nonJsonDiagnostic(materializePath(childPath), "elements must be enumerable data values")
+              nonJsonDiagnostic(
+                materializePath(childPath),
+                "elements must be enumerable data values"
+              )
             ]
           };
         }
@@ -2170,7 +2167,10 @@ function snapshotJsonWireValue(root) {
     if (prototype !== Object.prototype && prototype !== null) {
       return {
         diagnostics: [
-          nonJsonDiagnostic(materializePath(path), "objects must have Object.prototype or a null prototype")
+          nonJsonDiagnostic(
+            materializePath(path),
+            "objects must have Object.prototype or a null prototype"
+          )
         ]
       };
     }
@@ -2181,7 +2181,10 @@ function snapshotJsonWireValue(root) {
       if (!descriptor.enumerable || !("value" in descriptor)) {
         return {
           diagnostics: [
-            nonJsonDiagnostic(materializePath(childPath), "fields must be enumerable data properties")
+            nonJsonDiagnostic(
+              materializePath(childPath),
+              "fields must be enumerable data properties"
+            )
           ]
         };
       }
@@ -2190,19 +2193,16 @@ function snapshotJsonWireValue(root) {
   }
   return { value: holder.value, diagnostics: [] };
 }
-function deepFreeze2(value2) {
-  if (value2 === null || typeof value2 !== "object")
-    return value2;
+function deepFreeze6(value2) {
+  if (value2 === null || typeof value2 !== "object") return value2;
   const pending = [value2];
   const visited = /* @__PURE__ */ new WeakSet();
   while (pending.length > 0) {
     const current = pending.pop();
-    if (current === void 0 || visited.has(current))
-      continue;
+    if (current === void 0 || visited.has(current)) continue;
     visited.add(current);
     for (const child of Object.values(current)) {
-      if (child !== null && typeof child === "object")
-        pending.push(child);
+      if (child !== null && typeof child === "object") pending.push(child);
     }
     Object.freeze(current);
   }
@@ -2217,7 +2217,7 @@ function snapshotJsonWireData(value2) {
       context: { diagnostics: snapshot.diagnostics }
     });
   }
-  return deepFreeze2(snapshot.value);
+  return deepFreeze6(snapshot.value);
 }
 function snapshotJsonWireObject(value2) {
   return snapshotJsonWireData(value2);
@@ -2231,8 +2231,7 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
       diagnostics: [nonJsonDiagnostic([], "value could not be inspected as inert data")]
     };
   }
-  if (valueSnapshot.diagnostics.length > 0)
-    return [...valueSnapshot.diagnostics];
+  if (valueSnapshot.diagnostics.length > 0) return [...valueSnapshot.diagnostics];
   let schemaSnapshot;
   let schemaCacheKey;
   try {
@@ -2240,13 +2239,25 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
     schemaCacheKey = canonicalJsonStringify(schemaSnapshot);
   } catch (error) {
     return [
-      diagnostic("error", "x3.sdk/invalid-schema-authority", "the selected JSON Schema is not inert JSON data", [], { error: error instanceof Error ? error.message : String(error) })
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-schema-authority",
+        "the selected JSON Schema is not inert JSON data",
+        [],
+        { error: error instanceof Error ? error.message : String(error) }
+      )
     ];
   }
   const validate = suppliedValidator ?? (await platformValidators()).get(schemaCacheKey);
   if (validate === void 0) {
     return [
-      diagnostic("error", "x3.sdk/invalid-schema-authority", "the selected JSON Schema has no CSP-safe precompiled validator", [], { reason: "precompiled-validator-missing" })
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-schema-authority",
+        "the selected JSON Schema has no CSP-safe precompiled validator",
+        [],
+        { reason: "precompiled-validator-missing" }
+      )
     ];
   }
   try {
@@ -2255,8 +2266,7 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
       await result;
       return [];
     }
-    if (result)
-      return [];
+    if (result) return [];
   } catch (error) {
     const asyncErrors = error?.errors;
     if (asyncErrors !== void 0 && asyncErrors !== null) {
@@ -2264,24 +2274,26 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
     }
     const reason = error instanceof Error ? error.message : String(error);
     return [
-      diagnostic("error", "x3.sdk/schema-evaluation-failed", `the selected JSON Schema failed while evaluating inert wire data: ${reason}`, [], { error: reason })
+      diagnostic(
+        "error",
+        "x3.sdk/schema-evaluation-failed",
+        `the selected JSON Schema failed while evaluating inert wire data: ${reason}`,
+        [],
+        { error: reason }
+      )
     ];
   }
   return schemaDiagnostics(validate.errors, code);
 }
-
-// packages/sdk/dist/asset-capabilities/types.js
 function contributionId(value2) {
-  if (!isQualifiedId(value2))
-    throw new TypeError(`invalid contribution id: ${value2}`);
+  if (!isQualifiedId(value2)) throw new TypeError(`invalid contribution id: ${value2}`);
   return value2;
 }
 function isRevisionId(value2) {
   return parseRevisionRef(value2) !== void 0;
 }
 function revisionId(value2) {
-  if (!isRevisionId(value2))
-    throw new TypeError("revision id must be a canonical kind-tagged value");
+  if (!isRevisionId(value2)) throw new TypeError("revision id must be a canonical kind-tagged value");
   return value2;
 }
 function revisionIdFromRef(ref) {
@@ -2289,8 +2301,7 @@ function revisionIdFromRef(ref) {
 }
 function revisionRefFromId(value2) {
   const parsed = parseRevisionRef(value2);
-  if (parsed === void 0)
-    throw new TypeError("invalid branded revision id");
+  if (parsed === void 0) throw new TypeError("invalid branded revision id");
   return parsed;
 }
 function assetSourceRefFromSourceRef(source, uri) {
@@ -2312,8 +2323,6 @@ function sourceRefFromAssetSourceRef(ref) {
   }
   return Object.freeze({ id: ref.id, ...parent === void 0 ? {} : { parent } });
 }
-
-// packages/sdk/dist/host-facilities.generated.js
 var STANDARD_HOST_FACILITY_IDS = Object.freeze([
   "clipboard.write",
   "credential.broker",
@@ -2347,8 +2356,6 @@ var STANDARD_HOST_FACILITY_IDS = Object.freeze([
 var LEGACY_HOST_FACILITY_ALIASES = Object.freeze([
   "editor.monaco"
 ]);
-
-// packages/sdk/dist/host-profile.js
 var HOST_TRANSPORT_KINDS = Object.freeze([
   "in-process",
   "structured-clone",
@@ -2381,14 +2388,29 @@ function hostFacilityId(value2) {
   return value2;
 }
 function hostFacilityDiagnostics(values, path = []) {
-  if (values === void 0)
-    return [];
+  if (values === void 0) return [];
   const diagnostics = [];
   values.forEach((value2, index) => {
     if (!isHostFacilityId(value2)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/unknown-host-facility", `unknown unqualified host facility \xAB${value2}\xBB`, [...path, index], { facility: value2 }));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/unknown-host-facility",
+          `unknown unqualified host facility \xAB${value2}\xBB`,
+          [...path, index],
+          { facility: value2 }
+        )
+      );
     } else if (legacyFacilities.has(value2)) {
-      diagnostics.push(diagnostic("warning", "x3.sdk/legacy-host-facility", `host facility \xAB${value2}\xBB is a transitional compatibility alias`, [...path, index], { facility: value2 }));
+      diagnostics.push(
+        diagnostic(
+          "warning",
+          "x3.sdk/legacy-host-facility",
+          `host facility \xAB${value2}\xBB is a transitional compatibility alias`,
+          [...path, index],
+          { facility: value2 }
+        )
+      );
     }
   });
   return diagnostics;
@@ -2402,12 +2424,10 @@ function invalidProfile(message, context) {
 }
 function exactKeys(value2, allowed, field) {
   const extra = Object.keys(value2).filter((key2) => !allowed.includes(key2));
-  if (extra.length > 0)
-    invalidProfile(`${field} contains unsupported fields`, { field, extra });
+  if (extra.length > 0) invalidProfile(`${field} contains unsupported fields`, { field, extra });
 }
 function nonEmpty(value2, field) {
-  if (value2.trim().length === 0)
-    return invalidProfile(`${field} must not be empty`, { field });
+  if (value2.trim().length === 0) return invalidProfile(`${field} must not be empty`, { field });
   return value2;
 }
 function count(value2, field) {
@@ -2426,29 +2446,42 @@ function normalizeStrings(values) {
 }
 function createHostRealmProfile(profile) {
   const snapshot = snapshotJsonWireData(profile);
-  exactKeys(snapshot, ["schemaVersion", "realmId", "revision", "target", "facilities", "budgets", "policy"], "profile");
-  if (snapshot.schemaVersion !== 1)
-    invalidProfile("host profile schemaVersion must be 1");
-  exactKeys(snapshot.target, [
-    "environment",
-    "operatingSystem",
-    "architecture",
-    "webApis",
-    "externalTools",
-    "hostCapabilities",
-    "grantedPermissions"
-  ], "target");
-  exactKeys(snapshot.budgets, [
-    "maxConcurrentTasks",
-    "maxWorkerCount",
-    "maxResidentBytes",
-    "maxTransferBytes",
-    "defaultDeadlineMs"
-  ], "budgets");
+  exactKeys(
+    snapshot,
+    ["schemaVersion", "realmId", "revision", "target", "facilities", "budgets", "policy"],
+    "profile"
+  );
+  if (snapshot.schemaVersion !== 1) invalidProfile("host profile schemaVersion must be 1");
+  exactKeys(
+    snapshot.target,
+    [
+      "environment",
+      "operatingSystem",
+      "architecture",
+      "webApis",
+      "externalTools",
+      "hostCapabilities",
+      "grantedPermissions"
+    ],
+    "target"
+  );
+  exactKeys(
+    snapshot.budgets,
+    [
+      "maxConcurrentTasks",
+      "maxWorkerCount",
+      "maxResidentBytes",
+      "maxTransferBytes",
+      "defaultDeadlineMs"
+    ],
+    "budgets"
+  );
   exactKeys(snapshot.policy, ["id", "revision", "digest"], "policy");
   const rawTarget = snapshot.target;
   if ("hostCapabilities" in rawTarget || "grantedPermissions" in rawTarget) {
-    return invalidProfile("target.hostCapabilities and target.grantedPermissions are projections and cannot be authored in a host profile");
+    return invalidProfile(
+      "target.hostCapabilities and target.grantedPermissions are projections and cannot be authored in a host profile"
+    );
   }
   if (!RUNTIME_ENVIRONMENTS.includes(rawTarget.environment)) {
     invalidProfile("target.environment is not registered", { environment: rawTarget.environment });
@@ -2496,14 +2529,12 @@ function createHostRealmProfile(profile) {
 function createHostTopology(topology) {
   const snapshot = snapshotJsonWireData(topology);
   exactKeys(snapshot, ["schemaVersion", "topologyId", "realms", "links"], "topology");
-  if (snapshot.schemaVersion !== 1)
-    return invalidProfile("host topology schemaVersion must be 1");
+  if (snapshot.schemaVersion !== 1) return invalidProfile("host topology schemaVersion must be 1");
   const realms = snapshot.realms.map(createHostRealmProfile);
   realms.sort((left, right) => compareUtf8(left.realmId, right.realmId));
   const realmIds = /* @__PURE__ */ new Set();
   for (const realm of realms) {
-    if (realmIds.has(realm.realmId))
-      return invalidProfile(`duplicate realmId \xAB${realm.realmId}\xBB`);
+    if (realmIds.has(realm.realmId)) return invalidProfile(`duplicate realmId \xAB${realm.realmId}\xBB`);
     realmIds.add(realm.realmId);
   }
   const links = snapshot.links.map((link) => {
@@ -2514,8 +2545,7 @@ function createHostTopology(topology) {
         toRealm: link.toRealm
       });
     }
-    if (link.fromRealm === link.toRealm)
-      return invalidProfile("transport link must cross realms");
+    if (link.fromRealm === link.toRealm) return invalidProfile("transport link must cross realms");
     const transports = uniqueSortedUtf8(link.transports);
     if (transports.length === 0 || transports.some((value2) => !transportKinds.has(value2))) {
       return invalidProfile("transport link must declare known transport kinds");
@@ -2526,12 +2556,16 @@ function createHostTopology(topology) {
       transports: Object.freeze(transports)
     });
   });
-  links.sort((left, right) => compareUtf8(`${left.fromRealm}\0${left.toRealm}`, `${right.fromRealm}\0${right.toRealm}`));
+  links.sort(
+    (left, right) => compareUtf8(
+      `${left.fromRealm}\0${left.toRealm}`,
+      `${right.fromRealm}\0${right.toRealm}`
+    )
+  );
   const seenLinks = /* @__PURE__ */ new Set();
   for (const link of links) {
     const key2 = `${link.fromRealm}\0${link.toRealm}`;
-    if (seenLinks.has(key2))
-      return invalidProfile("duplicate directed transport link", { key: key2 });
+    if (seenLinks.has(key2)) return invalidProfile("duplicate directed transport link", { key: key2 });
     seenLinks.add(key2);
   }
   return Object.freeze({
@@ -2552,8 +2586,6 @@ function runtimeTargetForHostRealm(profile, grantedPermissions) {
 function hostRealmCacheKey(profile) {
   return canonicalJsonStringify(createHostRealmProfile(profile));
 }
-
-// packages/sdk/dist/manifest/spec-registry.js
 function invalidRegistration(message, context) {
   throw new ModkitError({
     code: "x3.sdk/invalid-spec-registration",
@@ -2562,10 +2594,8 @@ function invalidRegistration(message, context) {
   });
 }
 function safeContextValue(value2) {
-  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean")
-    return value2;
-  if (typeof value2 === "number")
-    return Number.isFinite(value2) ? value2 : String(value2);
+  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean") return value2;
+  if (typeof value2 === "number") return Number.isFinite(value2) ? value2 : String(value2);
   return typeof value2;
 }
 function validatedCoordinate(contractValue, majorValue) {
@@ -2647,12 +2677,20 @@ function createSpecSchemaRegistry(entries) {
       if (typeof project !== "function") {
         invalidRegistration("spec inventory projector must be a function", coordinate);
       }
-      const conformanceProfile = validatedConformanceProfile(conformanceProfileValue, coordinate.contract, coordinate.major);
+      const conformanceProfile = validatedConformanceProfile(
+        conformanceProfileValue,
+        coordinate.contract,
+        coordinate.major
+      );
       registration = mode === "executable" ? Object.freeze({
         mode: "executable",
         project,
         conformanceProfile,
-        moduleAbi: validatedModuleAbi(candidate.moduleAbi, coordinate.contract, coordinate.major)
+        moduleAbi: validatedModuleAbi(
+          candidate.moduleAbi,
+          coordinate.contract,
+          coordinate.major
+        )
       }) : Object.freeze({
         mode: "data-only",
         project,
@@ -2677,7 +2715,11 @@ function createSpecSchemaRegistry(entries) {
     }
     map.set(key2, entry);
   }
-  const list = Object.freeze([...map.values()].sort((left, right) => compareUtf8(left.contract, right.contract) || left.major - right.major));
+  const list = Object.freeze(
+    [...map.values()].sort(
+      (left, right) => compareUtf8(left.contract, right.contract) || left.major - right.major
+    )
+  );
   return {
     getEntry: (contract, major) => map.get(`${contract}@${major}`),
     get: (contract, major) => map.get(`${contract}@${major}`)?.schema,
@@ -2689,10 +2731,16 @@ function duplicateVariantDiagnostics(manifest) {
   const diagnostics = [];
   (manifest.runtimeVariants ?? []).forEach((variant, index) => {
     const previous = first.get(variant.variantId);
-    if (previous === void 0)
-      first.set(variant.variantId, index);
+    if (previous === void 0) first.set(variant.variantId, index);
     else {
-      diagnostics.push(diagnostic("error", "x3.sdk/duplicate-runtime-variant", `runtime variant ${variant.variantId} duplicates index ${previous}`, ["runtimeVariants", index, "variantId"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-runtime-variant",
+          `runtime variant ${variant.variantId} duplicates index ${previous}`,
+          ["runtimeVariants", index, "variantId"]
+        )
+      );
     }
   });
   return diagnostics;
@@ -2702,31 +2750,51 @@ function envelopeRangeDiagnostics(manifest) {
   manifest.dependsOn?.forEach((requirement, index) => {
     const parsed = requirement.range === void 0 ? void 0 : parseVersionRange(requirement.range);
     if (requirement.range !== void 0 && (parsed === void 0 || !versionRangeTargetsMajor(parsed, requirement.major))) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-contract-range", `contract range ${requirement.range} cannot be evaluated safely`, ["dependsOn", index, "range"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-contract-range",
+          `contract range ${requirement.range} cannot be evaluated safely`,
+          ["dependsOn", index, "range"]
+        )
+      );
     }
   });
   return diagnostics;
 }
 function runtimeFacilityDiagnostics(manifest) {
-  return (manifest.runtimeVariants ?? []).flatMap((variant, index) => hostFacilityDiagnostics(variant.target.requiredHostCapabilities, [
-    "runtimeVariants",
-    index,
-    "target",
-    "requiredHostCapabilities"
-  ]));
+  return (manifest.runtimeVariants ?? []).flatMap(
+    (variant, index) => hostFacilityDiagnostics(variant.target.requiredHostCapabilities, [
+      "runtimeVariants",
+      index,
+      "target",
+      "requiredHostCapabilities"
+    ])
+  );
 }
 async function runSemanticValidator(validator, manifest) {
-  if (validator === void 0)
-    return [];
+  if (validator === void 0) return [];
   try {
     const result = await validator(manifest);
-    if (!Array.isArray(result) || !result.every((item) => typeof item === "object" && item !== null && !Array.isArray(item) && typeof item.code === "string" && isQualifiedId(item.code) && ["error", "warning", "information", "hint"].includes(String(item.severity)) && typeof item.message === "string" && (item.path === void 0 || Array.isArray(item.path) && item.path.every((part) => typeof part === "string" || Number.isSafeInteger(part))))) {
+    if (!Array.isArray(result) || !result.every(
+      (item) => typeof item === "object" && item !== null && !Array.isArray(item) && typeof item.code === "string" && isQualifiedId(item.code) && ["error", "warning", "information", "hint"].includes(
+        String(item.severity)
+      ) && typeof item.message === "string" && (item.path === void 0 || Array.isArray(item.path) && item.path.every(
+        (part) => typeof part === "string" || Number.isSafeInteger(part)
+      ))
+    )) {
       throw new TypeError("semantic validator returned malformed diagnostics");
     }
     return [...result];
   } catch (error) {
     return [
-      diagnostic("error", "x3.sdk/semantic-validator-failed", "the host-owned contribution semantic validator threw", ["spec"], { error: error instanceof Error ? error.message : String(error) })
+      diagnostic(
+        "error",
+        "x3.sdk/semantic-validator-failed",
+        "the host-owned contribution semantic validator threw",
+        ["spec"],
+        { error: error instanceof Error ? error.message : String(error) }
+      )
     ];
   }
 }
@@ -2740,10 +2808,14 @@ function normalizeContributionManifest(wire) {
       id: contractId(contract.id)
     }),
     ...dependsOn === void 0 ? {} : {
-      dependsOn: Object.freeze(dependsOn.map((requirement) => Object.freeze({
-        ...requirement,
-        contract: contractId(requirement.contract)
-      })))
+      dependsOn: Object.freeze(
+        dependsOn.map(
+          (requirement) => Object.freeze({
+            ...requirement,
+            contract: contractId(requirement.contract)
+          })
+        )
+      )
     }
   });
 }
@@ -2757,7 +2829,13 @@ async function validateContributionManifest(value2, registry) {
       inventoryEligible: false,
       activationEligible: false,
       diagnostics: [
-        diagnostic("error", "x3.sdk/non-json-wire-value", "contribution manifest must be inert JSON data", [], { error: error instanceof Error ? error.message : String(error) })
+        diagnostic(
+          "error",
+          "x3.sdk/non-json-wire-value",
+          "contribution manifest must be inert JSON data",
+          [],
+          { error: error instanceof Error ? error.message : String(error) }
+        )
       ]
     };
   }
@@ -2795,11 +2873,21 @@ async function validateContributionManifest(value2, registry) {
       diagnostics: [
         ...envelopeDiagnostics,
         ...manifestDiagnostics,
-        diagnostic("warning", "x3.sdk/unknown-contract", `contract \xAB${manifest.contract.id}\xBB major ${manifest.contract.major} has no registered spec schema \u2014 contribution stays inspectable data and is not activatable`, ["contract"])
+        diagnostic(
+          "warning",
+          "x3.sdk/unknown-contract",
+          `contract \xAB${manifest.contract.id}\xBB major ${manifest.contract.major} has no registered spec schema \u2014 contribution stays inspectable data and is not activatable`,
+          ["contract"]
+        )
       ]
     };
   }
-  const specDiagnostics = (await validateWithSchema(registration.schema, manifest.spec, "x3.sdk/invalid-spec", registration.validator)).map((d) => ({ ...d, path: ["spec", ...d.path ?? []] }));
+  const specDiagnostics = (await validateWithSchema(
+    registration.schema,
+    manifest.spec,
+    "x3.sdk/invalid-spec",
+    registration.validator
+  )).map((d) => ({ ...d, path: ["spec", ...d.path ?? []] }));
   if (hasErrors(specDiagnostics)) {
     return {
       manifest,
@@ -2831,12 +2919,22 @@ async function validateContributionManifest(value2, registry) {
       diagnostics: [
         ...envelopeDiagnostics,
         ...specDiagnostics,
-        diagnostic("warning", "x3.sdk/schema-only-contract", `contract \xAB${manifest.contract.id}\xBB major ${manifest.contract.major} has a schema but no executable registration quartet`, ["contract"])
+        diagnostic(
+          "warning",
+          "x3.sdk/schema-only-contract",
+          `contract \xAB${manifest.contract.id}\xBB major ${manifest.contract.major} has a schema but no executable registration quartet`,
+          ["contract"]
+        )
       ]
     };
   }
   if (registration.registration.mode === "executable" && (manifest.runtimeVariants?.length ?? 0) === 0) {
-    const missingVariant = diagnostic("error", "x3.sdk/executable-without-runtime-variant", "an executable contribution requires at least one runtime variant", ["runtimeVariants"]);
+    const missingVariant = diagnostic(
+      "error",
+      "x3.sdk/executable-without-runtime-variant",
+      "an executable contribution requires at least one runtime variant",
+      ["runtimeVariants"]
+    );
     return {
       manifest,
       specState: "invalid",
@@ -2851,7 +2949,12 @@ async function validateContributionManifest(value2, registry) {
     };
   }
   if (registration.registration.mode === "data-only" && (manifest.runtimeVariants?.length ?? 0) > 0) {
-    const unexpectedVariant = diagnostic("error", "x3.sdk/data-only-with-runtime-variant", "a data-only contribution cannot declare runtime variants", ["runtimeVariants"]);
+    const unexpectedVariant = diagnostic(
+      "error",
+      "x3.sdk/data-only-with-runtime-variant",
+      "a data-only contribution cannot declare runtime variants",
+      ["runtimeVariants"]
+    );
     return {
       manifest,
       specState: "invalid",
@@ -2873,8 +2976,6 @@ async function validateContributionManifest(value2, registry) {
     diagnostics: [...envelopeDiagnostics, ...specDiagnostics, ...semanticDiagnostics]
   };
 }
-
-// packages/sdk/dist/asset-capabilities/standard-traits.js
 var TRAIT_IDS = Object.freeze([
   "content.metadata",
   "content.binary",
@@ -2956,28 +3057,50 @@ var STANDARD_TRAIT_SET = new Set(TRAIT_IDS);
 function isStandardTraitId(value2) {
   return STANDARD_TRAIT_SET.has(value2);
 }
-
-// packages/sdk/dist/manifest/contribution-contract-registry.js
 var CODEC_CONTRIBUTION_CONTRACT = contractId("org.modkitx/codec-contribution");
-var SERVICE_PROVIDER_CONTRIBUTION_CONTRACT = contractId("org.modkitx/service-provider-contribution");
-var VIEWER_CONTRIBUTION_CONTRACT = contractId("org.modkitx/viewer-contribution");
-var EDITOR_CONTRIBUTION_CONTRACT = contractId("org.modkitx/editor-contribution");
-var TRAIT_DEFINITION_CONTRIBUTION_CONTRACT = contractId("org.modkitx/trait-definition");
-var CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT = contractId("org.modkitx/contract-definition");
-var KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT = contractId("org.modkitx/knowledge-pack");
-var TRAIT_DEFINITION_FACT = contractId("org.modkitx.inventory/trait-definition");
-var CONTRACT_DEFINITION_FACT = contractId("org.modkitx.inventory/contract-definition");
-var EDITOR_CONTRIBUTION_FACT = contractId("org.modkitx.inventory/editor-contribution");
+var SERVICE_PROVIDER_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/service-provider-contribution"
+);
+var VIEWER_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/viewer-contribution"
+);
+var EDITOR_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/editor-contribution"
+);
+var TRAIT_DEFINITION_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/trait-definition"
+);
+var CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/contract-definition"
+);
+var KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/knowledge-pack"
+);
+var TRAIT_DEFINITION_FACT = contractId(
+  "org.modkitx.inventory/trait-definition"
+);
+var CONTRACT_DEFINITION_FACT = contractId(
+  "org.modkitx.inventory/contract-definition"
+);
+var EDITOR_CONTRIBUTION_FACT = contractId(
+  "org.modkitx.inventory/editor-contribution"
+);
 var KNOWLEDGE_PACK_FACT = contractId("org.modkitx.inventory/knowledge-pack");
 function duplicateFieldDiagnostics(values, path, label) {
   const first = /* @__PURE__ */ new Map();
   const diagnostics = [];
   values.forEach((value2, index) => {
     const previous = first.get(value2);
-    if (previous === void 0)
-      first.set(value2, index);
+    if (previous === void 0) first.set(value2, index);
     else {
-      diagnostics.push(diagnostic("error", "x3.sdk/duplicate-semantic-id", `${label} ${value2} duplicates index ${previous}`, [...path, index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-semantic-id",
+          `${label} ${value2} duplicates index ${previous}`,
+          [...path, index]
+        )
+      );
     }
   });
   return diagnostics;
@@ -2985,18 +3108,33 @@ function duplicateFieldDiagnostics(values, path, label) {
 function requirementRangeDiagnostics(requirement, path) {
   const parsed = requirement.range === void 0 ? void 0 : parseVersionRange(requirement.range);
   return requirement.range !== void 0 && (parsed === void 0 || !versionRangeTargetsMajor(parsed, requirement.major)) ? [
-    diagnostic("error", "x3.sdk/invalid-contract-range", `contract range ${requirement.range} cannot be evaluated safely`, [...path, "range"])
+    diagnostic(
+      "error",
+      "x3.sdk/invalid-contract-range",
+      `contract range ${requirement.range} cannot be evaluated safely`,
+      [...path, "range"]
+    )
   ] : [];
 }
 function traitDefinitionRangeDiagnostics(id, range, path) {
   if (isStandardTraitId(id)) {
     return range === void 0 ? [] : [
-      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id} does not use an extension definition range`, [...path, "definitionRange"])
+      diagnostic(
+        "error",
+        "x3.sdk/standard-trait-versioned",
+        `standard trait ${id} does not use an extension definition range`,
+        [...path, "definitionRange"]
+      )
     ];
   }
   if (range === void 0 || parseVersionRange(range) === void 0) {
     return [
-      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id} must declare a safe definition range`, [...path, "definitionRange"])
+      diagnostic(
+        "error",
+        "x3.sdk/custom-trait-definition-unbound",
+        `custom trait ${id} must declare a safe definition range`,
+        [...path, "definitionRange"]
+      )
     ];
   }
   return [];
@@ -3004,12 +3142,22 @@ function traitDefinitionRangeDiagnostics(id, range, path) {
 function traitDefinitionOfferDiagnostics(id, version, path) {
   if (isStandardTraitId(id)) {
     return version === void 0 ? [] : [
-      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id} does not use an extension definition version`, [...path, "definitionVersion"])
+      diagnostic(
+        "error",
+        "x3.sdk/standard-trait-versioned",
+        `standard trait ${id} does not use an extension definition version`,
+        [...path, "definitionVersion"]
+      )
     ];
   }
   if (version === void 0 || parseSemver(version) === void 0) {
     return [
-      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id} must declare one exact safe definition version`, [...path, "definitionVersion"])
+      diagnostic(
+        "error",
+        "x3.sdk/custom-trait-definition-unbound",
+        `custom trait ${id} must declare one exact safe definition version`,
+        [...path, "definitionVersion"]
+      )
     ];
   }
   return [];
@@ -3018,69 +3166,130 @@ var validateCodecContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const localCodecPrefix = manifest.id;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.formatRefs.map((format) => format.formatId), ["spec", "formatRefs"], "format ID"),
-    ...duplicateFieldDiagnostics(spec.representations.map((representation) => representation.id), ["spec", "representations"], "representation ID"),
-    ...duplicateFieldDiagnostics(spec.companions?.map((companion) => companion.id) ?? [], ["spec", "companions"], "companion rule ID"),
-    ...duplicateFieldDiagnostics(spec.traitDeclarations?.map((declaration) => `${declaration.id}\0${declaration.representation}`) ?? [], ["spec", "traitDeclarations"], "trait declaration coordinate"),
-    ...duplicateFieldDiagnostics(spec.operations.map((operation) => operation.id), ["spec", "operations"], "operation ID"),
-    ...duplicateFieldDiagnostics(spec.operations.map((operation) => operation.handlerId), ["spec", "operations"], "operation handler ID"),
-    ...duplicateFieldDiagnostics(spec.fidelityEvidence?.map((item) => item.evidenceId) ?? [], ["spec", "fidelityEvidence"], "fidelity evidence ID")
+    ...duplicateFieldDiagnostics(
+      spec.formatRefs.map((format) => format.formatId),
+      ["spec", "formatRefs"],
+      "format ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.representations.map((representation) => representation.id),
+      ["spec", "representations"],
+      "representation ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.companions?.map((companion) => companion.id) ?? [],
+      ["spec", "companions"],
+      "companion rule ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.traitDeclarations?.map(
+        (declaration) => `${declaration.id}\0${declaration.representation}`
+      ) ?? [],
+      ["spec", "traitDeclarations"],
+      "trait declaration coordinate"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.operations.map((operation) => operation.id),
+      ["spec", "operations"],
+      "operation ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.operations.map((operation) => operation.handlerId),
+      ["spec", "operations"],
+      "operation handler ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.fidelityEvidence?.map((item) => item.evidenceId) ?? [],
+      ["spec", "fidelityEvidence"],
+      "fidelity evidence ID"
+    )
   ];
   const formatIds = new Set(spec.formatRefs.map((format) => format.formatId));
-  const representationIds = new Set(spec.representations.map((representation) => representation.id));
+  const representationIds = new Set(
+    spec.representations.map((representation) => representation.id)
+  );
   spec.fidelityEvidence?.forEach((item, index) => {
     if (!formatIds.has(item.formatId)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/fidelity-evidence-format-unknown", `fidelity evidence ${item.evidenceId} names undeclared format ${item.formatId}`, ["spec", "fidelityEvidence", index, "formatId"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/fidelity-evidence-format-unknown",
+          `fidelity evidence ${item.evidenceId} names undeclared format ${item.formatId}`,
+          ["spec", "fidelityEvidence", index, "formatId"]
+        )
+      );
     }
     if (!representationIds.has(item.representationId)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/fidelity-evidence-representation-unknown", `fidelity evidence ${item.evidenceId} names undeclared representation ${item.representationId}`, ["spec", "fidelityEvidence", index, "representationId"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/fidelity-evidence-representation-unknown",
+          `fidelity evidence ${item.evidenceId} names undeclared representation ${item.representationId}`,
+          ["spec", "fidelityEvidence", index, "representationId"]
+        )
+      );
     }
   });
   const expectedProbeKind = spec.sourceTopology === "namespace" ? "namespace" : spec.sourceTopology === "derived" ? "derived" : "bytes";
   if (spec.probe.kind !== expectedProbeKind) {
-    diagnostics.push(diagnostic("error", "x3.sdk/probe-topology-mismatch", `topology ${spec.sourceTopology} requires a ${expectedProbeKind} probe policy`, ["spec", "probe", "kind"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/probe-topology-mismatch",
+        `topology ${spec.sourceTopology} requires a ${expectedProbeKind} probe policy`,
+        ["spec", "probe", "kind"]
+      )
+    );
   }
   spec.requires?.forEach((requirement, index) => {
     diagnostics.push(...requirementRangeDiagnostics(requirement, ["spec", "requires", index]));
   });
   spec.traitDeclarations?.forEach((claim, index) => {
-    diagnostics.push(...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
-      "spec",
-      "traitDeclarations",
-      index
-    ]));
-    claim.prerequisites?.forEach((requirement, requirementIndex) => {
-      diagnostics.push(...requirementRangeDiagnostics(requirement, [
+    diagnostics.push(
+      ...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
         "spec",
         "traitDeclarations",
-        index,
-        "prerequisites",
-        requirementIndex
-      ]));
+        index
+      ])
+    );
+    claim.prerequisites?.forEach((requirement, requirementIndex) => {
+      diagnostics.push(
+        ...requirementRangeDiagnostics(requirement, [
+          "spec",
+          "traitDeclarations",
+          index,
+          "prerequisites",
+          requirementIndex
+        ])
+      );
     });
   });
   spec.companions?.forEach((companion, companionIndex) => {
     for (const selector of ["all", "any", "none"]) {
       companion.expected?.[selector]?.forEach((requirement, requirementIndex) => {
-        diagnostics.push(...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
-          "spec",
-          "companions",
-          companionIndex,
-          "expected",
-          selector,
-          requirementIndex
-        ]));
+        diagnostics.push(
+          ...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
+            "spec",
+            "companions",
+            companionIndex,
+            "expected",
+            selector,
+            requirementIndex
+          ])
+        );
       });
     }
   });
   spec.operations.forEach((operation, index) => {
     if (operation.requiresContract !== void 0) {
-      diagnostics.push(...requirementRangeDiagnostics(operation.requiresContract, [
-        "spec",
-        "operations",
-        index,
-        "requiresContract"
-      ]));
+      diagnostics.push(
+        ...requirementRangeDiagnostics(operation.requiresContract, [
+          "spec",
+          "operations",
+          index,
+          "requiresContract"
+        ])
+      );
     }
     const shared = SHARED_OPERATION_IDS.includes(operation.id);
     const canonicalDomain = OPERATION_DOMAINS.some((domain) => {
@@ -3090,28 +3299,40 @@ var validateCodecContributionSemantics = (manifest) => {
     const localSuffix = operation.id.startsWith(`${localCodecPrefix}.`) ? operation.id.slice(localCodecPrefix.length + 1) : void 0;
     const codecLocal = localSuffix !== void 0 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(localSuffix);
     if (!shared && !canonicalDomain && !codecLocal) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-operation-namespace", `operation ${operation.id} is not shared, canonical-domain, or local to ${manifest.id}`, ["spec", "operations", index, "id"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-operation-namespace",
+          `operation ${operation.id} is not shared, canonical-domain, or local to ${manifest.id}`,
+          ["spec", "operations", index, "id"]
+        )
+      );
     }
   });
   const requiredPermissions = /* @__PURE__ */ new Set(["read-source"]);
   spec.operations.forEach((operation) => {
-    if (operation.mutatesSource)
-      requiredPermissions.add("write-source");
+    if (operation.mutatesSource) requiredPermissions.add("write-source");
     operation.requiredPermissions?.forEach((permission) => requiredPermissions.add(permission));
   });
   manifest.runtimeVariants?.forEach((variant, variantIndex) => {
     const requested = new Set(variant.requestedPermissionClasses);
     for (const permission of requiredPermissions) {
       if (!requested.has(permission)) {
-        diagnostics.push(diagnostic("error", "x3.sdk/variant-permission-underdeclared", `runtime variant ${variant.variantId} does not request ${permission}`, ["runtimeVariants", variantIndex, "requestedPermissionClasses"]));
+        diagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/variant-permission-underdeclared",
+            `runtime variant ${variant.variantId} does not request ${permission}`,
+            ["runtimeVariants", variantIndex, "requestedPermissionClasses"]
+          )
+        );
       }
     }
   });
   return diagnostics;
 };
 function isPortableOperationReference(id) {
-  if (SHARED_OPERATION_IDS.includes(id))
-    return true;
+  if (SHARED_OPERATION_IDS.includes(id)) return true;
   if (OPERATION_DOMAINS.some((domain) => {
     const prefix = `${domain}.`;
     return id.startsWith(prefix) && isSegment(id.slice(prefix.length));
@@ -3124,20 +3345,37 @@ function isPortableOperationReference(id) {
 var validateViewerContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.requiresTraits?.map((requirement) => requirement.id) ?? [], ["spec", "requiresTraits"], "trait requirement"),
-    ...duplicateFieldDiagnostics(spec.requiresOperations ?? [], ["spec", "requiresOperations"], "operation requirement")
+    ...duplicateFieldDiagnostics(
+      spec.requiresTraits?.map((requirement) => requirement.id) ?? [],
+      ["spec", "requiresTraits"],
+      "trait requirement"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.requiresOperations ?? [],
+      ["spec", "requiresOperations"],
+      "operation requirement"
+    )
   ];
   spec.requiresOperations?.forEach((id, index) => {
     if (!isPortableOperationReference(id)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-operation-namespace", `viewer operation requirement ${id} is not shared, canonical-domain, or qualified-local`, ["spec", "requiresOperations", index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-operation-namespace",
+          `viewer operation requirement ${id} is not shared, canonical-domain, or qualified-local`,
+          ["spec", "requiresOperations", index]
+        )
+      );
     }
   });
   spec.requiresTraits?.forEach((requirement, index) => {
-    diagnostics.push(...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
-      "spec",
-      "requiresTraits",
-      index
-    ]));
+    diagnostics.push(
+      ...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
+        "spec",
+        "requiresTraits",
+        index
+      ])
+    );
   });
   return diagnostics;
 };
@@ -3152,22 +3390,58 @@ var EDITING_OPERATION_IDS = Object.freeze([
 var validateEditorContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.requiresOperations, ["spec", "requiresOperations"], "operation"),
-    ...duplicateFieldDiagnostics(spec.consumesDataSources.map((source) => `${source.contract}@${source.major}`), ["spec", "consumesDataSources"], "data-source requirement")
+    ...duplicateFieldDiagnostics(
+      spec.requiresOperations,
+      ["spec", "requiresOperations"],
+      "operation"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.consumesDataSources.map((source) => `${source.contract}@${source.major}`),
+      ["spec", "consumesDataSources"],
+      "data-source requirement"
+    )
   ];
   spec.requiresOperations.forEach((id, index) => {
     if (!EDITING_OPERATION_IDS.includes(id)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-editor-operation", `editor operation ${id} is not one of the shared editing operations`, ["spec", "requiresOperations", index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-editor-operation",
+          `editor operation ${id} is not one of the shared editing operations`,
+          ["spec", "requiresOperations", index]
+        )
+      );
     }
   });
   if (!spec.requiresOperations.some((id) => id.startsWith("edit."))) {
-    diagnostics.push(diagnostic("error", "x3.sdk/editor-edit-operation-missing", "an editor contribution requires an explicit edit operation", ["spec", "requiresOperations"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/editor-edit-operation-missing",
+        "an editor contribution requires an explicit edit operation",
+        ["spec", "requiresOperations"]
+      )
+    );
   }
   if (spec.requiresTransactions && !spec.requiresOperations.some((id) => id === "source.save" || id === "source.save-as")) {
-    diagnostics.push(diagnostic("error", "x3.sdk/editor-save-operation-missing", "a transactional editor requires source.save or source.save-as", ["spec", "requiresOperations"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/editor-save-operation-missing",
+        "a transactional editor requires source.save or source.save-as",
+        ["spec", "requiresOperations"]
+      )
+    );
   }
   if (spec.requiresTransactions && spec.writer.mutationMode !== "mutate") {
-    diagnostics.push(diagnostic("error", "x3.sdk/editor-writer-mode-mismatch", "a transactional editor requires a mutating writer", ["spec", "writer", "mutationMode"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/editor-writer-mode-mismatch",
+        "a transactional editor requires a mutating writer",
+        ["spec", "writer", "mutationMode"]
+      )
+    );
   }
   return diagnostics;
 };
@@ -3175,21 +3449,48 @@ var validateTraitDefinitionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [];
   if (parseSemver(spec.version) === void 0) {
-    diagnostics.push(diagnostic("error", "x3.sdk/invalid-definition-version", `trait definition version ${spec.version} cannot be evaluated safely`, ["spec", "version"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-definition-version",
+        `trait definition version ${spec.version} cannot be evaluated safely`,
+        ["spec", "version"]
+      )
+    );
   }
   const seen = /* @__PURE__ */ new Map();
   spec.imports?.forEach((dependency, index) => {
     if (dependency.id === spec.id) {
-      diagnostics.push(diagnostic("error", "x3.sdk/self-definition-import", `trait definition ${spec.id} cannot import itself`, ["spec", "imports", index, "id"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/self-definition-import",
+          `trait definition ${spec.id} cannot import itself`,
+          ["spec", "imports", index, "id"]
+        )
+      );
     }
     const previous = seen.get(dependency.id);
-    if (previous === void 0)
-      seen.set(dependency.id, index);
+    if (previous === void 0) seen.set(dependency.id, index);
     else {
-      diagnostics.push(diagnostic("error", "x3.sdk/duplicate-definition-import", `trait import ${dependency.id} duplicates index ${previous}`, ["spec", "imports", index, "id"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-definition-import",
+          `trait import ${dependency.id} duplicates index ${previous}`,
+          ["spec", "imports", index, "id"]
+        )
+      );
     }
     if (parseVersionRange(dependency.range) === void 0) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-definition-range", `trait import range ${dependency.range} cannot be evaluated safely`, ["spec", "imports", index, "range"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-definition-range",
+          `trait import range ${dependency.range} cannot be evaluated safely`,
+          ["spec", "imports", index, "range"]
+        )
+      );
     }
   });
   return diagnostics;
@@ -3198,7 +3499,12 @@ var validateContractDefinitionSemantics = (manifest) => {
   const spec = manifest.spec;
   if (!Number.isSafeInteger(spec.major) || spec.major < 0) {
     return [
-      diagnostic("error", "x3.sdk/invalid-contract-major", `contract definition major ${spec.major} is not a safe non-negative integer`, ["spec", "major"])
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-contract-major",
+        `contract definition major ${spec.major} is not a safe non-negative integer`,
+        ["spec", "major"]
+      )
     ];
   }
   if (spec.surface !== void 0) {
@@ -3211,14 +3517,35 @@ function dataSourceSurfaceDiagnostics(surface, path) {
   if (surface.releaseVia !== void 0) {
     const target = surface.methods[surface.releaseVia];
     if (target === void 0) {
-      diagnostics.push(diagnostic("error", "x3.sdk/surface-release-via-unknown", `releaseVia \xAB${surface.releaseVia}\xBB does not name a declared method`, [...path, "releaseVia"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/surface-release-via-unknown",
+          `releaseVia \xAB${surface.releaseVia}\xBB does not name a declared method`,
+          [...path, "releaseVia"]
+        )
+      );
     } else if (target.kind !== "value") {
-      diagnostics.push(diagnostic("error", "x3.sdk/surface-release-via-kind", `releaseVia \xAB${surface.releaseVia}\xBB must name a value method, found ${target.kind}`, [...path, "releaseVia"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/surface-release-via-kind",
+          `releaseVia \xAB${surface.releaseVia}\xBB must name a value method, found ${target.kind}`,
+          [...path, "releaseVia"]
+        )
+      );
     }
   }
   for (const field of surface.fields ?? []) {
     if (Object.hasOwn(surface.methods, field)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/surface-field-is-method", `\xAB${field}\xBB cannot be both a field and a method`, [...path, "fields"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/surface-field-is-method",
+          `\xAB${field}\xBB cannot be both a field and a method`,
+          [...path, "fields"]
+        )
+      );
     }
   }
   return diagnostics;
@@ -3226,76 +3553,154 @@ function dataSourceSurfaceDiagnostics(surface, path) {
 var validateServiceProviderContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.provides.map((offer) => offer.offerId), ["spec", "provides"], "offer ID"),
-    ...duplicateFieldDiagnostics(spec.outputs?.map((output) => `${output.id}\0${output.representation}`) ?? [], ["spec", "outputs"], "trait declaration coordinate"),
-    ...duplicateFieldDiagnostics(spec.fidelityEvidence?.map((evidence) => `${evidence.offerId}\0${evidence.evidenceId}`) ?? [], ["spec", "fidelityEvidence"], "writer fidelity evidence coordinate")
+    ...duplicateFieldDiagnostics(
+      spec.provides.map((offer) => offer.offerId),
+      ["spec", "provides"],
+      "offer ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.outputs?.map((output) => `${output.id}\0${output.representation}`) ?? [],
+      ["spec", "outputs"],
+      "trait declaration coordinate"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.fidelityEvidence?.map((evidence) => `${evidence.offerId}\0${evidence.evidenceId}`) ?? [],
+      ["spec", "fidelityEvidence"],
+      "writer fidelity evidence coordinate"
+    )
   ];
   spec.requires?.forEach((requirement, index) => {
     diagnostics.push(...requirementRangeDiagnostics(requirement, ["spec", "requires", index]));
   });
   spec.outputs?.forEach((claim, index) => {
-    diagnostics.push(...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
-      "spec",
-      "outputs",
-      index
-    ]));
-    claim.prerequisites?.forEach((requirement, requirementIndex) => {
-      diagnostics.push(...requirementRangeDiagnostics(requirement, [
+    diagnostics.push(
+      ...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
         "spec",
         "outputs",
-        index,
-        "prerequisites",
-        requirementIndex
-      ]));
+        index
+      ])
+    );
+    claim.prerequisites?.forEach((requirement, requirementIndex) => {
+      diagnostics.push(
+        ...requirementRangeDiagnostics(requirement, [
+          "spec",
+          "outputs",
+          index,
+          "prerequisites",
+          requirementIndex
+        ])
+      );
     });
   });
   if (spec.replacement !== void 0) {
-    diagnostics.push(...requirementRangeDiagnostics(spec.replacement.target, ["spec", "replacement", "target"]));
+    diagnostics.push(
+      ...requirementRangeDiagnostics(spec.replacement.target, ["spec", "replacement", "target"])
+    );
   }
   const variants = new Set((manifest.runtimeVariants ?? []).map((variant) => variant.variantId));
   spec.provides.forEach((offer, index) => {
     const version = parseSemver(offer.version);
     if (version === void 0 || version.major !== offer.major) {
-      diagnostics.push(diagnostic("error", "x3.sdk/offer-major-mismatch", `offer ${offer.offerId} version ${offer.version} does not match major ${offer.major}`, ["spec", "provides", index, "version"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/offer-major-mismatch",
+          `offer ${offer.offerId} version ${offer.version} does not match major ${offer.major}`,
+          ["spec", "provides", index, "version"]
+        )
+      );
     }
   });
   const offersById = new Map(spec.provides.map((offer, index) => [offer.offerId, { offer, index }]));
   spec.fidelityEvidence?.forEach((evidence, index) => {
     const found = offersById.get(evidence.offerId);
     if (found === void 0) {
-      diagnostics.push(diagnostic("error", "x3.sdk/writer-evidence-offer-unknown", `writer fidelity evidence references unknown offer ${evidence.offerId}`, ["spec", "fidelityEvidence", index, "offerId"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/writer-evidence-offer-unknown",
+          `writer fidelity evidence references unknown offer ${evidence.offerId}`,
+          ["spec", "fidelityEvidence", index, "offerId"]
+        )
+      );
       return;
     }
     if (found.offer.contract !== "common.edit/writer" || found.offer.major !== 1) {
-      diagnostics.push(diagnostic("error", "x3.sdk/writer-evidence-offer-contract", `writer fidelity evidence offer ${evidence.offerId} is not common.edit/writer@1`, ["spec", "fidelityEvidence", index, "offerId"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/writer-evidence-offer-contract",
+          `writer fidelity evidence offer ${evidence.offerId} is not common.edit/writer@1`,
+          ["spec", "fidelityEvidence", index, "offerId"]
+        )
+      );
       return;
     }
     const facet = found.offer.facet;
     if (typeof facet !== "object" || facet === null || Array.isArray(facet)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/writer-evidence-offer-facet", `writer fidelity evidence offer ${evidence.offerId} has no writer facet`, ["spec", "provides", found.index, "facet"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/writer-evidence-offer-facet",
+          `writer fidelity evidence offer ${evidence.offerId} has no writer facet`,
+          ["spec", "provides", found.index, "facet"]
+        )
+      );
       return;
     }
     const writerFacet = facet;
     if (writerFacet.providerId !== manifest.id) {
-      diagnostics.push(diagnostic("error", "x3.sdk/writer-evidence-provider-mismatch", `writer offer ${evidence.offerId} providerId must equal contribution id ${manifest.id}`, ["spec", "provides", found.index, "facet", "providerId"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/writer-evidence-provider-mismatch",
+          `writer offer ${evidence.offerId} providerId must equal contribution id ${manifest.id}`,
+          ["spec", "provides", found.index, "facet", "providerId"]
+        )
+      );
     }
     if (writerFacet.fidelityEvidenceId !== evidence.evidenceId) {
-      diagnostics.push(diagnostic("error", "x3.sdk/writer-evidence-id-mismatch", `writer evidence ${evidence.evidenceId} does not match offer ${evidence.offerId}`, ["spec", "fidelityEvidence", index, "evidenceId"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/writer-evidence-id-mismatch",
+          `writer evidence ${evidence.evidenceId} does not match offer ${evidence.offerId}`,
+          ["spec", "fidelityEvidence", index, "evidenceId"]
+        )
+      );
     }
     if (writerFacet.minimumRoundTrip !== evidence.claim.roundTrip) {
-      diagnostics.push(diagnostic("error", "x3.sdk/writer-evidence-claim-mismatch", `writer evidence ${evidence.evidenceId} claims ${evidence.claim.roundTrip}, but offer ${evidence.offerId} declares ${String(writerFacet.minimumRoundTrip)}`, ["spec", "fidelityEvidence", index, "claim", "roundTrip"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/writer-evidence-claim-mismatch",
+          `writer evidence ${evidence.evidenceId} claims ${evidence.claim.roundTrip}, but offer ${evidence.offerId} declares ${String(writerFacet.minimumRoundTrip)}`,
+          ["spec", "fidelityEvidence", index, "claim", "roundTrip"]
+        )
+      );
     }
   });
   spec.applicableVariants?.forEach((variantId, index) => {
     if (!variants.has(variantId)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/unknown-applicable-variant", `applicable variant ${variantId} is not declared by the envelope`, ["spec", "applicableVariants", index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/unknown-applicable-variant",
+          `applicable variant ${variantId} is not declared by the envelope`,
+          ["spec", "applicableVariants", index]
+        )
+      );
     }
   });
   return diagnostics;
 };
 var validateKnowledgePackSemantics = (manifest) => {
   const spec = manifest.spec;
-  const diagnostics = duplicateFieldDiagnostics(spec.entries.map((entry) => `${entry.id}\0${entry.locale.toLowerCase()}`), ["spec", "entries"], "knowledge entry and locale");
+  const diagnostics = duplicateFieldDiagnostics(
+    spec.entries.map((entry) => `${entry.id}\0${entry.locale.toLowerCase()}`),
+    ["spec", "entries"],
+    "knowledge entry and locale"
+  );
   const targetLocales = /* @__PURE__ */ new Set();
   const targetByLogicalId = /* @__PURE__ */ new Map();
   const localesByLogicalId = /* @__PURE__ */ new Map();
@@ -3303,12 +3708,26 @@ var validateKnowledgePackSemantics = (manifest) => {
     const targetKey = knowledgeTargetKey(entry.target);
     const coordinate = `${targetKey}\0${entry.locale.toLowerCase()}`;
     if (targetLocales.has(coordinate)) {
-      diagnostics.push(diagnostic("warning", "x3.sdk/knowledge-target-locale-overlap", `more than one knowledge entry describes the same target and locale`, ["spec", "entries", index, "target"]));
+      diagnostics.push(
+        diagnostic(
+          "warning",
+          "x3.sdk/knowledge-target-locale-overlap",
+          `more than one knowledge entry describes the same target and locale`,
+          ["spec", "entries", index, "target"]
+        )
+      );
     }
     targetLocales.add(coordinate);
     const previousTarget = targetByLogicalId.get(entry.id);
     if (previousTarget !== void 0 && previousTarget !== targetKey) {
-      diagnostics.push(diagnostic("error", "x3.sdk/knowledge-logical-id-target-mismatch", "translations sharing a logical knowledge entry id must describe the same target", ["spec", "entries", index, "target"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/knowledge-logical-id-target-mismatch",
+          "translations sharing a logical knowledge entry id must describe the same target",
+          ["spec", "entries", index, "target"]
+        )
+      );
     } else {
       targetByLogicalId.set(entry.id, targetKey);
     }
@@ -3319,16 +3738,31 @@ var validateKnowledgePackSemantics = (manifest) => {
     logicalLocales.values.add(entry.locale.toLowerCase());
     localesByLogicalId.set(entry.id, logicalLocales);
     const exactSchemaRevision = entry.target.kind === "field" ? entry.target.schema.revision : void 0;
-    const hasExactSchemaSource = entry.sources.some((source) => source.kind === "schema" && source.schema !== void 0 && (entry.target.kind !== "field" || source.schema.contract === entry.target.schema.contract && source.schema.major === entry.target.schema.major && source.schema.revision === exactSchemaRevision));
+    const hasExactSchemaSource = entry.sources.some(
+      (source) => source.kind === "schema" && source.schema !== void 0 && (entry.target.kind !== "field" || source.schema.contract === entry.target.schema.contract && source.schema.major === entry.target.schema.major && source.schema.revision === exactSchemaRevision)
+    );
     if (entry.claimKind === "schema-derived-fact" && !hasExactSchemaSource) {
-      diagnostics.push(diagnostic("error", "x3.sdk/knowledge-schema-fact-without-schema-source", "a schema-derived fact must cite the exact active schema revision", ["spec", "entries", index, "sources"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/knowledge-schema-fact-without-schema-source",
+          "a schema-derived fact must cite the exact active schema revision",
+          ["spec", "entries", index, "sources"]
+        )
+      );
     }
   });
   const sourceLocale = spec.sourceLocale.toLowerCase();
   for (const [logicalId, locales] of localesByLogicalId) {
-    if (locales.values.has(sourceLocale))
-      continue;
-    diagnostics.push(diagnostic("error", "x3.sdk/knowledge-source-locale-missing", `knowledge entry ${logicalId} has no ${spec.sourceLocale} source-locale version`, ["spec", "entries", locales.firstIndex, "locale"]));
+    if (locales.values.has(sourceLocale)) continue;
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/knowledge-source-locale-missing",
+        `knowledge entry ${logicalId} has no ${spec.sourceLocale} source-locale version`,
+        ["spec", "entries", locales.firstIndex, "locale"]
+      )
+    );
   }
   return diagnostics;
 };
@@ -3343,10 +3777,8 @@ function invalidOpenRegistration(message, context) {
   });
 }
 function safeRegistrationContextValue(value2) {
-  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean")
-    return value2;
-  if (typeof value2 === "number")
-    return Number.isFinite(value2) ? value2 : String(value2);
+  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean") return value2;
+  if (typeof value2 === "number") return Number.isFinite(value2) ? value2 : String(value2);
   return typeof value2;
 }
 function validatedRegistrationCoordinate(value2) {
@@ -3362,7 +3794,10 @@ function validatedRegistrationCoordinate(value2) {
     });
   }
   if (!Number.isSafeInteger(major) || major < 0) {
-    return invalidOpenRegistration("contribution contract major must be a safe non-negative integer", { contract: id, major: safeRegistrationContextValue(major) });
+    return invalidOpenRegistration(
+      "contribution contract major must be a safe non-negative integer",
+      { contract: id, major: safeRegistrationContextValue(major) }
+    );
   }
   return Object.freeze({ id: contractId(id), major });
 }
@@ -3408,7 +3843,9 @@ function createContributionContractRegistry(entries) {
     if (typeof authoredEntry !== "object" || authoredEntry === null || Array.isArray(authoredEntry)) {
       invalidOpenRegistration("contribution contract registration must be an object", {});
     }
-    const coordinate = validatedRegistrationCoordinate(authoredEntry.contract);
+    const coordinate = validatedRegistrationCoordinate(
+      authoredEntry.contract
+    );
     const mode = authoredEntry.mode;
     const conformanceProfileValue = authoredEntry.conformanceProfile;
     const project = authoredEntry.project;
@@ -3439,7 +3876,11 @@ function createContributionContractRegistry(entries) {
         major: coordinate.major
       });
     }
-    const conformanceProfile = validatedRegistrationProfile(conformanceProfileValue, coordinate.id, coordinate.major);
+    const conformanceProfile = validatedRegistrationProfile(
+      conformanceProfileValue,
+      coordinate.id,
+      coordinate.major
+    );
     const base = {
       contract: coordinate,
       schema: snapshotJsonWireObject(authoredEntry.schema),
@@ -3451,7 +3892,11 @@ function createContributionContractRegistry(entries) {
     const entry = mode === "executable" ? Object.freeze({
       ...base,
       mode: "executable",
-      moduleAbi: validatedRegistrationModuleAbi(authoredEntry.moduleAbi, coordinate.id, coordinate.major)
+      moduleAbi: validatedRegistrationModuleAbi(
+        authoredEntry.moduleAbi,
+        coordinate.id,
+        coordinate.major
+      )
     }) : Object.freeze({ ...base, mode: "data-only" });
     const registrationKey2 = key(entry.contract.id, entry.contract.major);
     if (map.has(registrationKey2)) {
@@ -3463,24 +3908,30 @@ function createContributionContractRegistry(entries) {
     }
     map.set(registrationKey2, entry);
   }
-  const list = Object.freeze([...map.values()].sort((left, right) => compareUtf8(left.contract.id, right.contract.id) || left.contract.major - right.contract.major));
-  const validationRegistry = createSpecSchemaRegistry(list.map((entry) => ({
-    contract: entry.contract.id,
-    major: entry.contract.major,
-    schema: entry.schema,
-    ...entry.validator === void 0 ? {} : { validator: entry.validator },
-    validateSemantics: entry.validateSemantics,
-    registration: entry.mode === "executable" ? {
-      mode: "executable",
-      project: entry.project,
-      moduleAbi: entry.moduleAbi,
-      conformanceProfile: entry.conformanceProfile
-    } : {
-      mode: "data-only",
-      project: entry.project,
-      conformanceProfile: entry.conformanceProfile
-    }
-  })));
+  const list = Object.freeze(
+    [...map.values()].sort(
+      (left, right) => compareUtf8(left.contract.id, right.contract.id) || left.contract.major - right.contract.major
+    )
+  );
+  const validationRegistry = createSpecSchemaRegistry(
+    list.map((entry) => ({
+      contract: entry.contract.id,
+      major: entry.contract.major,
+      schema: entry.schema,
+      ...entry.validator === void 0 ? {} : { validator: entry.validator },
+      validateSemantics: entry.validateSemantics,
+      registration: entry.mode === "executable" ? {
+        mode: "executable",
+        project: entry.project,
+        moduleAbi: entry.moduleAbi,
+        conformanceProfile: entry.conformanceProfile
+      } : {
+        mode: "data-only",
+        project: entry.project,
+        conformanceProfile: entry.conformanceProfile
+      }
+    }))
+  );
   return {
     get: (contract, major) => map.get(key(contract, major)),
     list: () => list,
@@ -3555,19 +4006,12 @@ var A1_SPEC_SCHEMA_ENTRIES = [
     }
   }
 ];
-
-// packages/sdk/dist/service-contracts.js
 function foreignServiceContractId(contract) {
-  if (!isQualifiedId(contract))
-    throw new TypeError(`invalid foreign service contract: ${contract}`);
+  if (!isQualifiedId(contract)) throw new TypeError(`invalid foreign service contract: ${contract}`);
   return contract;
 }
-
-// packages/sdk/dist/language/index.js
 var LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT = "common.language/document-analysis";
 var LANGUAGE_DOCUMENT_MATCHER_PROFILE = "org.modkitx/language-document-matcher";
-
-// packages/sdk/dist/runtime/index.js
 var RUNTIME_PROVIDER_CONTRACT = "common.runtime/provider";
 var RUNTIME_SESSION_CONTRACT = "common.runtime/session";
 var RUNTIME_PROVIDER_MATCHER_PROFILE = "org.modkitx/runtime-provider-matcher";
@@ -3580,17 +4024,11 @@ var RUNTIME_SESSION_V2_MEMBERS = Object.freeze([
   "restore",
   "stateHash"
 ]);
-
-// packages/sdk/dist/renderer/index.js
 var SCENE_RENDERER_CONTRACT = "common.render/scene-3d";
 var SCENE_RENDERER_MATCHER_PROFILE = "org.modkitx/scene-renderer-matcher";
-
-// packages/sdk/dist/games/index.js
 var GAME_INSTALLATION_DISCOVERY_CONTRACT = "common.game/installation-discovery";
 var GAME_LAUNCH_PLAN_CONTRACT = "common.game/launch-plan";
 var GAME_INSTALLATION_MATCHER_PROFILE = "org.modkitx/game-installation-matcher";
-
-// packages/sdk/dist/mods/index.js
 var MOD_WORKSPACE_COMPOSITION_CONTRACT = "common.mod/workspace-composition";
 var MOD_WORKSPACE_MATCHER_PROFILE = "org.modkitx/mod-workspace-matcher";
 function positiveLimit(value2, name) {
@@ -3662,8 +4100,7 @@ function resolveModWorkspaceGraph(input) {
   let complete = diagnostics.every((item) => item.severity !== "error");
   const visit = (rootId, depth, path) => {
     const currentState = state.get(rootId);
-    if (currentState === "visited")
-      return;
+    if (currentState === "visited") return;
     if (currentState === "visiting") {
       complete = false;
       const start = path.indexOf(rootId);
@@ -3692,8 +4129,7 @@ function resolveModWorkspaceGraph(input) {
       return;
     }
     const root = roots.get(rootId);
-    if (root === void 0)
-      return;
+    if (root === void 0) return;
     state.set(rootId, "visiting");
     const nextPath = [...path, rootId];
     for (const dependency of root.dependencies) {
@@ -3703,11 +4139,9 @@ function resolveModWorkspaceGraph(input) {
         continue;
       }
       const key2 = `${rootId}\0${dependency.targetRootId}\0${dependency.ref}`;
-      if (missing.has(key2))
-        continue;
+      if (missing.has(key2)) continue;
       missing.add(key2);
-      if (dependency.required)
-        complete = false;
+      if (dependency.required) complete = false;
       diagnostics.push({
         severity: dependency.required ? "error" : "warning",
         code: dependency.required ? "common.mod/dependency-unresolved" : "common.mod/optional-dependency-unresolved",
@@ -3746,8 +4180,6 @@ function resolveModWorkspaceGraph(input) {
     complete
   });
 }
-
-// packages/sdk/dist/data/index.js
 var DATA_CATALOG_ANALYSIS_CONTRACT = "common.data/catalog-analysis";
 var DATA_CATALOG_MATCHER_PROFILE = "org.modkitx/data-catalog-matcher";
 var RESOLVED_DATA_WORKSPACE_CONTRACT = "common.data/resolved-workspace";
@@ -3762,18 +4194,18 @@ function entityKey(namespace, entityId) {
   return `${namespace}\0${entityId}`;
 }
 function cloneJson(value2) {
-  if (Array.isArray(value2))
-    return value2.map(cloneJson);
+  if (Array.isArray(value2)) return value2.map(cloneJson);
   if (typeof value2 === "object" && value2 !== null) {
     return Object.fromEntries(Object.entries(value2).map(([key2, item]) => [key2, cloneJson(item)]));
   }
   return value2;
 }
 function immutableJson(value2) {
-  if (Array.isArray(value2))
-    return Object.freeze(value2.map(immutableJson));
+  if (Array.isArray(value2)) return Object.freeze(value2.map(immutableJson));
   if (typeof value2 === "object" && value2 !== null) {
-    return Object.freeze(Object.fromEntries(Object.entries(value2).map(([key2, item]) => [key2, immutableJson(item)])));
+    return Object.freeze(
+      Object.fromEntries(Object.entries(value2).map(([key2, item]) => [key2, immutableJson(item)]))
+    );
   }
   return value2;
 }
@@ -3819,12 +4251,10 @@ function mergeIndexed(previous, incoming, indexKey) {
   const additions = Array.isArray(incoming) ? incoming : [incoming];
   for (const item of additions) {
     const key2 = indexedKey(item, indexKey);
-    if (key2 === void 0)
-      continue;
+    if (key2 === void 0) continue;
     const found = result.findIndex((candidate) => indexedKey(candidate, indexKey) === key2);
     if (isRemoved(item)) {
-      if (found !== -1)
-        result.splice(found, 1);
+      if (found !== -1) result.splice(found, 1);
     } else if (found === -1) {
       result.push(cloneJson(item));
     } else {
@@ -3861,16 +4291,16 @@ function schemaFields(schema, schemas, diagnostics, visiting = /* @__PURE__ */ n
       }
     }
   }
-  for (const field of schema.fields)
-    fields.set(field.fieldId, field);
+  for (const field of schema.fields) fields.set(field.fieldId, field);
   return fields;
 }
 function mergeFields(base, patch, fields) {
-  const merged = Object.fromEntries(Object.entries(base).map(([key2, value2]) => [key2, cloneJson(value2)]));
+  const merged = Object.fromEntries(
+    Object.entries(base).map(([key2, value2]) => [key2, cloneJson(value2)])
+  );
   for (const [fieldId, incoming] of Object.entries(patch)) {
     const field = fields.get(fieldId);
-    if (field === void 0)
-      continue;
+    if (field === void 0) continue;
     if (field.cardinality === "append") {
       merged[fieldId] = mergeAppend(merged[fieldId], incoming);
     } else if (field.cardinality === "indexed") {
@@ -3882,35 +4312,28 @@ function mergeFields(base, patch, fields) {
   return merged;
 }
 function relationScalarValues(value2) {
-  if (typeof value2 === "string" || typeof value2 === "number")
-    return [String(value2)];
-  if (Array.isArray(value2))
-    return value2.flatMap(relationScalarValues);
+  if (typeof value2 === "string" || typeof value2 === "number") return [String(value2)];
+  if (Array.isArray(value2)) return value2.flatMap(relationScalarValues);
   const record = recordOf(value2);
-  if (record === void 0)
-    return [];
+  if (record === void 0) return [];
   return record["value"] === void 0 ? [] : relationScalarValues(record["value"]);
 }
 function visitRelationField(value2, field, path, visit) {
   if (field.linkNamespace !== void 0 && field.linkNamespace !== "") {
     for (const entityId of relationScalarValues(value2)) {
-      if (entityId.length > 0)
-        visit(field.linkNamespace, entityId, path);
+      if (entityId.length > 0) visit(field.linkNamespace, entityId, path);
     }
   }
-  if (field.fields === void 0)
-    return;
+  if (field.fields === void 0) return;
   const values = Array.isArray(value2) ? value2 : [value2];
   for (const item of values) {
     const record = recordOf(item);
-    if (record === void 0)
-      continue;
+    if (record === void 0) continue;
     const wrapped = record["value"];
     const nested = wrapped === void 0 ? record : recordOf(wrapped) ?? record;
     for (const child of field.fields) {
       const childValue = nested[child.fieldId];
-      if (childValue === void 0)
-        continue;
+      if (childValue === void 0) continue;
       visitRelationField(childValue, child, `${path}.${child.fieldId}`, visit);
     }
   }
@@ -3980,15 +4403,12 @@ function resolveDataCatalog(input) {
       });
       continue;
     }
-    if (patch.parentEntityId !== void 0)
-      current.parentEntityId = patch.parentEntityId;
+    if (patch.parentEntityId !== void 0) current.parentEntityId = patch.parentEntityId;
     current.sources.push(patch.source);
     for (const fieldId of Object.keys(patch.fields)) {
-      if (typeFields.has(fieldId))
-        continue;
+      if (typeFields.has(fieldId)) continue;
       const diagnosticKey = `${patch.typeId}\0${fieldId}`;
-      if (unknownFields.has(diagnosticKey))
-        continue;
+      if (unknownFields.has(diagnosticKey)) continue;
       unknownFields.add(diagnosticKey);
       diagnostics.push({
         severity: "information",
@@ -4007,11 +4427,9 @@ function resolveDataCatalog(input) {
   const resolveEntity = (ref, depth, path) => {
     const key2 = entityKey(ref.namespace, ref.entityId);
     const cached = resolvedCache.get(key2);
-    if (cached !== void 0)
-      return cached;
+    if (cached !== void 0) return cached;
     const current = entities.get(key2);
-    if (current === void 0)
-      return void 0;
+    if (current === void 0) return void 0;
     if (depth > maxDepth) {
       diagnostics.push({
         severity: "error",
@@ -4057,7 +4475,9 @@ function resolveDataCatalog(input) {
         });
       } else {
         complete = parent.complete;
-        fields = Object.fromEntries(Object.entries(parent.fields).map(([fieldId, value2]) => [fieldId, cloneJson(value2)]));
+        fields = Object.fromEntries(
+          Object.entries(parent.fields).map(([fieldId, value2]) => [fieldId, cloneJson(value2)])
+        );
         inheritanceChain = [...parent.inheritanceChain];
         sources = [...parent.sources];
       }
@@ -4071,7 +4491,11 @@ function resolveDataCatalog(input) {
       entityId: current.entityId,
       ...current.parentEntityId === void 0 ? {} : { parentEntityId: current.parentEntityId },
       inheritanceChain: Object.freeze(inheritanceChain.map(immutableRef)),
-      fields: Object.freeze(Object.fromEntries(Object.entries(fields).map(([fieldId, value2]) => [fieldId, immutableJson(value2)]))),
+      fields: Object.freeze(
+        Object.fromEntries(
+          Object.entries(fields).map(([fieldId, value2]) => [fieldId, immutableJson(value2)])
+        )
+      ),
       sources: Object.freeze(sources.map(immutableSource2)),
       complete
     });
@@ -4081,11 +4505,16 @@ function resolveDataCatalog(input) {
   const definitions = [];
   if (extended) {
     for (const current of entities.values()) {
-      const entity = resolveEntity({ namespace: current.namespace, entityId: current.entityId }, 0, []);
-      if (entity !== void 0)
-        definitions.push(entity);
+      const entity = resolveEntity(
+        { namespace: current.namespace, entityId: current.entityId },
+        0,
+        []
+      );
+      if (entity !== void 0) definitions.push(entity);
     }
-    definitions.sort((left, right) => left.namespace.localeCompare(right.namespace) || left.entityId.localeCompare(right.entityId));
+    definitions.sort(
+      (left, right) => left.namespace.localeCompare(right.namespace) || left.entityId.localeCompare(right.entityId)
+    );
   }
   const results = [];
   for (const query of input.queries) {
@@ -4109,12 +4538,10 @@ function resolveDataCatalog(input) {
     const fields = fieldsByType.get(entity.typeId) ?? /* @__PURE__ */ new Map();
     for (const [fieldId, value2] of Object.entries(entity.fields)) {
       const field = fields.get(fieldId);
-      if (field === void 0)
-        continue;
+      if (field === void 0) continue;
       visitRelationField(value2, field, fieldId, (namespace, entityId, role) => {
         const key2 = `${entity.namespace}\0${entity.entityId}\0${namespace}\0${entityId}\0${role}`;
-        if (relationKeys.has(key2))
-          return;
+        if (relationKeys.has(key2)) return;
         relationKeys.add(key2);
         const dead = !resolvedKeys.has(entityKey(namespace, entityId));
         const relation = Object.freeze({
@@ -4140,7 +4567,9 @@ function resolveDataCatalog(input) {
       });
     }
   }
-  relations.sort((left, right) => left.from.namespace.localeCompare(right.from.namespace) || left.from.entityId.localeCompare(right.from.entityId) || left.role.localeCompare(right.role) || left.to.namespace.localeCompare(right.to.namespace) || left.to.entityId.localeCompare(right.to.entityId));
+  relations.sort(
+    (left, right) => left.from.namespace.localeCompare(right.from.namespace) || left.from.entityId.localeCompare(right.from.entityId) || left.role.localeCompare(right.role) || left.to.namespace.localeCompare(right.to.namespace) || left.to.entityId.localeCompare(right.to.entityId)
+  );
   const localizationPatches = extended ? input.localizationPatches ?? [] : [];
   const localePreferences = input.localePreferences ?? [];
   const localizedByLocale = /* @__PURE__ */ new Map();
@@ -4150,8 +4579,7 @@ function resolveDataCatalog(input) {
       entries = /* @__PURE__ */ new Map();
       localizedByLocale.set(patch.locale, entries);
     }
-    if (!entries.has(patch.key))
-      entries.set(patch.key, patch);
+    if (!entries.has(patch.key)) entries.set(patch.key, patch);
   }
   const requestedLocales = localePreferences.length > 0 ? localePreferences : [...localizedByLocale.keys()];
   const localizedStrings = [];
@@ -4160,8 +4588,7 @@ function resolveDataCatalog(input) {
     let resolvedLocale;
     for (const locale of requestedLocales) {
       const candidate = localizedByLocale.get(locale)?.get(key2);
-      if (candidate === void 0)
-        continue;
+      if (candidate === void 0) continue;
       found = candidate;
       resolvedLocale = locale;
       break;
@@ -4176,14 +4603,16 @@ function resolveDataCatalog(input) {
       continue;
     }
     const requestedLocale = requestedLocales[0] ?? resolvedLocale;
-    localizedStrings.push(Object.freeze({
-      key: key2,
-      requestedLocale,
-      resolvedLocale,
-      value: found.value,
-      source: immutableSource2(found.source),
-      fallback: resolvedLocale !== requestedLocale
-    }));
+    localizedStrings.push(
+      Object.freeze({
+        key: key2,
+        requestedLocale,
+        resolvedLocale,
+        value: found.value,
+        source: immutableSource2(found.source),
+        fallback: resolvedLocale !== requestedLocale
+      })
+    );
     if (resolvedLocale !== requestedLocale) {
       diagnostics.push({
         severity: "information",
@@ -4205,7 +4634,9 @@ function resolveDataCatalog(input) {
     gameId: input.gameId,
     analyzerId: input.analyzerId,
     typeIds: Object.freeze([...schemas.keys()].sort()),
-    namespaces: Object.freeze([...namespaceCounts.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([namespace, entityCount]) => Object.freeze({ namespace, entityCount }))),
+    namespaces: Object.freeze(
+      [...namespaceCounts.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([namespace, entityCount]) => Object.freeze({ namespace, entityCount }))
+    ),
     entityCount: entities.size,
     patchCount: input.patches.length,
     entities: Object.freeze(results),
@@ -4222,35 +4653,25 @@ function resolveDataCatalog(input) {
     complete: immutableDiagnostics.every((item) => item.severity !== "error") && results.every((item) => item.complete)
   });
 }
-
-// packages/sdk/dist/maps/index.js
 var MAP_SEMANTIC_ANALYSIS_CONTRACT = "common.map/semantic-analysis";
 var RESOLVED_MAP_WORKSPACE_CONTRACT = "common.map/resolved-workspace";
 var MAP_PREVIEW_PREPARATION_CONTRACT = "common.map/preview-preparation";
 var WORLD_SCENE_SOURCE_CONTRACT = "common.view/world-scene-source";
 var MAP_SEMANTIC_MATCHER_PROFILE = "org.modkitx/map-semantic-matcher";
 var MAP_PREVIEW_PREPARATION_MATCHER_PROFILE = "org.modkitx/map-preview-preparation-matcher";
-
-// packages/sdk/dist/manifest/patterns.js
 function normalize(path) {
   return path.startsWith("./") ? path.slice(2) : path;
 }
 function validateContributionPattern(pattern) {
   const diagnostics = [];
   const bad = (message) => diagnostics.push(diagnostic("error", "x3.sdk/invalid-contribution-pattern", message, [pattern]));
-  if (pattern.trim().length === 0)
-    bad("empty pattern");
-  if (/^([/\\]|[A-Za-z]:)/.test(pattern))
-    bad("absolute paths are forbidden");
-  if (pattern.includes("\\"))
-    bad("use forward slashes");
-  if (pattern.split("/").includes(".."))
-    bad("`..` segments are forbidden");
-  if (pattern.includes("**"))
-    bad("recursive `**` is forbidden");
+  if (pattern.trim().length === 0) bad("empty pattern");
+  if (/^([/\\]|[A-Za-z]:)/.test(pattern)) bad("absolute paths are forbidden");
+  if (pattern.includes("\\")) bad("use forward slashes");
+  if (pattern.split("/").includes("..")) bad("`..` segments are forbidden");
+  if (pattern.includes("**")) bad("recursive `**` is forbidden");
   const stars = pattern.split("*").length - 1;
-  if (stars > 1)
-    bad("at most one shallow `*` is allowed");
+  if (stars > 1) bad("at most one shallow `*` is allowed");
   return diagnostics;
 }
 function toRegExp(pattern) {
@@ -4259,37 +4680,54 @@ function toRegExp(pattern) {
 }
 function expandContributionManifests(patterns, files) {
   const diagnostics = [];
-  for (const pattern of patterns)
-    diagnostics.push(...validateContributionPattern(pattern));
-  if (diagnostics.length > 0)
-    return { entries: [], diagnostics };
+  for (const pattern of patterns) diagnostics.push(...validateContributionPattern(pattern));
+  if (diagnostics.length > 0) return { entries: [], diagnostics };
   const normalizedFiles = files.map(normalize);
   const regexes = patterns.map(toRegExp);
   const entries = [];
   for (const file of normalizedFiles) {
     const matched = [];
     for (let i = 0; i < patterns.length; i += 1) {
-      if (regexes[i].test(file))
-        matched.push(patterns[i]);
+      if (regexes[i].test(file)) matched.push(patterns[i]);
     }
     if (matched.length > 1) {
-      diagnostics.push(diagnostic("error", "x3.sdk/duplicate-pattern-match", `\xAB${file}\xBB matches ${matched.length} declarations`, [file], { patterns: matched }));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-pattern-match",
+          `\xAB${file}\xBB matches ${matched.length} declarations`,
+          [file],
+          { patterns: matched }
+        )
+      );
     } else if (matched.length === 1) {
       entries.push({ pattern: matched[0], path: file });
     } else if (file.endsWith("/contribution.manifest.json")) {
-      diagnostics.push(diagnostic("error", "x3.sdk/orphan-contribution-manifest", `\xAB${file}\xBB is not covered by any contributionManifests declaration`, [file]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/orphan-contribution-manifest",
+          `\xAB${file}\xBB is not covered by any contributionManifests declaration`,
+          [file]
+        )
+      );
     }
   }
   for (const pattern of patterns) {
     if (!entries.some((entry) => entry.pattern === pattern)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/pattern-without-matches", `\xAB${pattern}\xBB matched no files (optional groups do not exist in v1)`, [pattern]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/pattern-without-matches",
+          `\xAB${pattern}\xBB matched no files (optional groups do not exist in v1)`,
+          [pattern]
+        )
+      );
     }
   }
   entries.sort((a, b) => compareUtf8(a.path, b.path));
   return { entries, diagnostics };
 }
-
-// packages/sdk/dist/manifest/normalize.js
 function isRecord2(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
 }
@@ -4299,17 +4737,28 @@ function patternDiagnostics(manifest) {
 function rangeDiagnostics(manifest) {
   const out = [];
   manifest.dependsOn?.forEach((requirement, index) => {
-    if (requirement.range === void 0)
-      return;
+    if (requirement.range === void 0) return;
     if (parseVersionRange(requirement.range) === void 0) {
-      out.push(diagnostic("error", "x3.sdk/invalid-version-range", `\xAB${requirement.range}\xBB is not a range this resolver can evaluate (MK3/23 \xA74 subset)`, ["dependsOn", index, "range"]));
+      out.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-version-range",
+          `\xAB${requirement.range}\xBB is not a range this resolver can evaluate (MK3/23 \xA74 subset)`,
+          ["dependsOn", index, "range"]
+        )
+      );
     }
   });
   return out;
 }
 function exactVersionDiagnostics(manifest) {
   return parseSemver(manifest.version) === void 0 ? [
-    diagnostic("error", "x3.sdk/invalid-extension-version", "extension version must be an exactly evaluable SemVer with safe numeric components", ["version"])
+    diagnostic(
+      "error",
+      "x3.sdk/invalid-extension-version",
+      "extension version must be an exactly evaluable SemVer with safe numeric components",
+      ["version"]
+    )
   ] : [];
 }
 async function normalizeExtensionManifest(input) {
@@ -4333,7 +4782,11 @@ async function normalizeExtensionManifest(input) {
   } catch (error) {
     return {
       diagnostics: [
-        diagnostic("error", "x3.sdk/non-json-authored-container", `authored container must be inert JSON data: ${error instanceof Error ? error.message : String(error)}`)
+        diagnostic(
+          "error",
+          "x3.sdk/non-json-authored-container",
+          `authored container must be inert JSON data: ${error instanceof Error ? error.message : String(error)}`
+        )
       ]
     };
   }
@@ -4344,21 +4797,28 @@ async function normalizeExtensionManifest(input) {
   if (hasBlock && hasStandalone) {
     return {
       diagnostics: [
-        diagnostic("error", "x3.sdk/two-authored-containers", "both package.json#modkit and modkit.extension.json exist \u2014 exactly one authored container per artifact (packaging error)")
+        diagnostic(
+          "error",
+          "x3.sdk/two-authored-containers",
+          "both package.json#modkit and modkit.extension.json exist \u2014 exactly one authored container per artifact (packaging error)"
+        )
       ]
     };
   }
   if (!hasBlock && !hasStandalone) {
     return {
       diagnostics: [
-        diagnostic("error", "x3.sdk/no-authored-container", "neither package.json#modkit nor modkit.extension.json found")
+        diagnostic(
+          "error",
+          "x3.sdk/no-authored-container",
+          "neither package.json#modkit nor modkit.extension.json found"
+        )
       ]
     };
   }
   if (hasStandalone) {
     const diagnostics2 = await validateWithSchema(extensionManifestSchema, standaloneInput);
-    if (hasErrors(diagnostics2))
-      return { container: "standalone", diagnostics: diagnostics2 };
+    if (hasErrors(diagnostics2)) return { container: "standalone", diagnostics: diagnostics2 };
     const manifest2 = standaloneInput;
     const all2 = [
       ...diagnostics2,
@@ -4372,20 +4832,40 @@ async function normalizeExtensionManifest(input) {
   const blockRecord = block;
   for (const field of ["version", "license"]) {
     if (field in blockRecord) {
-      diagnostics.push(diagnostic("error", "x3.sdk/npm-field-duplicated-in-block", `\xAB${field}\xBB belongs to the top-level package.json only (Q76 packaging error)`, ["modkit", field]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/npm-field-duplicated-in-block",
+          `\xAB${field}\xBB belongs to the top-level package.json only (Q76 packaging error)`,
+          ["modkit", field]
+        )
+      );
     }
   }
   diagnostics.push(...await validateWithSchema(modkitBlockSchema, blockRecord));
   const version = packageJson["version"];
   if (typeof version !== "string" || parseSemver(version) === void 0) {
-    diagnostics.push(diagnostic("error", "x3.sdk/invalid-npm-version", "package.json must carry a valid SemVer `version` (inherited into the normalized manifest)", ["version"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-npm-version",
+        "package.json must carry a valid SemVer `version` (inherited into the normalized manifest)",
+        ["version"]
+      )
+    );
   }
   const license = packageJson["license"];
   if (typeof license !== "string" || license.length === 0) {
-    diagnostics.push(diagnostic("error", "x3.sdk/invalid-npm-license", "package.json must carry a non-empty `license` (inherited into the normalized manifest)", ["license"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-npm-license",
+        "package.json must carry a non-empty `license` (inherited into the normalized manifest)",
+        ["license"]
+      )
+    );
   }
-  if (hasErrors(diagnostics))
-    return { container: "package-json", diagnostics };
+  if (hasErrors(diagnostics)) return { container: "package-json", diagnostics };
   const manifest = snapshotJsonWireObject({
     schemaVersion: 1,
     publisher: blockRecord["publisher"],
@@ -4406,38 +4886,28 @@ async function normalizeExtensionManifest(input) {
   ];
   return hasErrors(all) ? { container: "package-json", diagnostics: all } : { container: "package-json", manifest, diagnostics: all };
 }
-
-// packages/sdk/dist/security/grant.js
 function grantValidity(grant, now = Date.now()) {
-  if (grant.expiresAt === void 0)
-    return { state: "valid" };
+  if (grant.expiresAt === void 0) return { state: "valid" };
   const parsed = Date.parse(grant.expiresAt);
-  if (Number.isNaN(parsed))
-    return { state: "malformed", value: grant.expiresAt };
+  if (Number.isNaN(parsed)) return { state: "malformed", value: grant.expiresAt };
   return parsed > now ? { state: "valid" } : { state: "expired", at: grant.expiresAt };
 }
 function intersectClasses(a, b) {
   return uniqueSortedUtf8(a.filter((cls) => b.includes(cls)));
 }
 function intersectStrings(a, b) {
-  if (a === void 0)
-    return b === void 0 ? void 0 : [...b];
-  if (b === void 0)
-    return [...a];
+  if (a === void 0) return b === void 0 ? void 0 : [...b];
+  if (b === void 0) return [...a];
   return uniqueSortedUtf8(a.filter((item) => b.includes(item)));
 }
 function narrowPaths(parent, requestedRoots) {
-  if (parent === void 0)
-    return void 0;
-  if (requestedRoots === void 0)
-    return [...parent];
+  if (parent === void 0) return void 0;
+  if (requestedRoots === void 0) return [...parent];
   return parent.filter((scope) => requestedRoots.includes(scope.root));
 }
 function narrowNetwork(parent, requestedOrigins) {
-  if (parent === void 0)
-    return void 0;
-  if (requestedOrigins === void 0)
-    return [...parent];
+  if (parent === void 0) return void 0;
+  if (requestedOrigins === void 0) return [...parent];
   return parent.map((scope) => ({
     ...scope,
     origins: scope.origins.filter((origin) => requestedOrigins.includes(origin))
@@ -4458,10 +4928,11 @@ function narrowGrant(parent, request) {
   }
   if (request.operation !== void 0 && policy2?.operationClasses !== void 0) {
     const ceiling = policy2.operationClasses[request.operation];
-    if (ceiling !== void 0)
-      allowed = intersectClasses(allowed, ceiling);
+    if (ceiling !== void 0) allowed = intersectClasses(allowed, ceiling);
   }
-  const missing = uniqueSortedUtf8(request.requestedClasses.filter((cls) => !allowed.includes(cls)));
+  const missing = uniqueSortedUtf8(
+    request.requestedClasses.filter((cls) => !allowed.includes(cls))
+  );
   const sourceScope = intersectStrings(parent.sourceScope, request.requestedSourceRoots);
   const filesystem = narrowPaths(parent.filesystem, request.requestedSourceRoots);
   const network = narrowNetwork(parent.network, request.requestedOrigins);
@@ -4488,8 +4959,6 @@ function assertNotWider(parent, child) {
     });
   }
 }
-
-// packages/sdk/dist/asset-capabilities/model-facet-sources.js
 var RESERVED_MODEL_FACET_SOURCES = Object.freeze([
   Object.freeze({
     contract: "common.view/model-lod-source",
@@ -4522,11 +4991,8 @@ var RESERVED_MODEL_FACET_SOURCES = Object.freeze([
 function isReservedModelFacetSource(contract) {
   return RESERVED_MODEL_FACET_SOURCES.some((entry) => entry.contract === contract);
 }
-
-// packages/sdk/dist/asset-capabilities/data-sources.js
 function foreignDataSource(contract, major) {
-  if (!isQualifiedId(contract))
-    throw new TypeError(`invalid foreign data-source id: ${contract}`);
+  if (!isQualifiedId(contract)) throw new TypeError(`invalid foreign data-source id: ${contract}`);
   if (STANDARD_DATA_SOURCE_CONTRACTS.includes(contract)) {
     throw new TypeError(`known data-source contract must use its typed reference: ${contract}`);
   }
@@ -4546,7 +5012,9 @@ function dataSourceRefFromWire(ref) {
     return Object.freeze({ ...ref });
   }
   if (!STANDARD_DATA_SOURCE_CONTRACTS.includes(ref.contract) || ref.major !== 1) {
-    throw new TypeError(`unknown data-source reference must be explicitly opaque: ${ref.contract}@${ref.major}`);
+    throw new TypeError(
+      `unknown data-source reference must be explicitly opaque: ${ref.contract}@${ref.major}`
+    );
   }
   return Object.freeze({ ...ref });
 }
@@ -4561,14 +5029,14 @@ function compareRegistration(a, b) {
   return compareUtf8(a.contract, b.contract) || a.major - b.major || compareUtf8(a.ownerExtensionId, b.ownerExtensionId);
 }
 function rejection(reason, spec, index) {
-  const diagnostic2 = {
+  const diagnostic8 = {
     id: `data-source-registration-${index}`,
     code: `x3.sdk/data-source-${reason}`,
     category: reason === "reserved-namespace" ? "security" : "structure",
     severity: "error",
     message: `data-source contract ${spec.contract}@${spec.major} rejected: ${reason}`
   };
-  return { state: "rejected", reason, diagnostics: [diagnostic2] };
+  return { state: "rejected", reason, diagnostics: [diagnostic8] };
 }
 function malformedBatchDiagnostic(message) {
   return {
@@ -4589,16 +5057,14 @@ var PROVENANCE_KEYS = [
   "manifestPath"
 ];
 function hasExactStringKeys(value2, keys) {
-  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
-    return false;
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2)) return false;
   const record = value2;
   const own = Object.keys(record).sort(compareUtf8);
   const expected = [...keys].sort(compareUtf8);
   return own.length === expected.length && own.every((key2, index) => key2 === expected[index]) && keys.every((key2) => typeof record[key2] === "string" && record[key2].trim() !== "");
 }
 function isInventoryEntry(value2) {
-  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
-    return false;
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2)) return false;
   const record = value2;
   const keys = Object.keys(record).sort(compareUtf8);
   return keys.length === 2 && keys[0] === "definition" && keys[1] === "provenance" && hasExactStringKeys(record.provenance, PROVENANCE_KEYS);
@@ -4623,33 +5089,41 @@ function createDataSourceRegistry(options) {
       let ownedEntries;
       try {
         const snapshot = snapshotJsonWireData(entries);
-        if (!Array.isArray(snapshot))
-          throw new TypeError("data-source inventory must be an array");
-        const checks = await Promise.all(snapshot.map((entry) => {
-          if (!isInventoryEntry(entry)) {
-            return Promise.resolve([
-              malformedBatchDiagnostic("data-source inventory entry must bind definition and provenance")
-            ]);
-          }
-          return validateWithSchema(dataSourceContractDefinitionSpecV1Schema, entry.definition);
-        }));
+        if (!Array.isArray(snapshot)) throw new TypeError("data-source inventory must be an array");
+        const checks = await Promise.all(
+          snapshot.map((entry) => {
+            if (!isInventoryEntry(entry)) {
+              return Promise.resolve([
+                malformedBatchDiagnostic(
+                  "data-source inventory entry must bind definition and provenance"
+                )
+              ]);
+            }
+            return validateWithSchema(
+              dataSourceContractDefinitionSpecV1Schema,
+              entry.definition
+            );
+          })
+        );
         const invalid = checks.findIndex((diagnostics2) => diagnostics2.length > 0);
         if (invalid !== -1) {
           throw new TypeError(`data-source inventory item ${invalid} violates its schema authority`);
         }
         ownedEntries = snapshot;
       } catch (error) {
-        const diagnostic2 = malformedBatchDiagnostic(`data-source inventory rejected before policy evaluation: ${error instanceof Error ? error.message : String(error)}`);
+        const diagnostic8 = malformedBatchDiagnostic(
+          `data-source inventory rejected before policy evaluation: ${error instanceof Error ? error.message : String(error)}`
+        );
         return {
           state: "rejected",
           results: [
             {
               state: "rejected",
               reason: "schema-invalid",
-              diagnostics: [diagnostic2]
+              diagnostics: [diagnostic8]
             }
           ],
-          diagnostics: [diagnostic2]
+          diagnostics: [diagnostic8]
         };
       }
       const counts = /* @__PURE__ */ new Map();
@@ -4657,51 +5131,67 @@ function createDataSourceRegistry(options) {
         const key2 = registrationKey(spec.contract, spec.major);
         counts.set(key2, (counts.get(key2) ?? 0) + 1);
       }
-      const results = await Promise.all(ownedEntries.map(async ({ definition: spec, provenance }, index) => {
-        const key2 = registrationKey(spec.contract, spec.major);
-        if ((counts.get(key2) ?? 0) > 1)
-          return rejection("duplicate", spec, index);
-        if (!isQualifiedId(spec.contract) || !Number.isSafeInteger(spec.major) || spec.major < 0 || spec.schema.$ref.trim() === "") {
-          return rejection("schema-invalid", spec, index);
-        }
-        try {
-          if (isNamespaceOwner(contractNamespace(spec.contract), ownerExtensionId) !== true) {
-            return rejection("reserved-namespace", spec, index);
+      const results = await Promise.all(
+        ownedEntries.map(
+          async ({ definition: spec, provenance }, index) => {
+            const key2 = registrationKey(spec.contract, spec.major);
+            if ((counts.get(key2) ?? 0) > 1) return rejection("duplicate", spec, index);
+            if (!isQualifiedId(spec.contract) || !Number.isSafeInteger(spec.major) || spec.major < 0 || spec.schema.$ref.trim() === "") {
+              return rejection("schema-invalid", spec, index);
+            }
+            try {
+              if (isNamespaceOwner(contractNamespace(spec.contract), ownerExtensionId) !== true) {
+                return rejection("reserved-namespace", spec, index);
+              }
+            } catch {
+              return rejection("reserved-namespace", spec, index);
+            }
+            if (spec.conformanceProfile.trim() === "") {
+              return rejection("conformance-missing", spec, index);
+            }
+            if (provenance.ownerExtensionId !== ownerExtensionId || provenance.artifactRoot.trim() === "" || provenance.manifestPath.trim() === "" || provenance.manifestDigest.trim() === "" || provenance.artifactDigest.trim() === "") {
+              return rejection("schema-invalid", spec, index);
+            }
+            const definition = Object.freeze({ ...spec, ownerExtensionId, provenance });
+            let validation;
+            try {
+              validation = await validateDefinition(definition);
+            } catch {
+              return rejection("schema-invalid", spec, index);
+            }
+            if (validation?.state !== "valid") {
+              const reason = validation?.state === "invalid" && (validation.reason === "schema-invalid" || validation.reason === "conformance-missing") ? validation.reason : "schema-invalid";
+              return rejection(reason, spec, index);
+            }
+            return { state: "registered" };
           }
-        } catch {
-          return rejection("reserved-namespace", spec, index);
-        }
-        if (spec.conformanceProfile.trim() === "") {
-          return rejection("conformance-missing", spec, index);
-        }
-        if (provenance.ownerExtensionId !== ownerExtensionId || provenance.artifactRoot.trim() === "" || provenance.manifestPath.trim() === "" || provenance.manifestDigest.trim() === "" || provenance.artifactDigest.trim() === "") {
-          return rejection("schema-invalid", spec, index);
-        }
-        const definition = Object.freeze({ ...spec, ownerExtensionId, provenance });
-        let validation;
-        try {
-          validation = await validateDefinition(definition);
-        } catch {
-          return rejection("schema-invalid", spec, index);
-        }
-        if (validation?.state !== "valid") {
-          const reason = validation?.state === "invalid" && (validation.reason === "schema-invalid" || validation.reason === "conformance-missing") ? validation.reason : "schema-invalid";
-          return rejection(reason, spec, index);
-        }
-        return { state: "registered" };
-      }));
-      const diagnostics = results.flatMap((result) => result.state === "rejected" ? result.diagnostics : []);
-      if (diagnostics.length > 0)
-        return { state: "rejected", results, diagnostics };
+        )
+      );
+      const diagnostics = results.flatMap(
+        (result) => result.state === "rejected" ? result.diagnostics : []
+      );
+      if (diagnostics.length > 0) return { state: "rejected", results, diagnostics };
       if (ownerGenerations.get(ownerExtensionId) !== generation) {
-        const staleResults = ownedEntries.map(({ definition }, index) => rejection("stale-update", definition, index));
-        const staleDiagnostics = staleResults.flatMap((result) => result.state === "rejected" ? result.diagnostics : []);
+        const staleResults = ownedEntries.map(
+          ({ definition }, index) => rejection("stale-update", definition, index)
+        );
+        const staleDiagnostics = staleResults.flatMap(
+          (result) => result.state === "rejected" ? result.diagnostics : []
+        );
         const diagnostics2 = staleDiagnostics.length > 0 ? staleDiagnostics : [malformedBatchDiagnostic("data-source inventory update was superseded")];
         return { state: "rejected", results: staleResults, diagnostics: diagnostics2 };
       }
-      const retained = new Map([...registrations].filter(([, registration]) => registration.ownerExtensionId !== ownerExtensionId));
-      const conflictResults = ownedEntries.map(({ definition }, index) => retained.has(registrationKey(definition.contract, definition.major)) ? rejection("major-conflict", definition, index) : { state: "registered" });
-      const conflictDiagnostics = conflictResults.flatMap((result) => result.state === "rejected" ? result.diagnostics : []);
+      const retained = new Map(
+        [...registrations].filter(
+          ([, registration]) => registration.ownerExtensionId !== ownerExtensionId
+        )
+      );
+      const conflictResults = ownedEntries.map(
+        ({ definition }, index) => retained.has(registrationKey(definition.contract, definition.major)) ? rejection("major-conflict", definition, index) : { state: "registered" }
+      );
+      const conflictDiagnostics = conflictResults.flatMap(
+        (result) => result.state === "rejected" ? result.diagnostics : []
+      );
       if (conflictDiagnostics.length > 0) {
         return {
           state: "rejected",
@@ -4709,12 +5199,14 @@ function createDataSourceRegistry(options) {
           diagnostics: conflictDiagnostics
         };
       }
-      const committed = ownedEntries.map(({ definition: spec, provenance }) => Object.freeze({
-        ...spec,
-        schema: Object.freeze({ ...spec.schema }),
-        ownerExtensionId,
-        provenance: Object.freeze({ ...provenance })
-      }));
+      const committed = ownedEntries.map(
+        ({ definition: spec, provenance }) => Object.freeze({
+          ...spec,
+          schema: Object.freeze({ ...spec.schema }),
+          ownerExtensionId,
+          provenance: Object.freeze({ ...provenance })
+        })
+      );
       registrations = retained;
       for (const registration of committed) {
         registrations.set(registrationKey(registration.contract, registration.major), registration);
@@ -4726,7 +5218,11 @@ function createDataSourceRegistry(options) {
     },
     unregisterOwner(ownerExtensionId) {
       beginOwnerUpdate(ownerExtensionId);
-      registrations = new Map([...registrations].filter(([, registration]) => registration.ownerExtensionId !== ownerExtensionId));
+      registrations = new Map(
+        [...registrations].filter(
+          ([, registration]) => registration.ownerExtensionId !== ownerExtensionId
+        )
+      );
     },
     lookup(contract, major) {
       return registrations.get(registrationKey(contract, major));
@@ -4739,7 +5235,9 @@ function createDataSourceRegistry(options) {
       if (!isQualifiedId(ref.contract) || !Number.isSafeInteger(ref.major) || ref.major < 0) {
         return void 0;
       }
-      const isStandard = STANDARD_DATA_SOURCE_CONTRACTS.includes(ref.contract);
+      const isStandard = STANDARD_DATA_SOURCE_CONTRACTS.includes(
+        ref.contract
+      );
       if (isStandard && (ref.major !== 1 || "opaque" in ref && ref.opaque === true)) {
         return void 0;
       }
@@ -4747,8 +5245,6 @@ function createDataSourceRegistry(options) {
     }
   };
 }
-
-// packages/sdk/dist/asset-capabilities/data-source-surfaces.js
 var ENCODED_MEDIA_SURFACE_ID = "common.view/encoded-media";
 var ENCODED_MEDIA = Object.freeze({
   contract: contractId(ENCODED_MEDIA_SURFACE_ID),
@@ -4960,25 +5456,23 @@ var AUXILIARY_DATA_SOURCE_SURFACES = deepFreeze({
   [ENCODED_MEDIA_SURFACE_ID]: encodedMediaSurface
 });
 function standardDataSourceSurfaceFor(contract, major) {
-  if (major !== 1)
-    return void 0;
+  if (major !== 1) return void 0;
   if (STANDARD_DATA_SOURCE_CONTRACTS.includes(contract)) {
     return STANDARD_DATA_SOURCE_SURFACES[contract];
   }
-  if (contract === ENCODED_MEDIA_SURFACE_ID)
-    return AUXILIARY_DATA_SOURCE_SURFACES[contract];
+  if (contract === ENCODED_MEDIA_SURFACE_ID) return AUXILIARY_DATA_SOURCE_SURFACES[contract];
   return void 0;
 }
 var ENCODED_MEDIA_SURFACE_CONTRACT = contractId(ENCODED_MEDIA_SURFACE_ID);
-
-// packages/sdk/dist/asset-capabilities/uv-projection.js
 var QUALIFIED_DIGEST = /^[a-z][a-z0-9-]*:[0-9a-f]{32,128}$/u;
 function isAlgorithmQualifiedDigest(value2) {
   return QUALIFIED_DIGEST.test(value2);
 }
 function algorithmQualifiedDigest(value2) {
   if (!isAlgorithmQualifiedDigest(value2)) {
-    throw new TypeError("a UV digest must be algorithm-qualified as \xAB<algorithm>:<lowercase hex>\xBB; a bare hex string is refused");
+    throw new TypeError(
+      "a UV digest must be algorithm-qualified as \xAB<algorithm>:<lowercase hex>\xBB; a bare hex string is refused"
+    );
   }
   return value2;
 }
@@ -4988,8 +5482,6 @@ function toPortableProjectionReceipt(receipt, identity) {
   void sourceUri;
   return { ...rest, form: "portable", sourceIdentity: identity };
 }
-
-// packages/sdk/dist/asset-capabilities/validate-descriptor.js
 function normalizeSourceSpan(span) {
   if (typeof span.byteOffset === "string" && typeof span.byteLength === "string") {
     return Object.freeze({
@@ -5039,10 +5531,14 @@ function normalizeCompanion(item) {
   if (item.state === "ambiguous") {
     return Object.freeze({
       ...item,
-      candidates: Object.freeze(item.candidates.map((candidate) => Object.freeze({
-        source: freezeSource(candidate.source),
-        revision: revisionId(candidate.revision)
-      }))),
+      candidates: Object.freeze(
+        item.candidates.map(
+          (candidate) => Object.freeze({
+            source: freezeSource(candidate.source),
+            revision: revisionId(candidate.revision)
+          })
+        )
+      ),
       diagnosticIds: Object.freeze([...item.diagnosticIds])
     });
   }
@@ -5073,7 +5569,11 @@ function normalizeOrigin(origin) {
     case "derived":
       return Object.freeze({
         kind: "derived",
-        inputs: Object.freeze(origin.inputs.map((input) => Object.freeze({ ...input, revision: revisionId(input.revision) }))),
+        inputs: Object.freeze(
+          origin.inputs.map(
+            (input) => Object.freeze({ ...input, revision: revisionId(input.revision) })
+          )
+        ),
         ...origin.recipe === void 0 ? {} : {
           recipe: Object.freeze({
             ...origin.recipe,
@@ -5100,13 +5600,18 @@ async function validateSubjectDescriptorV2(value2) {
   } catch (error) {
     return {
       diagnostics: [
-        diagnostic("error", "x3.sdk/non-json-subject-descriptor", "subject descriptor must be inert JSON data", [], { error: error instanceof Error ? error.message : String(error) })
+        diagnostic(
+          "error",
+          "x3.sdk/non-json-subject-descriptor",
+          "subject descriptor must be inert JSON data",
+          [],
+          { error: error instanceof Error ? error.message : String(error) }
+        )
       ]
     };
   }
   const schemaDiagnostics2 = await validateWithSchema(subjectDescriptorV2Schema, snapshot);
-  if (hasErrors(schemaDiagnostics2))
-    return { diagnostics: schemaDiagnostics2 };
+  if (hasErrors(schemaDiagnostics2)) return { diagnostics: schemaDiagnostics2 };
   const wire = snapshot;
   const semanticDiagnostics = [];
   const validateSubjectUri = (uri, path) => {
@@ -5115,61 +5620,131 @@ async function validateSubjectDescriptorV2(value2) {
         throw new TypeError("subject reference is not in canonical form");
       }
     } catch (error) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-subject-reference", `subject reference ${uri} is not a canonical restorable identity`, path, { error: error instanceof Error ? error.message : String(error) }));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-subject-reference",
+          `subject reference ${uri} is not a canonical restorable identity`,
+          path,
+          { error: error instanceof Error ? error.message : String(error) }
+        )
+      );
     }
   };
   validateSubjectUri(wire.subjectUri, ["subjectUri"]);
   if (wire.origin.kind === "derived") {
-    wire.origin.inputs.forEach((input, index) => validateSubjectUri(input.subjectUri, ["origin", "inputs", index, "subjectUri"]));
+    wire.origin.inputs.forEach(
+      (input, index) => validateSubjectUri(input.subjectUri, ["origin", "inputs", index, "subjectUri"])
+    );
   }
   const validateDiagnosticCode = (item, path) => {
     if (!isQualifiedId(item.code)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-persistent-diagnostic-code", `persistent diagnostic code ${item.code} is not a qualified id`, [...path, "code"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-persistent-diagnostic-code",
+          `persistent diagnostic code ${item.code} is not a qualified id`,
+          [...path, "code"]
+        )
+      );
     }
   };
   wire.diagnostics.forEach((item, index) => validateDiagnosticCode(item, ["diagnostics", index]));
   if (wire.interpretation === "none") {
-    wire.candidates.forEach((candidate, candidateIndex) => candidate.diagnostics?.forEach((item, diagnosticIndex) => validateDiagnosticCode(item, [
-      "candidates",
-      candidateIndex,
-      "diagnostics",
-      diagnosticIndex
-    ])));
+    wire.candidates.forEach(
+      (candidate, candidateIndex) => candidate.diagnostics?.forEach(
+        (item, diagnosticIndex) => validateDiagnosticCode(item, [
+          "candidates",
+          candidateIndex,
+          "diagnostics",
+          diagnosticIndex
+        ])
+      )
+    );
   }
   if (wire.interpretation === "codec" && parseSemver(wire.identity.codecVersion) === void 0) {
-    semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-codec-version", `codec version ${wire.identity.codecVersion} cannot be evaluated safely`, ["identity", "codecVersion"]));
+    semanticDiagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-codec-version",
+        `codec version ${wire.identity.codecVersion} cannot be evaluated safely`,
+        ["identity", "codecVersion"]
+      )
+    );
   }
   const knownDiagnostics = /* @__PURE__ */ new Set();
   wire.diagnostics.forEach((item, index) => {
     if (knownDiagnostics.has(item.id)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-diagnostic", `diagnostic id ${item.id} is declared more than once`, ["diagnostics", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-diagnostic",
+          `diagnostic id ${item.id} is declared more than once`,
+          ["diagnostics", index, "id"]
+        )
+      );
     }
     knownDiagnostics.add(item.id);
   });
   const traitIds = /* @__PURE__ */ new Set();
   wire.traits.forEach((trait, index) => {
     if (traitIds.has(trait.id)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-trait", `trait ${trait.id} is declared more than once`, ["traits", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-trait",
+          `trait ${trait.id} is declared more than once`,
+          ["traits", index, "id"]
+        )
+      );
     }
     traitIds.add(trait.id);
     if (isStandardTraitId(trait.id)) {
       if (trait.definitionVersion !== void 0) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${trait.id} cannot bind an extension definition version`, ["traits", index, "definitionVersion"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/standard-trait-versioned",
+            `standard trait ${trait.id} cannot bind an extension definition version`,
+            ["traits", index, "definitionVersion"]
+          )
+        );
       }
     } else {
       if (trait.definitionVersion === void 0 || parseSemver(trait.definitionVersion) === void 0) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${trait.id} must bind an exact installed definition version`, ["traits", index, "definitionVersion"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/custom-trait-definition-unbound",
+            `custom trait ${trait.id} must bind an exact installed definition version`,
+            ["traits", index, "definitionVersion"]
+          )
+        );
       }
     }
     if (trait.state !== "available") {
       const diagnosticIds = /* @__PURE__ */ new Set();
       for (const id of trait.diagnosticIds) {
         if (diagnosticIds.has(id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-trait-diagnostic", `trait diagnostic ${id} is referenced more than once`, ["traits", index, "diagnosticIds"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/duplicate-trait-diagnostic",
+              `trait diagnostic ${id} is referenced more than once`,
+              ["traits", index, "diagnosticIds"]
+            )
+          );
         }
         diagnosticIds.add(id);
         if (!knownDiagnostics.has(id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-trait-diagnostic", `trait diagnostic ${id} is not present in descriptor diagnostics`, ["traits", index, "diagnosticIds"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/unknown-trait-diagnostic",
+              `trait diagnostic ${id} is not present in descriptor diagnostics`,
+              ["traits", index, "diagnosticIds"]
+            )
+          );
         }
       }
     }
@@ -5179,29 +5754,64 @@ async function validateSubjectDescriptorV2(value2) {
   const handlerIds = /* @__PURE__ */ new Set();
   wire.operations.forEach((operation, index) => {
     if (operationIds.has(operation.id)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-operation", `operation ${operation.id} is declared more than once`, ["operations", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-operation",
+          `operation ${operation.id} is declared more than once`,
+          ["operations", index, "id"]
+        )
+      );
     }
     operationIds.add(operation.id);
     if (handlerIds.has(operation.handlerId)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-handler", `handler ${operation.handlerId} is bound to more than one operation`, ["operations", index, "handlerId"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-handler",
+          `handler ${operation.handlerId} is bound to more than one operation`,
+          ["operations", index, "handlerId"]
+        )
+      );
     }
     handlerIds.add(operation.handlerId);
     try {
       operationId(operation.id, { contributionId: operationOwner });
     } catch {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-descriptor-operation", `operation ${operation.id} is not owned by ${operationOwner}`, ["operations", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-descriptor-operation",
+          `operation ${operation.id} is not owned by ${operationOwner}`,
+          ["operations", index, "id"]
+        )
+      );
     }
   });
   if (wire.origin.kind === "bundle") {
     const bindingIds = /* @__PURE__ */ new Set();
     wire.origin.bindings.forEach((binding, index) => {
       if (bindingIds.has(binding.id)) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-origin-binding", `origin binding id ${binding.id} is duplicated`, ["origin", "bindings", index, "id"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/duplicate-origin-binding",
+            `origin binding id ${binding.id} is duplicated`,
+            ["origin", "bindings", index, "id"]
+          )
+        );
       }
       bindingIds.add(binding.id);
     });
     if (wire.origin.primary !== void 0 && !bindingIds.has(wire.origin.primary)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-origin-primary", `origin primary ${wire.origin.primary} does not name a bundle binding`, ["origin", "primary"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/unknown-origin-primary",
+          `origin primary ${wire.origin.primary} does not name a bundle binding`,
+          ["origin", "primary"]
+        )
+      );
     }
   }
   if (wire.interpretation === "codec") {
@@ -5210,24 +5820,52 @@ async function validateSubjectDescriptorV2(value2) {
     const bundleBindings = wire.origin.kind === "bundle" ? new Map(wire.origin.bindings.map((binding) => [binding.id, binding])) : /* @__PURE__ */ new Map();
     (wire.companions ?? []).forEach((companion, index) => {
       if (companionIds.has(companion.id)) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-companion-state", `companion requirement ${companion.id} is declared more than once`, ["companions", index, "id"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/duplicate-companion-state",
+            `companion requirement ${companion.id} is declared more than once`,
+            ["companions", index, "id"]
+          )
+        );
       }
       companionIds.add(companion.id);
       if (companion.state === "resolved") {
         if ((companion.cardinality === "one" || companion.cardinality === "zero-or-one") && companion.bindingIds.length !== 1) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-companion-cardinality", `resolved companion ${companion.id} must name exactly one binding for ${companion.cardinality}`, ["companions", index, "bindingIds"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/invalid-companion-cardinality",
+              `resolved companion ${companion.id} must name exactly one binding for ${companion.cardinality}`,
+              ["companions", index, "bindingIds"]
+            )
+          );
         }
         companion.bindingIds.forEach((bindingId2, bindingIndex) => {
           const binding = bundleBindings.get(bindingId2);
           if (binding === void 0 || binding.ownership !== "companion" || binding.role !== companion.role || binding.required !== companion.required || companionBindingIds.has(bindingId2)) {
-            semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-companion-binding", `resolved companion ${companion.id} does not name a distinct matching companion binding`, ["companions", index, "bindingIds", bindingIndex]));
+            semanticDiagnostics.push(
+              diagnostic(
+                "error",
+                "x3.sdk/invalid-companion-binding",
+                `resolved companion ${companion.id} does not name a distinct matching companion binding`,
+                ["companions", index, "bindingIds", bindingIndex]
+              )
+            );
           }
           companionBindingIds.add(bindingId2);
         });
       } else {
         for (const id of companion.diagnosticIds ?? []) {
           if (!knownDiagnostics.has(id)) {
-            semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-companion-diagnostic", `companion diagnostic ${id} is not present in descriptor diagnostics`, ["companions", index, "diagnosticIds"]));
+            semanticDiagnostics.push(
+              diagnostic(
+                "error",
+                "x3.sdk/unknown-companion-diagnostic",
+                `companion diagnostic ${id} is not present in descriptor diagnostics`,
+                ["companions", index, "diagnosticIds"]
+              )
+            );
           }
         }
         if (companion.state === "ambiguous") {
@@ -5235,7 +5873,14 @@ async function validateSubjectDescriptorV2(value2) {
           companion.candidates.forEach((candidate, candidateIndex) => {
             const key2 = canonicalJsonStringify(candidate);
             if (candidates.has(key2)) {
-              semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-companion-candidate", `ambiguous companion ${companion.id} repeats one candidate`, ["companions", index, "candidates", candidateIndex]));
+              semanticDiagnostics.push(
+                diagnostic(
+                  "error",
+                  "x3.sdk/duplicate-companion-candidate",
+                  `ambiguous companion ${companion.id} repeats one candidate`,
+                  ["companions", index, "candidates", candidateIndex]
+                )
+              );
             }
             candidates.add(key2);
           });
@@ -5245,7 +5890,14 @@ async function validateSubjectDescriptorV2(value2) {
     if (wire.origin.kind === "bundle") {
       wire.origin.bindings.forEach((binding, index) => {
         if (binding.ownership === "companion" && !companionBindingIds.has(binding.id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/untracked-companion-binding", `companion binding ${binding.id} has no resolved requirement state`, ["origin", "bindings", index, "id"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/untracked-companion-binding",
+              `companion binding ${binding.id} has no resolved requirement state`,
+              ["origin", "bindings", index, "id"]
+            )
+          );
         }
       });
     }
@@ -5254,7 +5906,14 @@ async function validateSubjectDescriptorV2(value2) {
     const inputIds = /* @__PURE__ */ new Set();
     wire.origin.inputs.forEach((input, index) => {
       if (inputIds.has(input.bindingId)) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-derived-input", `derived input binding ${input.bindingId} is duplicated`, ["origin", "inputs", index, "bindingId"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/duplicate-derived-input",
+            `derived input binding ${input.bindingId} is duplicated`,
+            ["origin", "inputs", index, "bindingId"]
+          )
+        );
       }
       inputIds.add(input.bindingId);
     });
@@ -5269,7 +5928,14 @@ async function validateSubjectDescriptorV2(value2) {
         contributionId: wire.origin.recipe.contributionId
       });
     } catch {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-derivation-operation", `derivation recipe ${wire.origin.recipe.extensionId}@${wire.origin.recipe.extensionVersion}#${wire.origin.recipe.contributionId} cannot own ${wire.origin.recipe.operation}`, ["origin", "recipe"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-derivation-operation",
+          `derivation recipe ${wire.origin.recipe.extensionId}@${wire.origin.recipe.extensionVersion}#${wire.origin.recipe.contributionId} cannot own ${wire.origin.recipe.operation}`,
+          ["origin", "recipe"]
+        )
+      );
     }
   }
   if (hasErrors(semanticDiagnostics)) {
@@ -5285,32 +5951,38 @@ async function validateSubjectDescriptorV2(value2) {
     }),
     diagnostics: Object.freeze(wire.diagnostics.map(normalizeDiagnostic)),
     dataSources: Object.freeze(wire.dataSources.map(dataSourceRefFromWire)),
-    traits: Object.freeze(wire.traits.map((item) => Object.freeze({ ...item, id: traitId(item.id) }))),
-    operations: Object.freeze(wire.operations.map((item) => Object.freeze({
-      ...item,
-      id: operationId(item.id, { contributionId: operationOwner })
-    })))
+    traits: Object.freeze(
+      wire.traits.map((item) => Object.freeze({ ...item, id: traitId(item.id) }))
+    ),
+    operations: Object.freeze(
+      wire.operations.map(
+        (item) => Object.freeze({
+          ...item,
+          id: operationId(item.id, { contributionId: operationOwner })
+        })
+      )
+    )
   };
-  const descriptor = Object.freeze(wire.interpretation === "none" ? { ...base, candidates: Object.freeze(wire.candidates.map(normalizeDetection)) } : {
-    ...base,
-    ...wire.companions === void 0 ? {} : { companions: Object.freeze(wire.companions.map(normalizeCompanion)) }
-  });
+  const descriptor = Object.freeze(
+    wire.interpretation === "none" ? { ...base, candidates: Object.freeze(wire.candidates.map(normalizeDetection)) } : {
+      ...base,
+      ...wire.companions === void 0 ? {} : { companions: Object.freeze(wire.companions.map(normalizeCompanion)) }
+    }
+  );
   return { descriptor, diagnostics: [...schemaDiagnostics2, ...semanticDiagnostics] };
 }
-
-// packages/sdk/dist/asset-capabilities/presentation.js
 function bindingId(value2) {
-  if (!isSegment(value2))
-    throw new TypeError(`invalid binding id: ${value2}`);
+  if (!isSegment(value2)) throw new TypeError(`invalid binding id: ${value2}`);
   return value2;
 }
 function presentationSlotId(value2) {
-  if (!isSegment(value2))
-    throw new TypeError(`invalid presentation slot id: ${value2}`);
+  if (!isSegment(value2)) throw new TypeError(`invalid presentation slot id: ${value2}`);
   return value2;
 }
 function definePresentationPlan(plan) {
-  const stageIds = new Set(plan.slots.filter((slot) => slot.kind === "stage").map((slot) => slot.slotId));
+  const stageIds = new Set(
+    plan.slots.filter((slot) => slot.kind === "stage").map((slot) => slot.slotId)
+  );
   if (plan.activeStage === void 0) {
     if (plan.fallback === void 0 || plan.fallback.kind !== "fallback" || plan.alternateStages.length !== 0) {
       throw new TypeError("a fallback-only presentation plan cannot declare stage alternates");
@@ -5327,14 +5999,11 @@ function definePresentationPlan(plan) {
   }
   return snapshotJsonWireData(plan);
 }
-
-// packages/sdk/dist/asset-capabilities/visual-composition.js
 var MIXED_VISUAL_STAGE_ID = presentationSlotId("mixed-visual");
 var MIXED_VISUAL_WORLD_BINDING_ID = bindingId("mixed-world");
 var MIXED_VISUAL_MODEL_BINDING_ID = bindingId("mixed-model");
 function nonEmpty2(value2, label) {
-  if (value2.trim().length === 0)
-    throw new TypeError(`${label} must not be empty`);
+  if (value2.trim().length === 0) throw new TypeError(`${label} must not be empty`);
 }
 function finiteTuple(value2, label, positive = false) {
   if (value2.length !== 3 || value2.some((item) => !Number.isFinite(item) || positive && item <= 0)) {
@@ -5377,12 +6046,10 @@ function policy(value2, label) {
   digest(value2.provenance.contentDigest, `${label}.provenance.contentDigest`);
   if (value2.license.state === "declared")
     nonEmpty2(value2.license.expression, `${label}.license.expression`);
-  else
-    nonEmpty2(value2.license.reason, `${label}.license.reason`);
+  else nonEmpty2(value2.license.reason, `${label}.license.reason`);
   if (value2.redistribution.state === "allowed")
     nonEmpty2(value2.redistribution.basis, `${label}.redistribution.basis`);
-  else
-    nonEmpty2(value2.redistribution.reason, `${label}.redistribution.reason`);
+  else nonEmpty2(value2.redistribution.reason, `${label}.redistribution.reason`);
 }
 function sameSubject(left, right) {
   return left.subjectUri === right.subjectUri && left.revision === right.revision;
@@ -5394,8 +6061,7 @@ function sameFrame(left, right) {
   return sameJson(left, right);
 }
 function validateTransform(value2, worldFrame) {
-  if (value2.schemaVersion !== 1)
-    throw new TypeError("overlay transform schemaVersion must be 1");
+  if (value2.schemaVersion !== 1) throw new TypeError("overlay transform schemaVersion must be 1");
   frame(value2.source, "overlay transform source");
   frame(value2.target, "overlay transform target");
   if (!sameFrame(value2.target, worldFrame)) {
@@ -5409,8 +6075,7 @@ function validateTransform(value2, worldFrame) {
   let inversions = 0;
   for (let left = 0; left < indices.length; left += 1) {
     for (let right = left + 1; right < indices.length; right += 1) {
-      if (indices[left] > indices[right])
-        inversions += 1;
+      if (indices[left] > indices[right]) inversions += 1;
     }
   }
   const permutationDirection = inversions % 2 === 0 ? 1 : -1;
@@ -5425,12 +6090,10 @@ function validateTransform(value2, worldFrame) {
   digest(value2.evidence.receiptDigest, "overlay transform evidence receiptDigest");
 }
 function validateDocument(document) {
-  if (document.schemaVersion !== 1)
-    throw new TypeError("mixed visual schemaVersion must be 1");
+  if (document.schemaVersion !== 1) throw new TypeError("mixed visual schemaVersion must be 1");
   nonEmpty2(document.workspaceId, "workspaceId");
   frame(document.worldFrame, "worldFrame");
-  if (document.sources.length !== 2)
-    throw new TypeError("mixed visual workspace needs two sources");
+  if (document.sources.length !== 2) throw new TypeError("mixed visual workspace needs two sources");
   const world = document.sources.find((source) => source.role === "world-base");
   const model = document.sources.find((source) => source.role === "model-overlay");
   if (world === void 0 || model === void 0) {
@@ -5470,11 +6133,12 @@ function validateDocument(document) {
     if (resources.has(resource.resourceId))
       throw new TypeError(`duplicate mixed visual resource id: ${resource.resourceId}`);
     const source = document.sources.find((candidate) => candidate.sourceId === resource.sourceId);
-    if (source === void 0)
-      throw new TypeError(`unknown resource source: ${resource.sourceId}`);
+    if (source === void 0) throw new TypeError(`unknown resource source: ${resource.sourceId}`);
     nonEmpty2(resource.logicalId, `resource ${resource.resourceId} logicalId`);
     if (!sameSubject(resource.provenance.subject, source.subject)) {
-      throw new TypeError(`resource ${resource.resourceId} provenance does not match its source snapshot`);
+      throw new TypeError(
+        `resource ${resource.resourceId} provenance does not match its source snapshot`
+      );
     }
     policy(resource, `resource ${resource.resourceId}`);
     resources.set(resource.resourceId, resource);
@@ -5486,8 +6150,7 @@ function validateDocument(document) {
     if (objects.has(object.objectId))
       throw new TypeError(`duplicate mixed visual object id: ${object.objectId}`);
     const source = document.sources.find((candidate) => candidate.sourceId === object.sourceId);
-    if (source === void 0)
-      throw new TypeError(`unknown object source: ${object.sourceId}`);
+    if (source === void 0) throw new TypeError(`unknown object source: ${object.sourceId}`);
     if (source.role !== object.role)
       throw new TypeError(`object ${object.objectId} role does not match its source`);
     if (!sameSubject(object.provenance.subject, source.subject)) {
@@ -5521,7 +6184,9 @@ function validateDocument(document) {
       throw new TypeError(`duplicate overlay placement id: ${placement.placementId}`);
     const object = objects.get(placement.objectId);
     if (object?.role !== "model-overlay") {
-      throw new TypeError(`overlay placement ${placement.placementId} must reference a model-overlay object`);
+      throw new TypeError(
+        `overlay placement ${placement.placementId} must reference a model-overlay object`
+      );
     }
     validateTransform(placement.transform, document.worldFrame);
     placementIds.add(placement.placementId);
@@ -5605,8 +6270,7 @@ function defineMixedVisualWorkspace(input) {
 }
 function isMixedVisualPresentationSlot(slot) {
   const candidate = slot;
-  if (slot.slotId !== MIXED_VISUAL_STAGE_ID || candidate.composition === void 0)
-    return false;
+  if (slot.slotId !== MIXED_VISUAL_STAGE_ID || candidate.composition === void 0) return false;
   try {
     validateDocument(candidate.composition);
     const expectedBindings = candidate.composition.sources.map((source) => source.binding);
@@ -5618,17 +6282,12 @@ function isMixedVisualPresentationSlot(slot) {
     return false;
   }
 }
-
-// packages/sdk/dist/asset-capabilities/v1-projection.js
 var V1_PROJECTION_UNAVAILABLE_CODE = "org.modkitx/compat-v1-projection-unavailable";
-
-// packages/sdk/dist/templates/index.js
 var GAME_TEMPLATE_PREVIEW_OPERATION_ID = "view.template";
 var GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION = 1;
 var nonEmpty3 = (value2) => typeof value2 === "string" && value2.trim().length > 0;
 function isGameTemplatePreviewResult(value2) {
-  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
-    return false;
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2)) return false;
   const result = value2;
   const fidelity = result["fidelity"];
   return result["schemaVersion"] === GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION && result["operationId"] === GAME_TEMPLATE_PREVIEW_OPERATION_ID && nonEmpty3(result["templateKind"]) && nonEmpty3(result["entryUri"]) && (result["rootPath"] === void 0 || typeof result["rootPath"] === "string") && typeof result["resolvedTree"] === "object" && result["resolvedTree"] !== null && Array.isArray(result["displayItems"]) && Array.isArray(result["diagnostics"]) && ["complete", "partial", "capped", "invalid"].includes(String(result["completeness"])) && typeof fidelity === "object" && fidelity !== null && !Array.isArray(fidelity) && fidelity["comparison"] === "semantic" && Array.isArray(fidelity["unsupported"]) && result["provenance"] !== void 0 && result["digest"] !== void 0;

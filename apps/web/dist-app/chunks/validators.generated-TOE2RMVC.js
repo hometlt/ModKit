@@ -1,14 +1,36 @@
-import {
-  __commonJS,
-  __toESM,
-  init_define_MODKIT_EMBED_EXTENSION_ORIGINS
-} from "./chunk-HJULOH5B.js";
-
-// node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js
+// packages/sdk/dist/manifest/validators.generated.js
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __commonJS = (cb, mod) => function __require() {
+  try {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  } catch (e) {
+    throw mod = 0, e;
+  }
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 var require_ucs2length = __commonJS({
   "node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
     "use strict";
-    init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
     Object.defineProperty(exports, "__esModule", { value: true });
     function ucs2length(str) {
       const len = str.length;
@@ -30,12 +52,9 @@ var require_ucs2length = __commonJS({
     ucs2length.code = 'require("ajv/dist/runtime/ucs2length").default';
   }
 });
-
-// node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js
 var require_fast_deep_equal = __commonJS({
   "node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js"(exports, module) {
     "use strict";
-    init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
     module.exports = function equal(a, b) {
       if (a === b) return true;
       if (a && b && typeof a == "object" && typeof b == "object") {
@@ -66,24 +85,15 @@ var require_fast_deep_equal = __commonJS({
     };
   }
 });
-
-// node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/equal.js
 var require_equal = __commonJS({
   "node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/equal.js"(exports) {
     "use strict";
-    init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
     Object.defineProperty(exports, "__esModule", { value: true });
     var equal = require_fast_deep_equal();
     equal.code = 'require("ajv/dist/runtime/equal").default';
     exports.default = equal;
   }
 });
-
-// packages/sdk/dist/manifest/validators.generated.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/sdk/dist/manifest/validators.generated/sourceSpanV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var sourceSpanV1 = validate20;
 var pattern4 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
 function validate20(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
@@ -673,9 +683,6 @@ function validate20(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 validate20.evaluated = { "dynamicProps": true, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/extensionManifestV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module = __toESM(require_ucs2length(), 1);
 var extensionManifestV1 = validate202;
 var schema31 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/extension-manifest.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "publisher", "id", "version", "license", "contributionManifests"], "properties": { "schemaVersion": { "const": 1 }, "publisher": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "license": { "type": "string", "minLength": 1 }, "contributionManifests": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } } } };
@@ -1106,9 +1113,6 @@ function validate202(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate202.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/extensionManifestModkitBlockV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module2 = __toESM(require_ucs2length(), 1);
 var extensionManifestModkitBlockV1 = validate203;
 var schema312 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/extension-manifest-modkit-block.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "publisher", "id", "contributionManifests"], "properties": { "schemaVersion": { "const": 1 }, "publisher": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionManifests": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } } } };
@@ -1476,9 +1480,6 @@ function validate203(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate203.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/extensionRequirementV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module3 = __toESM(require_ucs2length(), 1);
 var extensionRequirementV1 = validate204;
 var schema313 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } };
@@ -1680,9 +1681,6 @@ function validate204(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate204.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/codecContributionSpecV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func2Module = __toESM(require_ucs2length(), 1);
 var func0Module = __toESM(require_equal(), 1);
 var codecContributionSpecV1 = validate205;
@@ -2640,20 +2638,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i12 = data36.length;
                             let j0;
                             if (i12 > 1) {
-                              outer0: for (; i12--; ) {
-                                for (j0 = i12; j0--; ) {
-                                  if (func0(data36[i12], data36[j0])) {
-                                    const err84 = { instancePath: instancePath + "/companions/" + i8 + "/expected/all/" + i10 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i12, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i12 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err84];
-                                    } else {
-                                      vErrors.push(err84);
+                              outer0:
+                                for (; i12--; ) {
+                                  for (j0 = i12; j0--; ) {
+                                    if (func0(data36[i12], data36[j0])) {
+                                      const err84 = { instancePath: instancePath + "/companions/" + i8 + "/expected/all/" + i10 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i12, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i12 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err84];
+                                      } else {
+                                        vErrors.push(err84);
+                                      }
+                                      errors++;
+                                      break outer0;
                                     }
-                                    errors++;
-                                    break outer0;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err85 = { instancePath: instancePath + "/companions/" + i8 + "/expected/all/" + i10 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/all/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -2784,20 +2783,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i15 = data42.length;
                             let j1;
                             if (i15 > 1) {
-                              outer1: for (; i15--; ) {
-                                for (j1 = i15; j1--; ) {
-                                  if (func0(data42[i15], data42[j1])) {
-                                    const err96 = { instancePath: instancePath + "/companions/" + i8 + "/expected/any/" + i13 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i15, j: j1 }, message: "must NOT have duplicate items (items ## " + j1 + " and " + i15 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err96];
-                                    } else {
-                                      vErrors.push(err96);
+                              outer1:
+                                for (; i15--; ) {
+                                  for (j1 = i15; j1--; ) {
+                                    if (func0(data42[i15], data42[j1])) {
+                                      const err96 = { instancePath: instancePath + "/companions/" + i8 + "/expected/any/" + i13 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i15, j: j1 }, message: "must NOT have duplicate items (items ## " + j1 + " and " + i15 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err96];
+                                      } else {
+                                        vErrors.push(err96);
+                                      }
+                                      errors++;
+                                      break outer1;
                                     }
-                                    errors++;
-                                    break outer1;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err97 = { instancePath: instancePath + "/companions/" + i8 + "/expected/any/" + i13 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/any/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -2928,20 +2928,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i18 = data48.length;
                             let j2;
                             if (i18 > 1) {
-                              outer2: for (; i18--; ) {
-                                for (j2 = i18; j2--; ) {
-                                  if (func0(data48[i18], data48[j2])) {
-                                    const err108 = { instancePath: instancePath + "/companions/" + i8 + "/expected/none/" + i16 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i18, j: j2 }, message: "must NOT have duplicate items (items ## " + j2 + " and " + i18 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err108];
-                                    } else {
-                                      vErrors.push(err108);
+                              outer2:
+                                for (; i18--; ) {
+                                  for (j2 = i18; j2--; ) {
+                                    if (func0(data48[i18], data48[j2])) {
+                                      const err108 = { instancePath: instancePath + "/companions/" + i8 + "/expected/none/" + i16 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i18, j: j2 }, message: "must NOT have duplicate items (items ## " + j2 + " and " + i18 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err108];
+                                      } else {
+                                        vErrors.push(err108);
+                                      }
+                                      errors++;
+                                      break outer2;
                                     }
-                                    errors++;
-                                    break outer2;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err109 = { instancePath: instancePath + "/companions/" + i8 + "/expected/none/" + i16 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/none/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -6415,20 +6416,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i47 = data176.length;
                             let j4;
                             if (i47 > 1) {
-                              outer3: for (; i47--; ) {
-                                for (j4 = i47; j4--; ) {
-                                  if (func0(data176[i47], data176[j4])) {
-                                    const err419 = { instancePath: instancePath + "/companions/" + i43 + "/expected/all/" + i45 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i47, j: j4 }, message: "must NOT have duplicate items (items ## " + j4 + " and " + i47 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err419];
-                                    } else {
-                                      vErrors.push(err419);
+                              outer3:
+                                for (; i47--; ) {
+                                  for (j4 = i47; j4--; ) {
+                                    if (func0(data176[i47], data176[j4])) {
+                                      const err419 = { instancePath: instancePath + "/companions/" + i43 + "/expected/all/" + i45 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i47, j: j4 }, message: "must NOT have duplicate items (items ## " + j4 + " and " + i47 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err419];
+                                      } else {
+                                        vErrors.push(err419);
+                                      }
+                                      errors++;
+                                      break outer3;
                                     }
-                                    errors++;
-                                    break outer3;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err420 = { instancePath: instancePath + "/companions/" + i43 + "/expected/all/" + i45 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/all/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -6559,20 +6561,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i50 = data182.length;
                             let j5;
                             if (i50 > 1) {
-                              outer4: for (; i50--; ) {
-                                for (j5 = i50; j5--; ) {
-                                  if (func0(data182[i50], data182[j5])) {
-                                    const err431 = { instancePath: instancePath + "/companions/" + i43 + "/expected/any/" + i48 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i50, j: j5 }, message: "must NOT have duplicate items (items ## " + j5 + " and " + i50 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err431];
-                                    } else {
-                                      vErrors.push(err431);
+                              outer4:
+                                for (; i50--; ) {
+                                  for (j5 = i50; j5--; ) {
+                                    if (func0(data182[i50], data182[j5])) {
+                                      const err431 = { instancePath: instancePath + "/companions/" + i43 + "/expected/any/" + i48 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i50, j: j5 }, message: "must NOT have duplicate items (items ## " + j5 + " and " + i50 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err431];
+                                      } else {
+                                        vErrors.push(err431);
+                                      }
+                                      errors++;
+                                      break outer4;
                                     }
-                                    errors++;
-                                    break outer4;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err432 = { instancePath: instancePath + "/companions/" + i43 + "/expected/any/" + i48 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/any/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -6703,20 +6706,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i53 = data188.length;
                             let j6;
                             if (i53 > 1) {
-                              outer5: for (; i53--; ) {
-                                for (j6 = i53; j6--; ) {
-                                  if (func0(data188[i53], data188[j6])) {
-                                    const err443 = { instancePath: instancePath + "/companions/" + i43 + "/expected/none/" + i51 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i53, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i53 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err443];
-                                    } else {
-                                      vErrors.push(err443);
+                              outer5:
+                                for (; i53--; ) {
+                                  for (j6 = i53; j6--; ) {
+                                    if (func0(data188[i53], data188[j6])) {
+                                      const err443 = { instancePath: instancePath + "/companions/" + i43 + "/expected/none/" + i51 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i53, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i53 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err443];
+                                      } else {
+                                        vErrors.push(err443);
+                                      }
+                                      errors++;
+                                      break outer5;
                                     }
-                                    errors++;
-                                    break outer5;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err444 = { instancePath: instancePath + "/companions/" + i43 + "/expected/none/" + i51 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/none/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -10331,20 +10335,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                               let i84 = data319.length;
                               let j9;
                               if (i84 > 1) {
-                                outer6: for (; i84--; ) {
-                                  for (j9 = i84; j9--; ) {
-                                    if (func0(data319[i84], data319[j9])) {
-                                      const err766 = { instancePath: instancePath + "/companions/" + i80 + "/expected/all/" + i82 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i84, j: j9 }, message: "must NOT have duplicate items (items ## " + j9 + " and " + i84 + " are identical)" };
-                                      if (vErrors === null) {
-                                        vErrors = [err766];
-                                      } else {
-                                        vErrors.push(err766);
+                                outer6:
+                                  for (; i84--; ) {
+                                    for (j9 = i84; j9--; ) {
+                                      if (func0(data319[i84], data319[j9])) {
+                                        const err766 = { instancePath: instancePath + "/companions/" + i80 + "/expected/all/" + i82 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i84, j: j9 }, message: "must NOT have duplicate items (items ## " + j9 + " and " + i84 + " are identical)" };
+                                        if (vErrors === null) {
+                                          vErrors = [err766];
+                                        } else {
+                                          vErrors.push(err766);
+                                        }
+                                        errors++;
+                                        break outer6;
                                       }
-                                      errors++;
-                                      break outer6;
                                     }
                                   }
-                                }
                               }
                             } else {
                               const err767 = { instancePath: instancePath + "/companions/" + i80 + "/expected/all/" + i82 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/all/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -10475,20 +10480,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                               let i87 = data325.length;
                               let j10;
                               if (i87 > 1) {
-                                outer7: for (; i87--; ) {
-                                  for (j10 = i87; j10--; ) {
-                                    if (func0(data325[i87], data325[j10])) {
-                                      const err778 = { instancePath: instancePath + "/companions/" + i80 + "/expected/any/" + i85 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i87, j: j10 }, message: "must NOT have duplicate items (items ## " + j10 + " and " + i87 + " are identical)" };
-                                      if (vErrors === null) {
-                                        vErrors = [err778];
-                                      } else {
-                                        vErrors.push(err778);
+                                outer7:
+                                  for (; i87--; ) {
+                                    for (j10 = i87; j10--; ) {
+                                      if (func0(data325[i87], data325[j10])) {
+                                        const err778 = { instancePath: instancePath + "/companions/" + i80 + "/expected/any/" + i85 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i87, j: j10 }, message: "must NOT have duplicate items (items ## " + j10 + " and " + i87 + " are identical)" };
+                                        if (vErrors === null) {
+                                          vErrors = [err778];
+                                        } else {
+                                          vErrors.push(err778);
+                                        }
+                                        errors++;
+                                        break outer7;
                                       }
-                                      errors++;
-                                      break outer7;
                                     }
                                   }
-                                }
                               }
                             } else {
                               const err779 = { instancePath: instancePath + "/companions/" + i80 + "/expected/any/" + i85 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/any/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -10619,20 +10625,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                               let i90 = data331.length;
                               let j11;
                               if (i90 > 1) {
-                                outer8: for (; i90--; ) {
-                                  for (j11 = i90; j11--; ) {
-                                    if (func0(data331[i90], data331[j11])) {
-                                      const err790 = { instancePath: instancePath + "/companions/" + i80 + "/expected/none/" + i88 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i90, j: j11 }, message: "must NOT have duplicate items (items ## " + j11 + " and " + i90 + " are identical)" };
-                                      if (vErrors === null) {
-                                        vErrors = [err790];
-                                      } else {
-                                        vErrors.push(err790);
+                                outer8:
+                                  for (; i90--; ) {
+                                    for (j11 = i90; j11--; ) {
+                                      if (func0(data331[i90], data331[j11])) {
+                                        const err790 = { instancePath: instancePath + "/companions/" + i80 + "/expected/none/" + i88 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i90, j: j11 }, message: "must NOT have duplicate items (items ## " + j11 + " and " + i90 + " are identical)" };
+                                        if (vErrors === null) {
+                                          vErrors = [err790];
+                                        } else {
+                                          vErrors.push(err790);
+                                        }
+                                        errors++;
+                                        break outer8;
                                       }
-                                      errors++;
-                                      break outer8;
                                     }
                                   }
-                                }
                               }
                             } else {
                               const err791 = { instancePath: instancePath + "/companions/" + i80 + "/expected/none/" + i88 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/none/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -13141,9 +13148,6 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate205.evaluated = { "dynamicProps": true, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/serviceProviderContributionSpecV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func3Module = __toESM(require_ucs2length(), 1);
 var serviceProviderContributionSpecV1 = validate206;
 var schema315 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/service-provider-contribution-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["provides", "lifecycleScope"], "properties": { "provides": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["offerId", "contract", "major", "version"], "properties": { "offerId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "facet": { "title": "JsonValue" } } }, "minItems": 1 }, "fidelityEvidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["offerId", "evidenceId", "claim", "corpusId", "corpusDigest", "conformanceProfile", "optionsFingerprint", "inputClass", "provenAt"], "properties": { "offerId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "evidenceId": { "type": "string", "minLength": 1 }, "claim": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "byte-identical" }, "preservesUnknownData": { "const": true }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "semantic" }, "preservesUnknownData": { "type": "boolean" }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "enum": ["lossy", "none"] }, "preservesUnknownData": { "const": false }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }] }, "corpusId": { "type": "string", "minLength": 1 }, "corpusDigest": { "type": "string", "minLength": 1 }, "conformanceProfile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "optionsFingerprint": { "type": "string", "minLength": 1 }, "inputClass": { "type": "string", "minLength": 1 }, "provenAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" } } } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "inputs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "outputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "protocolOperations": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "replacement": { "type": "object", "additionalProperties": false, "required": ["target", "compatible"], "properties": { "target": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "compatible": { "type": "boolean" } } }, "lifecycleScope": { "enum": ["session", "operation", "process"] }, "applicableVariants": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" } } } };
@@ -14783,9 +14787,6 @@ function validate206(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate206.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/viewerContributionSpecV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func0Module2 = __toESM(require_equal(), 1);
 var func3Module2 = __toESM(require_ucs2length(), 1);
 var viewerContributionSpecV1 = validate207;
@@ -14959,20 +14960,21 @@ function validate207(data, { instancePath = "", parentData, parentDataProperty, 
                 let i2 = data5.length;
                 let j0;
                 if (i2 > 1) {
-                  outer0: for (; i2--; ) {
-                    for (j0 = i2; j0--; ) {
-                      if (func02(data5[i2], data5[j0])) {
-                        const err13 = { instancePath: instancePath + "/requiresTraits/" + i0 + "/states", schemaPath: "#/properties/requiresTraits/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i2, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i2 + " are identical)" };
-                        if (vErrors === null) {
-                          vErrors = [err13];
-                        } else {
-                          vErrors.push(err13);
+                  outer0:
+                    for (; i2--; ) {
+                      for (j0 = i2; j0--; ) {
+                        if (func02(data5[i2], data5[j0])) {
+                          const err13 = { instancePath: instancePath + "/requiresTraits/" + i0 + "/states", schemaPath: "#/properties/requiresTraits/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i2, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i2 + " are identical)" };
+                          if (vErrors === null) {
+                            vErrors = [err13];
+                          } else {
+                            vErrors.push(err13);
+                          }
+                          errors++;
+                          break outer0;
                         }
-                        errors++;
-                        break outer0;
                       }
                     }
-                  }
                 }
               } else {
                 const err14 = { instancePath: instancePath + "/requiresTraits/" + i0 + "/states", schemaPath: "#/properties/requiresTraits/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -15855,9 +15857,6 @@ function validate207(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate207.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/editorContributionSpecV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func2Module2 = __toESM(require_ucs2length(), 1);
 var func0Module3 = __toESM(require_equal(), 1);
 var editorContributionSpecV1 = validate208;
@@ -16420,20 +16419,21 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
         let i7 = data8.length;
         let j3;
         if (i7 > 1) {
-          outer0: for (; i7--; ) {
-            for (j3 = i7; j3--; ) {
-              if (func03(data8[i7], data8[j3])) {
-                const err43 = { instancePath: instancePath + "/consumesDataSources", schemaPath: "#/properties/consumesDataSources/uniqueItems", keyword: "uniqueItems", params: { i: i7, j: j3 }, message: "must NOT have duplicate items (items ## " + j3 + " and " + i7 + " are identical)" };
-                if (vErrors === null) {
-                  vErrors = [err43];
-                } else {
-                  vErrors.push(err43);
+          outer0:
+            for (; i7--; ) {
+              for (j3 = i7; j3--; ) {
+                if (func03(data8[i7], data8[j3])) {
+                  const err43 = { instancePath: instancePath + "/consumesDataSources", schemaPath: "#/properties/consumesDataSources/uniqueItems", keyword: "uniqueItems", params: { i: i7, j: j3 }, message: "must NOT have duplicate items (items ## " + j3 + " and " + i7 + " are identical)" };
+                  if (vErrors === null) {
+                    vErrors = [err43];
+                  } else {
+                    vErrors.push(err43);
+                  }
+                  errors++;
+                  break outer0;
                 }
-                errors++;
-                break outer0;
               }
             }
-          }
         }
       } else {
         const err44 = { instancePath: instancePath + "/consumesDataSources", schemaPath: "#/properties/consumesDataSources/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -16767,9 +16767,6 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate208.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/knowledgePackSpecV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module4 = __toESM(require_ucs2length(), 1);
 var knowledgePackSpecV1 = validate209;
 var schema318 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/knowledge-pack-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "sourceLocale", "priority", "entries"], "properties": { "schemaVersion": { "const": 1 }, "sourceLocale": { "type": "string", "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$", "maxLength": 64 }, "priority": { "type": "number" }, "gameIds": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "maxItems": 32, "uniqueItems": true }, "entries": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "target", "locale", "title", "summary", "claimKind", "confidence", "sources"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "target": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "schema", "typeId", "canonicalPath"], "properties": { "kind": { "const": "field" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "typeId": { "type": "string", "minLength": 1, "maxLength": 128 }, "canonicalPath": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "minItems": 1, "maxItems": 32 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "subjectKind"], "properties": { "kind": { "const": "subject" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectKind": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectId": { "type": "string", "minLength": 1, "maxLength": 512 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "formatId"], "properties": { "kind": { "const": "format" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "formatId": { "type": "string", "minLength": 1, "maxLength": 128 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "code"], "properties": { "kind": { "const": "diagnostic" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "code": { "type": "string", "minLength": 1, "maxLength": 256 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "conceptId"], "properties": { "kind": { "const": "concept" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "conceptId": { "type": "string", "minLength": 1, "maxLength": 128 } } }] }, "locale": { "type": "string", "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$", "maxLength": 64 }, "title": { "type": "string", "minLength": 1, "maxLength": 256 }, "summary": { "type": "string", "minLength": 1, "maxLength": 1024 }, "claimKind": { "enum": ["schema-derived-fact", "documented-interpretation", "community-note", "external-reference"] }, "confidence": { "enum": ["verified", "high", "medium", "low"] }, "aliases": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "maxItems": 32, "uniqueItems": true }, "keywords": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "maxItems": 32, "uniqueItems": true }, "details": { "type": "object", "additionalProperties": false, "properties": { "valueType": { "type": "string", "minLength": 1, "maxLength": 128 }, "units": { "type": "string", "minLength": 1, "maxLength": 128 }, "defaultValue": { "title": "JsonValue" }, "allowedValues": { "type": "array", "items": { "title": "JsonValue" }, "maxItems": 512 }, "deprecated": { "type": "boolean" }, "formulaRole": { "type": "string", "minLength": 1, "maxLength": 512 } } }, "relations": { "type": "array", "maxItems": 64, "items": { "type": "object", "additionalProperties": false, "required": ["role", "target"], "properties": { "role": { "type": "string", "minLength": 1, "maxLength": 128 }, "target": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "schema", "typeId", "canonicalPath"], "properties": { "kind": { "const": "field" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "typeId": { "type": "string", "minLength": 1, "maxLength": 128 }, "canonicalPath": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "minItems": 1, "maxItems": 32 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "subjectKind"], "properties": { "kind": { "const": "subject" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectKind": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectId": { "type": "string", "minLength": 1, "maxLength": 512 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "formatId"], "properties": { "kind": { "const": "format" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "formatId": { "type": "string", "minLength": 1, "maxLength": 128 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "code"], "properties": { "kind": { "const": "diagnostic" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "code": { "type": "string", "minLength": 1, "maxLength": 256 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "conceptId"], "properties": { "kind": { "const": "concept" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "conceptId": { "type": "string", "minLength": 1, "maxLength": 128 } } }] } } } }, "examples": { "type": "array", "maxItems": 16, "items": { "type": "object", "additionalProperties": false, "required": ["title", "text"], "properties": { "title": { "type": "string", "minLength": 1, "maxLength": 256 }, "text": { "type": "string", "minLength": 1, "maxLength": 2048 } } } }, "sources": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "title", "reviewedAt"], "properties": { "kind": { "enum": ["schema", "official-documentation", "source-code", "community-wiki", "observed-corpus", "external-reference"] }, "title": { "type": "string", "minLength": 1, "maxLength": 256 }, "url": { "type": "string", "pattern": "^https://[^\\s]+$", "maxLength": 2048 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 }, "license": { "type": "string", "minLength": 1, "maxLength": 256 }, "reviewedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" } } }, "minItems": 1, "maxItems": 16 } } }, "minItems": 1, "maxItems": 1e4 } } };
@@ -20069,9 +20066,6 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate209.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/writerRequirementV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module5 = __toESM(require_ucs2length(), 1);
 var writerRequirementV1 = validate2010;
 var schema319 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/writer-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] } } };
@@ -20216,9 +20210,6 @@ function validate2010(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2010.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/writerOfferV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module6 = __toESM(require_ucs2length(), 1);
 var writerOfferV1 = validate2011;
 var schema3110 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/writer-offer.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip", "providerId", "fidelityEvidenceId"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] }, "providerId": { "type": "string", "minLength": 1 }, "fidelityEvidenceId": { "type": "string", "minLength": 1 } } };
@@ -20425,9 +20416,6 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2011.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/traitDefinitionSpecV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module7 = __toESM(require_ucs2length(), 1);
 var traitDefinitionSpecV1 = validate2012;
 var schema3111 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "id", "version", "scope", "parametersSchema", "transport"], "properties": { "schemaVersion": { "const": 1 }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "scope": { "anyOf": [{ "enum": ["source", "asset", "subject", "workspace", "service", "operation", "view-session", "representation"] }, { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }] }, "parametersSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "transport": { "enum": ["json", "structured-clone"] }, "documentation": { "type": "string", "minLength": 1 }, "imports": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "range"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } } } };
@@ -20827,9 +20815,6 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2012.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/contractDefinitionSpecV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func2Module3 = __toESM(require_ucs2length(), 1);
 var contractDefinitionSpecV1 = validate2013;
 var schema3112 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/contract-definition-spec.v1.schema.json", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "offerFacet", "requestFacet", "matching", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "service" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "offerFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } } } }] }, "requestFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } } } }] }, "matching": { "type": "object", "additionalProperties": false, "required": ["profile", "major"], "properties": { "profile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "configuration": { "title": "JsonValue" } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }, { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }] };
@@ -24198,9 +24183,6 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2013.evaluated = { "dynamicProps": true, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/subjectDescriptorV2.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func2Module4 = __toESM(require_ucs2length(), 1);
 var func0Module4 = __toESM(require_equal(), 1);
 var subjectDescriptorV2 = validate2014;
@@ -36424,20 +36406,21 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                           let i52 = data388.length;
                           let j6;
                           if (i52 > 1) {
-                            outer0: for (; i52--; ) {
-                              for (j6 = i52; j6--; ) {
-                                if (func04(data388[i52], data388[j6])) {
-                                  const err1059 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i52, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i52 + " are identical)" };
-                                  if (vErrors === null) {
-                                    vErrors = [err1059];
-                                  } else {
-                                    vErrors.push(err1059);
+                            outer0:
+                              for (; i52--; ) {
+                                for (j6 = i52; j6--; ) {
+                                  if (func04(data388[i52], data388[j6])) {
+                                    const err1059 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i52, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i52 + " are identical)" };
+                                    if (vErrors === null) {
+                                      vErrors = [err1059];
+                                    } else {
+                                      vErrors.push(err1059);
+                                    }
+                                    errors++;
+                                    break outer0;
                                   }
-                                  errors++;
-                                  break outer0;
                                 }
                               }
-                            }
                           }
                         } else {
                           const err1060 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -36902,20 +36885,21 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                             let i57 = data403.length;
                             let j8;
                             if (i57 > 1) {
-                              outer1: for (; i57--; ) {
-                                for (j8 = i57; j8--; ) {
-                                  if (func04(data403[i57], data403[j8])) {
-                                    const err1101 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i57, j: j8 }, message: "must NOT have duplicate items (items ## " + j8 + " and " + i57 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err1101];
-                                    } else {
-                                      vErrors.push(err1101);
+                              outer1:
+                                for (; i57--; ) {
+                                  for (j8 = i57; j8--; ) {
+                                    if (func04(data403[i57], data403[j8])) {
+                                      const err1101 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i57, j: j8 }, message: "must NOT have duplicate items (items ## " + j8 + " and " + i57 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err1101];
+                                      } else {
+                                        vErrors.push(err1101);
+                                      }
+                                      errors++;
+                                      break outer1;
                                     }
-                                    errors++;
-                                    break outer1;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err1102 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -37097,9 +37081,6 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2014.evaluated = { "dynamicProps": true, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/contributionManifestV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func2Module5 = __toESM(require_ucs2length(), 1);
 var contributionManifestV1 = validate2015;
 var schema3114 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/contribution-manifest.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "contract", "id", "displayName", "spec"], "properties": { "schemaVersion": { "const": 1 }, "contract": { "type": "object", "additionalProperties": false, "required": ["id", "major"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 }, "status": { "enum": ["supported", "partial", "unsupported", "experimental"] }, "runtimeVariants": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "spec": { "title": "JsonValue" } } };
@@ -38029,9 +38010,6 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2015.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/runtimeVariantDeclarationV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module8 = __toESM(require_ucs2length(), 1);
 var runtimeVariantDeclarationV1 = validate2016;
 var schema3115 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } };
@@ -38438,9 +38416,6 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2016.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/scopedContractRequirementV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module9 = __toESM(require_ucs2length(), 1);
 var scopedContractRequirementV1 = validate2017;
 var schema3116 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } };
@@ -38683,9 +38658,6 @@ function validate2017(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2017.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/dataSourceContractDefinitionV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var func1Module10 = __toESM(require_ucs2length(), 1);
 var dataSourceContractDefinitionV1 = validate2018;
 var schema3117 = { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } };
@@ -40136,9 +40108,6 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2018.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/dataSourceSurfaceV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var dataSourceSurfaceV1 = validate2019;
 var schema3118 = { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } };
 var pattern417 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
@@ -41356,9 +41325,6 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2019.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated/dataSourceMethodSurfaceV1.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var dataSourceMethodSurfaceV1 = validate2020;
 var schema3119 = { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] };
 var pattern418 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
@@ -42400,8 +42366,6 @@ function validate2020(data, { instancePath = "", parentData, parentDataProperty,
   return errors === 0;
 }
 validate2020.evaluated = { "dynamicProps": true, "dynamicItems": false };
-
-// packages/sdk/dist/manifest/validators.generated.js
 var PRECOMPILED_SCHEMA_VALIDATORS = /* @__PURE__ */ new Map([
   ['{\n  "$id": "https://schemas.modkitx.org/x3/source-span.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "oneOf": [\n    {\n      "additionalProperties": false,\n      "properties": {\n        "byteLength": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "byteOffset": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        }\n      },\n      "required": [\n        "byteOffset",\n        "byteLength"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "column": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "line": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Length": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Offset": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "required": [\n        "utf16Offset",\n        "utf16Length",\n        "line",\n        "column"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "byteLength": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "byteOffset": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "column": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "line": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Length": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Offset": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "required": [\n        "byteOffset",\n        "byteLength",\n        "utf16Offset",\n        "utf16Length",\n        "line",\n        "column"\n      ],\n      "type": "object"\n    }\n  ]\n}\n', sourceSpanV1],
   ['{\n  "$id": "https://schemas.modkitx.org/x3/extension-manifest.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "contributionManifests": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "dependsOn": {\n      "items": {\n        "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json",\n        "$schema": "https://json-schema.org/draft/2020-12/schema",\n        "additionalProperties": false,\n        "properties": {\n          "extension": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "mode": {\n            "enum": [\n              "required",\n              "default",\n              "suggested",\n              "integrates"\n            ]\n          },\n          "range": {\n            "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n            "type": "string"\n          },\n          "scope": {\n            "additionalProperties": false,\n            "properties": {\n              "id": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "kind": {\n                "enum": [\n                  "contribution",\n                  "offer",\n                  "operation",\n                  "intent",\n                  "variant",\n                  "profile",\n                  "projection",\n                  "slot"\n                ]\n              }\n            },\n            "required": [\n              "kind",\n              "id"\n            ],\n            "type": "object"\n          }\n        },\n        "required": [\n          "extension",\n          "mode",\n          "scope"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "id": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "license": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "publisher": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "schemaVersion": {\n      "const": 1\n    },\n    "version": {\n      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-((?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\\\.(?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\\+([0-9a-zA-Z-]+(?:\\\\.[0-9a-zA-Z-]+)*))?$",\n      "type": "string"\n    }\n  },\n  "required": [\n    "schemaVersion",\n    "publisher",\n    "id",\n    "version",\n    "license",\n    "contributionManifests"\n  ],\n  "type": "object"\n}\n', extensionManifestV1],

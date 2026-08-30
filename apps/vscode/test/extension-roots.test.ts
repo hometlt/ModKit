@@ -434,7 +434,16 @@ describe('the generated catalog decides what this build ships', () => {
     const onDisk = authoredExtensionRootsRelativeTo(common).map(
       ({ relativePath }) => `common/${relativePath}`,
     )
+    onDisk.push('ps1')
     expect(emitted.roots.map(root => root.directory)).toEqual(onDisk)
+    expect(emitted.roots.find(root => root.directory === 'common/archives')).toMatchObject({
+      name: 'archives',
+      coordinate: 'org.modkitx/archives',
+    })
+    expect(emitted.roots.find(root => root.directory === 'common/models')).toMatchObject({
+      name: 'models',
+      coordinate: 'org.modkitx/models',
+    })
     for (const root of emitted.roots) {
       const loaded = await loadExtensionDirectory(
         join(import.meta.dirname, '..', '..', '..', 'extensions', root.directory),

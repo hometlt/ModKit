@@ -17,7 +17,6 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/iso',
       'org.modkitx/lzma',
       'org.modkitx/pe',
-      'org.modkitx/ps1-xa',
       'org.modkitx/rar',
       'org.modkitx/tar',
       'org.modkitx/xz',
@@ -35,9 +34,10 @@ export const READY_APP_EXTENSIONS = Object.freeze({
       'org.modkitx/wav',
     ]),
   }),
-  containers: Object.freeze({
-    coordinate: 'org.modkitx/containers',
-    contributions: Object.freeze(['org.modkitx/ps1-cue-bin']),
+  ps1: Object.freeze({
+    path: Object.freeze(['ps1']),
+    coordinate: 'org.modkitx/ps1',
+    contributions: Object.freeze(['org.modkitx/ps1-cue-bin', 'org.modkitx/ps1-xa']),
   }),
   documents: Object.freeze({
     coordinate: 'org.modkitx/documents',
@@ -365,7 +365,7 @@ const fullCodecs = Object.freeze([
   'plain-text',
   ...media,
   ...modelsAndArchives,
-  'containers',
+  'ps1',
   /*
    * UVM/UVT materializers and writers.
    *

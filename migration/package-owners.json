@@ -84,6 +84,14 @@
       "unit": "extension-manager"
     },
     {
+      "directory": "packages/codec-kit",
+      "unit": "codec-kit"
+    },
+    {
+      "directory": "packages/ui-graph-3d",
+      "unit": "ui-graph-3d"
+    },
+    {
       "directory": "packages/testkit",
       "unit": "testkit"
     }
@@ -298,9 +306,9 @@
     },
     {
       "package": "@modkitx/xml",
-      "owner": "packages/codec-kit",
+      "owner": "extensions/common/data/text-xml",
       "state": "demoted",
-      "note": "owner decision 2026-08-24: demoted from the package catalog to an extension-side library. Consumers are codecs only; the platform -X-> extensions guard holds the boundary and the user-visible XML codec stays in common/text-xml."
+      "note": "owner decision 2026-08-24: demoted from the package catalog to the XML extension family. Shared codec helpers may live in optional codec-kit, while the user-visible XML implementation and ownership stay in common/data/text-xml."
     }
   ],
   "decisions": [

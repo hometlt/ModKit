@@ -222,15 +222,6 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/sdk
 
-  extensions/common/containers:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../packages/host
-
   extensions/common/data/plain-text:
     dependencies:
       '@modkitx-x3/codec-kit':
@@ -623,6 +614,15 @@ importers:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
         version: link:../../../packages/codec-kit
+
+  extensions/ps1:
+    dependencies:
+      '@modkitx-x3/codec-kit':
+        specifier: workspace:*
+        version: link:../../packages/codec-kit
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../../packages/host
 
   packages/codec-kit:
     dependencies:

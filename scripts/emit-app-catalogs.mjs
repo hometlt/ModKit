@@ -180,8 +180,16 @@ function contributionPaths(extensionRoot, patterns) {
 }
 
 function bundledExtensionDirectories(root) {
-  const commonRoot = join(root, 'extensions', 'common')
-  return authoredExtensionRootsRelativeTo(commonRoot)
+  const extensionsRoot = join(root, 'extensions')
+  const roots = authoredExtensionRootsRelativeTo(join(extensionsRoot, 'common')).map(entry => ({
+    ...entry,
+    relativePath: `common/${entry.relativePath}`,
+  }))
+  const ps1Root = join(extensionsRoot, 'ps1')
+  if (existsSync(join(ps1Root, 'package.json'))) {
+    roots.push({ directory: ps1Root, relativePath: 'ps1' })
+  }
+  return roots
     .filter(({ directory: extensionRoot }) => {
       const packagePath = join(extensionRoot, 'package.json')
       if (!existsSync(packagePath)) return false

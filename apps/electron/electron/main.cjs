@@ -138,7 +138,7 @@ async function createWindow() {
 
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
   const BUNDLED_ROOTS = BUNDLED_EXTENSION_DIRECTORIES.map(directory =>
-    path.join(repositoryRoot, 'extensions', 'common', directory),
+    path.join(repositoryRoot, 'extensions', directory),
   )
   const extensionRegistry =
     process.env.MODKIT_EXTENSION_REGISTRY ||

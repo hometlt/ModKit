@@ -8926,7 +8926,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/containers'
+    owner: 'extensions/ps1'
     plannedBlock: 12
     dependsOn:
       - 'format/iso/open-inspect'
@@ -8995,7 +8995,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/archives'
+    owner: 'extensions/ps1'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:

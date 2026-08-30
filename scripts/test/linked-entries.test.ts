@@ -8,20 +8,22 @@ const repoRoot = resolve(import.meta.dirname, '..', '..')
 const commonRoot = join(repoRoot, 'extensions', 'common')
 
 describe('hand-authored linked extension entries', () => {
-  const extensions = authoredExtensionRootsRelativeTo(commonRoot)
+  const extensions = [
+    ...authoredExtensionRootsRelativeTo(commonRoot),
+    { directory: join(repoRoot, 'extensions', 'ps1'), relativePath: 'ps1' },
+  ]
     .filter(({ directory }) => existsSync(join(directory, 'contributions')))
-    .map(({ relativePath }) => relativePath)
-    .sort()
+    .sort((left, right) => left.relativePath.localeCompare(right.relativePath))
 
-  it.each(extensions)('%s mentions every contribution manifest', extension => {
-    const root = join(commonRoot, extension)
+  it.each(extensions)('$relativePath mentions every contribution manifest', extension => {
+    const root = extension.directory
     const linkedPath = join(root, 'src', 'linked.js')
     const linked = readFileSync(linkedPath, 'utf8')
     const contributions = readdirSync(join(root, 'contributions'))
       .filter(name => name.endsWith('.json'))
       .sort()
     for (const contribution of contributions) {
-      expect(linked, `${extension} omits ${contribution}`).toContain(
+      expect(linked, `${extension.relativePath} omits ${contribution}`).toContain(
         `contributions/${contribution}`,
       )
     }

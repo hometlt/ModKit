@@ -346,7 +346,7 @@
       "kind": "synthetic",
       "format": "ps1-cue-bin",
       "contributionId": "org.modkitx/ps1-cue-bin",
-      "x3Extension": "extensions/common/containers",
+      "x3Extension": "extensions/ps1",
       "canonicalModule": "extensions/common/containers/codecs/ps1-cue-bin/src/index.ts",
       "canonicalAdapter": "archive",
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cue",

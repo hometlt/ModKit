@@ -33,7 +33,7 @@ describe('manifest-driven web extension discovery', () => {
     expect(selection.included).toHaveLength(1)
     expect(selection.included[0]).toMatchObject({
       name: 'images',
-      relativePath: 'data/images',
+      relativePath: 'common/data/images',
     })
     expect(selection.excluded).toEqual([])
   })

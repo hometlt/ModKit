@@ -596,12 +596,6 @@ Metadata: apps/web/dist-app/extensions/audio/package.json
 
 ---
 
-modkit-extension-x3-containers@1.0.0
-License: MIT
-Metadata: apps/web/dist-app/extensions/containers/package.json
-
----
-
 modkit-extension-x3-documents@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/documents/package.json
@@ -623,6 +617,12 @@ Metadata: apps/web/dist-app/extensions/models/package.json
 modkit-extension-x3-plain-text@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/plain-text/package.json
+
+---
+
+modkit-extension-x3-ps1@1.0.0
+License: MIT
+Metadata: apps/web/dist-app/extensions/ps1/package.json
 
 ---
 

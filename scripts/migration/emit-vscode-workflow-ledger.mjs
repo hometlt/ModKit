@@ -865,8 +865,10 @@ if (ownerBlockerById.size !== 0) {
 }
 
 const packagingBoundary = decisions.packagingBoundary ?? {}
-const cataloguedCommonRoots = (vscodeCatalog.roots ?? []).filter(
-  root => typeof root?.directory === 'string' && root.directory.startsWith('common/'),
+const cataloguedCoreRoots = (vscodeCatalog.roots ?? []).filter(
+  root =>
+    typeof root?.directory === 'string' &&
+    (root.directory.startsWith('common/') || root.directory === 'ps1'),
 ).length
 if (
   publicationInventory.schemaVersion !== 1 ||
@@ -889,17 +891,17 @@ if (
 const packagedCodecRoots = publicationInventory.packagedCodecRoots.length
 if (
   vscodeCatalog.schemaVersion !== 1 ||
-  vscodeCatalog.rootCount !== cataloguedCommonRoots ||
-  cataloguedCommonRoots !== 18
+  vscodeCatalog.rootCount !== cataloguedCoreRoots ||
+  cataloguedCoreRoots !== 18
 ) {
   fail(
-    `VS Code catalog boundary must contain exactly 18 common roots; found ${String(vscodeCatalog.rootCount)}/${cataloguedCommonRoots}`,
+    `VS Code catalog boundary must contain exactly 18 core roots; found ${String(vscodeCatalog.rootCount)}/${cataloguedCoreRoots}`,
   )
 }
 if (
   packagingBoundary.state !== 'already-equivalent' ||
   packagingBoundary.ownerBlockerId !== null ||
-  packagingBoundary.cataloguedCommonRoots !== cataloguedCommonRoots ||
+  packagingBoundary.cataloguedCommonRoots !== cataloguedCoreRoots ||
   packagingBoundary.packagedCodecRoots !== packagedCodecRoots ||
   packagedCodecRoots !== 0 ||
   packagingBoundary.deterministicShellArtifact !== true ||

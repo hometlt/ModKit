@@ -17,7 +17,7 @@ packages:
   # dependencies of core/sdk/vfs/host and therefore do not enter the bootstrap import closure.
   - 'extensions/common/archives'
   - 'extensions/common/audio'
-  - 'extensions/common/containers'
+  - 'extensions/ps1'
   - 'extensions/common/images'
   - 'extensions/common/vector'
   - 'extensions/common/models'

@@ -23,7 +23,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:143769e1dd4405e5201fd2e519f7d5aae5e21efb4293d3fa788c130134cdaf5f',
+        artifactDigest: 'sha256:4c6179fa1312497fcd336e7f665a445d0284c22c74a3e18b9ead6c2e32680420',
         fileDigests: {
           'MIGRATION-NOTES-common-archives.json':
             'sha256:c824dbe6a3f04776d304b30974c1b21b478c66e5bbe2a39124997b6cedc348f8',
@@ -46,8 +46,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:ae4f9eb09391c9b55b89ef844328abd70e92ba23bafab3a4aaeec1336cc87aec',
           'contributions/codec-pe.json':
             'sha256:22046a650a7a95ac2e25207402b673405694c18635cf787985546c3554da6d21',
-          'contributions/codec-ps1-xa.json':
-            'sha256:3599c99c7413e2088ec83e06b042bec0eb38d9e8da134e8c80cc222d9f8d7396',
           'contributions/codec-rar.json':
             'sha256:e4b33a25acab1a2263ecc7dbdb774fcc5be491b9e6164dab66091fc75e1e7348',
           'contributions/codec-tar.json':
@@ -77,13 +75,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/iso/codec.js':
             'sha256:87a48d1edecde33b6783cffd8edf202fc0c46b5a37fa03a1fcee6f08eadb551b',
           'src/linked.js':
-            'sha256:fd9027c6f5e7698a7c35c78f6707ab8ce943c567cd7becdeb33a83623b360942',
+            'sha256:89180de9656484d6e25686055ab0839d76f9677a41da68fcc62a98ca937f88f0',
           'src/lzma/codec.js':
             'sha256:349f70697fe4292670ca1ff71eec5fc486d1e9caa9f24d6e89746a953c002ac9',
           'src/pe/codec.js':
             'sha256:fdd0a8dc9b9966cb1a36cb56f68fc62e6393ee5ced844f240062e2d51eaf2a95',
-          'src/ps1-xa/codec.js':
-            'sha256:8448cf49288b23c781bbc6ce0b3abcddf063084a8dff1de5447ffb8044ee19af',
           'src/rar/codec.js':
             'sha256:3e9331eea1f26300e450bab388c7cea4f9eff7f37050c6afcc6b40769445bf8c',
           'src/tar/codec.js':
@@ -94,7 +90,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:c4077d90c36bfefb1f329f6fcf51c97825d464114dabe71a8a2e93bf19bb7f1f',
         },
         inventoryRecordId:
-          'artifact:sha256:143769e1dd4405e5201fd2e519f7d5aae5e21efb4293d3fa788c130134cdaf5f',
+          'artifact:sha256:4c6179fa1312497fcd336e7f665a445d0284c22c74a3e18b9ead6c2e32680420',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
@@ -171,10 +167,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         [
           'contributions/codec-pe.json',
           'sha256:22046a650a7a95ac2e25207402b673405694c18635cf787985546c3554da6d21',
-        ],
-        [
-          'contributions/codec-ps1-xa.json',
-          'sha256:3599c99c7413e2088ec83e06b042bec0eb38d9e8da134e8c80cc222d9f8d7396',
         ],
         [
           'contributions/codec-rar.json',
@@ -1378,131 +1370,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           },
         ],
         [
-          'contributions/codec-ps1-xa.json',
-          {
-            contract: {
-              id: 'org.modkitx/codec-contribution',
-              major: 1,
-            },
-            displayName: 'PlayStation XA indexed stream',
-            id: 'org.modkitx/ps1-xa',
-            limitations: [
-              'The XA payload has no self-contained Westwood file index; without a sibling FAT, the portable codec exposes validated 2336-byte CD-XA sectors with anonymous names.',
-              'Audio, video, and data payload decoding, full 2352-byte raw sectors, writing, and FAT-derived file boundaries are not implemented.',
-            ],
-            runtimeVariants: [
-              {
-                entrypoint: './src/ps1-xa/codec.js',
-                executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['node'],
-                },
-                variantId: 'trusted-node',
-              },
-              {
-                entrypoint: './src/ps1-xa/codec.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              artifactStages: ['authored', 'compiled'],
-              budgets: {
-                maxDepth: 64,
-                maxDiagnostics: 1000,
-                maxInputBytes: '1073741824',
-                maxNodes: 100000,
-                maxScalarBytes: 104857600,
-              },
-              formatRefs: [
-                {
-                  formatId: 'ps1-xa',
-                  label: 'PlayStation XA indexed stream',
-                },
-              ],
-              implementationTier: {
-                claimed: 1,
-              },
-              match: {
-                extensions: ['xa'],
-              },
-              openIntents: ['probe', 'inspect', 'full', 'export'],
-              operations: [
-                {
-                  handlerId: 'inspect',
-                  id: 'view.inspect',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'validate',
-                  id: 'asset.validate',
-                  mutatesSource: false,
-                  outputKinds: ['none'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'export-raw',
-                  id: 'export.raw',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'extract-entry',
-                  id: 'container.extract',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-              ],
-              probe: {
-                kind: 'bytes',
-                maxBytes: 4096,
-                ranges: [
-                  {
-                    from: 'start',
-                    length: 4096,
-                  },
-                ],
-              },
-              publishesDataSources: [
-                {
-                  contract: 'common.view/namespace-entry-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/tree-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/byte-range-source',
-                  major: 1,
-                },
-              ],
-              representations: [
-                {
-                  contract: 'common.archive/entry-namespace',
-                  id: 'archive-namespace',
-                  lossy: false,
-                  major: 1,
-                  stage: 'authored',
-                },
-              ],
-              roles: ['container'],
-              sourceTopology: 'single',
-            },
-            status: 'supported',
-          },
-        ],
-        [
           'contributions/codec-rar.json',
           {
             contract: {
@@ -2245,7 +2112,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'contributions/codec-iso.json',
         'contributions/codec-lzma.json',
         'contributions/codec-pe.json',
-        'contributions/codec-ps1-xa.json',
         'contributions/codec-rar.json',
         'contributions/codec-tar.json',
         'contributions/codec-xz.json',
@@ -2264,7 +2130,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/linked.js',
         'src/lzma/codec.js',
         'src/pe/codec.js',
-        'src/ps1-xa/codec.js',
         'src/rar/codec.js',
         'src/tar/codec.js',
         'src/xz/codec.js',
@@ -3228,211 +3093,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       ],
       name: 'audio',
       source: 'extensions/common/audio',
-    },
-    {
-      artifact: {
-        artifactDigest: 'sha256:c93e9a475c8f95b1724f5fca948da1f410b431d14636aec91ec45a903e082683',
-        fileDigests: {
-          'MIGRATION-NOTES-common-containers.json':
-            'sha256:d38d3068fa12e31350e8636e22186b95607bcc2df8cd72c70e2876e9d90940cb',
-          'README.md': 'sha256:573b5d8d8bd6e42211c77f6aaf7792aed3696c0da3bd7d4c880828ad7ecfe7e3',
-          'contributions/codec-ps1-cue-bin.json':
-            'sha256:556e3e8fd00069b9964e1f6374e3b02ffa249ff83dbfb7fe2079a415444592c0',
-          'package.json': 'sha256:908aa8487e703202a321ebb90e7b3626c097c6c50329a64c5a210cede2528fd0',
-          'src/linked.js':
-            'sha256:d28527d9c71d2760e2b34f0d41e78e08d4cf321024543b06ba8d10195a1e5ab9',
-          'src/ps1-cue-bin/codec.js':
-            'sha256:8e7a5e98f76f882380d9ccc750d786a059819b657b09967213e69a76bd5354f0',
-        },
-        inventoryRecordId:
-          'artifact:sha256:c93e9a475c8f95b1724f5fca948da1f410b431d14636aec91ec45a903e082683',
-      },
-      artifactRoot: 'extensions/containers/',
-      containers: {
-        packageJson: {
-          dependencies: {
-            '@modkitx-x3/codec-kit': 'workspace:*',
-          },
-          description: 'Product-owned multi-file container codecs for MK3.',
-          exports: {
-            './linked': './src/linked.js',
-            './package.json': './package.json',
-          },
-          files: ['contributions', 'src', 'README.md'],
-          license: 'MIT',
-          modkit: {
-            contributionManifests: ['./contributions/*.json'],
-            id: 'containers',
-            publisher: 'org.modkitx',
-            schemaVersion: 1,
-          },
-          name: 'modkit-extension-x3-containers',
-          peerDependencies: {
-            '@modkitx-x3/host': 'workspace:*',
-          },
-          peerDependenciesMeta: {
-            '@modkitx-x3/host': {
-              optional: true,
-            },
-          },
-          type: 'module',
-          version: '1.0.0',
-        },
-      },
-      documentDigests: [
-        [
-          'contributions/codec-ps1-cue-bin.json',
-          'sha256:556e3e8fd00069b9964e1f6374e3b02ffa249ff83dbfb7fe2079a415444592c0',
-        ],
-      ],
-      documents: [
-        [
-          'contributions/codec-ps1-cue-bin.json',
-          {
-            contract: {
-              id: 'org.modkitx/codec-contribution',
-              major: 1,
-            },
-            displayName: 'PlayStation CUE/BIN disc image',
-            id: 'org.modkitx/ps1-cue-bin',
-            limitations: [
-              'The CUE is the candidate and its exact FILE name is refined into one required host-resolved BIN companion; the portable codec never resolves filesystem paths.',
-              'The bounded subset supports one BINARY FILE, a zero first INDEX 01, increasing tracks with one physical sector size, and AUDIO, MODE1/2048, MODE1/2352, MODE2/2048, or MODE2/2352 tracks.',
-              'Raw and cooked tracks plus the first ISO 9660 data-track namespace are extractable; raw-sector EDC/ECC validation, Joliet, Rock Ridge, UDF, multi-extent files, pregap materialization, and writing are not implemented.',
-              'The companion is materialized under maxScalarBytes as well as maxInputBytes; larger full-disc images require a future leased random-access companion lifecycle.',
-            ],
-            runtimeVariants: [
-              {
-                entrypoint: './src/ps1-cue-bin/codec.js',
-                executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['node'],
-                },
-                variantId: 'trusted-node',
-              },
-              {
-                entrypoint: './src/ps1-cue-bin/codec.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              artifactStages: ['authored', 'compiled'],
-              budgets: {
-                maxDepth: 64,
-                maxDiagnostics: 1000,
-                maxInputBytes: '1073741824',
-                maxNodes: 100000,
-                maxScalarBytes: 104857600,
-              },
-              companions: [
-                {
-                  id: 'disc-payload',
-                  patterns: ['*.bin', '*.BIN'],
-                  required: true,
-                  role: 'disc-payload',
-                  searchScopes: ['sibling-directory', 'enclosing-container'],
-                },
-              ],
-              formatRefs: [
-                {
-                  formatId: 'ps1-cue-bin',
-                  label: 'PlayStation CUE/BIN disc image',
-                },
-              ],
-              implementationTier: {
-                claimed: 1,
-              },
-              match: {
-                extensions: ['cue'],
-              },
-              openIntents: ['probe', 'inspect', 'full', 'export'],
-              operations: [
-                {
-                  handlerId: 'inspect',
-                  id: 'view.inspect',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'validate',
-                  id: 'asset.validate',
-                  mutatesSource: false,
-                  outputKinds: ['none'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'export-raw',
-                  id: 'export.raw',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'extract-entry',
-                  id: 'container.extract',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-              ],
-              probe: {
-                kind: 'bytes',
-                maxBytes: 4096,
-                ranges: [
-                  {
-                    from: 'start',
-                    length: 4096,
-                  },
-                ],
-              },
-              publishesDataSources: [
-                {
-                  contract: 'common.view/namespace-entry-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/tree-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/byte-range-source',
-                  major: 1,
-                },
-              ],
-              representations: [
-                {
-                  contract: 'common.archive/entry-namespace',
-                  id: 'archive-namespace',
-                  lossy: false,
-                  major: 1,
-                  stage: 'authored',
-                },
-              ],
-              roles: ['container'],
-              sourceTopology: 'bundle',
-            },
-            status: 'partial',
-          },
-        ],
-      ],
-      files: [
-        'MIGRATION-NOTES-common-containers.json',
-        'README.md',
-        'contributions/codec-ps1-cue-bin.json',
-        'package.json',
-        'src/linked.js',
-        'src/ps1-cue-bin/codec.js',
-      ],
-      name: 'containers',
-      source: 'extensions/common/containers',
     },
     {
       artifact: {
@@ -11708,6 +11368,343 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       ],
       name: 'video',
       source: 'extensions/common/video',
+    },
+    {
+      artifact: {
+        artifactDigest: 'sha256:88688928d87699f08384cb9eda916b862e8f36e812fb475a8324a8f78c5acb3c',
+        fileDigests: {
+          'README.md': 'sha256:7422973629ab0f7ae9992e7cad2056568cdf769f6bda8790ce877411d302b760',
+          'contributions/codec-ps1-cue-bin.json':
+            'sha256:556e3e8fd00069b9964e1f6374e3b02ffa249ff83dbfb7fe2079a415444592c0',
+          'contributions/codec-ps1-xa.json':
+            'sha256:3599c99c7413e2088ec83e06b042bec0eb38d9e8da134e8c80cc222d9f8d7396',
+          'package.json': 'sha256:5f43de2a6c57512fd5f3acc1015832c31fca97270aff74daf68a40cc7d6d5516',
+          'src/linked.js':
+            'sha256:ab2830cf4340130d1af7d7b136bb2282fc86ec623c65d33519ae70c98f99aef5',
+          'src/ps1-cue-bin/codec.js':
+            'sha256:8e7a5e98f76f882380d9ccc750d786a059819b657b09967213e69a76bd5354f0',
+          'src/ps1-xa/codec.js':
+            'sha256:8448cf49288b23c781bbc6ce0b3abcddf063084a8dff1de5447ffb8044ee19af',
+        },
+        inventoryRecordId:
+          'artifact:sha256:88688928d87699f08384cb9eda916b862e8f36e812fb475a8324a8f78c5acb3c',
+      },
+      artifactRoot: 'extensions/ps1/',
+      containers: {
+        packageJson: {
+          dependencies: {
+            '@modkitx-x3/codec-kit': 'workspace:*',
+          },
+          description: 'Product-owned PlayStation container codecs for MK3.',
+          exports: {
+            './linked': './src/linked.js',
+            './package.json': './package.json',
+          },
+          files: ['contributions', 'src', 'README.md'],
+          license: 'MIT',
+          modkit: {
+            contributionManifests: ['./contributions/*.json'],
+            id: 'ps1',
+            publisher: 'org.modkitx',
+            schemaVersion: 1,
+          },
+          name: 'modkit-extension-x3-ps1',
+          peerDependencies: {
+            '@modkitx-x3/host': 'workspace:*',
+          },
+          peerDependenciesMeta: {
+            '@modkitx-x3/host': {
+              optional: true,
+            },
+          },
+          type: 'module',
+          version: '1.0.0',
+        },
+      },
+      documentDigests: [
+        [
+          'contributions/codec-ps1-cue-bin.json',
+          'sha256:556e3e8fd00069b9964e1f6374e3b02ffa249ff83dbfb7fe2079a415444592c0',
+        ],
+        [
+          'contributions/codec-ps1-xa.json',
+          'sha256:3599c99c7413e2088ec83e06b042bec0eb38d9e8da134e8c80cc222d9f8d7396',
+        ],
+      ],
+      documents: [
+        [
+          'contributions/codec-ps1-cue-bin.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'PlayStation CUE/BIN disc image',
+            id: 'org.modkitx/ps1-cue-bin',
+            limitations: [
+              'The CUE is the candidate and its exact FILE name is refined into one required host-resolved BIN companion; the portable codec never resolves filesystem paths.',
+              'The bounded subset supports one BINARY FILE, a zero first INDEX 01, increasing tracks with one physical sector size, and AUDIO, MODE1/2048, MODE1/2352, MODE2/2048, or MODE2/2352 tracks.',
+              'Raw and cooked tracks plus the first ISO 9660 data-track namespace are extractable; raw-sector EDC/ECC validation, Joliet, Rock Ridge, UDF, multi-extent files, pregap materialization, and writing are not implemented.',
+              'The companion is materialized under maxScalarBytes as well as maxInputBytes; larger full-disc images require a future leased random-access companion lifecycle.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/ps1-cue-bin/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/ps1-cue-bin/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              companions: [
+                {
+                  id: 'disc-payload',
+                  patterns: ['*.bin', '*.BIN'],
+                  required: true,
+                  role: 'disc-payload',
+                  searchScopes: ['sibling-directory', 'enclosing-container'],
+                },
+              ],
+              formatRefs: [
+                {
+                  formatId: 'ps1-cue-bin',
+                  label: 'PlayStation CUE/BIN disc image',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['cue'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'bundle',
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-ps1-xa.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'PlayStation XA indexed stream',
+            id: 'org.modkitx/ps1-xa',
+            limitations: [
+              'The XA payload has no self-contained Westwood file index; without a sibling FAT, the portable codec exposes validated 2336-byte CD-XA sectors with anonymous names.',
+              'Audio, video, and data payload decoding, full 2352-byte raw sectors, writing, and FAT-derived file boundaries are not implemented.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/ps1-xa/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/ps1-xa/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'compiled'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '1073741824',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'ps1-xa',
+                  label: 'PlayStation XA indexed stream',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['xa'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'extract-entry',
+                  id: 'container.extract',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.archive/entry-namespace',
+                  id: 'archive-namespace',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['container'],
+              sourceTopology: 'single',
+            },
+            status: 'supported',
+          },
+        ],
+      ],
+      files: [
+        'README.md',
+        'contributions/codec-ps1-cue-bin.json',
+        'contributions/codec-ps1-xa.json',
+        'package.json',
+        'src/linked.js',
+        'src/ps1-cue-bin/codec.js',
+        'src/ps1-xa/codec.js',
+      ],
+      name: 'ps1',
+      source: 'extensions/ps1',
     },
   ],
   schemaVersion: 1,

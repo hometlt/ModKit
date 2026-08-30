@@ -12,11 +12,25 @@ import { loadExtensionRoots } from '@modkitx-x3/host/node'
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const textJsonDir = join(repoRoot, 'extensions', 'common', 'data', 'text-json')
 const imagesDir = join(repoRoot, 'extensions', 'common', 'images')
+const ps1Dir = join(repoRoot, 'extensions', 'ps1')
 
 const scratch = mkdtempSync(join(tmpdir(), 'x3-extension-roots-'))
 afterAll(() => rmSync(scratch, { recursive: true, force: true }))
 
 describe('loadExtensionRoots', () => {
+  it('ships PS1 runtime files without embedding migration receipts in the extension artifact', async () => {
+    const result = await loadExtensionRoots([ps1Dir], { origin: 'bundled' })
+    expect(result.coordinates).toEqual(['org.modkitx/ps1'])
+    expect(
+      [...(result.inputs[0]?.documents.values() ?? [])]
+        .map(document => (document as { readonly id: string }).id)
+        .sort(),
+    ).toEqual(['org.modkitx/ps1-cue-bin', 'org.modkitx/ps1-xa'])
+    expect(Object.keys(result.inputs[0]?.artifact.fileDigests ?? {})).not.toContainEqual(
+      expect.stringMatching(/MIGRATION-NOTES/u),
+    )
+  })
+
   it('keeps every root that loads and reports the ones that do not', async () => {
     const missing = join(scratch, 'gone')
     const notAnExtension = join(scratch, 'empty')

@@ -64,7 +64,7 @@
     },
     {
       "contributionId": "org.modkitx/ps1-xa",
-      "family": "archives",
+      "family": "ps1",
       "status": "blocked-missing-legal-corpus",
       "reason": "The canonical PS1-XA reader refuses the repository fixture with \"archive-companion-missing: fat\" because it requires the paired FAT image, and no legal PS1 disc corpus is available to supply one."
     },
@@ -130,7 +130,7 @@
     },
     {
       "contributionId": "org.modkitx/ps1-cue-bin",
-      "family": "containers",
+      "family": "ps1",
       "status": "compared-synthetic",
       "parityRows": ["ps1-cue-bin-synthetic"]
     },

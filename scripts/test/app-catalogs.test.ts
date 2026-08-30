@@ -56,9 +56,9 @@ describe('deterministic Electron app catalog emission', () => {
 
     const generated = join(root, 'apps', 'electron', 'generated')
     const bundled = readFileSync(join(generated, 'bundled-catalog.cjs'), 'utf8')
-    expect(bundled).toContain("  'archives',")
-    expect(bundled).toContain("  'data/text-json',")
-    expect(bundled).toContain("  'video',")
+    expect(bundled).toContain("  'common/archives',")
+    expect(bundled).toContain("  'common/data/text-json',")
+    expect(bundled).toContain("  'common/video',")
     expect(bundled).not.toContain('ui-monaco')
     expect(bundled).not.toContain('ui-graph-3d')
 
@@ -160,8 +160,8 @@ describe('deterministic Electron app catalog emission', () => {
       join(root, 'apps', 'electron', 'generated', 'bundled-catalog.cjs'),
       'utf8',
     )
-    expect(bundled).toContain("  'data/group/text-json',")
-    expect(bundled).not.toContain("  'data/text-json',")
-    expect(bundled).not.toContain("  'data/group',")
+    expect(bundled).toContain("  'common/data/group/text-json',")
+    expect(bundled).not.toContain("  'common/data/text-json',")
+    expect(bundled).not.toContain("  'common/data/group',")
   })
 })

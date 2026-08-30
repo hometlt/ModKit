@@ -6,8 +6,8 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:129461f52298f55e0b84ac5ff9d1e5ccbe771730d7c39fc0f663037643bee319",
-      "size": 40062464
+      "sha256": "sha256:2ec63fa9eda92ac0de2422cb74284e7d4fbfc885d2880b2a24d210bff50b035e",
+      "size": 40516608
     },
     {
       "catalog": [
@@ -23,7 +23,6 @@
             "org.modkitx/iso",
             "org.modkitx/lzma",
             "org.modkitx/pe",
-            "org.modkitx/ps1-xa",
             "org.modkitx/rar",
             "org.modkitx/tar",
             "org.modkitx/xz",
@@ -31,7 +30,7 @@
           ],
           "coordinate": "org.modkitx/archives",
           "root": "extensions/common/archives",
-          "sourceDigest": "sha256:143769e1dd4405e5201fd2e519f7d5aae5e21efb4293d3fa788c130134cdaf5f"
+          "sourceDigest": "sha256:4c6179fa1312497fcd336e7f665a445d0284c22c74a3e18b9ead6c2e32680420"
         },
         {
           "contributions": [
@@ -48,11 +47,84 @@
         },
         {
           "contributions": [
-            "org.modkitx/ps1-cue-bin"
+            "org.modkitx/plain-text-writer",
+            "org.modkitx/txt"
           ],
-          "coordinate": "org.modkitx/containers",
-          "root": "extensions/common/containers",
-          "sourceDigest": "sha256:c93e9a475c8f95b1724f5fca948da1f410b431d14636aec91ec45a903e082683"
+          "coordinate": "org.modkitx/plain-text",
+          "root": "extensions/common/data/plain-text",
+          "sourceDigest": "sha256:aa86b282e2ec62853e9cfa78720e8442c0cd8ccb0516f657c210d4ebb8d0a11e"
+        },
+        {
+          "contributions": [
+            "org.modkitx/csv-syntax-contract",
+            "org.modkitx/csv-syntax-default",
+            "org.modkitx/text-csv",
+            "org.modkitx/text-delimited-writer",
+            "org.modkitx/text-tsv",
+            "org.modkitx/tsv-syntax-contract",
+            "org.modkitx/tsv-syntax-default"
+          ],
+          "coordinate": "org.modkitx/text-delimited",
+          "root": "extensions/common/data/text-delimited",
+          "sourceDigest": "sha256:34007b2288074d9b43b3e9db1552fc5656baa8962afdaa335bd620ae7d06e384"
+        },
+        {
+          "contributions": [
+            "org.modkitx/ini-syntax-contract",
+            "org.modkitx/ini-syntax-default",
+            "org.modkitx/text-ini",
+            "org.modkitx/text-ini-writer"
+          ],
+          "coordinate": "org.modkitx/text-ini",
+          "root": "extensions/common/data/text-ini",
+          "sourceDigest": "sha256:0674985c9dca6293d5b0a9e7128e6f66f3137803528f9a0acab0b0f389dffe33"
+        },
+        {
+          "contributions": [
+            "org.modkitx/json-syntax-contract",
+            "org.modkitx/json-syntax-default",
+            "org.modkitx/jsonc-syntax-contract",
+            "org.modkitx/jsonc-syntax-default",
+            "org.modkitx/text-json",
+            "org.modkitx/text-json-writer",
+            "org.modkitx/text-jsonc"
+          ],
+          "coordinate": "org.modkitx/text-json",
+          "root": "extensions/common/data/text-json",
+          "sourceDigest": "sha256:4cef3e1df6ff174a29705620ce488a96f05d715d791c63148bc2759d7d8cd4f0"
+        },
+        {
+          "contributions": [
+            "org.modkitx/text-toml",
+            "org.modkitx/text-toml-writer",
+            "org.modkitx/toml-syntax-contract",
+            "org.modkitx/toml-syntax-default"
+          ],
+          "coordinate": "org.modkitx/text-toml",
+          "root": "extensions/common/data/text-toml",
+          "sourceDigest": "sha256:55095a3fc4f3c72d9fdca5395a0d3c6123f91fdbb7488d0b477ddebd9bb55d8c"
+        },
+        {
+          "contributions": [
+            "org.modkitx/text-xml",
+            "org.modkitx/text-xml-writer",
+            "org.modkitx/xml-syntax-contract",
+            "org.modkitx/xml-syntax-default"
+          ],
+          "coordinate": "org.modkitx/text-xml",
+          "root": "extensions/common/data/text-xml",
+          "sourceDigest": "sha256:dbd2a8597b7f1ecd8ae36f4347e08af073e443c036cb837829fb16291e08076f"
+        },
+        {
+          "contributions": [
+            "org.modkitx/text-yaml",
+            "org.modkitx/text-yaml-writer",
+            "org.modkitx/yaml-syntax-contract",
+            "org.modkitx/yaml-syntax-default"
+          ],
+          "coordinate": "org.modkitx/text-yaml",
+          "root": "extensions/common/data/text-yaml",
+          "sourceDigest": "sha256:23b3c3a92c8bc252f353405f3c93fe24bc61d7c0a6d66a84b32a87caf7bcebf8"
         },
         {
           "contributions": [
@@ -112,93 +184,12 @@
         },
         {
           "contributions": [
-            "org.modkitx/plain-text-writer",
-            "org.modkitx/txt"
-          ],
-          "coordinate": "org.modkitx/plain-text",
-          "root": "extensions/common/data/plain-text",
-          "sourceDigest": "sha256:807ba8ca5de278d8f12c520bc46cfcd57ba98a89a73be838964f97871b24c272"
-        },
-        {
-          "contributions": [
             "org.modkitx/browser-webgl-renderer",
             "org.modkitx/headless-renderer"
           ],
           "coordinate": "org.modkitx/rendering-3d",
           "root": "extensions/common/rendering/rendering-3d",
-          "sourceDigest": "sha256:458389d579ee37d16ed41dba2d7cddce47d8cfc82c400b6dd2686f14d0aac5d4"
-        },
-        {
-          "contributions": [
-            "org.modkitx/csv-syntax-contract",
-            "org.modkitx/csv-syntax-default",
-            "org.modkitx/text-csv",
-            "org.modkitx/text-delimited-writer",
-            "org.modkitx/text-tsv",
-            "org.modkitx/tsv-syntax-contract",
-            "org.modkitx/tsv-syntax-default"
-          ],
-          "coordinate": "org.modkitx/text-delimited",
-          "root": "extensions/common/data/text-delimited",
-          "sourceDigest": "sha256:f4a5f31469d2fec57d9f5d7cb38ecb60c2b8892517e5a385179d408ea99255ee"
-        },
-        {
-          "contributions": [
-            "org.modkitx/ini-syntax-contract",
-            "org.modkitx/ini-syntax-default",
-            "org.modkitx/text-ini",
-            "org.modkitx/text-ini-writer"
-          ],
-          "coordinate": "org.modkitx/text-ini",
-          "root": "extensions/common/data/text-ini",
-          "sourceDigest": "sha256:26361aa2a389951e818001e9afd9c13a02f2e5f740cb5dc0cd9038bd01ab8ab9"
-        },
-        {
-          "contributions": [
-            "org.modkitx/json-syntax-contract",
-            "org.modkitx/json-syntax-default",
-            "org.modkitx/jsonc-syntax-contract",
-            "org.modkitx/jsonc-syntax-default",
-            "org.modkitx/text-json",
-            "org.modkitx/text-json-writer",
-            "org.modkitx/text-jsonc"
-          ],
-          "coordinate": "org.modkitx/text-json",
-          "root": "extensions/common/data/text-json",
-          "sourceDigest": "sha256:fad29b816143e013ee88edf6b837d1653e29e72f959f6e5a180b56c4eee01cae"
-        },
-        {
-          "contributions": [
-            "org.modkitx/text-toml",
-            "org.modkitx/text-toml-writer",
-            "org.modkitx/toml-syntax-contract",
-            "org.modkitx/toml-syntax-default"
-          ],
-          "coordinate": "org.modkitx/text-toml",
-          "root": "extensions/common/data/text-toml",
-          "sourceDigest": "sha256:496bc18160112680664ff640366d79097e376e5ec4f0992e3a7d5bff4afc57f5"
-        },
-        {
-          "contributions": [
-            "org.modkitx/text-xml",
-            "org.modkitx/text-xml-writer",
-            "org.modkitx/xml-syntax-contract",
-            "org.modkitx/xml-syntax-default"
-          ],
-          "coordinate": "org.modkitx/text-xml",
-          "root": "extensions/common/data/text-xml",
-          "sourceDigest": "sha256:f8dd4c45c06607342e3ecc75d327ecc8992760967d08e8fb43d575da95f55018"
-        },
-        {
-          "contributions": [
-            "org.modkitx/text-yaml",
-            "org.modkitx/text-yaml-writer",
-            "org.modkitx/yaml-syntax-contract",
-            "org.modkitx/yaml-syntax-default"
-          ],
-          "coordinate": "org.modkitx/text-yaml",
-          "root": "extensions/common/data/text-yaml",
-          "sourceDigest": "sha256:5b7c5257d47df46bd52b36a8e6698abce385f943f2554be6f4f08507d7f93e5d"
+          "sourceDigest": "sha256:a2e9143af0194457c0f7948a8d049aedbd91217ec16cff39217dbebfa4dd8c9a"
         },
         {
           "contributions": [
@@ -206,7 +197,7 @@
           ],
           "coordinate": "org.modkitx/ui-monaco",
           "root": "extensions/common/ui/monaco",
-          "sourceDigest": "sha256:21510b4beb7a48cfccac6c7d8ef99568365e353fdbd594e776b4b2a9dab66ce2"
+          "sourceDigest": "sha256:b62bf7d9c8fbb9c4f844924dffdc066beb2745f7a3a4506abaa21c59bf2fde3a"
         },
         {
           "contributions": [
@@ -243,13 +234,22 @@
           "coordinate": "org.modkitx/video",
           "root": "extensions/common/video",
           "sourceDigest": "sha256:de7c8b4a93ff80eaa9c73e6932863461120037efc8954dcb652782092d7fce31"
+        },
+        {
+          "contributions": [
+            "org.modkitx/ps1-cue-bin",
+            "org.modkitx/ps1-xa"
+          ],
+          "coordinate": "org.modkitx/ps1",
+          "root": "extensions/ps1",
+          "sourceDigest": "sha256:88688928d87699f08384cb9eda916b862e8f36e812fb475a8324a8f78c5acb3c"
         }
       ],
       "file": "artifacts/modkitx-common.tar",
       "id": "common",
       "kind": "common-extension-bundle",
-      "sha256": "sha256:dcb5e18f18c6c04c6f0e4647f0978230bed9d64d99f0d5cd8c58e48d6e89c518",
-      "size": 1726976
+      "sha256": "sha256:205d22191be07119e6c22501a33de233cef0a8acd6771c59b151a9755c35c45a",
+      "size": 1724928
     }
   ],
   "composition": {
@@ -263,15 +263,15 @@
     "catalogSources": [
       {
         "path": "apps/electron/generated/bundled-catalog.cjs",
-        "sha256": "sha256:b19154cb59ad53aec8941a8b77cb8165f824c8150fdd96fd2c038ebebf631a39"
+        "sha256": "sha256:a65ef9bbe89e4a4a889443fb9a6949319963cbf1b70b892bef70b234d8540588"
       },
       {
         "path": "apps/vscode/generated/bundled-catalog.json",
-        "sha256": "sha256:155210b93d9c6a6ef2890fcb87e5f414972896bf0d312b00bd27ab95e0d39597"
+        "sha256": "sha256:b975ac2d689593e030f97937d497c21c957adfe25fc793a6dea65e651a17026a"
       },
       {
         "path": "apps/web/generated/extension-catalog.js",
-        "sha256": "sha256:a84d7b29b5e6948046a0b0fe52ff5ff365b5df2d3fc8aebd2ce3875a737d6253"
+        "sha256": "sha256:2c500914fdbf30a63bf65c9c3737ef55c3a821816d382476e61c0da92c18bae7"
       },
       {
         "path": "migration/product-profiles.json",
@@ -279,7 +279,7 @@
       },
       {
         "path": "scripts/app-extension-sets.mjs",
-        "sha256": "sha256:b44c54c929bb1a2b3146eb3af63ad95776939469ed9596c1afd09f89ab56ca0c"
+        "sha256": "sha256:a01437b7778f388493d8cc460af6f34d7ace06e366c321b9f10e375817ebdb50"
       },
       {
         "path": "scripts/bundle-hashes.json",
@@ -290,22 +290,22 @@
     "commonExtensionRoots": [
       "extensions/common/archives",
       "extensions/common/audio",
-      "extensions/common/containers",
-      "extensions/common/documents",
-      "extensions/common/images",
-      "extensions/common/models",
       "extensions/common/data/plain-text",
-      "extensions/common/rendering/rendering-3d",
       "extensions/common/data/text-delimited",
       "extensions/common/data/text-ini",
       "extensions/common/data/text-json",
       "extensions/common/data/text-toml",
       "extensions/common/data/text-xml",
       "extensions/common/data/text-yaml",
+      "extensions/common/documents",
+      "extensions/common/images",
+      "extensions/common/models",
+      "extensions/common/rendering/rendering-3d",
       "extensions/common/ui/monaco",
       "extensions/common/uv-materializer",
       "extensions/common/vector",
-      "extensions/common/video"
+      "extensions/common/video",
+      "extensions/ps1"
     ],
     "deferredProfiles": [
       "bar-spring-studio",
@@ -369,7 +369,7 @@
   },
   "licenseNotices": {
     "file": "LICENSE-NOTICES.txt",
-    "sha256": "sha256:a4ec01b5280c22615eb375099fbf842f1fac0a28c8ee55ad6202f34c8b10d763"
+    "sha256": "sha256:26c22fd4be2693b603e7015a6646e8717a519aa416186885b89d6276c3ecbd81"
   },
   "release": {
     "authenticode": false,
@@ -390,7 +390,7 @@
   "sbom": {
     "file": "sbom.cdx.json",
     "format": "CycloneDX-1.5",
-    "sha256": "sha256:d0240b733e398e3bfdf4c6e4235ca6fbb07ec966ae71eecdd05025774f6adb4a"
+    "sha256": "sha256:94f97ff00d7463410d91e15109ed55e23f2cf10062fa7caaa01c782752923672"
   },
   "schemaVersion": "release-manifest-1",
   "signing": {

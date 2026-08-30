@@ -9,7 +9,6 @@ import gzipManifest from '../contributions/codec-gzip.json' with { type: 'json' 
 import isoManifest from '../contributions/codec-iso.json' with { type: 'json' }
 import lzmaManifest from '../contributions/codec-lzma.json' with { type: 'json' }
 import peManifest from '../contributions/codec-pe.json' with { type: 'json' }
-import ps1XaManifest from '../contributions/codec-ps1-xa.json' with { type: 'json' }
 import rarManifest from '../contributions/codec-rar.json' with { type: 'json' }
 import tarManifest from '../contributions/codec-tar.json' with { type: 'json' }
 import xzManifest from '../contributions/codec-xz.json' with { type: 'json' }
@@ -26,7 +25,6 @@ import * as gzip from './gzip/codec.js'
 import * as iso from './iso/codec.js'
 import * as lzma from './lzma/codec.js'
 import * as pe from './pe/codec.js'
-import * as ps1Xa from './ps1-xa/codec.js'
 import * as rar from './rar/codec.js'
 import * as tar from './tar/codec.js'
 import * as xz from './xz/codec.js'
@@ -45,7 +43,6 @@ export const archives = defineLinkedExtension({
     { path: 'contributions/codec-iso.json', manifest: isoManifest },
     { path: 'contributions/codec-lzma.json', manifest: lzmaManifest },
     { path: 'contributions/codec-pe.json', manifest: peManifest },
-    { path: 'contributions/codec-ps1-xa.json', manifest: ps1XaManifest },
     { path: 'contributions/codec-rar.json', manifest: rarManifest },
     { path: 'contributions/codec-tar.json', manifest: tarManifest },
     { path: 'contributions/codec-xz.json', manifest: xzManifest },
@@ -63,7 +60,6 @@ export const archives = defineLinkedExtension({
     './src/iso/codec.js': iso,
     './src/lzma/codec.js': lzma,
     './src/pe/codec.js': pe,
-    './src/ps1-xa/codec.js': ps1Xa,
     './src/rar/codec.js': rar,
     './src/tar/codec.js': tar,
     './src/xz/codec.js': xz,

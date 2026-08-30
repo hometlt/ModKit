@@ -15,15 +15,7 @@ import {
 } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const codecPath = join(
-  repoRoot,
-  'extensions',
-  'common',
-  'containers',
-  'src',
-  'ps1-cue-bin',
-  'codec.js',
-)
+const codecPath = join(repoRoot, 'extensions', 'ps1', 'src', 'ps1-cue-bin', 'codec.js')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 const ISO_DESCRIPTOR_START = 16 * 2048
 

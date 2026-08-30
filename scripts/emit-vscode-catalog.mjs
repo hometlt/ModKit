@@ -65,7 +65,7 @@ const check = process.argv.includes('--check')
  * through the product's own `modkit.extensions` setting, and the block-9 receipt names the
  * question — and when that decision is made it is made by editing this constant.
  */
-const CATALOG_DIRECTORY = Object.freeze(['common'])
+const CATALOG_DIRECTORIES = Object.freeze([Object.freeze(['common']), Object.freeze(['ps1'])])
 
 /**
  * One canonical host artifact identity per extension root.
@@ -75,21 +75,28 @@ const CATALOG_DIRECTORY = Object.freeze(['common'])
  * check runs before a clean checkout has emitted `packages/host/dist`.
  */
 
-const catalogRoot = join(repoRoot, 'extensions', ...CATALOG_DIRECTORY)
 const declaredByRelativePath = new Map(
   Object.keys(READY_APP_EXTENSIONS)
     .filter(name => READY_APP_EXTENSIONS[name].repository === undefined)
-    .map(name => [extensionDirectory(name).slice(CATALOG_DIRECTORY.length).join('/'), name]),
+    .map(name => [extensionDirectory(name).join('/'), name]),
 )
-const roots = authoredExtensionRootsRelativeTo(catalogRoot).map(
-  ({ directory: absolute, relativePath }) => {
-    const name = declaredByRelativePath.get(relativePath) ?? relativePath
+const roots = CATALOG_DIRECTORIES.flatMap(path => {
+  const catalogRoot = join(repoRoot, 'extensions', ...path)
+  const discovered =
+    path.length === 1 && path[0] === 'ps1'
+      ? [{ directory: catalogRoot, relativePath: '' }]
+      : authoredExtensionRootsRelativeTo(catalogRoot)
+  return discovered.map(({ directory: absolute, relativePath }) => {
+    const physicalPath = [...path, ...(relativePath === '' ? [] : relativePath.split('/'))].join(
+      '/',
+    )
+    const name = declaredByRelativePath.get(physicalPath) ?? physicalPath
     const entry = READY_APP_EXTENSIONS[name]
     const declared = entry !== undefined
     return {
       name,
       // Relative to `extensions/`, so the same record resolves in a checkout and in `dist-app`.
-      directory: [...CATALOG_DIRECTORY, relativePath].join('/'),
+      directory: physicalPath,
       /*
        * `declared` is the conformance matrix's opinion, not this catalog's: a root the product
        * ships that `READY_APP_EXTENSIONS` does not know is shipped anyway, and saying so is more
@@ -100,8 +107,8 @@ const roots = authoredExtensionRootsRelativeTo(catalogRoot).map(
       ...(declared ? { contributions: [...entry.contributions].sort() } : {}),
       digest: extensionArtifactDigest(absolute),
     }
-  },
-)
+  })
+})
 
 const document = {
   $comment:

@@ -1,9 +1,9 @@
 {
-  "name": "modkit-extension-x3-containers",
+  "name": "modkit-extension-x3-ps1",
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
-  "description": "Product-owned multi-file container codecs for MK3.",
+  "description": "Product-owned PlayStation container codecs for MK3.",
   "exports": {
     "./linked": "./src/linked.js",
     "./package.json": "./package.json"
@@ -16,7 +16,7 @@
   "modkit": {
     "schemaVersion": 1,
     "publisher": "org.modkitx",
-    "id": "containers",
+    "id": "ps1",
     "contributionManifests": [
       "./contributions/*.json"
     ]

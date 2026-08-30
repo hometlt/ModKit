@@ -35,10 +35,14 @@ function readJson<T>(...parts: readonly string[]): T {
   return JSON.parse(readFileSync(join(repoRoot, ...parts), 'utf8')) as T
 }
 
-/** The live list of codec contributions shipped under `extensions/common/**`. */
+/** The live list of codec contributions shipped by the core product. */
 function commonCodecContributions(): ReadonlyMap<string, string> {
   const found = new Map<string, string>()
-  for (const { directory, relativePath } of authoredExtensionRootsRelativeTo(commonRoot)) {
+  const roots = [
+    ...authoredExtensionRootsRelativeTo(commonRoot),
+    { directory: join(repoRoot, 'extensions', 'ps1'), relativePath: '../../ps1' },
+  ]
+  for (const { directory, relativePath } of roots) {
     const family = relativePath.split('/').at(-1) ?? relativePath
     let files: readonly string[]
     try {
@@ -49,9 +53,7 @@ function commonCodecContributions(): ReadonlyMap<string, string> {
     for (const file of files) {
       if (!file.endsWith('.json')) continue
       const manifest = readJson<{ contract?: { id?: string }; id?: string }>(
-        'extensions',
-        'common',
-        ...relativePath.split('/'),
+        ...directory.slice(repoRoot.length + 1).split(/[\\/]/u),
         'contributions',
         file,
       )

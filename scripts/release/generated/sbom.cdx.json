@@ -626,30 +626,6 @@
       "version": "1.0.0"
     },
     {
-      "bom-ref": "pkg:npm/modkit-extension-x3-containers@1.0.0",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "name": "modkit-extension-x3-containers",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "common,platform"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "apps/web/dist-app/extensions/containers/package.json"
-        }
-      ],
-      "purl": "pkg:npm/modkit-extension-x3-containers@1.0.0",
-      "type": "library",
-      "version": "1.0.0"
-    },
-    {
       "bom-ref": "pkg:npm/modkit-extension-x3-documents@1.0.0",
       "licenses": [
         {
@@ -742,6 +718,30 @@
         }
       ],
       "purl": "pkg:npm/modkit-extension-x3-plain-text@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/modkit-extension-x3-ps1@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "modkit-extension-x3-ps1",
+      "properties": [
+        {
+          "name": "modkitx:artifacts",
+          "value": "common,platform"
+        },
+        {
+          "name": "modkitx:metadata-source",
+          "value": "apps/web/dist-app/extensions/ps1/package.json"
+        }
+      ],
+      "purl": "pkg:npm/modkit-extension-x3-ps1@1.0.0",
       "type": "library",
       "version": "1.0.0"
     },
@@ -1278,13 +1278,6 @@
     {
       "dependsOn": [
         "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0"
-      ],
-      "ref": "pkg:npm/modkit-extension-x3-containers@1.0.0"
-    },
-    {
-      "dependsOn": [
-        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
         "pkg:npm/%40modkitx-x3/host@0.1.0",
         "pkg:npm/%40modkitx-x3/sdk@0.1.0"
       ],
@@ -1313,6 +1306,13 @@
         "pkg:npm/%40modkitx-x3/sdk@0.1.0"
       ],
       "ref": "pkg:npm/modkit-extension-x3-plain-text@1.0.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+        "pkg:npm/%40modkitx-x3/host@0.1.0"
+      ],
+      "ref": "pkg:npm/modkit-extension-x3-ps1@1.0.0"
     },
     {
       "dependsOn": [
