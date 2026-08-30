@@ -202,7 +202,7 @@ async function validateNodeGameLaunchPaths(
       diagnostic(
         'error',
         'x3.host/game-launch-path-missing',
-        'the confirmed installation, SC2Switcher executable, working directory or map path is missing',
+        'the confirmed installation, game launcher executable, working directory or map path is missing',
       ),
     ]
   }

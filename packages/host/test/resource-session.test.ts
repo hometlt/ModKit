@@ -226,7 +226,7 @@ describe('resource session — a name is a name, a path is a path', () => {
      * The two seams must agree. A W3D names its texture `fixture.tga` with no directory, and the
      * block-9 companion resolver finds it wherever it lives in the archive; the port used to match
      * the whole logical id and miss it, so the very same reference resolved before `open` and
-     * failed after it. The CASC case could not catch this — SC2 spells its references as paths.
+     * failed after it. A large namespace case could not catch this because it uses path references.
      */
     const origin = fakeOrigin(['art/textures/fixture.tga'])
     const session = createResourceSession({ origin, revision: SESSION_REVISION })

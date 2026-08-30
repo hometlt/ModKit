@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
   "id": "org.modkitx/ani",
-  "displayName": "Windows Animated Cursor / Warzone Animation",
+  "displayName": "Windows Animated Cursor",
   "status": "partial",
   "runtimeVariants": [
     {
@@ -22,10 +22,10 @@
   ],
   "limitations": [
     "The MK3 port performs a bounded RIFF/ACON chunk walk, validates anih declarations and embedded ICO/CUR frame headers, and decodes the first supported CUR/DIB frame through the generic raster source with its AND mask.",
-    "Warzone 2100 ANIM3DFRAMES text sidecars are parsed as bounded frame lines; remaining ANI frames, playback/timeline publication, model application, PNG/indexed embedded frames, and writing remain unsupported."
+    "Remaining ANI frames, playback/timeline publication, PNG/indexed embedded frames, and writing remain unsupported."
   ],
   "spec": {
-    "formatRefs": [{ "formatId": "ani", "label": "Windows Animated Cursor / Warzone Animation" }],
+    "formatRefs": [{ "formatId": "ani", "label": "Windows Animated Cursor" }],
     "roles": ["media"],
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],

@@ -85,7 +85,7 @@
       "gapId": null,
       "replacementWorkflowId": "platform/tools/ga-priority",
       "sourceUnitIds": ["legacy/cli/modkit/check"],
-      "evidence": ["apps/cli/test/cli.test.ts"],
+      "evidence": ["migration/history/externalization/former-core-tests/apps/cli/test/cli.test.ts"],
       "reason": "project.validate checks every focused project file through subject.validate, emits deterministic per-file protocol receipts and fails closed on unclaimed inputs."
     },
     {
@@ -94,7 +94,9 @@
       "gapId": null,
       "replacementWorkflowId": "platform/tools/ga-priority",
       "sourceUnitIds": ["legacy/cli/modkit/scripts"],
-      "evidence": ["packages/host/test/language.test.ts"],
+      "evidence": [
+        "migration/history/externalization/former-core-tests/packages/host/test/language.test.ts"
+      ],
       "reason": "The shared CLI validates a positive Galaxy source through subject.validate and emits a stable modkit-command-protocol-1 receipt."
     },
     {
@@ -103,7 +105,7 @@
       "gapId": null,
       "replacementWorkflowId": "platform/tools/ga-priority",
       "sourceUnitIds": ["legacy/cli/modkit/texture"],
-      "evidence": ["apps/cli/test/cli.test.ts"],
+      "evidence": ["migration/history/externalization/former-core-tests/apps/cli/test/cli.test.ts"],
       "reason": "The shared CLI runs subject.convert for a PNG and exports deterministic decoded rgba8 bytes with a machine-readable receipt."
     },
     {
@@ -168,9 +170,9 @@
         "legacy/vscode/language/xml"
       ],
       "evidence": [
-        "apps/vscode/test/sc2-authoring-workflows.test.ts",
+        "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
         "apps/vscode/test/game-launch-workflow.test.ts",
-        "packages/host/test/game-launch.test.ts"
+        "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
       ],
       "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
     },
@@ -240,7 +242,7 @@
       ],
       "evidence": [
         "apps/vscode/test/settings.test.ts",
-        "apps/vscode/test/priority-settings.test.ts"
+        "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
       ],
       "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
     },
@@ -514,48 +516,6 @@
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-language:galaxy",
-      "kind": "vscode-language",
-      "key": "galaxy",
-      "workflowId": "vscode/authoring-language-data-launch",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-language:ini",
-      "kind": "vscode-language",
-      "key": "ini",
-      "workflowId": "vscode/authoring-language-data-launch",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-language:sc2layout",
-      "kind": "vscode-language",
-      "key": "sc2layout",
-      "workflowId": "vscode/authoring-language-data-launch",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-language:sc2strings",
-      "kind": "vscode-language",
-      "key": "sc2strings",
-      "workflowId": "vscode/authoring-language-data-launch",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-language:sc2style",
-      "kind": "vscode-language",
-      "key": "sc2style",
-      "workflowId": "vscode/authoring-language-data-launch",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-language:xml",
-      "kind": "vscode-language",
-      "key": "xml",
-      "workflowId": "vscode/authoring-language-data-launch",
-      "state": "observed-only"
-    },
-    {
       "factId": "x3:vscode-runtime-only-command:modkit.openResource",
       "kind": "vscode-runtime-only-command",
       "key": "modkit.openResource",
@@ -597,11 +557,11 @@
   "packagingBoundary": {
     "state": "already-equivalent",
     "ownerBlockerId": null,
-    "cataloguedCommonRoots": 18,
+    "cataloguedCommonRoots": 16,
     "packagedCodecRoots": 0,
     "deterministicShellArtifact": true,
     "provenVsixCodecArtifact": false,
-    "reason": "The accepted B plus C topology deliberately keeps the deterministic VSIX as an 18-root common shell and installs the Common, SC2 and Warzone codec artifacts separately through the signed local RC."
+    "reason": "The accepted B plus C topology keeps the deterministic VSIX as a 16-root common shell; plain text and JSON are native Core capabilities, while publisher codecs install separately through extension management."
   },
   "workflows": [
     {

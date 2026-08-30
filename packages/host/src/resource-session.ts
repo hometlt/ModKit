@@ -276,7 +276,7 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
      * only that place will do. Matching the whole id in both cases is what the port used to do, and
      * it made the same reference resolve through the pre-open seam and miss through this one — two
      * resolvers disagreeing, which is the exact thing plan item 13 says this port must not become.
-     * The CASC case never caught it because SC2 spells its texture references as paths.
+     * A large namespace case never caught it because that provider spells references as paths.
      */
     const byName = !normalized.includes('/')
     let entries = 0

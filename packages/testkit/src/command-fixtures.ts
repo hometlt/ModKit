@@ -13,7 +13,7 @@
  * hosts can silently disagree about — whether a command ran, refused, or failed.
  *
  * The workspace is staged from bytes this repository already owns: a PNG that ships with the web
- * app, and a BIG archive built in memory from two synthetic model fixtures. Nothing here needs an
+ * app, and a ZIP archive built in memory from neutral synthetic fixtures. Nothing here needs an
  * installed game, which is why this set can run in a unit test, in a headless Electron composition
  * and inside a real editor without a corpus descriptor between them. The live-corpus matrix is
  * block 13's slice D, and this is not it.
@@ -42,7 +42,7 @@ export interface CommandFixture {
 }
 
 /** The member the archive fixture holds, and the one `subject.extract` asks for. */
-export const COMMAND_FIXTURE_ENTRY = 'art/w3d/minimal.w3d'
+export const COMMAND_FIXTURE_ENTRY = 'assets/models/triangle.obj'
 
 export const COMMAND_FIXTURES: readonly CommandFixture[] = Object.freeze([
   {
@@ -89,7 +89,7 @@ export const COMMAND_FIXTURES: readonly CommandFixture[] = Object.freeze([
     id: 'extract-missing-member',
     command: 'subject.extract',
     subject: 'archive',
-    entry: 'art/w3d/not-here.w3d',
+    entry: 'assets/models/not-here.obj',
     expect: 'failed',
     proves: 'a member that does not exist fails by name rather than by exception shape',
   },
@@ -98,36 +98,67 @@ export const COMMAND_FIXTURES: readonly CommandFixture[] = Object.freeze([
 /** File names the staged workspace uses; a host names them the same way in every run. */
 export const COMMAND_FIXTURE_FILES = Object.freeze({
   png: 'fixture.png',
-  archive: 'fixture.big',
+  archive: 'fixture.zip',
 })
 
-/** A BIG4 archive: header, flat index of `offset/size/name\0`, then the payloads. */
+function crc32(bytes: Uint8Array): number {
+  let crc = 0xffffffff
+  for (const byte of bytes) {
+    crc ^= byte
+    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1))
+  }
+  return (crc ^ 0xffffffff) >>> 0
+}
+
+/** A deterministic classic ZIP containing stored entries only. */
 export function buildFixtureArchive(
   entries: readonly { readonly path: string; readonly bytes: Uint8Array }[],
 ): Uint8Array {
   const encoder = new TextEncoder()
-  const stored = entries.map(item => ({ name: encoder.encode(item.path), payload: item.bytes }))
-  const indexBytes = stored.reduce((total, item) => total + 8 + item.name.byteLength + 1, 0)
-  const dataOffset = 16 + indexBytes
-  const total = stored.reduce((size, item) => size + item.payload.byteLength, dataOffset)
-  const archive = new Uint8Array(total)
-  const view = new DataView(archive.buffer)
-  archive.set(encoder.encode('BIG4'), 0)
-  view.setUint32(4, total, true)
-  view.setUint32(8, stored.length, false)
-  view.setUint32(12, dataOffset, false)
-  let index = 16
-  let payload = dataOffset
-  for (const item of stored) {
-    view.setUint32(index, payload, false)
-    view.setUint32(index + 4, item.payload.byteLength, false)
-    index += 8
-    archive.set(item.name, index)
-    index += item.name.byteLength
-    archive[index] = 0
-    index += 1
-    archive.set(item.payload, payload)
-    payload += item.payload.byteLength
+  const parts: Uint8Array[] = []
+  const directory: Uint8Array[] = []
+  let offset = 0
+  for (const entry of entries) {
+    const name = encoder.encode(entry.path)
+    const local = new Uint8Array(30 + name.byteLength)
+    const localView = new DataView(local.buffer)
+    localView.setUint32(0, 0x04034b50, true)
+    localView.setUint16(4, 20, true)
+    localView.setUint32(14, crc32(entry.bytes), true)
+    localView.setUint32(18, entry.bytes.byteLength, true)
+    localView.setUint32(22, entry.bytes.byteLength, true)
+    localView.setUint16(26, name.byteLength, true)
+    local.set(name, 30)
+    parts.push(local, entry.bytes)
+
+    const central = new Uint8Array(46 + name.byteLength)
+    const centralView = new DataView(central.buffer)
+    centralView.setUint32(0, 0x02014b50, true)
+    centralView.setUint16(6, 20, true)
+    centralView.setUint32(16, crc32(entry.bytes), true)
+    centralView.setUint32(20, entry.bytes.byteLength, true)
+    centralView.setUint32(24, entry.bytes.byteLength, true)
+    centralView.setUint16(28, name.byteLength, true)
+    centralView.setUint32(42, offset, true)
+    central.set(name, 46)
+    directory.push(central)
+    offset += local.byteLength + entry.bytes.byteLength
+  }
+  const directorySize = directory.reduce((total, part) => total + part.byteLength, 0)
+  const end = new Uint8Array(22)
+  const endView = new DataView(end.buffer)
+  endView.setUint32(0, 0x06054b50, true)
+  endView.setUint16(8, entries.length, true)
+  endView.setUint16(10, entries.length, true)
+  endView.setUint32(12, directorySize, true)
+  endView.setUint32(16, offset, true)
+
+  const all = [...parts, ...directory, end]
+  const archive = new Uint8Array(all.reduce((total, part) => total + part.byteLength, 0))
+  let cursor = 0
+  for (const part of all) {
+    archive.set(part, cursor)
+    cursor += part.byteLength
   }
   return archive
 }
@@ -151,22 +182,22 @@ export function stageCommandFixtures(
     buildFixtureArchive([
       {
         path: COMMAND_FIXTURE_ENTRY,
-        bytes: new Uint8Array(readFileSync(join(synthetic, 'minimal.westwood.w3d'))),
+        bytes: new Uint8Array(readFileSync(join(synthetic, 'minimal.obj'))),
       },
       {
-        path: 'art/textures/fixture.tga',
-        bytes: new Uint8Array(readFileSync(join(synthetic, 'minimal.tga'))),
+        path: 'assets/images/fixture.png',
+        bytes: new Uint8Array(readFileSync(join(synthetic, 'minimal.png'))),
       },
     ]),
   )
   return { png, archive }
 }
 
-/** Extension roots the fixtures need: the PNG codec and the BIG reader. */
+/** Common extension roots used by the image, ZIP and nested model fixtures. */
 export const COMMAND_FIXTURE_EXTENSIONS: readonly (readonly string[])[] = Object.freeze([
   Object.freeze(['common', 'images']),
-  Object.freeze(['ea', 'big']),
-  Object.freeze(['ea', 'models']),
+  Object.freeze(['common', 'archives']),
+  Object.freeze(['common', 'models']),
 ])
 
 /** One fixture's verdict, in the shape every host reports so a receipt can hold all three. */

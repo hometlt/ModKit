@@ -113,7 +113,7 @@ export interface CompanionEnumerationOptions {
    *
    * A hint, never a filter the backend may rely on being applied — the resolver matches patterns
    * again over whatever comes back. It exists because "enumerate everything and then filter" stops
-   * being a bounded search once a namespace is large: an installed StarCraft II CASC lists 666,588
+   * being a bounded search once a namespace is large: a production namespace may list hundreds of thousands of
    * entries, which is not a scan any budget should permit. A backend that can narrow its listing
    * cheaply should; one whose logical ids carry no path structure (a directory, whose ids are bare
    * names) ignores this and loses nothing.
@@ -411,7 +411,7 @@ function compilePatterns(
  * Each pattern contributes the most it can safely promise about where a match may live:
  *
  *  * a pattern with no wildcard promises its whole self — anything matching it *is* it, so the
- *    complete literal is a sound prefix. On an installed StarCraft II this is the difference
+ *    complete literal is a sound prefix. On a large installed corpus this is the difference
  *    between listing 1 entry and listing 4,100;
  *  * a pattern with a wildcard promises only up to the last `/` before it. `assets/tex*` narrows
  *    to `assets/`, never to `assets/tex`, which would silently exclude `assets/textures/hero.dds`;

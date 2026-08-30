@@ -102,17 +102,10 @@ function memorySource(name: string, text: string): ArtifactByteSource {
 }
 
 async function openJsonDescriptor(): Promise<Record<string, unknown>> {
-  const roots = await loadExtensionRoots(
-    [join(repositoryRoot, 'extensions', 'common', 'data', 'text-json')],
-    {
-      origin: 'bundled',
-    },
-  )
-  expect(roots.failures).toEqual([])
   const services = await createNodeSubjectServices({
     topology: createVsCodeDesktopTopology(),
     realms: { host: VSCODE_DESKTOP_EXTENSION_REALM, workers: VSCODE_DESKTOP_WORKER_REALM },
-    extensions: roots.inputs,
+    extensions: [],
   })
   const result = await services.open({
     source: memorySource('sample.json', '{"name":"Modkit","items":[1,2,3]}'),

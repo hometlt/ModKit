@@ -15,7 +15,7 @@ export const MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY: NonNullable<
 > = Object.freeze({
   locales: Object.freeze(['enUS']),
   limits: Object.freeze({
-    // A three-root SC2 workspace needs 327 bounded reads for all 108 catalog families plus locale.
+    // A multi-root workspace may need hundreds of bounded reads across catalog families and locale.
     maxRequirements: 512,
     maxDocumentBytes: 16_777_216,
     maxTextBytes: 268_435_456,

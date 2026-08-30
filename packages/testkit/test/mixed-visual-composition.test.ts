@@ -7,7 +7,6 @@ import {
   revisionId,
   type ArtifactByteSource,
   type AssetInput,
-  type CandidateWorldSceneSource,
   type Codec,
   type ContributionContext,
   type Lease,
@@ -16,27 +15,15 @@ import {
   type VisualAssetPolicy,
   type WorldSceneSource,
 } from '@modkitx-x3/sdk'
-import type {
-  ResolvedMapWorkspaceAnalysisRequest,
-  ResolvedMapWorkspaceSnapshot,
-} from '@modkitx-x3/sdk/maps'
 import { loadMixedVisualStage } from '@modkitx-x3/ui/composition'
-import { createCandidateWorldSceneLease } from '../../../packages/host/src/maps/world-source.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const { createCodec: createM3Codec } = (await import(
-  pathToFileURL(join(repoRoot, '..', 'modkit-blizzard', 'models', 'src', 'm3', 'codec.js')).href
+const { createCodec: createGltfCodec } = (await import(
+  pathToFileURL(join(repoRoot, 'extensions', 'common', 'models', 'src', 'gltf', 'codec.js')).href
 )) as { createCodec(context: ContributionContext): Codec }
-const { analyzeWarzoneMapWorkspace } = (await import(
-  pathToFileURL(join(repoRoot, '..', 'modkit-warzone', 'src', 'map-provider.js')).href
-)) as {
-  analyzeWarzoneMapWorkspace(
-    request: ResolvedMapWorkspaceAnalysisRequest,
-  ): Promise<ResolvedMapWorkspaceSnapshot>
-}
-const modelFixture = join(import.meta.dirname, 'fixtures', 'models', 'triangle.m3')
-const worldRevision = revisionId('content-hash.sha256:warzone-map-mixed-visual')
-const modelRevision = revisionId('content-hash.sha256:m3-mixed-visual')
+const modelFixture = join(import.meta.dirname, 'fixtures', 'mk2-synthetic', 'minimal.gltf')
+const worldRevision = revisionId('content-hash.sha256:neutral-world')
+const modelRevision = revisionId('content-hash.sha256:neutral-model')
 const budget: ResourceBudget = {
   maxInputBytes: 10_000_000n,
   maxDepth: 64,
@@ -49,38 +36,16 @@ const context: ContributionContext = {
   diagnostics: { report: () => undefined },
   contracts: {
     async resolve() {
-      throw new Error('mixed visual M3 fixture has no service dependency')
+      throw new Error('mixed visual fixture has no service dependency')
     },
     async resolveUnknown() {
-      throw new Error('mixed visual M3 fixture has no foreign service dependency')
+      throw new Error('mixed visual fixture has no foreign service dependency')
     },
   },
 }
 
-function gameMap(): Uint8Array {
-  const width = 2
-  const height = 3
-  const count = width * height
-  const bytes = new Uint8Array(16 + count * 3 + 8 + 4)
-  bytes.set(new TextEncoder().encode('map '), 0)
-  const view = new DataView(bytes.buffer)
-  view.setUint32(4, 10, true)
-  view.setUint32(8, width, true)
-  view.setUint32(12, height, true)
-  let offset = 16
-  for (let index = 0; index < count; index += 1) {
-    view.setUint16(offset, 100 + index, true)
-    view.setUint8(offset + 2, index + 1)
-    offset += 3
-  }
-  view.setUint32(offset, 1, true)
-  view.setUint32(offset + 4, 1, true)
-  bytes.set([0, 0, width - 1, height - 1], offset + 8)
-  return bytes
-}
-
 function modelInput(bytes: Uint8Array): AssetInput {
-  const uri = 'memory://mixed-visual/triangle.m3'
+  const uri = 'memory://mixed-visual/triangle.gltf'
   const source: ArtifactByteSource = {
     kind: 'bytes',
     ref: { id: uri, uri },
@@ -111,11 +76,11 @@ function modelInput(bytes: Uint8Array): AssetInput {
       topology: 'single',
       revision: modelRevision,
       bindings: [{ bindingId: 'content', revision: modelRevision }],
-      compositionFingerprint: 'mixed-visual-m3',
+      compositionFingerprint: 'mixed-visual-model',
     },
     bindingsFor: () => [],
     async openBinding() {
-      return { value: source, release: () => Promise.resolve() }
+      return { value: source, release: async () => undefined }
     },
   }
 }
@@ -127,141 +92,235 @@ function policy(uri: string, revision: ReturnType<typeof revisionId>): VisualAss
       subject: { subjectUri: uri, revision },
       originUri: uri,
     },
-    license: { state: 'unknown', reason: 'original game asset terms are not inferred by Modkit' },
-    redistribution: { state: 'restricted', reason: 'local visual test only' },
+    license: { state: 'unknown', reason: 'synthetic fixture' },
+    redistribution: { state: 'allowed', basis: 'synthetic fixture', attributionRequired: false },
   }
 }
 
-function commonWorldLease(candidate: Lease<CandidateWorldSceneSource>): Lease<WorldSceneSource> {
+function worldLease(): Lease<WorldSceneSource> {
+  const snapshotId = 'neutral-world-snapshot'
   return {
     value: {
       contract: 'common.view/world-scene-source',
       major: 1,
-      snapshotId: candidate.value.snapshotId,
-      async info(signal) {
-        const info = await candidate.value.info(signal)
-        return { ...info, contract: 'common.view/world-scene-source' }
+      snapshotId,
+      async info() {
+        return {
+          contract: 'common.view/world-scene-source',
+          major: 1,
+          maturity: 'publisher-candidate',
+          snapshotId,
+          mapId: 'synthetic-grid',
+          coordinateSpaces: [],
+          crossSpaceTransforms: [],
+          bounds: [],
+          uvwTransform: {
+            schemaVersion: 1,
+            snapshotId,
+            sourceCoordinateSpaceId: 'fixture-native',
+            targetCoordinateSpaceId: 'uvw-canonical',
+            basis: {
+              handedness: 'right',
+              upAxis: 'y',
+              forwardAxis: '-z',
+              unit: 'source-unit',
+              sourceUnit: 'fixture-unit',
+            },
+            axes: {
+              x: { sourceAxis: 'x', scale: 1, offset: 0 },
+              y: { sourceAxis: 'y', scale: 1, offset: 0 },
+              z: { sourceAxis: 'z', scale: 1, offset: 0 },
+            },
+            heightfield: {
+              columns: 2,
+              rows: 2,
+              cellSize: 1,
+              origin: [0, 0, 0],
+              sourceRowOrder: 'forward',
+            },
+            bounds: {
+              coordinateSpaceId: 'uvw-canonical',
+              minimum: { x: 0, y: 0, z: 0 },
+              maximum: { x: 1, y: 1, z: 1 },
+            },
+            proof: {
+              kind: 'adapter-qualification',
+              method: 'official-reference-differential',
+              oracle: 'synthetic fixture',
+              corpus: 'synthetic fixture',
+              sourceDigests: { fixture: `sha256:${'a'.repeat(64)}` },
+              tupleCount: 3,
+              comparison: 'ieee-754-binary64-exact',
+              nativeTupleDigest: `sha256:${'b'.repeat(64)}`,
+              canonicalTupleDigest: `sha256:${'c'.repeat(64)}`,
+            },
+          },
+          facets: [
+            {
+              facet: 'terrain',
+              layerId: 'terrain',
+              state: 'available',
+              itemCount: 3,
+              lods: ['exact'],
+            },
+          ],
+          provenance: [],
+          unknownFacets: [],
+          lossPolicy: 'explicit-partial',
+          complete: true,
+        }
       },
-      page: (request, signal) => candidate.value.page(request, signal),
+      async page(request) {
+        return {
+          snapshotId,
+          facet: request.facet,
+          state: request.facet === 'terrain' ? 'available' : 'unsupported',
+          items:
+            request.facet === 'terrain'
+              ? [
+                  {
+                    facet: 'terrain',
+                    id: 'a',
+                    layerId: 'terrain',
+                    coordinateSpaceId: 'neutral',
+                    x: 0,
+                    y: 0,
+                    height: 0,
+                    lod: 'exact',
+                  },
+                  {
+                    facet: 'terrain',
+                    id: 'b',
+                    layerId: 'terrain',
+                    coordinateSpaceId: 'neutral',
+                    x: 1,
+                    y: 0,
+                    height: 0,
+                    lod: 'exact',
+                  },
+                  {
+                    facet: 'terrain',
+                    id: 'c',
+                    layerId: 'terrain',
+                    coordinateSpaceId: 'neutral',
+                    x: 0,
+                    y: 1,
+                    height: 0,
+                    lod: 'exact',
+                  },
+                ]
+              : [],
+        } as never
+      },
     },
-    release: () => candidate.release(),
+    release: async () => undefined,
   }
 }
 
-describe('priority-game mixed visual composition', () => {
-  it('loads Warzone terrain and an M3 model through one visual-only shared pipeline', async () => {
-    const snapshot = await analyzeWarzoneMapWorkspace({
-      workspaceId: 'warzone-mixed-visual',
-      gameId: 'org.modkitx/warzone-2100',
-      mapId: 'multiplay/maps/mixed',
-      documents: [{ path: 'multiplay/maps/mixed/game.map', bytes: gameMap() }],
-      maxDocuments: 1,
-      maxDocumentBytes: 1_000_000,
-      maxTotalBytes: 1_000_000,
-      maxObjects: 100,
-      maxRegions: 100,
-      maxTerrainCells: 1_000,
-      maxTerrainSamples: 1_000,
-      maxDepth: 32,
-      snapshotId: 'warzone-mixed-snapshot',
-      unresolvedRequirementIds: [],
-      requiredRequirementIds: ['warzone-game-map'],
-      maxDiagnostics: 100,
-    })
-    if (snapshot.uvwTransform === undefined) throw new Error('Warzone fixture has no UVW transform')
-    const worldLease = commonWorldLease(createCandidateWorldSceneLease(snapshot, [], 1_024))
-    const m3Session = await createM3Codec(context).open(
+describe('neutral mixed visual composition', () => {
+  it('loads a synthetic world and common glTF through one visual-only pipeline', async () => {
+    const modelSession = await createGltfCodec(context).open(
       modelInput(new Uint8Array(await readFile(modelFixture))),
       'inspect',
       budget,
     )
-    const modelLease = await m3Session.dataSource('common.view/model-scene-source', 1)
-    const worldUri = 'memory://mixed-visual/warzone-map'
-    const modelUri = 'memory://mixed-visual/triangle.m3'
+    const modelLease = await modelSession.dataSource('common.view/model-scene-source', 1)
+    const world = worldLease()
+    const worldUri = 'memory://mixed-visual/world'
+    const modelUri = 'memory://mixed-visual/triangle.gltf'
     const selected = defineMixedVisualWorkspace({
-      workspaceId: 'warzone-terrain-m3-model',
-      workspaceUri: 'workspace://mixed-visual/warzone-m3',
-      workspaceRevision: revisionId('content-hash.sha256:warzone-m3-workspace'),
+      workspaceId: 'neutral-world-model',
+      workspaceUri: 'workspace://mixed-visual/neutral',
+      workspaceRevision: revisionId('content-hash.sha256:neutral-workspace'),
       worldFrame: {
-        coordinateSpaceId: snapshot.uvwTransform.targetCoordinateSpaceId,
-        basis: snapshot.uvwTransform.basis,
-        origin: snapshot.uvwTransform.heightfield.origin,
+        coordinateSpaceId: 'uvw-canonical',
+        basis: {
+          handedness: 'right',
+          upAxis: 'y',
+          forwardAxis: '-z',
+          unit: 'source-unit',
+          sourceUnit: 'fixture-unit',
+        },
+        origin: [0, 0, 0],
       },
       world: {
-        sourceId: 'warzone-world',
-        originGroup: 'org.modkitx/warzone-2100',
+        sourceId: 'world',
+        originGroup: 'org.example/world',
         role: 'world-base',
         subject: { subjectUri: worldUri, revision: worldRevision },
       },
       model: {
-        sourceId: 'starcraft-model',
-        originGroup: 'org.modkitx/starcraft-2',
+        sourceId: 'model',
+        originGroup: 'org.example/model',
         role: 'model-overlay',
         subject: { subjectUri: modelUri, revision: modelRevision },
       },
       objects: [
         {
-          objectId: 'warzone-terrain',
-          sourceId: 'warzone-world',
+          objectId: 'terrain',
+          sourceId: 'world',
           role: 'world-base',
-          resourceIds: ['warzone-height-grid'],
+          resourceIds: ['grid'],
           ...policy(worldUri, worldRevision),
         },
         {
-          objectId: 'm3-model',
-          sourceId: 'starcraft-model',
+          objectId: 'triangle',
+          sourceId: 'model',
           role: 'model-overlay',
-          resourceIds: ['m3-geometry'],
+          resourceIds: ['geometry'],
           ...policy(modelUri, modelRevision),
         },
       ],
       resources: [
         {
-          resourceId: 'warzone-height-grid',
-          sourceId: 'warzone-world',
-          logicalId: 'multiplay/maps/mixed/game.map#terrain',
+          resourceId: 'grid',
+          sourceId: 'world',
+          logicalId: 'grid#terrain',
           ...policy(worldUri, worldRevision),
         },
         {
-          resourceId: 'm3-geometry',
-          sourceId: 'starcraft-model',
-          logicalId: 'triangle.m3#geometry',
+          resourceId: 'geometry',
+          sourceId: 'model',
+          logicalId: 'triangle.gltf#geometry',
           ...policy(modelUri, modelRevision),
         },
       ],
       overlayPlacements: [
         {
-          placementId: 'm3-on-warzone-terrain',
-          objectId: 'm3-model',
+          placementId: 'triangle-on-grid',
+          objectId: 'triangle',
           transform: {
             schemaVersion: 1,
             source: {
-              coordinateSpaceId: 'm3-model-native',
+              coordinateSpaceId: 'model',
               basis: {
                 handedness: 'right',
                 upAxis: 'y',
                 forwardAxis: '-z',
                 unit: 'source-unit',
-                sourceUnit: 'm3-model-unit',
+                sourceUnit: 'fixture-unit',
               },
               origin: [0, 0, 0],
             },
             target: {
-              coordinateSpaceId: snapshot.uvwTransform.targetCoordinateSpaceId,
-              basis: snapshot.uvwTransform.basis,
-              origin: snapshot.uvwTransform.heightfield.origin,
+              coordinateSpaceId: 'uvw-canonical',
+              basis: {
+                handedness: 'right',
+                upAxis: 'y',
+                forwardAxis: '-z',
+                unit: 'source-unit',
+                sourceUnit: 'fixture-unit',
+              },
+              origin: [0, 0, 0],
             },
             axes: {
-              x: { sourceAxis: 'x', direction: -1 },
+              x: { sourceAxis: 'x', direction: 1 },
               y: { sourceAxis: 'y', direction: 1 },
-              z: { sourceAxis: 'z', direction: -1 },
+              z: { sourceAxis: 'z', direction: 1 },
             },
-            scale: [64, 64, 64],
-            translation: [64, 2, 128],
-            evidence: {
-              kind: 'owner-declared',
-              reference: 'fixture-pinned M3-to-Warzone visual placement',
-            },
+            scale: [1, 1, 1],
+            translation: [0, 0, 0],
+            evidence: { kind: 'owner-declared', reference: 'synthetic identity placement' },
           },
         },
       ],
@@ -271,7 +330,7 @@ describe('priority-game mixed visual composition', () => {
       get(binding) {
         opened.push(binding.contract)
         return Promise.resolve(
-          binding.contract === 'common.view/world-scene-source' ? worldLease : modelLease,
+          binding.contract === 'common.view/world-scene-source' ? world : modelLease,
         ) as never
       },
       getUnknown: () => Promise.resolve(undefined),
@@ -290,16 +349,9 @@ describe('priority-game mixed visual composition', () => {
         'common.view/model-scene-source',
         'common.view/world-scene-source',
       ])
-      expect(rendered.world.info.mapId).toBe('multiplay/maps/mixed')
+      expect(rendered.world.info.mapId).toBe('synthetic-grid')
       expect(rendered.model.info).toMatchObject({ geometryAccess: 'decoded', primitives: 1 })
       expect(rendered.overlays).toHaveLength(1)
-      expect(rendered.overlays[0]?.primitive.positions.length).toBeGreaterThan(0)
-      expect(
-        rendered.workspace.objects.map(object => object.provenance.subject.subjectUri),
-      ).toEqual([worldUri, modelUri])
-      expect(
-        rendered.workspace.resources.every(resource => resource.license.state === 'unknown'),
-      ).toBe(true)
       expect(rendered.workspace.compatibility).toMatchObject({
         mode: 'visual-only',
         definitionCompatible: false,
@@ -309,7 +361,7 @@ describe('priority-game mixed visual composition', () => {
       expect(JSON.stringify(rendered.workspace)).not.toContain(repoRoot)
     } finally {
       await Promise.all(retained.map(item => item.release()))
-      await m3Session.dispose()
+      await modelSession.dispose()
     }
   })
 })

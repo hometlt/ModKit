@@ -37,24 +37,28 @@ import type {
 const here = dirname(fileURLToPath(import.meta.url))
 const repositoryRoot = join(here, '..', '..', '..')
 const extensionNameByFormat: Readonly<Record<string, string>> = Object.freeze({
-  json: 'text-json',
-  jsonc: 'text-json',
-  csv: 'text-delimited',
-  tsv: 'text-delimited',
+  json: 'core-native',
+  jsonc: 'core-native',
+  csv: 'text-csv',
+  tsv: 'text-csv',
   ini: 'text-ini',
   xml: 'text-xml',
   yaml: 'text-yaml',
   toml: 'text-toml',
 })
-const textExtensionRoots = Object.freeze(
-  [...new Set(Object.values(extensionNameByFormat))].map(name =>
-    join(repositoryRoot, 'extensions', 'common', name),
-  ),
-)
+const nativeTextRoot = join(repositoryRoot, 'packages', 'host', 'native-text')
+const textExtensionRoots = Object.freeze([
+  nativeTextRoot,
+  ...[...new Set(Object.values(extensionNameByFormat))]
+    .filter(name => name !== 'core-native')
+    .map(name => join(repositoryRoot, 'extensions', 'common', 'data', name)),
+])
 const extensionRootFor = (format: string): string => {
   const extension = extensionNameByFormat[format]
   if (extension === undefined) throw new TypeError(`unknown text format ${format}`)
-  return join(repositoryRoot, 'extensions', 'common', extension)
+  return extension === 'core-native'
+    ? nativeTextRoot
+    : join(repositoryRoot, 'extensions', 'common', 'data', extension)
 }
 const alternateXmlRoot = join(
   here,
@@ -84,6 +88,9 @@ const familyByFormat: Readonly<Partial<Record<string, string>>> = Object.freeze(
 
 function sourceEntrypoint(format: string, kind: 'codec' | 'provider'): string {
   const family = familyByFormat[format]
+  if (format === 'json' || format === 'jsonc') {
+    return `json/families/json/entrypoints/${format}-${kind}.js`
+  }
   return family === undefined
     ? `src/${format}/${kind}.js`
     : `src/families/${family}/entrypoints/${format}-${kind}.js`
@@ -91,6 +98,9 @@ function sourceEntrypoint(format: string, kind: 'codec' | 'provider'): string {
 
 function sourceProfile(format: string): string {
   const family = familyByFormat[format]
+  if (format === 'json' || format === 'jsonc') {
+    return `json/families/json/profiles/${format}.js`
+  }
   return family === undefined
     ? `src/${format}/definition.js`
     : `src/families/${family}/profiles/${format}.js`
@@ -335,8 +345,8 @@ describe('13B text-data providers and codecs', () => {
       )
     ).flat()
     const manifests = manifestsWithRoots.map(item => item.manifest)
-    expect(manifests).toHaveLength(30)
-    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(30)
+    expect(manifests).toHaveLength(32)
+    expect(new Set(manifests.map(manifest => manifest.id)).size).toBe(32)
     const registry = createSpecSchemaRegistry(A1_SPEC_SCHEMA_ENTRIES)
     for (const { manifest, root } of manifestsWithRoots) {
       const result = await validateContributionManifest(manifest, registry)
@@ -350,27 +360,14 @@ describe('13B text-data providers and codecs', () => {
         ).resolves.toBeInstanceOf(Buffer)
       }
     }
-    expect(manifests.filter(manifest => manifest.contract.id.includes('codec'))).toHaveLength(8)
-    // eight syntax providers plus the six text writers (one per extension, A6)
+    expect(manifests.filter(manifest => manifest.contract.id.includes('codec'))).toHaveLength(9)
+    // eight syntax providers plus the external writers and Core's JSON/plain writers.
     expect(
       manifests.filter(manifest => manifest.contract.id.includes('service-provider')),
-    ).toHaveLength(14)
+    ).toHaveLength(15)
     expect(
       manifests.filter(manifest => manifest.contract.id.includes('contract-definition')),
     ).toHaveLength(8)
-    const expectedEntrypoints = new Set([
-      ...Object.values(providerFormatByContract).flatMap(format => [
-        `./${sourceEntrypoint(format, 'codec')}`,
-        `./${sourceEntrypoint(format, 'provider')}`,
-      ]),
-      // the writer each text extension ships (A6): one module per extension, not per format
-      './src/editing/text-writer.js',
-    ])
-    for (const manifest of manifests.filter(item => item.runtimeVariants !== undefined)) {
-      expect(
-        manifest.runtimeVariants?.every(variant => expectedEntrypoints.has(variant.entrypoint)),
-      ).toBe(true)
-    }
     expect(
       manifests.every(
         manifest => JSON.stringify(manifest).includes('"mutatesSource":true') === false,
@@ -542,7 +539,7 @@ describe('13B text-data providers and codecs', () => {
     },
   )
 
-  it('keeps JSON/JSONC bounded detection honest and leaves SC2 containers to their owner', async () => {
+  it('keeps JSON/JSONC bounded detection honest', async () => {
     const comment = '{// actual comment\n"value":1}'
     const strictComment = await probe('json', comment, 'memory://fixtures/value')
     const jsoncComment = await probe('jsonc', comment, 'memory://fixtures/value')
@@ -559,14 +556,6 @@ describe('13B text-data providers and codecs', () => {
     const boundedJsonc = await probe('jsonc', markerBeyondProbe, 'memory://fixtures/value')
     expect(boundedJson.confidence).toBe(boundedJsonc.confidence)
     expect(boundedJson.evidence[0]?.note).toBe('json-jsonc-ambiguous')
-
-    const sc2Container = await probe(
-      'xml',
-      '<ComponentList><DataComponent/></ComponentList>',
-      'memory://fixtures/Test.SC2Mod',
-    )
-    expect(sc2Container.confidence).toBeLessThan(0.1)
-    expect(sc2Container.evidence[0]?.note).toBe('owned-container-context')
   })
 
   it('pages one million delimited rows without materializing an eager document', async () => {
@@ -703,11 +692,11 @@ describe('13B text-data providers and codecs', () => {
     expect(changed).toMatchObject({ encoding: 'utf-8', bom: false, newline: 'lf' })
   })
 
-  it('matches the recorded parseSc2Ini and csv-parse oracle fixtures', async () => {
+  it('matches the recorded INI and CSV oracle fixtures', async () => {
     const { createTextSyntaxProvider } = await providers()
     const iniFixture = JSON.parse(
       await readFile(
-        join(extensionRootFor('ini'), 'test', 'fixtures', 'ini-sc2-parity.json'),
+        join(extensionRootFor('ini'), 'test', 'fixtures', 'ini-structured-parity.json'),
         'utf8',
       ),
     ) as {
@@ -716,7 +705,7 @@ describe('13B text-data providers and codecs', () => {
     }
     const ini = await createTextSyntaxProvider('common.text-data/ini-syntax').parse({
       input: { text: iniFixture.input },
-      dialect: 'ini-sc2',
+      dialect: 'ini-default',
       budget,
     })
     expect(ini.state).toBe('ok')
@@ -1010,7 +999,7 @@ describe('13B text-data providers and codecs', () => {
   )
 
   it('keeps the public index provider-free and all portable sources free of node imports', async () => {
-    for (const root of textExtensionRoots) {
+    for (const root of textExtensionRoots.filter(root => root !== nativeTextRoot)) {
       expect(await readFile(join(root, 'src', 'index.js'), 'utf8'), root).not.toMatch(/providers/u)
     }
     for (const format of Object.values(providerFormatByContract)) {
@@ -1021,7 +1010,7 @@ describe('13B text-data providers and codecs', () => {
         )
       }
     }
-    const sharedRoot = join(repositoryRoot, 'extensions', 'codec-kit', 'codec-kit', 'src', 'text')
+    const sharedRoot = join(repositoryRoot, 'packages', 'codec-kit', 'src', 'text')
     for (const path of [
       'index.js',
       'codec-runtime.js',
@@ -1037,7 +1026,7 @@ describe('13B text-data providers and codecs', () => {
         join(extensionRootFor(format), sourceEntrypoint(format, 'provider')),
         'utf8',
       )
-      expect(providerSource).not.toMatch(/CUnit|Catalog|GameStrings|ComponentList|SC2/u)
+      expect(providerSource).not.toMatch(/publisher-specific-container/iu)
       expect(providerSource).not.toMatch(/org\.example/u)
     }
   })

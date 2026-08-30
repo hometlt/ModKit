@@ -21,8 +21,8 @@
 //
 // Usage: node scripts/migration/check-parity-legacy.mjs [--quiet]
 
-import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, rmSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -77,34 +77,6 @@ if (existsSync(localDescriptorPath)) {
 }
 if (!existsSync(path.join(legacyRoot, '.git'))) {
   environmentRequired('the pinned legacy oracle repository is unavailable')
-}
-
-const animationSemantics = spawnSync(
-  process.execPath,
-  [
-    path.join(repoRoot, 'scripts/parity/check-m3-animation-semantics.mjs'),
-    ...(quiet ? ['--quiet'] : []),
-  ],
-  {
-    cwd: repoRoot,
-    encoding: 'utf8',
-    env: { ...process.env, MODKIT_PARITY_CANON_ROOT: legacyRoot },
-    maxBuffer: 1 << 28,
-  },
-)
-const animationStdout = animationSemantics.stdout?.trim() ?? ''
-const animationStderr = animationSemantics.stderr?.trim() ?? ''
-if (animationSemantics.status !== 0) {
-  console.error(
-    `parity:legacy: the M3 animation semantics check exited ${String(animationSemantics.status)}`,
-  )
-  if (animationSemantics.error !== undefined) console.error(animationSemantics.error.message)
-  if (animationStdout !== '') console.error(animationStdout)
-  if (animationStderr !== '') console.error(animationStderr)
-  process.exit(1)
-}
-if (!quiet && animationStdout !== '') {
-  console.log(animationStdout)
 }
 
 const missing = variables.filter(name => {

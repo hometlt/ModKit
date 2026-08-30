@@ -111,10 +111,6 @@ async function glbFixture(): Promise<Uint8Array> {
 
 const cameras = {
   glb: new Float32Array([1.6, 0, 0, 0, 0, 1.6, 0, 0, 0, 0, 1, 0, -0.8, -0.8, 0, 1]),
-  m3: new Float32Array([1.6, 0, 0, 0, 0, 0, 1, 0, 0, 1.6, 0, 0, -0.8, -0.8, 0, 1]),
-  w3x: new Float32Array([1.6, 0, 0, 0, 0, 0, 1, 0, 0, -1.6, 0, 0, -0.8, -0.8, 0, 1]),
-  w3d: new Float32Array([1.6, 0, 0, 0, 0, 0, 1, 0, 0, -1.6, 0, 0, -0.8, -0.8, 0, 1]),
-  vxl: new Float32Array([1.6, 0, 0, 0, 0, 1.6, 0, 0, 0, 0, 0.1, 0, -0.8, -0.8, 0, 1]),
 }
 
 const clearColor = [0.015, 0.02, 0.03, 0] as const
@@ -127,45 +123,6 @@ describe('decoded model to headless PNG vertical', () => {
       bytes: glbFixture,
       primitiveId: 'mesh-0-primitive-0',
       digest: 'c63d264e1bf0670f4b3f54707f3428818af9864e54c6eea60de5f9935d2bf218',
-    },
-    {
-      format: 'm3',
-      codec: join(repoRoot, '..', 'modkit-blizzard', 'models', 'src', 'm3', 'codec.js'),
-      bytes: async () => new Uint8Array(await readFile(join(fixtureRoot, 'models', 'triangle.m3'))),
-      primitiveId: 'mesh-0-primitive-0',
-      digest: 'c63d264e1bf0670f4b3f54707f3428818af9864e54c6eea60de5f9935d2bf218',
-    },
-    {
-      format: 'w3x',
-      codec: join(repoRoot, 'extensions', 'ea', 'models', 'src', 'sage-w3x', 'codec.js'),
-      bytes: async () =>
-        new Uint8Array(await readFile(join(fixtureRoot, 'mk2-synthetic', 'minimal.sage.w3x'))),
-      primitiveId: 'w3x-primitive-0',
-      digest: 'c63d264e1bf0670f4b3f54707f3428818af9864e54c6eea60de5f9935d2bf218',
-    },
-    {
-      format: 'w3d',
-      codec: join(repoRoot, 'extensions', 'ea', 'models', 'src', 'westwood-w3d', 'codec.js'),
-      bytes: async () =>
-        new Uint8Array(await readFile(join(fixtureRoot, 'mk2-synthetic', 'minimal.westwood.w3d'))),
-      primitiveId: 'w3d-primitive-0',
-      digest: 'c63d264e1bf0670f4b3f54707f3428818af9864e54c6eea60de5f9935d2bf218',
-    },
-    {
-      format: 'vxl',
-      codec: join(
-        repoRoot,
-        'extensions',
-        'ea',
-        'tiberian-sun',
-        'src',
-        'red-alert2-vxl',
-        'codec.js',
-      ),
-      bytes: async () =>
-        new Uint8Array(await readFile(join(fixtureRoot, 'mk2-synthetic', 'minimal.ra2.vxl'))),
-      primitiveId: 'vxl-primitive-0-0',
-      digest: 'd2ab89406e585cce47d0f5b0557b726944534017c10ccf6a87bb6598142be424',
     },
   ] as const)('$format geometry renders to a deterministic PNG fixture', async fixture => {
     const codecModule = (await import(pathToFileURL(fixture.codec).href)) as {

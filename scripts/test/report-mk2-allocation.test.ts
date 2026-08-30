@@ -69,7 +69,7 @@ describe('MK2 → MK3 allocation report', () => {
       for (const id of mapping.ids ?? []) expect(CORE_SHARED).toContain(id)
     }
     // grammar parity on representative ids
-    for (const id of ['org.modkitx/dds', 'org.modkitx.blizzard/starcraft-2', 'a.b-c/d.e']) {
+    for (const id of ['org.modkitx/dds', 'org.example.publisher/game-alpha', 'a.b-c/d.e']) {
       expect(QUALIFIED.test(id)).toBe(isQualifiedId(id))
     }
     for (const id of ['portable', 'browser-wasm', 'Node', 'node_worker', 'x.y']) {

@@ -195,9 +195,8 @@ function admittedTerrainTransform(
     }
     return (
       value.mapping.vertical === 'direct-base-times-scale-plus-offset' &&
-      value.source.format === 'warzone-game-map' &&
-      (value.source.heightEncoding === 'uint8-times-2' ||
-        value.source.heightEncoding === 'uint16-le') &&
+      value.source.format.length > 0 &&
+      value.source.heightEncoding.length > 0 &&
       terrain.samples.every(sample => sample.heightAdjustment === 0)
     )
   }

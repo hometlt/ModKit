@@ -2,10 +2,8 @@
 module.exports = Object.freeze([
   'common/archives',
   'common/audio',
-  'common/data/plain-text',
-  'common/data/text-delimited',
+  'common/data/text-csv',
   'common/data/text-ini',
-  'common/data/text-json',
   'common/data/text-toml',
   'common/data/text-xml',
   'common/data/text-yaml',

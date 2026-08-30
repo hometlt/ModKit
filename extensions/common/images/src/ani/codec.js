@@ -21,10 +21,6 @@ function isWindowsAni(bytes) {
   return bytes.byteLength >= 12 && tag(bytes, 0) === 'RIFF' && tag(bytes, 8) === 'ACON'
 }
 
-function isWarzoneAni(bytes) {
-  return latin1.decode(bytes.subarray(0, Math.min(bytes.byteLength, 16))).startsWith('ANIM3DFRAMES')
-}
-
 function walkChunks(bytes, start, end, depth, state) {
   if (state.signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
   if (depth > state.maxDepth) throw new RangeError('ANI RIFF nesting exceeds maxDepth budget')
@@ -127,165 +123,105 @@ function parseWindowsAni(bytes, context) {
   return Object.freeze({ header, chunks, all, iconChunks, sequence, rates })
 }
 
-function parseWarzoneAni(bytes, maxNodes) {
-  if (!isWarzoneAni(bytes)) throw new TypeError('Warzone ANIM3DFRAMES header is invalid')
-  const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes).replace(/\r\n/g, '\n')
-  const lines = text
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean)
-  if (lines.length === 0 || lines.length > maxNodes) {
-    throw new RangeError('Warzone animation line count is invalid or exceeds maxNodes budget')
-  }
-  const header = /^ANIM3DFRAMES(?:\s+(\d+))?$/u.exec(lines[0])
-  if (header === null) throw new TypeError('Warzone animation first line is malformed')
-  const declaredFrames = header[1] === undefined ? undefined : Number(header[1])
-  if (
-    declaredFrames !== undefined &&
-    (!Number.isSafeInteger(declaredFrames) ||
-      declaredFrames < 0 ||
-      declaredFrames > lines.length - 1)
-  ) {
-    throw new TypeError('Warzone animation declared frame count is invalid')
-  }
-  return Object.freeze({ lines: Object.freeze(lines), declaredFrames })
-}
-
 const definition = Object.freeze({
   id: ID,
-  format: Object.freeze({ id: 'ani', label: 'Windows Animated Cursor / Warzone Animation' }),
+  format: Object.freeze({ id: 'ani', label: 'Windows Animated Cursor' }),
   async detect(prefix) {
     if (isWindowsAni(prefix)) return { confidence: 0.99, kind: 'structure', note: 'riff-acon' }
-    if (isWarzoneAni(prefix))
-      return { confidence: 0.95, kind: 'structure', note: 'warzone-anim3dframes' }
     return { confidence: 0, kind: 'structure', note: 'signature-mismatch' }
   },
   async inspect(bytes, context) {
-    if (isWindowsAni(bytes)) {
-      const ani = parseWindowsAni(bytes, context)
-      const firstIcon = ani.iconChunks[0]
-      if (firstIcon === undefined) throw new TypeError('Windows ANI has no first icon frame')
-      const firstFrameBytes = bytes.subarray(firstIcon.payload, firstIcon.payload + firstIcon.size)
-      const firstFrame = decodeEmbeddedIconFrame(firstFrameBytes, context.budget)
-      if (
-        firstFrame.decodedBytes !== undefined &&
-        firstFrame.decodedBytes > BigInt(context.budget.maxScalarBytes)
-      ) {
-        throw new RangeError('Windows ANI first frame exceeds maxScalarBytes budget')
-      }
-      const raster = createRasterImageSource(
-        bytes,
-        'application/x-navi-animation',
-        {
-          width: firstFrame.width,
-          height: firstFrame.height,
-          depth: 1,
-          layers: 1,
-          faces: 1,
-          mipLevels: 1,
-          frames: 1,
-          channels: 4,
-          bitDepth: 8,
-          colorSpace: 'srgb',
-          alphaMode: 'straight',
-          orientation: 'top-left',
-          decodedAccess: firstFrame.decodedAccess,
-        },
-        firstFrame.readRegion,
-      )
-      const tree = createTreeDataSource({
-        kind: 'animation',
-        label: 'Windows ANI',
-        preview: `${ani.header.frames} frame(s), ${ani.header.steps} playback step(s)`,
-        children: ani.chunks.map((chunk, index) => ({
-          kind: 'chunk',
-          label: `${index}: ${chunk.id}${chunk.listType === undefined ? '' : `/${chunk.listType}`}`,
-          preview: `${chunk.size} data bytes`,
-        })),
-      })
-      return {
-        summary: {
-          format: 'ani',
-          variant: 'windows-riff-acon',
-          frames: ani.header.frames,
-          steps: ani.header.steps,
-          width: ani.header.width,
-          height: ani.header.height,
-          jiffiesPerStep: ani.header.jiffiesPerStep,
-          firstFramePayloadKind: firstFrame.payloadKind,
-          firstFrameDecodedAccess: firstFrame.decodedAccess,
-        },
-        metadata: [
-          {
-            id: 'ani-header',
-            label: 'Windows animated cursor',
-            entries: [
-              { key: 'frames', value: ani.header.frames },
-              { key: 'steps', value: ani.header.steps },
-              { key: 'width', value: ani.header.width },
-              { key: 'height', value: ani.header.height },
-              { key: 'bitDepth', value: ani.header.bitDepth },
-              { key: 'planes', value: ani.header.planes },
-              { key: 'jiffiesPerStep', value: ani.header.jiffiesPerStep },
-              { key: 'flags', value: ani.header.flags },
-              { key: 'embeddedIcons', value: ani.iconChunks.length },
-              { key: 'hasSequence', value: ani.sequence !== undefined },
-              { key: 'hasRates', value: ani.rates !== undefined },
-              { key: 'firstFramePayloadKind', value: firstFrame.payloadKind },
-              { key: 'firstFrameDecodedAccess', value: firstFrame.decodedAccess },
-            ],
-          },
-        ],
-        traits: [
-          { id: 'image.frames', parameters: { count: ani.header.frames } },
-          { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
-        ],
-        dataSources: {
-          'common.view/tree-data-source': tree,
-          'common.view/raster-image-source': raster,
-        },
-        ...(firstFrame.decodedBytes === undefined
-          ? {}
-          : { maxDecodedBytes: firstFrame.decodedBytes }),
-        unsupportedFeatures: [
-          ...(firstFrame.decodedAccess ? [] : ['embedded-icon-pixel-decoding']),
-          ...(ani.header.frames > 1 ? ['remaining-embedded-icon-frame-decoding'] : []),
-          'animation-playback',
-          'ani-writing',
-        ],
-      }
+    const ani = parseWindowsAni(bytes, context)
+    const firstIcon = ani.iconChunks[0]
+    if (firstIcon === undefined) throw new TypeError('Windows ANI has no first icon frame')
+    const firstFrameBytes = bytes.subarray(firstIcon.payload, firstIcon.payload + firstIcon.size)
+    const firstFrame = decodeEmbeddedIconFrame(firstFrameBytes, context.budget)
+    if (
+      firstFrame.decodedBytes !== undefined &&
+      firstFrame.decodedBytes > BigInt(context.budget.maxScalarBytes)
+    ) {
+      throw new RangeError('Windows ANI first frame exceeds maxScalarBytes budget')
     }
-    const warzone = parseWarzoneAni(bytes, context.budget.maxNodes)
+    const raster = createRasterImageSource(
+      bytes,
+      'application/x-navi-animation',
+      {
+        width: firstFrame.width,
+        height: firstFrame.height,
+        depth: 1,
+        layers: 1,
+        faces: 1,
+        mipLevels: 1,
+        frames: 1,
+        channels: 4,
+        bitDepth: 8,
+        colorSpace: 'srgb',
+        alphaMode: 'straight',
+        orientation: 'top-left',
+        decodedAccess: firstFrame.decodedAccess,
+      },
+      firstFrame.readRegion,
+    )
     const tree = createTreeDataSource({
       kind: 'animation',
-      label: 'Warzone ANIM3DFRAMES',
-      preview: `${warzone.declaredFrames ?? warzone.lines.length - 1} declared frame line(s)`,
-      children: warzone.lines.slice(1).map((line, index) => ({
-        kind: 'frame',
-        label: `Frame line ${index}`,
-        preview: line,
+      label: 'Windows ANI',
+      preview: `${ani.header.frames} frame(s), ${ani.header.steps} playback step(s)`,
+      children: ani.chunks.map((chunk, index) => ({
+        kind: 'chunk',
+        label: `${index}: ${chunk.id}${chunk.listType === undefined ? '' : `/${chunk.listType}`}`,
+        preview: `${chunk.size} data bytes`,
       })),
     })
     return {
       summary: {
         format: 'ani',
-        variant: 'warzone-anim3dframes',
-        declaredFrames: warzone.declaredFrames,
-        lines: warzone.lines.length,
+        variant: 'windows-riff-acon',
+        frames: ani.header.frames,
+        steps: ani.header.steps,
+        width: ani.header.width,
+        height: ani.header.height,
+        jiffiesPerStep: ani.header.jiffiesPerStep,
+        firstFramePayloadKind: firstFrame.payloadKind,
+        firstFrameDecodedAccess: firstFrame.decodedAccess,
       },
       metadata: [
         {
-          id: 'warzone-animation',
-          label: 'Warzone animation sidecar',
+          id: 'ani-header',
+          label: 'Windows animated cursor',
           entries: [
-            { key: 'declaredFrames', value: warzone.declaredFrames ?? 'unspecified' },
-            { key: 'lines', value: warzone.lines.length },
+            { key: 'frames', value: ani.header.frames },
+            { key: 'steps', value: ani.header.steps },
+            { key: 'width', value: ani.header.width },
+            { key: 'height', value: ani.header.height },
+            { key: 'bitDepth', value: ani.header.bitDepth },
+            { key: 'planes', value: ani.header.planes },
+            { key: 'jiffiesPerStep', value: ani.header.jiffiesPerStep },
+            { key: 'flags', value: ani.header.flags },
+            { key: 'embeddedIcons', value: ani.iconChunks.length },
+            { key: 'hasSequence', value: ani.sequence !== undefined },
+            { key: 'hasRates', value: ani.rates !== undefined },
+            { key: 'firstFramePayloadKind', value: firstFrame.payloadKind },
+            { key: 'firstFrameDecodedAccess', value: firstFrame.decodedAccess },
           ],
         },
       ],
-      traits: [{ id: 'content.text', parameters: { lines: warzone.lines.length } }],
-      dataSources: { 'common.view/tree-data-source': tree },
-      unsupportedFeatures: ['model-animation-application', 'ani-writing'],
+      traits: [
+        { id: 'image.frames', parameters: { count: ani.header.frames } },
+        { id: 'content.binary', parameters: { bytes: String(bytes.byteLength) } },
+      ],
+      dataSources: {
+        'common.view/tree-data-source': tree,
+        'common.view/raster-image-source': raster,
+      },
+      ...(firstFrame.decodedBytes === undefined
+        ? {}
+        : { maxDecodedBytes: firstFrame.decodedBytes }),
+      unsupportedFeatures: [
+        ...(firstFrame.decodedAccess ? [] : ['embedded-icon-pixel-decoding']),
+        ...(ani.header.frames > 1 ? ['remaining-embedded-icon-frame-decoding'] : []),
+        'animation-playback',
+        'ani-writing',
+      ],
     }
   },
 })

@@ -116,15 +116,6 @@ const tabFor = target => modkitTabs().find(entry => samePath(entry.uri.fsPath, t
 
 const tabForUri = text => modkitTabs().find(entry => entry.uri.toString() === text)
 
-/** The declared half of a matrix row, carried into the receipt whether the row ran or not. */
-const describeRow = row => ({
-  id: row.id,
-  source: row.source,
-  route: row.command,
-  expect: row.expect,
-  note: row.note,
-})
-
 async function closeAllEditors() {
   await vscode.commands.executeCommand('workbench.action.closeAllEditors')
   await waitFor(() => modkitTabs().length === 0, { timeoutMs: 5_000 })
@@ -500,40 +491,10 @@ async function scenario(id, title, body) {
 }
 
 /*
- * The focused-product E5 rows ask only whether the real editor is wired to the already-tested
- * Common, SC2 and Warzone codecs and viewers. Codec semantics stay in their owning suites: here a
- * row opens through the public custom editor, observes the applicable viewer on the rendered page,
- * and confirms the selected format through the shared command surface.
+ * Core E2E rows exercise only first-party common viewers. Publisher-specific preview acceptance
+ * lives with each external extension and is linked by the externalization owner receipts.
  */
 const FOCUSED_PREVIEWS = Object.freeze([
-  {
-    id: 'focused-preview-sc2-model',
-    title: 'The SC2 model reaches the real Model viewer',
-    file: 'sc2-model.m3',
-    stage: 'Model',
-    formatId: 'm3',
-  },
-  {
-    id: 'focused-preview-warzone-model',
-    title: 'The Warzone model reaches the real Model viewer',
-    file: 'warzone-model.pie',
-    stage: 'Model',
-    formatId: 'warzone-pie',
-  },
-  {
-    id: 'focused-preview-sc2-map',
-    title: 'The SC2 map reaches the real archive preview',
-    file: 'sc2-map.SC2Map',
-    stage: 'Entries',
-    formatId: 'sc2-map',
-  },
-  {
-    id: 'focused-preview-warzone-map',
-    title: 'The Warzone map reaches the real archive preview',
-    file: 'warzone-map.wz',
-    stage: 'Entries',
-    formatId: 'warzone-wz',
-  },
   {
     id: 'focused-preview-document',
     title: 'The Common document reaches the real tree preview',
@@ -616,47 +577,6 @@ async function runFocusedGaScenarios() {
     })
     await closeAllEditors()
   }
-
-  await scenario(
-    'focused-world-presentation',
-    'The SC2 map mounts the shared World presentation in the real editor',
-    async record => {
-      const target = path.join(staged, 'sc2-world.SC2Map')
-      const tab = await openThroughCustomEditor(target)
-      record.details.tabOpened = tab !== undefined
-      record.details.contentProvedBy = 'apps/web/test/presentation-plan-conformance.test.ts'
-      if (tab === undefined) {
-        record.evidence = 'no Modkit custom-editor tab appeared for sc2-world.SC2Map within 20s'
-        return false
-      }
-      await waitFor(async () => (await readStageTabs()).includes('World'), {
-        timeoutMs: 45_000,
-        stepMs: 500,
-      })
-      const stages = await readStageTabs()
-      record.details.stageTabs = stages
-      if (!stages.includes('World')) {
-        record.evidence = `sc2-world.SC2Map opened, but World was absent from ${JSON.stringify(stages)}`
-        return false
-      }
-      const clicked = await clickStage('World')
-      const visible = await readWebviewText()
-      record.details.worldSelected = clicked
-      record.details.webviewReadable = visible.trim() !== ''
-      record.details.pageExcerpt = excerpt(visible, 900)
-      if (!clicked || visible.trim() === '') {
-        record.evidence =
-          'World was offered for sc2-world.SC2Map, but the rendered page could not be observed ' +
-          `after selection (${cdp.note})`
-        return false
-      }
-      record.evidence =
-        'sc2-world.SC2Map opened in a real custom-editor tab and mounted the shared World stage; ' +
-        'semantic content is proved by the linked conformance suite'
-      return true
-    },
-  )
-  await closeAllEditors()
 
   await scenario(
     'focused-positive-conversion',
@@ -1115,7 +1035,7 @@ async function runScenarios(env) {
     const nodes = /(\d+)\s*nodes?/i.exec(text)
     record.details.memberNodes = nodes?.[1] ?? null
     // Recorded, not asserted: what the nested model holds belongs to the host's own nested suite.
-    record.details.contentProvedBy = 'packages/host/test/nested-subject-blizzard.test.ts'
+    record.details.contentProvedBy = 'packages/host/test/nested-subject-containers.test.ts'
     record.evidence =
       `with no editor open on the archive, the container filesystem lists ${listing.length} root ` +
       `entries through the editor's own workspace.fs and stats «${entry}» at ${stat.size} bytes; ` +
@@ -1226,201 +1146,10 @@ async function runScenarios(env) {
     },
   )
 
-  // ---------------------------------------------------------------- 6. transport/shell matrix
   /*
-   * Block 13, work 7, verbatim: "prove transport/shell smoke of Common Documents, SC2 CASC/MPQ,
-   * C&C BIG, Warzone `.wz` and BAR Spring VFS flows in a real window".
-   *
-   * What this scenario is and is not. It asks the *transport and shell* question — can this editor
-   * reach these five kinds of source through the product route and get a structured answer — and
-   * the plan says in the same sentence that it "does not replace the semantic E4/E5 acceptance of
-   * the corresponding contributions in blocks 15–17". So a row passes when the route reaches the
-   * codec and the codec answers *by name*, whether that answer is a subject or a refusal. A row
-   * fails when the editor crashes, hangs, or answers nothing.
-   *
-   * That distinction is what lets two rows be honest instead of absent:
-   *
-   *   - Warzone `.wz` is a ZIP, and today it opens through the generic `org.modkitx/archive-zip`
-   *     route. The `wz` semantics — what those entries *mean* to Warzone — are still in mk2
-   *     staging and belong to block 17. The row records the generic route it actually took.
-   *   - BAR ships its maps as `.sd7`, and this lab's 7z reader refuses their header form by name.
-   *     That is a real answer about a real corpus and it is recorded as one; making the row green
-   *     by choosing a different file would be measuring the harness.
-   *
-   * Rows whose corpus variable is unset are skipped by name rather than failing: an owner running
-   * this without Warzone installed should see "environment-required", not a red gate.
+   * Publisher-specific transport matrices moved to their extension owners. Core keeps the generic
+   * document, image and command-surface scenarios above.
    */
-  await scenario(
-    'transport-matrix',
-    'Five source families answer through the product route',
-    async record => {
-      if ((process.env.MODKITX_SMOKE_MATRIX ?? '') === '') {
-        record.evidence = 'not the matrix run of this repeat set'
-        record.details.skipped = 'sampling-run'
-        return true
-      }
-      const staged = requireEnv('MODKITX_SMOKE_FIXTURE_DIR')
-      const rows = [
-        {
-          id: 'common-documents',
-          source: 'Common Documents',
-          variable: null,
-          subject: path.join(staged, 'fixture.odt'),
-          command: 'subject.inspect',
-          expect: 'ok',
-          note: 'an ODT from the bundled documents catalog; no corpus needed',
-        },
-        {
-          id: 'sc2-mpq',
-          source: 'SC2 CASC/MPQ',
-          variable: 'MODKITX_SC2_ROOT',
-          subject: env => path.join(env, 'Maps', 'Amphion.SC2Map'),
-          command: 'subject.open',
-          expect: 'ok',
-          note: 'MPQ container of a retail install; CASC as a whole-install mount is block 15',
-        },
-        {
-          id: 'cnc-big',
-          source: 'C&C BIG',
-          variable: 'MODKITX_CNC3_ROOT',
-          subject: env => path.join(env, 'Core', '1.0', 'Misc.big'),
-          command: 'subject.extract',
-          entry: 'data/editor/molds/bowl.w3d',
-          expect: 'ok',
-          note: 'the command runtime reading a member out of a live container',
-        },
-        {
-          id: 'warzone-wz',
-          source: 'Warzone .wz',
-          variable: 'MODKITX_WARZONE_ROOT',
-          /*
-           * A level deeper than the generic ZIP route, now that round 2 landed the PIE codec: the
-           * `.wz` is mounted as a container and one of its models is opened as a subject of its
-           * own. `mp.wz` rather than `base.wz` because base is 117 MiB and this host reads 64 —
-           * that ceiling is a real property of the profile, recorded rather than worked around.
-           */
-          container: env => path.join(env, 'data', 'mp.wz'),
-          entryPath: 'components/bodies/camper.pie',
-          command: 'subject.inspect',
-          expect: 'ok',
-          note: 'container mount plus a PIE member as its own subject (org.modkitx/warzone-pie)',
-        },
-        {
-          id: 'bar-spring-vfs',
-          source: 'BAR Spring VFS',
-          variable: 'MODKITX_BAR_ROOT',
-          subject: env => path.join(env, 'data', 'maps', 'avalanche_3.4.sd7'),
-          command: 'subject.open',
-          // A named refusal is the honest answer for this corpus today, and it is what the row asserts.
-          expect: 'failed',
-          note:
-            'both container forms BAR ships are out of reach today: `.sd7` is 7z with a header the ' +
-            'reader refuses by name, and the rapid store (`.sdp` manifest plus `pool/`) has no MK3 ' +
-            'container codec. The S3O *model* codec exists after round 2 and is proven against this ' +
-            'very install by its own corpus test — what is missing is the VFS mount, block 17',
-        },
-      ]
-
-      const results = []
-      for (const row of rows) {
-        const root = row.variable === null ? '' : (process.env[row.variable] ?? '')
-        if (row.variable !== null && root === '') {
-          results.push({
-            ...describeRow(row),
-            verdict: 'skipped',
-            reason: `${row.variable} is not set`,
-          })
-          continue
-        }
-        /*
-         * A row either names a file, or names a container and a member inside it. The second shape
-         * is the deeper claim — the container is mounted and the member becomes a subject of its
-         * own — and it needs the container granted first, exactly as a person would by opening it.
-         */
-        const containerPath = row.container === undefined ? undefined : row.container(root)
-        const subject =
-          containerPath === undefined
-            ? typeof row.subject === 'function'
-              ? row.subject(root)
-              : row.subject
-            : containerUri(containerPath, row.entryPath).toString()
-        const onDisk = containerPath ?? subject
-        if (!fs.existsSync(onDisk)) {
-          results.push({
-            ...describeRow(row),
-            verdict: 'skipped',
-            reason: 'the corpus does not hold this file',
-          })
-          continue
-        }
-        /*
-         * Grant the directory the way a person does — by opening the file.
-         *
-         * The command runtime opens through this window's confined path opener, and a corpus
-         * outside the workspace is not granted until something opens it. The first run of this
-         * matrix failed SC2 and Warzone in under 300 ms for exactly that reason while C&C passed,
-         * because an earlier scenario had already opened the BIG. That is the product behaving
-         * correctly and the harness asking wrongly: `modkit.openResource` is the same door the
-         * Explorer's context menu uses, and it grants the file's directory before anything asks.
-         */
-        await vscode.commands.executeCommand('modkit.openResource', vscode.Uri.file(onDisk))
-        await waitFor(() => tabFor(onDisk), { timeoutMs: 30_000 })
-        await closeAllEditors()
-
-        const started = Date.now()
-        const result = await vscode.commands.executeCommand('modkit.runCommand', {
-          command: row.command,
-          subject,
-          ...(row.entry === undefined ? {} : { entry: row.entry }),
-        })
-        const durationMs = Date.now() - started
-        const state = result?.state ?? 'no-answer'
-        results.push({
-          ...describeRow(row),
-          verdict: state === row.expect ? 'pass' : 'fail',
-          state,
-          durationMs,
-          /*
-           * The identity of the answer, not its prose: a refusal has to be *named* for the row to
-           * count as a transport success, and a code is what naming means here.
-           */
-          code: result?.code ?? null,
-          // The sentence too: a named refusal is only named if the name is legible in the receipt.
-          message: result?.message ?? result?.reason ?? null,
-          selected: result?.data?.selected?.contributionId ?? null,
-          /*
-           * Which format actually claimed it. `subject.open` reports a contribution and
-           * `subject.inspect` reports an identity, and a row that recorded neither would prove only
-           * that *something* answered — which for the Warzone row is the whole question, since the
-           * point of going through the container is that the PIE codec claims the member.
-           */
-          formatId: result?.data?.identity?.formatId ?? result?.data?.formatId ?? null,
-        })
-      }
-
-      record.details.matrix = results
-      const failed = results.filter(item => item.verdict === 'fail')
-      const ran = results.filter(item => item.verdict !== 'skipped')
-      const skipped = results.filter(item => item.verdict === 'skipped')
-      if (failed.length > 0) {
-        record.evidence =
-          `${failed.length} of ${rows.length} source families did not answer as recorded: ` +
-          failed.map(item => `${item.id} (expected ${item.expect}, got ${item.state})`).join('; ')
-        return false
-      }
-      record.evidence =
-        `${ran.length} of ${rows.length} source families answered through the product route ` +
-        `(${skipped.length} skipped for a missing corpus: ${skipped.map(item => item.id).join(', ') || 'none'}); ` +
-        ran
-          .map(
-            item =>
-              `${item.id}=${item.state}${item.selected ? ` via ${item.selected}` : ''} in ${item.durationMs} ms`,
-          )
-          .join('; ')
-      return true
-    },
-  )
-  await closeAllEditors()
 
   /*
    * `gpu-texture-stages` lived here and is gone (owner decision, 2026-08-26).

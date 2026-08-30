@@ -20,7 +20,7 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { delimiter, join, resolve } from 'node:path'
 import { build } from 'esbuild'
 import { afterAll, describe, expect, it } from 'vitest'
 
@@ -43,7 +43,9 @@ async function bundleCjs(name: string, source: string): Promise<string> {
     target: ['node20'],
     absWorkingDir: repoRoot,
     logLevel: 'silent',
-    external: ['node:*'],
+    // jsonc-parser is a legitimate host-native dependency. Keeping it as a package boundary also
+    // preserves its own relative CommonJS requires instead of flattening them into this bundle.
+    external: ['node:*', 'jsonc-parser'],
   })
   return outfile
 }
@@ -67,6 +69,7 @@ async function bundleBootstrap(): Promise<string> {
     target: ['node20'],
     absWorkingDir: repoRoot,
     logLevel: 'silent',
+    external: ['jsonc-parser'],
   })
   return outfile
 }
@@ -75,7 +78,15 @@ function runNode(file: string): { readonly status: number | null; readonly outpu
   const result = spawnSync(process.execPath, [file], {
     cwd: scratch,
     encoding: 'utf8',
-    env: { ...process.env, NODE_PATH: join(repoRoot, 'node_modules') },
+    env: {
+      ...process.env,
+      NODE_PATH: [
+        join(repoRoot, 'packages', 'host', 'node_modules'),
+        join(repoRoot, 'node_modules'),
+      ]
+        .filter(Boolean)
+        .join(delimiter),
+    },
   })
   return { status: result.status, output: `${result.stdout ?? ''}${result.stderr ?? ''}` }
 }

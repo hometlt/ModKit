@@ -3,15 +3,15 @@
   "schemaVersion": "bundle-graph-1",
   "entryCount": 74,
   "totals": {
-    "modules": 604,
-    "bytes": 7215415
+    "modules": 652,
+    "bytes": 7356426
   },
   "entries": [
     {
       "entry": "apps/cli/dist/main.js",
-      "surface": "modkit-cli/main",
+      "surface": "cli/main",
       "modules": 4,
-      "bytes": 31609,
+      "bytes": 31574,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -90,11 +90,12 @@
     {
       "entry": "packages/host/dist/index.js",
       "surface": "host",
-      "modules": 63,
-      "bytes": 737708,
+      "modules": 87,
+      "bytes": 806423,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
+        "@modkitx-x3/host",
         "@modkitx-x3/sdk",
         "@modkitx-x3/sdk/data",
         "@modkitx-x3/sdk/games",
@@ -133,7 +134,7 @@
       "entry": "packages/host/dist/maps/index.js",
       "surface": "host/maps",
       "modules": 20,
-      "bytes": 206535,
+      "bytes": 206465,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -157,11 +158,12 @@
     {
       "entry": "packages/host/dist/node/index.js",
       "surface": "host/node",
-      "modules": 66,
-      "bytes": 541125,
+      "modules": 90,
+      "bytes": 613526,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
+        "@modkitx-x3/host",
         "@modkitx-x3/sdk",
         "@modkitx-x3/sdk/data",
         "@modkitx-x3/sdk/games",

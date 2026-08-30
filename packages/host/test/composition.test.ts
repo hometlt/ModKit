@@ -3,7 +3,7 @@ import { uint64 } from '@modkitx-x3/core'
 import { createHostComposition } from '@modkitx-x3/host'
 
 describe('host composition root', () => {
-  it('starts an empty host and keeps realm facilities isolated', async () => {
+  it('starts with only the native text inventory and keeps realm facilities isolated', async () => {
     const composition = await createHostComposition({
       realmId: 'org.modkitx.test/renderer',
       topology: {
@@ -54,7 +54,12 @@ describe('host composition root', () => {
         ],
       },
     })
-    expect(composition.inventory.extensions).toEqual([])
+    expect(composition.inventory.extensions).toHaveLength(1)
+    expect(composition.inventory.extensions[0]).toMatchObject({
+      source: 'native:core/text',
+      origin: 'bundled',
+      manifest: { publisher: 'org.modkitx', id: 'core-native-text' },
+    })
     expect(composition.target.hostCapabilities).toEqual(['gpu.webgl2'])
     expect(composition.target.hostCapabilities).not.toContain('process.launch')
     expect(composition.executionBackends.profiles).toEqual(['trusted-in-process'])

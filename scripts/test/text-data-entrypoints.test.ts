@@ -59,9 +59,9 @@ describe('text-data contribution entrypoint discovery', () => {
     expect(
       relativeEntrypointSpecifier(
         join(checkout, 'examples', 'gallery', 'src', 'generated.ts'),
-        join(checkout, 'extensions', 'common', 'data', 'text-json', 'codec.js'),
+        join(checkout, 'packages', 'host', 'native-text', 'json', 'codec.js'),
       ),
-    ).toBe('../../../extensions/common/data/text-json/codec.js')
+    ).toBe('../../../packages/host/native-text/json/codec.js')
 
     const tracked = readFileSync(
       join(
@@ -76,6 +76,6 @@ describe('text-data contribution entrypoint discovery', () => {
       'utf8',
     )
     expect(tracked).not.toMatch(/[A-Za-z]:[\\/]/u)
-    expect(tracked).toContain("from '../../../extensions/common/data/text-json/")
+    expect(tracked).toContain("from '../../../packages/host/native-text/json/")
   })
 })

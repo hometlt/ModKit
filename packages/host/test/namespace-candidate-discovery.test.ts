@@ -14,8 +14,8 @@ import { containerEntryRevision } from '../src/namespace-origin.js'
 
 const containerRevision = revisionId('provider-token:namespace-candidate-test')
 const roots = Object.freeze([
-  { rootId: 'active', pathPrefix: 'mods/active.sc2mod/base.sc2assets' },
-  { rootId: 'dependency', pathPrefix: 'mods/dependency.sc2mod/base.sc2assets' },
+  { rootId: 'active', pathPrefix: 'mods/active.package/base.assets' },
+  { rootId: 'dependency', pathPrefix: 'mods/dependency.package/base.assets' },
 ])
 const searches = Object.freeze([
   { rootId: 'active', logicalPrefix: 'assets/characters' },
@@ -77,23 +77,20 @@ function discovery(
 
 describe('workspace namespace candidate discovery', () => {
   it('orders exact-extension candidates by explicit root precedence and pins entry revisions', async () => {
-    const activeB = entry('mods/active.sc2mod/base.sc2assets/assets/characters/b/b.m3a', 31n)
-    const activeA = entry('mods/active.sc2mod/base.sc2assets/assets/characters/a/a.m3a', 29n)
+    const activeB = entry('mods/active.package/base.assets/assets/characters/b/b.m3a', 31n)
+    const activeA = entry('mods/active.package/base.assets/assets/characters/a/a.m3a', 29n)
     const dependencyDuplicate = entry(
-      'mods/dependency.sc2mod/base.sc2assets/assets/characters/a/a.m3a',
+      'mods/dependency.package/base.assets/assets/characters/a/a.m3a',
       37n,
     )
-    const dependencyC = entry(
-      'mods/dependency.sc2mod/base.sc2assets/assets/characters/c/c.M3A',
-      41n,
-    )
+    const dependencyC = entry('mods/dependency.package/base.assets/assets/characters/c/c.M3A', 41n)
     const result = await discovery([
       activeB,
-      entry('mods/active.sc2mod/base.sc2assets/assets/characters/readme.txt'),
+      entry('mods/active.package/base.assets/assets/characters/readme.txt'),
       activeA,
       dependencyC,
       dependencyDuplicate,
-      entry('mods/active.sc2mod/base.sc2assets/assets/other/out-of-scope.m3a'),
+      entry('mods/active.package/base.assets/assets/other/out-of-scope.m3a'),
     ]).discover()
 
     expect(result.state).toBe('complete')
@@ -129,8 +126,8 @@ describe('workspace namespace candidate discovery', () => {
 
   it('publishes no partial candidates when entry, candidate or byte budgets are exhausted', async () => {
     const entries = [
-      entry('mods/active.sc2mod/base.sc2assets/assets/characters/a.m3a', 17n),
-      entry('mods/active.sc2mod/base.sc2assets/assets/characters/b.m3a', 19n),
+      entry('mods/active.package/base.assets/assets/characters/a.m3a', 17n),
+      entry('mods/active.package/base.assets/assets/characters/b.m3a', 19n),
     ]
     for (const overrides of [
       { pageItems: 1, maxPages: 1 },
@@ -150,7 +147,7 @@ describe('workspace namespace candidate discovery', () => {
 
   it('fails closed when a candidate has no bounded size and completes an empty search honestly', async () => {
     const unbounded = await discovery([
-      entry('mods/active.sc2mod/base.sc2assets/assets/characters/a.m3a', null),
+      entry('mods/active.package/base.assets/assets/characters/a.m3a', null),
     ]).discover()
     expect(unbounded).toMatchObject({
       state: 'refused',
@@ -159,7 +156,7 @@ describe('workspace namespace candidate discovery', () => {
     })
 
     const empty = await discovery([
-      entry('mods/active.sc2mod/base.sc2assets/assets/characters/model.m3'),
+      entry('mods/active.package/base.assets/assets/characters/model.m3'),
     ]).discover()
     expect(empty).toMatchObject({
       state: 'complete',
@@ -205,8 +202,8 @@ describe('workspace namespace candidate discovery', () => {
       { items: 'not-an-array' },
       {
         items: [
-          entry('mods/active.sc2mod/base.sc2assets/assets/characters/a.m3a'),
-          entry('mods/active.sc2mod/base.sc2assets/assets/characters/b.m3a'),
+          entry('mods/active.package/base.assets/assets/characters/a.m3a'),
+          entry('mods/active.package/base.assets/assets/characters/b.m3a'),
         ],
       },
     ]

@@ -209,7 +209,7 @@ describe('PWA product path — catalog → composition → worker-brokered open'
       moduleMap: nodeModuleMap,
       onDiagnostic: diagnostic => void diagnostics.push(diagnostic),
     })
-    expect(services.executionProfiles).toEqual(['worker-brokered'])
+    expect(services.executionProfiles).toEqual(['trusted-in-process', 'worker-brokered'])
     expect(services.supportedExtensions).toContain('png')
     expect(services.worker.target.environment).toBe('browser-worker')
     expect(services.main.inventory.diagnostics.filter(d => d.severity === 'error')).toEqual([])
@@ -327,9 +327,16 @@ describe('PWA product path — catalog → composition → worker-brokered open'
       },
       moduleMap: nodeModuleMap,
     })
-    expect(
-      services.main.inventory.extensions.every(extension => extension.origin === 'installed'),
-    ).toBe(true)
+    const native = services.main.inventory.extensions.filter(
+      extension => extension.source === 'native:core/text',
+    )
+    const supplied = services.main.inventory.extensions.filter(
+      extension => extension.source !== 'native:core/text',
+    )
+    expect(native).toHaveLength(1)
+    expect(native[0]?.origin).toBe('bundled')
+    expect(supplied.length).toBeGreaterThan(0)
+    expect(supplied.every(extension => extension.origin === 'installed')).toBe(true)
     const result = await services.open({
       source: fileSource(join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png'), 'x.png'),
       path: 'x.png',

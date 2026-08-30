@@ -328,6 +328,7 @@ export {
   type LinkedExtensionSet,
   type LinkedModule,
 } from './linked.js'
+export { NATIVE_TEXT_INPUT, NATIVE_TEXT_MODULES, withNativeTextModules } from './native-text.js'
 export {
   resolveFormatWriter,
   type FormatWriterRequest,

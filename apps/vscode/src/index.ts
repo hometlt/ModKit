@@ -15,7 +15,6 @@ import {
 } from '@modkitx-x3/host/node'
 
 export * from './workbench-workflows.js'
-export * from './sc2-authoring-workflows.js'
 export * from './game-launch-workflow.js'
 export * from './extension-manager.js'
 

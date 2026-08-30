@@ -11,6 +11,7 @@ import {
 import { createHostContributionContractRegistry } from './contribution-registry.js'
 import { buildInventory, type ExtensionInput, type Inventory } from './inventory.js'
 import { DEFAULT_EXECUTION_BACKENDS, type ExecutionBackendRegistry } from './execution/backend.js'
+import { NATIVE_TEXT_INPUT } from './native-text.js'
 
 export interface HostCompositionOptions {
   readonly topology: HostTopology
@@ -49,7 +50,7 @@ export async function createHostComposition(
     })
   }
   const inventory = await buildInventory(
-    options.extensions ?? [],
+    [NATIVE_TEXT_INPUT, ...(options.extensions ?? [])],
     options.contributionContracts ?? createHostContributionContractRegistry(),
     options.disabledContributions === undefined
       ? {}

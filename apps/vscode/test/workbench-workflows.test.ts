@@ -17,14 +17,14 @@ import {
 
 describe('generic container tools', () => {
   const index = buildContainerIndex([
-    { id: '1', path: 'Base.SC2Data/GameData/Units.xml', name: 'Units.xml', kind: 'file' },
+    { id: '1', path: 'Base.ALPHAData/GameData/Units.xml', name: 'Units.xml', kind: 'file' },
     { id: '2', path: 'mods/readme.TXT', name: 'readme.TXT', kind: 'file' },
     { id: '3', path: 'mods/units.txt', name: 'units.txt', kind: 'file' },
   ])
 
   it('searches normalized member paths deterministically and with a hard cap', () => {
     expect(searchContainerIndex(index, 'UNIT').map(hit => hit.path)).toEqual([
-      'Base.SC2Data/GameData/Units.xml',
+      'Base.ALPHAData/GameData/Units.xml',
       'mods/units.txt',
     ])
     expect(searchContainerIndex(index, 'mods\\', 1).map(hit => hit.path)).toEqual([
@@ -59,25 +59,25 @@ describe('generic container tools', () => {
 })
 
 describe('generic source lifecycle', () => {
-  const sc2 = {
-    gameId: 'org.modkitx/starcraft-2',
-    displayName: 'StarCraft II',
-    installPath: 'C:\\Games\\StarCraft II',
-    normalizedPath: 'c:/games/starcraft ii',
+  const alpha = {
+    gameId: 'org.example/game-alpha',
+    displayName: 'Example Game Alpha',
+    installPath: 'C:\\Games\\Example Game Alpha',
+    normalizedPath: 'c:/games/example game alpha',
   }
-  const warzone = {
-    gameId: 'org.modkitx/warzone-2100',
-    displayName: 'Warzone 2100',
-    installPath: 'C:\\Games\\Warzone 2100',
-    normalizedPath: 'c:/games/warzone 2100',
+  const beta = {
+    gameId: 'org.example/game-beta',
+    displayName: 'Example Game Beta',
+    installPath: 'C:\\Games\\Example Game Beta',
+    normalizedPath: 'c:/games/beta 2100',
   }
 
   it('validates persisted selections, replaces a path once and unloads exactly one source', () => {
-    expect(selectedContentSources([null, { gameId: '' }, sc2])).toEqual([sc2])
-    expect(withSelectedContentSource([sc2], { ...sc2, displayName: 'SC2' })).toEqual([
-      { ...sc2, displayName: 'SC2' },
+    expect(selectedContentSources([null, { gameId: '' }, alpha])).toEqual([alpha])
+    expect(withSelectedContentSource([alpha], { ...alpha, displayName: 'ALPHA' })).toEqual([
+      { ...alpha, displayName: 'ALPHA' },
     ])
-    expect(withoutSelectedContentSource([sc2, warzone], sc2.normalizedPath)).toEqual([warzone])
+    expect(withoutSelectedContentSource([alpha, beta], alpha.normalizedPath)).toEqual([beta])
   })
 
   it('derives supported game ids from standard installation offer facts, not an app allowlist', () => {
@@ -97,11 +97,11 @@ describe('generic source lifecycle', () => {
     expect(
       installationGameIds({
         extensions: [
-          { contributions: [contribution([warzone.gameId, sc2.gameId])] },
-          { contributions: [contribution([sc2.gameId])] },
+          { contributions: [contribution([beta.gameId, alpha.gameId])] },
+          { contributions: [contribution([alpha.gameId])] },
         ],
       }),
-    ).toEqual([sc2.gameId, warzone.gameId])
+    ).toEqual([alpha.gameId, beta.gameId])
   })
 })
 
@@ -115,14 +115,12 @@ describe('visible diagnostics and focused-view replacement truth', () => {
     expect(journal.text()).toBe('continued\nthird\n')
   })
 
-  it('maps all six legacy views to generic live surfaces exactly once', () => {
+  it('maps the generic legacy views to live surfaces exactly once', () => {
     expect(VSCODE_LEGACY_VIEW_REPLACEMENTS.map(row => row.legacyViewId)).toEqual([
       'modkitArchiveTree',
       'modkitGameCodecsTree',
       'modkitModTree',
       'modkitView',
-      'sc2layoutElementView',
-      'sc2layoutMainView',
     ])
     expect(VSCODE_LEGACY_VIEW_REPLACEMENTS.flatMap(row => row.surfaces)).toEqual(
       expect.arrayContaining([
@@ -132,7 +130,6 @@ describe('visible diagnostics and focused-view replacement truth', () => {
         'presentation:tree',
         'presentation:relations',
         'presentation:edit',
-        'presentation:workbench',
       ]),
     )
     for (const surface of VSCODE_LEGACY_VIEW_REPLACEMENTS.flatMap(row => row.surfaces)) {

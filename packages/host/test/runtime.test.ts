@@ -242,7 +242,7 @@ describe('standard executable runtime contract and counter provider', () => {
       sessionId: 'trusted-pass-through',
       revision: 'provider-token:trusted-pass-through',
       state: () => 'live',
-      resolve: () => Promise.reject(new Error('the counter does not resolve SC2 inputs')),
+      resolve: () => Promise.reject(new Error('the counter does not resolve fixture inputs')),
       provenance: () => Object.freeze([]),
       dispose: () => Promise.resolve(),
     })

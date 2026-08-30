@@ -4,10 +4,6 @@
 export const WEB_EXTENSION_CATALOG = Object.freeze({
   excluded: [
     {
-      name: 'text-json',
-      reason: 'runtime dependencies not vendored for the worker: jsonc-parser',
-    },
-    {
       name: 'text-toml',
       reason: 'runtime dependencies not vendored for the worker: smol-toml',
     },
@@ -3096,284 +3092,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:aa86b282e2ec62853e9cfa78720e8442c0cd8ccb0516f657c210d4ebb8d0a11e',
-        fileDigests: {
-          'README.md': 'sha256:2339ff16b1e58e37bcf7c7e44011a171e635b9aeb526be03152b5e994ba25fc7',
-          'contributions/codec-txt.json':
-            'sha256:68d7d7e69156cb6657a835cc57839c1ef585429de339eb8bcc55b8e2708b001a',
-          'contributions/writer-plain-text.json':
-            'sha256:6750d3b1234259c5f12112dec432d62f2645afa0d70f316a96062bde50343531',
-          'package.json': 'sha256:5f6873b70904d7afa58cb8b23a3bfc49724cbcd0d4bd0e0af209e0525b68c6a9',
-          'src/editing/text-writer.js':
-            'sha256:fc211a3b193ee86413d779899771c0cb93c89517ea50ae22773b1ec2ed023b9d',
-          'src/index.js': 'sha256:4490f78940b58ce6125c3f02a429c6e502a4f8cbb6ebbb01d0693fb06eed5b04',
-          'src/linked.js':
-            'sha256:dbb22dad8b1a7ea7ff072151da0284f78e3022f33102dc3fe1f6609d56ca636b',
-          'src/txt/codec.js':
-            'sha256:9b31a57ee8e440462b7ca91979d8bb12c6d277ef823c408604e7aa587c5bbb73',
-        },
-        inventoryRecordId:
-          'artifact:sha256:aa86b282e2ec62853e9cfa78720e8442c0cd8ccb0516f657c210d4ebb8d0a11e',
-      },
-      artifactRoot: 'extensions/plain-text/',
-      containers: {
-        packageJson: {
-          dependencies: {
-            '@modkitx-x3/codec-kit': 'workspace:*',
-          },
-          description: 'Isolated MK3 plain-text codec and its separate text writer.',
-          exports: {
-            '.': './src/index.js',
-            './editing/text-writer': './src/editing/text-writer.js',
-            './linked': './src/linked.js',
-            './package.json': './package.json',
-            './txt/codec': './src/txt/codec.js',
-          },
-          files: ['contributions', 'src', 'README.md'],
-          license: 'MIT',
-          modkit: {
-            contributionManifests: ['./contributions/*.json'],
-            id: 'plain-text',
-            publisher: 'org.modkitx',
-            schemaVersion: 1,
-          },
-          name: 'modkit-extension-x3-plain-text',
-          peerDependencies: {
-            '@modkitx-x3/host': 'workspace:*',
-            '@modkitx-x3/sdk': 'workspace:*',
-          },
-          peerDependenciesMeta: {
-            '@modkitx-x3/host': {
-              optional: true,
-            },
-            '@modkitx-x3/sdk': {
-              optional: true,
-            },
-          },
-          type: 'module',
-          version: '1.0.0',
-        },
-      },
-      documentDigests: [
-        [
-          'contributions/codec-txt.json',
-          'sha256:68d7d7e69156cb6657a835cc57839c1ef585429de339eb8bcc55b8e2708b001a',
-        ],
-        [
-          'contributions/writer-plain-text.json',
-          'sha256:6750d3b1234259c5f12112dec432d62f2645afa0d70f316a96062bde50343531',
-        ],
-      ],
-      documents: [
-        [
-          'contributions/codec-txt.json',
-          {
-            contract: {
-              id: 'org.modkitx/codec-contribution',
-              major: 1,
-            },
-            displayName: 'Plain Text Document',
-            id: 'org.modkitx/txt',
-            limitations: [
-              'The codec is read-only: editing plain text is the separate org.modkitx/plain-text-writer contribution, and no operation here mutates a source.',
-              'UTF-16 is accepted only with a byte-order mark, and a UTF-16 document publishes the paragraph outline and the raw bytes but not the lazy text source, whose line index is only true for UTF-8.',
-              'A .txt inside a StarCraft II container or under LocalizedData/ is left to the game codec that owns the path; the generic route reports a decisive minimum there.',
-            ],
-            runtimeVariants: [
-              {
-                entrypoint: './src/txt/codec.js',
-                executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['node'],
-                },
-                variantId: 'trusted-node',
-              },
-              {
-                entrypoint: './src/txt/codec.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              artifactStages: ['authored'],
-              budgets: {
-                maxDepth: 64,
-                maxDiagnostics: 1000,
-                maxInputBytes: '1073741824',
-                maxNodes: 100000,
-                maxScalarBytes: 104857600,
-              },
-              formatRefs: [
-                {
-                  formatId: 'txt',
-                  label: 'Plain Text Document',
-                  mediaType: 'text/plain',
-                },
-              ],
-              implementationTier: {
-                claimed: 1,
-              },
-              match: {
-                extensions: ['txt'],
-                mediaTypes: ['text/plain'],
-              },
-              openIntents: ['probe', 'inspect', 'full', 'export'],
-              operations: [
-                {
-                  handlerId: 'inspect',
-                  id: 'view.inspect',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'validate',
-                  id: 'asset.validate',
-                  mutatesSource: false,
-                  outputKinds: ['none'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'search',
-                  id: 'asset.search',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'export-raw',
-                  id: 'export.raw',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-              ],
-              probe: {
-                kind: 'bytes',
-                maxBytes: 8192,
-                ranges: [
-                  {
-                    from: 'start',
-                    length: 8192,
-                  },
-                ],
-              },
-              publishesDataSources: [
-                {
-                  contract: 'common.view/tree-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/text-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/byte-range-source',
-                  major: 1,
-                },
-              ],
-              representations: [
-                {
-                  contract: 'common.document/flow-metadata',
-                  id: 'flow-metadata',
-                  lossy: false,
-                  major: 1,
-                  stage: 'authored',
-                },
-              ],
-              roles: ['semantic'],
-              sourceTopology: 'single',
-              traitDeclarations: [
-                {
-                  id: 'document.flow',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-                {
-                  id: 'structure.hierarchy',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-                {
-                  id: 'content.text',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-                {
-                  id: 'content.binary',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-              ],
-            },
-            status: 'supported',
-          },
-        ],
-        [
-          'contributions/writer-plain-text.json',
-          {
-            contract: {
-              id: 'org.modkitx/service-provider-contribution',
-              major: 1,
-            },
-            displayName: 'Plain text writer',
-            id: 'org.modkitx/plain-text-writer',
-            runtimeVariants: [
-              {
-                entrypoint: './src/editing/text-writer.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: [],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              lifecycleScope: 'session',
-              provides: [
-                {
-                  contract: 'common.edit/writer',
-                  facet: {
-                    fidelityEvidenceId: 'plain-text-writer-v1',
-                    formatId: 'txt',
-                    minimumRoundTrip: 'byte-identical',
-                    mutationMode: 'mutate',
-                    providerId: 'org.modkitx/plain-text-writer',
-                    representationId: 'source',
-                  },
-                  major: 1,
-                  offerId: 'plain-text-source',
-                  version: '1.0.0',
-                },
-              ],
-            },
-          },
-        ],
-      ],
-      files: [
-        'README.md',
-        'contributions/codec-txt.json',
-        'contributions/writer-plain-text.json',
-        'package.json',
-        'src/editing/text-writer.js',
-        'src/index.js',
-        'src/linked.js',
-        'src/txt/codec.js',
-      ],
-      name: 'plain-text',
-      source: 'extensions/common/data/plain-text',
-    },
-    {
-      artifact: {
-        artifactDigest: 'sha256:cc9995bfcfe7a1873ac8d20c47bcd28780257fe42b794ef2d3e9687474c10dfb',
+        artifactDigest: 'sha256:7b1359a891dd7811e4af034d3f85d1e1e6441e5b2a51f3d47762132631a081f0',
         fileDigests: {
           'README.md': 'sha256:32b16af9cd40d5a69ccc3a44c7d74e40703c44ff0ac7f61a8f1289f093506a0d',
           'contributions/codec-csv.json':
@@ -3419,7 +3138,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:9cd30c3d83e23764bed3378f2ff03b7e5843c5af3a88b4cd31c89daa7757857d',
           'src/index.js': 'sha256:4d3c1f65a922238a9b5cd20832700b890e95abd3e1485f07bd472d9a074227d2',
           'src/linked.js':
-            'sha256:08acec9c2c0c086da98e4f106833311c5dc4eaf11cbb9b9d8a5fd7d09475281e',
+            'sha256:94da1f34a1d0dc98ea8e8f1d6546d4f0a137ff59987528c74c8cd445da426ae1',
           'src/tsv/codec.js':
             'sha256:b0af8e1d4a7981475ef0976233d8cc0dca51b6554fba7aead564f6c93dc55cc0',
           'src/tsv/provider.js':
@@ -3428,7 +3147,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:518c4096fdf96326de1c0a83acab3674a66a2ccfa7f9b7279760e97fbb712ef5',
         },
         inventoryRecordId:
-          'artifact:sha256:cc9995bfcfe7a1873ac8d20c47bcd28780257fe42b794ef2d3e9687474c10dfb',
+          'artifact:sha256:7b1359a891dd7811e4af034d3f85d1e1e6441e5b2a51f3d47762132631a081f0',
       },
       artifactRoot: 'extensions/text-delimited/',
       containers: {
@@ -4149,11 +3868,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'test/fixtures/csv-rfc4180-parity.json',
       ],
       name: 'text-delimited',
-      source: 'extensions/common/data/text-delimited',
+      source: 'extensions/common/data/text-csv',
     },
     {
       artifact: {
-        artifactDigest: 'sha256:8ac6ede610fa4c7d86a9cd1eb664cfef413836fc11f2f7be61ee75436fbcb0af',
+        artifactDigest: 'sha256:3e50a3d8ebb2ddbbe7d79f31f0f3c394f8b3c8afd7d045d8fd45417fe4160c52',
         fileDigests: {
           'README.md': 'sha256:9519219eb63529bab5e470614ac5a8c5506507cb35e567d4686f73c13023e546',
           'contributions/codec-ini.json':
@@ -4178,11 +3897,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:90b04036cffdcb990e1f90e09882377d206081ba02e45cea85e93545422599da',
           'src/linked.js':
             'sha256:16ac97135e2a005c455352a1d572a0a4c7f450ec4aa330659637382e111fc517',
-          'test/fixtures/ini-sc2-parity.json':
+          'test/fixtures/ini-structured-parity.json':
             'sha256:205a176ec39d8c1adeebd8f9419ff9c9b8e2e2d45f4387541adc7e96c2090df9',
         },
         inventoryRecordId:
-          'artifact:sha256:8ac6ede610fa4c7d86a9cd1eb664cfef413836fc11f2f7be61ee75436fbcb0af',
+          'artifact:sha256:3e50a3d8ebb2ddbbe7d79f31f0f3c394f8b3c8afd7d045d8fd45417fe4160c52',
       },
       artifactRoot: 'extensions/text-ini/',
       containers: {
@@ -4574,7 +4293,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/ini/definition.js',
         'src/ini/provider.js',
         'src/linked.js',
-        'test/fixtures/ini-sc2-parity.json',
+        'test/fixtures/ini-structured-parity.json',
       ],
       name: 'text-ini',
       source: 'extensions/common/data/text-ini',
@@ -5644,13 +5363,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:fc059d3e64c7569f801f3a19b28c1b797a38b13d9f3c87846c4ebbb764e8aaf1',
+        artifactDigest: 'sha256:ab7de5ab022073abf6b55eb83931809cb38447526cac71fddea9dc6354814196',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:76c5e4320dbbc9b2e71030063212b4351eb11d409eb69e554749364c33415205',
           'README.md': 'sha256:4f8426d4cb4a5a43b6b37cfb8d3262b2ce94a8ec1436d6d339e7f64dc3adadeb',
           'contributions/codec-ani.json':
-            'sha256:b1bc2fd0c8feb81a6fb5e13887265d79ab69806481cdf9e5e556e90ea143ba8e',
+            'sha256:70cf942994bd7ccd94aa8dc6eb89f7f7a0b48a949a5a1baee6ba61d261887e05',
           'contributions/codec-astc.json':
             'sha256:d717582caf9e440fd5fd5de5bb58a0084e40f876df34f9e56b823e3df69e4503',
           'contributions/codec-avif.json':
@@ -5697,7 +5416,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:fa03ddbb7e468a6d9948ba9f89dee07ffc682e8404adb23f379da4cf231aed49',
           'package.json': 'sha256:4b062fc2f40706d1bc73000aa2436d9a32a8ac59d4373c0c01fcf35c43ceefc4',
           'src/ani/codec.js':
-            'sha256:5f0d9226306868dbaa0998f9c85c85d8507d07fb2cc25a9bd047ac8e0c810fe3',
+            'sha256:bf98812d1607c130aeedf498975710cf1adc1d6e812666057ebe1426f7155145',
           'src/astc/codec.js':
             'sha256:5359e6bec5bdad5ed690715a07de6ec3d8f58534ceadbe98e898b88b6bf8737e',
           'src/astc/ldr.js':
@@ -5763,7 +5482,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:22041288fa8ceff125f3eaeb8f835a9a501440f9edec516a3e3804976f3959f8',
         },
         inventoryRecordId:
-          'artifact:sha256:fc059d3e64c7569f801f3a19b28c1b797a38b13d9f3c87846c4ebbb764e8aaf1',
+          'artifact:sha256:ab7de5ab022073abf6b55eb83931809cb38447526cac71fddea9dc6354814196',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -5809,7 +5528,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-ani.json',
-          'sha256:b1bc2fd0c8feb81a6fb5e13887265d79ab69806481cdf9e5e556e90ea143ba8e',
+          'sha256:70cf942994bd7ccd94aa8dc6eb89f7f7a0b48a949a5a1baee6ba61d261887e05',
         ],
         [
           'contributions/codec-astc.json',
@@ -5908,11 +5627,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               id: 'org.modkitx/codec-contribution',
               major: 1,
             },
-            displayName: 'Windows Animated Cursor / Warzone Animation',
+            displayName: 'Windows Animated Cursor',
             id: 'org.modkitx/ani',
             limitations: [
               'The MK3 port performs a bounded RIFF/ACON chunk walk, validates anih declarations and embedded ICO/CUR frame headers, and decodes the first supported CUR/DIB frame through the generic raster source with its AND mask.',
-              'Warzone 2100 ANIM3DFRAMES text sidecars are parsed as bounded frame lines; remaining ANI frames, playback/timeline publication, model application, PNG/indexed embedded frames, and writing remain unsupported.',
+              'Remaining ANI frames, playback/timeline publication, PNG/indexed embedded frames, and writing remain unsupported.',
             ],
             runtimeVariants: [
               {
@@ -5947,7 +5666,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               formatRefs: [
                 {
                   formatId: 'ani',
-                  label: 'Windows Animated Cursor / Warzone Animation',
+                  label: 'Windows Animated Cursor',
                 },
               ],
               implementationTier: {

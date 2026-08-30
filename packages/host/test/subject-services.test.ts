@@ -30,7 +30,6 @@ import {
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const imagesDir = join(repoRoot, 'extensions', 'common', 'images')
-const textJsonDir = join(repoRoot, 'extensions', 'common', 'data', 'text-json')
 const png = join(repoRoot, 'apps', 'web', 'public', 'favicon-32.png')
 
 const HOST = 'org.example.app/host'
@@ -90,7 +89,7 @@ describe('supportedExtensionHints', () => {
     const composition = await createHostComposition({
       topology,
       realmId: HOST,
-      extensions: [await linked(imagesDir), await linked(textJsonDir)],
+      extensions: [await linked(imagesDir)],
     })
     const hints = supportedExtensionHints(composition.inventory)
     expect(hints).toContain('png')
@@ -171,7 +170,7 @@ describe('createNodeSubjectServices (host realm inventory, worker realm target)'
       createNodeSubjectServices({
         topology,
         realms: { host: HOST, workers: WORKERS },
-        extensions: [await linked(textJsonDir)],
+        extensions: [],
         policy,
         serviceDefinitions: own,
       }),
@@ -187,7 +186,7 @@ describe('createNodeSubjectServices (host realm inventory, worker realm target)'
 describe('createSubjectServices + definitions helpers', () => {
   it('binds inventory, target and backends; the definitions surfaces are what workers read', async () => {
     const definitions = createBundledServiceDefinitionRegistry()
-    const extensions = [await linked(textJsonDir)]
+    const extensions: readonly ExtensionInput[] = []
     const [host, workers] = await Promise.all([
       createHostComposition({ topology, realmId: HOST, extensions }),
       createHostComposition({ topology, realmId: WORKERS, extensions }),
@@ -204,7 +203,7 @@ describe('createSubjectServices + definitions helpers', () => {
       executionBackends: host.executionBackends,
       serviceDefinitions: definitions,
     })
-    expect(services.supportedExtensions).toEqual(['json', 'jsonc'])
+    expect(services.supportedExtensions).toEqual(['json', 'jsonc', 'txt'])
     expect(services.executionProfiles).toEqual(host.executionBackends.profiles)
     expect(Object.isFrozen(services)).toBe(true)
   })

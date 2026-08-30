@@ -6,7 +6,6 @@
  * (`addEventListener`), which is what a Node `worker_threads` MessagePort provides natively.
  * No Electron binary is involved; the adapters, surfaces and endpoints are the production ones.
  */
-import { join } from 'node:path'
 import { MessageChannel, type MessagePort as NodeMessagePort } from 'node:worker_threads'
 import { afterEach, describe, expect, it } from 'vitest'
 import { revisionId, type ArtifactByteSource } from '@modkitx-x3/sdk'
@@ -29,7 +28,6 @@ import {
   type SubjectRpcExposure,
 } from '../src/index.js'
 
-const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
 function memorySource(name: string, text: string): ArtifactByteSource {
   const bytes = new TextEncoder().encode(text)
   return {
@@ -105,7 +103,7 @@ async function rpcPair(open: ElectronSubjectOpener): Promise<{
 describe('Electron subject RPC — the production pair without the binary', () => {
   it('opens JSON end to end: snapshot over the wire, session attached as a capability, tree pages and search pulled through surfaces, dispose cascades', async () => {
     const services = await createElectronSubjectServices([
-      join(repositoryRoot, 'extensions', 'common', 'data', 'text-json'),
+      // JSON is native Core functionality; no extension root is required.
     ])
     const opener: ElectronSubjectOpener = async (path, signal) => {
       const result = await services.open({
@@ -167,10 +165,10 @@ describe('Electron subject RPC — the production pair without the binary', () =
     // the codec ran worker-brokered in main's worker realm; the wire carried the honest notice
     expect(opened.snapshot.selected).toMatchObject({
       contributionId: 'org.modkitx/text-json',
-      variantId: 'portable',
+      variantId: 'core-native',
     })
     expect(opened.snapshot.diagnostics.map(item => item.code)).toContain(
-      'x3.host/worker-shared-process',
+      'x3.host/full-process-authority',
     )
     expect(opened.snapshot.presentation).toMatchObject({ activeStage: 'code' })
     expect((await opened.session.descriptor())['interpretation']).toBe('codec')

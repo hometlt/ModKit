@@ -40,8 +40,11 @@ export function relativeEntrypointSpecifier(generatedFile, entrypoint) {
 export function discoverTextDataEntrypoints(repoRoot, requestedFormatIds) {
   const wanted = new Set(requestedFormatIds)
   const found = new Map()
-  const root = join(repoRoot, 'extensions', 'common')
-  for (const manifestPath of contributionFiles(root)) {
+  const roots = [
+    join(repoRoot, 'packages', 'host', 'native-text'),
+    join(repoRoot, 'extensions', 'common'),
+  ].filter(existsSync)
+  for (const manifestPath of roots.flatMap(contributionFiles)) {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
     const contract = manifest?.contract?.id
     const kind =

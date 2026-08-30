@@ -25,39 +25,36 @@ const catalog = Object.freeze({
   signature: { algorithm: 'Ed25519', keyId: 'test', value: 'AA==' },
   packages: Object.freeze([
     {
-      id: 'org.modkitx.blizzard/sc2-pack',
-      displayName: 'StarCraft II',
-      publisher: 'Blizzard',
-      summary: 'StarCraft II codecs',
+      id: 'org.example.alpha/alpha-pack',
+      displayName: 'Example Game Alpha',
+      publisher: 'Example Publisher A',
+      summary: 'Example Game Alpha codecs',
       versions: Object.freeze([
         {
           version: '3.0.0',
           channel: 'stable' as const,
-          extensions: Object.freeze([
-            'org.modkitx.blizzard/starcraft2',
-            'org.modkitx.blizzard/galaxy',
-          ]),
+          extensions: Object.freeze(['org.example.alpha/gamealpha', 'org.example.alpha/galaxy']),
           source: {
             kind: 'bundle' as const,
-            uri: 'memory:/sc2-pack',
+            uri: 'memory:/alpha-pack',
             trust: { mode: 'local-user' as const },
           },
         },
       ]),
     },
     {
-      id: 'org.modkitx.warzone/warzone-pack',
-      displayName: 'Warzone 2100',
-      publisher: 'Warzone 2100 Project',
-      summary: 'Warzone codecs',
+      id: 'org.example.beta/beta-pack',
+      displayName: 'Example Game Beta',
+      publisher: 'Example Publisher B',
+      summary: 'ExampleGameBeta codecs',
       versions: Object.freeze([
         {
           version: '2.0.0',
           channel: 'stable' as const,
-          extensions: Object.freeze(['org.modkitx.warzone/warzone2100']),
+          extensions: Object.freeze(['org.example.beta/gamebeta']),
           source: {
             kind: 'bundle' as const,
-            uri: 'memory:/warzone-pack',
+            uri: 'memory:/beta-pack',
             trust: { mode: 'local-user' as const },
           },
         },
@@ -103,35 +100,33 @@ const catalog = Object.freeze({
   ]),
 } as const) satisfies ExtensionRegistryCatalog
 
-const sc2V2: InstalledExtensionRecord = Object.freeze({
-  id: 'org.modkitx.blizzard/sc2-pack',
-  displayName: 'StarCraft II',
-  publisher: 'Blizzard',
+const alphaV2: InstalledExtensionRecord = Object.freeze({
+  id: 'org.example.alpha/alpha-pack',
+  displayName: 'Example Game Alpha',
+  publisher: 'Example Publisher A',
   version: '2.0.0',
-  source: 'memory:/sc2-pack-v2',
+  source: 'memory:/alpha-pack-v2',
   trusted: true,
   roots: Object.freeze([
-    { root: '/extensions/sc2-v2/starcraft2', expectedId: 'org.modkitx.blizzard/starcraft2' },
-    { root: '/extensions/sc2-v2/galaxy', expectedId: 'org.modkitx.blizzard/galaxy' },
+    { root: '/extensions/alpha-v2/gamealpha', expectedId: 'org.example.alpha/gamealpha' },
+    { root: '/extensions/alpha-v2/galaxy', expectedId: 'org.example.alpha/galaxy' },
   ]),
 })
 
-const warzone: InstalledExtensionRecord = Object.freeze({
-  id: 'org.modkitx.warzone/warzone-pack',
-  displayName: 'Warzone 2100',
-  publisher: 'Warzone 2100 Project',
+const beta: InstalledExtensionRecord = Object.freeze({
+  id: 'org.example.beta/beta-pack',
+  displayName: 'Example Game Beta',
+  publisher: 'Example Publisher B',
   version: '2.0.0',
-  source: 'memory:/warzone-pack',
+  source: 'memory:/beta-pack',
   trusted: true,
-  roots: Object.freeze([
-    { root: '/extensions/warzone', expectedId: 'org.modkitx.warzone/warzone2100' },
-  ]),
+  roots: Object.freeze([{ root: '/extensions/beta', expectedId: 'org.example.beta/gamebeta' }]),
 })
 
 function materialized(entry: ExtensionCatalogCandidate): InstalledExtensionRecord {
   const base =
-    entry.id === 'org.modkitx.blizzard/sc2-pack'
-      ? `/extensions/sc2-v${entry.version.split('.')[0]}`
+    entry.id === 'org.example.alpha/alpha-pack'
+      ? `/extensions/alpha-v${entry.version.split('.')[0]}`
       : `/extensions/${entry.id.replaceAll('/', '-')}`
   return Object.freeze({
     id: entry.id,
@@ -149,10 +144,10 @@ function materialized(entry: ExtensionCatalogCandidate): InstalledExtensionRecor
 }
 
 function fixture() {
-  let packages: InstalledExtensionRecord[] = [sc2V2, warzone]
+  let packages: InstalledExtensionRecord[] = [alphaV2, beta]
   let enablement = [
-    { id: sc2V2.id, enabled: false },
-    { id: warzone.id, enabled: true },
+    { id: alphaV2.id, enabled: false },
+    { id: beta.id, enabled: true },
   ]
   const writes: unknown[][] = []
   let cachedReads = 0
@@ -267,12 +262,12 @@ describe('VS Code extension manager state', () => {
     let enabled = true
     const enabledRoots = Object.freeze([
       Object.freeze({
-        root: '/extensions/sc2-v2/starcraft2',
-        expectedId: 'org.modkitx.blizzard/starcraft2',
+        root: '/extensions/alpha-v2/gamealpha',
+        expectedId: 'org.example.alpha/gamealpha',
       }),
       Object.freeze({
-        root: '/extensions/sc2-v2/galaxy',
-        expectedId: 'org.modkitx.blizzard/galaxy',
+        root: '/extensions/alpha-v2/galaxy',
+        expectedId: 'org.example.alpha/galaxy',
       }),
     ])
     const manager = {
@@ -280,8 +275,8 @@ describe('VS Code extension manager state', () => {
     }
 
     expect(await installedManagerExtensionRoots(manager)).toEqual([
-      { root: '/extensions/sc2-v2/starcraft2', expectedId: 'org.modkitx.blizzard/starcraft2' },
-      { root: '/extensions/sc2-v2/galaxy', expectedId: 'org.modkitx.blizzard/galaxy' },
+      { root: '/extensions/alpha-v2/gamealpha', expectedId: 'org.example.alpha/gamealpha' },
+      { root: '/extensions/alpha-v2/galaxy', expectedId: 'org.example.alpha/galaxy' },
     ])
     enabled = false
     expect(await installedManagerExtensionRoots(manager)).toEqual([])
@@ -294,7 +289,7 @@ describe('VS Code extension manager state', () => {
     expect(snapshot.entries).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: sc2V2.id,
+          id: alphaV2.id,
           installedVersion: '2.0.0',
           availableVersion: '3.0.0',
           enabled: false,
@@ -332,16 +327,16 @@ describe('VS Code extension manager state', () => {
 
   it('updates manager state without writing configuration and preserves package enablement', async () => {
     const state = fixture()
-    const snapshot = await state.controller.execute({ kind: 'update', id: sc2V2.id })
+    const snapshot = await state.controller.execute({ kind: 'update', id: alphaV2.id })
 
     expect(state.writes).toHaveLength(0)
-    expect(state.packages().find(entry => entry.id === sc2V2.id)?.roots).toEqual(
+    expect(state.packages().find(entry => entry.id === alphaV2.id)?.roots).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ root: '/extensions/sc2-v3/starcraft2' }),
-        expect.objectContaining({ root: '/extensions/sc2-v3/galaxy' }),
+        expect.objectContaining({ root: '/extensions/alpha-v3/gamealpha' }),
+        expect.objectContaining({ root: '/extensions/alpha-v3/galaxy' }),
       ]),
     )
-    expect(snapshot.entries.find(entry => entry.id === sc2V2.id)).toMatchObject({
+    expect(snapshot.entries.find(entry => entry.id === alphaV2.id)).toMatchObject({
       installedVersion: '3.0.0',
       enabled: false,
       updateAvailable: false,
@@ -353,21 +348,21 @@ describe('VS Code extension manager state', () => {
     const changed = vi.fn()
     state.controller.onDidChange(changed)
 
-    await state.controller.execute({ kind: 'set-enabled', id: sc2V2.id, enabled: true })
+    await state.controller.execute({ kind: 'set-enabled', id: alphaV2.id, enabled: true })
     expect(state.writes).toHaveLength(0)
     expect(
-      (await state.client.snapshot()).entries.find(entry => entry.id === sc2V2.id),
+      (await state.client.snapshot()).entries.find(entry => entry.id === alphaV2.id),
     ).toMatchObject({ enabled: true })
 
-    await state.controller.execute({ kind: 'set-enabled', id: sc2V2.id, enabled: false })
+    await state.controller.execute({ kind: 'set-enabled', id: alphaV2.id, enabled: false })
     expect(state.writes).toHaveLength(0)
     expect(
-      (await state.client.snapshot()).entries.find(entry => entry.id === sc2V2.id),
+      (await state.client.snapshot()).entries.find(entry => entry.id === alphaV2.id),
     ).toMatchObject({ enabled: false })
 
-    await state.controller.execute({ kind: 'remove', id: sc2V2.id })
+    await state.controller.execute({ kind: 'remove', id: alphaV2.id })
     expect(state.writes).toHaveLength(0)
-    expect(state.packages().some(item => item.id === sc2V2.id)).toBe(false)
+    expect(state.packages().some(item => item.id === alphaV2.id)).toBe(false)
     expect(changed).toHaveBeenCalledTimes(3)
   })
 

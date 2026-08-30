@@ -11,14 +11,17 @@ import {
 } from '../src/index.js'
 
 describe('server composition root', () => {
-  it('boots with an empty extension catalog', async () => {
-    // The acceptance criterion from the apps plan: an empty catalog is a correct state, not a
-    // bootstrap failure. A server that refused to start without extensions could never be deployed
-    // before its content is installed.
+  it('boots with only the mandatory native text inventory', async () => {
+    // No configured extension is a correct state. Native plain/JSON support is part of Core rather
+    // than installed content, so it remains present without making startup depend on a catalog.
     const app = await createServerApp()
     const health = app.health()
     expect(health.status).toBe('ok')
-    expect(health.extensionCount).toBe(0)
+    expect(health.extensionCount).toBe(1)
+    expect(app.composition.inventory.extensions[0]).toMatchObject({
+      source: 'native:core/text',
+      manifest: { publisher: 'org.modkitx', id: 'core-native-text' },
+    })
     expect(health.realmId).toBe(SERVER_REALM)
     expect(health.topologyId).toBe('org.modkitx.app/server')
     expect(app.commandContracts.schemaVersion).toBe(COMMAND_PROTOCOL_SCHEMA_VERSION)
@@ -140,14 +143,16 @@ describe('server open path (S7)', () => {
       extensionRoots: [join(repositoryRoot, 'extensions', 'common', 'images')],
       disabledContributions: ['org.modkitx/image-png'],
     })
-    expect(app.composition.inventory.extensions).toHaveLength(1)
+    expect(app.composition.inventory.extensions).toHaveLength(2)
     expect(app.subjects.supportedExtensions).toContain('png')
     expect(
-      app.composition.inventory.extensions[0]?.contributions.some(
-        contribution =>
-          contribution.manifest?.id === 'org.modkitx/image-png' &&
-          contribution.activationEligible === false,
-      ),
+      app.composition.inventory.extensions
+        .flatMap(extension => extension.contributions)
+        .some(
+          contribution =>
+            contribution.manifest?.id === 'org.modkitx/image-png' &&
+            contribution.activationEligible === false,
+        ),
     ).toBe(true)
     const result = await app.subjects.open({
       source: await openFileArtifactSource(

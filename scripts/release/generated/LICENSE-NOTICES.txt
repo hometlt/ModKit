@@ -312,13 +312,6 @@ License document: licenses/MIT.txt
 
 ---
 
-modkit-extension-x3-plain-text@1.0.0
-License: MIT
-Metadata: apps/web/dist-app/extensions/plain-text/package.json
-License document: licenses/MIT.txt
-
----
-
 modkit-extension-x3-ps1@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/ps1/package.json
@@ -343,13 +336,6 @@ License document: licenses/MIT.txt
 modkit-extension-x3-text-ini@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/text-ini/package.json
-License document: licenses/MIT.txt
-
----
-
-modkit-extension-x3-text-json@1.0.0
-License: MIT
-Metadata: extensions/common/data/text-json/package.json
 License document: licenses/MIT.txt
 
 ---

@@ -300,7 +300,7 @@ describe('NXT-103 — standard data-source surfaces', () => {
     expect(ADMITTED_DATA_SOURCE_CONTRACTS).toContain('common.view/subject-calculations-source')
     /*
      * ODP-only slides, M3-only sockets and the not-yet-frozen common world surface remain
-     * candidates. Skeleton was promoted only after M3 supplied an independent Blizzard publisher
+     * candidates. Skeleton was promoted only after a second model family supplied an independent publisher
      * beside the SAGE/Westwood W3D/W3X family.
      */
     expect(

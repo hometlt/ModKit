@@ -274,7 +274,7 @@ export function createNamespaceCompanionOrigin(
       if (scope !== 'current-mount' && scope !== 'enclosing-container') return
       /*
        * The prefix goes straight to the container's own `list(prefix, …)`. This is the difference
-       * between a bounded search and a scan: the installed StarCraft II CASC lists 666,588 entries,
+       * between a bounded search and a scan: a production namespace may list hundreds of thousands of entries,
        * and a requirement that names a directory reads a few hundred of them instead.
        */
       for (const entry of (await listing(enumeration.prefix, signal)).values()) {
@@ -290,7 +290,7 @@ export function createNamespaceCompanionOrigin(
       /*
        * The id itself is the narrowest possible prefix, and opening asks for one exact entry — so
        * the listing behind an open is one entry, not the directory it sits in. That mattered
-       * measurably: resolving a StarCraft II texture read 4,101 entries when the open re-listed its
+       * measurably: resolving a texture read thousands of entries when the open re-listed its
        * folder, and 2 once it stopped.
        */
       const entry = (await listing(logicalId, signal)).get(fold(logicalId))
@@ -323,8 +323,8 @@ export function createNamespaceCompanionOrigin(
 /**
  * Project a dependency-composed workspace onto the same host-private `CompanionOrigin` seam.
  *
- * The host knows only ordered prefixes. The StarCraft II provider decides that its roots expose
- * resources below `base.sc2assets`; another game can provide different prefixes without a branch
+ * The host knows only ordered prefixes. A publisher provider decides that its roots expose
+ * resources below `base.assets`; another game can provide different prefixes without a branch
  * here. Enumeration strips each namespace prefix and can then add the workspace's logical prefix,
  * so standalone archives and nested maps both match the paths declared by their resolved graph;
  * provenance still comes from the exact namespace entry selected by workspace precedence.

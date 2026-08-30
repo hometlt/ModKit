@@ -32,6 +32,8 @@ const [{ loadExtensionDirectory }, { inventoryHasErrors, offersFromInventory, re
   ])
 
 const coordinate = extension => `${extension.manifest.publisher}/${extension.manifest.id}`
+const installableExtensions = inventory =>
+  inventory.extensions.filter(extension => extension.source !== 'native:core/text')
 const contributionIds = inventory =>
   inventory.extensions
     .flatMap(extension =>
@@ -43,14 +45,20 @@ const contributionIds = inventory =>
 
 function assertExactInventory(label, setName, composition) {
   const inventory = composition.inventory
-  const actualCoordinates = inventory.extensions.map(coordinate).toSorted()
+  // Native capabilities are mandatory Core inventory, not members of an installable extension
+  // set. Keep set isolation exact by comparing only roots supplied by the selected catalog.
+  const installableInventory = {
+    ...inventory,
+    extensions: installableExtensions(inventory),
+  }
+  const actualCoordinates = installableInventory.extensions.map(coordinate).toSorted()
   const expectedCoordinates = expectedExtensionCoordinates(setName)
   if (JSON.stringify(actualCoordinates) !== JSON.stringify(expectedCoordinates)) {
     throw new Error(
       `apps:check: ${label}/${setName} extension isolation failed: ${JSON.stringify(actualCoordinates)}`,
     )
   }
-  const actualContributions = contributionIds(inventory)
+  const actualContributions = contributionIds(installableInventory)
   const expectedContributions = expectedContributionIds(setName)
   if (JSON.stringify(actualContributions) !== JSON.stringify(expectedContributions)) {
     throw new Error(
@@ -69,7 +77,7 @@ function assertExactInventory(label, setName, composition) {
   return Object.freeze({
     extensions: actualCoordinates.length,
     contributions: actualContributions.length,
-    offers: offersFromInventory(inventory).length,
+    offers: offersFromInventory(installableInventory).length,
   })
 }
 
@@ -98,7 +106,11 @@ function offerResolvesForTarget(offer, target) {
 }
 
 function compatibleOfferCount(composition) {
-  return offersFromInventory(composition.inventory).filter(offer =>
+  const installableInventory = {
+    ...composition.inventory,
+    extensions: installableExtensions(composition.inventory),
+  }
+  return offersFromInventory(installableInventory).filter(offer =>
     offerResolvesForTarget(offer, composition.target),
   ).length
 }
@@ -123,7 +135,7 @@ function variantMatchesTarget(variant, target) {
 }
 
 function compatibleContributionCount(composition) {
-  return composition.inventory.extensions.reduce(
+  return installableExtensions(composition.inventory).reduce(
     (count, extension) =>
       count +
       extension.contributions.filter(
@@ -199,13 +211,33 @@ async function checkApplicationSet(application, setName, create, realmExpectatio
 }
 
 const server = await createServerApp()
-if (server.health().status !== 'ok' || server.composition.inventory.extensions.length !== 0) {
-  throw new Error('apps:check: empty server composition did not start cleanly')
+const nativeTextContributionIds = [
+  'org.modkitx/text-json',
+  'org.modkitx/text-jsonc',
+  'org.modkitx/txt',
+  'org.modkitx/json-syntax-contract',
+  'org.modkitx/jsonc-syntax-contract',
+  'org.modkitx/json-syntax-default',
+  'org.modkitx/jsonc-syntax-default',
+  'org.modkitx/text-json-writer',
+  'org.modkitx/plain-text-writer',
+]
+const serverNativeText = server.composition.inventory.extensions[0]
+if (
+  server.health().status !== 'ok' ||
+  server.composition.inventory.extensions.length !== 1 ||
+  serverNativeText?.source !== 'native:core/text' ||
+  coordinate(serverNativeText) !== 'org.modkitx/core-native-text'
+) {
+  throw new Error('apps:check: server did not start with only the mandatory native text inventory')
 }
 
 const automation = await createAutomationHost()
-if (automation.describeHost().contributions.length !== 0) {
-  throw new Error('apps:check: empty automation host unexpectedly contains contributions')
+if (
+  JSON.stringify(automation.describeHost().contributions) !==
+  JSON.stringify(nativeTextContributionIds)
+) {
+  throw new Error('apps:check: automation host did not start with only native text contributions')
 }
 
 const electronApp = await electron.createElectronApp()
@@ -243,13 +275,13 @@ await checkApplicationSet(
   'headless',
   'structured-text',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 16, active: 16 } },
+  { main: { offers: 12, active: 12 } },
 )
 await checkApplicationSet(
   'headless',
   'full-codecs',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 85, active: 85 } },
+  { main: { offers: 80, active: 80 } },
 )
 await checkApplicationSet(
   'pwa',
@@ -264,8 +296,7 @@ await checkApplicationSet(
   },
   {
     main: { offers: 'none', active: 'none' },
-    // 16 codecs and syntax providers + the six text writers (A6, one per extension)
-    worker: { offers: 22, active: 22 },
+    worker: { offers: 17, active: 17 },
   },
 )
 await checkApplicationSet(
@@ -281,7 +312,6 @@ await checkApplicationSet(
   },
   {
     main: { offers: 'none', active: 'none' },
-    // 7 codecs + the PNG encoder writer provider (A5, browser-worker variant)
     worker: { offers: 38, active: 38 },
   },
 )
@@ -298,8 +328,7 @@ await checkApplicationSet(
   },
   {
     main: { offers: 'none', active: 1 },
-    // + the text-json writer (A6)
-    worker: { offers: 11, active: 11 },
+    worker: { offers: 6, active: 6 },
   },
 )
 await checkApplicationSet(
@@ -346,7 +375,7 @@ await checkApplicationSet(
     return { main: app.main, renderer: app.renderer }
   },
   {
-    main: { offers: 85, active: 85 },
+    main: { offers: 80, active: 80 },
     renderer: { offers: 'none', active: 'none' },
   },
 )

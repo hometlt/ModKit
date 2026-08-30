@@ -31,7 +31,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { parseCanonicalYaml } from './lib/canonical-yaml.mjs'
-import { externalRepositoryRoot } from '../lib/external-extension-roots.mjs'
+import { externalRepositoryRoot } from './lib/external-extension-roots.mjs'
 
 const repoRoot = path.resolve(fileURLToPath(new URL('../..', import.meta.url)))
 const args = process.argv.slice(2)

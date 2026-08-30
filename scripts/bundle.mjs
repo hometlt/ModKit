@@ -22,13 +22,31 @@
 
 import { build } from 'esbuild'
 import { createHash } from 'node:crypto'
-import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { join, relative, resolve, sep } from 'node:path'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
+import { dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const check = process.argv.includes('--check')
+const manifestOnly = process.argv.includes('--manifest-only')
+const writeArtifacts = !check && !manifestOnly
+const artifactRootIndex = process.argv.indexOf('--artifact-root')
+if (artifactRootIndex !== -1 && process.argv[artifactRootIndex + 1] === undefined) {
+  console.error('bundle: --artifact-root requires a path')
+  process.exit(2)
+}
+const artifactRoot =
+  artifactRootIndex === -1 ? undefined : resolve(root, process.argv[artifactRootIndex + 1])
+const writesRepositoryDist = writeArtifacts && artifactRoot === undefined
 
 /**
  * Where the hash manifest is read from / written to. Defaults to the tracked baseline.
@@ -42,6 +60,12 @@ const check = process.argv.includes('--check')
 const outIndex = process.argv.indexOf('--out')
 if (outIndex !== -1 && process.argv[outIndex + 1] === undefined) {
   console.error('bundle: --out requires a path')
+  process.exit(2)
+}
+if (manifestOnly && outIndex === -1) {
+  console.error(
+    'bundle: --manifest-only requires --out so it cannot overwrite the reviewed baseline',
+  )
   process.exit(2)
 }
 
@@ -134,7 +158,7 @@ function pruneUnreferenced(pkgDir, keep) {
       const jsPath = path.replace(/\.map$/, '')
       if (keep.has(jsPath)) continue
       removed.push(relative(root, path).split(sep).join('/'))
-      if (!check) rmSync(path)
+      if (writesRepositoryDist) rmSync(path)
     }
   }
   walk(distDir)
@@ -150,20 +174,25 @@ for (const pkg of BUNDLED_PACKAGES) {
   const entries = entriesOf(pkgDir)
   const keep = new Set(entries.map(e => e.outFile))
   for (const { srcPath, outFile } of entries) {
-    const contents = await bundleEntry(srcPath, outFile)
+    const destination =
+      artifactRoot === undefined ? outFile : join(artifactRoot, relative(root, outFile))
+    const contents = await bundleEntry(srcPath, destination)
     hashes[relative(root, outFile).split(sep).join('/')] = createHash('sha256')
       .update(contents)
       .digest('hex')
-    if (!check) writeFileSync(outFile, contents)
+    if (writeArtifacts) {
+      mkdirSync(dirname(destination), { recursive: true })
+      writeFileSync(destination, contents)
+    }
     bundled += 1
   }
-  const removed = pruneUnreferenced(pkgDir, keep)
+  const removed = writesRepositoryDist ? pruneUnreferenced(pkgDir, keep) : []
   pruned += removed.length
   // Pruning invalidates tsc's incremental view of dist: with the .tsbuildinfo left in place a later
   // `tsc -b` believes the modular files still exist and re-emits only changed ones, leaving a
   // modular index.js that imports pruned siblings. Dropping the build info makes the next `tsc -b`
   // re-emit the whole package (consistent modular dist), and `pnpm build` re-bundles on top.
-  if (!check && removed.length > 0) {
+  if (writesRepositoryDist && removed.length > 0) {
     const buildInfo = join(pkgDir, 'tsconfig.tsbuildinfo')
     if (existsSync(buildInfo)) rmSync(buildInfo)
   }
@@ -173,9 +202,14 @@ for (const pkg of BUNDLED_PACKAGES) {
 // external-extension proof still resolves them from the installed tarballs.
 const cliMain = join(root, 'apps', 'cli', 'dist', 'main.js')
 if (existsSync(join(root, 'apps', 'cli', 'src', 'main.ts'))) {
-  const contents = await bundleEntry(join(root, 'apps', 'cli', 'src', 'main.ts'), cliMain)
+  const cliDestination =
+    artifactRoot === undefined ? cliMain : join(artifactRoot, relative(root, cliMain))
+  const contents = await bundleEntry(join(root, 'apps', 'cli', 'src', 'main.ts'), cliDestination)
   hashes['apps/cli/dist/main.js'] = createHash('sha256').update(contents).digest('hex')
-  if (!check) writeFileSync(cliMain, contents)
+  if (writeArtifacts) {
+    mkdirSync(dirname(cliDestination), { recursive: true })
+    writeFileSync(cliDestination, contents)
+  }
   bundled += 1
 }
 
@@ -196,8 +230,12 @@ if (check) {
   console.log(`bundle --check: ${Object.keys(hashes).length} entries byte-identical`)
 } else {
   writeFileSync(hashPath, rendered, 'utf8')
+  if (manifestOnly) {
+    console.log(`bundle --manifest-only: hashed ${bundled} entries without changing dist`)
+    process.exit(0)
+  }
   const sizes = Object.keys(hashes)
-    .map(f => `${f} ${statSync(join(root, f)).size}b`)
+    .map(f => `${f} ${statSync(join(artifactRoot ?? root, f)).size}b`)
     .join('\n  ')
   console.log(`bundled ${bundled} entries, pruned ${pruned} modular files:\n  ${sizes}`)
 }

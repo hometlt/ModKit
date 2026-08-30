@@ -9,9 +9,22 @@ describe('external composition boundary', () => {
     ).toEqual([])
   })
 
-  it('rejects a concrete sibling or game default', () => {
-    expect(externalCompositionViolations(['runtime'], () => 'fallback to modkit-warzone')).toEqual([
-      'runtime',
-    ])
+  it.each([
+    'fallback to modkit-warzone',
+    "join(root, 'extensions', 'ea', 'models')",
+    "join(root, 'extensions', 'mk2', 'legacy')",
+    "productExtensionDirectory(root, ['publisher', 'codec'])",
+    "externalRepositoryRoot(root, 'publisher')",
+    "const gameId = 'starcraft-2'",
+    "const publisher = 'blizzard'",
+    "const gameId = 'warzone-2100'",
+    "const engine = 'spring'",
+    "const gameId = 'cnc3'",
+  ])('rejects concrete sibling and legacy-loader knowledge: %s', source => {
+    expect(externalCompositionViolations(['runtime'], () => source)).toEqual(['runtime'])
+  })
+
+  it('does not confuse CSS color names with a product token', () => {
+    expect(externalCompositionViolations(['theme'], () => 'mediumspringgreen')).toEqual([])
   })
 })

@@ -24,7 +24,7 @@ import type { WebDomGlobals } from '../src/subjects.js'
 export const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
 export const ORIGIN = 'https://pwa.example/app/'
 
-/** Serves `extensions/<name>/…` requests from `extensions/common/<name>/…` on disk. */
+/** Serves the exact built PWA artifact tree, including renamed/grouped extension source roots. */
 export function diskOrigin(): {
   readonly fetched: string[]
   fetch: (url: string) => Promise<{
@@ -42,7 +42,9 @@ export function diskOrigin(): {
         ? url.slice(`${ORIGIN}extensions/`.length)
         : undefined
       const path =
-        relative === undefined ? undefined : join(repositoryRoot, 'extensions', 'common', relative)
+        relative === undefined
+          ? undefined
+          : join(repositoryRoot, 'apps', 'web', 'dist-app', 'extensions', relative)
       const ok = path !== undefined && existsSync(path)
       return {
         ok,

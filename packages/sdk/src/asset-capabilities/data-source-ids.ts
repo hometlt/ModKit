@@ -51,24 +51,23 @@ export type DataSourceMaturity = 'admitted' | 'publisher-candidate'
  * `common.view/slide-deck-source`: block 11 slice 11B publishes it from ODP alone. Its admission
  * waits for a second, independent slides family (PPTX) plus a generic consumer — block 30.
  *
- * `common.view/model-socket-source`: block 15D publishes it from explicit Blizzard M3 ATT_ records.
+ * `common.view/model-socket-source`: one model family publishes it from explicit attachment records.
  * It stays a publisher-candidate until a second independent native family proves the same
  * identity/node/role boundary without assigning semantics from a name heuristic.
  *
- * `common.view/world-scene-source`: the shared callable surface is now backed by independent SC2
- * and Warzone candidate publishers, but it remains a candidate until the common viewer and frozen
+ * `common.view/world-scene-source`: the shared callable surface is backed by independent candidate
+ * publishers, but it remains a candidate until the common viewer and frozen
  * `world-interchange-v1` conformance receipt exist. Standard wire availability is not GA.
  *
- * `common.view/subject-calculations-source` is admitted after both StarCraft II and Warzone 2100
- * published the same bounded formula/input/result boundary and the common UI and MCP consumed it.
+ * `common.view/subject-calculations-source` is admitted after two independent publishers exposed
+ * the same bounded formula/input/result boundary and the common UI and MCP consumed it.
  *
  * `common.view/subject-selector-source` is a publisher candidate used by container-like subjects
  * to lend the standard facts/calculations sources for one explicitly selected nested subject. It
  * remains a candidate until another independent publisher proves the same selection boundary.
  *
- * `common.view/model-skeleton-source` was admitted after the independent Blizzard M3 family began
- * decoding `MODL.bones → BONE.name → CHAR` and publishing twelve corpus-backed bindings. W3D/W3X
- * remain the SAGE/Westwood family; M3 is a different format, parser, package and vendor lineage.
+ * `common.view/model-skeleton-source` was admitted after an independent model family began
+ * publishing corpus-backed bone bindings. A second family has a different parser and vendor lineage.
  * Together they satisfy §2.7 without inventing joints from UVM/core's advisory `skinned` boolean.
  *
  * The other four optional model facets are `admitted` as of slice 12-1. Each has at least two

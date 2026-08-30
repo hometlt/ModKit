@@ -99,7 +99,7 @@ export function renderGameTemplatePreview(
   }
 }
 
-/** Standard operation-backed stage shared by SC2 layouts and Warzone research templates. */
+/** Standard operation-backed stage shared by publisher-defined document templates. */
 export const gameTemplateViewer: ViewerModule = defineViewerModule({
   abiVersion: 1,
   async mount(args) {

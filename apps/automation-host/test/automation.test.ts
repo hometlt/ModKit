@@ -11,11 +11,21 @@ import {
 } from '../src/index.js'
 
 describe('automation host composition root', () => {
-  it('boots headless with an empty catalog', async () => {
+  it('boots headless with only the mandatory native text contributions', async () => {
     const host = await createAutomationHost()
     const description = host.describeHost()
     expect(description.realmId).toBe(AUTOMATION_REALM)
-    expect(description.contributions).toEqual([])
+    expect(description.contributions).toEqual([
+      'org.modkitx/text-json',
+      'org.modkitx/text-jsonc',
+      'org.modkitx/txt',
+      'org.modkitx/json-syntax-contract',
+      'org.modkitx/jsonc-syntax-contract',
+      'org.modkitx/json-syntax-default',
+      'org.modkitx/jsonc-syntax-default',
+      'org.modkitx/text-json-writer',
+      'org.modkitx/plain-text-writer',
+    ])
     expect(description.diagnostics).toBe(0)
     expect(host.commandContracts.schemaVersion).toBe(COMMAND_PROTOCOL_SCHEMA_VERSION)
     expect(host.commandContracts.commands).toHaveLength(6)
@@ -108,11 +118,13 @@ describe('automation open path (S7)', () => {
     expect(host.describeHost().contributions).toContain('org.modkitx/image-png')
     expect(host.subjects.supportedExtensions).toContain('png')
     expect(
-      host.composition.inventory.extensions[0]?.contributions.some(
-        contribution =>
-          contribution.manifest?.id === 'org.modkitx/image-png' &&
-          contribution.activationEligible === false,
-      ),
+      host.composition.inventory.extensions
+        .flatMap(extension => extension.contributions)
+        .some(
+          contribution =>
+            contribution.manifest?.id === 'org.modkitx/image-png' &&
+            contribution.activationEligible === false,
+        ),
     ).toBe(true)
     const result = await host.subjects.open({
       source: await openFileArtifactSource(

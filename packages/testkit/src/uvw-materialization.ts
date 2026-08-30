@@ -206,9 +206,8 @@ function hasProvenNativeTerrainTransform(info: CandidateWorldSceneInfo): boolean
         transform.mapping.vertical ===
           'dequantized-base-times-scale-plus-offset-plus-dequantized-adjustment'
       : transform.mapping.vertical === 'direct-base-times-scale-plus-offset' &&
-        transform.source.format === 'warzone-game-map' &&
-        (transform.source.heightEncoding === 'uint8-times-2' ||
-          transform.source.heightEncoding === 'uint16-le')
+        transform.source.format.length > 0 &&
+        transform.source.heightEncoding.length > 0
   return (
     transform.schemaVersion === 1 &&
     Number.isSafeInteger(transform.descriptorVersion) &&

@@ -1,17 +1,17 @@
 {
-  "$comment": "Product profiles и composition lock (PLAN_MODKIT_MK3_FINAL_RU.md §4.2–4.3, блок 10 работа 8). Preset — данные composition lock, а не форк приложения: строка перечисляет семейства расширений и service-provider вклады, из которых профиль собирается. Новых чисел здесь нет: состав семейств берётся из scripts/app-extension-sets.mjs, reference bundle baseline — из scripts/bundle-hashes.json (ratchet pnpm bundle:check), а бюджеты и запреты reference-профилей §4.3 — из scripts/test/minimal-build.test.ts. Проверяется pnpm profiles:check.",
+  "$comment": "Generic core product profiles. External product compositions are supplied by extension-manager workspace/lock data.",
   "schemaVersion": "product-profiles-1",
   "compositionSource": "scripts/app-extension-sets.mjs",
   "optionalFamilies": ["rendering-3d", "ui-monaco"],
   "counts": {
-    "presets": 7,
-    "available": 6,
-    "planned": 1,
+    "presets": 3,
+    "available": 3,
+    "planned": 0,
     "referenceProfiles": 13,
     "byIntroducedInClosure": {
-      "mk3-ga": 5,
+      "mk3-ga": 3,
       "mk3-multiverse-ga": 0,
-      "mk3-deferred-games": 2
+      "mk3-deferred-games": 0
     }
   },
   "presets": [
@@ -26,7 +26,6 @@
         "documents",
         "text-delimited",
         "text-ini",
-        "text-json",
         "text-toml",
         "text-xml",
         "text-yaml"
@@ -34,97 +33,6 @@
       "plannedFamilies": [],
       "serviceProviders": [],
       "note": "Opt-in preset плана slice 11B: minimal и plain-text не должны тянуть ZIP, XML или UI, поэтому editor и renderer сюда не входят. ODT/ODS/ODP/ODG приехали слайсом 11B внутри семейства documents вместе с приватным ODF package reader — отдельного ZIP-семейства профиль по-прежнему не тянет."
-    },
-    {
-      "id": "sc2-mod-studio",
-      "displayName": "SC2 Mod Studio",
-      "introducedInClosure": "mk3-ga",
-      "status": "available",
-      "hosts": ["electron", "vscode"],
-      "minimalClosure": false,
-      "extensionFamilies": [
-        "archives",
-        "blizzard-casc",
-        "blizzard-models",
-        "blizzard-mpq",
-        "blizzard-starcraft2",
-        "images",
-        "models",
-        "rendering-3d",
-        "text-json",
-        "ui-monaco"
-      ],
-      "plannedFamilies": [],
-      "serviceProviders": [
-        "org.modkitx.blizzard/galaxy-language",
-        "org.modkitx.blizzard/starcraft2-data",
-        "org.modkitx.blizzard/starcraft2-installation",
-        "org.modkitx.blizzard/starcraft2-map-semantic",
-        "org.modkitx.blizzard/starcraft2-resolved-data",
-        "org.modkitx.blizzard/starcraft2-workspace"
-      ],
-      "note": "Профиль использует отдельное игровое расширение с автоматическим поиском установки и ручными путями из настроек; общий хост не импортирует код StarCraft II. Состав профиля доступен, но обязательные Product GA knowledge, карточки, граф связей, расчёты, game template, полный анализ документов, MCP и SC2 inspection skill остаются отдельными partial registry gaps до доказанного закрытия."
-    },
-    {
-      "id": "cnc-sage-studio",
-      "displayName": "C&C SAGE Studio",
-      "introducedInClosure": "mk3-deferred-games",
-      "status": "available",
-      "hosts": ["electron", "vscode"],
-      "minimalClosure": false,
-      "extensionFamilies": [
-        "archives",
-        "ea-archives",
-        "ea-big",
-        "ea-models",
-        "ea-sage",
-        "images",
-        "models",
-        "rendering-3d"
-      ],
-      "plannedFamilies": [],
-      "serviceProviders": [],
-      "note": "Общий BIG/SAGE closure трёх named-game профилей (TW, KW, RA3). Game-provider вкладов ещё нет — отложенная после Multiverse STOP вертикаль блока 16; корпус TW и RA3 в corpora-readiness помечен owner-action-required."
-    },
-    {
-      "id": "warzone-2100-studio",
-      "displayName": "Warzone 2100 Studio",
-      "introducedInClosure": "mk3-ga",
-      "status": "available",
-      "hosts": ["electron", "vscode"],
-      "minimalClosure": false,
-      "extensionFamilies": [
-        "archives",
-        "images",
-        "models",
-        "opensource-warzone-2100",
-        "rendering-3d"
-      ],
-      "plannedFamilies": [],
-      "serviceProviders": [
-        "org.modkitx.opensource/warzone2100-data",
-        "org.modkitx.opensource/warzone2100-installation",
-        "org.modkitx.opensource/warzone2100-map-semantic",
-        "org.modkitx.opensource/warzone2100-resolved-data"
-      ],
-      "note": "Профиль использует одно конечное игровое расширение для PIE, WZ, IMG, LEV, WRF, map, поиска установки и основных данных объектов. Состав профиля доступен, но обязательные Product GA knowledge, карточки, граф связей, расчёты, game template, полный анализ документов, MCP и Warzone inspection skill, а также незакрытые authoring и round-trip обещания остаются отдельными registry gaps."
-    },
-    {
-      "id": "bar-spring-studio",
-      "displayName": "BAR/Spring Studio",
-      "introducedInClosure": "mk3-deferred-games",
-      "status": "planned",
-      "hosts": ["electron", "vscode"],
-      "minimalClosure": false,
-      "extensionFamilies": ["archives", "images", "models", "rendering-3d"],
-      "plannedFamilies": [
-        {
-          "directory": "extensions/mk2/opensource-spring",
-          "contributions": ["org.modkitx/spring-rapid", "org.modkitx/spring-vfs"]
-        }
-      ],
-      "serviceProviders": [],
-      "note": "Spring/Recoil и Beyond All Reason остаются разными строками: движок не объявляется игрой. Preset относится к отложенной после Multiverse STOP вертикали блока 17 и не активируется без owner resume."
     },
     {
       "id": "universal-asset-explorer",
@@ -143,7 +51,6 @@
         "rendering-3d",
         "text-delimited",
         "text-ini",
-        "text-json",
         "text-toml",
         "text-xml",
         "text-yaml",
@@ -170,7 +77,6 @@
         "models",
         "text-delimited",
         "text-ini",
-        "text-json",
         "text-toml",
         "text-xml",
         "text-yaml"

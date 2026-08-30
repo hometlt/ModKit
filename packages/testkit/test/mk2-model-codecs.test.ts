@@ -16,8 +16,7 @@ import {
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const modelRoot = join(repoRoot, 'extensions', 'common', 'models')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
-const m3Fixture = join(import.meta.dirname, 'fixtures', 'models', 'triangle.m3')
-const formats = ['obj', 'ply', 'stl', 'dae', 'gltf', 'uvm', 'm3'] as const
+const formats = ['obj', 'ply', 'stl', 'dae', 'gltf', 'uvm'] as const
 type Format = (typeof formats)[number]
 const fixtureNames: Record<Format, string> = {
   obj: 'minimal.obj',
@@ -26,8 +25,6 @@ const fixtureNames: Record<Format, string> = {
   dae: 'minimal.dae',
   gltf: 'minimal.gltf',
   uvm: 'minimal.uvm.glb',
-  // Generated from the canonical encodeM3RenderModel triangle; no game-owned file is vendored.
-  m3: 'triangle.m3',
 }
 const primitiveIds: Record<Format, string> = {
   obj: 'primitive-0',
@@ -36,7 +33,6 @@ const primitiveIds: Record<Format, string> = {
   dae: 'geometry-0-primitive-0',
   gltf: 'mesh-0-primitive-0',
   uvm: 'mesh-0-primitive-0',
-  m3: 'mesh-0-primitive-0',
 }
 
 const budget: ResourceBudget = {
@@ -109,8 +105,7 @@ function inputFor(source: ArtifactByteSource): AssetInput {
 }
 
 async function codecFor(format: Format): Promise<Codec> {
-  const extensionRoot =
-    format === 'm3' ? join(repoRoot, '..', 'modkit-blizzard', 'models') : modelRoot
+  const extensionRoot = modelRoot
   const module = (await import(
     pathToFileURL(join(extensionRoot, 'src', format, 'codec.js')).href
   )) as {
@@ -120,9 +115,7 @@ async function codecFor(format: Format): Promise<Codec> {
 }
 
 async function fixture(format: Format): Promise<Uint8Array> {
-  return new Uint8Array(
-    await readFile(format === 'm3' ? m3Fixture : join(fixtureRoot, fixtureNames[format])),
-  )
+  return new Uint8Array(await readFile(join(fixtureRoot, fixtureNames[format])))
 }
 
 async function open(format: Format, bytes: Uint8Array, resourceBudget = budget) {
@@ -164,8 +157,7 @@ describe('ported MK2 geometry model codecs', () => {
 
     const lease = await session.dataSource('common.view/model-scene-source', 1)
     const model = lease.value as ModelSceneSource
-    const expectedBounds =
-      format === 'm3' ? { min: [0, -0, 0], max: [1, -0, 1] } : { min: [0, 0, 0], max: [1, 1, 0] }
+    const expectedBounds = { min: [0, 0, 0], max: [1, 1, 0] }
     expect(await model.info()).toMatchObject({
       scenes: 1,
       nodes: 1,

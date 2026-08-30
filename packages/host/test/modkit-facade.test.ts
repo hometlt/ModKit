@@ -182,21 +182,27 @@ describe('disabling a contribution (the settings-page seam)', () => {
 })
 
 describe('the format writer is preferred over the raw byte splicer (Path B reaches products)', () => {
-  const textDir = join(repoRoot, 'extensions', 'common', 'data', 'text-json')
-
-  it('a JSON subject validates through its own writer: corruption refused, a real edit commits', async () => {
+  it('native JSON validates through its own writer, commits, and reopens without an extension', async () => {
     const heard: string[] = []
     const jsonHost = await createModkit({
-      extensions: [textDir],
+      extensions: [],
       roots: [scratch],
       writableRoots: [join(scratch, 'writable')],
       onDiagnostic: item => heard.push(`${item.code}: ${item.message}`),
     })
     try {
+      const nativeInventory = jsonHost.services.inventory.extensions.find(
+        item => item.manifest.id === 'core-native-text',
+      )
+      expect(nativeInventory, JSON.stringify(jsonHost.services.inventory.diagnostics)).toBeDefined()
+      expect(
+        nativeInventory?.contributions.filter(item => item.activationEligible).length,
+        JSON.stringify(nativeInventory?.contributions),
+      ).toBeGreaterThan(0)
       const path = join(scratch, 'writable', 'config.json')
       writeFileSync(path, '{\n  "name": "original"\n}\n')
       const opened = await jsonHost.open(path)
-      expect(opened.snapshot.state).toBe('opened')
+      expect(opened.snapshot.state, JSON.stringify(opened.snapshot)).toBe('opened')
       const ports = opened.editing?.editorPorts
       if (ports === undefined) throw new Error('no editor ports')
       // the host said which writer serves this subject, by name
@@ -243,8 +249,48 @@ describe('the format writer is preferred over the raw byte splicer (Path B reach
       expect(receipt.state).toBe('committed')
       expect(readFileSync(path, 'utf8')).toBe('{\n  "name": "edited"\n}\n')
       await opened.close()
+      const reopened = await jsonHost.open(path)
+      expect(reopened.snapshot.state).toBe('opened')
+      if (reopened.snapshot.state === 'opened') {
+        const identity = reopened.snapshot.descriptor.identity
+        expect(
+          typeof identity === 'object' && identity !== null && 'codecId' in identity
+            ? identity.codecId
+            : undefined,
+        ).toBe('org.modkitx/text-json')
+        const tree = await reopened.session?.dataSource('common.view/tree-data-source', 1)
+        expect(tree).toBeDefined()
+        await tree?.release()
+      }
+      await reopened.close()
     } finally {
       await jsonHost.close()
+    }
+  }, 60_000)
+
+  it('native plain text detects and publishes inspect, tree and text surfaces', async () => {
+    const textHost = await createModkit({ extensions: [], roots: [scratch] })
+    try {
+      const path = join(scratch, 'native.txt')
+      writeFileSync(path, 'One paragraph.\n\nSecond paragraph.\n')
+      const opened = await textHost.open(path)
+      expect(opened.snapshot.state, JSON.stringify(opened.snapshot)).toBe('opened')
+      if (opened.snapshot.state !== 'opened' || opened.session === undefined) return
+      const identity = opened.snapshot.descriptor.identity
+      expect(
+        typeof identity === 'object' && identity !== null && 'codecId' in identity
+          ? identity.codecId
+          : undefined,
+      ).toBe('org.modkitx/txt')
+      expect(await opened.session.operations().invoke('inspect', null)).toMatchObject({
+        state: 'ok',
+        output: { kind: 'json', value: { format: 'txt', paragraphs: 2 } },
+      })
+      await (await opened.session.dataSource('common.view/tree-data-source', 1)).release()
+      await (await opened.session.dataSource('common.view/text-data-source', 1)).release()
+      await opened.close()
+    } finally {
+      await textHost.close()
     }
   }, 60_000)
 

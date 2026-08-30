@@ -20,14 +20,14 @@
     "sourceTopology": "bundle",
     "artifactStages": ["authored"],
     "openIntents": ["probe", "inspect", "full"],
-    "match": { "pathGlobs": ["**/molds/*.w3d"] },
+    "match": { "pathGlobs": ["**/models/*.mesh"] },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 16 }], "maxBytes": 16 },
     "companions": [
       {
         "id": "skin",
         "role": "texture",
         "required": true,
-        "patterns": ["bowl.tga"],
+        "patterns": ["cube.texture"],
         "searchScopes": ["current-mount", "enclosing-container"]
       }
     ],

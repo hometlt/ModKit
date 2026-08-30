@@ -106,12 +106,7 @@ const services = () =>
     createNodeSubjectServices({
       topology,
       realms: { host: HOST, workers: WORKERS },
-      extensions: [
-        await linked(extensionDir('text-json')),
-        await linked(extensionDir('text-ini')),
-        await linked(extensionDir('text-delimited')),
-        await linked(extensionDir('plain-text')),
-      ],
+      extensions: [await linked(extensionDir('text-ini')), await linked(extensionDir('text-csv'))],
       policy,
     }))())
 
@@ -231,8 +226,11 @@ describe('A6 — text writers resolve by facet and save through the host coordin
     it(`${testCase.formatId}: a UTF-16 range edit is proposed, planned, committed and reopened`, async () => {
       const { path, opened } = await openCopy(testCase.file, testCase.source)
       expect(opened.selected.contributionId).toBe(testCase.codecId)
-      expect(opened.selected.variantId).toBe('portable')
-      expect(opened.diagnostics.map(item => item.code)).toContain('x3.host/worker-shared-process')
+      const native = testCase.formatId === 'json' || testCase.formatId === 'txt'
+      expect(opened.selected.variantId).toBe(native ? 'core-native' : 'portable')
+      if (!native) {
+        expect(opened.diagnostics.map(item => item.code)).toContain('x3.host/worker-shared-process')
+      }
       // the codec itself stays read-only: saving is the writer's contract, not the codec's
       expect(opened.descriptor.constraints.readOnly).toBe(true)
 
@@ -258,7 +256,9 @@ describe('A6 — text writers resolve by facet and save through the host coordin
         minimumRoundTrip: 'byte-identical',
       })
       expect(writer.identity.formatId).toBe(testCase.formatId)
-      expect(port.diagnostics.map(item => item.code)).toContain('x3.host/worker-shared-process')
+      expect(port.diagnostics.map(item => item.code)).toContain(
+        native ? 'x3.host/full-process-authority' : 'x3.host/worker-shared-process',
+      )
 
       const backend = createFileEditingBackend({ roots: [scratch] })
       const editing = createSubjectEditing({

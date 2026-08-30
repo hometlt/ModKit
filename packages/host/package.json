@@ -66,12 +66,14 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "native-text"
   ],
   "dependencies": {
     "@modkitx-x3/core": "workspace:*",
     "@modkitx-x3/sdk": "workspace:*",
     "@modkitx-x3/vfs": "workspace:*",
-    "es-module-lexer": "^1.7.0"
+    "es-module-lexer": "^1.7.0",
+    "jsonc-parser": "^3.3.1"
   }
 }

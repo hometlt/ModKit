@@ -182,15 +182,15 @@ describe('A-1 contribution spec schemas', () => {
       schemaVersion: 1,
       sourceLocale: 'en',
       priority: 100,
-      gameIds: ['starcraft-2'],
+      gameIds: ['game-alpha'],
       entries: [
         {
-          id: 'org.example.sc2/life-max',
+          id: 'org.example.alpha/life-max',
           target: {
             kind: 'field',
-            ecosystem: 'starcraft-2',
+            ecosystem: 'game-alpha',
             schema: {
-              contract: 'org.example/sc2-data-schema',
+              contract: 'org.example/alpha-data-schema',
               major: 1,
               revision: 'sha256:fixture',
             },
@@ -207,7 +207,7 @@ describe('A-1 contribution spec schemas', () => {
               kind: 'schema',
               title: 'Fixture schema',
               schema: {
-                contract: 'org.example/sc2-data-schema',
+                contract: 'org.example/alpha-data-schema',
                 major: 1,
                 revision: 'sha256:fixture',
               },
@@ -219,7 +219,7 @@ describe('A-1 contribution spec schemas', () => {
       ],
     } as const
     const result = await validateContributionManifest(
-      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help', knowledgeSpec),
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/alpha-help', knowledgeSpec),
       registry,
     )
     expect(result.specState).toBe('validated')
@@ -227,7 +227,7 @@ describe('A-1 contribution spec schemas', () => {
     expect(result.activationEligible).toBe(false)
 
     const duplicate = await validateContributionManifest(
-      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help-duplicate', {
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/alpha-help-duplicate', {
         ...knowledgeSpec,
         entries: [...knowledgeSpec.entries, knowledgeSpec.entries[0]],
       }),
@@ -237,7 +237,7 @@ describe('A-1 contribution spec schemas', () => {
     expect(duplicate.diagnostics.map(item => item.code)).toContain('x3.sdk/duplicate-semantic-id')
 
     const unsupportedSchemaFact = await validateContributionManifest(
-      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help-unproved', {
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/alpha-help-unproved', {
         ...knowledgeSpec,
         entries: [
           {
@@ -261,7 +261,7 @@ describe('A-1 contribution spec schemas', () => {
     )
 
     const wrongSchemaRevision = await validateContributionManifest(
-      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help-wrong-revision', {
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/alpha-help-wrong-revision', {
         ...knowledgeSpec,
         entries: [
           {
@@ -271,7 +271,7 @@ describe('A-1 contribution spec schemas', () => {
                 kind: 'schema',
                 title: 'Different schema revision',
                 schema: {
-                  contract: 'org.example/sc2-data-schema',
+                  contract: 'org.example/alpha-data-schema',
                   major: 1,
                   revision: 'sha256:other',
                 },
@@ -290,7 +290,7 @@ describe('A-1 contribution spec schemas', () => {
     )
 
     const mismatchedTranslation = await validateContributionManifest(
-      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help-target-mismatch', {
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/alpha-help-target-mismatch', {
         ...knowledgeSpec,
         entries: [
           knowledgeSpec.entries[0],
@@ -312,7 +312,7 @@ describe('A-1 contribution spec schemas', () => {
     )
 
     const missingSourceLocale = await validateContributionManifest(
-      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help-locale-missing', {
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/alpha-help-locale-missing', {
         ...knowledgeSpec,
         entries: [{ ...knowledgeSpec.entries[0], locale: 'ru' }],
       }),
@@ -324,7 +324,7 @@ describe('A-1 contribution spec schemas', () => {
     )
 
     const oversizedTitle = await validateContributionManifest(
-      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help-oversized', {
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/alpha-help-oversized', {
         ...knowledgeSpec,
         entries: [{ ...knowledgeSpec.entries[0], title: 'x'.repeat(257) }],
       }),
@@ -334,7 +334,7 @@ describe('A-1 contribution spec schemas', () => {
     expect(oversizedTitle.diagnostics.map(item => item.code)).toContain('x3.sdk/invalid-spec')
 
     const oversizedCoordinates = await validateContributionManifest(
-      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/sc2-help-id-oversized', {
+      manifest(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT, 'org.example/alpha-help-id-oversized', {
         ...knowledgeSpec,
         entries: [
           {

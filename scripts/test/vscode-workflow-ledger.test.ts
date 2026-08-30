@@ -141,7 +141,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       },
       decisionRequired: 0,
       releaseCandidateGaps: 0,
-      currentX3ObservedFacts: 39,
+      currentX3ObservedFacts: 33,
     })
     expect(ledger.counts.byKind).toEqual({
       'cli-command': 5,
@@ -238,7 +238,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
     ).toHaveLength(62)
   })
 
-  it('records the factual 64→24, 11→1, 8→6 and 6→2 surface change', () => {
+  it('records the factual 64→24, 11→1, 8→0 and 6→2 surface change', () => {
     const ledger = JSON.parse(readFileSync(committedLedger, 'utf8'))
     expect(ledger.surfaceComparison).toEqual({
       legacyVsCode: { commands: 64, customEditors: 11, languages: 8, views: 6 },
@@ -248,7 +248,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         customEditors: 1,
         fileSystemSchemes: 1,
         keybindings: 0,
-        languages: 6,
+        languages: 0,
         menus: 0,
         runtimeOnlyCommands: 1,
         viewContainers: 1,
@@ -274,7 +274,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       'Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.',
     )
     expect(status).not.toContain('PWA не заявлен')
-    expect(ledger.currentX3Facts).toHaveLength(39)
+    expect(ledger.currentX3Facts).toHaveLength(33)
     expect(
       ledger.currentX3Facts.every((row: { state: string }) => row.state === 'observed-only'),
     ).toBe(true)
@@ -398,7 +398,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
     expect(ledger.packagingBoundary).toMatchObject({
       state: 'already-equivalent',
       ownerBlockerId: null,
-      cataloguedCommonRoots: 18,
+      cataloguedCommonRoots: 16,
       packagedCodecRoots: 0,
       deterministicShellArtifact: true,
       provenVsixCodecArtifact: false,
@@ -573,7 +573,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain(
-      'packagingBoundary must record an already-equivalent 18-root shell, 0 packaged codec roots',
+      'packagingBoundary must record the already-equivalent deterministic shell, 0 packaged codec roots, the accepted B+C topology, and no codec-bearing VSIX',
     )
   })
 

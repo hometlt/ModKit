@@ -13,6 +13,9 @@ import {
   createServiceContractDefinitionRegistry,
   createServiceFacetMatcherProfileRegistry,
   evaluateViewerContribution,
+  linkedInProcessBackend,
+  NATIVE_TEXT_INPUT,
+  NATIVE_TEXT_MODULES,
   offersFromInventory,
   openSubject,
   parseCodecDetectionSelection,
@@ -47,7 +50,6 @@ const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const imagesDir = join(repoRoot, 'extensions', 'common', 'images')
 const archivesDir = join(repoRoot, 'extensions', 'common', 'archives')
 const modelsDir = join(repoRoot, 'extensions', 'common', 'models')
-const textJsonDir = join(repoRoot, 'extensions', 'common', 'data', 'text-json')
 const hostileProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-extension')
 const grantsProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-grants-extension')
 const ambiguousProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-ambiguous-extension')
@@ -513,7 +515,10 @@ describe('host-owned subject opening pipeline', () => {
   })
 
   it('opens JSON through a separately ticketed syntax provider under a child grant', async () => {
-    const inventory = await bundledInventory(textJsonDir)
+    const inventory = await buildInventory(
+      [NATIVE_TEXT_INPUT],
+      createHostContributionContractRegistry(),
+    )
     const definitions = createServiceContractDefinitionRegistry({
       matcherProfiles: createServiceFacetMatcherProfileRegistry(),
       isNamespaceOwner: () => true,
@@ -536,6 +541,9 @@ describe('host-owned subject opening pipeline', () => {
       grant: { id: 'subject-open-json', classes: ['read-source'] },
       budget,
       serviceDefinitions: definitions,
+      executionBackends: createExecutionBackendRegistry([
+        linkedInProcessBackend(NATIVE_TEXT_MODULES),
+      ]),
     })
 
     if (result.state !== 'opened') {
@@ -544,7 +552,7 @@ describe('host-owned subject opening pipeline', () => {
     expect(result.state).toBe('opened')
     expect(result.selected).toMatchObject({
       contributionId: 'org.modkitx/text-json',
-      variantId: 'trusted-node',
+      variantId: 'core-native',
       offerId: 'syntax-document',
     })
     expect(result.descriptor).toMatchObject({

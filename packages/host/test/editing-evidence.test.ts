@@ -41,7 +41,6 @@ import {
 } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const textJsonDir = join(repoRoot, 'extensions', 'common', 'data', 'text-json')
 const documentsDir = join(repoRoot, 'extensions', 'common', 'documents')
 const archivesDir = join(repoRoot, 'extensions', 'common', 'archives')
 
@@ -102,7 +101,7 @@ const services = () =>
     return createNodeSubjectServices({
       topology,
       realms: { host: HOST, workers: WORKERS },
-      extensions: [await linked(textJsonDir), await linked(documentsDir)],
+      extensions: [await linked(documentsDir)],
       policy: workerBackendPolicy({ loadDeadlineMs: 15_000, defaultCallDeadlineMs: 15_000 }),
     })
   })())

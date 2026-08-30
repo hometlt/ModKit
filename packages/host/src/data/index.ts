@@ -854,7 +854,7 @@ async function readResourceText(
 
 /**
  * Product path: service resolution -> provider plan -> ResourceSession/VFS reads -> live facets.
- * The generic host validates order/confinement but contains no StarCraft II ids or paths.
+ * The generic host validates order and confinement but contains no publisher ids or paths.
  */
 export async function analyzeResolvedDataWorkspace(
   request: AnalyzeResolvedDataWorkspaceRequest,

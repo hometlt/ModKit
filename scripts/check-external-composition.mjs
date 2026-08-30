@@ -1,28 +1,48 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const BANNED =
-  /(?:blizzard|warzone|starcraft|\bspring\b|modkit-(?:blizzard|warzone)|MODKIT_(?:BLIZZARD|WARZONE)|extensions\/(?:ea|mk2|opensource)\/)/iu
+  /(?:productExtensionDirectory|externalRepositoryRoot|starcraft|warzone|blizzard|sc2|\bspring\b|\bcnc3?\b|tiberium|red[ -]alert|modkit-(?:blizzard|warzone|extensions-(?:ea|spring|other))|MODKIT_(?:BLIZZARD|WARZONE)|extensions(?:[\\/]|['"]\s*,\s*['"])(?:ea|mk2|opensource)(?:[\\/]|['"]))/iu
+
+const SOURCE_SUFFIX = /\.(?:[cm]?[jt]s|json|ya?ml)$/iu
+const normalized = path => path.replaceAll('\\', '/')
+const isCurrentExecutable = path => {
+  const portable = normalized(path)
+  if (!SOURCE_SUFFIX.test(portable)) return false
+  if (/\/(?:node_modules|dist|dist-app|coverage|migration\/history)\//u.test(portable)) return false
+  if (/\/scripts\/migration\//u.test(portable)) return false
+  if (/\/scripts\/test\/fixtures\/migration-registry\//u.test(portable)) return false
+  if (portable.endsWith('/scripts/test/migration-registry.test.ts')) return false
+  if (portable.endsWith('/scripts/convert-mk2.mjs')) return false
+  // The policy implementation and its deliberate negative fixture spell the tokens they reject.
+  if (portable.endsWith('/scripts/check-external-composition.mjs')) return false
+  if (portable.endsWith('/scripts/test/external-composition-boundary.test.ts')) return false
+  return true
+}
+
+function currentFiles(root) {
+  const files = []
+  const walk = directory => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = resolve(directory, entry.name)
+      if (entry.isDirectory()) {
+        if (['node_modules', 'dist', 'dist-app', 'coverage'].includes(entry.name)) continue
+        walk(path)
+      } else if (isCurrentExecutable(path)) files.push(path)
+    }
+  }
+  for (const directory of ['apps', 'packages', 'scripts', 'config']) walk(resolve(root, directory))
+  return files.sort()
+}
 
 export function externalCompositionViolations(files, read = path => readFileSync(path, 'utf8')) {
   return files.filter(path => BANNED.test(read(path))).sort()
 }
 
 export function checkExternalComposition(root = repoRoot) {
-  const candidates = [
-    'scripts/app-extension-sets.mjs',
-    'scripts/debug/app-runner.mjs',
-    'scripts/debug/pwa-server.mjs',
-    'scripts/release/rc.mjs',
-    'scripts/release/INSTALL.md',
-    'config/build-composition.json',
-    'vitest.config.ts',
-    'vitest.fast.config.ts',
-    'apps/mcp/README.md',
-    'apps/vscode/PACKAGING.md',
-  ].map(path => resolve(root, path))
+  const candidates = currentFiles(root)
   const violations = externalCompositionViolations(candidates)
   if (violations.length > 0) {
     throw new Error(

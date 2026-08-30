@@ -1,7 +1,7 @@
 /**
  * SubjectCard — a declarative composition surface for any subject.
  *
- * A subject is not a file. A SC2 unit is assembled from many files and owns none of them; a file
+ * A subject is not a file. A domain entity may be assembled from many files and own none; a file
  * is equally a subject. So a card is never format-specific code: it is a list of section specs
  * that the host builds from whatever the subject exposes, rendered by reusable section kinds.
  *

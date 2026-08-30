@@ -13,11 +13,12 @@
       "testedSurface": "headless Node composition, worker realm, command and subject-open contracts",
       "evidenceLevel": "current-source-composition",
       "verification": [
-        "pnpm exec vitest run apps/automation-host/test/automation.test.ts --maxWorkers=1",
+        "pnpm exec vitest run apps/automation-host/test/product-ga-app-matrix.test.ts --maxWorkers=1",
         "pnpm apps:check"
       ],
       "evidence": [
-        "apps/automation-host/test/automation.test.ts",
+        "apps/automation-host/test/product-ga-app-matrix.test.ts",
+        "apps/automation-host/test/product-ga-app-matrix.json",
         "scripts/check-app-contract-matrix.mjs"
       ],
       "notClaimed": [
@@ -31,10 +32,14 @@
       "testedSurface": "compiled CLI launched as a separate Node process with real files",
       "evidenceLevel": "current-source-live-process",
       "verification": [
-        "pnpm exec vitest run apps/cli/test/cli.test.ts --maxWorkers=1",
+        "pnpm exec vitest run apps/automation-host/test/product-ga-app-matrix.test.ts --maxWorkers=1",
         "pnpm apps:check"
       ],
-      "evidence": ["apps/cli/test/cli.test.ts", "scripts/check-app-contract-matrix.mjs"],
+      "evidence": [
+        "apps/automation-host/test/product-ga-app-matrix.test.ts",
+        "apps/automation-host/test/product-ga-app-matrix.json",
+        "scripts/check-app-contract-matrix.mjs"
+      ],
       "notClaimed": ["a system-wide installer or shell integration"]
     },
     {
@@ -43,11 +48,12 @@
       "testedSurface": "Electron composition, worker realm, main-process subject path and source wiring",
       "evidenceLevel": "current-source-headless-composition",
       "verification": [
-        "pnpm exec vitest run apps/electron/test/subject-open-smoke.test.ts --maxWorkers=1",
+        "pnpm exec vitest run apps/automation-host/test/product-ga-app-matrix.test.ts --maxWorkers=1",
         "pnpm apps:check"
       ],
       "evidence": [
-        "apps/electron/test/subject-open-smoke.test.ts",
+        "apps/automation-host/test/product-ga-app-matrix.test.ts",
+        "apps/automation-host/test/product-ga-app-matrix.json",
         "apps/electron/electron/main.cjs",
         "scripts/check-app-contract-matrix.mjs"
       ],

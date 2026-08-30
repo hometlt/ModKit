@@ -37,9 +37,9 @@ describe('knowledge contracts', () => {
   it('uses the complete schema revision, type and canonical field path in a field target key', () => {
     const target: KnowledgeTarget = {
       kind: 'field',
-      ecosystem: 'starcraft-2',
+      ecosystem: 'game-alpha',
       schema: {
-        contract: 'org.modkitx.blizzard/sc2-data-schema',
+        contract: 'org.example.alpha/alpha-data-schema',
         major: 1,
         revision: 'sha256:fixture',
       },
@@ -59,13 +59,13 @@ describe('knowledge contracts', () => {
     expect(
       knowledgeTargetKey({
         kind: 'concept',
-        ecosystem: 'starcraft-2\u0000data',
+        ecosystem: 'game-alpha\u0000data',
         conceptId: 'unit',
       }),
     ).not.toBe(
       knowledgeTargetKey({
         kind: 'concept',
-        ecosystem: 'starcraft-2',
+        ecosystem: 'game-alpha',
         conceptId: 'data\u0000unit',
       }),
     )
@@ -77,7 +77,7 @@ describe('knowledge contracts', () => {
     expect(
       isKnowledgeTarget({
         kind: 'field',
-        ecosystem: 'starcraft-2',
+        ecosystem: 'game-alpha',
         schema: { contract: 'x', major: 1, revision: 'v1' },
         typeId: 'CUnit',
         canonicalPath: ['LifeMax'],
@@ -86,18 +86,18 @@ describe('knowledge contracts', () => {
     expect(
       isKnowledgeTarget({
         kind: 'field',
-        ecosystem: 'starcraft-2',
+        ecosystem: 'game-alpha',
         schema: { contract: `org.example/${'x'.repeat(300)}`, major: 1, revision: 'v1' },
         typeId: 'CUnit',
         canonicalPath: ['LifeMax'],
       }),
     ).toBe(false)
-    expect(
-      isKnowledgeTarget({ kind: 'concept', ecosystem: 'starcraft-2', conceptId: 'unit' }),
-    ).toBe(true)
+    expect(isKnowledgeTarget({ kind: 'concept', ecosystem: 'game-alpha', conceptId: 'unit' })).toBe(
+      true,
+    )
     const cyclic: Record<string, unknown> = {
       kind: 'concept',
-      ecosystem: 'starcraft-2',
+      ecosystem: 'game-alpha',
       conceptId: 'unit',
     }
     cyclic['extra'] = cyclic

@@ -91,7 +91,7 @@ let shared: Promise<ElectronSubjectServices> | undefined
 function subjects(): Promise<ElectronSubjectServices> {
   shared ??= createElectronSubjectServices([
     join(extensionsRoot, 'common', 'documents'),
-    join(extensionsRoot, 'common', 'text-delimited'),
+    join(extensionsRoot, 'common', 'data', 'text-csv'),
     join(extensionsRoot, 'common', 'vector'),
   ])
   return shared

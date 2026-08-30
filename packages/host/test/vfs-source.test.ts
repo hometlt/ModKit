@@ -22,14 +22,14 @@ describe('public VFS to Host namespace bridge', () => {
   it('resolves exact companion paths without exposing the mount to a codec', async () => {
     const vfs = new VirtualFileSystem().registerProvider(
       createMemoryVfsProvider({
-        authority: 'spring-fixture',
+        authority: 'rapid-fixture',
         entries: {
           'units/test.lua': new TextEncoder().encode('unit'),
           'objects3d/units/test.s3o': Uint8Array.from([1, 2, 3]),
         },
       }),
     )
-    const mount = await vfs.openMount('memory://spring-fixture')
+    const mount = await vfs.openMount('memory://rapid-fixture')
     const origin = createVfsCompanionOrigin({
       mount,
       primaryLogicalId: 'units/test.lua',

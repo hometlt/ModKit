@@ -549,7 +549,7 @@ export interface SubjectSelectorSummary {
 
 /** Optional publisher-applied filters for large nested-subject catalogs. */
 export interface SubjectSelectorQuery extends PageRequest {
-  /** Exact semantic kind, for example an SC2 data namespace. */
+  /** Exact semantic kind, for example a publisher-defined data namespace. */
   readonly kind?: string
   /** Exact publisher type within the kind. */
   readonly type?: string

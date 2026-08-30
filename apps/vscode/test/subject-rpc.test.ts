@@ -108,7 +108,7 @@ async function wire(
     probe: catalogProbe(['text-json']),
   })
   expect(host.extensions.failures).toEqual([])
-  expect(host.extensions.bundled.length).toBe(1)
+  expect(host.extensions.bundled.length).toBe(0)
 
   const channels = channelPair()
   const served = host.serve({

@@ -1,6 +1,6 @@
 /**
- * The archive case of block 9, end to end: a W3D entry inside a BIG finds its texture inside the
- * *same* BIG, through the container's own bounded extraction.
+ * The archive case of block 9, end to end: a synthetic mesh entry inside a ZIP finds its texture
+ * inside the *same* ZIP, through the container's own bounded extraction.
  *
  * Two claims are load-bearing here, and both are proved by counting rather than by assertion:
  *
@@ -14,13 +14,14 @@
  *    takes is counted in and out, at each failure point: a missing required companion, an ambiguous
  *    one, an abort in the middle of enumeration, and the ordinary success followed by dispose.
  *
- * The BIG is genuine, not mocked: it is assembled by the writer below and parsed by the shipped EA
- * BIG codec, RefPack entry included, so the companion's bytes travel the real decompression path.
+ * The ZIP is genuine, not mocked: it is assembled by the independent writer below and parsed by
+ * the bundled common ZIP codec. No product extension, sibling repository or installed game is
+ * involved in this generic host contract.
  */
 
+import { crc32, deflateRawSync } from 'node:zlib'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { productExtensionDirectory } from '../../../scripts/lib/external-extension-roots.mjs'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CANCELLED_CODE, isModkitError } from '@modkitx-x3/core'
 import {
@@ -31,7 +32,7 @@ import {
   openSubject,
   type SubjectServices,
 } from '@modkitx-x3/host'
-import { loadExtensionDirectory, openFileArtifactSource } from '@modkitx-x3/host/node'
+import { loadExtensionDirectory } from '@modkitx-x3/host/node'
 import {
   revisionId,
   type ArtifactByteSource,
@@ -55,8 +56,7 @@ import {
 } from '../src/input-resolution.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const syntheticDir = join(repoRoot, 'packages', 'testkit', 'test', 'fixtures', 'mk2-synthetic')
-const bigExtension = join(repoRoot, 'extensions', 'ea', 'big')
+const archiveExtension = join(repoRoot, 'extensions', 'common', 'archives')
 const nestedExtension = join(import.meta.dirname, 'fixtures', 'companion-namespace-extension')
 
 const budget: ResourceBudget = {
@@ -71,75 +71,56 @@ const target = { environment: 'node', operatingSystem: 'windows', architecture: 
 const grant = { id: 'nested-companion', classes: ['read-source'] } as const
 
 // ---------------------------------------------------------------------------------------------
-// a real BIG4 archive, assembled in memory
+// a real stored/deflated ZIP archive, assembled in memory
 
-/**
- * A literal-only RefPack stream.
- *
- * Deliberately the simplest *valid* encoding rather than a good one: the point of a compressed
- * entry in this fixture is that the container's decoder has to run and produce the original bytes
- * back, not that the archive is small. The shipped decoder rejects a stream that does not end in a
- * terminator command with the declared output length filled exactly, so a stream this writer
- * produces is a stream that decoder accepts — or the fixture test fails, which is also useful.
- */
-function refPack(data: Uint8Array): Uint8Array {
-  const out: number[] = [
-    0x10,
-    0xfb,
-    (data.length >>> 16) & 0xff,
-    (data.length >>> 8) & 0xff,
-    data.length & 0xff,
-  ]
-  let cursor = 0
-  while (data.length - cursor >= 4) {
-    // long-literal command 0xE0..0xFB: ((control & 0x1f) + 1) << 2 bytes, so 4…112 at a time
-    const chunk = Math.min(112, (data.length - cursor) & ~3)
-    out.push(0xe0 + ((chunk >>> 2) - 1))
-    for (let index = 0; index < chunk; index += 1) out.push(data[cursor + index] as number)
-    cursor += chunk
-  }
-  const rest = data.length - cursor // 0…3, carried by the terminator itself
-  out.push(0xfc + rest)
-  for (let index = 0; index < rest; index += 1) out.push(data[cursor + index] as number)
-  return new Uint8Array(out)
-}
-
-interface BigEntryInput {
+interface ZipEntryInput {
   readonly path: string
   readonly bytes: Uint8Array
   readonly compress?: boolean
 }
 
-function buildBig(entries: readonly BigEntryInput[]): Uint8Array {
-  const encoder = new TextEncoder()
-  const stored = entries.map(entry => ({
-    path: entry.path,
-    name: encoder.encode(entry.path),
-    payload: entry.compress === true ? refPack(entry.bytes) : entry.bytes,
-  }))
-  const indexBytes = stored.reduce((total, entry) => total + 8 + entry.name.byteLength + 1, 0)
-  const dataOffset = 16 + indexBytes
-  const total = stored.reduce((size, entry) => size + entry.payload.byteLength, dataOffset)
-  const archive = new Uint8Array(total)
-  const view = new DataView(archive.buffer)
-  archive.set(encoder.encode('BIG4'), 0)
-  view.setUint32(4, total, true)
-  view.setUint32(8, stored.length, false)
-  view.setUint32(12, dataOffset, false)
-  let index = 16
-  let payload = dataOffset
-  for (const entry of stored) {
-    view.setUint32(index, payload, false)
-    view.setUint32(index + 4, entry.payload.byteLength, false)
-    index += 8
-    archive.set(entry.name, index)
-    index += entry.name.byteLength
-    archive[index] = 0
-    index += 1
-    archive.set(entry.payload, payload)
-    payload += entry.payload.byteLength
+function buildZip(entries: readonly ZipEntryInput[]): Uint8Array {
+  const locals: Buffer[] = []
+  const centrals: Buffer[] = []
+  let offset = 0
+  for (const entry of entries) {
+    const name = Buffer.from(entry.path, 'utf8')
+    const plain = Buffer.from(entry.bytes)
+    const payload = entry.compress === true ? deflateRawSync(plain) : plain
+    const method = entry.compress === true ? 8 : 0
+    const checksum = crc32(plain)
+    const local = Buffer.alloc(30 + name.length)
+    local.writeUInt32LE(0x04034b50, 0)
+    local.writeUInt16LE(20, 4)
+    local.writeUInt16LE(method, 8)
+    local.writeUInt32LE(checksum, 14)
+    local.writeUInt32LE(payload.length, 18)
+    local.writeUInt32LE(plain.length, 22)
+    local.writeUInt16LE(name.length, 26)
+    name.copy(local, 30)
+    locals.push(local, payload)
+
+    const central = Buffer.alloc(46 + name.length)
+    central.writeUInt32LE(0x02014b50, 0)
+    central.writeUInt16LE(20, 6)
+    central.writeUInt16LE(method, 10)
+    central.writeUInt32LE(checksum, 16)
+    central.writeUInt32LE(payload.length, 20)
+    central.writeUInt32LE(plain.length, 24)
+    central.writeUInt16LE(name.length, 28)
+    central.writeUInt32LE(offset, 42)
+    name.copy(central, 46)
+    centrals.push(central)
+    offset += local.length + payload.length
   }
-  return archive
+  const directory = Buffer.concat(centrals)
+  const eocd = Buffer.alloc(22)
+  eocd.writeUInt32LE(0x06054b50, 0)
+  eocd.writeUInt16LE(entries.length, 8)
+  eocd.writeUInt16LE(entries.length, 10)
+  eocd.writeUInt32LE(directory.length, 12)
+  eocd.writeUInt32LE(offset, 16)
+  return new Uint8Array(Buffer.concat([...locals, directory, eocd]))
 }
 
 function byteSource(bytes: Uint8Array, name: string): ArtifactByteSource {
@@ -161,13 +142,11 @@ function byteSource(bytes: Uint8Array, name: string): ArtifactByteSource {
 // ---------------------------------------------------------------------------------------------
 // the host under test
 
-let model: Uint8Array
-let skin: Uint8Array
+const MODEL_BYTES = new TextEncoder().encode('MESH\u0000synthetic-geometry')
+const TEXTURE_BYTES = new TextEncoder().encode('TEXTURE\u0000synthetic-pixels')
 
-async function payloads(): Promise<{ readonly model: Uint8Array; readonly skin: Uint8Array }> {
-  model ??= new Uint8Array(await readFile(join(syntheticDir, 'minimal.westwood.w3d')))
-  skin ??= new Uint8Array(await readFile(join(syntheticDir, 'minimal.tga')))
-  return { model, skin }
+function payloads(): { readonly model: Uint8Array; readonly skin: Uint8Array } {
+  return { model: MODEL_BYTES, skin: TEXTURE_BYTES }
 }
 
 let services: SubjectServices | undefined
@@ -175,7 +154,7 @@ let services: SubjectServices | undefined
 async function nestedServices(): Promise<SubjectServices> {
   if (services !== undefined) return services
   const inputs = await Promise.all(
-    [bigExtension, nestedExtension].map(async directory => ({
+    [archiveExtension, nestedExtension].map(async directory => ({
       ...(await loadExtensionDirectory(directory)),
       execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
     })),
@@ -201,13 +180,13 @@ async function nestedServices(): Promise<SubjectServices> {
 }
 
 /** Opens the archive itself as a subject — the parent every nested open starts from. */
-async function openArchive(entries: readonly BigEntryInput[]): Promise<AssetSession> {
+async function openArchive(entries: readonly ZipEntryInput[]): Promise<AssetSession> {
   const subjects = await nestedServices()
-  const archive = buildBig(entries)
+  const archive = buildZip(entries)
   const result = await openSubject({
     inventory: subjects.inventory,
-    source: byteSource(archive, 'fixture.big'),
-    path: 'fixture.big',
+    source: byteSource(archive, 'fixture.zip'),
+    path: 'fixture.zip',
     intent: 'full',
     target,
     grant,
@@ -215,20 +194,20 @@ async function openArchive(entries: readonly BigEntryInput[]): Promise<AssetSess
     executionBackends: subjects.executionBackends,
   })
   if (result.state !== 'opened') {
-    throw new Error(`the BIG fixture did not open: ${JSON.stringify(result.diagnostics)}`)
+    throw new Error(`the ZIP fixture did not open: ${JSON.stringify(result.diagnostics)}`)
   }
-  expect(result.selected.contributionId).toBe('org.modkitx/big')
+  expect(result.selected.contributionId).toBe('org.modkitx/archive-zip')
   return result.session
 }
 
-async function standardEntries(): Promise<readonly BigEntryInput[]> {
-  const { model: modelBytes, skin: skinBytes } = await payloads()
+async function standardEntries(): Promise<readonly ZipEntryInput[]> {
+  const { model: modelBytes, skin: skinBytes } = payloads()
   return [
-    { path: 'data/editor/molds/bowl.w3d', bytes: modelBytes },
-    // the companion arrives RefPack-compressed: its bytes only match if the container decompressed
-    { path: 'art/textures/bowl.tga', bytes: skinBytes, compress: true },
-    { path: 'art/textures/other.tga', bytes: skinBytes },
-    { path: 'data/editor/props/lamp.w3d', bytes: modelBytes },
+    { path: 'assets/models/cube.mesh', bytes: modelBytes },
+    // The companion is deflated so byte equality proves the common container decoded it.
+    { path: 'assets/textures/cube.texture', bytes: skinBytes, compress: true },
+    { path: 'assets/textures/other.texture', bytes: skinBytes },
+    { path: 'assets/props/lamp.mesh', bytes: modelBytes },
   ]
 }
 
@@ -314,7 +293,7 @@ const requirement = (scopes: readonly string[], cardinality: 'one' | 'many') =>
     id: 'skin',
     role: 'texture',
     ownership: 'companion',
-    patterns: ['bowl.tga'],
+    patterns: ['cube.texture'],
     scopes,
     cardinality,
     required: cardinality === 'one',
@@ -336,15 +315,15 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------------------------
 
 describe('a container entry opens as its own subject, with companions from the same container', () => {
-  it('binds the RefPack texture beside the model and hands the codec byte-exact bytes', async () => {
+  it('binds the deflated texture beside the mesh and hands the codec byte-exact bytes', async () => {
     const archive = await openArchive(await standardEntries())
     openSessions.push(archive)
-    const { skin: skinBytes } = await payloads()
+    const { skin: skinBytes } = payloads()
     const subjects = await nestedServices()
 
     const { result, entry } = await openNestedSubject({
       parent: archive,
-      entryId: await entryIdOf(archive, 'data/editor/molds/bowl.w3d'),
+      entryId: await entryIdOf(archive, 'assets/models/cube.mesh'),
       inventory: subjects.inventory,
       executionBackends: subjects.executionBackends,
       target,
@@ -352,7 +331,7 @@ describe('a container entry opens as its own subject, with companions from the s
       budget,
     })
 
-    expect(entry.path).toBe('data/editor/molds/bowl.w3d')
+    expect(entry.path).toBe('assets/models/cube.mesh')
     if (result.state !== 'opened') throw new Error(JSON.stringify(result.diagnostics))
     expect(result.selected.contributionId).toBe('org.example/nested-required')
 
@@ -365,11 +344,11 @@ describe('a container entry opens as its own subject, with companions from the s
       readonly boundBindingIds: readonly string[]
       readonly skinSource: readonly string[]
     }
-    // byte-exact through the container's RefPack decoder, and nowhere else
+    // byte-exact through the container's deflate decoder, and nowhere else
     expect(summary.skin).toEqual(Array.from(skinBytes))
-    expect(summary.boundBindingIds).toEqual(['skin#art/textures/bowl.tga'])
+    expect(summary.boundBindingIds).toEqual(['skin#assets/textures/cube.texture'])
     // the codec reports the reference the host bound; it never built that URI
-    expect(summary.skinSource[0]).toMatch(/^big-entry:/u)
+    expect(summary.skinSource[0]).toMatch(/^zip-entry:/u)
 
     await result.session.dispose()
   })
@@ -397,10 +376,10 @@ describe('a container entry opens as its own subject, with companions from the s
 
     const archive = await openArchive(await standardEntries())
     openSessions.push(archive)
-    const { skin: skinBytes } = await payloads()
+    const { skin: skinBytes } = payloads()
     const { origin, counters, release, extracted } = await originOver(
       archive,
-      'data/editor/molds/bowl.w3d',
+      'assets/models/cube.mesh',
     )
     try {
       const input = await createCompanionInputResolver(origin)({
@@ -435,7 +414,7 @@ describe('a container entry opens as its own subject, with companions from the s
        * this very archive — is refused, so knowing the archive's contents buys no access to them.
        */
       const beforeForging = [...extracted]
-      expect(await codeOf(() => input.openBinding('skin#art/textures/other.tga'))).toBe(
+      expect(await codeOf(() => input.openBinding('skin#assets/textures/other.texture'))).toBe(
         'x3.host/unknown-asset-input-binding',
       )
       expect(await codeOf(() => input.openBinding('skin#../../etc/passwd'))).toBe(
@@ -449,17 +428,17 @@ describe('a container entry opens as its own subject, with companions from the s
   })
 
   it('refuses the nested open when the required texture is absent, and releases the container', async () => {
-    const { model: modelBytes, skin: skinBytes } = await payloads()
+    const { model: modelBytes, skin: skinBytes } = payloads()
     const archive = await openArchive([
-      { path: 'data/editor/molds/bowl.w3d', bytes: modelBytes },
-      { path: 'art/textures/other.tga', bytes: skinBytes, compress: true },
+      { path: 'assets/models/cube.mesh', bytes: modelBytes },
+      { path: 'assets/textures/other.texture', bytes: skinBytes, compress: true },
     ])
     openSessions.push(archive)
     const subjects = await nestedServices()
 
     const { result } = await openNestedSubject({
       parent: archive,
-      entryId: await entryIdOf(archive, 'data/editor/molds/bowl.w3d'),
+      entryId: await entryIdOf(archive, 'assets/models/cube.mesh'),
       inventory: subjects.inventory,
       executionBackends: subjects.executionBackends,
       target,
@@ -482,19 +461,19 @@ describe('a container entry opens as its own subject, with companions from the s
   })
 
   it('refuses to choose between two entries that share the declared name', async () => {
-    const { model: modelBytes, skin: skinBytes } = await payloads()
+    const { model: modelBytes, skin: skinBytes } = payloads()
     const archive = await openArchive([
-      { path: 'data/editor/molds/bowl.w3d', bytes: modelBytes },
-      { path: 'art/textures/bowl.tga', bytes: skinBytes, compress: true },
+      { path: 'assets/models/cube.mesh', bytes: modelBytes },
+      { path: 'assets/textures/cube.texture', bytes: skinBytes, compress: true },
       // a second entry with the same name filed under another folder: two candidates, one slot
-      { path: 'art/textures/decoy/bowl.tga', bytes: skinBytes },
+      { path: 'assets/textures/decoy/cube.texture', bytes: skinBytes },
     ])
     openSessions.push(archive)
     const subjects = await nestedServices()
 
     const { result } = await openNestedSubject({
       parent: archive,
-      entryId: await entryIdOf(archive, 'data/editor/molds/bowl.w3d'),
+      entryId: await entryIdOf(archive, 'assets/models/cube.mesh'),
       inventory: subjects.inventory,
       executionBackends: subjects.executionBackends,
       target,
@@ -507,10 +486,10 @@ describe('a container entry opens as its own subject, with companions from the s
   })
 
   it('opens the optional variant without its texture and names the capability unavailable', async () => {
-    const { model: modelBytes, skin: skinBytes } = await payloads()
+    const { model: modelBytes, skin: skinBytes } = payloads()
     const archive = await openArchive([
-      { path: 'data/editor/props/lamp.w3d', bytes: modelBytes },
-      { path: 'art/textures/other.tga', bytes: skinBytes },
+      { path: 'assets/props/lamp.mesh', bytes: modelBytes },
+      { path: 'assets/textures/other.texture', bytes: skinBytes },
     ])
     openSessions.push(archive)
     const subjects = await nestedServices()
@@ -518,7 +497,7 @@ describe('a container entry opens as its own subject, with companions from the s
 
     const { result } = await openNestedSubject({
       parent: archive,
-      entryId: await entryIdOf(archive, 'data/editor/props/lamp.w3d'),
+      entryId: await entryIdOf(archive, 'assets/props/lamp.mesh'),
       inventory: subjects.inventory,
       executionBackends: subjects.executionBackends,
       target,
@@ -541,7 +520,7 @@ describe('a container entry opens as its own subject, with companions from the s
     const archive = await openArchive(await standardEntries())
     openSessions.push(archive)
     const subjects = await nestedServices()
-    const entryId = await entryIdOf(archive, 'data/editor/molds/bowl.w3d')
+    const entryId = await entryIdOf(archive, 'assets/models/cube.mesh')
     const { result } = await openNestedSubject({
       parent: archive,
       entryId,
@@ -554,7 +533,7 @@ describe('a container entry opens as its own subject, with companions from the s
     if (result.state !== 'opened') throw new Error('setup: the nested model did not open')
     openSessions.push(result.session)
 
-    // the nested W3D subject publishes neither an entry listing nor container.extract
+    // the nested mesh subject publishes neither an entry listing nor container.extract
     expect(
       await codeOf(() =>
         openNestedSubject({
@@ -574,7 +553,7 @@ describe('a container entry opens as its own subject, with companions from the s
     const archive = await openArchive(await standardEntries())
     openSessions.push(archive)
     const subjects = await nestedServices()
-    const entryId = await entryIdOf(archive, 'data/editor/molds/bowl.w3d')
+    const entryId = await entryIdOf(archive, 'assets/models/cube.mesh')
     const operations = archive.operations()
     const refusing: AssetSession = Object.freeze({
       ...archive,
@@ -606,105 +585,6 @@ describe('a container entry opens as its own subject, with companions from the s
       ),
     ).toBe(NESTED_ENTRY_UNREADABLE)
   })
-})
-
-describe('the same route on a real shipped archive', () => {
-  /**
-   * Kane's Wrath root, under its precise name.
-   *
-   * MODKITX_CNC3_ROOT named the engine, not the dialect, and the two SAGE corpora need separate
-   * roots — so the exact name wins and the old one is read only when the new one is unset, with a
-   * warning. A silent fallback would let a machine keep running on the deprecated name forever.
-   */
-  function kanesWrathRoot(): string | undefined {
-    const exact = process.env['MODKITX_CNC3_KW_ROOT']?.trim()
-    if (exact !== undefined && exact !== '') return exact
-    const alias = process.env['MODKITX_CNC3_ROOT']?.trim()
-    if (alias === undefined || alias === '') return undefined
-    console.warn(
-      'deprecated alias MODKITX_CNC3_ROOT used for MODKITX_CNC3_KW_ROOT; set MODKITX_CNC3_KW_ROOT instead',
-    )
-    return alias
-  }
-  const cncRoot = kanesWrathRoot()
-  const archivePath = 'Core/1.0/Misc.big'
-  const entryPath = 'data/editor/molds/bowl.w3d'
-
-  /*
-   * A synthetic BIG proves the route; a shipped one proves the route survives a real index — tens
-   * of thousands of entries, real paths, real RefPack payloads. The inventory here is the shipping
-   * one (EA BIG + EA models), so the entry is decoded by the codec a user would actually get.
-   */
-  it.skipIf(cncRoot === undefined)(
-    `opens ${entryPath} out of ${archivePath} as its own subject`,
-    async () => {
-      if (cncRoot === undefined) throw new TypeError('MODKITX_CNC3_KW_ROOT is not set')
-      const inputs = await Promise.all(
-        [
-          ['ea', 'big'],
-          ['ea', 'models'],
-        ].map(async parts => ({
-          ...(await loadExtensionDirectory(productExtensionDirectory(repoRoot, parts))),
-          execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
-        })),
-      )
-      const inventory = await buildInventory(inputs, createHostContributionContractRegistry())
-      const backends = createExecutionBackendRegistry([
-        {
-          profile: 'trusted-in-process',
-          supports: (_target, variant) => variant.executionProfile === 'trusted-in-process',
-          async activate(context) {
-            return {
-              module: (await import(context.entrypoint.href)) as Record<string, unknown>,
-              release: async () => undefined,
-            }
-          },
-        },
-      ])
-      const liveBudget: ResourceBudget = {
-        maxInputBytes: 64_000_000n,
-        maxDepth: 128,
-        maxNodes: 200_000,
-        maxScalarBytes: 16_000_000,
-        maxDiagnostics: 100,
-      }
-      const archiveFile = join(cncRoot, ...archivePath.split('/'))
-      const opened = await openSubject({
-        inventory,
-        source: await openFileArtifactSource(archiveFile),
-        path: archiveFile,
-        intent: 'full',
-        target,
-        grant,
-        budget: liveBudget,
-        executionBackends: backends,
-      })
-      if (opened.state !== 'opened') throw new Error(JSON.stringify(opened.diagnostics))
-      expect(opened.selected.contributionId).toBe('org.modkitx/big')
-      openSessions.push(opened.session)
-
-      const entryId = await entryIdOf(opened.session, entryPath)
-      const { result, entry } = await openNestedSubject({
-        parent: opened.session,
-        entryId,
-        inventory,
-        executionBackends: backends,
-        target,
-        grant,
-        budget: liveBudget,
-      })
-      expect(entry.path).toBe(entryPath)
-      if (result.state !== 'opened') throw new Error(JSON.stringify(result.diagnostics))
-      // the shipping W3D codec, decoding an entry it never had to find or extract itself
-      expect(result.selected.contributionId).toBe('org.modkitx/westwood-w3d')
-      const descriptor = result.descriptor as unknown as {
-        readonly traits: readonly { readonly id: string }[]
-      }
-      expect(descriptor.traits.map(trait => trait.id)).toContain('model.geometry')
-      await result.session.dispose()
-    },
-    120_000,
-  )
 })
 
 describe('the container lease the route retains is released exactly once, on every path', () => {
@@ -761,7 +641,7 @@ describe('the container lease the route retains is released exactly once, on eve
   }
 
   async function nestedOver(
-    entries: readonly BigEntryInput[],
+    entries: readonly ZipEntryInput[],
     entryPath: string,
   ): Promise<{
     readonly counted: ReturnType<typeof countedParent>
@@ -784,10 +664,7 @@ describe('the container lease the route retains is released exactly once, on eve
   }
 
   it('holds the container while the child lives and gives it back on dispose', async () => {
-    const { counted, nested } = await nestedOver(
-      await standardEntries(),
-      'data/editor/molds/bowl.w3d',
-    )
+    const { counted, nested } = await nestedOver(await standardEntries(), 'assets/models/cube.mesh')
     if (nested.result.state !== 'opened') throw new Error('the nested model did not open')
 
     // still held: the child is alive and its companion is reachable through the container
@@ -805,27 +682,27 @@ describe('the container lease the route retains is released exactly once, on eve
   it.each([
     [
       'a required companion is missing',
-      async (): Promise<readonly BigEntryInput[]> => {
-        const { model: modelBytes, skin: skinBytes } = await payloads()
+      async (): Promise<readonly ZipEntryInput[]> => {
+        const { model: modelBytes, skin: skinBytes } = payloads()
         return [
-          { path: 'data/editor/molds/bowl.w3d', bytes: modelBytes },
-          { path: 'art/textures/other.tga', bytes: skinBytes, compress: true },
+          { path: 'assets/models/cube.mesh', bytes: modelBytes },
+          { path: 'assets/textures/other.texture', bytes: skinBytes, compress: true },
         ]
       },
     ],
     [
       'two candidates claim one slot',
-      async (): Promise<readonly BigEntryInput[]> => {
-        const { model: modelBytes, skin: skinBytes } = await payloads()
+      async (): Promise<readonly ZipEntryInput[]> => {
+        const { model: modelBytes, skin: skinBytes } = payloads()
         return [
-          { path: 'data/editor/molds/bowl.w3d', bytes: modelBytes },
-          { path: 'art/textures/bowl.tga', bytes: skinBytes, compress: true },
-          { path: 'art/textures/decoy/bowl.tga', bytes: skinBytes },
+          { path: 'assets/models/cube.mesh', bytes: modelBytes },
+          { path: 'assets/textures/cube.texture', bytes: skinBytes, compress: true },
+          { path: 'assets/textures/decoy/cube.texture', bytes: skinBytes },
         ]
       },
     ],
   ])('gives the container back when %s', async (_label, entries) => {
-    const { counted, nested } = await nestedOver(await entries(), 'data/editor/molds/bowl.w3d')
+    const { counted, nested } = await nestedOver(await entries(), 'assets/models/cube.mesh')
     expect(nested.result.state).toBe('unresolved')
     // nothing is left holding the archive: the failed child released what it took, before returning
     expect(counted.acquired()).toBe(1)
@@ -840,7 +717,7 @@ describe('the archive origin serves the scopes an entry actually has', () => {
     async scope => {
       const archive = await openArchive(await standardEntries())
       openSessions.push(archive)
-      const { origin, counters, release } = await originOver(archive, 'data/editor/molds/bowl.w3d')
+      const { origin, counters, release } = await originOver(archive, 'assets/models/cube.mesh')
       try {
         const input = await createCompanionInputResolver(origin)({
           source: byteSource(new Uint8Array([0, 0, 0, 0]), 'entry'),
@@ -854,7 +731,7 @@ describe('the archive origin serves the scopes an entry actually has', () => {
         })
         if (input.originKind === 'derived') throw new Error('unexpected derived input')
         expect(input.bindingsFor('skin').map(item => item.bindingId)).toEqual([
-          'skin#art/textures/bowl.tga',
+          'skin#assets/textures/cube.texture',
         ])
         expect(counters.opens).toBe(counters.releases)
         expect(counters.doubleRelease).toBe(false)
@@ -867,7 +744,7 @@ describe('the archive origin serves the scopes an entry actually has', () => {
   it('refuses sibling-directory for an entry that has no directory', async () => {
     const archive = await openArchive(await standardEntries())
     openSessions.push(archive)
-    const { origin, release } = await originOver(archive, 'data/editor/molds/bowl.w3d')
+    const { origin, release } = await originOver(archive, 'assets/models/cube.mesh')
     try {
       const failing = () =>
         createCompanionInputResolver(origin)({
@@ -889,7 +766,7 @@ describe('the archive origin serves the scopes an entry actually has', () => {
   it('cancels mid-resolution and leaves no container lease behind', async () => {
     const archive = await openArchive(await standardEntries())
     openSessions.push(archive)
-    const { origin, counters, release } = await originOver(archive, 'data/editor/molds/bowl.w3d')
+    const { origin, counters, release } = await originOver(archive, 'assets/models/cube.mesh')
     try {
       const controller = new AbortController()
       const guarded = Object.freeze({

@@ -100,15 +100,14 @@ describe('Block 20 supported OS and host matrix', () => {
     expect(byId.get('electron')?.evidenceLevel).toBe('current-source-headless-composition')
     expect(byId.get('electron')?.notClaimed).toContain('a launched packaged Electron GUI')
 
-    const cliTest = readFileSync(resolve(repositoryRoot, 'apps/cli/test/cli.test.ts'), 'utf8')
-    const pwaTest = readFileSync(resolve(repositoryRoot, 'apps/web/test/boot.test.ts'), 'utf8')
-    const electronTest = readFileSync(
-      resolve(repositoryRoot, 'apps/electron/test/subject-open-smoke.test.ts'),
+    const applicationMatrixTest = readFileSync(
+      resolve(repositoryRoot, 'apps/automation-host/test/product-ga-app-matrix.test.ts'),
       'utf8',
     )
-    expect(cliTest).toContain('spawnSync(process.execPath')
+    const pwaTest = readFileSync(resolve(repositoryRoot, 'apps/web/test/boot.test.ts'), 'utf8')
+    expect(applicationMatrixTest).toContain('spawnSync(process.execPath')
     expect(pwaTest).toContain('chromium.launch')
-    expect(electronTest).toContain('opened headlessly')
+    expect(applicationMatrixTest).toContain('createElectronSubjectServices([images])')
 
     const vscodeReceipt = JSON.parse(
       readFileSync(resolve(repositoryRoot, 'reports/vscode-smoke/receipt.json'), 'utf8'),

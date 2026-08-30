@@ -14,7 +14,7 @@
  * field that no publisher can fill.
  *
  * All five were declared at `publisher-candidate` maturity in slice 11C0. Slice 12-1 admitted four
- * after independent publishers exercised their shapes; skeleton followed only when the Blizzard
+ * after independent publishers exercised their shapes; skeleton followed only when a publisher
  * M3 reader decoded BONE bindings independently of the SAGE/Westwood W3D/W3X family.
  * `DATA_SOURCE_MATURITY` carries the verdict and reason. Declaring the contract first and migrating
  * publishers second was deliberate: it is the order that let the two be reviewed separately.

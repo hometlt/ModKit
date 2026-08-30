@@ -222,19 +222,7 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/sdk
 
-  extensions/common/data/plain-text:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../../packages/codec-kit
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../../../packages/sdk
-
-  extensions/common/data/text-delimited:
+  extensions/common/data/text-csv:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
@@ -263,24 +251,6 @@ importers:
       '@modkitx-x3/sdk':
         specifier: workspace:*
         version: link:../../../../packages/sdk
-
-  extensions/common/data/text-json:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../../packages/codec-kit
-      '@modkitx-x3/core':
-        specifier: workspace:*
-        version: link:../../../../packages/core
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../../../packages/sdk
-      jsonc-parser:
-        specifier: ^3.3.1
-        version: 3.3.1
 
   extensions/common/data/text-toml:
     dependencies:
@@ -423,198 +393,6 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/sdk
 
-  extensions/ea/archives:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/ea/big:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/ea/emperor:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/ea/models:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/ea/sage:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/ea/tiberian-sun:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/ea/westwood:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/adobe-flash:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/annihilation-gas-powered:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/audiokinetic-wwise:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/blizzard-common-formats:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/blizzard-diablo:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/blizzard-warcraft-3:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/cavedog-total-annihilation:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/epic-games-unreal-engine:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/firelight-fmod:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/microsoft-age-series:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/microsoft-halo-wars:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/new-world-computing-heroes-3:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/new-world-computing-heroes-4:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/opensource-spring:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/petroglyph-glyphx:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/rad-game-tools-video:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/realitypump-earth-2150:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/realitypump-earth2160:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/relic-essence:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/relic-models:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/stainless-steel-studios-empire-earth:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/ubisoft-heroes-6:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/uncommon-documents:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/mk2/unity-engine:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
-  extensions/opensource/spring:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-
   extensions/ps1:
     dependencies:
       '@modkitx-x3/codec-kit':
@@ -658,6 +436,9 @@ importers:
       es-module-lexer:
         specifier: ^1.7.0
         version: 1.7.0
+      jsonc-parser:
+        specifier: ^3.3.1
+        version: 3.3.1
 
   packages/sdk:
     dependencies:

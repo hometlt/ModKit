@@ -9,7 +9,7 @@ import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { externalRepositoryRoot } from '../lib/external-extension-roots.mjs'
+import { externalRepositoryRoot } from './lib/external-extension-roots.mjs'
 import ts from 'typescript'
 import { format, resolveConfig } from 'prettier'
 
@@ -892,10 +892,10 @@ const packagedCodecRoots = publicationInventory.packagedCodecRoots.length
 if (
   vscodeCatalog.schemaVersion !== 1 ||
   vscodeCatalog.rootCount !== cataloguedCoreRoots ||
-  cataloguedCoreRoots !== 18
+  cataloguedCoreRoots !== packagingBoundary.cataloguedCommonRoots
 ) {
   fail(
-    `VS Code catalog boundary must contain exactly 18 core roots; found ${String(vscodeCatalog.rootCount)}/${cataloguedCoreRoots}`,
+    `VS Code catalog boundary root count drifted; found ${String(vscodeCatalog.rootCount)}/${cataloguedCoreRoots}`,
   )
 }
 if (
@@ -910,7 +910,7 @@ if (
   packagingBoundary.reason.length < 20
 ) {
   fail(
-    'packagingBoundary must record an already-equivalent 18-root shell, 0 packaged codec roots, the accepted B+C topology, and no codec-bearing VSIX',
+    'packagingBoundary must record the already-equivalent deterministic shell, 0 packaged codec roots, the accepted B+C topology, and no codec-bearing VSIX',
   )
 }
 

@@ -5,7 +5,6 @@ import { basename, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
-import { productExtensionDirectory } from './lib/external-extension-roots.mjs'
 import { authoredExtensionRootsRelativeTo } from './lib/authored-extension-roots.mjs'
 
 const args = process.argv.slice(2)
@@ -61,17 +60,6 @@ if (explicitRoot) {
 }
 for (const key of Object.keys(ratchet.families)) {
   if (familySources.has(key)) continue
-  if (explicitRoot === undefined) {
-    // The authored workspace manifest owns legacy-family relocation. This keeps the ratchet
-    // neutral: moving Blizzard, Warzone or any future publisher out of the core repository does
-    // not require a hardcoded publisher list here, and a missing configured source remains a
-    // visible zero below.
-    const relocated = productExtensionDirectory(repoRoot, key.split('/'))
-    if (existsSync(relocated)) {
-      familySources.set(key, join(relocated, 'src'))
-      continue
-    }
-  }
   const groupRoot = groupRoots.get(key.slice(0, key.indexOf('/')))
   // A ratcheted family whose directory is gone still gets a row, and so a visible zero.
   familySources.set(key, groupRoot ? join(groupRoot, key.slice(key.indexOf('/') + 1), 'src') : '')
@@ -91,9 +79,11 @@ for (const entry of origins.codecs) {
   if (
     entry.origin !== 'authored' ||
     typeof entry.formerPath !== 'string' ||
-    !entry.formerPath.includes(`/src/formats/${entry.codec}/codec.js`) ||
+    (!entry.family.startsWith('core/native-') &&
+      !entry.formerPath.includes(`/src/formats/${entry.codec}/codec.js`)) ||
     typeof entry.currentPath !== 'string' ||
-    !entry.currentPath.endsWith(`/src/${entry.codec}/codec.js`)
+    (!entry.family.startsWith('core/native-') &&
+      !entry.currentPath.endsWith(`/src/${entry.codec}/codec.js`))
   ) {
     errors.push(`${key}: codec origin must preserve authored formerPath and flattened currentPath`)
   }
@@ -109,7 +99,14 @@ for (const entry of origins.codecs) {
 for (const family of familyNames) {
   const srcRoot = familySources.get(family)
   const codecDirectories = subdirectories(srcRoot)
-  let ported = 0
+  // Native Core capabilities have no extension `src/<codec>` root by design. Their authored
+  // origin receipts are the ratcheted live modules, so count those directly instead of inventing
+  // a compatibility extension directory.
+  let ported =
+    srcRoot === ''
+      ? origins.codecs.filter(entry => entry.family === family && entry.origin === 'authored')
+          .length
+      : 0
   let pending = 0
   for (const codec of codecDirectories) {
     const modulePath = join(srcRoot, codec, 'codec.js')

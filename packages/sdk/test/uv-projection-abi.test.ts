@@ -52,7 +52,7 @@ describe('a portable projection receipt cannot carry an ambient path', () => {
     form: 'local',
     adapter: { id: 'org.modkitx/m3-projector', version: '1.0.0' },
     subjectRevision: revisionId('provider-token:test-subject'),
-    sourceUri: 'file:///C:/Apps/StarCraft%20II/artifact1.m3',
+    sourceUri: 'file:///C:/Apps/ExampleGame%20II/artifact1.m3',
     companions: [],
     basis: { handedness: 'right', upAxis: 'y', forwardAxis: '-z', unit: 'meter' },
     planes: [{ planeId: 'geometry', state: 'normalized' }],
@@ -70,7 +70,7 @@ describe('a portable projection receipt cannot carry an ambient path', () => {
       JSON.stringify(portable, (_key, value) =>
         typeof value === 'bigint' ? String(value) : value,
       ),
-    ).not.toContain('StarCraft')
+    ).not.toContain('ExampleGame')
     // everything that is not machine-local survives untouched
     expect(portable.planes).toEqual(local.planes)
     expect(portable.evidence).toEqual(local.evidence)
@@ -87,7 +87,7 @@ describe('a portable projection receipt cannot carry an ambient path', () => {
 
   it('leaves the local receipt alone', () => {
     toPortableProjectionReceipt(local, { kind: 'opaque', token: 'x' })
-    expect(local.sourceUri).toBe('file:///C:/Apps/StarCraft%20II/artifact1.m3')
+    expect(local.sourceUri).toBe('file:///C:/Apps/ExampleGame%20II/artifact1.m3')
   })
 })
 

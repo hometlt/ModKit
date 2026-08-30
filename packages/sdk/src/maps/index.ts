@@ -115,7 +115,7 @@ export interface MapPreviewHostResourceRoot {
 /** Maps one workspace root to a confined prefix inside the opened subject namespace. */
 export interface MapPreviewSubjectNamespaceRoot {
   readonly rootId: string
-  /** Empty explicitly means the namespace root (for example a standalone SC2 archive). */
+  /** Empty explicitly means the namespace root (for example a standalone map archive). */
   readonly namespacePrefix: string
 }
 
@@ -351,7 +351,7 @@ interface MapTerrainNativeTransformBase {
   }>
 }
 
-/** Exact SC2 native terrain mapping from one matching `t3Terrain.xml` and complete HMAP grid. */
+/** Exact quantized native terrain mapping from a terrain document and complete height grid. */
 export interface MapQuantizedTerrainNativeTransform extends MapTerrainNativeTransformBase {
   readonly source: Readonly<{
     readonly terrainDocumentPath: string
@@ -371,12 +371,12 @@ export interface MapQuantizedTerrainNativeTransform extends MapTerrainNativeTran
   }>
 }
 
-/** Exact direct-height terrain mapping, currently qualified against Warzone `game.map`. */
+/** Exact direct-height terrain mapping qualified by the contributing extension. */
 export interface MapDirectTerrainNativeTransform extends MapTerrainNativeTransformBase {
   readonly source: Readonly<{
     readonly terrainDocumentPath: string
-    readonly format: 'warzone-game-map'
-    readonly heightEncoding: 'uint8-times-2' | 'uint16-le'
+    readonly format: string
+    readonly heightEncoding: string
   }>
   readonly mapping: Readonly<{
     readonly horizontal: 'offset-plus-grid-index-times-scale'

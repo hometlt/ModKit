@@ -23,6 +23,8 @@ import {
   createExecutionBackendRegistry,
   createHostComposition,
   createSubjectServices,
+  linkedInProcessBackend,
+  NATIVE_TEXT_MODULES,
   registerServiceDefinitionsOrThrow,
   serviceDefinitionSurfaces,
   type ExtensionInput,
@@ -341,6 +343,9 @@ export async function createWebSubjectServices(
     verifiedModuleRoots,
   })
   const executionBackends = createExecutionBackendRegistry([
+    // Plain text and JSON are Core code, not user-installed extensions, so they may execute in
+    // the page process while all external artifacts remain worker-only below.
+    linkedInProcessBackend(NATIVE_TEXT_MODULES),
     createBrowserWorkerBackend({
       realm: createDomWorkerRealmFactory({
         workerUrl: options.workerUrl ?? new URL(WEB_WORKER_ENTRY, options.baseUrl).href,

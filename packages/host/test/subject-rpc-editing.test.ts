@@ -17,7 +17,6 @@ import {
   createRawWriter,
   createSubjectEditing,
   exposeSubjectRpc,
-  type ExtensionInput,
   type SubjectEditing,
   type SubjectRpcClient,
 } from '@modkitx-x3/host'
@@ -26,15 +25,11 @@ import {
   createFileEditingBackend,
   createNodeSubjectServices,
   createPathSubjectOpener,
-  loadExtensionDirectory,
   nodeRuntimeTargetBase,
   nodeWorkerLinks,
   nodeWorkerRealmProfile,
   workerBackendPolicy,
 } from '@modkitx-x3/host/node'
-
-const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const textJsonDir = join(repoRoot, 'extensions', 'common', 'data', 'text-json')
 
 const HOST = 'org.example.app/host'
 const WORKERS = 'org.example.app/workers'
@@ -88,14 +83,10 @@ async function servingPair(options: { readonly editable: boolean }): Promise<{
   client: SubjectRpcClient
   path: string
 }> {
-  const input: ExtensionInput = {
-    ...(await loadExtensionDirectory(textJsonDir)),
-    execution: { origin: 'linked', allowTrustedInProcess: false },
-  }
   const subjects = await createNodeSubjectServices({
     topology,
     realms: { host: HOST, workers: WORKERS },
-    extensions: [input],
+    extensions: [],
     policy: workerBackendPolicy({ loadDeadlineMs: 15_000, defaultCallDeadlineMs: 15_000 }),
   })
   const path = join(scratch, `doc-${options.editable ? 'rw' : 'ro'}.json`)

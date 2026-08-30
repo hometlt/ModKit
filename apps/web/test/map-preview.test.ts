@@ -18,7 +18,7 @@ const budget = {
 function opened(dispose: () => Promise<void>): OpenedSubject {
   return {
     state: 'opened',
-    descriptor: { subjectUri: 'memory://map.sc2map' },
+    descriptor: { subjectUri: 'memory://map.samplemap' },
     session: { dispose },
     selected: { contributionId: 'archive', variantId: 'main', confidence: 1 },
     candidates: [],

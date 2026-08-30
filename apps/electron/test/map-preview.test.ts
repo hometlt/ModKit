@@ -77,7 +77,7 @@ describe('Electron map preview binding', () => {
   it('carries a chosen candidate into the second open and releases the first session first', async () => {
     const events: string[] = []
     const reopened = await continueElectronMapPreviewSelection({
-      path: 'C:\\Games\\Warzone 2100\\mp.wz',
+      path: 'C:\\Games\\Example Game Beta\\mp.wz',
       selectionId: 'map:2c-highground',
       dispose: async () => void events.push('dispose:first'),
       open: async request => {
@@ -88,7 +88,7 @@ describe('Electron map preview binding', () => {
 
     expect(events).toEqual(['dispose:first', 'open:second'])
     expect(reopened).toEqual({
-      path: 'C:\\Games\\Warzone 2100\\mp.wz',
+      path: 'C:\\Games\\Example Game Beta\\mp.wz',
       selectionId: 'map:2c-highground',
     })
     expect(electronMapPreviewSelectionRequest({ path: 'map.wz', selectionId: 'chosen' })).toMatch(

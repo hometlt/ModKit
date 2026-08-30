@@ -446,7 +446,7 @@ describe('12-3 UVW candidate — materialize a synthetic projection and reopen i
       upAxis: 'y',
       forwardAxis: '+z',
       unit: 'source-unit',
-      sourceUnit: 'sc2-game-unit',
+      sourceUnit: 'publisher-game-unit',
       unitsPerCell: 1,
     },
     bounds: { min: [0, -1, 0], max: [8, 5, 8] },

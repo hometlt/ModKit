@@ -4,8 +4,7 @@
  * The subjects are opened the way the page opens them — the attested catalog, the served artifacts,
  * the production worker entry in a fake module Worker — so the stage list is asserted against what
  * the codecs actually publish, not against a hand-written descriptor. The one synthetic descriptor
- * is the JSON case, which the browser catalog deliberately excludes (`jsonc-parser` is not vendored
- * for the worker), and it is asserted as a descriptor shape rather than pretended to be a codec.
+ * JSON is native Core functionality; the synthetic case below isolates presentation policy.
  */
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -64,7 +63,7 @@ async function stageIdsFor(
     grant: { id: 'pwa-views', classes: ['read-source'] },
     budget,
   })
-  if (result.state !== 'opened') throw new Error(`${name} did not open: ${result.reason}`)
+  if (result.state !== 'opened') throw new Error(`${name} did not open: ${JSON.stringify(result)}`)
   const descriptor = await result.session.descriptor()
   const ids = applicableStages(stages, descriptor).map(stageIdOf)
   await result.session.dispose()
@@ -196,8 +195,7 @@ describe('web preview policy', () => {
   }, 30_000)
 
   it('a JSON-shaped descriptor resolves text, tree and table as applicable', () => {
-    // `text-json` is listed `excluded` for the browser, so this is asserted as a descriptor shape.
-    expect(WEB_EXTENSION_CATALOG.excluded.map(entry => entry.name)).toContain('text-json')
+    expect(WEB_EXTENSION_CATALOG.excluded.map(entry => entry.name)).not.toContain('text-json')
 
     const treeShaped = syntheticDescriptor(
       [

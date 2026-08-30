@@ -6,7 +6,7 @@
  * does not, is the difference fully enumerated rather than glossed over?
  *
  * It lives in the testkit rather than inside one test file on purpose. Block 17 runs the same
- * harness against Spring/Recoil S3O and Warzone PIE projections, and a harness that had to be
+ * harness against independent publisher projections, and a harness that had to be
  * copied to be reused would have drifted by then.
  *
  * **Where the truth comes from.** The scope, the canonical form and the artifact reader are the

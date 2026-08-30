@@ -4,10 +4,10 @@
   "generator": "scripts/migration/emit-vscode-workflow-ledger.mjs",
   "inputs": {
     "sourceInventorySha256": "efc7c81a2686d55e40734ac4cf1b3bc0bf0de5a9d33b0609291ec1c6480a11cd",
-    "decisionsSha256": "7ebca7475ad21b951b092cea9297fad2cd209d96ac818f51646d498dea230a69",
-    "vscodeManifestSha256": "e71f2a2abb57adeb1b6ee3f10bddb9db18d3b7402bb0cf29857a20facb9de1d3",
+    "decisionsSha256": "6d03f7aaf092c2450158cb77175e646f1ca81bc6b4484d2588dcef0da745c795",
+    "vscodeManifestSha256": "f89a4c04a539ae8dfce6fa0f2a513161bf04c958a43494145376e869d496b53c",
     "vscodeExtensionSourceSha256": "b08c181a65d90659103c6595431e436cc137d05088630500ac76e8e231b2cfc1",
-    "vscodeCatalogSha256": "15ea03f7087487d560db200ef77d9b8a9c8846510cecb7186c72e79e4688edbb",
+    "vscodeCatalogSha256": "30fdb94d9d2805643d897f6560d18723d934caf8b94d083a99a077e1d58c43cd",
     "vscodePublicationInventorySha256": "15a59d6ff3932cf1d43eb7ae05b8117c4a4ed60828d11acaefabdd2fc09ff901",
     "sharedCommandTargetsSha256": "90b0fa05560139670ebb3050207428349f118f8b4cc8cbde956ebaf30b27d09a"
   },
@@ -30,7 +30,7 @@
     "byDisposition": { "already-equivalent": 204, "release-candidate": 0, "post-release": 62 },
     "decisionRequired": 0,
     "releaseCandidateGaps": 0,
-    "currentX3ObservedFacts": 39
+    "currentX3ObservedFacts": 33
   },
   "surfaceComparison": {
     "legacyVsCode": { "commands": 64, "customEditors": 11, "languages": 8, "views": 6 },
@@ -40,7 +40,7 @@
       "customEditors": 1,
       "fileSystemSchemes": 1,
       "keybindings": 0,
-      "languages": 6,
+      "languages": 0,
       "menus": 0,
       "runtimeOnlyCommands": 1,
       "viewContainers": 1,
@@ -363,60 +363,6 @@
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-language:galaxy",
-      "sourceFactSha256": "fa2e9904fcf21af4cb912c5b9038c5a3582244bb2fb4dc6999f94afbfacda78d",
-      "kind": "vscode-language",
-      "key": "galaxy",
-      "source": "contributes.languages[0]",
-      "workflowId": "vscode/authoring-language-data-launch",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-language:ini",
-      "sourceFactSha256": "aeb84fa14dab3ff1d185dee5ed8ef77b5b0d0366af3e5c17b670e75af61115f0",
-      "kind": "vscode-language",
-      "key": "ini",
-      "source": "contributes.languages[1]",
-      "workflowId": "vscode/authoring-language-data-launch",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-language:sc2layout",
-      "sourceFactSha256": "4364c843a35a6928b007f82bf81209258fafb70d616052174c885b1ccfbd917d",
-      "kind": "vscode-language",
-      "key": "sc2layout",
-      "source": "contributes.languages[2]",
-      "workflowId": "vscode/authoring-language-data-launch",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-language:sc2strings",
-      "sourceFactSha256": "8560d6876a1ee175614cf867f9c85114a5f71b94b1e621d359992cc2d35832c6",
-      "kind": "vscode-language",
-      "key": "sc2strings",
-      "source": "contributes.languages[3]",
-      "workflowId": "vscode/authoring-language-data-launch",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-language:sc2style",
-      "sourceFactSha256": "96781784efe72ae0a5cd68a8ddf5242f5c5e12bb3628e0d0c0b7bc8042cdd6b2",
-      "kind": "vscode-language",
-      "key": "sc2style",
-      "source": "contributes.languages[4]",
-      "workflowId": "vscode/authoring-language-data-launch",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-language:xml",
-      "sourceFactSha256": "409d5666b568767ba516965b017d407bc591b0ce42c6eb3b56b133d78dbfa630",
-      "kind": "vscode-language",
-      "key": "xml",
-      "source": "contributes.languages[5]",
-      "workflowId": "vscode/authoring-language-data-launch",
-      "state": "observed-only"
-    },
-    {
       "factId": "x3:vscode-runtime-only-command:modkit.openResource",
       "sourceFactSha256": "63d95e91af4c1b6f5e626ccfec6e4b28214d492241fcc58149d4edc8740529b7",
       "kind": "vscode-runtime-only-command",
@@ -517,11 +463,11 @@
   "packagingBoundary": {
     "state": "already-equivalent",
     "ownerBlockerId": null,
-    "cataloguedCommonRoots": 18,
+    "cataloguedCommonRoots": 16,
     "packagedCodecRoots": 0,
     "deterministicShellArtifact": true,
     "provenVsixCodecArtifact": false,
-    "reason": "The accepted B plus C topology deliberately keeps the deterministic VSIX as an 18-root common shell and installs the Common, SC2 and Warzone codec artifacts separately through the signed local RC.",
+    "reason": "The accepted B plus C topology keeps the deterministic VSIX as a 16-root common shell; plain text and JSON are native Core capabilities, while publisher codecs install separately through extension management.",
     "publicationArtifactKind": "deterministic-shell",
     "publicationShellEntryCount": 5
   },
@@ -862,7 +808,9 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
-        "evidence": ["apps/cli/test/cli.test.ts"],
+        "evidence": [
+          "migration/history/externalization/former-core-tests/apps/cli/test/cli.test.ts"
+        ],
         "reason": "project.validate checks every focused project file through subject.validate, emits deterministic per-file protocol receipts and fails closed on unclaimed inputs."
       }
     },
@@ -925,7 +873,9 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
-        "evidence": ["packages/host/test/language.test.ts"],
+        "evidence": [
+          "migration/history/externalization/former-core-tests/packages/host/test/language.test.ts"
+        ],
         "reason": "The shared CLI validates a positive Galaxy source through subject.validate and emits a stable modkit-command-protocol-1 receipt."
       }
     },
@@ -945,7 +895,9 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
-        "evidence": ["packages/host/test/language.test.ts"],
+        "evidence": [
+          "migration/history/externalization/former-core-tests/packages/host/test/language.test.ts"
+        ],
         "reason": "The shared CLI validates a positive Galaxy source through subject.validate and emits a stable modkit-command-protocol-1 receipt."
       }
     },
@@ -965,7 +917,9 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
-        "evidence": ["apps/cli/test/cli.test.ts"],
+        "evidence": [
+          "migration/history/externalization/former-core-tests/apps/cli/test/cli.test.ts"
+        ],
         "reason": "The shared CLI runs subject.convert for a PNG and exports deterministic decoded rgba8 bytes with a machine-readable receipt."
       }
     },
@@ -985,7 +939,9 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
-        "evidence": ["apps/cli/test/cli.test.ts"],
+        "evidence": [
+          "migration/history/externalization/former-core-tests/apps/cli/test/cli.test.ts"
+        ],
         "reason": "The shared CLI runs subject.convert for a PNG and exports deterministic decoded rgba8 bytes with a machine-readable receipt."
       }
     },
@@ -1005,7 +961,9 @@
         "owner": "modkit-program-owner",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "gapId": null,
-        "evidence": ["apps/cli/test/cli.test.ts"],
+        "evidence": [
+          "migration/history/externalization/former-core-tests/apps/cli/test/cli.test.ts"
+        ],
         "reason": "The shared CLI runs subject.convert for a PNG and exports deterministic decoded rgba8 bytes with a machine-readable receipt."
       }
     },
@@ -1668,9 +1626,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -1692,9 +1650,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -1739,9 +1697,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -1901,9 +1859,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -1965,9 +1923,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -2179,9 +2137,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -2223,9 +2181,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -2270,9 +2228,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -2294,9 +2252,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -2318,9 +2276,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -2407,9 +2365,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -2431,9 +2389,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -2455,9 +2413,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -2479,9 +2437,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -2504,7 +2462,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2527,7 +2485,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2550,7 +2508,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2673,7 +2631,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2756,7 +2714,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2779,7 +2737,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2822,7 +2780,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2845,7 +2803,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2868,7 +2826,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2891,7 +2849,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2914,7 +2872,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2937,7 +2895,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2960,7 +2918,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -2983,7 +2941,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3006,7 +2964,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3029,7 +2987,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3052,7 +3010,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3075,7 +3033,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3098,7 +3056,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3121,7 +3079,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3144,7 +3102,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3507,7 +3465,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3530,7 +3488,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3853,7 +3811,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3896,7 +3854,7 @@
         "gapId": null,
         "evidence": [
           "apps/vscode/test/settings.test.ts",
-          "apps/vscode/test/priority-settings.test.ts"
+          "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
         ],
         "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
       }
@@ -3941,9 +3899,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -4008,9 +3966,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -4035,9 +3993,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -4062,9 +4020,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -4089,9 +4047,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -4179,9 +4137,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -4603,9 +4561,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -4627,9 +4585,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -4671,9 +4629,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -4695,9 +4653,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -4719,9 +4677,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -4763,9 +4721,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -4920,9 +4878,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -5131,9 +5089,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -5262,9 +5220,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -5289,9 +5247,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -5316,9 +5274,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -5343,9 +5301,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -5552,9 +5510,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -5683,9 +5641,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -5710,9 +5668,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -5737,9 +5695,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -5764,9 +5722,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -5999,9 +5957,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -6176,9 +6134,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -6926,9 +6884,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -6953,9 +6911,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }
@@ -6980,9 +6938,9 @@
         "replacementWorkflowId": "platform/apps/priority-workflows",
         "gapId": null,
         "evidence": [
-          "apps/vscode/test/sc2-authoring-workflows.test.ts",
+          "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
           "apps/vscode/test/game-launch-workflow.test.ts",
-          "packages/host/test/game-launch.test.ts"
+          "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
         ],
         "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
       }

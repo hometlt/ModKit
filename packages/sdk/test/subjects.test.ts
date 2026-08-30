@@ -26,10 +26,10 @@ describe('SubjectRef (MK3/25 §3)', () => {
 
     const marine = nestedSubject(
       rootSubject({ id: 'modkit-vfs://ws/' }),
-      'blizzard.sc2/unit',
+      'publisher-alpha.alpha/unit',
       'Marine',
     )
-    expect(serializeSubjectRef(marine)).toBe('modkit-vfs://ws/#blizzard.sc2%2Funit/Marine')
+    expect(serializeSubjectRef(marine)).toBe('modkit-vfs://ws/#publisher-alpha.alpha%2Funit/Marine')
 
     const roundTrip = parseSubjectRef(serializeSubjectRef(marine))
     expect(subjectRefEquals(roundTrip, marine)).toBe(true)

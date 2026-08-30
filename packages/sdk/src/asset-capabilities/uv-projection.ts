@@ -181,7 +181,7 @@ export interface ProjectionBasis {
   readonly unit: 'meter' | 'source-unit'
   /** Physical scale, when the source states or implies one. */
   readonly metersPerUnit?: number
-  /** The source's own unit name, preserved verbatim (`sc2-game-unit`, `elmo`, `inch`, …). */
+  /** The source's own unit name, preserved verbatim (`game-unit`, `world-unit`, `inch`, …). */
   readonly sourceUnit?: string
   /** Grid relationship an RTS source authored against, where the format carries it. */
   readonly unitsPerCell?: number

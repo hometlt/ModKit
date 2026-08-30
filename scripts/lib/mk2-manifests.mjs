@@ -118,7 +118,7 @@ export function operationIdVerdict(id, contributionId) {
   }
   if (id.startsWith(`${contributionId}.`) && SEGMENT.test(id.slice(contributionId.length + 1)))
     return { ok: true }
-  // codec-local verb with a bare prefix: `sc2-data.foo` of org.modkitx/sc2-data keeps its verb
+  // codec-local verb with a bare prefix: `sample-data.foo` of org.example/sample-data keeps its verb
   const localName = contributionId.slice(contributionId.indexOf('/') + 1)
   if (head === localName) return { ok: false, fix: `${contributionId}.${verb.replace(/\./g, '-')}` }
   return { ok: false, fix: `${contributionId}.${id.replace(/\./g, '-')}` }

@@ -18,9 +18,8 @@
  *    contracts then carry ODS into the CSV table viewer and ODG into the SVG vector viewer is
  *    proved where the viewers actually live: `apps/electron/test/odf-view-policy.test.ts`.
  *
- * The Node-worker (`portable` variant) conformance run lives in `mk2-acceptance.test.ts`, which
- * opens all four through the real host in a worker; browser-worker safety is checked here as the
- * property that makes it true — the sources reach for nothing Node-only.
+ * Shared Host suites own worker-realm execution; browser-worker safety is checked here as the
+ * property that makes it portable — the sources reach for nothing Node-only.
  */
 import { readFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'

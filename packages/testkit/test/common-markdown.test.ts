@@ -6,8 +6,7 @@
  *    by bounded structure plus the alias, not by extension alone;
  *  - preview is safe: nothing in the published surface executes or renders HTML or script — hostile
  *    markup survives as literal text and the codec declares no render operation at all;
- *  - the routing ambiguity with the staging contribution `org.modkitx/markdown` is gone: on every
- *    alias the MK3 route wins decisively, so exactly one route is ever active.
+ *  - the native route remains confident for every supported alias.
  *
  * The edit transaction on the existing `common.edit` seam is proven separately in
  * `packages/host/test/editing-evidence.test.ts`.
@@ -36,16 +35,6 @@ const nativeModule = join(
   'markdown',
   'codec.js',
 )
-const stagingModule = join(
-  repoRoot,
-  'extensions',
-  'mk2',
-  'uncommon-documents',
-  'src',
-  'markdown',
-  'codec.js',
-)
-
 const budget: ResourceBudget = {
   maxInputBytes: 10_000_000n,
   maxDepth: 16,
@@ -158,18 +147,6 @@ describe('11A common/documents markdown', () => {
     expect(await confidence(nativeModule, SAMPLE, 'memory://doc/notes.rst')).toBe(0.72)
     expect(await confidence(nativeModule, 'plain sentence\n', 'memory://doc/notes.md')).toBe(0.4)
     expect(await confidence(nativeModule, 'plain sentence\n', 'memory://doc/notes.rst')).toBe(0.05)
-  })
-
-  it('leaves exactly one active route: the MK3 contribution beats the staging port on every alias', async () => {
-    for (const alias of ALIASES) {
-      const uri = `memory://doc/notes.${alias}`
-      const native = await confidence(nativeModule, SAMPLE, uri)
-      const staging = await confidence(stagingModule, SAMPLE, uri)
-      expect(native, `${alias}: MK3 must win`).toBeGreaterThan(staging)
-      // decisive, not a coin toss: the staging port reads structure only, the MK3 route reads
-      // structure and the alias, so the margin is real evidence rather than a tuned constant
-      expect(native - staging, `${alias}: margin`).toBeGreaterThan(0.029)
-    }
   })
 
   it('keeps preview safe: hostile HTML and script survive as text and nothing renders them', async () => {

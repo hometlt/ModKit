@@ -9,9 +9,9 @@ import type { KnowledgePackSpecV1 } from '@modkitx-x3/sdk/knowledge'
 
 const fieldTarget = {
   kind: 'field',
-  ecosystem: 'starcraft-2',
+  ecosystem: 'game-alpha',
   schema: {
-    contract: 'org.modkitx.blizzard/sc2-data-schema',
+    contract: 'org.example.alpha/alpha-data-schema',
     major: 1,
     revision: 'sha256:fixture-schema',
   },
@@ -23,10 +23,10 @@ const pack: KnowledgePackSpecV1 = {
   schemaVersion: 1,
   sourceLocale: 'en',
   priority: 100,
-  gameIds: ['starcraft-2'],
+  gameIds: ['game-alpha'],
   entries: [
     {
-      id: 'org.modkitx.blizzard.sc2/life-max',
+      id: 'org.example.alpha.alpha/life-max',
       target: fieldTarget,
       locale: 'en',
       title: 'Maximum life',
@@ -37,9 +37,9 @@ const pack: KnowledgePackSpecV1 = {
       sources: [
         {
           kind: 'schema',
-          title: 'SC2 data schema fixture',
+          title: 'ALPHA data schema fixture',
           schema: {
-            contract: 'org.modkitx.blizzard/sc2-data-schema',
+            contract: 'org.example.alpha/alpha-data-schema',
             major: 1,
             revision: 'sha256:fixture-schema',
           },
@@ -49,7 +49,7 @@ const pack: KnowledgePackSpecV1 = {
       ],
     },
     {
-      id: 'org.modkitx.blizzard.sc2/life-max',
+      id: 'org.example.alpha.alpha/life-max',
       target: fieldTarget,
       locale: 'ru',
       title: 'Максимальное здоровье',
@@ -59,15 +59,15 @@ const pack: KnowledgePackSpecV1 = {
       sources: [
         {
           kind: 'community-wiki',
-          title: 'SC2Mapster Data Types',
-          url: 'https://sc2mapster.wiki.gg/wiki/Data_Types',
+          title: 'ALPHAMapster Data Types',
+          url: 'https://alphamapster.wiki.gg/wiki/Data_Types',
           reviewedAt: '2026-08-28',
         },
       ],
     },
     {
-      id: 'org.modkitx.blizzard.sc2/unit-overview',
-      target: { kind: 'subject', ecosystem: 'starcraft-2', subjectKind: 'unit' },
+      id: 'org.example.alpha.alpha/unit-overview',
+      target: { kind: 'subject', ecosystem: 'game-alpha', subjectKind: 'unit' },
       locale: 'en',
       title: 'Unit',
       summary: 'A generic unit data record.',
@@ -76,8 +76,8 @@ const pack: KnowledgePackSpecV1 = {
       sources: [
         {
           kind: 'official-documentation',
-          title: 'SC2 Editor documentation',
-          url: 'https://us.forums.blizzard.com/en/sc2/',
+          title: 'ALPHA Editor documentation',
+          url: 'https://us.forums.publisher-alpha.com/en/alpha/',
           reviewedAt: '2026-08-28',
         },
       ],
@@ -86,14 +86,14 @@ const pack: KnowledgePackSpecV1 = {
 }
 
 const extensionInput = (): ExtensionInput => {
-  const path = 'contributions/sc2-knowledge.json'
+  const path = 'contributions/alpha-knowledge.json'
   return {
     source: 'knowledge-fixture',
     containers: {
       standalone: {
         schemaVersion: 1,
-        publisher: 'org.modkitx.blizzard',
-        id: 'starcraft-2-knowledge-fixture',
+        publisher: 'org.example.alpha',
+        id: 'game-alpha-knowledge-fixture',
         version: '1.2.3',
         license: 'MIT',
         contributionManifests: ['./contributions/*.json'],
@@ -106,8 +106,8 @@ const extensionInput = (): ExtensionInput => {
         {
           schemaVersion: 1,
           contract: { id: 'org.modkitx/knowledge-pack', major: 1 },
-          id: 'org.modkitx.blizzard/sc2-data-knowledge',
-          displayName: 'SC2 data knowledge',
+          id: 'org.example.alpha/alpha-data-knowledge',
+          displayName: 'ALPHA data knowledge',
           spec: pack,
         },
       ],
@@ -137,7 +137,7 @@ const rankedExtensionInput = (
     containers: {
       standalone: {
         schemaVersion: 1,
-        publisher: 'org.modkitx.blizzard',
+        publisher: 'org.example.alpha',
         id: extensionId,
         version: '1.0.0',
         license: 'MIT',
@@ -151,7 +151,7 @@ const rankedExtensionInput = (
         {
           schemaVersion: 1,
           contract: { id: 'org.modkitx/knowledge-pack', major: 1 },
-          id: `org.modkitx.blizzard/${extensionId}-knowledge`,
+          id: `org.example.alpha/${extensionId}-knowledge`,
           displayName: `${title} knowledge`,
           spec: {
             ...pack,
@@ -191,12 +191,12 @@ describe('inventory-backed knowledge catalog', () => {
       entry: {
         locale: 'ru',
         title: 'Максимальное здоровье',
-        sources: [{ url: 'https://sc2mapster.wiki.gg/wiki/Data_Types' }],
+        sources: [{ url: 'https://alphamapster.wiki.gg/wiki/Data_Types' }],
       },
       localeRank: 1,
       provenance: {
-        packId: 'org.modkitx.blizzard/sc2-data-knowledge',
-        ownerExtensionId: 'org.modkitx.blizzard/starcraft-2-knowledge-fixture',
+        packId: 'org.example.alpha/alpha-data-knowledge',
+        ownerExtensionId: 'org.example.alpha/game-alpha-knowledge-fixture',
         extensionVersion: '1.2.3',
         manifestDigest: 'sha256:knowledge-manifest',
       },
@@ -212,18 +212,18 @@ describe('inventory-backed knowledge catalog', () => {
     )
     const catalog = createKnowledgeCatalog(inventory)
     const aliases = await catalog.search({ text: 'hit points', locales: ['en'] })
-    expect(aliases.items.map(item => item.entry.id)).toEqual(['org.modkitx.blizzard.sc2/life-max'])
+    expect(aliases.items.map(item => item.entry.id)).toEqual(['org.example.alpha.alpha/life-max'])
 
     const generic = await catalog.resolve({
       target: {
         kind: 'subject',
-        ecosystem: 'starcraft-2',
+        ecosystem: 'game-alpha',
         subjectKind: 'unit',
         subjectId: 'Marine',
       },
       locales: ['en'],
     })
-    expect(generic.items[0]?.entry.id).toBe('org.modkitx.blizzard.sc2/unit-overview')
+    expect(generic.items[0]?.entry.id).toBe('org.example.alpha.alpha/unit-overview')
   })
 
   it('caps pages and reports malformed cursors structurally', async () => {
@@ -324,13 +324,13 @@ describe('inventory-backed knowledge catalog', () => {
     const low = rankedExtensionInput(
       'aaa-low-priority',
       1,
-      'org.modkitx.blizzard.sc2/low-priority',
+      'org.example.alpha.alpha/low-priority',
       'Low priority',
     )
     const high = rankedExtensionInput(
       'zzz-high-priority',
       1_000,
-      'org.modkitx.blizzard.sc2/high-priority',
+      'org.example.alpha.alpha/high-priority',
       'High priority',
     )
     const inventory = await buildInventory([low, high], createHostContributionContractRegistry())
@@ -349,7 +349,7 @@ describe('inventory-backed knowledge catalog', () => {
       containers: {
         standalone: {
           ...standalone,
-          id: 'starcraft-2-knowledge-fixture-moved',
+          id: 'game-alpha-knowledge-fixture-moved',
         },
       },
     } satisfies ExtensionInput

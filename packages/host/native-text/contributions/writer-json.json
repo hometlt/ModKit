@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx/text-json-writer",
+  "displayName": "JSON and JSONC text writer",
+  "runtimeVariants": [
+    {
+      "variantId": "portable",
+      "entrypoint": "./json/editing/text-writer.js",
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "lifecycleScope": "session",
+    "provides": [
+      {
+        "offerId": "json-source",
+        "contract": "common.edit/writer",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "providerId": "org.modkitx/text-json-writer",
+          "fidelityEvidenceId": "text-json-text-writer-v1",
+          "formatId": "json",
+          "representationId": "source",
+          "mutationMode": "mutate",
+          "minimumRoundTrip": "byte-identical"
+        }
+      },
+      {
+        "offerId": "jsonc-source",
+        "contract": "common.edit/writer",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "providerId": "org.modkitx/text-json-writer",
+          "fidelityEvidenceId": "text-json-text-writer-v1",
+          "formatId": "jsonc",
+          "representationId": "source",
+          "mutationMode": "mutate",
+          "minimumRoundTrip": "byte-identical"
+        }
+      }
+    ]
+  }
+}

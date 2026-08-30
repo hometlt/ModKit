@@ -670,16 +670,16 @@ describe('node worker backend — verified multi-file loading through module hoo
 })
 
 describe('node worker backend — a real bundled extension codec runs in the worker', () => {
-  it('text-json: inventoried through loadExtensionDirectory, its multi-file entrypoint and workspace dependencies load, probe detects JSON', async () => {
+  it('text-csv: inventoried through loadExtensionDirectory, its multi-file entrypoint and workspace dependencies load, probe detects CSV', async () => {
     const extensionDir = fileURLToPath(
-      new URL('../../../extensions/common/data/text-json/', import.meta.url),
+      new URL('../../../extensions/common/data/text-csv/', import.meta.url),
     )
     const loaded = await loadExtensionDirectory(extensionDir)
     const artifact = loaded.artifact
     expect(artifact.fileDigests).toBeDefined()
     const registry = createExecutionBackendRegistry([backend()])
     const entrypoint = new URL(
-      './src/families/json/entrypoints/json-codec.js',
+      './src/families/delimited/entrypoints/csv-codec.js',
       artifact.artifactRoot,
     )
     const lease = await activateExecutionBackend(registry, {
@@ -695,41 +695,41 @@ describe('node worker backend — a real bundled extension codec runs in the wor
         ): Promise<{ codecId: string; confidence: number }>
       }
     )(context([]))
-    const json = new TextEncoder().encode('{"hello": ["world", 1, true]}')
+    const csv = new TextEncoder().encode('name,value\nhello,1\nworld,2\n')
     const source = {
-      ref: { uri: 'file:///demo.json' },
+      ref: { uri: 'file:///demo.csv' },
       revision: 'rev-1',
       kind: 'bytes',
-      size: BigInt(json.length),
+      size: BigInt(csv.length),
       read: async (offset: bigint, length: number) =>
-        json.slice(Number(offset), Number(offset) + length),
+        csv.slice(Number(offset), Number(offset) + length),
       stream: async function* () {
-        yield json
+        yield csv
       },
     }
     const detection = await codec.probe({
       source,
       plan: { kind: 'bytes', ranges: [{ from: 'start', length: 4096 }], maxBytes: 4096 },
     })
-    expect(detection.codecId).toBe('org.modkitx/text-json')
+    expect(detection.codecId).toBe('org.modkitx/text-csv')
     expect(detection.confidence).toBeGreaterThan(0.5)
   }, 30_000)
 })
 
 describe('node worker backend — a real codec opens a session with a host-resolved provider', () => {
-  it('text-json open(): contracts.resolve crosses to the host, the provider is proxied by its definition surface, parse/dataSource run on the host', async () => {
+  it('text-csv open(): contracts.resolve crosses to the host and the provider data source runs on the host', async () => {
     const extensionDir = fileURLToPath(
-      new URL('../../../extensions/common/data/text-json/', import.meta.url),
+      new URL('../../../extensions/common/data/text-csv/', import.meta.url),
     )
     const loaded = await loadExtensionDirectory(extensionDir)
     const artifact = loaded.artifact
     // the provider runs on the host, in-process (as the trusted-in-process path activates it)
     const providerModule = (await import(
-      new URL('./src/families/json/entrypoints/json-provider.js', artifact.artifactRoot).href
+      new URL('./src/families/delimited/entrypoints/csv-provider.js', artifact.artifactRoot).href
     )) as { createProvider(selection: unknown): { value: unknown; release(): Promise<void> } }
     // the JSON syntax contract definition (service arm) carries the provider's method surface
     const definition = JSON.parse(
-      readFileSync(join(extensionDir, 'contributions', 'contract-json-syntax.json'), 'utf8'),
+      readFileSync(join(extensionDir, 'contributions', 'contract-csv-syntax.json'), 'utf8'),
     ) as { spec: { contract: string; major: number; surface: DataSourceSurfaceV1Wire } }
     const b = createNodeWorkerBackend({
       bootstrapUrl,
@@ -744,7 +744,7 @@ describe('node worker backend — a real codec opens a session with a host-resol
     })
     const registry = createExecutionBackendRegistry([b])
     const entrypoint = new URL(
-      './src/families/json/entrypoints/json-codec.js',
+      './src/families/delimited/entrypoints/csv-codec.js',
       artifact.artifactRoot,
     )
     const lease = await activateExecutionBackend(registry, {
@@ -775,7 +775,7 @@ describe('node worker backend — a real codec opens a session with a host-resol
         },
       } as unknown as ContributionContext['contracts'],
     })
-    const json = new TextEncoder().encode('{"greeting": "hello", "n": [1, 2, 3]}')
+    const csv = new TextEncoder().encode('greeting,n\nhello,1\nworld,2\n')
     const input = {
       originKind: 'single',
       primaryBindingId: 'content',
@@ -785,7 +785,7 @@ describe('node worker backend — a real codec opens a session with a host-resol
           role: 'content',
           ownership: 'owned',
           sourceKind: 'candidate',
-          source: { id: 'src-1', uri: 'file:///demo.json' },
+          source: { id: 'src-1', uri: 'file:///demo.csv' },
           revision: 'content-hash:demo',
         },
       ],
@@ -798,14 +798,14 @@ describe('node worker backend — a real codec opens a session with a host-resol
       bindingsFor: () => [],
       openBinding: async () => ({
         value: {
-          ref: { id: 'src-1', uri: 'file:///demo.json' },
+          ref: { id: 'src-1', uri: 'file:///demo.csv' },
           revision: 'content-hash:demo',
           kind: 'bytes',
-          size: BigInt(json.length),
+          size: BigInt(csv.length),
           read: async (offset: bigint, length: number) =>
-            json.slice(Number(offset), Number(offset) + length),
+            csv.slice(Number(offset), Number(offset) + length),
           stream: async function* () {
-            yield json
+            yield csv
           },
         },
         release: async () => undefined,
@@ -820,31 +820,29 @@ describe('node worker backend — a real codec opens a session with a host-resol
       ): Promise<{ value: Record<string, unknown>; release(): Promise<void> }>
       dispose(): Promise<void>
     }
-    expect(resolved).toEqual(['common.text-data/json-syntax@1'])
+    expect(resolved).toEqual(['common.text-data/csv-syntax@1'])
     expect(session.revision).toBe('content-hash:demo')
     const descriptor = await session.descriptor()
     expect(descriptor['schemaVersion']).toBe(2)
-    const tree = await session.dataSource('common.view/tree-data-source', 1)
-    const root = await (tree.value['root'] as () => Promise<{ id: string }>)()
-    expect(typeof root.id).toBe('string')
-    const children = await (
-      tree.value['children'] as (n: unknown, p: unknown) => Promise<{ items: { id: string }[] }>
-    )(root, { limit: 10 })
-    expect(children.items.length).toBeGreaterThan(0)
-    await tree.release()
+    const table = await session.dataSource('common.view/table-data-source', 1)
+    const rows = await (table.value['rows'] as (request: unknown) => Promise<{ items: unknown[] }>)(
+      { kind: 'range', from: 0, count: 10 },
+    )
+    expect(rows.items.length).toBeGreaterThan(0)
+    await table.release()
     await session.dispose()
   }, 30_000)
 })
 
 describe('node worker backend — provider in one worker, codec in another, the host bridges them (S1b product path)', () => {
-  it('text-json: the provider module leases through createProvider in worker B; the codec in worker A resolves it through the host; parse/dataSource cross two boundaries', async () => {
+  it('text-csv: the provider leases in worker B and its codec in worker A crosses both boundaries', async () => {
     const extensionDir = fileURLToPath(
-      new URL('../../../extensions/common/data/text-json/', import.meta.url),
+      new URL('../../../extensions/common/data/text-csv/', import.meta.url),
     )
     const loaded = await loadExtensionDirectory(extensionDir)
     const artifact = loaded.artifact
     const definition = JSON.parse(
-      readFileSync(join(extensionDir, 'contributions', 'contract-json-syntax.json'), 'utf8'),
+      readFileSync(join(extensionDir, 'contributions', 'contract-csv-syntax.json'), 'utf8'),
     ) as { spec: { contract: string; major: number; surface: DataSourceSurfaceV1Wire } }
     // one backend, definitions late-bound (registered after the backend exists, like an app does)
     let definitions: { contract: string; major: number; surface: DataSourceSurfaceV1Wire }[] = []
@@ -868,7 +866,7 @@ describe('node worker backend — provider in one worker, codec in another, the 
     // worker B: the service-provider module
     const providerLease = await activateExecutionBackend(registry, {
       ...activation(
-        new URL('./src/families/json/entrypoints/json-provider.js', artifact.artifactRoot),
+        new URL('./src/families/delimited/entrypoints/csv-provider.js', artifact.artifactRoot),
         artifact.artifactRoot,
       ),
       ...digests,
@@ -884,7 +882,7 @@ describe('node worker backend — provider in one worker, codec in another, the 
     // worker A: the codec; its contracts.resolve runs on the host and hands back B's provider
     const codecLease = await activateExecutionBackend(registry, {
       ...activation(
-        new URL('./src/families/json/entrypoints/json-codec.js', artifact.artifactRoot),
+        new URL('./src/families/delimited/entrypoints/csv-codec.js', artifact.artifactRoot),
         artifact.artifactRoot,
       ),
       ...digests,
@@ -907,7 +905,7 @@ describe('node worker backend — provider in one worker, codec in another, the 
         resolve: async (request: { contract: string; major: number }) => {
           resolved.push(`${request.contract}@${request.major}`)
           const lease = await createProvider(
-            { offerId: 'json-syntax-default-v1', contract: request.contract, major: request.major },
+            { offerId: 'csv-syntax-default-v1', contract: request.contract, major: request.major },
             { budgets: budget, diagnostics: { report: () => undefined }, contracts: {} as never },
           )
           providerLeases.push(lease)
@@ -918,16 +916,16 @@ describe('node worker backend — provider in one worker, codec in another, the 
         },
       } as unknown as ContributionContext['contracts'],
     })
-    const json = new TextEncoder().encode('{"greeting": "hello", "n": [1, 2, 3]}')
+    const csv = new TextEncoder().encode('greeting,n\nhello,1\nworld,2\n')
     const source = {
-      ref: { id: 'src-1', uri: 'file:///demo.json' },
+      ref: { id: 'src-1', uri: 'file:///demo.csv' },
       revision: 'content-hash:demo',
       kind: 'bytes',
-      size: BigInt(json.length),
+      size: BigInt(csv.length),
       read: async (offset: bigint, length: number) =>
-        json.slice(Number(offset), Number(offset) + length),
+        csv.slice(Number(offset), Number(offset) + length),
       stream: async function* () {
-        yield json
+        yield csv
       },
     }
     const input = {
@@ -939,7 +937,7 @@ describe('node worker backend — provider in one worker, codec in another, the 
           role: 'content',
           ownership: 'owned',
           sourceKind: 'candidate',
-          source: { id: 'src-1', uri: 'file:///demo.json' },
+          source: { id: 'src-1', uri: 'file:///demo.csv' },
           revision: 'content-hash:demo',
         },
       ],
@@ -960,16 +958,15 @@ describe('node worker backend — provider in one worker, codec in another, the 
       ): Promise<{ value: Record<string, unknown>; release(): Promise<void> }>
       dispose(): Promise<void>
     }
-    expect(resolved).toEqual(['common.text-data/json-syntax@1'])
+    expect(resolved).toEqual(['common.text-data/csv-syntax@1'])
     expect((await session.descriptor())['schemaVersion']).toBe(2)
     // A → host → B: the tree data source lives in worker B, leased through A's session
-    const tree = await session.dataSource('common.view/tree-data-source', 1)
-    const root = await (tree.value['root'] as () => Promise<{ id: string }>)()
-    const children = await (
-      tree.value['children'] as (n: unknown, p: unknown) => Promise<{ items: { id: string }[] }>
-    )(root, { limit: 10 })
-    expect(children.items.length).toBeGreaterThan(0)
-    await tree.release()
+    const table = await session.dataSource('common.view/table-data-source', 1)
+    const rows = await (table.value['rows'] as (request: unknown) => Promise<{ items: unknown[] }>)(
+      { kind: 'range', from: 0, count: 10 },
+    )
+    expect(rows.items.length).toBeGreaterThan(0)
+    await table.release()
     await session.dispose()
     for (const lease of providerLeases) await lease.release()
     // two activations → two shared-process notices, two workers, no crashes or restarts

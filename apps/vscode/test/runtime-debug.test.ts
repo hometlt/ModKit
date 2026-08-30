@@ -2,14 +2,11 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { externalRepositoryRoot } from '../../../scripts/lib/external-extension-roots.mjs'
 import type { RuntimeSessionV2, RuntimeSnapshot } from '@modkitx-x3/sdk/runtime'
-import { openFileArtifactSource } from '@modkitx-x3/host/node'
 import {
   createRuntimeDebugController,
   type RuntimeDebugControllerOptions,
 } from '../src/runtime-debug.js'
-import { createVsCodeSubjectHost } from '../src/host.js'
 
 const sessionBudget = { maxWallTimeMs: 1_000, maxTicks: 1_000, maxMemoryBytes: 1_000_000 }
 const activationBudget = {
@@ -454,7 +451,7 @@ describe('generic VS Code runtime controller', () => {
     const adapter = readFileSync(join(root, 'src', 'runtime-debug.ts'), 'utf8')
     const extension = readFileSync(join(root, 'src', 'extension.ts'), 'utf8')
     expect(adapter).toContain("from '@modkitx-x3/host/runtime'")
-    expect(adapter).not.toMatch(/extensions[\\/]|starcraft|blizzard|sc2/iu)
+    expect(adapter).not.toMatch(/extensions[\\/]|publisher-specific/iu)
     expect(extension).toContain("registerCommand('modkit.runtime.control'")
     const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
       readonly activationEvents: readonly string[]
@@ -465,59 +462,4 @@ describe('generic VS Code runtime controller', () => {
       manifest.contributes.commands.filter(item => item.command.startsWith('modkit.runtime.')),
     ).toEqual([{ command: 'modkit.runtime.control', title: 'Modkit: Control Runtime Session…' }])
   })
-})
-
-describe('runtime remains optional to codec inspection', () => {
-  it('reports a named no-runtime diagnostic while a replay codec still opens normally', async () => {
-    const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
-    const host = await createVsCodeSubjectHost({
-      catalogCandidates: [externalRepositoryRoot(repositoryRoot, 'blizzard')],
-      configuredDisabledContributions: ['org.modkitx/sc2-runtime-provider'],
-    })
-    const controller = createRuntimeDebugController({
-      services: host.services,
-      grant: { id: 'runtime-optional-test', classes: [] },
-      activationBudget,
-      sessionBudget,
-    })
-    await expect(
-      controller.dispatch({
-        action: 'start',
-        runtimeId: 'org.example/not-installed',
-        sessionId: 'missing',
-      }),
-    ).resolves.toMatchObject({
-      state: 'unavailable',
-      code: 'x3.vscode/runtime-provider-unavailable',
-    })
-
-    const path = join(
-      repositoryRoot,
-      'packages',
-      'testkit',
-      'test',
-      'fixtures',
-      'mk2-synthetic',
-      'minimal.SC2Replay',
-    )
-    const opened = await host.services.open({
-      source: await openFileArtifactSource(path),
-      path,
-      intent: 'inspect',
-      grant: { id: 'replay-after-runtime-refusal', classes: ['read-source'] },
-      budget: {
-        maxInputBytes: 64_000_000n,
-        maxDepth: 64,
-        maxNodes: 100_000,
-        maxScalarBytes: 64_000_000,
-        maxDiagnostics: 1_000,
-      },
-    })
-    expect(opened.state).toBe('opened')
-    if (opened.state === 'opened') {
-      expect(opened.selected.contributionId).toBe('org.modkitx/sc2-replay')
-      await opened.session.dispose()
-    }
-    await controller.dispose()
-  }, 120_000)
 })

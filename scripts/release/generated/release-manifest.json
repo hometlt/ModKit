@@ -6,8 +6,8 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:db2ad737cde843bce2cf7c721bb11db863e69d2baf181f9ad0a68d4caf5dc240",
-      "size": 40032256
+      "sha256": "sha256:6c1bb97aa2ad764656afa67be604a358b7518c3781ca5b502756ddb8ab6e7ca2",
+      "size": 40710144
     },
     {
       "catalog": [
@@ -47,15 +47,6 @@
         },
         {
           "contributions": [
-            "org.modkitx/plain-text-writer",
-            "org.modkitx/txt"
-          ],
-          "coordinate": "org.modkitx/plain-text",
-          "root": "extensions/common/data/plain-text",
-          "sourceDigest": "sha256:aa86b282e2ec62853e9cfa78720e8442c0cd8ccb0516f657c210d4ebb8d0a11e"
-        },
-        {
-          "contributions": [
             "org.modkitx/csv-syntax-contract",
             "org.modkitx/csv-syntax-default",
             "org.modkitx/text-csv",
@@ -65,8 +56,8 @@
             "org.modkitx/tsv-syntax-default"
           ],
           "coordinate": "org.modkitx/text-delimited",
-          "root": "extensions/common/data/text-delimited",
-          "sourceDigest": "sha256:cc9995bfcfe7a1873ac8d20c47bcd28780257fe42b794ef2d3e9687474c10dfb"
+          "root": "extensions/common/data/text-csv",
+          "sourceDigest": "sha256:7b1359a891dd7811e4af034d3f85d1e1e6441e5b2a51f3d47762132631a081f0"
         },
         {
           "contributions": [
@@ -77,21 +68,7 @@
           ],
           "coordinate": "org.modkitx/text-ini",
           "root": "extensions/common/data/text-ini",
-          "sourceDigest": "sha256:8ac6ede610fa4c7d86a9cd1eb664cfef413836fc11f2f7be61ee75436fbcb0af"
-        },
-        {
-          "contributions": [
-            "org.modkitx/json-syntax-contract",
-            "org.modkitx/json-syntax-default",
-            "org.modkitx/jsonc-syntax-contract",
-            "org.modkitx/jsonc-syntax-default",
-            "org.modkitx/text-json",
-            "org.modkitx/text-json-writer",
-            "org.modkitx/text-jsonc"
-          ],
-          "coordinate": "org.modkitx/text-json",
-          "root": "extensions/common/data/text-json",
-          "sourceDigest": "sha256:62cdbd55f44b3ec61bec337be66606b261abffa9bdbbd8d15875e5853087532f"
+          "sourceDigest": "sha256:3e50a3d8ebb2ddbbe7d79f31f0f3c394f8b3c8afd7d045d8fd45417fe4160c52"
         },
         {
           "contributions": [
@@ -113,7 +90,7 @@
           ],
           "coordinate": "org.modkitx/text-xml",
           "root": "extensions/common/data/text-xml",
-          "sourceDigest": "sha256:9d2495975076fcf0a7c8b7d3e70908d9b7852e775674adb63e1b34e452a7d4fb"
+          "sourceDigest": "sha256:8f44e8371eb198c54c0927c63010d76bf30714d6d52a7dba96cbb87c511c5cf0"
         },
         {
           "contributions": [
@@ -167,7 +144,7 @@
           ],
           "coordinate": "org.modkitx/images",
           "root": "extensions/common/images",
-          "sourceDigest": "sha256:fc059d3e64c7569f801f3a19b28c1b797a38b13d9f3c87846c4ebbb764e8aaf1"
+          "sourceDigest": "sha256:ab7de5ab022073abf6b55eb83931809cb38447526cac71fddea9dc6354814196"
         },
         {
           "contributions": [
@@ -240,8 +217,8 @@
       "file": "artifacts/modkitx-common.tar",
       "id": "common",
       "kind": "common-extension-bundle",
-      "sha256": "sha256:4348bc4bd825491ca24795ac32edabe7397e50cd2aee9ce6ee20dc6d1fc071de",
-      "size": 1704448
+      "sha256": "sha256:cf7ee4422cde0b6fc74eb02c9d31f13546b382e37e0c12a85612255ce5b56728",
+      "size": 1615872
     }
   ],
   "composition": {
@@ -251,19 +228,19 @@
     "catalogSources": [
       {
         "path": "apps/electron/generated/bundled-catalog.cjs",
-        "sha256": "sha256:a65ef9bbe89e4a4a889443fb9a6949319963cbf1b70b892bef70b234d8540588"
+        "sha256": "sha256:38c1581f082e5838521b8373a5b47ec99337e976e3cad704c668b186f80ec4b4"
       },
       {
         "path": "apps/vscode/generated/bundled-catalog.json",
-        "sha256": "sha256:15ea03f7087487d560db200ef77d9b8a9c8846510cecb7186c72e79e4688edbb"
+        "sha256": "sha256:30fdb94d9d2805643d897f6560d18723d934caf8b94d083a99a077e1d58c43cd"
       },
       {
         "path": "apps/web/generated/extension-catalog.js",
-        "sha256": "sha256:ef6d4112b1a0333f0e101dadd5eccb7d4208a5a2194a59051e38634cec5bd5e5"
+        "sha256": "sha256:3adbd594dc6933290e75041823c4de49ed43cf3a2f4a74c072d083d710e01964"
       },
       {
         "path": "config/build-composition.json",
-        "sha256": "sha256:64b1b0af581b32b04c778e19e388f7d7a86ffa112a2417acfd431ef3785be8c5"
+        "sha256": "sha256:045e19f65426526f9a53748007325d0b7330d7697c31d2ee419c4e5245552101"
       },
       {
         "path": "scripts/app-extension-sets.mjs",
@@ -271,17 +248,15 @@
       },
       {
         "path": "scripts/bundle-hashes.json",
-        "sha256": "sha256:f5fb62badb07255891fbbb08e1721ceccd2686eda4c2190457775024813b5f6a"
+        "sha256": "sha256:03fb6347f087f7ebe171cb110f381b8464ec469ca4c076c2604794c427aaa2c3"
       }
     ],
     "closure": "mk3-ga",
     "commonExtensionRoots": [
       "extensions/common/archives",
       "extensions/common/audio",
-      "extensions/common/data/plain-text",
-      "extensions/common/data/text-delimited",
+      "extensions/common/data/text-csv",
       "extensions/common/data/text-ini",
-      "extensions/common/data/text-json",
       "extensions/common/data/text-toml",
       "extensions/common/data/text-xml",
       "extensions/common/data/text-yaml",
@@ -299,7 +274,7 @@
   },
   "licenseNotices": {
     "file": "LICENSE-NOTICES.txt",
-    "sha256": "sha256:7268e49b79805e7efd2a15d424a9519a87fbbe6166e653e9adb4f69e79d490b4"
+    "sha256": "sha256:5513ee3f74d4f3ef04ed60c72e1013b000a1f26d184177692396b73b6680025e"
   },
   "release": {
     "authenticode": false,
@@ -320,7 +295,7 @@
   "sbom": {
     "file": "sbom.cdx.json",
     "format": "CycloneDX-1.5",
-    "sha256": "sha256:a6a50dc015d79d433358387ed4c016578cdda9c7dc780e20f7609ef5ba171caa"
+    "sha256": "sha256:d23dba7d1c7c697911067c594d8bc7c6f4bcbd63910a3d5f49e15619b4bf75b8"
   },
   "schemaVersion": "release-manifest-1",
   "signing": {

@@ -261928,7 +261928,7 @@ init_standaloneStrings();
 init_codicon_modifiers();
 init_editor_api();
 
-// extensions/common/ui-monaco/src/index.js
+// extensions/common/ui/monaco/src/index.js
 var LANGUAGE_BY_FORMAT = Object.freeze({
   json: "json",
   jsonc: "json",

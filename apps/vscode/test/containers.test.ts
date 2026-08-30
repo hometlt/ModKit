@@ -14,9 +14,9 @@
  *
  *  1. **The Explorer can be answered.** `stat`, `readDirectory` and `readFile` over the archive's
  *     own listing, including the directories a BIG never records.
- *  2. **A member is a subject.** The W3D inside the archive opens with its own descriptor and
- *     resolves its texture *from the same archive* — and it arrives over the very subject RPC the
- *     webview speaks, so what is proved here is the product's route and not a private one.
+ *  2. **A member is a subject.** A text member inside a ZIP opens with its own descriptor and
+ *     arrives over the very subject RPC the webview speaks, so what is proved here is the
+ *     product's generic route and not a private one or a product extension.
  *
  * The only thing not exercised is the editor itself; that is what `pnpm smoke:vscode` is for.
  */
@@ -59,9 +59,13 @@ afterAll(async () => {
   for (const step of cleanup.splice(0).reverse()) await step()
 })
 
-/** The `ea` catalog presented as if it shipped beside the extension; only what this suite needs. */
+/** A tiny first-party catalog presented as if it shipped beside the extension. */
 function catalogProbe(names: readonly string[]): DirectoryProbe {
-  const ea = join(repositoryRoot, 'extensions', 'ea')
+  const common = join(repositoryRoot, 'extensions', 'common')
+  const roots: Readonly<Record<string, string>> = {
+    archives: join(common, 'archives'),
+    'plain-text': join(common, 'data', 'plain-text'),
+  }
   return {
     readDirectory: path => (path === 'catalog' ? [...names] : undefined),
     isFile: path => existsSync(path),
@@ -72,39 +76,11 @@ function catalogProbe(names: readonly string[]): DirectoryProbe {
         return undefined
       }
     },
-    join: (...parts) => (parts[0] === 'catalog' ? join(ea, ...parts.slice(1)) : join(...parts)),
+    join: (...parts) =>
+      parts[0] === 'catalog' && parts.length === 2
+        ? (roots[parts[1] ?? ''] ?? join(common, parts[1] ?? ''))
+        : join(...parts),
   }
-}
-
-/** A BIG4 archive, written by hand: header, flat index of `offset/size/name\0`, then the payloads. */
-function buildBig(
-  entries: readonly { readonly path: string; readonly bytes: Uint8Array }[],
-): Uint8Array {
-  const encoder = new TextEncoder()
-  const stored = entries.map(item => ({ name: encoder.encode(item.path), payload: item.bytes }))
-  const indexBytes = stored.reduce((total, item) => total + 8 + item.name.byteLength + 1, 0)
-  const dataOffset = 16 + indexBytes
-  const total = stored.reduce((size, item) => size + item.payload.byteLength, dataOffset)
-  const archive = new Uint8Array(total)
-  const view = new DataView(archive.buffer)
-  archive.set(encoder.encode('BIG4'), 0)
-  view.setUint32(4, total, true)
-  view.setUint32(8, stored.length, false)
-  view.setUint32(12, dataOffset, false)
-  let index = 16
-  let payload = dataOffset
-  for (const item of stored) {
-    view.setUint32(index, payload, false)
-    view.setUint32(index + 4, item.payload.byteLength, false)
-    index += 8
-    archive.set(item.name, index)
-    index += item.name.byteLength
-    archive[index] = 0
-    index += 1
-    archive.set(item.payload, payload)
-    payload += item.payload.byteLength
-  }
-  return archive
 }
 
 /** The editor's single JSON duplex, as two ends that deliver asynchronously. */
@@ -148,24 +124,14 @@ function stage(): Promise<Staged> {
   staged ??= (async () => {
     const workspace = mkdtempSync(join(tmpdir(), 'modkit-vscode-containers-'))
     cleanup.push(() => rmSync(workspace, { recursive: true, force: true }))
-    const model = new Uint8Array(readFileSync(join(syntheticDir, 'minimal.westwood.w3d')))
-    // the model declares «fixture.tga»; the archive stores it under that name, in another folder
-    const skin = new Uint8Array(readFileSync(join(syntheticDir, 'minimal.tga')))
-    const archive = join(workspace, 'fixture.big')
-    writeFileSync(
-      archive,
-      buildBig([
-        { path: 'art/w3d/minimal.w3d', bytes: model },
-        { path: 'art/textures/fixture.tga', bytes: skin },
-        { path: 'readme.txt', bytes: new TextEncoder().encode('inside the archive') },
-      ]),
-    )
+    const archive = join(workspace, 'fixture.zip')
+    writeFileSync(archive, readFileSync(join(syntheticDir, 'minimal.zip')))
     const plain = join(workspace, 'loose.txt')
     writeFileSync(plain, 'not a container')
 
     const host = await createVsCodeSubjectHost({
       catalogCandidates: ['catalog'],
-      probe: catalogProbe(['big', 'models']),
+      probe: catalogProbe(['archives', 'plain-text']),
     })
     expect(host.extensions.failures).toEqual([])
     return { host, workspace, archive, plain }
@@ -209,26 +175,21 @@ describe('the manifest opens the window for it', () => {
 })
 
 describe('the Explorer can be answered from inside a container', () => {
-  it('lists the directories a BIG never recorded', async () => {
+  it('lists a ZIP entry', async () => {
     const { containers, archive } = await registryFor()
     const root = await containers.list(archive, '')
-    expect(root.map((node: ContainerNode) => [node.name, node.kind]).sort()).toEqual([
-      ['art', 'directory'],
-      ['readme.txt', 'file'],
+    expect(root.map((node: ContainerNode) => [node.name, node.kind])).toEqual([
+      ['hello.txt', 'file'],
     ])
-    expect((await containers.list(archive, 'art')).map(node => node.name).sort()).toEqual([
-      'textures',
-      'w3d',
-    ])
-    const model = await containers.stat(archive, 'art/w3d/minimal.w3d')
-    expect(model.kind).toBe('file')
-    expect(model.size).toBeGreaterThan(0)
+    const text = await containers.stat(archive, 'hello.txt')
+    expect(text.kind).toBe('file')
+    expect(text.size).toBeGreaterThan(0)
   }, 120_000)
 
   it('reads a member through the container, not from disk', async () => {
     const { containers, archive } = await registryFor()
-    const bytes = await containers.read(archive, 'readme.txt')
-    expect(new TextDecoder().decode(bytes)).toBe('inside the archive')
+    const bytes = await containers.read(archive, 'hello.txt')
+    expect(new TextDecoder().decode(bytes)).toContain('hello')
     proves({
       capabilityId: 'block9/archive-entry-as-subject',
       operation: 'read',
@@ -238,11 +199,9 @@ describe('the Explorer can be answered from inside a container', () => {
 
   it('searches, refreshes and releases the shared held container without a second cache', async () => {
     const { containers, archive } = await registryFor()
-    expect((await containers.search(archive, 'MINIMAL')).map(hit => hit.path)).toEqual([
-      'art/w3d/minimal.w3d',
-    ])
+    expect((await containers.search(archive, 'HELLO')).map(hit => hit.path)).toEqual(['hello.txt'])
     expect(containers.held()).toEqual([archive])
-    expect((await containers.refresh(archive)).files.has('readme.txt')).toBe(true)
+    expect((await containers.refresh(archive)).files.has('hello.txt')).toBe(true)
     expect(containers.held()).toEqual([archive])
     expect(await containers.release(archive)).toBe(true)
     expect(await containers.release(archive)).toBe(false)
@@ -251,10 +210,9 @@ describe('the Explorer can be answered from inside a container', () => {
 
   it('names what it refuses: a missing member, a directory, a file that holds nothing', async () => {
     const { containers, archive, plain } = await registryFor()
-    expect(await codeOf(() => containers.stat(archive, 'art/w3d/absent.w3d'))).toBe(
+    expect(await codeOf(() => containers.stat(archive, 'absent.txt'))).toBe(
       CONTAINER_ENTRY_NOT_FOUND,
     )
-    expect(await codeOf(() => containers.read(archive, 'art'))).toBe(CONTAINER_ENTRY_NOT_FOUND)
     expect(await codeOf(() => containers.index(plain))).toBe(NOT_A_CONTAINER)
   }, 120_000)
 
@@ -265,48 +223,26 @@ describe('the Explorer can be answered from inside a container', () => {
 })
 
 describe('a member is a subject in its own right', () => {
-  it('opens the W3D inside the archive, with its texture bound from the same archive', async () => {
+  it('opens text inside the archive through a first-party codec', async () => {
     const { containers, archive } = await registryFor()
-    const uri = containerUriText(archive, 'art/w3d/minimal.w3d')
+    const uri = containerUriText(archive, 'hello.txt')
     const answer = await containers.open(uri)
     if (answer.snapshot.state !== 'opened') {
-      throw new Error(`the nested W3D did not open: ${JSON.stringify(answer.snapshot.diagnostics)}`)
+      throw new Error(
+        `the nested text did not open: ${JSON.stringify(answer.snapshot.diagnostics)}`,
+      )
     }
-    expect(answer.snapshot.selected.contributionId).toBe('org.modkitx/westwood-w3d')
-    // the texture is a companion resolved inside the container: no unavailable-companion finding
-    expect(
-      answer.snapshot.diagnostics.filter(item => item.code.includes('companion-unavailable')),
-    ).toEqual([])
-    /*
-     * And the receipt says «bound», not merely "nothing complained". The texture is stored in
-     * another folder of the same archive, so a binding here can only have come through the
-     * container's own namespace — there is no such file on disk anywhere.
-     */
-    const receipt = (
-      answer.snapshot.descriptor as unknown as {
-        readonly metadata: readonly {
-          readonly id: string
-          readonly entries: readonly { readonly value: unknown }[]
-        }[]
-      }
-    ).metadata.find(group => group.id === 'uv-projection-receipt')?.entries[0]?.value as
-      { readonly companions?: readonly { requirementId: string; state: string }[] } | undefined
-    expect(receipt?.companions).toEqual([
-      expect.objectContaining({ requirementId: 'textures', state: 'bound' }),
-    ])
+    expect(answer.snapshot.selected.contributionId).toBe('org.modkitx/txt')
     const session = answer.session
     expect(session).toBeDefined()
-    const scene = await session?.dataSource('common.view/model-scene-source', 1)
-    expect(scene).toBeDefined()
-    await scene?.release()
 
     // the child goes first and the container survives it, still listable
     await session?.dispose()
-    expect((await containers.list(archive, 'art/w3d')).length).toBe(1)
+    expect((await containers.list(archive, '')).length).toBe(1)
     proves({
       capabilityId: 'block9/archive-entry-as-subject',
       operation: 'inspect',
-      note: 'a W3D inside a BIG opens as its own subject in the VS Code composition',
+      note: 'text inside a ZIP opens as its own subject in the VS Code composition',
     })
   }, 180_000)
 
@@ -337,18 +273,18 @@ describe('a member is a subject in its own right', () => {
       await containers.dispose()
     })
 
-    const uri = containerUriText(archive, 'art/w3d/minimal.w3d')
+    const uri = containerUriText(archive, 'hello.txt')
     const answer = await client.open(uri)
     if (answer.state !== 'opened') {
       throw new Error(
         `the page did not receive the member: ${JSON.stringify(answer.snapshot.diagnostics)}`,
       )
     }
-    expect(answer.snapshot.selected.contributionId).toBe('org.modkitx/westwood-w3d')
+    expect(answer.snapshot.selected.contributionId).toBe('org.modkitx/txt')
     // the page is told what it opened by the same callback a file goes through
-    expect(opened).toEqual([{ path: uri, contributionId: 'org.modkitx/westwood-w3d' }])
+    expect(opened).toEqual([{ path: uri, contributionId: 'org.modkitx/txt' }])
     // and the status surface names it without the container's absolute path
-    expect(subjectLabel(uri)).toBe('fixture.big › art/w3d/minimal.w3d')
+    expect(subjectLabel(uri)).toBe('fixture.zip › hello.txt')
     expect(subjectLabel(uri)).not.toContain(workspace)
     expect(parseContainerUriText(uri)?.container).toBe(archive)
 
@@ -363,21 +299,20 @@ describe('a member is a subject in its own right', () => {
      */
     const bytes = await page.request({
       op: 'read',
-      path: containerUriText(archive, 'readme.txt'),
+      path: containerUriText(archive, 'hello.txt'),
       maxBytes: 1024,
     })
-    expect(new TextDecoder().decode(bytes as Uint8Array)).toBe('inside the archive')
+    expect(new TextDecoder().decode(bytes as Uint8Array)).toContain('hello')
 
     const root = (await page.request({
       op: 'list',
       path: containerUriText(archive),
     })) as readonly { readonly id: string; readonly name: string; readonly directory: boolean }[]
-    expect(root.map(item => [item.name, item.directory]).sort()).toEqual([
-      ['art', true],
-      ['readme.txt', false],
-    ])
-    // a child's id is its own address, so the page descends without knowing the encoding
-    const art = root.find(item => item.name === 'art')
-    expect(parseContainerUriText(art?.id ?? '')).toEqual({ container: archive, entry: 'art' })
+    expect(root.map(item => [item.name, item.directory])).toEqual([['hello.txt', false]])
+    // a child's id is its own address, so the page does not need to know the encoding
+    expect(parseContainerUriText(root[0]?.id ?? '')).toEqual({
+      container: archive,
+      entry: 'hello.txt',
+    })
   }, 180_000)
 })

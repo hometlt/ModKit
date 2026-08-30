@@ -55,7 +55,7 @@ against the sealed implementation, so the two agree by evidence rather than asse
 
 **Sources.** `SPEC_UVM.md` §4.1 allows `profile` to be `core`, `full` or a game name, and §5 defines
 two equal encodings (`.uvm.glb` and `.uvm.gltf` plus siblings). The only executable UVM reader —
-`modkitX3/extensions/common/models/src/uvm/codec.js` — accepts GLB only, requires
+`modkitX3/extensions/common/models/src/formats/uvm/codec.js` — accepts GLB only, requires
 `profile: "core"`, requires `UV_asset` and `UV_provenance`, requires triangle primitives, and takes
 a node transform from `node.matrix` while ignoring TRS.
 

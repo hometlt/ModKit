@@ -1,9 +1,10 @@
 import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 /**
  * Properties of the single-file production dist (owner authorisation 2026-08-14).
@@ -14,7 +15,27 @@ import { describe, expect, it } from 'vitest'
  */
 
 const root = fileURLToPath(new URL('../..', import.meta.url))
-const bundlePath = (...parts: string[]) => join(root, ...parts)
+const stagedDist = mkdtempSync(join(tmpdir(), 'x3-bundle-conformance-'))
+const stagedManifest = join(stagedDist, 'bundle-hashes.json')
+const bundlePath = (...parts: string[]) => {
+  const staged = join(stagedDist, ...parts)
+  return existsSync(staged) ? staged : join(root, ...parts)
+}
+
+beforeAll(() => {
+  const repositoryBefore = repositoryDistHashes()
+  const result = spawnSync(
+    process.execPath,
+    [join(root, 'scripts', 'bundle.mjs'), '--artifact-root', stagedDist, '--out', stagedManifest],
+    { cwd: root, encoding: 'utf8' },
+  )
+  if (result.status !== 0) {
+    throw new Error(`isolated bundle staging failed:\n${result.stderr || result.stdout}`)
+  }
+  expect(repositoryDistHashes()).toEqual(repositoryBefore)
+})
+
+afterAll(() => rmSync(stagedDist, { recursive: true, force: true }))
 
 const PUBLISHED_ENTRIES = [
   'packages/core/dist/index.js',
@@ -101,6 +122,16 @@ const PUBLISHED_ENTRIES = [
   'packages/ui/dist/hex-editor/index.js',
   'packages/ui/dist/media/encoded.js',
 ]
+
+const repositoryDistHashes = () =>
+  Object.fromEntries(
+    [...PUBLISHED_ENTRIES, 'apps/cli/dist/main.js'].map(entry => [
+      entry,
+      createHash('sha256')
+        .update(readFileSync(join(root, entry)))
+        .digest('hex'),
+    ]),
+  )
 
 /**
  * Every module specifier the file still depends on. Matches `from '…'` (import and export
@@ -214,19 +245,21 @@ describe('single-file production dist', () => {
      * baseline.
      *
      * This suite used to run the generator's default write mode twice and diff
-     * `scripts/bundle-hashes.json`, which meant an ordinary `pnpm test` rewrote a reviewed,
-     * committed file as a side effect of asking whether the build is deterministic. The question is
-     * a good one; overwriting the answer's own baseline to ask it is not. `--out` sends the manifest
-     * somewhere disposable, so the run proves determinism and changes nothing a human tracks.
+     * `scripts/bundle-hashes.json`, which meant an ordinary `pnpm test` rewrote reviewed output as
+     * a side effect of asking whether the build is deterministic. `--manifest-only` builds every
+     * entry in memory and sends only its hashes to scratch. This also keeps other Vitest workers
+     * from observing a half-pruned dist while this suite runs.
      */
     const baseline = join(root, 'scripts', 'bundle-hashes.json')
     const before = existsSync(baseline) ? readFileSync(baseline, 'utf8') : undefined
+    const distEntries = [...PUBLISHED_ENTRIES, 'apps/cli/dist/main.js']
+    const distBefore = repositoryDistHashes()
     const scratch = mkdtempSync(join(tmpdir(), 'x3-bundle-determinism-'))
     const run = (attempt: string) => {
       const out = join(scratch, `${attempt}.json`)
       const result = spawnSync(
         process.execPath,
-        [join(root, 'scripts', 'bundle.mjs'), '--out', out],
+        [join(root, 'scripts', 'bundle.mjs'), '--manifest-only', '--out', out],
         { cwd: root, encoding: 'utf8' },
       )
       expect(result.status, result.stderr).toBe(0)
@@ -243,9 +276,8 @@ describe('single-file production dist', () => {
     expect(second).toBe(first)
     // and the baseline this suite exists to protect is exactly as it was found
     expect(existsSync(baseline) ? readFileSync(baseline, 'utf8') : undefined).toBe(before)
+    expect(repositoryDistHashes()).toEqual(distBefore)
     const hashes = JSON.parse(first) as Record<string, string>
-    expect(Object.keys(hashes).sort()).toEqual(
-      [...PUBLISHED_ENTRIES, 'apps/cli/dist/main.js'].sort(),
-    )
+    expect(Object.keys(hashes).sort()).toEqual(distEntries.sort())
   })
 })

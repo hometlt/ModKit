@@ -59,32 +59,35 @@ describe('portable settings', () => {
   it('normalizes bounded local game installation paths and preserves their priority order', () => {
     const tooMany = Array.from(
       { length: GAME_INSTALLATION_PATH_LIMIT + 2 },
-      (_, index) => `C:\\Games\\SC2-${index}`,
+      (_, index) => `C:\\Games\\ALPHA-${index}`,
     )
     const normalized = normalizeSettings({
       gameInstallations: {
-        'ORG.MODKITX/STARCRAFT-2': {
+        'ORG.EXAMPLE/GAME-ALPHA': {
           configuredPaths: [
-            ' C:\\Games\\StarCraft II ',
+            ' C:\\Games\\Example Game Alpha ',
             'https://example.invalid/game',
             'relative/game',
-            'C:\\Games\\StarCraft II',
+            'C:\\Games\\Example Game Alpha',
             ...tooMany,
           ],
         },
         'not-qualified': { configuredPaths: ['/ignored'] },
-        'org.modkitx/warzone-2100': {
-          configuredPaths: ['/opt/warzone2100', 'bad\0path'],
+        'org.example/game-beta': {
+          configuredPaths: ['/opt/gamebeta', 'bad\0path'],
         },
       },
     })
 
     expect(
-      normalized.document.gameInstallations['org.modkitx/starcraft-2']?.configuredPaths,
-    ).toEqual(['C:\\Games\\StarCraft II', ...tooMany.slice(0, GAME_INSTALLATION_PATH_LIMIT - 1)])
-    expect(
-      normalized.document.gameInstallations['org.modkitx/warzone-2100']?.configuredPaths,
-    ).toEqual(['/opt/warzone2100'])
+      normalized.document.gameInstallations['org.example/game-alpha']?.configuredPaths,
+    ).toEqual([
+      'C:\\Games\\Example Game Alpha',
+      ...tooMany.slice(0, GAME_INSTALLATION_PATH_LIMIT - 1),
+    ])
+    expect(normalized.document.gameInstallations['org.example/game-beta']?.configuredPaths).toEqual(
+      ['/opt/gamebeta'],
+    )
     expect(normalized.document.gameInstallations['not-qualified']).toBeUndefined()
     expect(normalized.problems).toEqual(
       expect.arrayContaining([
@@ -98,15 +101,15 @@ describe('portable settings', () => {
   it('serializes game ids deterministically without reordering configured paths', () => {
     const document = normalizeSettings({
       gameInstallations: {
-        'org.modkitx/warzone-2100': { configuredPaths: ['/second', '/first'] },
-        'org.modkitx/starcraft-2': { configuredPaths: ['D:\\SC2', 'C:\\SC2'] },
+        'org.example/game-beta': { configuredPaths: ['/second', '/first'] },
+        'org.example/game-alpha': { configuredPaths: ['D:\\ALPHA', 'C:\\ALPHA'] },
       },
     }).document
     const serialized = serializeSettings(document)
-    expect(serialized.indexOf('org.modkitx/starcraft-2')).toBeLessThan(
-      serialized.indexOf('org.modkitx/warzone-2100'),
+    expect(serialized.indexOf('org.example/game-alpha')).toBeLessThan(
+      serialized.indexOf('org.example/game-beta'),
     )
-    expect(serialized.indexOf('D:\\\\SC2')).toBeLessThan(serialized.indexOf('C:\\\\SC2'))
+    expect(serialized.indexOf('D:\\\\ALPHA')).toBeLessThan(serialized.indexOf('C:\\\\ALPHA'))
   })
 })
 

@@ -133,9 +133,9 @@
     },
     {
       "package": "@modkitx/data-processing",
-      "owner": "extensions/common/data/text-delimited",
+      "owner": "extensions/common/data/text-csv",
       "state": "ported",
-      "note": "plus text-json/text-ini/text-toml/text-yaml; one legacy package fanned out to the delimited and structured-text families"
+      "note": "plus native Core JSON and the text-ini/text-toml/text-yaml families; one legacy package fanned out to the delimited and structured-text implementations"
     },
     {
       "package": "@modkitx/documents-processing",

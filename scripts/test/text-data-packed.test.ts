@@ -73,17 +73,7 @@ function textFiles(directory: string): string[] {
 
 const groups = [
   {
-    directory: 'text-json',
-    packageName: 'modkit-extension-x3-text-json',
-    formats: ['json', 'jsonc'],
-    dependencies: ['@modkitx-x3/codec-kit', 'jsonc-parser'],
-    samples: [
-      ['json', 'common.text-data/json-syntax', 'json', '{"x":1}'],
-      ['jsonc', 'common.text-data/jsonc-syntax', 'jsonc', '{//c\n"x":1}'],
-    ],
-  },
-  {
-    directory: 'text-delimited',
+    directory: 'text-csv',
     packageName: 'modkit-extension-x3-text-delimited',
     formats: ['csv', 'tsv'],
     dependencies: ['@modkitx-x3/codec-kit'],
@@ -173,7 +163,7 @@ describe('13B packed text extension boundaries', () => {
         ),
       ).toMatchObject({ state: 'unresolved', reason: 'no-offer' })
 
-      const forbidden = ["'jsonc-parser'", "'smol-toml'", "'@rgrove/parse-xml'", "from 'yaml'"]
+      const forbidden = ["'smol-toml'", "'@rgrove/parse-xml'", "from 'yaml'"]
       for (const name of ['core', 'sdk', 'vfs', 'host']) {
         const packageRoot = join(platformOnly, 'node_modules', '@modkitx-x3', name)
         const combined = textFiles(packageRoot)
@@ -228,6 +218,11 @@ describe('13B packed text extension boundaries', () => {
           readFileSync(externalRequire.resolve(`${group.packageName}/package.json`), 'utf8'),
         ) as { dependencies: Record<string, string> }
         expect(Object.keys(installed.dependencies).sort()).toEqual([...group.dependencies].sort())
+        const extensionSource = textFiles(
+          join(external, 'node_modules', ...group.packageName.split('/')),
+        )
+          .map(file => readFileSync(file, 'utf8'))
+          .join('\n')
         for (const parser of parserPackages) {
           const parserPackageJson = join(
             external,
@@ -240,9 +235,9 @@ describe('13B packed text extension boundaries', () => {
               true,
             )
           } else {
-            expect(existsSync(parserPackageJson), `${group.packageName} leaked ${parser}`).toBe(
-              false,
-            )
+            // jsonc-parser is installed transitively by the host's mandatory native JSON support;
+            // isolation means an independent extension neither declares nor imports it.
+            expect(extensionSource, `${group.packageName} imported ${parser}`).not.toContain(parser)
           }
         }
       }

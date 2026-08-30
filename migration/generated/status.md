@@ -54,7 +54,7 @@ Ledger распределяет ровно **258 VS Code + 8 CLI = 266** legacy-
 | -------------- | ------ | --------- |
 | commands       | 64     | 24        |
 | custom editors | 11     | 1         |
-| languages      | 8      | 6         |
+| languages      | 8      | 0         |
 | views          | 6      | 2         |
 
 Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`, `subject.open`, `subject.preview`, `subject.validate`. Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.
@@ -183,15 +183,11 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 ## 8. Профили продукта
 
-| Preset                   | Входит с release     | Статус      | Семейств | Планируемых | Минимальный closure |
-| ------------------------ | -------------------- | ----------- | -------- | ----------- | ------------------- |
-| Common/Documents         | `mk3-ga`             | `available` | 7        | 0           | да                  |
-| SC2 Mod Studio           | `mk3-ga`             | `available` | 10       | 0           | нет                 |
-| C&C SAGE Studio          | `mk3-deferred-games` | `available` | 8        | 0           | нет                 |
-| Warzone 2100 Studio      | `mk3-ga`             | `available` | 5        | 0           | нет                 |
-| BAR/Spring Studio        | `mk3-deferred-games` | `planned`   | 4        | 1           | нет                 |
-| Universal Asset Explorer | `mk3-ga`             | `available` | 16       | 0           | нет                 |
-| Headless Mod CI          | `mk3-ga`             | `available` | 11       | 0           | да                  |
+| Preset                   | Входит с release | Статус      | Семейств | Планируемых | Минимальный closure |
+| ------------------------ | ---------------- | ----------- | -------- | ----------- | ------------------- |
+| Common/Documents         | `mk3-ga`         | `available` | 6        | 0           | да                  |
+| Universal Asset Explorer | `mk3-ga`         | `available` | 15       | 0           | нет                 |
+| Headless Mod CI          | `mk3-ga`         | `available` | 10       | 0           | да                  |
 
 ## 9. Матрица проекций
 

@@ -1,5 +1,5 @@
 /**
- * Block 11 slice 11A — plain text in its final home, `extensions/common/data/plain-text`.
+ * Core-native plain text: the implementation is compiled into Host, not installed as an extension.
  *
  * The MK2 route decoded strict UTF-8 and rejected everything else. The relocated codec keeps the
  * contribution identity `org.modkitx/txt`, stays read-only, and proves the three things the plan
@@ -26,7 +26,7 @@ import {
 } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const extensionRoot = join(repoRoot, 'extensions', 'common', 'data', 'plain-text')
+const nativeRoot = join(repoRoot, 'packages', 'host', 'native-text')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 
 const budget: ResourceBudget = {
@@ -86,7 +86,7 @@ function inputFor(source: ArtifactByteSource): AssetInput {
 
 async function codec(): Promise<Codec> {
   const module = (await import(
-    pathToFileURL(join(extensionRoot, 'src', 'txt', 'codec.js')).href
+    pathToFileURL(join(nativeRoot, 'plain', 'txt', 'codec.js')).href
   )) as { createCodec(): Codec }
   return module.createCodec()
 }
@@ -119,14 +119,14 @@ describe('11A common/plain-text', () => {
     const registry = createSpecSchemaRegistry(A1_SPEC_SCHEMA_ENTRIES)
     for (const file of ['codec-txt.json', 'writer-plain-text.json']) {
       const manifest = JSON.parse(
-        await readFile(join(extensionRoot, 'contributions', file), 'utf8'),
+        await readFile(join(nativeRoot, 'contributions', file), 'utf8'),
       ) as ContributionManifestV1Wire
       const result = await validateContributionManifest(manifest, registry)
       expect(result.specState, `${file}: ${JSON.stringify(result.diagnostics)}`).toBe('validated')
     }
 
     const codecManifest = JSON.parse(
-      await readFile(join(extensionRoot, 'contributions', 'codec-txt.json'), 'utf8'),
+      await readFile(join(nativeRoot, 'contributions', 'codec-txt.json'), 'utf8'),
     ) as ContributionManifestV1Wire & {
       spec: { operations: readonly { id: string; mutatesSource: boolean }[] }
     }
@@ -212,23 +212,6 @@ describe('11A common/plain-text', () => {
       expect(detected.evidence[0]?.note, reason).toBe(reason)
       await expect(open(bytes)).rejects.toThrow(/rejected a binary source/u)
     }
-  })
-
-  it('yields a .txt that a game owns instead of racing a codec with format evidence', async () => {
-    const bytes = utf8('Cmd/Name=Attack\r\n')
-    const owned = [
-      'memory://plain-text/Mods/Core.SC2Mod/enUS.SC2Assets/LocalizedData/GameStrings.txt',
-      'file:///games/Campaigns/Liberty.SC2Campaign/Base.SC2Data/notes.txt',
-    ]
-    for (const uri of owned) {
-      const detected = await probe(bytes, uri)
-      expect(detected.confidence, uri).toBeLessThanOrEqual(0.05)
-      expect(detected.evidence[0]?.note, uri).toBe('owned-game-namespace')
-    }
-    // outside a game namespace the same bytes are ordinary plain text
-    expect((await probe(bytes, 'memory://plain-text/notes.txt')).confidence).toBeGreaterThan(0.8)
-    // and a .txt without the extension evidence is plausible, not confident
-    expect((await probe(bytes, 'memory://plain-text/notes')).confidence).toBeLessThan(0.8)
   })
 
   it('inspects, validates, searches and exports the parity fixture byte-for-byte', async () => {

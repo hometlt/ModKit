@@ -68,7 +68,7 @@ async function listed(nodes: AsyncIterable<VfsNode>): Promise<readonly VfsNode[]
   return out
 }
 
-describe('Spring rapid VFS provider', () => {
+describe('Rapid rapid VFS provider', () => {
   it('mounts manifest records case-insensitively and verifies pool bytes before exposing them', async () => {
     const unit = new TextEncoder().encode('return { objectName = "Units/Test.s3o" }')
     const model = Uint8Array.from([1, 2, 3, 4])

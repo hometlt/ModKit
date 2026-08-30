@@ -24,18 +24,18 @@
       "currentPath": "extensions/common/audio/src/ogg/codec.js"
     },
     {
-      "family": "common/data/text-delimited",
+      "family": "common/data/text-csv",
       "codec": "csv",
       "origin": "authored",
       "formerPath": "extensions/common/data/text-delimited/src/formats/csv/codec.js",
-      "currentPath": "extensions/common/data/text-delimited/src/csv/codec.js"
+      "currentPath": "extensions/common/data/text-csv/src/csv/codec.js"
     },
     {
-      "family": "common/data/text-delimited",
+      "family": "common/data/text-csv",
       "codec": "tsv",
       "origin": "authored",
       "formerPath": "extensions/common/data/text-delimited/src/formats/tsv/codec.js",
-      "currentPath": "extensions/common/data/text-delimited/src/tsv/codec.js"
+      "currentPath": "extensions/common/data/text-csv/src/tsv/codec.js"
     },
     {
       "family": "common/data/text-ini",
@@ -45,18 +45,25 @@
       "currentPath": "extensions/common/data/text-ini/src/ini/codec.js"
     },
     {
-      "family": "common/data/text-json",
+      "family": "core/native-text",
       "codec": "json",
       "origin": "authored",
       "formerPath": "extensions/common/data/text-json/src/formats/json/codec.js",
-      "currentPath": "extensions/common/data/text-json/src/json/codec.js"
+      "currentPath": "packages/host/native-text/json/families/json/entrypoints/json-codec.js"
     },
     {
-      "family": "common/data/text-json",
+      "family": "core/native-text",
       "codec": "jsonc",
       "origin": "authored",
       "formerPath": "extensions/common/data/text-json/src/formats/jsonc/codec.js",
-      "currentPath": "extensions/common/data/text-json/src/jsonc/codec.js"
+      "currentPath": "packages/host/native-text/json/families/json/entrypoints/jsonc-codec.js"
+    },
+    {
+      "family": "core/native-text",
+      "codec": "txt",
+      "origin": "authored",
+      "formerPath": "extensions/common/data/plain-text/src/txt/codec.js",
+      "currentPath": "packages/host/native-text/plain/txt/codec.js"
     },
     {
       "family": "common/data/text-toml",

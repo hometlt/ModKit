@@ -3,26 +3,17 @@
   "schemaVersion": 1,
   "bundledBaseRoots": ["extensions/common", "extensions/ps1"],
   "extensionSets": {
-    "structured-text": [
-      "text-json",
-      "text-delimited",
-      "text-ini",
-      "text-xml",
-      "text-yaml",
-      "text-toml"
-    ],
+    "structured-text": ["text-delimited", "text-ini", "text-xml", "text-yaml", "text-toml"],
     "documents": ["documents"],
     "media": ["images", "vector", "audio", "video"],
     "models-and-archives": ["models", "rendering-3d", "archives"],
     "full-codecs": [
-      "text-json",
       "text-delimited",
       "text-ini",
       "text-xml",
       "text-yaml",
       "text-toml",
       "documents",
-      "plain-text",
       "images",
       "vector",
       "audio",
@@ -33,7 +24,7 @@
       "ps1",
       "uv-materializer"
     ],
-    "editor-and-documents": ["text-json", "documents", "ui-monaco"]
+    "editor-and-documents": ["documents", "ui-monaco"]
   },
   "releaseSet": "full-codecs"
 }

@@ -23,24 +23,16 @@ packages:
   - 'extensions/common/models'
   - 'extensions/common/rendering/rendering-3d'
   - 'extensions/common/video'
-  - 'extensions/common/data/text-json'
-  - 'extensions/common/data/text-delimited'
+  - 'extensions/common/data/text-csv'
   - 'extensions/common/data/text-ini'
   - 'extensions/common/data/text-xml'
   - 'extensions/common/data/text-yaml'
   - 'extensions/common/data/text-toml'
   - 'extensions/common/documents'
   - 'extensions/common/uv-materializer'
-  - 'extensions/common/data/plain-text'
   - 'extensions/common/ui/monaco'
-  - 'extensions/ea/*'
-  - 'extensions/opensource/spring'
   - 'examples/extensions/counter-runtime'
   - 'examples/extensions/software-renderer'
-  # MK2 → MK3 converted staging area (scripts/convert-mk2.mjs). Workspace membership exists so
-  # the generated modules can import `@modkitx-x3/codec-kit` by package name instead of by path;
-  # none of these is a bootstrap dependency either.
-  - 'extensions/mk2/*'
 # esbuild works through its platform binary package (@esbuild/win32-x64); its postinstall
 # script is only a fallback/validator, so build scripts stay denied (pnpm default-secure).
 allowBuilds:

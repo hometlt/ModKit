@@ -80,10 +80,15 @@ describe('web composition root', () => {
     expect(app.worker.profile.facilities).not.toContain('dialog.file-picker')
   })
 
-  it('boots both realms with an empty catalog', async () => {
+  it('boots both realms with only the mandatory native text inventory', async () => {
     const app = await createWebApp(IDENTITY, [], { main: [], worker: [], sharedMemory: false })
-    expect(app.main.inventory.extensions).toHaveLength(0)
-    expect(app.worker.inventory.extensions).toHaveLength(0)
+    for (const realm of [app.main, app.worker]) {
+      expect(realm.inventory.extensions).toHaveLength(1)
+      expect(realm.inventory.extensions[0]).toMatchObject({
+        source: 'native:core/text',
+        manifest: { publisher: 'org.modkitx', id: 'core-native-text' },
+      })
+    }
     expect(app.main.inventory.diagnostics.filter(d => d.severity === 'error')).toHaveLength(0)
   })
 })

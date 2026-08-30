@@ -9,7 +9,7 @@ export const createCodec = () =>
       id: 'skin',
       role: 'texture',
       ownership: 'companion',
-      patterns: ['bowl.tga'],
+      patterns: ['cube.texture'],
       scopes: ['current-mount', 'enclosing-container'],
       cardinality: 'zero-or-one',
       required: false,

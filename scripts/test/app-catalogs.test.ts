@@ -57,7 +57,7 @@ describe('deterministic Electron app catalog emission', () => {
     const generated = join(root, 'apps', 'electron', 'generated')
     const bundled = readFileSync(join(generated, 'bundled-catalog.cjs'), 'utf8')
     expect(bundled).toContain("  'common/archives',")
-    expect(bundled).toContain("  'common/data/text-json',")
+    expect(bundled).toContain("  'common/data/text-csv',")
     expect(bundled).toContain("  'common/video',")
     expect(bundled).not.toContain('ui-monaco')
     expect(bundled).not.toContain('ui-graph-3d')
@@ -152,7 +152,7 @@ describe('deterministic Electron app catalog emission', () => {
       `${JSON.stringify({ name: 'grouping-only', private: true }, undefined, 2)}\n`,
       'utf8',
     )
-    renameSync(join(common, 'data', 'text-json'), join(group, 'text-json'))
+    renameSync(join(common, 'data', 'text-csv'), join(group, 'text-csv'))
 
     const emitted = run(root)
     expect(emitted.status, emitted.stderr).toBe(0)
@@ -160,8 +160,8 @@ describe('deterministic Electron app catalog emission', () => {
       join(root, 'apps', 'electron', 'generated', 'bundled-catalog.cjs'),
       'utf8',
     )
-    expect(bundled).toContain("  'common/data/group/text-json',")
-    expect(bundled).not.toContain("  'common/data/text-json',")
+    expect(bundled).toContain("  'common/data/group/text-csv',")
+    expect(bundled).not.toContain("  'common/data/text-csv',")
     expect(bundled).not.toContain("  'common/data/group',")
   })
 })

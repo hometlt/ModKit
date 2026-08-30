@@ -13,13 +13,13 @@
 import type { Diagnostic } from '@modkitx-x3/core'
 import {
   linkedInProcessBackend,
-  TRUSTED_IN_PROCESS_EXECUTION_BACKEND,
   createExecutionBackendRegistry,
   type ExecutionBackend,
   type ExecutionBackendRegistry,
 } from '../execution/backend.js'
 import type { DataSourceSurfaceSource } from '../execution/index.js'
 import type { WorkerBackendPolicy } from '../execution/worker-policy.js'
+import { NATIVE_TEXT_MODULES, withNativeTextModules } from '../native-text.js'
 import { createNodeWorkerBackend } from './worker-backend.js'
 
 export interface NodeExecutionBackendsOptions {
@@ -53,11 +53,13 @@ export function createNodeExecutionBackends(
   options: NodeExecutionBackendsOptions = {},
 ): ExecutionBackendRegistry {
   const backends: ExecutionBackend[] = []
-  if (options.linkedModules !== undefined && options.linkedModules.size > 0) {
-    backends.push(linkedInProcessBackend(options.linkedModules))
-  } else if (options.trustedInProcess !== false) {
-    backends.push(TRUSTED_IN_PROCESS_EXECUTION_BACKEND)
-  }
+  // Core-native modules are always present. `trustedInProcess: false` only excludes application-
+  // supplied linked extensions; it must not disable the built-in text/JSON implementation.
+  const linkedModules =
+    options.trustedInProcess === false
+      ? NATIVE_TEXT_MODULES
+      : withNativeTextModules(options.linkedModules)
+  backends.push(linkedInProcessBackend(linkedModules))
   backends.push(
     createNodeWorkerBackend({
       ...(options.policy === undefined ? {} : { policy: options.policy }),

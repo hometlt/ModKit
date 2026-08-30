@@ -19,14 +19,12 @@ import {
   sourceRevisionToken,
   sourceUriFor,
   stageIdOf
-} from "./chunks/chunk-H3L6ZUVX.js";
+} from "./chunks/chunk-EWFHUSBY.js";
 import {
-  define_MODKIT_EMBED_EXTENSION_ORIGINS_default,
-  init_define_MODKIT_EMBED_EXTENSION_ORIGINS
-} from "./chunks/chunk-HJULOH5B.js";
+  define_MODKIT_EMBED_EXTENSION_ORIGINS_default
+} from "./chunks/chunk-HVXSZ42C.js";
 
 // apps/web/src/embed.ts
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var MODKIT_VIEWER_TAG = "modkit-viewer";
 var EMBED_MAXIMUM_BYTES = EXPLORER_MAXIMUM_BYTES;
 var EMBED_CHROME_CSS = `

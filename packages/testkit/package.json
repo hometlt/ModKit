@@ -20,10 +20,7 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "corpus:synthetic": "node scripts/gen-synthetic-corpus.mjs",
-    "corpus:synthetic:check": "node scripts/gen-synthetic-corpus.mjs --check"
-  },
+  "scripts": {},
   "dependencies": {
     "@modkitx-x3/core": "workspace:*",
     "@modkitx-x3/host": "workspace:*",

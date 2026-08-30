@@ -22,10 +22,9 @@ export const nestedCompanionCodec = options =>
     id: options.id,
     format: { id: options.id.split('/')[1], label: 'Nested namespace companion fixture' },
     async detect(bytes) {
-      // the fixture payload is the repository's synthetic Westwood W3D; four leading zero bytes are
-      // its first chunk id, which is all the identity this fixture needs
-      return bytes.byteLength >= 8 && bytes[0] === 0 && bytes[1] === 0 && bytes[2] === 0
-        ? { confidence: 0.99, kind: 'magic', note: 'synthetic W3D chunk header' }
+      // A neutral synthetic mesh magic is enough for the generic host contract.
+      return bytes.byteLength >= 5 && new TextDecoder().decode(bytes.slice(0, 5)) === 'MESH\u0000'
+        ? { confidence: 0.99, kind: 'magic', note: 'synthetic mesh header' }
         : { confidence: 0, kind: 'magic', note: 'not the fixture payload' }
     },
     async planInput() {
@@ -58,11 +57,11 @@ export const nestedCompanionCodec = options =>
           : { state: 'missing' }),
       }
       return {
-        detection: { confidence: 0.99, kind: 'magic', note: 'synthetic W3D chunk header' },
+        detection: { confidence: 0.99, kind: 'magic', note: 'synthetic mesh header' },
         summary: {
           modelBytes: bytes.byteLength,
           // the companion's bytes verbatim, so the test can compare them with the fixture on disk
-          // and prove the RefPack path through the container is byte-exact
+          // and prove the container decompression path is byte-exact
           skin: skin ?? null,
           boundBindingIds: bound.map(binding => binding.bindingId),
           // the container reference the host bound, which the codec reports but never constructs

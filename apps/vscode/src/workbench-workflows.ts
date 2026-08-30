@@ -214,18 +214,4 @@ export const VSCODE_LEGACY_VIEW_REPLACEMENTS: readonly LegacyViewReplacement[] =
     surfaces: Object.freeze(['host-view'] as const),
     reason: 'Topology, facilities, sources and inventory health are native Host view rows.',
   }),
-  Object.freeze({
-    legacyViewId: 'sc2layoutElementView',
-    surfaces: Object.freeze([
-      'presentation:tree',
-      'presentation:relations',
-      'presentation:edit',
-    ] as const),
-    reason: 'Navigation and refactors use generic tree, relation and evidence-gated edit stages.',
-  }),
-  Object.freeze({
-    legacyViewId: 'sc2layoutMainView',
-    surfaces: Object.freeze(['presentation:workbench'] as const),
-    reason: 'The shared subject workbench selects all applicable presentation and edit stages.',
-  }),
 ])

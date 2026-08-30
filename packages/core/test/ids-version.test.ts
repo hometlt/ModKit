@@ -52,7 +52,7 @@ describe('id grammars (MK3/23 §3)', () => {
       'common.image/decoded',
       'common.table/view',
       'multiverse.rts/shield-state',
-      'blizzard.sc2/shield-regeneration-system',
+      'publisher-alpha.alpha/shield-regeneration-system',
       'org.modkitx/permission-denied',
       'x3.demo/greeter',
     ]) {

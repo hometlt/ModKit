@@ -113,7 +113,7 @@ describe('web settings', () => {
     for (const excluded of WEB_EXTENSION_CATALOG.excluded) {
       expect(excluded.reason).toMatch(/not vendored/u)
     }
-    expect(WEB_EXTENSION_CATALOG.excluded.map(entry => entry.name)).toContain('text-json')
+    expect(WEB_EXTENSION_CATALOG.excluded.map(entry => entry.name)).not.toContain('text-json')
   })
 })
 

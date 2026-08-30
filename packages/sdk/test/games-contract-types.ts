@@ -8,27 +8,27 @@ import type {
 } from '@modkitx-x3/sdk/games'
 import type { TypedServiceContractRequest } from '@modkitx-x3/sdk/service-contracts'
 
-export const starcraft2Route = {
+export const gamealphaRoute = {
   contract: 'common.game/installation-discovery',
   major: 1,
-  facet: { gameId: 'org.modkitx/starcraft-2' },
+  facet: { gameId: 'org.example/game-alpha' },
 } satisfies TypedServiceContractRequest<'common.game/installation-discovery', 1>
 
-export const starcraft2Contribution = {
+export const gamealphaContribution = {
   provides: [
     {
-      offerId: 'starcraft2-installation-v1',
+      offerId: 'gamealpha-installation-v1',
       contract: 'common.game/installation-discovery',
       major: 1,
       version: '1.0.0',
-      facet: { gameIds: ['org.modkitx/starcraft-2'] },
+      facet: { gameIds: ['org.example/game-alpha'] },
     },
   ],
   lifecycleScope: 'session',
 } satisfies ServiceProviderContributionSpecV1<'common.game/installation-discovery'>
 
 export const invalidDiscoveryRequest = {
-  gameId: 'org.modkitx/starcraft-2',
+  gameId: 'org.example/game-alpha',
   // @ts-expect-error Candidate ceilings cross the service boundary as bounded numbers.
   maxCandidates: 16n,
 } satisfies GameInstallationDiscoveryRequest
@@ -36,25 +36,25 @@ export const invalidDiscoveryRequest = {
 export declare const discovery: GameInstallationDiscovery
 export declare const providerModule: GameInstallationProviderModule
 export const installations = discovery.discover({
-  gameId: 'org.modkitx/starcraft-2',
-  configuredPaths: ['C:/Games/StarCraft II'],
+  gameId: 'org.example/game-alpha',
+  configuredPaths: ['C:/Games/Example Game Alpha'],
   maxCandidates: 16,
 })
 
-export const starcraft2LaunchRoute = {
+export const gamealphaLaunchRoute = {
   contract: 'common.game/launch-plan',
   major: 1,
-  facet: { gameId: 'org.modkitx/starcraft-2' },
+  facet: { gameId: 'org.example/game-alpha' },
 } satisfies TypedServiceContractRequest<'common.game/launch-plan', 1>
 
-export const starcraft2LaunchContribution = {
+export const gamealphaLaunchContribution = {
   provides: [
     {
-      offerId: 'starcraft2-native-map-launch-v1',
+      offerId: 'gamealpha-native-map-launch-v1',
       contract: 'common.game/launch-plan',
       major: 1,
       version: '1.0.0',
-      facet: { gameIds: ['org.modkitx/starcraft-2'] },
+      facet: { gameIds: ['org.example/game-alpha'] },
     },
   ],
   lifecycleScope: 'operation',
@@ -63,14 +63,14 @@ export const starcraft2LaunchContribution = {
 export declare const launchPlanner: GameLaunchPlanner
 export declare const launchProviderModule: GameLaunchProviderModule
 export const launchPlan = launchPlanner.plan({
-  gameId: 'org.modkitx/starcraft-2',
+  gameId: 'org.example/game-alpha',
   installation: {
-    gameId: 'org.modkitx/starcraft-2',
-    displayName: 'StarCraft II',
-    installPath: 'C:/Games/StarCraft II',
-    normalizedPath: 'C:/Games/StarCraft II',
+    gameId: 'org.example/game-alpha',
+    displayName: 'Example Game Alpha',
+    installPath: 'C:/Games/Example Game Alpha',
+    normalizedPath: 'C:/Games/Example Game Alpha',
     origins: ['configured-path'],
-    evidence: [{ kind: 'fixture', path: 'C:/Games/StarCraft II', found: true }],
+    evidence: [{ kind: 'fixture', path: 'C:/Games/Example Game Alpha', found: true }],
   },
-  resource: { kind: 'map', path: 'C:/Maps/Test.SC2Map' },
+  resource: { kind: 'map', path: 'C:/Maps/Test.ALPHAMap' },
 })

@@ -86,9 +86,7 @@ function fixture() {
   const active = [
     ['common-documents', []],
     ['headless-mod-ci', []],
-    ['sc2-mod-studio', ['blizzard-starcraft2']],
     ['universal-asset-explorer', ['images']],
-    ['warzone-2100-studio', ['opensource-warzone-2100']],
   ].map(([id, extensionFamilies]) => ({
     id,
     introducedInClosure: 'mk3-ga',
@@ -98,23 +96,7 @@ function fixture() {
   }))
   json(join(root, 'migration', 'product-profiles.json'), {
     schemaVersion: 'product-profiles-1',
-    presets: [
-      ...active,
-      {
-        id: 'cnc-sage-studio',
-        introducedInClosure: 'mk3-deferred-games',
-        status: 'available',
-        extensionFamilies: ['ea-sage'],
-        serviceProviders: [],
-      },
-      {
-        id: 'bar-spring-studio',
-        introducedInClosure: 'mk3-deferred-games',
-        status: 'planned',
-        extensionFamilies: [],
-        serviceProviders: [],
-      },
-    ],
+    presets: [...active],
   })
   json(join(root, 'apps', 'vscode', 'generated', 'bundled-catalog.json'), {
     schemaVersion: 1,
@@ -146,44 +128,11 @@ function fixture() {
     'images',
     'MIT',
   )
-  extension(
-    root,
-    'extensions/blizzard/starcraft2',
-    'modkit-extension-x3-blizzard-starcraft2',
-    'org.modkitx.blizzard',
-    'starcraft2',
-    'MIT',
-  )
-  extension(
-    root,
-    'extensions/opensource/warzone-2100',
-    'modkit-extension-x3-opensource-warzone-2100',
-    'org.modkitx.opensource',
-    'warzone-2100',
-    'GPL-2.0-or-later',
-  )
-
+  extension(root, 'external/alpha', 'fixture-alpha', 'example.test', 'alpha', 'MIT')
   const catalogPath = join(root, 'apps', 'vscode', 'generated', 'bundled-catalog.json')
   const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'))
   catalog.roots[0].digest = canonicalExtensionDigest(root, 'extensions/common/images')
   json(catalogPath, catalog)
-  extension(
-    root,
-    'extensions/ea/sage',
-    'modkit-extension-x3-ea-sage',
-    'org.modkitx.ea',
-    'sage',
-    'MIT',
-  )
-  extension(
-    root,
-    'extensions/opensource/spring',
-    'modkit-extension-x3-opensource-spring',
-    'org.modkitx.opensource',
-    'spring',
-    'GPL-2.0-or-later',
-  )
-
   for (const app of [
     ['automation-host', '@modkitx-x3/automation-host'],
     ['electron', '@modkitx-x3/electron-app'],
@@ -333,20 +282,18 @@ describe('focused local RC artifacts', () => {
     const output = join(parent, 'focused')
     const { manifest } = buildRc({ repoRoot: root, outDir: output })
     const rendered = JSON.stringify(manifest)
-    expect(rendered).not.toContain('extensions/ea/')
-    expect(rendered).not.toContain('extensions/opensource/spring')
+    expect(rendered).not.toContain('external/alpha')
     for (const artifact of manifest.artifacts) {
       const bytes = readFileSync(join(output, artifact.file)).toString('utf8')
-      expect(bytes).not.toContain('extensions/ea/')
-      expect(bytes).not.toContain('extensions/opensource/spring')
+      expect(bytes).not.toContain('external/alpha')
     }
 
     const catalogPath = join(root, 'apps', 'vscode', 'generated', 'bundled-catalog.json')
     const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'))
-    catalog.roots.push({ name: 'sage', directory: 'ea/sage', digest: 'sha256:bad' })
+    catalog.roots.push({ name: 'alpha', directory: '../../external/alpha', digest: 'sha256:bad' })
     json(catalogPath, catalog)
     const second = buildRc({ repoRoot: root, outDir: join(parent, 'unselected') })
-    expect(JSON.stringify(second.manifest)).not.toContain('extensions/ea/sage')
+    expect(JSON.stringify(second.manifest)).not.toContain('external/alpha')
   })
 
   it('ratchets manifest, SBOM and notices against two clean unsigned builds', () => {
@@ -376,7 +323,7 @@ describe('focused local RC artifacts', () => {
       root: first.root,
     })
     expect(existsSync(join(first.root, 'release', 'INSTALL.md'))).toBe(true)
-    expect(existsSync(join(first.root, 'extensions', 'blizzard'))).toBe(false)
+    expect(existsSync(join(first.root, 'external'))).toBe(false)
     const firstManifest = JSON.parse(
       readFileSync(join(first.root, 'release', 'release-manifest.json'), 'utf8'),
     )

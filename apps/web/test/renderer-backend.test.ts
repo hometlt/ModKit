@@ -100,25 +100,25 @@ function inputFor(name: string, bytes: Uint8Array): AssetInput {
 
 const modelFixtures = [
   {
-    format: 'w3x',
-    codec: join(repoRoot, 'extensions', 'ea', 'models', 'src', 'sage-w3x', 'codec.js'),
-    sample: 'minimal.sage.w3x',
-    primitiveId: 'w3x-primitive-0',
-    viewProjection: [1.6, 0, 0, 0, 0, 0, 1, 0, 0, -1.6, 0, 0, -0.8, -0.8, 0, 1],
+    format: 'obj',
+    codec: join(repoRoot, 'extensions', 'common', 'models', 'src', 'obj', 'codec.js'),
+    sample: 'minimal.obj',
+    primitiveId: 'primitive-0',
+    viewProjection: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
   },
   {
-    format: 'w3d',
-    codec: join(repoRoot, 'extensions', 'ea', 'models', 'src', 'westwood-w3d', 'codec.js'),
-    sample: 'minimal.westwood.w3d',
-    primitiveId: 'w3d-primitive-0',
-    viewProjection: [1.6, 0, 0, 0, 0, 0, 1, 0, 0, -1.6, 0, 0, -0.8, -0.8, 0, 1],
+    format: 'ply',
+    codec: join(repoRoot, 'extensions', 'common', 'models', 'src', 'ply', 'codec.js'),
+    sample: 'minimal.ply',
+    primitiveId: 'primitive-0',
+    viewProjection: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
   },
   {
-    format: 'vxl',
-    codec: join(repoRoot, 'extensions', 'ea', 'tiberian-sun', 'src', 'red-alert2-vxl', 'codec.js'),
-    sample: 'minimal.ra2.vxl',
-    primitiveId: 'vxl-primitive-0-0',
-    viewProjection: [1.6, 0, 0, 0, 0, 1.6, 0, 0, 0, 0, 0.1, 0, -0.8, -0.8, 0, 1],
+    format: 'stl',
+    codec: join(repoRoot, 'extensions', 'common', 'models', 'src', 'stl', 'codec.js'),
+    sample: 'minimal.stl',
+    primitiveId: 'primitive-0',
+    viewProjection: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
   },
 ] as const
 

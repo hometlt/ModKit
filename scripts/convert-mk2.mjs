@@ -52,7 +52,11 @@ const argValue = flag => {
 }
 const x3Root = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const mk2Root = resolve(argValue('--mk2-root') ?? join(x3Root, '..', 'references', 'modkitmk2'))
-const outRoot = resolve(argValue('--out') ?? join(x3Root, 'extensions', 'mk2'))
+const outputArgument = argValue('--out')
+if (outputArgument === undefined) {
+  throw new Error('convert-mk2 is archival and requires an explicit --out <directory>')
+}
+const outRoot = resolve(outputArgument)
 const jsonPath = argValue('--json')
 // D2: the committed tree is mechanical + rework. `--mechanical-only` reproduces the narrower
 // OPUS-MK2-01 tree for reports and comparisons; `--check` compares with whatever flags it is
