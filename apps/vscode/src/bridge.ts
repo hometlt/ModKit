@@ -70,6 +70,7 @@ export interface ShellSettingsView {
   readonly problems: readonly string[]
   readonly configuredExtensions: readonly ShellConfiguredExtension[]
   readonly contributions: readonly ShellContribution[]
+  readonly disabledExtensions: readonly string[]
   readonly disabledContributions: readonly string[]
   /** Which configuration target a write lands in (`workspace` when one is open, else `user`). */
   readonly scope: 'workspace' | 'user'
@@ -124,6 +125,9 @@ export type ShellRequest =
    */
   | { readonly op: 'settings' }
   | { readonly op: 'set-contribution'; readonly id: string; readonly enabled: boolean }
+  | { readonly op: 'set-extension-coordinate'; readonly id: string; readonly enabled: boolean }
+  | { readonly op: 'set-managed-package'; readonly id: string; readonly enabled: boolean }
+  | { readonly op: 'link-extension'; readonly id: string }
   | { readonly op: 'set-extension'; readonly index: number; readonly enabled: boolean }
   | { readonly op: 'remove-extension'; readonly index: number }
   | { readonly op: 'add-extension-folder' }

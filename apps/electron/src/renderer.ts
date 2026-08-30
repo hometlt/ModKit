@@ -867,7 +867,7 @@ async function boot(): Promise<void> {
   })
   await settingsUi.reload()
 
-  // ---------------------------------------------------------------- extensions and codecs
+  // ---------------------------------------------------------------- extensions and contributions
   /**
    * Recompose the host from the settings file, then reopen whatever was open.
    *
@@ -1118,7 +1118,7 @@ async function boot(): Promise<void> {
     { separator: true },
     { label: 'Set as Default App…', command: 'default-app' },
     { label: 'Settings', command: 'settings', hint: 'Ctrl+,' },
-    { label: 'Extensions & Codecs…', command: 'extensions', hint: 'Ctrl+Shift+X' },
+    { label: 'Extensions & Contributions…', command: 'extensions', hint: 'Ctrl+Shift+X' },
   ])
   addMenu('View', [
     { label: 'Split Editor', command: 'split', hint: 'Ctrl+Backslash' },
@@ -1204,7 +1204,7 @@ async function selfTest(options: {
   portsFor(path: string): RendererEditorPorts | undefined
   /** Whatever the status line currently says, so a refusal can be read back. */
   footerText(): string
-  /** The Extensions & Codecs page, driven through its own switches like a user would. */
+  /** The Extensions & Contributions page, driven through its own switches like a user would. */
   readonly extensionsRoot: HTMLElement
   showExtensions(): void
   showWorkspace(): void
@@ -1516,7 +1516,7 @@ interface ProbePorts {
 }
 
 /**
- * The Extensions & Codecs page, driven through its own switches.
+ * The Extensions & Contributions page, driven through its own switches.
  *
  * Every claim below is about what the *host* did afterwards, never about a checkbox having been
  * clicked: a settings page whose switches write a file and change nothing is precisely the failure
@@ -1630,8 +1630,8 @@ async function extensionProbes(options: {
   } else {
     console.log(`selftest: extensions ${png.name} before ${await openAndDescribe(png)}`)
     await closeAllAndShowPage()
-    if (!(await showGroup('Codecs'))) {
-      console.log('selftest: extensions page has no Codecs group')
+    if (!(await showGroup('Contributions'))) {
+      console.log('selftest: extensions page has no Contributions group')
     } else {
       const off = codecToggle(PNG_CODEC)
       if (off === undefined) {
@@ -1643,7 +1643,7 @@ async function extensionProbes(options: {
         console.log(`selftest: extensions ${png.name} disabled ${await openAndDescribe(png)}`)
 
         await closeAllAndShowPage()
-        await showGroup('Codecs')
+        await showGroup('Contributions')
         const on = codecToggle(PNG_CODEC)
         if (on === undefined) {
           // The whole reason a disabled contribution stays in the inventory: without the record
@@ -1669,9 +1669,9 @@ async function extensionProbes(options: {
     return
   }
 
-  /** Every id the Codecs group currently lists, read from the switches themselves. */
+  /** Every id the Contributions group currently lists, read from the switches themselves. */
   const listedContributions = async (): Promise<readonly string[]> => {
-    await showGroup('Codecs')
+    await showGroup('Contributions')
     const ids = [...extensionsRoot.querySelectorAll('[data-mk-part="settings.toggle"]')].flatMap(
       node => {
         const id = node instanceof HTMLInputElement ? node.dataset['contribution'] : undefined
@@ -1680,6 +1680,17 @@ async function extensionProbes(options: {
     )
     await showGroup('Extensions')
     return ids
+  }
+  const contributionEnablement = async (id: string): Promise<string> => {
+    await showGroup('Contributions')
+    const toggle = extensionsRoot.querySelector(
+      `[data-mk-part="settings.toggle"][data-contribution="${id}"]`,
+    )
+    const state = toggle
+      ?.closest('[data-mk-part="settings.extension"]')
+      ?.querySelector<HTMLElement>('[data-enablement]')?.dataset['enablement']
+    await showGroup('Extensions')
+    return state ?? 'missing'
   }
 
   const before = await listedContributions()
@@ -1692,10 +1703,10 @@ async function extensionProbes(options: {
   )
 
   /*
-   * Switching the whole extension off, which is a different seam from switching one codec off: a
-   * disabled entry is never offered to the loader at all, so its contributions leave the inventory
-   * rather than staying in it inert. Both halves are checked, because "the switch wrote the file"
-   * and "the host stopped loading it" are two different claims.
+   * Switching the whole extension off is a different seam from switching one contribution off:
+   * its manifests and cards remain inventoried while every owned contribution becomes inactive.
+   * Both halves are checked because "the switch wrote the file" and "the host refused activation"
+   * are different claims.
    */
   const extensionToggle = (id: string): HTMLInputElement | undefined => {
     const node = extensionsRoot.querySelector(
@@ -1717,7 +1728,8 @@ async function extensionProbes(options: {
       const off = await listedContributions()
       console.log(
         `selftest: extensions codecs ${after.length} -> ${off.length}, ` +
-          `${connected} listed=${off.includes(connected)}`,
+          `${connected} listed=${off.includes(connected)} ` +
+          `state=${await contributionEnablement(connected)}`,
       )
       const again = extensionToggle('org.example/fixture-thirdparty')
       if (again !== undefined) {
@@ -1727,7 +1739,8 @@ async function extensionProbes(options: {
         const back = await listedContributions()
         console.log(
           `selftest: extensions codecs ${off.length} -> ${back.length}, ` +
-            `${connected} listed=${back.includes(connected)}`,
+            `${connected} listed=${back.includes(connected)} ` +
+            `state=${await contributionEnablement(connected)}`,
         )
       }
     }

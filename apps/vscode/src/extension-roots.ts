@@ -294,6 +294,25 @@ export function configuredDisabledContributions(value: unknown): {
   return { ids: Object.freeze(ids.sort()), problems: Object.freeze(problems) }
 }
 
+/** Read extension-coordinate enablement without removing the extension from the inventory. */
+export function configuredDisabledExtensions(value: unknown): {
+  readonly ids: readonly string[]
+  readonly problems: readonly string[]
+} {
+  const result = configuredDisabledContributions(value)
+  return {
+    ids: result.ids,
+    problems: Object.freeze(
+      result.problems.map(problem =>
+        problem
+          .replaceAll('modkit.disabledContributions', 'modkit.disabledExtensions')
+          .replaceAll('contribution ids', 'extension coordinates')
+          .replaceAll('contribution id', 'extension coordinate'),
+      ),
+    ),
+  }
+}
+
 /**
  * One entry of `modkit.extensions` as a settings surface shows it.
  *
@@ -382,6 +401,15 @@ export function withContributionDisabled(
   if (has === disabled) return { next: current, changed: false }
   const next = disabled ? [...current, id].sort() : current.filter(other => other !== id)
   return { next: Object.freeze(next), changed: true }
+}
+
+/** Toggle one extension coordinate while preserving every contribution's own switch. */
+export function withExtensionDisabled(
+  value: unknown,
+  id: string,
+  disabled: boolean,
+): { readonly next: readonly string[]; readonly changed: boolean } {
+  return withContributionDisabled(value, id, disabled)
 }
 
 /** Drop duplicates (a workspace folder that is also in the setting) keeping the first request. */

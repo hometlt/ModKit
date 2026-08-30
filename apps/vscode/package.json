@@ -157,6 +157,14 @@
           "markdownDescription": "Contribution ids to switch off, one level below `modkit.extensions`: an extension may ship several codecs and you may want only some of them. A disabled contribution stays in the inventory and loses activation, so a file only it could read opens as raw bytes with the diagnostic `x3.host/contribution-disabled` — and the switch is still there to turn it back on. Takes effect when the window reloads.",
           "type": "array"
         },
+        "modkit.disabledExtensions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "markdownDescription": "Extension coordinates to switch off without removing their cards or contributions from the inventory. Individual contribution choices are preserved and become effective again when the extension is enabled. Takes effect when the window reloads.",
+          "type": "array"
+        },
         "modkit.extensionRegistry": {
           "default": "",
           "markdownDescription": "Catalog file or HTTPS URL used by the extension manager. Opening the Extensions view reads only its local cache; the registry is contacted only by `Modkit: Refresh Extension Catalog`. `MODKIT_EXTENSION_REGISTRY` is used when this setting is empty. Remote catalogs also require an Ed25519 key map in `MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS`; remote artifact origins stay blocked unless listed in `MODKIT_EXTENSION_ALLOWED_ORIGINS`.",

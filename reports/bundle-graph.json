@@ -4,7 +4,7 @@
   "entryCount": 74,
   "totals": {
     "modules": 652,
-    "bytes": 7356426
+    "bytes": 7360720
   },
   "entries": [
     {
@@ -91,7 +91,7 @@
       "entry": "packages/host/dist/index.js",
       "surface": "host",
       "modules": 87,
-      "bytes": 806423,
+      "bytes": 807326,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -159,7 +159,7 @@
       "entry": "packages/host/dist/node/index.js",
       "surface": "host/node",
       "modules": 90,
-      "bytes": 613526,
+      "bytes": 614657,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -486,7 +486,7 @@
       "entry": "packages/ui/dist/index.js",
       "surface": "ui",
       "modules": 45,
-      "bytes": 304109,
+      "bytes": 305239,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -563,7 +563,7 @@
       "entry": "packages/ui/dist/settings/index.js",
       "surface": "ui/settings",
       "modules": 4,
-      "bytes": 35218,
+      "bytes": 36348,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core"

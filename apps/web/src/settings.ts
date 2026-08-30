@@ -7,10 +7,10 @@
  *
  * The extensions list inside the settings document is deliberately not writable, and the reason
  * has changed since S12-web: a user *can* now add an extension (a granted folder — see
- * `./extension-roots.ts`), but this host still has no enable/disable switch for an inventoried
- * extension, and the folder list lives in IndexedDB rather than in the portable settings document
- * because a directory handle cannot be serialised to text. So a write to `extensions` is refused
- * *with the reason* rather than accepted and silently ignored on the next boot.
+ * `./extension-roots.ts`) and can switch an inventoried coordinate through the portable
+ * `disabledExtensions` set. The folder locator still lives in IndexedDB because a directory handle
+ * cannot be serialised to text. So a write to `extensions` is refused *with the reason* rather than
+ * accepted and silently ignored on the next boot.
  *
  * `Storage` is taken structurally so the store is tested in Node against a plain map.
  */
@@ -33,9 +33,9 @@ export interface WebStorageLike {
 export const SETTINGS_STORAGE_KEY = 'org.modkitx.app.web/settings'
 
 export const EXTENSIONS_READ_ONLY_REASON =
-  'this host has no enable/disable switch for an inventoried extension yet, so the settings ' +
-  'extension list cannot be written here; add or remove your own extension folders in the ' +
-  'Extensions panel instead'
+  'browser extension locations are managed through granted folders and downloaded packages, so ' +
+  'the portable locator list cannot be written here; use the Extensions panel to add sources or ' +
+  'enable and disable inventoried extensions'
 
 const sameExtensions = (
   left: SettingsDocument['extensions'],

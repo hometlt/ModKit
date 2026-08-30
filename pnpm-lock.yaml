@@ -418,6 +418,9 @@ importers:
 
   packages/extension-manager:
     dependencies:
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../sdk
       '@modkitx-x3/vfs':
         specifier: workspace:*
         version: link:../vfs

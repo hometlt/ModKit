@@ -110,6 +110,12 @@ async function buildInto(output, syncManifest) {
      */
     absWorkingDir: repoRoot,
     logLevel: 'warning',
+    // `@modkitx-x3/host` keeps an ESM default that resolves its worker bootstrap through
+    // `import.meta.url`. This CommonJS host always supplies the shipped bootstrap explicitly (see
+    // `apps/vscode/src/extension.ts`), and the host has a named refusal if another CommonJS
+    // consumer omits it. esbuild still warns while lowering that guarded fallback, so silence only
+    // this expected diagnostic rather than hiding other build warnings.
+    logOverride: { 'empty-import-meta': 'silent' },
   })
 
   const bootstrapEntry = join(repoRoot, 'packages', 'host', 'dist', 'node', 'worker-bootstrap.js')

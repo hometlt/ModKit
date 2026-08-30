@@ -132,11 +132,20 @@ export {
   type ManagedExtensionsPageModel,
 } from './managed-extensions-controller.js'
 export {
+  createWebExtensionSubjectCatalog,
+  webExtensionSubjectCardBundle,
+  type CreateWebExtensionSubjectCatalogOptions,
+  type WebExtensionSubjectCardBundle,
+  type WebExtensionSubjectCatalog,
+  type WebExtensionSubjectEntry,
+} from './extension-subjects.js'
+export {
   combineLoadedExtensionRoots,
   inspectPortableExtensionBundle,
   loadManagedExtensionRoots,
   MANAGED_EXTENSION_BUNDLE_FAILURE_CODES,
   type LoadManagedExtensionRootsOptions,
+  type LoadedManagedExtensionRoots,
 } from './managed-extension-roots.js'
 
 export const WEB_MAIN_REALM = 'org.modkitx.app.web/main'

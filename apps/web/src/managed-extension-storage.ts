@@ -111,6 +111,8 @@ export interface BrowserExtensionStorage {
   updateSettings(id: string, settings: BrowserExtensionSettings): Promise<InstalledBrowserExtension>
   /** Returns a verified package response without executing or dynamically importing it. */
   open(id: string): Promise<Response | undefined>
+  /** Opens verified installed bytes even when disabled, for inert inventory/card projection only. */
+  openInstalled(id: string): Promise<Response | undefined>
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -733,6 +735,12 @@ export function createBrowserExtensionStorage(
     async open(id) {
       const record = findById(await options.metadata.list(), id)
       if (record === undefined || !record.enabled) return undefined
+      return verifiedCachedResponse(record)
+    },
+
+    async openInstalled(id) {
+      const record = findById(await options.metadata.list(), id)
+      if (record === undefined) return undefined
       return verifiedCachedResponse(record)
     },
   }

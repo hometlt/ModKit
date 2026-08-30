@@ -27,7 +27,12 @@ import type {
 } from '@modkitx-x3/sdk'
 import type { DataSourceSurfaceSource } from './execution/index.js'
 import type { ExecutionBackendRegistry } from './execution/backend.js'
-import type { ExtensionOrigin, Inventory } from './inventory.js'
+import {
+  CONTRIBUTION_DISABLED_CODE,
+  EXTENSION_DISABLED_CODE,
+  type ExtensionOrigin,
+  type Inventory,
+} from './inventory.js'
 import {
   createServiceContractDefinitionRegistry,
   createServiceFacetMatcherProfileRegistry,
@@ -101,8 +106,7 @@ export interface SubjectServicesOptions {
  * The extension hints of every codec contribution in the inventory (`spec.match.extensions`),
  * lowercase, unique, sorted. A hint for a picker — never a detection decision.
  */
-/** The host's own code for "this contribution is switched off by settings". */
-export const CONTRIBUTION_DISABLED_CODE = 'x3.host/contribution-disabled'
+export { CONTRIBUTION_DISABLED_CODE, EXTENSION_DISABLED_CODE } from './inventory.js'
 
 /**
  * One row per contribution in the inventory, for a settings surface that lists them.
@@ -124,8 +128,10 @@ export interface InventoryContributionRow {
   readonly extension: string
   readonly origin: ExtensionOrigin
   readonly activationEligible: boolean
-  /** True when the host refused activation because this contribution is switched off. */
+  /** True when this contribution's own switch is off, independent of its owning extension. */
   readonly disabled: boolean
+  /** True when the owning extension's switch is off. */
+  readonly extensionDisabled: boolean
   /** Manifest path inside the extension — the only identity an unparsed record has. */
   readonly path: string
 }
@@ -147,6 +153,9 @@ export function describeInventoryContributions(
         origin: extension.origin,
         activationEligible: contribution.activationEligible,
         disabled: contribution.diagnostics.some(item => item.code === CONTRIBUTION_DISABLED_CODE),
+        extensionDisabled: contribution.diagnostics.some(
+          item => item.code === EXTENSION_DISABLED_CODE,
+        ),
         path: contribution.path,
       }
     })

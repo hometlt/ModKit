@@ -1,6 +1,6 @@
 /**
- * Electron's Extensions & Codecs settings groups — where a user connects a third-party extension
- * and switches individual codecs off.
+ * Electron's Extensions & Contributions settings groups — where a user connects a third-party
+ * extension and switches individual declared contributions off.
  *
  * Everything it draws needs an answer the portable settings component cannot have: what the host
  * made of the folder the user named. Main answers that over `modkitExtensions`; these groups plug
@@ -14,18 +14,24 @@
  * recomposition all happen in main; this file holds the document, the switches and the words.
  */
 import {
+  createSubjectCard,
   element,
+  loadSubjectCardSections,
   safeViewerText,
   setState,
+  type CardRef,
   type SettingsDocument,
   type SettingsStore,
   type SettingsUiGroup,
   type SettingsUiGroupContext,
+  type SubjectCard,
 } from '@modkitx-x3/ui'
-import type {
-  ExtensionManagerClient,
-  ExtensionManagerEntry,
-  ExtensionManagerSnapshot,
+import {
+  subjectFactsSourceFromWire,
+  type ExtensionSubjectCardWireDocument,
+  type ExtensionManagerClient,
+  type ExtensionManagerEntry,
+  type ExtensionManagerSnapshot,
 } from '@modkitx/extension-manager'
 
 export type { ExtensionManagerSnapshot } from '@modkitx/extension-manager'
@@ -69,6 +75,8 @@ export interface ContributionReport {
   readonly origin: string
   readonly activationEligible: boolean
   readonly disabled: boolean
+  /** Owner extension is off; direct contribution preference remains visible and unchanged. */
+  readonly extensionDisabled: boolean
   readonly path: string
 }
 
@@ -83,6 +91,9 @@ export interface ExtensionsReport {
   /** Roots that failed and are not in the settings list — a broken directory of this build. */
   readonly unconfiguredFailures: readonly ExtensionRootFailureReport[]
   readonly contributions: readonly ContributionReport[]
+  /** Inert generic subject-card documents projected from the validated main-process inventory. */
+  readonly subjectCards: readonly ExtensionSubjectCardWireDocument[]
+  readonly disabledExtensions: readonly string[]
   readonly disabledContributions: readonly string[]
   readonly supportedExtensions: readonly string[]
 }
@@ -170,19 +181,73 @@ export interface ExtensionsSettingsGroups {
   readonly groups: readonly SettingsUiGroup[]
 }
 
-const CONTRACT_LABELS: Readonly<Record<string, string>> = Object.freeze({
-  'org.modkitx/codec-contribution': 'codec',
-  'org.modkitx/viewer-contribution': 'viewer',
-  'org.modkitx/editor-contribution': 'editor',
-  'org.modkitx/service-provider-contribution': 'service provider',
-  'org.modkitx/contract-definition': 'contract definition',
-  'org.modkitx/trait-definition': 'trait definition',
-})
+export interface ContributionContractGroup {
+  /** Exact declared contract coordinate. Absent only for an unreadable contribution envelope. */
+  readonly key?: string
+  readonly contributions: readonly ContributionReport[]
+}
 
-/** «codec» for the contracts a user recognises, the contract id itself for anything else. */
-function contractLabel(contribution: ContributionReport): string {
-  if (contribution.contract === undefined) return 'unreadable manifest'
-  return CONTRACT_LABELS[contribution.contract] ?? contribution.contract
+export function contributionContractKey(contribution: ContributionReport): string | undefined {
+  return contribution.contract === undefined || contribution.contractMajor === undefined
+    ? undefined
+    : `${contribution.contract}@${contribution.contractMajor}`
+}
+
+/** Groups real contributions only by the exact `contract.id@major` stored in their manifest. */
+export function groupContributionsByContract(
+  contributions: readonly ContributionReport[],
+): readonly ContributionContractGroup[] {
+  const grouped = new Map<string | undefined, ContributionReport[]>()
+  for (const contribution of contributions) {
+    const key = contributionContractKey(contribution)
+    const entries = grouped.get(key) ?? []
+    entries.push(contribution)
+    grouped.set(key, entries)
+  }
+  return Object.freeze(
+    [...grouped.entries()]
+      .sort(([left], [right]) => {
+        if (left === undefined) return right === undefined ? 0 : 1
+        if (right === undefined) return -1
+        return left.localeCompare(right, 'en')
+      })
+      .map(([key, entries]) =>
+        Object.freeze({
+          ...(key === undefined ? {} : { key }),
+          contributions: Object.freeze([...entries]),
+        }),
+      ),
+  )
+}
+
+/** Changes only the already configured coordinate; renderer code never supplies a replacement root. */
+export function withExtensionEnabled(
+  document: SettingsDocument,
+  id: string,
+  enabled: boolean,
+): SettingsDocument {
+  return {
+    ...document,
+    disabledExtensions: enabled
+      ? document.disabledExtensions.filter(other => other !== id)
+      : [...new Set([...document.disabledExtensions, id])],
+    // Keep the legacy per-root flag in sync; bundled extensions have no row and use only the set.
+    extensions: document.extensions.map(entry => (entry.id === id ? { ...entry, enabled } : entry)),
+  }
+}
+
+/** Keeps disabled contributions inventoried while changing their direct user preference. */
+export function withContributionEnabled(
+  document: SettingsDocument,
+  id: string,
+  enabled: boolean,
+): SettingsDocument {
+  return {
+    ...document,
+    disabledContributions: enabled
+      ? document.disabledContributions.filter(other => other !== id)
+      : [...new Set([...document.disabledContributions, id])],
+  }
 }
 
 export function createExtensionsSettingsGroups(
@@ -192,6 +257,9 @@ export function createExtensionsSettingsGroups(
   let managerSnapshot: ExtensionManagerSnapshot | undefined
   const managerProblems: string[] = []
   let groupContext: SettingsUiGroupContext | undefined
+  let selectedSubjectId: string | undefined
+  let mountedCard: SubjectCard | undefined
+  let cardLoadRevision = 0
   /** Busy while main recomposes: a second toggle mid-flight would compose against stale bytes. */
   let busy = false
   /**
@@ -283,6 +351,166 @@ export function createExtensionsSettingsGroups(
     }
   }
 
+  const subjectCards = (): readonly ExtensionSubjectCardWireDocument[] =>
+    report?.subjectCards ?? Object.freeze([])
+
+  const subjectCardFor = (
+    kind: ExtensionSubjectCardWireDocument['subject']['kind'],
+    id: string,
+  ): ExtensionSubjectCardWireDocument | undefined =>
+    subjectCards().find(document => document.subject.kind === kind && document.subject.id === id)
+
+  const openSubjectCard = (
+    kind: ExtensionSubjectCardWireDocument['subject']['kind'],
+    id: string,
+  ): void => {
+    const document = subjectCardFor(kind, id)
+    if (document === undefined) {
+      say(`${id} has no loaded manifest card in the current composition.`, true)
+      return
+    }
+    selectedSubjectId = document.subject.subjectId
+    draw()
+  }
+
+  const makeSubjectLink = (
+    node: HTMLElement,
+    kind: ExtensionSubjectCardWireDocument['subject']['kind'],
+    id: string,
+  ): void => {
+    if (subjectCardFor(kind, id) === undefined) return
+    node.tabIndex = 0
+    node.setAttribute('role', 'button')
+    node.title = `Open ${id} subject card`
+    node.dataset['subjectKind'] = kind
+    node.dataset['subject'] = id
+    node.addEventListener('click', () => openSubjectCard(kind, id))
+    node.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return
+      event.preventDefault()
+      openSubjectCard(kind, id)
+    })
+  }
+
+  const addEnablementIcon = (row: HTMLElement, enabled: boolean, label: string): HTMLElement => {
+    const icon = element(row, 'span', {
+      part: 'settings.description',
+      text: enabled ? '●' : '○',
+    })
+    icon.dataset['enablement'] = enabled ? 'enabled' : 'disabled'
+    icon.setAttribute('role', 'img')
+    icon.setAttribute('aria-label', `${label} ${enabled ? 'enabled' : 'disabled'}`)
+    return icon
+  }
+
+  const mutateContribution = (id: string, enabled: boolean): void => {
+    void mutate(`${enabled ? 'Enabling' : 'Disabling'} ${id}`, document =>
+      withContributionEnabled(document, id, enabled),
+    )
+  }
+
+  /**
+   * Draws the selected subject using the shared generic SubjectCard. The surrounding controls are
+   * host actions, not a second card implementation; every fact and relation still comes from the
+   * presentation-neutral SubjectFactsSource reconstructed from the inert IPC document.
+   */
+  const renderSelectedSubject = (host: HTMLElement): boolean => {
+    mountedCard?.destroy()
+    mountedCard = undefined
+    cardLoadRevision += 1
+    const subjectId = selectedSubjectId
+    if (subjectId === undefined) return false
+    const wire = subjectCards().find(document => document.subject.subjectId === subjectId)
+    if (wire === undefined) {
+      selectedSubjectId = undefined
+      return false
+    }
+
+    const actions = element(host, 'div', { part: 'settings.adder' })
+    addEnablementIcon(
+      actions,
+      wire.subject.kind === 'org.modkitx/contribution'
+        ? wire.subject.effectiveEnabled === true
+        : wire.subject.enabled,
+      wire.subject.displayName,
+    )
+    const back = element(actions, 'button', {
+      part: 'settings.add',
+      text: 'Back to extensions',
+    }) as HTMLButtonElement
+    back.type = 'button'
+    back.dataset['action'] = 'close-subject-card'
+    back.addEventListener('click', () => {
+      selectedSubjectId = undefined
+      draw()
+    })
+
+    if (wire.subject.kind === 'org.modkitx/contribution') {
+      const toggle = element(actions, 'button', {
+        part: 'settings.add',
+        text: wire.subject.enabled ? 'Disable contribution' : 'Enable contribution',
+      }) as HTMLButtonElement
+      toggle.type = 'button'
+      toggle.disabled = busy
+      toggle.dataset['action'] = wire.subject.enabled
+        ? 'disable-contribution'
+        : 'enable-contribution'
+      toggle.addEventListener('click', () =>
+        mutateContribution(wire.subject.id, !wire.subject.enabled),
+      )
+    } else {
+      const toggle = element(actions, 'button', {
+        part: 'settings.add',
+        text: wire.subject.enabled ? 'Disable extension' : 'Enable extension',
+      }) as HTMLButtonElement
+      toggle.type = 'button'
+      toggle.disabled = busy
+      toggle.dataset['action'] = wire.subject.enabled ? 'disable-extension' : 'enable-extension'
+      toggle.addEventListener('click', () => {
+        void mutate(
+          `${wire.subject.enabled ? 'Disabling' : 'Enabling'} ${wire.subject.id}`,
+          document => withExtensionEnabled(document, wire.subject.id, !wire.subject.enabled),
+        )
+      })
+    }
+
+    const cardHost = element(host, 'div', { part: 'settings.list' })
+    cardHost.dataset['subjectId'] = wire.subject.subjectId
+    element(cardHost, 'p', { part: 'settings.description', text: 'Loading subject card…' })
+    const revision = cardLoadRevision
+    void (async () => {
+      try {
+        const sections = await loadSubjectCardSections(subjectFactsSourceFromWire(wire))
+        if (revision !== cardLoadRevision || selectedSubjectId !== wire.subject.subjectId) return
+        const card = createSubjectCard(cardHost.ownerDocument, {
+          label: `${wire.subject.displayName} subject card`,
+          sections,
+          onNavigate(reference: CardRef) {
+            if (
+              reference.href === undefined ||
+              !subjectCards().some(document => document.subject.subjectId === reference.href)
+            ) {
+              return
+            }
+            selectedSubjectId = reference.href
+            draw()
+          },
+        })
+        mountedCard = card
+        cardHost.replaceChildren(card.root)
+      } catch (error) {
+        if (revision !== cardLoadRevision) return
+        cardHost.replaceChildren()
+        const problem = element(cardHost, 'p', {
+          part: 'settings.description',
+          text: `Could not render this subject card: ${describe(error)}`,
+        })
+        setState(problem, ['error'])
+      }
+    })()
+    return true
+  }
+
   // ------------------------------------------------------------------ extensions group
   const addFolder = (): void => {
     void (async () => {
@@ -319,6 +547,7 @@ export function createExtensionsSettingsGroups(
   }
 
   const renderExtensions = (host: HTMLElement): void => {
+    if (renderSelectedSubject(host)) return
     const value = report
     element(host, 'p', {
       part: 'settings.description',
@@ -374,6 +603,9 @@ export function createExtensionsSettingsGroups(
         for (const entry of entries) {
           const row = element(list, 'div', { part: 'settings.extension' })
           if (!entry.trusted) setState(row, ['error'])
+          if (entry.installedVersion !== undefined) {
+            addEnablementIcon(row, entry.enabled, entry.displayName)
+          }
           const text = element(row, 'div', { part: 'settings.extension-text' })
           element(text, 'div', {
             part: 'settings.label',
@@ -386,6 +618,7 @@ export function createExtensionsSettingsGroups(
               `${entry.installedVersion ?? 'not installed'} → ${entry.availableVersion} · ` +
               `${entry.trusted ? 'trusted source' : 'untrusted remote source'}`,
           })
+          makeSubjectLink(text, 'org.modkitx/extension', entry.id)
           action(entry, row)
         }
       }
@@ -491,6 +724,7 @@ export function createExtensionsSettingsGroups(
     for (const entry of entries) {
       const item = element(list, 'div', { part: 'settings.extension' })
       if (entry.state === 'failed') setState(item, ['error'])
+      addEnablementIcon(item, entry.enabled, entry.id ?? entry.path)
       const toggle = element(item, 'input', { part: 'settings.toggle' }) as HTMLInputElement
       toggle.type = 'checkbox'
       toggle.checked = entry.enabled
@@ -501,12 +735,9 @@ export function createExtensionsSettingsGroups(
         const wanted = toggle.checked
         const key = entry.id
         if (key === undefined) return
-        void mutate(`${wanted ? 'Enabling' : 'Disabling'} ${key}`, document => ({
-          ...document,
-          extensions: document.extensions.map(other =>
-            other.id === key ? { ...other, enabled: wanted } : other,
-          ),
-        }))
+        void mutate(`${wanted ? 'Enabling' : 'Disabling'} ${key}`, document =>
+          withExtensionEnabled(document, key, wanted),
+        )
       })
 
       const text = element(item, 'div', { part: 'settings.extension-text' })
@@ -527,6 +758,7 @@ export function createExtensionsSettingsGroups(
                 ? `not loaded — ${entry.code ?? ''}: ${entry.message ?? ''}`
                 : 'enabled, but the composition did not report it under this id',
       })
+      if (entry.id !== undefined) makeSubjectLink(text, 'org.modkitx/extension', entry.id)
 
       const remove = element(item, 'button', {
         part: 'settings.remove',
@@ -592,31 +824,37 @@ export function createExtensionsSettingsGroups(
     const bundled = element(host, 'div', { part: 'settings.list' })
     for (const coordinate of value?.bundled ?? []) {
       const item = element(bundled, 'div', { part: 'settings.extension' })
+      const enabled = !(value?.disabledExtensions ?? []).includes(coordinate)
+      addEnablementIcon(item, enabled, coordinate)
       const text = element(item, 'div', { part: 'settings.extension-text' })
       element(text, 'div', { part: 'settings.label', text: safeViewerText(coordinate, 200) })
       element(text, 'div', {
         part: 'settings.description',
-        // Whole bundled extensions are not removable here; their individual codecs are, next door.
-        text: 'ships with the application — switch its individual codecs off under Codecs',
+        // Whole bundled extensions are not removable here; their contributions are, next door.
+        text: enabled
+          ? 'ships with the application — enabled; open its card to switch it off'
+          : 'ships with the application — disabled; its contributions remain inventoried',
       })
+      makeSubjectLink(text, 'org.modkitx/extension', coordinate)
     }
   }
 
   // ------------------------------------------------------------------ codecs group
   const renderCodecs = (host: HTMLElement): void => {
+    if (renderSelectedSubject(host)) return
     const value = report
     element(host, 'p', {
       part: 'settings.description',
       text:
         'Every contribution the host inventoried, whichever extension ships it. Switching one off ' +
         'keeps the record — it stays listed here, and the host refuses to activate it — so a file ' +
-        'that only that codec could read opens as raw bytes instead, and the inspector says why.',
+        'that only that contribution could read opens as raw bytes instead, and the inspector says why.',
     })
     element(host, 'p', {
       part: 'settings.description',
       text:
         'Changes apply immediately: the app recomposes and reopens the files you had open. The ' +
-        'reason a disabled codec gives is the diagnostic x3.host/contribution-disabled.',
+        'reason a disabled contribution gives is the diagnostic x3.host/contribution-disabled.',
     })
 
     const contributions = value?.contributions ?? []
@@ -632,54 +870,61 @@ export function createExtensionsSettingsGroups(
     for (const owner of owners) {
       const owned = contributions.filter(item => item.extension === owner)
       const off = owned.filter(item => item.disabled).length
-      element(host, 'div', {
+      const ownerLabel = element(host, 'div', {
         part: 'settings.label',
         text: `${owner} — ${owned.length} contribution(s)${off === 0 ? '' : `, ${off} off`}`,
       })
-      const list = element(host, 'div', { part: 'settings.list' })
-      for (const contribution of owned) {
-        const item = element(list, 'div', { part: 'settings.extension' })
-        if (contribution.disabled) setState(item, ['error'])
-        const id = contribution.id
-        if (id === undefined) {
-          // No id means the envelope did not parse: it is inspectable, never activatable, and
-          // there is nothing for a switch to name.
-          element(item, 'div', { part: 'settings.description', text: 'no id' })
-        } else {
-          const toggle = element(item, 'input', { part: 'settings.toggle' }) as HTMLInputElement
-          toggle.type = 'checkbox'
-          toggle.checked = !contribution.disabled
-          toggle.disabled = busy
-          toggle.dataset['contribution'] = id
-          toggle.setAttribute('aria-label', `Enable ${id}`)
-          toggle.addEventListener('change', () => {
-            const wanted = toggle.checked
-            void mutate(`${wanted ? 'Enabling' : 'Disabling'} ${id}`, document => ({
-              ...document,
-              disabledContributions: wanted
-                ? document.disabledContributions.filter(other => other !== id)
-                : [...document.disabledContributions, id],
-            }))
-          })
-        }
+      makeSubjectLink(ownerLabel, 'org.modkitx/extension', owner)
+      for (const contractGroup of groupContributionsByContract(owned)) {
+        element(host, 'div', {
+          part: 'settings.description',
+          text: contractGroup.key ?? 'Unreadable contribution manifest',
+        })
+        const list = element(host, 'div', { part: 'settings.list' })
+        for (const contribution of contractGroup.contributions) {
+          const item = element(list, 'div', { part: 'settings.extension' })
+          if (contribution.disabled) setState(item, ['error'])
+          addEnablementIcon(
+            item,
+            !contribution.disabled && !contribution.extensionDisabled,
+            contribution.displayName,
+          )
+          const id = contribution.id
+          if (id === undefined) {
+            // No id means the envelope did not parse: it is inspectable, never activatable, and
+            // there is nothing for a switch to name.
+            element(item, 'div', { part: 'settings.description', text: 'no id' })
+          } else {
+            const toggle = element(item, 'input', { part: 'settings.toggle' }) as HTMLInputElement
+            toggle.type = 'checkbox'
+            toggle.checked = !contribution.disabled
+            toggle.disabled = busy
+            toggle.dataset['contribution'] = id
+            toggle.setAttribute('aria-label', `Enable ${id}`)
+            toggle.addEventListener('change', () => mutateContribution(id, toggle.checked))
+          }
 
-        const text = element(item, 'div', { part: 'settings.extension-text' })
-        element(text, 'div', {
-          part: 'settings.label',
-          text: safeViewerText(contribution.displayName, 200),
-        })
-        element(text, 'div', {
-          part: 'settings.description',
-          text: `${safeViewerText(id ?? contribution.path, 200)} · ${contractLabel(contribution)}`,
-        })
-        element(text, 'div', {
-          part: 'settings.description',
-          text: contribution.disabled
-            ? 'switched off — the host will not activate it'
-            : contribution.activationEligible
-              ? `active · ${contribution.origin}`
-              : `inventoried, not activatable · ${contribution.origin}`,
-        })
+          const text = element(item, 'div', { part: 'settings.extension-text' })
+          element(text, 'div', {
+            part: 'settings.label',
+            text: safeViewerText(contribution.displayName, 200),
+          })
+          element(text, 'div', {
+            part: 'settings.description',
+            text: safeViewerText(id ?? contribution.path, 200),
+          })
+          element(text, 'div', {
+            part: 'settings.description',
+            text: contribution.extensionDisabled
+              ? 'inactive — the owner extension is switched off'
+              : contribution.disabled
+                ? 'switched off — the host will not activate it'
+                : contribution.activationEligible
+                  ? `active · ${contribution.origin}`
+                  : `inventoried, not activatable · ${contribution.origin}`,
+          })
+          if (id !== undefined) makeSubjectLink(text, 'org.modkitx/contribution', id)
+        }
       }
     }
   }
@@ -705,11 +950,16 @@ export function createExtensionsSettingsGroups(
       }
       draw()
     },
+    destroy() {
+      cardLoadRevision += 1
+      mountedCard?.destroy()
+      mountedCard = undefined
+    },
   }
 
   const codecsGroup: SettingsUiGroup = {
     id: 'codecs',
-    label: 'Codecs',
+    label: 'Contributions',
     render(host, context) {
       groupContext = context
       renderCodecs(host)

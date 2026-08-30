@@ -54,6 +54,11 @@ export interface NodeSubjectServicesOptions {
   readonly trustedInProcess?: boolean
   /** Statically linked modules (see `linkedExtensionInputs`), served by the in-process backend. */
   readonly linkedModules?: ReadonlyMap<string, Readonly<Record<string, unknown>>>
+  /**
+   * Extension coordinates (`publisher/id`) the user switched off. Their contributions stay
+   * inventoried and their individual disabled settings remain independent.
+   */
+  readonly disabledExtensions?: readonly string[]
   /** Contribution ids the user switched off; they stay listed and lose activation eligibility. */
   readonly disabledContributions?: readonly string[]
 }
@@ -92,6 +97,9 @@ export async function createNodeSubjectServices(
       realmId: options.realms.host,
       extensions: options.extensions,
       executionBackends,
+      ...(options.disabledExtensions === undefined
+        ? {}
+        : { disabledExtensions: options.disabledExtensions }),
       ...(options.disabledContributions === undefined
         ? {}
         : { disabledContributions: options.disabledContributions }),
@@ -101,6 +109,9 @@ export async function createNodeSubjectServices(
       realmId: options.realms.workers,
       extensions: options.extensions,
       executionBackends,
+      ...(options.disabledExtensions === undefined
+        ? {}
+        : { disabledExtensions: options.disabledExtensions }),
       ...(options.disabledContributions === undefined
         ? {}
         : { disabledContributions: options.disabledContributions }),

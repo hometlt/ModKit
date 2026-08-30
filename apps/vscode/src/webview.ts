@@ -23,7 +23,17 @@ import {
   type PreviewResolver,
 } from '@modkitx-x3/ui/explorer'
 import { createWorkbench } from '@modkitx-x3/ui/workbench'
+import {
+  createSubjectCard,
+  loadSubjectCardSections,
+  type CardRef,
+  type SubjectCard,
+} from '@modkitx-x3/ui/card'
 import { connectSubjectRpc, type SubjectPreviewSession } from '@modkitx-x3/host'
+import {
+  subjectFactsSourceFromWire,
+  type ExtensionSubjectCardWireDocument,
+} from '@modkitx/extension-manager'
 
 import { createBridge, type ShellEntry, type WebviewChannel } from './bridge.js'
 import { probeWebviewFacilities } from './facilities.js'
@@ -61,6 +71,7 @@ interface Bootstrap {
   readonly diagnostics: number
   /** Opened straight away when the panel was raised from a file (the custom editor). */
   readonly openPath?: string
+  readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
 }
 
 /** `acquireVsCodeApi`, declared structurally so nothing here depends on the editor's typings. */
@@ -175,6 +186,11 @@ async function mount(
    * asked.
    */
   bridge.emit({ op: 'facilities', observed: probeWebviewFacilities(globalThis) })
+
+  if (snapshot.extensionCard !== undefined) {
+    await mountExtensionSubjectCard(workbench, bridge, snapshot.extensionCard)
+    return
+  }
 
   const client = await connectSubjectRpc({
     framePort: bridge.framePort,
@@ -516,4 +532,102 @@ async function mount(
   if (snapshot.openPath !== undefined) {
     await openPath(snapshot.openPath, baseName(snapshot.openPath))
   }
+}
+
+async function mountExtensionSubjectCard(
+  workbench: ReturnType<typeof createWorkbench>,
+  bridge: ReturnType<typeof createBridge>,
+  bundle: import('./extension-cards.js').ExtensionCardBundle,
+): Promise<void> {
+  const documents = new Map(
+    bundle.documents.map(document => [document.subject.subjectId, document]),
+  )
+  const root = document.createElement('div')
+  root.className = 'modkit-extension-subject'
+  root.dataset['mkPart'] = 'card'
+  const toolbar = document.createElement('div')
+  toolbar.className = 'modkit-extension-subject__toolbar'
+  toolbar.dataset['mkPart'] = 'settings.adder'
+  const status = document.createElement('span')
+  status.dataset['mkPart'] = 'settings.status'
+  let card: SubjectCard | undefined
+
+  const configure = async (
+    request:
+      | { readonly op: 'set-contribution'; readonly id: string; readonly enabled: boolean }
+      | { readonly op: 'set-extension-coordinate'; readonly id: string; readonly enabled: boolean }
+      | { readonly op: 'set-managed-package'; readonly id: string; readonly enabled: boolean }
+      | { readonly op: 'link-extension'; readonly id: string },
+  ): Promise<void> => {
+    const result = (await bridge.request(request)) as { readonly message?: unknown }
+    status.textContent =
+      typeof result.message === 'string' ? result.message : 'Configuration updated.'
+  }
+
+  const actionButton = (active: ExtensionSubjectCardWireDocument): HTMLButtonElement => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.dataset['mkPart'] = 'settings.add'
+    const subject = active.subject
+    if (
+      bundle.extension.managedPackageId !== undefined &&
+      bundle.extension.managedPackageEnabled === false
+    ) {
+      const packageId = bundle.extension.managedPackageId
+      button.textContent = 'Enable package'
+      button.addEventListener('click', () => {
+        void configure({
+          op: 'set-managed-package',
+          id: packageId,
+          enabled: true,
+        })
+      })
+      return button
+    }
+    if (!bundle.extension.installed && bundle.extension.linkable) {
+      button.textContent = 'Link extension'
+      button.addEventListener('click', () => {
+        void configure({ op: 'link-extension', id: bundle.extension.id })
+      })
+      return button
+    }
+    if (subject.kind === 'org.modkitx/contribution') {
+      button.textContent = subject.enabled ? 'Disable contribution' : 'Enable contribution'
+      button.addEventListener('click', () => {
+        void configure({ op: 'set-contribution', id: subject.id, enabled: !subject.enabled })
+      })
+      return button
+    }
+    button.textContent = bundle.extension.enabled ? 'Disable extension' : 'Enable extension'
+    button.addEventListener('click', () => {
+      void configure({
+        op: 'set-extension-coordinate',
+        id: bundle.extension.id,
+        enabled: !bundle.extension.enabled,
+      })
+    })
+    return button
+  }
+
+  const render = async (subjectId: string): Promise<void> => {
+    const active = documents.get(subjectId)
+    if (active === undefined) throw new Error(`unknown extension subject ${subjectId}`)
+    const sections = await loadSubjectCardSections(subjectFactsSourceFromWire(active))
+    card?.destroy()
+    toolbar.replaceChildren(actionButton(active), status)
+    const navigate = (ref: CardRef): void => {
+      if (ref.href !== undefined && documents.has(ref.href)) {
+        void render(ref.href)
+      }
+    }
+    card = createSubjectCard(document, {
+      label: active.subject.displayName,
+      sections,
+      onNavigate: navigate,
+    })
+    root.replaceChildren(toolbar, card.root)
+  }
+
+  workbench.setMain(root)
+  await render(bundle.activeSubjectId)
 }

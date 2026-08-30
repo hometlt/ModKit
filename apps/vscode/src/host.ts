@@ -74,6 +74,7 @@ import { prepareVsCodeMapPreview, type VsCodeMapPreviewCandidate } from './map-p
 import { parseVsCodeMapPreviewSelectionRequest } from './map-preview-selection.js'
 import {
   configuredDisabledContributions,
+  configuredDisabledExtensions,
   configuredExtensionRoots,
   dedupeRoots,
   describeConfiguredExtensions,
@@ -81,6 +82,7 @@ import {
   discoverWorkspaceRoots,
   resolveBundledCatalog,
   withContributionDisabled,
+  withExtensionDisabled,
   withExtensionEnabled,
   withExtensionRoot,
   withoutExtension,
@@ -138,6 +140,8 @@ export interface VsCodeExtensionReport {
   readonly problems: readonly string[]
   /** Contribution ids `modkit.disabledContributions` switched off, as the host received them. */
   readonly disabledContributions: readonly string[]
+  /** Extension coordinates switched off without removing their inventory records. */
+  readonly disabledExtensions: readonly string[]
 }
 
 export interface VsCodeSubjectHost {
@@ -196,6 +200,8 @@ export interface VsCodeSubjectHostOptions {
    * vanish and the switch with it.
    */
   readonly configuredDisabledContributions?: unknown
+  /** Raw value of `modkit.disabledExtensions`; disabled roots remain inspectable. */
+  readonly configuredDisabledExtensions?: unknown
   /**
    * The worker bootstrap this extension shipped beside its bundle. Required in a packaged build:
    * the backend default resolves it through `import.meta.url`, which a CommonJS extension entry
@@ -322,6 +328,7 @@ export async function createVsCodeSubjectHost(
     ...managed.inputs,
   ]
   const switchedOff = configuredDisabledContributions(options.configuredDisabledContributions)
+  const switchedOffExtensions = configuredDisabledExtensions(options.configuredDisabledExtensions)
 
   const topology = createVsCodeDesktopTopology()
   const services = await createNodeSubjectServices({
@@ -329,6 +336,7 @@ export async function createVsCodeSubjectHost(
     realms: { host: VSCODE_DESKTOP_EXTENSION_REALM, workers: VSCODE_DESKTOP_WORKER_REALM },
     extensions: extensionInputs,
     policy: VSCODE_WORKER_POLICY,
+    disabledExtensions: switchedOffExtensions.ids,
     disabledContributions: switchedOff.ids,
     /*
      * Where this host shipped the worker bootstrap.
@@ -349,6 +357,7 @@ export async function createVsCodeSubjectHost(
     topology,
     realmId: VSCODE_WEBVIEW_REALM,
     extensions: extensionInputs,
+    disabledExtensions: switchedOffExtensions.ids,
     disabledContributions: switchedOff.ids,
   })
 
@@ -364,7 +373,13 @@ export async function createVsCodeSubjectHost(
     ]),
     // a malformed `modkit.disabledContributions` is the user's setting too, so it is reported in
     // the same place a malformed `modkit.extensions` entry is, not swallowed on the way past
-    problems: Object.freeze([...catalogProblems, ...configured.problems, ...switchedOff.problems]),
+    problems: Object.freeze([
+      ...catalogProblems,
+      ...configured.problems,
+      ...switchedOffExtensions.problems,
+      ...switchedOff.problems,
+    ]),
+    disabledExtensions: switchedOffExtensions.ids,
     disabledContributions: switchedOff.ids,
   })
 
@@ -401,6 +416,15 @@ export interface VsCodeServeOptions {
    * widens the grant without rebuilding anything.
    */
   readonly roots: () => readonly string[]
+  /**
+   * Host-discovered extension coordinates that an extension card may link into the user's
+   * configuration. The webview receives coordinates only; absolute paths stay on this side of
+   * the bridge and arbitrary page input can never become a configured filesystem root.
+   */
+  readonly linkableExtensionRoots?: ReadonlyMap<string, string>
+  /** Host-owned package ids accepted from extension cards, plus their manager mutation port. */
+  readonly managedPackageIds?: ReadonlySet<string>
+  readonly setManagedPackageEnabled?: (id: string, enabled: boolean) => Promise<void>
   /** The grant every open runs under. Defaults to `read-source` only. */
   readonly grant?: PermissionGrant
   readonly budget?: ResourceBudget
@@ -468,9 +492,14 @@ export interface VsCodeConfigurationPort {
   readExtensions(): unknown
   /** `modkit.disabledContributions` exactly as the editor returns it. */
   readDisabledContributions(): unknown
+  /** `modkit.disabledExtensions` exactly as the editor returns it. */
+  readDisabledExtensions?(): unknown
   /** Where a write lands; shown to the user, because it decides who else sees the change. */
   readonly scope: 'workspace' | 'user'
-  write(key: 'extensions' | 'disabledContributions', value: readonly unknown[]): Promise<void>
+  write(
+    key: 'extensions' | 'disabledExtensions' | 'disabledContributions',
+    value: readonly unknown[],
+  ): Promise<void>
   /** Native folder dialog; resolves with the chosen absolute path, or nothing when cancelled. */
   pickFolder(): Promise<string | undefined>
 }
@@ -881,6 +910,10 @@ function serveVsCode(
         }
       }),
       contributions: composed.contributions.map(row => ({ ...row })),
+      disabledExtensions:
+        configuration === undefined
+          ? composed.extensions.disabledExtensions
+          : configuredDisabledExtensions(configuration.readDisabledExtensions?.()).ids,
       disabledContributions:
         configuration === undefined
           ? composed.extensions.disabledContributions
@@ -941,6 +974,55 @@ function serveVsCode(
             ? `${request.id} is now ${request.enabled ? 'enabled' : 'disabled'} in ` +
                 `modkit.disabledContributions (${configuration.scope}). ${applies}`
             : `${request.id} was already ${request.enabled ? 'enabled' : 'disabled'}.`,
+        )
+      }
+      case 'set-extension-coordinate': {
+        if (configuration === undefined) return answer(false, CANNOT_CONFIGURE)
+        const { next, changed } = withExtensionDisabled(
+          configuration.readDisabledExtensions?.(),
+          request.id,
+          !request.enabled,
+        )
+        if (changed) await configuration.write('disabledExtensions', next)
+        return answer(
+          changed,
+          changed
+            ? `${request.id} is now ${request.enabled ? 'enabled' : 'disabled'} in ` +
+                `modkit.disabledExtensions (${configuration.scope}). ${applies}`
+            : `${request.id} was already ${request.enabled ? 'enabled' : 'disabled'}.`,
+        )
+      }
+      case 'set-managed-package': {
+        if (
+          options.setManagedPackageEnabled === undefined ||
+          options.managedPackageIds?.has(request.id) !== true
+        ) {
+          return answer(false, `${request.id} is not a managed extension package.`)
+        }
+        await options.setManagedPackageEnabled(request.id, request.enabled)
+        return answer(
+          true,
+          `${request.id} is now ${request.enabled ? 'enabled' : 'disabled'} in the extension ` +
+            `manager. ${applies}`,
+        )
+      }
+      case 'link-extension': {
+        if (configuration === undefined) return answer(false, CANNOT_CONFIGURE)
+        const root = options.linkableExtensionRoots?.get(request.id)
+        if (root === undefined) {
+          return answer(false, `${request.id} is not an available local extension.`)
+        }
+        const { next, added, reason } = withExtensionRoot(
+          configuration.readExtensions(),
+          resolve(root),
+          { caseSensitive: process.platform !== 'win32' && process.platform !== 'darwin' },
+        )
+        if (added) await configuration.write('extensions', next)
+        return answer(
+          added,
+          added
+            ? `${request.id} was linked through modkit.extensions (${configuration.scope}). ${applies}`
+            : (reason ?? `${request.id} is already linked.`),
         )
       }
       case 'set-extension': {

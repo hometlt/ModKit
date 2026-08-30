@@ -9,6 +9,7 @@ import {
   RECENT_LIMIT,
   serializeSettings,
   withRecent,
+  type SettingsDocument,
 } from '@modkitx-x3/ui/settings'
 
 describe('portable settings', () => {
@@ -54,6 +55,61 @@ describe('portable settings', () => {
       'org.example/a',
       'org.example/z',
     ])
+  })
+
+  it('normalizes disabled extension coordinates as a deterministic independent set', () => {
+    const normalized = normalizeSettings({
+      extensions: [
+        { id: 'org.example/pack', path: './pack', enabled: true },
+        { id: 'org.example/off-at-source', path: './off', enabled: false },
+      ],
+      disabledExtensions: [
+        ' org.example/zeta ',
+        'org.example/alpha',
+        'org.example/zeta',
+        'NOT.QUALIFIED/value',
+        'missing-slash',
+        17,
+      ],
+      disabledContributions: ['org.example/one-codec'],
+    })
+
+    expect(normalized.document.disabledExtensions).toEqual([
+      'org.example/alpha',
+      'org.example/zeta',
+    ])
+    expect(normalized.document.disabledContributions).toEqual(['org.example/one-codec'])
+    expect(normalized.problems).toEqual([
+      'disabledExtensions[3] is not an extension coordinate; ignored',
+      'disabledExtensions[4] is not an extension coordinate; ignored',
+      'disabledExtensions[5] is not an extension coordinate; ignored',
+    ])
+
+    // Disablement is passed to host composition. It must not remove the extension before inventory
+    // is built; the source-level `enabled` switch remains the only load filter here.
+    expect(enabledExtensions(normalized.document).map(extension => extension.id)).toEqual([
+      'org.example/pack',
+    ])
+  })
+
+  it('serializes disabled extension coordinates canonically and accepts old schema-v1 objects', () => {
+    const document = normalizeSettings({
+      disabledExtensions: ['org.example/zeta', 'org.example/alpha'],
+    }).document
+    const serialized = serializeSettings(document)
+    expect(serialized.indexOf('org.example/alpha')).toBeLessThan(
+      serialized.indexOf('org.example/zeta'),
+    )
+    expect(normalizeSettings(JSON.parse(serialized)).document.disabledExtensions).toEqual([
+      'org.example/alpha',
+      'org.example/zeta',
+    ])
+
+    const legacy = { ...document } as Record<string, unknown>
+    delete legacy['disabledExtensions']
+    expect(
+      JSON.parse(serializeSettings(legacy as unknown as SettingsDocument)).disabledExtensions,
+    ).toEqual([])
   })
 
   it('normalizes bounded local game installation paths and preserves their priority order', () => {

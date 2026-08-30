@@ -48,6 +48,108 @@ export interface NodeExtensionDiscoveryOptions {
   readonly vfsOptions?: NodeExtensionVfsOptions
 }
 
+export interface LocalExtensionCandidateDiscoveryOptions {
+  /** Directory below, at, or beside the nearest modkit.workspace.json. */
+  readonly workspaceRoot?: string
+  /** Explicit modkit.workspace.json path; takes precedence over workspaceRoot. */
+  readonly configurationPath?: string
+  readonly environment?: Record<string, string | undefined>
+  readonly profile?: string
+  readonly maxWorkspaceBytes?: number
+  readonly maxSources?: number
+  readonly maxExtensionsPerRepository?: number
+  readonly maxDescriptorBytes?: number
+  readonly maxPackageBytes?: number
+  readonly maxContributionManifests?: number
+  readonly maxContributionFileBytes?: number
+  readonly maxContributionBytes?: number
+}
+
+export interface LocalExtensionCandidateDiagnostic {
+  readonly severity: 'info' | 'error'
+  readonly code: string
+  readonly message: string
+  readonly sourceId: string
+  readonly path?: string
+  readonly uri?: string
+  readonly conflictingSourceId?: string
+}
+
+export interface LocalExtensionCandidate {
+  readonly id: string
+  readonly publisher: string
+  readonly extensionId: string
+  readonly version: string
+  readonly packageName?: string
+  readonly displayName: string
+  readonly summary?: string
+  readonly license?: string
+  readonly homepage?: string
+  readonly contributionManifests: readonly string[]
+  readonly contributions: readonly LocalContributionCandidate[]
+  /** Non-fatal contribution inspection failures scoped to this extension. */
+  readonly diagnostics: readonly LocalExtensionCandidateDiagnostic[]
+  readonly sourceId: string
+  readonly sourcePublisher?: string
+  readonly enabled: boolean
+  /** True when the source, entry and selected profile all include this extension. */
+  readonly selected: boolean
+  readonly embedded: boolean
+  readonly relativePath?: string
+  /** Confined local root. Missing for a portable embedded entry. */
+  readonly root?: string
+}
+
+export interface LocalContributionCandidate {
+  readonly id: string
+  readonly displayName: string
+  readonly contract: {
+    readonly id: string
+    readonly major: number
+  }
+  /** Confined extension-relative manifest path. */
+  readonly path: string
+  /** Frozen JSON document; extension code is never imported or evaluated. */
+  readonly manifest: Readonly<Record<string, unknown>>
+}
+
+export interface LocalExtensionRepositoryCandidate {
+  readonly sourceId: string
+  readonly uri: string
+  readonly root: string
+  readonly descriptorPath: string
+  readonly publisher?: string
+  readonly enabled: boolean
+  /** True when the source is included by the selected workspace profile. */
+  readonly selected: boolean
+  readonly packageName?: string
+  readonly displayName: string
+  readonly summary?: string
+  readonly version?: string
+  readonly license?: string
+  readonly homepage?: string
+  readonly extensions: readonly LocalExtensionCandidate[]
+}
+
+export interface LocalExtensionCandidateDiscovery {
+  readonly configurationPath: string
+  readonly workspaceRoot: string
+  readonly profile?: string
+  readonly repositories: readonly LocalExtensionRepositoryCandidate[]
+  /** Flat deterministic view of every valid local extension candidate. */
+  readonly extensions: readonly LocalExtensionCandidate[]
+  readonly diagnostics: readonly LocalExtensionCandidateDiagnostic[]
+}
+
+/**
+ * Inspect only local file repositories from the nearest workspace configuration. This function is
+ * inert: it neither scans sibling directories recursively, executes extensions, materializes
+ * artifacts, nor contacts network sources.
+ */
+export function discoverLocalExtensionCandidates(
+  options?: LocalExtensionCandidateDiscoveryOptions,
+): Promise<LocalExtensionCandidateDiscovery>
+
 export function createNodeExtensionVfs(options?: NodeExtensionVfsOptions): {
   readonly vfs: VirtualFileSystem
   readonly protocols: readonly string[]

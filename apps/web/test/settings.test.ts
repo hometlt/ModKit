@@ -75,6 +75,24 @@ describe('web settings', () => {
     )
   })
 
+  it('persists contribution enablement in the portable settings document', async () => {
+    const storage = memoryStorage()
+    const store = createWebSettingsStore(storage)
+    const current = (await store.read()).document
+    await store.write({
+      ...current,
+      disabledExtensions: ['org.example/images'],
+      disabledContributions: ['org.example/second', 'org.example/first'],
+    })
+
+    const loaded = await createWebSettingsStore(storage).read()
+    expect(loaded.document.disabledExtensions).toEqual(['org.example/images'])
+    expect(loaded.document.disabledContributions).toEqual([
+      'org.example/first',
+      'org.example/second',
+    ])
+  })
+
   it('degrades to the defaults, with the reason, when the stored value is not settings', async () => {
     const broken = await createWebSettingsStore(memoryStorage('{not json')).read()
     expect(broken.document).toEqual(DEFAULT_SETTINGS)

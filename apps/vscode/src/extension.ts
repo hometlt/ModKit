@@ -17,7 +17,11 @@ import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:pat
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
 import type { CatalogSource, ExtensionManagerEntry } from '@modkitx/extension-manager'
-import { createNodeExtensionManager } from '@modkitx/extension-manager/node'
+import {
+  createNodeExtensionManager,
+  discoverLocalExtensionCandidates,
+  type LocalExtensionCandidate,
+} from '@modkitx/extension-manager/node'
 
 import type { CloseAnswer, WebviewChannel } from './bridge.js'
 import {
@@ -40,12 +44,25 @@ import {
 } from '@modkitx-x3/host/node'
 import type { ContainerRegistry } from './containers.js'
 import { CustomDocumentState } from './custom-document.js'
-import { describeConfiguredExtensions, withExtensionRoot } from './extension-roots.js'
+import { createExtensionCardCatalog, extensionCardBundle } from './extension-cards.js'
+import {
+  configuredDisabledContributions,
+  configuredDisabledExtensions,
+  describeConfiguredExtensions,
+  withExtensionRoot,
+} from './extension-roots.js'
+import {
+  createExtensionTree,
+  extensionTreeChildren,
+  OPEN_CONTRIBUTION_COMMAND,
+  OPEN_EXTENSION_COMMAND,
+  type ExtensionNode,
+} from './extension-tree.js'
 import {
   createVsCodeExtensionManagerClient,
   extensionManagerCommandCompletion,
   ExtensionManagerController,
-  installedManagerExtensionRoots,
+  installedManagerExtensionState,
   type ExtensionManagerCommand,
   type StaticExtensionPackage,
 } from './extension-manager.js'
@@ -181,6 +198,7 @@ interface PanelPageOptions {
   readonly host: VsCodeSubjectHost
   readonly session: string
   readonly openPath?: string
+  readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
 }
 
 /**
@@ -218,36 +236,13 @@ function panelHtml(options: PanelPageOptions): string {
       extensions: options.host.extensions,
       diagnostics: options.host.services.host.inventory.diagnostics.length,
       ...(options.openPath === undefined ? {} : { openPath: options.openPath }),
+      ...(options.extensionCard === undefined ? {} : { extensionCard: options.extensionCard }),
     },
   })
 }
 
 // ---------------------------------------------------------------------------------------------
 // tree views
-
-type ExtensionGroup = 'available' | 'installed' | 'enabled' | 'updates' | 'problems'
-
-interface ExtensionGroupNode {
-  readonly kind: 'group'
-  readonly group: ExtensionGroup
-  readonly label: string
-  readonly entries?: readonly ExtensionManagerEntry[]
-  readonly problems?: readonly ExtensionProblemNode[]
-}
-
-interface ExtensionEntryNode {
-  readonly kind: 'entry'
-  readonly group: ExtensionGroup
-  readonly entry: ExtensionManagerEntry
-}
-
-interface ExtensionProblemNode {
-  readonly kind: 'problem'
-  readonly label: string
-  readonly detail: string
-}
-
-type ExtensionNode = ExtensionGroupNode | ExtensionEntryNode | ExtensionProblemNode
 
 /**
  * Native extension-manager surface.
@@ -264,6 +259,8 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
   constructor(
     private readonly host: VsCodeSubjectHost,
     private readonly manager: ExtensionManagerController,
+    private readonly disabledContributionIds: () => readonly string[],
+    private readonly availableContributions: readonly import('./contributions.js').ContributionRow[],
   ) {
     this.subscription = manager.onDidChange(() => this.changed.fire(undefined))
   }
@@ -293,8 +290,55 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
       return item
     }
 
+    if (node.kind === 'contract') {
+      const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Collapsed)
+      item.description = `${node.contributions.length}`
+      item.tooltip =
+        node.contract === undefined
+          ? 'Contribution records whose manifest did not parse'
+          : `Exact contribution contract ${node.label}`
+      item.iconPath = new vscode.ThemeIcon('symbol-interface')
+      item.contextValue = 'modkitContributionContract'
+      return item
+    }
+
+    if (node.kind === 'contribution') {
+      const { contribution } = node
+      const item = new vscode.TreeItem(
+        contribution.displayName,
+        vscode.TreeItemCollapsibleState.None,
+      )
+      const identity = contribution.id ?? contribution.path
+      const state = node.enabled ? 'enabled' : 'disabled'
+      item.description = `${state}${node.pendingReload ? ' · reload pending' : ''}`
+      item.tooltip =
+        `${identity}\n${node.extension}\ncontract: ${contribution.contract ?? 'invalid manifest'}` +
+        `${contribution.contractMajor === undefined ? '' : `@${contribution.contractMajor}`}\n` +
+        `state: ${state}${node.pendingReload ? ' after reload' : ''}\norigin: ${contribution.origin}`
+      item.iconPath = new vscode.ThemeIcon(node.enabled ? 'pass-filled' : 'circle-slash')
+      item.contextValue =
+        contribution.id === undefined
+          ? 'modkitContribution.invalid'
+          : `modkitContribution.${node.configuredDisabled ? 'disabled' : 'enabled'}`
+      if (contribution.id !== undefined) {
+        item.command = {
+          command: OPEN_CONTRIBUTION_COMMAND,
+          title: 'Open contribution card',
+          arguments: [
+            { kind: 'contribution', id: contribution.id, extension: node.extension } as const,
+          ],
+        }
+      }
+      return item
+    }
+
     const { entry } = node
-    const item = new vscode.TreeItem(entry.displayName, vscode.TreeItemCollapsibleState.None)
+    const item = new vscode.TreeItem(
+      entry.displayName,
+      node.contributions.length > 0
+        ? vscode.TreeItemCollapsibleState.Collapsed
+        : vscode.TreeItemCollapsibleState.None,
+    )
     const version =
       entry.installedVersion === undefined
         ? `available ${entry.availableVersion}`
@@ -308,11 +352,11 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
     item.iconPath = new vscode.ThemeIcon(
       node.group === 'updates'
         ? 'cloud-download'
-        : node.group === 'enabled'
-          ? 'pass-filled'
-          : node.group === 'available'
+        : node.group === 'available'
+          ? 'cloud-download'
+          : entry.enabled
             ? 'extensions'
-            : 'package',
+            : 'circle-slash',
     )
     item.contextValue =
       entry.installedVersion === undefined
@@ -320,31 +364,27 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
         : entry.updateAvailable
           ? `modkitExtension.installed.${entry.enabled ? 'enabled' : 'disabled'}.update`
           : `modkitExtension.installed.${entry.enabled ? 'enabled' : 'disabled'}`
-    if (node.group === 'available') {
-      item.command = {
-        command: 'modkit.extensions.install',
-        title: 'Install extension',
-        arguments: [entry.id],
-      }
-    } else if (node.group === 'updates') {
+    if (node.group === 'updates') {
       item.command = {
         command: 'modkit.extensions.update',
         title: 'Update extension',
         arguments: [entry.id],
+      }
+    } else {
+      item.command = {
+        command: OPEN_EXTENSION_COMMAND,
+        title: 'Open extension card',
+        arguments: [{ kind: 'extension', id: entry.id } as const],
       }
     }
     return item
   }
 
   async getChildren(node?: ExtensionNode): Promise<ExtensionNode[]> {
-    if (node?.kind === 'entry' || node?.kind === 'problem') return []
-    if (node?.kind === 'group') {
-      if (node.group === 'problems') return [...(node.problems ?? [])]
-      return (node.entries ?? []).map(entry => ({ kind: 'entry', group: node.group, entry }))
-    }
+    if (node !== undefined) return [...extensionTreeChildren(node, this.disabledContributionIds())]
 
     const entries = (await this.manager.snapshot()).entries
-    const problems: ExtensionProblemNode[] = [
+    const problems = [
       ...this.host.extensions.failures.map(failure => ({
         kind: 'problem' as const,
         label: failure.root,
@@ -357,31 +397,12 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
       })),
     ]
     return [
-      {
-        kind: 'group',
-        group: 'available',
-        label: 'Available',
-        entries: entries.filter(entry => entry.installedVersion === undefined),
-      },
-      {
-        kind: 'group',
-        group: 'installed',
-        label: 'Installed',
-        entries: entries.filter(entry => entry.installedVersion !== undefined),
-      },
-      {
-        kind: 'group',
-        group: 'enabled',
-        label: 'Enabled',
-        entries: entries.filter(entry => entry.enabled),
-      },
-      {
-        kind: 'group',
-        group: 'updates',
-        label: 'Updates',
-        entries: entries.filter(entry => entry.updateAvailable),
-      },
-      { kind: 'group', group: 'problems', label: 'Problems', problems },
+      ...createExtensionTree({
+        entries,
+        contributions: [...this.host.contributions, ...this.availableContributions],
+        configuredDisabledContributionIds: this.disabledContributionIds(),
+        problems,
+      }),
     ]
   }
 }
@@ -563,6 +584,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   // In a checkout the extension lives at `<repo>/apps/vscode`; in a packaged build it
   // carries its own copy of the catalog and the checkout guess simply does not exist.
   const repositoryRoot = resolve(extensionRoot, '..', '..')
+  let localExtensionCandidates: readonly LocalExtensionCandidate[] = Object.freeze([])
+  try {
+    const discovered = await discoverLocalExtensionCandidates({ workspaceRoot: repositoryRoot })
+    localExtensionCandidates = discovered.extensions
+    log(
+      `[extensions] local workspace catalog: ${discovered.repositories.length} repositories, ` +
+        `${discovered.extensions.length} extensions, ${discovered.diagnostics.length} diagnostics`,
+    )
+    for (const diagnostic of discovered.diagnostics) {
+      log(`[extensions] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`)
+    }
+  } catch (error) {
+    log(
+      `[extensions] no local workspace catalog: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
 
   /*
    * The shared Node manager owns private catalog/artifact/enablement state under VS Code's global
@@ -605,7 +642,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         }),
   })
   context.subscriptions.push({ dispose: () => void nodeExtensionManager.dispose() })
-  const managedExtensionsForHost = await installedManagerExtensionRoots(nodeExtensionManager)
+  const managedExtensionState = await installedManagerExtensionState(nodeExtensionManager)
 
   /*
    * Composed once at activation. The profile revision keys resolution caches, so recomposing per
@@ -624,10 +661,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     catalogCandidates: catalogCandidates(extensionRoot, repositoryRoot),
     workspaceFolders: workspaceFolders(),
     configuredExtensions: rawConfiguredExtensions,
-    managedExtensions: managedExtensionsForHost,
+    managedExtensions: managedExtensionState.roots,
     configuredDisabledContributions: vscode.workspace
       .getConfiguration('modkit')
       .get('disabledContributions'),
+    configuredDisabledExtensions: [
+      ...managedExtensionState.disabledExtensions,
+      ...configuredDisabledExtensions(
+        vscode.workspace.getConfiguration('modkit').get('disabledExtensions'),
+      ).ids,
+    ],
     // the bootstrap this extension ships beside its own bundle: a CommonJS entry has no
     // `import.meta.url` for the backend to resolve it from
     bootstrapUrl: pathToFileURL(join(extensionRoot, 'dist-app', 'worker-bootstrap.js')),
@@ -668,6 +711,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   for (const problem of host.extensions.problems) log(`modkit settings: ${problem}`)
   for (const id of host.extensions.disabledContributions) {
     log(`contribution disabled by modkit.disabledContributions: ${id}`)
+  }
+  for (const id of host.extensions.disabledExtensions) {
+    log(`extension disabled by modkit.disabledExtensions: ${id}`)
   }
   for (const diagnostic of host.services.host.inventory.diagnostics) {
     log(`[inventory] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`)
@@ -833,6 +879,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     readExtensions: () => vscode.workspace.getConfiguration('modkit').get('extensions'),
     readDisabledContributions: () =>
       vscode.workspace.getConfiguration('modkit').get('disabledContributions'),
+    readDisabledExtensions: () =>
+      vscode.workspace.getConfiguration('modkit').get('disabledExtensions'),
     async write(key, value) {
       await vscode.workspace.getConfiguration('modkit').update(key, [...value], configurationTarget)
       log(`modkit.${key} written (${configurationScope}): ${JSON.stringify(value)}`)
@@ -849,48 +897,142 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       return picked?.[0]?.fsPath
     },
   }
+  const disabledExtensionIds = (): readonly string[] =>
+    Object.freeze([
+      ...new Set([
+        ...managedExtensionState.disabledExtensions,
+        ...configuredDisabledExtensions(configuration.readDisabledExtensions?.()).ids,
+      ]),
+    ])
 
   /* The Node manager owns package state; static rows are descriptive and never mutation targets. */
   const staticManagerPackages = (): readonly StaticExtensionPackage[] => {
     const configured = describeConfiguredExtensions(configuration.readExtensions())
+    const disabledExtensions = new Set(disabledExtensionIds())
     const configuredById = new Map(
       configured.flatMap(entry => (entry.id === undefined ? [] : [[entry.id, entry] as const])),
     )
+    const localById = new Map(localExtensionCandidates.map(candidate => [candidate.id, candidate]))
     const coordinates = [
       ...new Set([
         ...host.extensions.bundled,
-        ...host.extensions.installed.filter(id => !host.extensions.managed.includes(id)),
+        ...host.extensions.installed,
         ...configured.flatMap(entry => (entry.id === undefined ? [] : [entry.id])),
       ]),
     ]
-    return Object.freeze(
-      coordinates.map(id => {
+    const available = localExtensionCandidates.map(candidate =>
+      Object.freeze({
+        entry: Object.freeze({
+          id: candidate.id,
+          displayName: candidate.displayName,
+          publisher: candidate.publisher,
+          availableVersion: candidate.version,
+          enabled: false,
+          updateAvailable: false,
+          source: `local:${candidate.sourceId}`,
+          trusted: true,
+        }),
+      }),
+    )
+    return Object.freeze([
+      ...available,
+      ...coordinates.map(id => {
         const root = configuredById.get(id)
+        const local = localById.get(id)
         const bundled = host.extensions.bundled.includes(id)
-        const source = bundled ? 'bundled' : root === undefined ? 'workspace' : 'configured'
+        const managedPackage = managedExtensionState.packageByExtension.get(id)
+        const source = bundled
+          ? 'bundled'
+          : managedPackage === undefined
+            ? root === undefined
+              ? 'workspace'
+              : 'configured'
+            : `managed:${managedPackage}`
         return Object.freeze({
           entry: Object.freeze({
             id,
-            displayName: id,
+            displayName: local?.displayName ?? id,
             publisher: id.includes('/') ? id.slice(0, id.indexOf('/')) : 'unknown',
             availableVersion: 'local',
             installedVersion: 'local',
-            enabled: bundled || root === undefined || root.enabled,
+            enabled: !disabledExtensions.has(id) && (bundled || root === undefined || root.enabled),
             updateAvailable: false,
             source,
             trusted: bundled,
           }),
         })
       }),
-    )
+    ])
   }
   const managerClient = createVsCodeExtensionManagerClient({
     client: nodeExtensionManager.client,
     staticPackages: staticManagerPackages,
   })
   const extensionManager = new ExtensionManagerController(managerClient)
-  const extensionsView = new ExtensionsView(host, extensionManager)
+  // Reproject on open so a settings write is reflected even when the user postpones the reload.
+  // Inventory stays the activation snapshot; direct enablement is the live preference layered on
+  // top of it, and the card names both instead of showing a stale button.
+  const extensionCards = () =>
+    createExtensionCardCatalog({
+      inventory: host.services.host.inventory,
+      localCandidates: localExtensionCandidates,
+      linkableLocalExtensionIds: [...linkableExtensionRoots.keys()],
+      managedPackageByExtension: managedExtensionState.packageByExtension,
+      disabledManagedExtensions: managedExtensionState.disabledExtensions,
+      disabledExtensions: disabledExtensionIds(),
+      disabledContributions: configuredDisabledContributions(
+        configuration.readDisabledContributions(),
+      ).ids,
+      onDiagnostic: message => log(`[extension-card] ${message}`),
+    })
+  const localCoordinateCounts = new Map<string, number>()
+  for (const candidate of localExtensionCandidates) {
+    localCoordinateCounts.set(candidate.id, (localCoordinateCounts.get(candidate.id) ?? 0) + 1)
+  }
+  const linkableExtensionRoots = new Map(
+    localExtensionCandidates.flatMap(candidate =>
+      candidate.root === undefined || localCoordinateCounts.get(candidate.id) !== 1
+        ? []
+        : ([[candidate.id, candidate.root]] as const),
+    ),
+  )
+  const managedPackageIds = new Set(managedExtensionState.packageByExtension.values())
+  const loadedExtensionIds = new Set([...host.extensions.bundled, ...host.extensions.installed])
+  const availableContributions = Object.freeze(
+    localExtensionCandidates
+      .filter(candidate => !loadedExtensionIds.has(candidate.id))
+      .flatMap(candidate =>
+        candidate.contributions.map(contribution => ({
+          id: contribution.id,
+          displayName: contribution.displayName,
+          contract: contribution.contract.id,
+          contractMajor: contribution.contract.major,
+          extension: candidate.id,
+          origin: `available:${candidate.sourceId}`,
+          activationEligible: false,
+          disabled: false,
+          path: contribution.path,
+        })),
+      ),
+  )
+  const extensionsView = new ExtensionsView(
+    host,
+    extensionManager,
+    () => configuredDisabledContributions(configuration.readDisabledContributions()).ids,
+    availableContributions,
+  )
   context.subscriptions.push(extensionsView)
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(event => {
+      if (
+        event.affectsConfiguration('modkit.extensions') ||
+        event.affectsConfiguration('modkit.disabledExtensions') ||
+        event.affectsConfiguration('modkit.disabledContributions')
+      ) {
+        extensionManager.invalidate()
+      }
+    }),
+  )
 
   const confirmClose = async (message: string, savable: boolean): Promise<CloseAnswer> => {
     const choices = savable ? ['Save', 'Discard'] : ['Discard']
@@ -1492,6 +1634,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       readonly onDirty: (path: string, dirty: boolean) => void
       readonly onSaveRequested: (path: string) => void
     },
+    extensionCard?: import('./extension-cards.js').ExtensionCardBundle,
   ): VsCodeServed => {
     const channel: WebviewChannel = {
       post: message => {
@@ -1507,6 +1650,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       channel,
       session,
       roots,
+      linkableExtensionRoots,
+      managedPackageIds,
+      setManagedPackageEnabled: async (id, enabled) => {
+        await extensionManager.execute({ kind: 'set-enabled', id, enabled })
+        log(`[extensions] ${id} ${enabled ? 'enabled' : 'disabled'} from extension card`)
+        askToReload(`Modkit: ${id} was ${enabled ? 'enabled' : 'disabled'}. Reload the window.`)
+      },
       confirmClose,
       configuration,
       mapPreviewResourcePlanResolver,
@@ -1533,6 +1683,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       host,
       session,
       ...(openPath === undefined ? {} : { openPath }),
+      ...(extensionCard === undefined ? {} : { extensionCard }),
     })
     return served
   }
@@ -1840,6 +1991,45 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     return typeof id === 'string' && id.length > 0 ? id : undefined
   }
 
+  const openExtensionCard = async (argument: unknown): Promise<void> => {
+    if (typeof argument !== 'object' || argument === null) return
+    const value = argument as {
+      readonly kind?: unknown
+      readonly id?: unknown
+      readonly extension?: unknown
+    }
+    const extensionId =
+      value.kind === 'contribution' && typeof value.extension === 'string'
+        ? value.extension
+        : typeof value.id === 'string'
+          ? value.id
+          : undefined
+    if (extensionId === undefined) return
+    const entry = extensionCards().get(extensionId)
+    if (entry === undefined) {
+      void vscode.window.showWarningMessage(`Modkit has no card data for ${extensionId}.`)
+      return
+    }
+    const contributionId =
+      value.kind === 'contribution' && typeof value.id === 'string' ? value.id : undefined
+    const bundle = await extensionCardBundle(entry, contributionId)
+    const active = bundle.documents.find(
+      document => document.subject.subjectId === bundle.activeSubjectId,
+    )
+    const panel = vscode.window.createWebviewPanel(
+      'modkit.extensionSubjectCard',
+      active?.subject.displayName ?? extensionId,
+      vscode.ViewColumn.Active,
+      { ...webviewOptions(), retainContextWhenHidden: true },
+    )
+    const served = attach(panel.webview, undefined, undefined, bundle)
+    panel.onDidDispose(() => {
+      live.delete(served)
+      liveSubjects.delete(served)
+      void served.close('the extension subject card was closed')
+    })
+  }
+
   const pickManagerEntry = async (
     title: string,
     accept: (entry: ExtensionManagerEntry) => boolean,
@@ -1899,12 +2089,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       runManagerCommand({ kind: 'refresh' }, 'extension catalog refreshed'),
     ),
 
+    vscode.commands.registerCommand(OPEN_EXTENSION_COMMAND, (argument: unknown) => {
+      void openExtensionCard(argument).catch(error => {
+        const message = error instanceof Error ? error.message : String(error)
+        log(`[extensions] card failed: ${message}`)
+        void vscode.window.showErrorMessage(`Modkit: ${message}`)
+      })
+    }),
+
+    vscode.commands.registerCommand(OPEN_CONTRIBUTION_COMMAND, (argument: unknown) => {
+      void openExtensionCard(argument).catch(error => {
+        const message = error instanceof Error ? error.message : String(error)
+        log(`[extensions] contribution card failed: ${message}`)
+        void vscode.window.showErrorMessage(`Modkit: ${message}`)
+      })
+    }),
+
     vscode.commands.registerCommand('modkit.extensions.install', async (argument: unknown) => {
       const id =
         managerEntryId(argument) ??
         (await pickManagerEntry(
           'Install a Modkit extension',
-          entry => entry.installedVersion === undefined,
+          entry => entry.installedVersion === undefined && !entry.source.startsWith('local:'),
         ))
       if (id !== undefined) await runManagerCommand({ kind: 'install', id }, `${id} installed`)
     }),

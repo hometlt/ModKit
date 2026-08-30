@@ -181,6 +181,43 @@ describe('disabling a contribution (the settings-page seam)', () => {
   })
 })
 
+describe('disabling an extension (the settings-page seam)', () => {
+  it('keeps its contributions listed while the Node facade refuses to activate them', async () => {
+    const disabled = await createModkit({
+      extensions: [imagesDir],
+      roots: [scratch],
+      disabledExtensions: ['org.modkitx/images'],
+    })
+    try {
+      const path = join(scratch, 'disabled-extension.png')
+      writeFileSync(path, readFileSync(pngFixture))
+      const opened = await disabled.open(path)
+      expect(opened.snapshot.state).toBe('unresolved')
+      if (opened.snapshot.state !== 'unresolved') throw new Error('disabled extension activated')
+      const suppressed = opened.snapshot.diagnostics.find(
+        item => item.code === 'x3.host/candidate-suppressed',
+      )
+      if (suppressed === undefined) throw new Error('no suppression diagnostic')
+      expect(suppressed.message).toContain('org.modkitx/image-png')
+      expect(suppressed.message).toContain('x3.host/extension-disabled')
+      const extension = disabled.services.inventory.extensions.find(
+        item => item.manifest.publisher === 'org.modkitx' && item.manifest.id === 'images',
+      )
+      if (extension === undefined) throw new Error('disabled extension vanished')
+      expect(extension.contributions.length).toBeGreaterThan(0)
+      expect(extension.contributions.every(item => !item.activationEligible)).toBe(true)
+      expect(
+        extension.contributions.every(item =>
+          item.diagnostics.some(diagnostic => diagnostic.code === 'x3.host/extension-disabled'),
+        ),
+      ).toBe(true)
+      await opened.close()
+    } finally {
+      await disabled.close()
+    }
+  })
+})
+
 describe('the format writer is preferred over the raw byte splicer (Path B reaches products)', () => {
   it('native JSON validates through its own writer, commits, and reopens without an extension', async () => {
     const heard: string[] = []

@@ -1,0 +1,186 @@
+import { describe, expect, it } from 'vitest'
+import type { ExtensionManagerEntry } from '@modkitx/extension-manager'
+
+import type { ContributionRow } from '../src/contributions.js'
+import {
+  createExtensionTree,
+  extensionTreeChildren,
+  type ContributionContractNode,
+  type ExtensionEntryNode,
+} from '../src/extension-tree.js'
+
+const installed: ExtensionManagerEntry = Object.freeze({
+  id: 'org.example/models',
+  displayName: 'Models',
+  publisher: 'Example',
+  availableVersion: 'local',
+  installedVersion: 'local',
+  enabled: true,
+  updateAvailable: false,
+  source: 'workspace',
+  trusted: true,
+})
+
+const disabledExtension: ExtensionManagerEntry = Object.freeze({
+  ...installed,
+  id: 'org.example/audio',
+  displayName: 'Audio',
+  enabled: false,
+})
+
+const available: ExtensionManagerEntry = Object.freeze({
+  id: 'org.example/available',
+  displayName: 'Available',
+  publisher: 'Example',
+  availableVersion: '1.0.0',
+  enabled: false,
+  updateAvailable: false,
+  source: 'registry',
+  trusted: true,
+})
+
+function contribution(
+  id: string,
+  displayName: string,
+  contract: string,
+  contractMajor = 1,
+  overrides: Partial<ContributionRow> = {},
+): ContributionRow {
+  return Object.freeze({
+    id,
+    displayName,
+    contract,
+    contractMajor,
+    extension: installed.id,
+    origin: 'installed',
+    activationEligible: true,
+    disabled: false,
+    path: `${id}.json`,
+    ...overrides,
+  })
+}
+
+const contributions: readonly ContributionRow[] = Object.freeze([
+  contribution('org.example/model-a', 'Model A', 'org.modkitx/codec-contribution'),
+  contribution('org.example/model-b', 'Model B', 'org.modkitx/codec-contribution'),
+  contribution('org.example/model-v2', 'Model v2', 'org.modkitx/codec-contribution', 2),
+  contribution('org.example/model-language', 'Model language', 'org.modkitx/language-provider'),
+  contribution('org.example/audio-codec', 'Audio codec', 'org.modkitx/codec-contribution', 1, {
+    extension: disabledExtension.id,
+  }),
+  Object.freeze({
+    displayName: 'bad.json',
+    extension: installed.id,
+    origin: 'installed',
+    activationEligible: false,
+    disabled: false,
+    path: 'bad.json',
+  }),
+])
+
+function required<T>(value: T | undefined, message: string): T {
+  if (value === undefined) throw new TypeError(message)
+  return value
+}
+
+function model() {
+  return createExtensionTree({
+    entries: [available, installed, disabledExtension],
+    contributions,
+    configuredDisabledContributionIds: ['org.example/model-b'],
+    problems: [],
+  })
+}
+
+describe('VS Code extension contribution tree', () => {
+  it('nests real contributions under their exact owner extension and contract pair', () => {
+    const installedGroup = required(
+      model().find(group => group.group === 'installed'),
+      'installed group is missing',
+    )
+    const modelExtension = installedGroup.entries?.find(
+      node => node.entry.id === installed.id,
+    ) as ExtensionEntryNode
+    const contracts = extensionTreeChildren(modelExtension, [
+      'org.example/model-b',
+    ]) as readonly ContributionContractNode[]
+
+    expect(contracts.map(node => node.label)).toEqual([
+      'Invalid contribution manifest',
+      'org.modkitx/codec-contribution@1',
+      'org.modkitx/codec-contribution@2',
+      'org.modkitx/language-provider@1',
+    ])
+    expect(contracts.find(node => node.label.endsWith('@1'))?.contributions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'org.example/model-a' }),
+        expect.objectContaining({ id: 'org.example/model-b' }),
+      ]),
+    )
+    expect(contracts.every(node => node.kind === 'contract')).toBe(true)
+  })
+
+  it('uses the configured contribution switch immediately and marks reload drift honestly', () => {
+    const installedGroup = required(
+      model().find(group => group.group === 'installed'),
+      'installed group is missing',
+    )
+    const modelExtension = installedGroup.entries?.find(
+      node => node.entry.id === installed.id,
+    ) as ExtensionEntryNode
+    const codecContract = (
+      extensionTreeChildren(modelExtension, [
+        'org.example/model-b',
+      ]) as readonly ContributionContractNode[]
+    ).find(node => node.label === 'org.modkitx/codec-contribution@1')
+    const requiredCodecContract = required(codecContract, 'codec contract group is missing')
+    const leaves = extensionTreeChildren(requiredCodecContract, ['org.example/model-b'])
+
+    expect(leaves).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'contribution',
+          contribution: expect.objectContaining({ id: 'org.example/model-a' }),
+          enabled: true,
+          pendingReload: false,
+        }),
+        expect.objectContaining({
+          kind: 'contribution',
+          contribution: expect.objectContaining({ id: 'org.example/model-b' }),
+          enabled: false,
+          configuredDisabled: true,
+          pendingReload: true,
+        }),
+      ]),
+    )
+  })
+
+  it('makes all contribution leaves ineffective when their extension is disabled', () => {
+    const installedGroup = required(
+      model().find(group => group.group === 'installed'),
+      'installed group is missing',
+    )
+    const extension = installedGroup.entries?.find(
+      node => node.entry.id === disabledExtension.id,
+    ) as ExtensionEntryNode
+    const [contract] = extensionTreeChildren(extension, []) as readonly ContributionContractNode[]
+    const [leaf] = extensionTreeChildren(required(contract, 'contract group is missing'), [])
+
+    expect(leaf).toMatchObject({
+      kind: 'contribution',
+      enabled: false,
+      configuredDisabled: false,
+    })
+  })
+
+  it('keeps available packages as leaves because they have no composed inventory yet', () => {
+    const availableGroup = required(
+      model().find(group => group.group === 'available'),
+      'available group is missing',
+    )
+    const [entry] = availableGroup.entries ?? []
+
+    expect(entry?.entry.id).toBe(available.id)
+    expect(extensionTreeChildren(required(entry, 'available entry is missing'), [])).toEqual([])
+  })
+})

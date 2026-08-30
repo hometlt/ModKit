@@ -1,5 +1,10 @@
 import { compareUtf8, ModkitError, uint64, type Diagnostic } from '@modkitx-x3/core'
 import {
+  extensionSubjectRecordToWire,
+  projectExtensionSubjects,
+  type ExtensionSubjectCardWireDocument,
+} from '@modkitx/extension-manager'
+import {
   createHostTopology,
   type AnyDescriptor,
   type HostTopology,
@@ -9,6 +14,7 @@ import {
   createBundledServiceDefinitionRegistry,
   createHostComposition,
   createSubjectServices,
+  EXTENSION_DISABLED_CODE,
   registerServiceDefinitionsOrThrow,
   resolveCommonPresentationPlan,
   serviceDefinitionSurfaces,
@@ -57,8 +63,10 @@ export {
 
 export {
   createElectronExtensionManagerBackend,
+  readElectronManagedExtensionState,
   type ElectronExtensionManagerBackend,
   type ElectronExtensionManagerBackendOptions,
+  type ElectronManagedExtensionState,
 } from './extension-manager-main.js'
 
 export {
@@ -339,6 +347,8 @@ export interface ElectronAppOptions {
    * and the worker realm agree with the inventory resolution runs against.
    */
   readonly disabledContributions?: readonly string[]
+  /** Extension coordinates stay inventoried but none of their contributions may activate. */
+  readonly disabledExtensions?: readonly string[]
 }
 
 /** What loaded from where, and what did not — the settings UI and the status bar report it. */
@@ -402,10 +412,14 @@ export async function createElectronApp(
       policy: ELECTRON_WORKER_POLICY,
       ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
     })
-  const disabled =
-    options.disabledContributions === undefined
+  const disabled = {
+    ...(options.disabledContributions === undefined
       ? {}
-      : { disabledContributions: options.disabledContributions }
+      : { disabledContributions: options.disabledContributions }),
+    ...(options.disabledExtensions === undefined
+      ? {}
+      : { disabledExtensions: options.disabledExtensions }),
+  }
   const [main, renderer, workers] = await Promise.all([
     createHostComposition({
       topology,
@@ -450,6 +464,8 @@ export interface ElectronSubjectServicesOptions {
    * show the switch in its off position and the inspector can say why nothing resolved.
    */
   readonly disabledContributions?: readonly string[]
+  /** Extension coordinates switched off without removing their inventory or cards. */
+  readonly disabledExtensions?: readonly string[]
 }
 
 /**
@@ -476,6 +492,8 @@ export interface ElectronContributionRow {
   readonly activationEligible: boolean
   /** True when the host refused activation because this contribution is switched off. */
   readonly disabled: boolean
+  /** The direct contribution preference is retained even while its owner extension is off. */
+  readonly extensionDisabled: boolean
   /** Manifest path inside the extension — the only identity an unparsed record has. */
   readonly path: string
 }
@@ -503,6 +521,9 @@ export function describeInventoryContributions(
         origin: extension.origin,
         activationEligible: contribution.activationEligible,
         disabled: contribution.diagnostics.some(item => item.code === CONTRIBUTION_DISABLED_CODE),
+        extensionDisabled: contribution.diagnostics.some(
+          item => item.code === EXTENSION_DISABLED_CODE,
+        ),
         path: contribution.path,
       }
     })
@@ -513,6 +534,60 @@ export function describeInventoryContributions(
       return owner === 0 ? compareUtf8(left.id ?? left.path, right.id ?? right.path) : owner
     }),
   )
+}
+
+/**
+ * Function-free extension and contribution cards derived only from the host's validated inventory.
+ *
+ * Renderer code must not reopen extension manifests or learn artifact paths. The inventory already
+ * owns the admitted JSON declarations, so main projects those declarations through the same neutral
+ * subject ABI every other Modkit host uses and sends only inert card documents across IPC. Extension
+ * enablement is an explicit coordinate set because an extension with zero valid contributions has
+ * no child diagnostic from which state could be inferred.
+ */
+export async function describeInventoryExtensionSubjects(
+  inventory: Inventory,
+  disabledExtensions: readonly string[] = Object.freeze([]),
+): Promise<readonly ExtensionSubjectCardWireDocument[]> {
+  const documents: ExtensionSubjectCardWireDocument[] = []
+  const disabled = new Set(disabledExtensions)
+  for (const extension of inventory.extensions) {
+    const extensionId = `${extension.manifest.publisher}/${extension.manifest.id}`
+    const contributions = extension.contributions.flatMap(contribution =>
+      contribution.manifest === undefined ? [] : [contribution.manifest],
+    )
+    const contributionEnablement = Object.fromEntries(
+      extension.contributions.flatMap(contribution => {
+        const id = contribution.manifest?.id
+        return id === undefined
+          ? []
+          : [
+              [
+                id,
+                !contribution.diagnostics.some(
+                  diagnostic => diagnostic.code === CONTRIBUTION_DISABLED_CODE,
+                ),
+              ] as const,
+            ]
+      }),
+    )
+    const projection = projectExtensionSubjects({
+      extension: extension.manifest,
+      contributions,
+      metadata: {
+        displayName: `${extension.manifest.publisher}/${extension.manifest.id}`,
+        source: extension.origin,
+      },
+      enabled: !disabled.has(extensionId),
+      contributionEnablement,
+    })
+    documents.push(
+      ...(await Promise.all(
+        projection.records.map(record => extensionSubjectRecordToWire(record)),
+      )),
+    )
+  }
+  return Object.freeze(documents)
 }
 
 /**
@@ -620,6 +695,9 @@ export async function createElectronSubjectServices(
     ...(options.disabledContributions === undefined
       ? {}
       : { disabledContributions: options.disabledContributions }),
+    ...(options.disabledExtensions === undefined
+      ? {}
+      : { disabledExtensions: options.disabledExtensions }),
   })
   await registerServiceDefinitionsOrThrow(application.main.inventory, definitions)
   // codecs are resolved against main's inventory and activated for the worker realm: portable

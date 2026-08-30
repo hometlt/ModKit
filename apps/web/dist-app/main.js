@@ -31,8 +31,10 @@ import {
   createIndexedDbExtensionStore,
   createManagedExtensionsController,
   createSingleFileAccess,
+  createSubjectCard,
   createSurface,
   createWebEditingArm,
+  createWebExtensionSubjectCatalog,
   createWebPreviewStages,
   createWebSubjectServices,
   createWebTopology,
@@ -50,6 +52,7 @@ import {
   isTraitId,
   isWritableHandle,
   loadManagedExtensionRoots,
+  loadSubjectCardSections,
   loadUserExtensionRoots,
   mountWebWorkbench,
   narrowGrant,
@@ -75,9 +78,11 @@ import {
   sourceRevisionToken,
   sourceUriFor,
   stageIdOf,
+  subjectFactsSourceFromWire,
   throwIfAborted,
-  validateSubjectDescriptorV2
-} from "./chunks/chunk-T4ZCUK7F.js";
+  validateSubjectDescriptorV2,
+  webExtensionSubjectCardBundle
+} from "./chunks/chunk-FHDXK6YU.js";
 import "./chunks/chunk-HVXSZ42C.js";
 
 // packages/ui/dist/settings/index.js
@@ -507,6 +512,7 @@ var DEFAULT_SETTINGS = Object.freeze({
   extensions: Object.freeze([]),
   gameInstallations: Object.freeze({}),
   recent: Object.freeze([]),
+  disabledExtensions: Object.freeze([]),
   disabledContributions: Object.freeze([])
 });
 var isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -629,6 +635,24 @@ function normalizeSettings(value) {
       if (recent.length >= RECENT_LIMIT) break;
     }
   }
+  const disabledExtensions = [];
+  const disabledExtensionsInput = value["disabledExtensions"];
+  if (disabledExtensionsInput !== void 0 && !Array.isArray(disabledExtensionsInput)) {
+    problems.push("disabledExtensions must be an array; it was ignored");
+  } else {
+    const seenIds = /* @__PURE__ */ new Set();
+    for (const [index, item] of (disabledExtensionsInput ?? []).entries()) {
+      const id = asText(item);
+      if (id === void 0 || !isQualifiedId(id)) {
+        problems.push(`disabledExtensions[${index}] is not an extension coordinate; ignored`);
+        continue;
+      }
+      if (seenIds.has(id)) continue;
+      seenIds.add(id);
+      disabledExtensions.push(id);
+    }
+    disabledExtensions.sort(compareUtf8);
+  }
   const disabled = [];
   const disabledInput = value["disabledContributions"];
   if (disabledInput !== void 0 && !Array.isArray(disabledInput)) {
@@ -654,6 +678,7 @@ function normalizeSettings(value) {
       extensions: Object.freeze(extensions),
       gameInstallations: Object.freeze(gameInstallations),
       recent: Object.freeze(recent),
+      disabledExtensions: Object.freeze(disabledExtensions),
       disabledContributions: Object.freeze(disabled)
     }),
     problems: Object.freeze(problems)
@@ -667,6 +692,9 @@ function serializeSettings(document2) {
       // Recency is meaningful order, so this list is written as-is rather than sorted.
       recent: document2.recent.map((entry) => ({ path: entry.path, kind: entry.kind })),
       // A set: sorted, so the same choice made in two hosts produces the same bytes.
+      // `?? []` keeps runtime serialization compatible with schema-v1 documents created before
+      // this additive field existed. `normalizeSettings` always returns the complete shape.
+      disabledExtensions: [...document2.disabledExtensions ?? []].sort(compareUtf8),
       disabledContributions: [...document2.disabledContributions].sort(compareUtf8),
       gameInstallations: Object.fromEntries(
         Object.entries(document2.gameInstallations).sort(([left], [right]) => compareUtf8(left, right)).map(([gameId, setting]) => [gameId, { configuredPaths: [...setting.configuredPaths] }])
@@ -6401,6 +6429,10 @@ function mountExtensionsUi(documentRef, options) {
     })
   };
   let status = "";
+  let activeExtensionId;
+  let activeSubjectId;
+  let activeCard;
+  let cardRevision = 0;
   const loadOptions = () => ({
     subtle: options.subtle,
     claimed: [
@@ -6499,6 +6531,176 @@ function mountExtensionsUi(documentRef, options) {
         status = `Extension action failed: ${describe(error)}`;
       }
       render();
+    })();
+  };
+  const subjectAction = (action, success) => {
+    void (async () => {
+      try {
+        await action();
+        status = `${success} Reload the page to rebuild the running host.`;
+      } catch (error) {
+        status = `Extension action failed: ${describe(error)}`;
+      }
+      render();
+    })();
+  };
+  const selectSubject = (entry, subjectId) => {
+    activeExtensionId = entry.id;
+    activeSubjectId = subjectId;
+    render();
+  };
+  const renderExtensionSubjectTree = () => {
+    const catalog = options.extensionSubjects?.();
+    if (catalog === void 0) return void 0;
+    element(root, "h3", { text: "Installed extension subjects" });
+    element(root, "p", {
+      part: "settings.description",
+      text: "These cards come from validated extension and contribution JSON. Contract rows are visual groups named by the exact declared contract id and major."
+    });
+    const list = element(root, "div", { part: "settings.list" });
+    for (const entry of catalog.entries) {
+      const extension = entry.projection.extension;
+      const item = element(list, "details", { part: "settings.extension" });
+      item.open = entry.id === activeExtensionId;
+      const summary = documentRef.createElement("summary");
+      const state = documentRef.createElement("span");
+      state.textContent = extension.enabled ? "\u25CF" : "\u25CB";
+      state.setAttribute("aria-label", extension.enabled ? "enabled" : "disabled");
+      const label = documentRef.createElement("span");
+      label.dataset["mkPart"] = "settings.label";
+      label.textContent = extension.displayName;
+      summary.addEventListener("click", () => {
+        selectSubject(entry, extension.subjectId);
+      });
+      summary.append(state, documentRef.createTextNode(" "), label);
+      item.append(summary);
+      if (options.setExtensionEnabled !== void 0) {
+        button(
+          item,
+          "settings.add",
+          entry.configuredEnabled ? "Disable" : "Enable",
+          () => subjectAction(
+            () => options.setExtensionEnabled?.(entry.id, !entry.configuredEnabled),
+            `${entry.configuredEnabled ? "Disabled" : "Enabled"} ${extension.displayName}.`
+          )
+        );
+      }
+      if (entry.configuredEnabled && !extension.enabled) {
+        element(item, "span", {
+          part: "settings.description",
+          text: "The extension is enabled directly, but its distribution package is disabled."
+        });
+      }
+      for (const group of entry.projection.contractGroups) {
+        const contract = documentRef.createElement("details");
+        contract.open = true;
+        contract.dataset["mkPart"] = "settings.row";
+        const contractSummary = documentRef.createElement("summary");
+        contractSummary.textContent = group.key;
+        contract.append(contractSummary);
+        for (const contribution of group.contributions) {
+          const row = element(contract, "div", { part: "settings.extension" });
+          const openContribution = documentRef.createElement("button");
+          openContribution.type = "button";
+          openContribution.dataset["mkPart"] = "settings.label";
+          openContribution.textContent = `${contribution.effectiveEnabled ? "\u25CF" : "\u25CB"} ${contribution.displayName}`;
+          openContribution.setAttribute(
+            "aria-label",
+            `${contribution.displayName}, ${contribution.effectiveEnabled ? "enabled" : "disabled"}`
+          );
+          openContribution.addEventListener(
+            "click",
+            () => selectSubject(entry, contribution.subjectId)
+          );
+          row.append(openContribution);
+          if (options.setContributionEnabled !== void 0) {
+            button(
+              row,
+              "settings.add",
+              contribution.enabled ? "Disable" : "Enable",
+              () => subjectAction(
+                () => options.setContributionEnabled?.(contribution.id, !contribution.enabled),
+                `${contribution.enabled ? "Disabled" : "Enabled"} ${contribution.displayName}.`
+              )
+            );
+          }
+        }
+        item.append(contract);
+      }
+      list.append(item);
+    }
+    if (catalog.entries.length === 0) {
+      element(list, "p", {
+        part: "settings.description",
+        text: "The running host has no inventoried extension subjects."
+      });
+    }
+    const cardHost = documentRef.createElement("div");
+    cardHost.className = "web-extension-subject-card";
+    root.append(cardHost);
+    return cardHost;
+  };
+  const renderActiveSubjectCard = (host) => {
+    const catalog = options.extensionSubjects?.();
+    const entry = activeExtensionId === void 0 ? void 0 : catalog?.extension(activeExtensionId);
+    if (entry === void 0 || activeSubjectId === void 0) return;
+    const requestedSubjectId = activeSubjectId;
+    const revision = ++cardRevision;
+    void (async () => {
+      try {
+        const bundle = await webExtensionSubjectCardBundle(entry, requestedSubjectId);
+        if (revision !== cardRevision || !host.isConnected) return;
+        const documents = new Map(
+          bundle.documents.map((document2) => [document2.subject.subjectId, document2])
+        );
+        const active = documents.get(requestedSubjectId);
+        if (active === void 0) throw new Error(`unknown extension subject ${requestedSubjectId}`);
+        const sections = await loadSubjectCardSections(subjectFactsSourceFromWire(active));
+        if (revision !== cardRevision || !host.isConnected) return;
+        const toolbar = documentRef.createElement("div");
+        toolbar.dataset["mkPart"] = "settings.adder";
+        const subject = active.subject;
+        if (subject.kind === "org.modkitx/contribution" && options.setContributionEnabled !== void 0) {
+          button(
+            toolbar,
+            "settings.add",
+            subject.enabled ? "Disable contribution" : "Enable contribution",
+            () => subjectAction(
+              () => options.setContributionEnabled?.(subject.id, !subject.enabled),
+              `${subject.enabled ? "Disabled" : "Enabled"} ${subject.displayName}.`
+            )
+          );
+        } else if (subject.kind === "org.modkitx/extension" && options.setExtensionEnabled !== void 0) {
+          button(
+            toolbar,
+            "settings.add",
+            entry.configuredEnabled ? "Disable extension" : "Enable extension",
+            () => subjectAction(
+              () => options.setExtensionEnabled?.(entry.id, !entry.configuredEnabled),
+              `${entry.configuredEnabled ? "Disabled" : "Enabled"} ${subject.displayName}.`
+            )
+          );
+        }
+        activeCard?.destroy();
+        const navigate = (ref) => {
+          if (ref.href !== void 0 && documents.has(ref.href)) {
+            activeSubjectId = ref.href;
+            render();
+          }
+        };
+        activeCard = createSubjectCard(documentRef, {
+          label: active.subject.displayName,
+          sections,
+          onNavigate: navigate
+        });
+        host.replaceChildren(toolbar, activeCard.root);
+      } catch (error) {
+        if (revision !== cardRevision || !host.isConnected) return;
+        element(host, "p", {
+          part: "settings.status",
+          text: `Could not open extension card: ${describe(error)}`
+        });
+      }
     })();
   };
   const renderManagedExtensions = () => {
@@ -6602,6 +6804,9 @@ function mountExtensionsUi(documentRef, options) {
     }
   };
   function render() {
+    cardRevision += 1;
+    activeCard?.destroy();
+    activeCard = void 0;
     root.replaceChildren();
     element(root, "h2", { text: "Extensions" });
     element(root, "p", { part: "settings.description", text: USER_EXTENSION_TRUST_SENTENCE });
@@ -6612,6 +6817,7 @@ function mountExtensionsUi(documentRef, options) {
       part: "settings.description",
       text: `Added folders are remembered in ${options.store.location}.`
     });
+    const subjectCardHost = renderExtensionSubjectTree();
     const rows = describeExtensionList({
       catalog: options.catalog,
       loaded,
@@ -6649,6 +6855,7 @@ function mountExtensionsUi(documentRef, options) {
     }
     renderManagedExtensions();
     element(root, "p", { part: "settings.status", text: status });
+    if (subjectCardHost !== void 0) renderActiveSubjectCard(subjectCardHost);
   }
   render();
   return {
@@ -8666,7 +8873,7 @@ function applyDensity(root, density) {
 
 // apps/web/src/settings.ts
 var SETTINGS_STORAGE_KEY = "org.modkitx.app.web/settings";
-var EXTENSIONS_READ_ONLY_REASON = "this host has no enable/disable switch for an inventoried extension yet, so the settings extension list cannot be written here; add or remove your own extension folders in the Extensions panel instead";
+var EXTENSIONS_READ_ONLY_REASON = "browser extension locations are managed through granted folders and downloaded packages, so the portable locator list cannot be written here; use the Extensions panel to add sources or enable and disable inventoried extensions";
 var sameExtensions = (left, right) => left.length === right.length && left.every((entry, index) => {
   const other = right[index];
   return other !== void 0 && other.id === entry.id && other.enabled === entry.enabled;
@@ -8789,6 +8996,8 @@ async function fetchServed(baseUrl, path) {
 async function boot() {
   const probe = probeWebFacilities();
   const appThemes = readAppThemeChoices(document);
+  const settingsStore = createWebSettingsStore(window.localStorage);
+  let settingsDocument = (await settingsStore.read()).document;
   const baseUrl = new URL("./", document.baseURI);
   const pageUrl = new URL(window.location.href);
   const locale = resolveUiLocale(pageUrl.searchParams.get("lang") ?? navigator.languages);
@@ -8824,6 +9033,14 @@ async function boot() {
   for (const failure of managedRoots.failures) {
     bootDiagnostics.push(`${failure.code}: ${failure.message}`);
   }
+  const composedDisabledExtensions = () => Object.freeze(
+    [
+      .../* @__PURE__ */ new Set([
+        ...settingsDocument.disabledExtensions,
+        ...managedRoots.disabledExtensionCoordinates
+      ])
+    ].sort()
+  );
   const host = {};
   const extensionsUi = mountExtensionsUi(document, {
     store: extensionStore,
@@ -8837,6 +9054,39 @@ async function boot() {
       return await picker.call(window);
     },
     conflicts: () => host.services?.userExtensionConflicts ?? [],
+    extensionSubjects: () => {
+      const inventory = host.services?.main.inventory;
+      if (inventory === void 0) return void 0;
+      const packageEnablement = Object.fromEntries(
+        managedExtensions.snapshot().rows.filter((row) => row.installed).map((row) => [row.id, row.enabled])
+      );
+      return createWebExtensionSubjectCatalog(inventory, {
+        disabledExtensions: settingsDocument.disabledExtensions,
+        disabledContributions: settingsDocument.disabledContributions,
+        managedPackageByExtension: managedRoots.packageByCoordinate,
+        managedPackageEnablement: packageEnablement
+      });
+    },
+    setContributionEnabled: async (id, enabled) => {
+      const disabled = new Set(settingsDocument.disabledContributions);
+      if (enabled) disabled.delete(id);
+      else disabled.add(id);
+      settingsDocument = {
+        ...settingsDocument,
+        disabledContributions: Object.freeze([...disabled].sort())
+      };
+      await settingsStore.write(settingsDocument);
+    },
+    setExtensionEnabled: async (id, enabled) => {
+      const disabled = new Set(settingsDocument.disabledExtensions);
+      if (enabled) disabled.delete(id);
+      else disabled.add(id);
+      settingsDocument = {
+        ...settingsDocument,
+        disabledExtensions: Object.freeze([...disabled].sort())
+      };
+      await settingsStore.write(settingsDocument);
+    },
     onChanged: (loaded) => {
       console.info(
         `[extensions] ${loaded.inputs.length} user extension(s) loaded. Reload the page to compose a host with a changed list: this app builds its inventory once, at startup.`
@@ -8859,6 +9109,8 @@ async function boot() {
       ...loadedExtensionRoots.moduleMap
     }),
     identity: identity(),
+    disabledExtensions: composedDisabledExtensions(),
+    disabledContributions: settingsDocument.disabledContributions,
     probe,
     dom: {
       fetch: (url, init) => fetch(url, init),
@@ -9349,12 +9601,14 @@ ${mapPreview.candidates.map(
     if (file === void 0) return;
     void openFile(file).catch((error) => say(t2("error.drop", { reason: describe2(error) })));
   });
-  const store = createWebSettingsStore(window.localStorage);
   const settingsUi = createSettingsUi(document, {
-    store,
+    store: settingsStore,
     themes: appThemes,
     onAppearance(appearance) {
       applyAppearance(document.documentElement, appearance);
+    },
+    onChange(document2) {
+      settingsDocument = document2;
     },
     onClose() {
       showView("explorer");

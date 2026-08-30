@@ -6,7 +6,10 @@ import { mkdtempSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
-import { createElectronExtensionManagerBackend } from '../src/extension-manager-main.js'
+import {
+  createElectronExtensionManagerBackend,
+  readElectronManagedExtensionState,
+} from '../src/extension-manager-main.js'
 import {
   composeElectronExtensionRoots,
   ELECTRON_MANAGED_COORDINATE_CONFLICT,
@@ -205,6 +208,12 @@ describe('Electron extension root composition', () => {
     await manager.setEnabled('org.example/fixture-suite', false)
     expect((await manager.snapshot()).entries[0]?.enabled).toBe(false)
     expect((await compose()).roots).toEqual([])
+    const disabled = await readElectronManagedExtensionState(manager)
+    expect(disabled.roots).toHaveLength(2)
+    expect(disabled.disabledExtensions).toEqual([
+      'org.example/fixture-secondary',
+      'org.example/fixture-thirdparty',
+    ])
     await manager.setEnabled('org.example/fixture-suite', true)
     expect((await manager.snapshot()).entries[0]?.enabled).toBe(true)
     expect((await compose()).roots).toHaveLength(2)
@@ -244,6 +253,21 @@ describe('Electron extension root composition', () => {
       ELECTRON_MANUAL_MANAGED_COORDINATE_CONFLICT,
       ELECTRON_MANUAL_MANAGED_COORDINATE_CONFLICT,
     ])
+  })
+
+  it('keeps a disabled manual root in composition and names it for host-side activation refusal', async () => {
+    const result = await composeElectronExtensionRoots({
+      managedRoots: [],
+      manualRoots: [{ root: 'C:/extensions/fixture', id: 'org.example/fixture', enabled: false }],
+      probeManual: async () => {
+        throw new Error('a disabled row with a coordinate does not need probing')
+      },
+    })
+    expect(result.roots).toEqual([
+      { root: 'C:/extensions/fixture', expectedId: 'org.example/fixture' },
+    ])
+    expect(result.disabledExtensions).toEqual(['org.example/fixture'])
+    expect(result.conflicts).toEqual([])
   })
 
   it('keeps every managed mutation out of the manual settings store', () => {

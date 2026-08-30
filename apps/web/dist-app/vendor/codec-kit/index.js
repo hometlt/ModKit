@@ -2,7 +2,7 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-6EP6ZNUS.js";
+} from "../../chunks/chunk-25D4A4NO.js";
 import {
   revisionId,
   toPortableProjectionReceipt

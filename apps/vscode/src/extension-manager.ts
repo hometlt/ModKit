@@ -1,3 +1,5 @@
+import { isAbsolute, resolve } from 'node:path'
+
 import type {
   ExtensionManagerClient,
   ExtensionManagerEntry,
@@ -19,6 +21,15 @@ export interface StaticExtensionPackage {
   readonly entry: ExtensionManagerEntry
 }
 
+export interface VsCodeManagedExtensionState {
+  /** Every installed extension root, including roots owned by a disabled package. */
+  readonly roots: readonly ManagedExtensionRootRequest[]
+  /** Extension coordinates whose owning distribution package is disabled. */
+  readonly disabledExtensions: readonly string[]
+  /** Exact package owner for each installed extension coordinate. */
+  readonly packageByExtension: ReadonlyMap<string, string>
+}
+
 export interface CreateVsCodeExtensionManagerClientOptions {
   readonly client: ExtensionManagerClient
   readonly staticPackages?: () => readonly StaticExtensionPackage[]
@@ -35,6 +46,45 @@ export async function installedManagerExtensionRoots(
   return Object.freeze([
     ...roots.map(root => Object.freeze({ root: root.root, expectedId: root.expectedId })),
   ])
+}
+
+/**
+ * Read the complete manager inventory without using package enablement as a root filter.
+ *
+ * Package enablement is an activation decision. Keeping disabled package roots here lets the host
+ * retain their manifests, contributions and cards while `disabledExtensions` makes every owned
+ * contribution ineligible.
+ */
+export async function installedManagerExtensionState(
+  manager: Pick<NodeExtensionManager, 'artifactStore' | 'enablementStore'>,
+): Promise<VsCodeManagedExtensionState> {
+  const [packages, enablement] = await Promise.all([
+    manager.artifactStore.list(),
+    manager.enablementStore.list(),
+  ])
+  const enabled = new Map(enablement.map(entry => [entry.id, entry.enabled]))
+  const roots: ManagedExtensionRootRequest[] = []
+  const disabledExtensions = new Set<string>()
+  const packageByExtension = new Map<string, string>()
+  for (const installed of packages) {
+    const packageEnabled = enabled.get(installed.id) === true
+    for (const item of installed.roots) {
+      if (typeof item.root !== 'string' || !isAbsolute(item.root)) {
+        throw new TypeError(`installed extension root is not absolute: ${String(item.root)}`)
+      }
+      if (typeof item.expectedId !== 'string' || item.expectedId.trim().length === 0) {
+        throw new TypeError(`installed package ${installed.id} contains an unnamed extension root`)
+      }
+      roots.push(Object.freeze({ root: resolve(item.root), expectedId: item.expectedId }))
+      packageByExtension.set(item.expectedId, installed.id)
+      if (!packageEnabled) disabledExtensions.add(item.expectedId)
+    }
+  }
+  return Object.freeze({
+    roots: Object.freeze(roots),
+    disabledExtensions: Object.freeze([...disabledExtensions].sort()),
+    packageByExtension,
+  })
 }
 
 /**

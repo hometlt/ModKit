@@ -1,6 +1,9 @@
 import { webcrypto } from 'node:crypto'
+import { createHostComposition, EXTENSION_DISABLED_CODE } from '@modkitx-x3/host'
 import { describe, expect, it } from 'vitest'
 
+import { createWebExtensionSubjectCatalog } from '../src/extension-subjects.js'
+import { createWebTopology, WEB_MAIN_REALM } from '../src/index.js'
 import {
   combineLoadedExtensionRoots,
   loadManagedExtensionRoots,
@@ -21,6 +24,7 @@ function extensionPackageJson(id = 'codec'): string {
   return JSON.stringify({
     name: `modkit-extension-${id}`,
     version: '1.0.0',
+    license: 'MIT',
     type: 'module',
     modkit: {
       schemaVersion: 1,
@@ -38,6 +42,36 @@ function embeddedBundle(id = 'org.example/codec'): string {
       {
         id,
         files: { 'package.json': encode(extensionPackageJson(id.split('/')[1] ?? 'codec')) },
+      },
+    ],
+  })
+}
+
+function embeddedBundleWithContribution(): string {
+  const packageJson = JSON.parse(extensionPackageJson()) as Record<string, unknown>
+  packageJson['modkit'] = {
+    schemaVersion: 1,
+    publisher: 'org.example',
+    id: 'codec',
+    contributionManifests: ['./contributions/*.json'],
+  }
+  return JSON.stringify({
+    schemaVersion: 1,
+    extensions: [
+      {
+        id: 'org.example/codec',
+        files: {
+          'package.json': encode(JSON.stringify(packageJson)),
+          'contributions/fixture.json': encode(
+            JSON.stringify({
+              schemaVersion: 1,
+              id: 'org.example/fixture-contribution',
+              displayName: 'Fixture contribution',
+              contract: { id: 'org.example/fixture-contract', major: 1 },
+              spec: {},
+            }),
+          ),
+        },
       },
     ],
   })
@@ -128,6 +162,10 @@ class FakeManagedStorage implements BrowserExtensionStorage {
     return new Response(copy)
   }
 
+  openInstalled(id: string): Promise<Response | undefined> {
+    return this.open(id)
+  }
+
   async install(): Promise<InstalledBrowserExtension> {
     throw new Error('not used by this bridge test')
   }
@@ -159,6 +197,10 @@ describe('downloaded browser extension roots', () => {
 
     expect(loaded.failures).toEqual([])
     expect(loaded.coordinates).toEqual(['org.example/dependency', 'org.example/consumer'])
+    expect(loaded.packageByCoordinate).toEqual({
+      'org.example/consumer': 'org.example/toolkit',
+      'org.example/dependency': 'org.example/toolkit',
+    })
     expect(Object.keys(loaded.moduleMap).sort()).toEqual([
       'example-consumer',
       'example-dependency/value',
@@ -194,16 +236,49 @@ describe('downloaded browser extension roots', () => {
     })
   })
 
-  it('ignores disabled records without opening their Cache Storage response', async () => {
+  it('keeps disabled package roots in inventory while naming every inactive coordinate', async () => {
     const storage = new FakeManagedStorage(
       [record({ enabled: false })],
-      new Map([['org.example/codec', embeddedBundle()]]),
+      new Map([['org.example/codec', embeddedBundleWithContribution()]]),
     )
     const loaded = await loadManagedExtensionRoots(storage, { subtle })
 
-    expect(storage.openCalls).toEqual([])
-    expect(loaded.inputs).toEqual([])
+    expect(storage.openCalls).toEqual(['org.example/codec'])
+    expect(loaded.inputs).toHaveLength(1)
+    expect(loaded.coordinates).toEqual(['org.example/codec'])
+    expect(loaded.packageByCoordinate).toEqual({
+      'org.example/codec': 'org.example/codec',
+    })
+    expect(loaded.disabledExtensionCoordinates).toEqual(['org.example/codec'])
     expect(loaded.failures).toEqual([])
+
+    const topology = createWebTopology(
+      { operatingSystem: 'linux', architecture: 'x64' },
+      { main: [], worker: [], sharedMemory: false },
+    )
+    const composition = await createHostComposition({
+      topology,
+      realmId: WEB_MAIN_REALM,
+      extensions: loaded.inputs,
+      disabledExtensions: loaded.disabledExtensionCoordinates,
+    })
+    const extension = composition.inventory.extensions.find(
+      item => `${item.manifest.publisher}/${item.manifest.id}` === 'org.example/codec',
+    )
+    expect(extension).toBeDefined()
+    expect(extension?.contributions[0]?.diagnostics.map(item => item.code)).toContain(
+      EXTENSION_DISABLED_CODE,
+    )
+    expect(extension?.contributions[0]?.activationEligible).toBe(false)
+
+    const cards = createWebExtensionSubjectCatalog(composition.inventory, {
+      disabledExtensions: loaded.disabledExtensionCoordinates,
+      managedPackageByExtension: loaded.packageByCoordinate,
+      managedPackageEnablement: { 'org.example/codec': false },
+    })
+    const card = cards.extension('org.example/codec')
+    expect(card?.projection.extension.enabled).toBe(false)
+    expect(card?.projection.contributions[0]?.effectiveEnabled).toBe(false)
   })
 
   it('diagnoses invalid JSON and path-only repository entries instead of resolving paths', async () => {

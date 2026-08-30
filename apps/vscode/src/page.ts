@@ -35,6 +35,8 @@ export interface PageBootstrap {
   readonly extensions: unknown
   readonly diagnostics: number
   readonly openPath?: string
+  /** Function-free extension/contribution subject cards for the generic subject-card renderer. */
+  readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
 }
 
 export interface PageOptions {

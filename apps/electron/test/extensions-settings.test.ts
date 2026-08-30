@@ -12,15 +12,24 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
+import type { Inventory } from '@modkitx-x3/host'
 import { normalizeSettings, serializeSettings } from '@modkitx-x3/ui/settings'
+import { subjectFactsSourceFromWire } from '@modkitx/extension-manager'
 
 import {
   createElectronSubjectServices,
   describeInventoryContributions,
+  describeInventoryExtensionSubjects,
   disabledContributionNotices,
   probeElectronExtensionRoot,
   CONTRIBUTION_DISABLED_CODE,
 } from '../src/index.js'
+import {
+  groupContributionsByContract,
+  withContributionEnabled,
+  withExtensionEnabled,
+  type ContributionReport,
+} from '../src/extensions-page.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
 const imagesExtension = join(repositoryRoot, 'extensions', 'common', 'images')
@@ -82,9 +91,109 @@ describe('the settings document carries the disabled set', () => {
     expect(document.disabledContributions).toEqual([])
     expect(problems).toEqual([])
   })
+
+  it('changes enablement by stable id without accepting or replacing a filesystem root', () => {
+    const document = normalizeSettings({
+      schemaVersion: 1,
+      extensions: [
+        { id: 'org.example/first', path: 'C:/fixed/first', enabled: true },
+        { id: 'org.example/second', path: 'C:/fixed/second', enabled: true },
+      ],
+      disabledContributions: ['org.example/already-off'],
+    }).document
+    const disabled = withExtensionEnabled(document, 'org.example/first', false)
+    expect(disabled.extensions).toEqual([
+      { id: 'org.example/first', path: 'C:/fixed/first', enabled: false },
+      { id: 'org.example/second', path: 'C:/fixed/second', enabled: true },
+    ])
+    expect(disabled.disabledExtensions).toEqual(['org.example/first'])
+    const bundledOff = withExtensionEnabled(document, 'org.example/bundled', false)
+    expect(bundledOff.extensions).toEqual(document.extensions)
+    expect(bundledOff.disabledExtensions).toEqual(['org.example/bundled'])
+
+    const contributionOff = withContributionEnabled(disabled, 'org.example/codec', false)
+    expect(contributionOff.disabledContributions).toEqual([
+      'org.example/already-off',
+      'org.example/codec',
+    ])
+    expect(withContributionEnabled(contributionOff, 'org.example/codec', true)).toMatchObject({
+      extensions: disabled.extensions,
+      disabledContributions: ['org.example/already-off'],
+    })
+  })
+})
+
+describe('contribution contract groups', () => {
+  it('uses exact contract.id@major coordinates and never invents codec entities', () => {
+    const contribution = (
+      id: string,
+      contract: string | undefined,
+      contractMajor: number | undefined,
+    ): ContributionReport => ({
+      id,
+      displayName: id,
+      ...(contract === undefined ? {} : { contract }),
+      ...(contractMajor === undefined ? {} : { contractMajor }),
+      extension: 'org.example/extension',
+      origin: 'bundled',
+      activationEligible: true,
+      disabled: false,
+      extensionDisabled: false,
+      path: `${id}.json`,
+    })
+    const groups = groupContributionsByContract([
+      contribution('org.example/codec-v2', 'org.modkitx/codec-contribution', 2),
+      contribution('org.example/viewer', 'org.modkitx/viewer-contribution', 1),
+      contribution('org.example/codec-v1', 'org.modkitx/codec-contribution', 1),
+      contribution('org.example/unreadable', undefined, undefined),
+    ])
+    expect(groups.map(group => group.key)).toEqual([
+      'org.modkitx/codec-contribution@1',
+      'org.modkitx/codec-contribution@2',
+      'org.modkitx/viewer-contribution@1',
+      undefined,
+    ])
+    expect(groups.flatMap(group => group.contributions.map(item => item.id))).toEqual([
+      'org.example/codec-v1',
+      'org.example/codec-v2',
+      'org.example/viewer',
+      'org.example/unreadable',
+    ])
+  })
 })
 
 describe('what the codecs section lists', () => {
+  it('keeps an explicitly disabled zero-contribution extension visible as a disabled card', async () => {
+    const coordinate = 'org.example/empty'
+    const inventory: Inventory = {
+      extensions: [
+        {
+          source: 'fixture-empty',
+          origin: 'installed',
+          container: 'package-json',
+          manifest: {
+            schemaVersion: 1,
+            publisher: 'org.example',
+            id: 'empty',
+            version: '1.0.0',
+            license: 'MIT',
+            contributionManifests: [],
+          },
+          contributions: [],
+        },
+      ],
+      diagnostics: [],
+    }
+    const documents = await describeInventoryExtensionSubjects(inventory, [coordinate])
+    expect(documents).toHaveLength(1)
+    expect(documents[0]?.subject).toMatchObject({
+      kind: 'org.modkitx/extension',
+      id: coordinate,
+      enabled: false,
+    })
+    expect(documents[0]?.relations).toEqual([])
+  })
+
   it('keeps a switched-off codec listed, without activation and with the host reason', async () => {
     const services = await createElectronSubjectServices([imagesExtension], {
       disabledContributions: [PNG_CODEC],
@@ -109,6 +218,34 @@ describe('what the codecs section lists', () => {
     // sorted by owner then id, so the page draws the same order on every launch
     const keys = rows.map(row => `${row.extension}\u0000${row.id ?? row.path}`)
     expect(keys).toEqual([...keys].sort())
+
+    const documents = await describeInventoryExtensionSubjects(services.application.main.inventory)
+    const extension = documents.find(
+      document =>
+        document.subject.kind === 'org.modkitx/extension' &&
+        document.subject.id === 'org.modkitx/images',
+    )
+    const pngCard = documents.find(
+      document =>
+        document.subject.kind === 'org.modkitx/contribution' && document.subject.id === PNG_CODEC,
+    )
+    expect(extension).toBeDefined()
+    expect(pngCard?.subject).toMatchObject({
+      contractKey: 'org.modkitx/codec-contribution@1',
+      enabled: false,
+      effectiveEnabled: false,
+    })
+    if (extension === undefined || pngCard === undefined) return
+    const extensionRelations = await subjectFactsSourceFromWire(extension).relations({ limit: 256 })
+    const contributionRelations = await subjectFactsSourceFromWire(pngCard).relations({
+      limit: 256,
+    })
+    expect(extensionRelations.items).toContainEqual(
+      expect.objectContaining({ role: 'owns', subjectId: pngCard.subject.subjectId }),
+    )
+    expect(contributionRelations.items).toEqual([
+      expect.objectContaining({ role: 'belongs-to', subjectId: extension.subject.subjectId }),
+    ])
   }, 30_000)
 
   it('answers the "why did nothing claim this file" question with the host diagnostic', async () => {
@@ -147,6 +284,41 @@ describe('a folder the user connected reaches the inventory', () => {
     })
     // its declared format is offered by the picker hints, so the app can say it can open it
     expect(services.supportedExtensions).toContain('mkfixture')
+  }, 30_000)
+
+  it('keeps a disabled extension and its cards inventoried while every contribution is inactive', async () => {
+    const coordinate = 'org.example/fixture-thirdparty'
+    const services = await createElectronSubjectServices([imagesExtension], {
+      userRoots: [{ root: extensionFolders.ok }],
+      disabledExtensions: [coordinate],
+    })
+    expect(services.extensions.installed).toContain(coordinate)
+    const rows = describeInventoryContributions(services.application.main.inventory).filter(
+      row => row.extension === coordinate,
+    )
+    expect(rows.length).toBeGreaterThan(0)
+    expect(
+      rows.every(row => row.extensionDisabled && !row.disabled && !row.activationEligible),
+    ).toBe(true)
+
+    const documents = await describeInventoryExtensionSubjects(
+      services.application.main.inventory,
+      [coordinate],
+    )
+    const extension = documents.find(document => document.subject.id === coordinate)
+    const contributions = documents.filter(document => document.subject.extensionId === coordinate)
+    expect(extension?.subject).toMatchObject({
+      kind: 'org.modkitx/extension',
+      id: coordinate,
+      enabled: false,
+    })
+    expect(contributions.length).toBeGreaterThan(0)
+    expect(
+      contributions.every(
+        document =>
+          document.subject.enabled === true && document.subject.effectiveEnabled === false,
+      ),
+    ).toBe(true)
   }, 30_000)
 
   it('reports a broken folder as a record and still loads everything else', async () => {

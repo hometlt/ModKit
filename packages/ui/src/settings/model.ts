@@ -11,7 +11,7 @@
  * Normalisation never throws on bad input. A settings file is user-editable by design, so a typo
  * must degrade to "that entry was ignored, here is why" rather than refusing to start the app.
  */
-import { compareUtf8 } from '@modkitx-x3/core'
+import { compareUtf8, isQualifiedId } from '@modkitx-x3/core'
 
 export type Density = 'compact' | 'comfortable'
 
@@ -48,6 +48,8 @@ export interface SettingsDocument {
   readonly extensions: readonly ExtensionSetting[]
   readonly gameInstallations: Readonly<Record<string, GameInstallationSetting>>
   readonly recent: readonly RecentEntry[]
+  /** Extension coordinates switched off without removing their manifests from inventory. */
+  readonly disabledExtensions: readonly string[]
   /**
    * Contribution ids (`org.example/image-png`) the user switched off, one level below an
    * extension: an extension may ship six codecs and a user may want five of them.
@@ -73,6 +75,7 @@ export const DEFAULT_SETTINGS: SettingsDocument = Object.freeze({
   extensions: Object.freeze([]),
   gameInstallations: Object.freeze({}),
   recent: Object.freeze([]),
+  disabledExtensions: Object.freeze([]),
   disabledContributions: Object.freeze([]),
 })
 
@@ -231,9 +234,33 @@ export function normalizeSettings(value: unknown): NormalizedSettings {
   }
 
   /*
+   * A coordinate set independent from both extension locations and contribution switches. An
+   * extension stays loadable/inventoried while this host-owned switch makes its contributions
+   * ineligible, so this list must not be folded into `ExtensionSetting.enabled`.
+   */
+  const disabledExtensions: string[] = []
+  const disabledExtensionsInput = value['disabledExtensions']
+  if (disabledExtensionsInput !== undefined && !Array.isArray(disabledExtensionsInput)) {
+    problems.push('disabledExtensions must be an array; it was ignored')
+  } else {
+    const seenIds = new Set<string>()
+    for (const [index, item] of (disabledExtensionsInput ?? []).entries()) {
+      const id = asText(item)
+      if (id === undefined || !isQualifiedId(id)) {
+        problems.push(`disabledExtensions[${index}] is not an extension coordinate; ignored`)
+        continue
+      }
+      if (seenIds.has(id)) continue
+      seenIds.add(id)
+      disabledExtensions.push(id)
+    }
+    disabledExtensions.sort(compareUtf8)
+  }
+
+  /*
    * A set of contribution ids. Sorted and deduplicated here rather than at every read site,
-   * because "is this codec off?" is a membership question and the file is user-editable: two
-   * entries for the same id, or an id written as a number, must not decide anything.
+   * because "is this contribution off?" is a membership question and the file is user-editable:
+   * two entries for the same id, or an id written as a number, must not decide anything.
    */
   const disabled: string[] = []
   const disabledInput = value['disabledContributions']
@@ -261,6 +288,7 @@ export function normalizeSettings(value: unknown): NormalizedSettings {
       extensions: Object.freeze(extensions),
       gameInstallations: Object.freeze(gameInstallations),
       recent: Object.freeze(recent),
+      disabledExtensions: Object.freeze(disabledExtensions),
       disabledContributions: Object.freeze(disabled),
     }),
     problems: Object.freeze(problems),
@@ -287,6 +315,9 @@ export function serializeSettings(document: SettingsDocument): string {
       // Recency is meaningful order, so this list is written as-is rather than sorted.
       recent: document.recent.map(entry => ({ path: entry.path, kind: entry.kind })),
       // A set: sorted, so the same choice made in two hosts produces the same bytes.
+      // `?? []` keeps runtime serialization compatible with schema-v1 documents created before
+      // this additive field existed. `normalizeSettings` always returns the complete shape.
+      disabledExtensions: [...(document.disabledExtensions ?? [])].sort(compareUtf8),
       disabledContributions: [...document.disabledContributions].sort(compareUtf8),
       gameInstallations: Object.fromEntries(
         Object.entries(document.gameInstallations)
@@ -309,6 +340,8 @@ export function serializeSettings(document: SettingsDocument): string {
 
 /** The extensions a host should actually load. */
 export function enabledExtensions(document: SettingsDocument): readonly ExtensionSetting[] {
+  // A coordinate in `disabledExtensions` must still load so its manifests and contributions remain
+  // inspectable. The host passes that independent set into composition to suppress activation.
   return document.extensions.filter(entry => entry.enabled)
 }
 

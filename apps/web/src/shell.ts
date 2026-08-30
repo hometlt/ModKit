@@ -76,6 +76,7 @@ import type { WebCommandSubjectLease } from './commands.js'
 import { createIndexedDbExtensionStore, type IdbFactoryLike } from './extension-store.js'
 import { mountExtensionsUi } from './extensions-ui.js'
 import { createManagedExtensionsController } from './managed-extensions-controller.js'
+import { createWebExtensionSubjectCatalog } from './extension-subjects.js'
 import { createBrowserExtensionManager } from './browser-extension-manager.js'
 import type {
   BrowserCacheStorageLike,
@@ -241,6 +242,8 @@ async function fetchServed(baseUrl: URL, path: string): Promise<WebFileLike | un
 async function boot(): Promise<void> {
   const probe = probeWebFacilities()
   const appThemes = readAppThemeChoices(document)
+  const settingsStore = createWebSettingsStore(window.localStorage)
+  let settingsDocument = (await settingsStore.read()).document
   const baseUrl = new URL('./', document.baseURI)
   const pageUrl = new URL(window.location.href)
   const locale = resolveUiLocale(pageUrl.searchParams.get('lang') ?? navigator.languages)
@@ -287,6 +290,15 @@ async function boot(): Promise<void> {
   for (const failure of managedRoots.failures) {
     bootDiagnostics.push(`${failure.code}: ${failure.message}`)
   }
+  const composedDisabledExtensions = (): readonly string[] =>
+    Object.freeze(
+      [
+        ...new Set([
+          ...settingsDocument.disabledExtensions,
+          ...managedRoots.disabledExtensionCoordinates,
+        ]),
+      ].sort(),
+    )
   /*
    * Filled once the host exists. The panel renders — and therefore asks for conflicts — during
    * `reload()`, which runs *before* the composition, because the folders have to be read before
@@ -308,6 +320,42 @@ async function boot(): Promise<void> {
       return (await picker.call(window)) as never
     },
     conflicts: () => host.services?.userExtensionConflicts ?? [],
+    extensionSubjects: () => {
+      const inventory = host.services?.main.inventory
+      if (inventory === undefined) return undefined
+      const packageEnablement = Object.fromEntries(
+        managedExtensions
+          .snapshot()
+          .rows.filter(row => row.installed)
+          .map(row => [row.id, row.enabled] as const),
+      )
+      return createWebExtensionSubjectCatalog(inventory, {
+        disabledExtensions: settingsDocument.disabledExtensions,
+        disabledContributions: settingsDocument.disabledContributions,
+        managedPackageByExtension: managedRoots.packageByCoordinate,
+        managedPackageEnablement: packageEnablement,
+      })
+    },
+    setContributionEnabled: async (id, enabled) => {
+      const disabled = new Set(settingsDocument.disabledContributions)
+      if (enabled) disabled.delete(id)
+      else disabled.add(id)
+      settingsDocument = {
+        ...settingsDocument,
+        disabledContributions: Object.freeze([...disabled].sort()),
+      }
+      await settingsStore.write(settingsDocument)
+    },
+    setExtensionEnabled: async (id, enabled) => {
+      const disabled = new Set(settingsDocument.disabledExtensions)
+      if (enabled) disabled.delete(id)
+      else disabled.add(id)
+      settingsDocument = {
+        ...settingsDocument,
+        disabledExtensions: Object.freeze([...disabled].sort()),
+      }
+      await settingsStore.write(settingsDocument)
+    },
     onChanged: loaded => {
       // `say` is not in scope yet at boot; the status line is created below, so report where a
       // user is already looking for load news
@@ -334,6 +382,8 @@ async function boot(): Promise<void> {
       ...loadedExtensionRoots.moduleMap,
     }),
     identity: identity(),
+    disabledExtensions: composedDisabledExtensions(),
+    disabledContributions: settingsDocument.disabledContributions,
     probe,
     dom: {
       fetch: (url, init) => fetch(url, init),
@@ -1037,12 +1087,14 @@ async function boot(): Promise<void> {
   })
 
   // ---------------------------------------------------------------- settings
-  const store = createWebSettingsStore(window.localStorage)
   const settingsUi = createSettingsUi(document, {
-    store,
+    store: settingsStore,
     themes: appThemes,
     onAppearance(appearance: SettingsDocument['appearance']) {
       applyAppearance(document.documentElement, appearance)
+    },
+    onChange(document) {
+      settingsDocument = document
     },
     onClose() {
       showView('explorer')

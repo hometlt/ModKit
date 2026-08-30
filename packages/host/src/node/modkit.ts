@@ -92,6 +92,12 @@ export interface ModkitOptions {
    * activation eligibility, so resolution never selects them.
    */
   readonly disabledContributions?: readonly string[]
+  /**
+   * Extension coordinates (`publisher/id`) switched off by the user. Every owned contribution
+   * stays inventoried but loses activation eligibility; individual contribution switches are
+   * preserved independently for a later re-enable.
+   */
+  readonly disabledExtensions?: readonly string[]
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
 }
 
@@ -192,6 +198,9 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
     ...(options.disabledContributions === undefined
       ? {}
       : { disabledContributions: options.disabledContributions }),
+    ...(options.disabledExtensions === undefined
+      ? {}
+      : { disabledExtensions: options.disabledExtensions }),
     ...(options.bootstrapUrl === undefined ? {} : { bootstrapUrl: options.bootstrapUrl }),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })

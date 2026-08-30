@@ -200,6 +200,10 @@ export interface WebSubjectServicesOptions {
    * `userExtensionConflicts` — first wins, second reported, exactly as the Node loader resolves it.
    */
   readonly userExtensions?: LoadedUserExtensionRoots
+  /** Portable user switches. Disabled records stay inventoried and card-addressable. */
+  readonly disabledExtensions?: readonly string[]
+  /** Portable user switches. Disabled records stay inventoried and card-addressable. */
+  readonly disabledContributions?: readonly string[]
   readonly identity: WebRuntimeIdentity
   readonly dom: WebDomGlobals
   readonly probe?: WebFacilityProbe
@@ -372,8 +376,30 @@ export async function createWebSubjectServices(
     }),
   ])
   const [main, worker] = await Promise.all([
-    createHostComposition({ topology, realmId: WEB_MAIN_REALM, extensions, executionBackends }),
-    createHostComposition({ topology, realmId: WEB_WORKER_REALM, extensions, executionBackends }),
+    createHostComposition({
+      topology,
+      realmId: WEB_MAIN_REALM,
+      extensions,
+      executionBackends,
+      ...(options.disabledExtensions === undefined
+        ? {}
+        : { disabledExtensions: options.disabledExtensions }),
+      ...(options.disabledContributions === undefined
+        ? {}
+        : { disabledContributions: options.disabledContributions }),
+    }),
+    createHostComposition({
+      topology,
+      realmId: WEB_WORKER_REALM,
+      extensions,
+      executionBackends,
+      ...(options.disabledExtensions === undefined
+        ? {}
+        : { disabledExtensions: options.disabledExtensions }),
+      ...(options.disabledContributions === undefined
+        ? {}
+        : { disabledContributions: options.disabledContributions }),
+    }),
   ])
   // Fails closed: one rejected definition owner is a refused bootstrap, never a half-defined host.
   if (definitions !== undefined)

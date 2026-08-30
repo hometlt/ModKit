@@ -20,6 +20,13 @@
  * reports through `onChanged` and lets the composition root decide when to rebuild.
  */
 
+import { subjectFactsSourceFromWire } from '@modkitx/extension-manager'
+import {
+  createSubjectCard,
+  loadSubjectCardSections,
+  type CardRef,
+  type SubjectCard,
+} from '@modkitx-x3/ui/card'
 import { element, type PartName } from '@modkitx-x3/ui/viewer'
 import type { BrowserSubtleCryptoLike } from '@modkitx-x3/host/browser'
 import {
@@ -34,6 +41,8 @@ import {
 import type { StoredUserExtension, UserExtensionStore } from './extension-store.js'
 import type { ManagedExtensionsController } from './managed-extensions-controller.js'
 import { catalogCoordinates, type WebExtensionCatalog } from './subjects.js'
+import type { WebExtensionSubjectCatalog, WebExtensionSubjectEntry } from './extension-subjects.js'
+import { webExtensionSubjectCardBundle } from './extension-subjects.js'
 
 // ---------------------------------------------------------------------------------------------
 // the one sentence
@@ -159,6 +168,12 @@ export interface ExtensionsUiOptions {
   onChanged?(loaded: LoadedUserExtensionRoots): void | Promise<void>
   /** Conflicts the composition reported for the current host, shown alongside the load failures. */
   conflicts?(): readonly UserExtensionRootFailure[]
+  /** Validated subjects of the currently composed host. Undefined while the host is booting. */
+  extensionSubjects?(): WebExtensionSubjectCatalog | undefined
+  /** Portable settings action for one authored contribution. */
+  setContributionEnabled?(id: string, enabled: boolean): void | Promise<void>
+  /** Portable settings action for one extension coordinate. */
+  setExtensionEnabled?(id: string, enabled: boolean): void | Promise<void>
   newId?(): string
   readonly maxFiles?: number
   readonly maxTotalBytes?: number
@@ -221,6 +236,10 @@ export function mountExtensionsUi(
     }),
   }
   let status = ''
+  let activeExtensionId: string | undefined
+  let activeSubjectId: string | undefined
+  let activeCard: SubjectCard | undefined
+  let cardRevision = 0
 
   const loadOptions = () => ({
     subtle: options.subtle,
@@ -339,6 +358,186 @@ export function mountExtensionsUi(
     })()
   }
 
+  const subjectAction = (action: () => void | Promise<void>, success: string): void => {
+    void (async () => {
+      try {
+        await action()
+        status = `${success} Reload the page to rebuild the running host.`
+      } catch (error) {
+        status = `Extension action failed: ${describe(error)}`
+      }
+      render()
+    })()
+  }
+
+  const selectSubject = (entry: WebExtensionSubjectEntry, subjectId: string): void => {
+    activeExtensionId = entry.id
+    activeSubjectId = subjectId
+    render()
+  }
+
+  const renderExtensionSubjectTree = (): HTMLElement | undefined => {
+    const catalog = options.extensionSubjects?.()
+    if (catalog === undefined) return undefined
+
+    element(root, 'h3', { text: 'Installed extension subjects' })
+    element(root, 'p', {
+      part: 'settings.description',
+      text:
+        'These cards come from validated extension and contribution JSON. Contract rows are ' +
+        'visual groups named by the exact declared contract id and major.',
+    })
+    const list = element(root, 'div', { part: 'settings.list' })
+    for (const entry of catalog.entries) {
+      const extension = entry.projection.extension
+      const item = element(list, 'details', { part: 'settings.extension' }) as HTMLDetailsElement
+      item.open = entry.id === activeExtensionId
+      const summary = documentRef.createElement('summary')
+      const state = documentRef.createElement('span')
+      state.textContent = extension.enabled ? '●' : '○'
+      state.setAttribute('aria-label', extension.enabled ? 'enabled' : 'disabled')
+      const label = documentRef.createElement('span')
+      label.dataset['mkPart'] = 'settings.label'
+      label.textContent = extension.displayName
+      summary.addEventListener('click', () => {
+        selectSubject(entry, extension.subjectId)
+      })
+      summary.append(state, documentRef.createTextNode(' '), label)
+      item.append(summary)
+      if (options.setExtensionEnabled !== undefined) {
+        button(item, 'settings.add', entry.configuredEnabled ? 'Disable' : 'Enable', () =>
+          subjectAction(
+            () => options.setExtensionEnabled?.(entry.id, !entry.configuredEnabled),
+            `${entry.configuredEnabled ? 'Disabled' : 'Enabled'} ${extension.displayName}.`,
+          ),
+        )
+      }
+      if (entry.configuredEnabled && !extension.enabled) {
+        element(item, 'span', {
+          part: 'settings.description',
+          text: 'The extension is enabled directly, but its distribution package is disabled.',
+        })
+      }
+
+      for (const group of entry.projection.contractGroups) {
+        const contract = documentRef.createElement('details')
+        contract.open = true
+        contract.dataset['mkPart'] = 'settings.row'
+        const contractSummary = documentRef.createElement('summary')
+        contractSummary.textContent = group.key
+        contract.append(contractSummary)
+        for (const contribution of group.contributions) {
+          const row = element(contract, 'div', { part: 'settings.extension' })
+          const openContribution = documentRef.createElement('button')
+          openContribution.type = 'button'
+          openContribution.dataset['mkPart'] = 'settings.label'
+          openContribution.textContent = `${contribution.effectiveEnabled ? '●' : '○'} ${contribution.displayName}`
+          openContribution.setAttribute(
+            'aria-label',
+            `${contribution.displayName}, ${contribution.effectiveEnabled ? 'enabled' : 'disabled'}`,
+          )
+          openContribution.addEventListener('click', () =>
+            selectSubject(entry, contribution.subjectId),
+          )
+          row.append(openContribution)
+          if (options.setContributionEnabled !== undefined) {
+            button(row, 'settings.add', contribution.enabled ? 'Disable' : 'Enable', () =>
+              subjectAction(
+                () => options.setContributionEnabled?.(contribution.id, !contribution.enabled),
+                `${contribution.enabled ? 'Disabled' : 'Enabled'} ${contribution.displayName}.`,
+              ),
+            )
+          }
+        }
+        item.append(contract)
+      }
+      list.append(item)
+    }
+    if (catalog.entries.length === 0) {
+      element(list, 'p', {
+        part: 'settings.description',
+        text: 'The running host has no inventoried extension subjects.',
+      })
+    }
+    const cardHost = documentRef.createElement('div')
+    cardHost.className = 'web-extension-subject-card'
+    root.append(cardHost)
+    return cardHost
+  }
+
+  const renderActiveSubjectCard = (host: HTMLElement): void => {
+    const catalog = options.extensionSubjects?.()
+    const entry =
+      activeExtensionId === undefined ? undefined : catalog?.extension(activeExtensionId)
+    if (entry === undefined || activeSubjectId === undefined) return
+    const requestedSubjectId = activeSubjectId
+    const revision = ++cardRevision
+    void (async () => {
+      try {
+        const bundle = await webExtensionSubjectCardBundle(entry, requestedSubjectId)
+        if (revision !== cardRevision || !host.isConnected) return
+        const documents = new Map(
+          bundle.documents.map(document => [document.subject.subjectId, document]),
+        )
+        const active = documents.get(requestedSubjectId)
+        if (active === undefined) throw new Error(`unknown extension subject ${requestedSubjectId}`)
+        const sections = await loadSubjectCardSections(subjectFactsSourceFromWire(active))
+        if (revision !== cardRevision || !host.isConnected) return
+        const toolbar = documentRef.createElement('div')
+        toolbar.dataset['mkPart'] = 'settings.adder'
+        const subject = active.subject
+        if (
+          subject.kind === 'org.modkitx/contribution' &&
+          options.setContributionEnabled !== undefined
+        ) {
+          button(
+            toolbar,
+            'settings.add',
+            subject.enabled ? 'Disable contribution' : 'Enable contribution',
+            () =>
+              subjectAction(
+                () => options.setContributionEnabled?.(subject.id, !subject.enabled),
+                `${subject.enabled ? 'Disabled' : 'Enabled'} ${subject.displayName}.`,
+              ),
+          )
+        } else if (
+          subject.kind === 'org.modkitx/extension' &&
+          options.setExtensionEnabled !== undefined
+        ) {
+          button(
+            toolbar,
+            'settings.add',
+            entry.configuredEnabled ? 'Disable extension' : 'Enable extension',
+            () =>
+              subjectAction(
+                () => options.setExtensionEnabled?.(entry.id, !entry.configuredEnabled),
+                `${entry.configuredEnabled ? 'Disabled' : 'Enabled'} ${subject.displayName}.`,
+              ),
+          )
+        }
+        activeCard?.destroy()
+        const navigate = (ref: CardRef): void => {
+          if (ref.href !== undefined && documents.has(ref.href)) {
+            activeSubjectId = ref.href
+            render()
+          }
+        }
+        activeCard = createSubjectCard(documentRef, {
+          label: active.subject.displayName,
+          sections,
+          onNavigate: navigate,
+        })
+        host.replaceChildren(toolbar, activeCard.root)
+      } catch (error) {
+        if (revision !== cardRevision || !host.isConnected) return
+        element(host, 'p', {
+          part: 'settings.status',
+          text: `Could not open extension card: ${describe(error)}`,
+        })
+      }
+    })()
+  }
+
   const renderManagedExtensions = (): void => {
     const controller = options.managedExtensions
     if (controller === undefined) return
@@ -434,6 +633,9 @@ export function mountExtensionsUi(
   }
 
   function render(): void {
+    cardRevision += 1
+    activeCard?.destroy()
+    activeCard = undefined
     root.replaceChildren()
     element(root, 'h2', { text: 'Extensions' })
     element(root, 'p', { part: 'settings.description', text: USER_EXTENSION_TRUST_SENTENCE })
@@ -445,6 +647,8 @@ export function mountExtensionsUi(
       part: 'settings.description',
       text: `Added folders are remembered in ${options.store.location}.`,
     })
+
+    const subjectCardHost = renderExtensionSubjectTree()
 
     const rows = describeExtensionList({
       catalog: options.catalog,
@@ -484,6 +688,7 @@ export function mountExtensionsUi(
     }
     renderManagedExtensions()
     element(root, 'p', { part: 'settings.status', text: status })
+    if (subjectCardHost !== undefined) renderActiveSubjectCard(subjectCardHost)
   }
 
   render()

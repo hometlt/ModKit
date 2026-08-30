@@ -5,7 +5,10 @@ import { canonicalJsonStringify, contractId } from '@modkitx-x3/core'
 import { createContributionContractRegistry } from '@modkitx-x3/sdk'
 import {
   buildInventory,
+  CONTRIBUTION_DISABLED_CODE,
   createHostContributionContractRegistry,
+  describeInventoryContributions,
+  EXTENSION_DISABLED_CODE,
   inventoryHasErrors,
   offersFromInventory,
   type ExtensionInput,
@@ -150,6 +153,72 @@ describe('buildInventory (S1 acceptance)', () => {
     const inventory = await buildInventory([sneaky], registry)
     expect(inventory.extensions[0]?.contributions.map(c => c.path)).toEqual([
       'contributions/a.json',
+    ])
+  })
+
+  it('keeps every contribution of a disabled extension visible but ineligible for activation', async () => {
+    const extension = input('dir-off', 'org.off', 'pack', {
+      'contributions/a.json': contribution('org.off/a'),
+      'contributions/b.json': contribution('org.off/b'),
+    })
+    const inventory = await buildInventory([extension], registry, {
+      disabledExtensions: ['org.off/pack'],
+    })
+    const contributions = inventory.extensions[0]?.contributions ?? []
+    expect(contributions).toHaveLength(2)
+    expect(contributions.every(item => !item.activationEligible)).toBe(true)
+    expect(
+      contributions.every(item =>
+        item.diagnostics.some(diagnostic => diagnostic.code === EXTENSION_DISABLED_CODE),
+      ),
+    ).toBe(true)
+  })
+
+  it('preserves an individual contribution switch while its owning extension is disabled', async () => {
+    const extension = input('dir-layered-off', 'org.layered', 'pack', {
+      'contributions/a.json': contribution('org.layered/a'),
+      'contributions/b.json': contribution('org.layered/b'),
+    })
+    const disabledContributions = ['org.layered/a']
+    const whileExtensionIsOff = await buildInventory([extension], registry, {
+      disabledExtensions: ['org.layered/pack'],
+      disabledContributions,
+    })
+    expect(describeInventoryContributions(whileExtensionIsOff)).toEqual([
+      expect.objectContaining({
+        id: 'org.layered/a',
+        activationEligible: false,
+        disabled: true,
+        extensionDisabled: true,
+      }),
+      expect.objectContaining({
+        id: 'org.layered/b',
+        activationEligible: false,
+        disabled: false,
+        extensionDisabled: true,
+      }),
+    ])
+    const contributionA = whileExtensionIsOff.extensions[0]?.contributions[0]
+    expect(contributionA?.diagnostics.map(item => item.code)).toEqual(
+      expect.arrayContaining([EXTENSION_DISABLED_CODE, CONTRIBUTION_DISABLED_CODE]),
+    )
+
+    const afterExtensionIsEnabled = await buildInventory([extension], registry, {
+      disabledContributions,
+    })
+    expect(describeInventoryContributions(afterExtensionIsEnabled)).toEqual([
+      expect.objectContaining({
+        id: 'org.layered/a',
+        activationEligible: false,
+        disabled: true,
+        extensionDisabled: false,
+      }),
+      expect.objectContaining({
+        id: 'org.layered/b',
+        activationEligible: true,
+        disabled: false,
+        extensionDisabled: false,
+      }),
     ])
   })
 

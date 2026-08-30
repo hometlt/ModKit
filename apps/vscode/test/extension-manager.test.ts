@@ -14,6 +14,7 @@ import {
   extensionManagerCommandCompletion,
   ExtensionManagerController,
   installedManagerExtensionRoots,
+  installedManagerExtensionState,
   type StaticExtensionPackage,
 } from '../src/extension-manager.js'
 import { extensionManagerSecurityOptions } from '../src/extension-manager-environment.js'
@@ -280,6 +281,33 @@ describe('VS Code extension manager state', () => {
     ])
     enabled = false
     expect(await installedManagerExtensionRoots(manager)).toEqual([])
+  })
+
+  it('keeps disabled package roots in inventory and returns their owning package', async () => {
+    const state = await installedManagerExtensionState({
+      artifactStore: {
+        list: async () => [alphaV2, beta],
+        async install() {
+          throw new Error('not used')
+        },
+        remove: () => Promise.resolve(),
+      },
+      enablementStore: {
+        list: async () => [
+          { id: alphaV2.id, enabled: false },
+          { id: beta.id, enabled: true },
+        ],
+        setEnabled: () => Promise.resolve(),
+        remove: () => Promise.resolve(),
+      },
+    })
+
+    expect(state.roots).toHaveLength(3)
+    expect(state.disabledExtensions).toEqual([
+      'org.example.alpha/galaxy',
+      'org.example.alpha/gamealpha',
+    ])
+    expect(state.packageByExtension.get('org.example.alpha/gamealpha')).toBe(alphaV2.id)
   })
 
   it('uses the shared package snapshot without refreshing or acquiring artifacts', async () => {

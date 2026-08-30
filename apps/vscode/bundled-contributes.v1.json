@@ -140,6 +140,14 @@
         "items": {
           "type": "string"
         }
+      },
+      "modkit.disabledExtensions": {
+        "type": "array",
+        "default": [],
+        "markdownDescription": "Extension coordinates to switch off without removing their cards or contributions from the inventory. Individual contribution choices are preserved and become effective again when the extension is enabled. Takes effect when the window reloads.",
+        "items": {
+          "type": "string"
+        }
       }
     }
   },

@@ -317,6 +317,7 @@ describe('managed extension browser persistence', () => {
 
     await storage.enable(installed.id, false)
     expect(await storage.open(installed.id)).toBeUndefined()
+    expect(await (await storage.openInstalled(installed.id))?.text()).toBe('alpha')
     await storage.enable(installed.id, true)
     expect((await storage.list())[0]?.enabled).toBe(true)
     await storage.updateSettings(installed.id, { strict: false, retries: 2 })

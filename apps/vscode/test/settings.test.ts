@@ -27,8 +27,10 @@ import { describe, expect, it } from 'vitest'
 import type { ShellRequest, ShellSettingsView } from '../src/bridge.js'
 import {
   configuredDisabledContributions,
+  configuredDisabledExtensions,
   describeConfiguredExtensions,
   withContributionDisabled,
+  withExtensionDisabled,
   withExtensionEnabled,
   withExtensionRoot,
   withoutExtension,
@@ -122,6 +124,16 @@ describe('rewriting modkit.disabledContributions', () => {
   })
 })
 
+describe('rewriting modkit.disabledExtensions', () => {
+  it('uses extension coordinates as an independent sorted set', () => {
+    expect(configuredDisabledExtensions(['org.example/z', 'org.example/a']).ids).toEqual([
+      'org.example/a',
+      'org.example/z',
+    ])
+    expect(withExtensionDisabled([], 'org.example/demo', true).next).toEqual(['org.example/demo'])
+  })
+})
+
 // ---------------------------------------------------------------------------------------------
 // the shell channel, end to end over a fake editor
 
@@ -129,19 +141,23 @@ describe('rewriting modkit.disabledContributions', () => {
 function fakeConfiguration(initial: {
   extensions?: unknown
   disabled?: unknown
+  disabledExtensions?: unknown
   folder?: string
 }): VsCodeConfigurationPort & { readonly writes: { key: string; value: readonly unknown[] }[] } {
   let extensions = initial.extensions
   let disabled = initial.disabled
+  let disabledExtensions = initial.disabledExtensions
   const writes: { key: string; value: readonly unknown[] }[] = []
   return {
     writes,
     scope: 'workspace',
     readExtensions: () => extensions,
     readDisabledContributions: () => disabled,
+    readDisabledExtensions: () => disabledExtensions,
     async write(key, value) {
       writes.push({ key, value: [...value] })
       if (key === 'extensions') extensions = [...value]
+      else if (key === 'disabledExtensions') disabledExtensions = [...value]
       else disabled = [...value]
     },
     async pickFolder() {
@@ -180,6 +196,9 @@ async function servedHost(options: {
   readonly configuration?: VsCodeConfigurationPort
   readonly configuredExtensions?: unknown
   readonly configuredDisabledContributions?: unknown
+  readonly linkableExtensionRoots?: ReadonlyMap<string, string>
+  readonly managedPackageIds?: ReadonlySet<string>
+  readonly setManagedPackageEnabled?: (id: string, enabled: boolean) => Promise<void>
 }): Promise<{
   ask(request: ShellRequest): Promise<unknown>
   readonly host: Awaited<ReturnType<typeof createVsCodeSubjectHost>>
@@ -199,6 +218,15 @@ async function servedHost(options: {
     channel: channels.host,
     session: 'test-session',
     roots: () => [],
+    ...(options.linkableExtensionRoots === undefined
+      ? {}
+      : { linkableExtensionRoots: options.linkableExtensionRoots }),
+    ...(options.managedPackageIds === undefined
+      ? {}
+      : { managedPackageIds: options.managedPackageIds }),
+    ...(options.setManagedPackageEnabled === undefined
+      ? {}
+      : { setManagedPackageEnabled: options.setManagedPackageEnabled }),
     ...(options.configuration === undefined ? {} : { configuration: options.configuration }),
   })
   const page = createBridge({ channel: channels.page, idPrefix: 'page' })
@@ -266,6 +294,60 @@ describe('the webview asks, the extension side writes', () => {
       const again = (await served.ask({ op: 'add-extension-folder' })) as { changed: boolean }
       expect(again.changed).toBe(false)
       expect(configuration.writes).toHaveLength(1)
+    } finally {
+      await served.close()
+    }
+  }, 60_000)
+
+  it('links only a host-discovered extension coordinate and never accepts a page path', async () => {
+    const configuration = fakeConfiguration({ extensions: [] })
+    const coordinate = 'org.example/demo'
+    const served = await servedHost({
+      configuration,
+      linkableExtensionRoots: new Map([[coordinate, extensionFolders.ok]]),
+    })
+    try {
+      const refused = (await served.ask({
+        op: 'link-extension',
+        id: 'org.example/not-discovered',
+      })) as { changed: boolean }
+      expect(refused.changed).toBe(false)
+      expect(configuration.writes).toEqual([])
+
+      const linked = (await served.ask({ op: 'link-extension', id: coordinate })) as {
+        changed: boolean
+      }
+      expect(linked.changed).toBe(true)
+      expect(configuration.writes).toEqual([{ key: 'extensions', value: [extensionFolders.ok] }])
+    } finally {
+      await served.close()
+    }
+  }, 60_000)
+
+  it('mutates only a host-owned managed package id from a card', async () => {
+    const calls: { id: string; enabled: boolean }[] = []
+    const served = await servedHost({
+      managedPackageIds: new Set(['org.example/package']),
+      setManagedPackageEnabled: async (id, enabled) => {
+        calls.push({ id, enabled })
+      },
+    })
+    try {
+      const refused = (await served.ask({
+        op: 'set-managed-package',
+        id: 'org.example/not-owned',
+        enabled: true,
+      })) as { changed: boolean }
+      expect(refused.changed).toBe(false)
+      expect(calls).toEqual([])
+
+      const enabled = (await served.ask({
+        op: 'set-managed-package',
+        id: 'org.example/package',
+        enabled: true,
+      })) as { changed: boolean }
+      expect(enabled.changed).toBe(true)
+      expect(calls).toEqual([{ id: 'org.example/package', enabled: true }])
     } finally {
       await served.close()
     }

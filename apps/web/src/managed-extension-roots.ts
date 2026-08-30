@@ -57,6 +57,13 @@ export interface LoadManagedExtensionRootsOptions {
   readonly signal?: AbortSignal
 }
 
+export interface LoadedManagedExtensionRoots extends LoadedUserExtensionRoots {
+  /** Exact distribution package owner for every successfully loaded extension coordinate. */
+  readonly packageByCoordinate: Readonly<Record<string, string>>
+  /** Coordinates retained in inventory but disabled because their package switch is off. */
+  readonly disabledExtensionCoordinates: readonly string[]
+}
+
 const messageOf = (error: unknown): string =>
   error instanceof Error ? error.message : String(error)
 
@@ -224,14 +231,16 @@ export function inspectPortableExtensionBundle(bytes: Uint8Array): readonly stri
 }
 
 /**
- * Opens every enabled digest-pinned package and turns its embedded repository entries into the
- * same loaded-root contract used by user folders. Disabled records are ignored without opening
- * Cache Storage. One malformed package or entry becomes a diagnostic and never blocks siblings.
+ * Opens every installed digest-pinned package and turns its embedded repository entries into the
+ * same loaded-root contract used by user folders. Disabled packages remain inert inventory/card
+ * inputs and publish their root coordinates through `disabledExtensionCoordinates`; the host gate
+ * still prevents their contributions from activating. One malformed package or entry becomes a
+ * diagnostic and never blocks siblings.
  */
 export async function loadManagedExtensionRoots(
   storage: BrowserExtensionStorage,
   options: LoadManagedExtensionRootsOptions,
-): Promise<LoadedUserExtensionRoots> {
+): Promise<LoadedManagedExtensionRoots> {
   const records = await storage.list()
   const requests: {
     readonly record: InstalledBrowserExtension
@@ -243,14 +252,13 @@ export async function loadManagedExtensionRoots(
 
   for (const record of records) {
     options.signal?.throwIfAborted()
-    if (!record.enabled) continue
-    const response = await storage.open(record.id)
+    const response = await storage.openInstalled(record.id)
     if (response === undefined) {
       failures.push(
         failure(
           record,
           MANAGED_EXTENSION_BUNDLE_FAILURE_CODES.unavailable,
-          `enabled package ${record.id}@${record.version} is absent or failed its stored digest`,
+          `installed package ${record.id}@${record.version} is absent or failed its stored digest`,
         ),
       )
       continue
@@ -355,6 +363,18 @@ export async function loadManagedExtensionRoots(
       ? input
       : Object.freeze({ ...input, source: `managed-package/${record.id}@${record.version}` })
   })
+  const packageByCoordinate = Object.fromEntries(
+    loaded.coordinates.flatMap((coordinate, index) => {
+      const rootId = loaded.rootIds[index]
+      const record = rootId === undefined ? undefined : sources.get(rootId)
+      return record === undefined ? [] : [[coordinate, record.id] as const]
+    }),
+  )
+  const disabledExtensionCoordinates = loaded.coordinates.filter((_, index) => {
+    const rootId = loaded.rootIds[index]
+    const record = rootId === undefined ? undefined : sources.get(rootId)
+    return record?.enabled === false
+  })
   return Object.freeze({
     inputs: Object.freeze(inputs),
     failures: Object.freeze([...failures, ...loaded.failures]),
@@ -363,6 +383,8 @@ export async function loadManagedExtensionRoots(
     moduleMap: loaded.moduleMap,
     moduleMapOwners: loaded.moduleMapOwners,
     verifiedModuleRoots: loaded.verifiedModuleRoots,
+    packageByCoordinate: Object.freeze(packageByCoordinate),
+    disabledExtensionCoordinates: Object.freeze(disabledExtensionCoordinates),
     serve: loaded.serve,
   })
 }

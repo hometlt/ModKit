@@ -119,6 +119,12 @@ export interface PrivateInventoryRecord {
   readonly execution: ExtensionExecutionPolicy
 }
 
+/** The host's diagnostic code for an extension disabled by user settings. */
+export const EXTENSION_DISABLED_CODE = 'x3.host/extension-disabled'
+
+/** The host's diagnostic code for a contribution disabled by user settings. */
+export const CONTRIBUTION_DISABLED_CODE = 'x3.host/contribution-disabled'
+
 /**
  * The private record travels on the contribution object itself under a well-known symbol —
  * non-enumerable, non-writable, frozen — rather than in a module-local WeakMap: the published
@@ -182,6 +188,14 @@ function snapshotExecutionPolicy(value: ExtensionInput['execution']): {
 
 export interface InventoryBuildOptions {
   /**
+   * Extension coordinates (`publisher/id`) the user switched off.
+   *
+   * Just like a disabled contribution, a disabled extension stays fully inventoried. Every
+   * contribution it owns becomes ineligible for activation, so cards and settings can still show
+   * the extension and restore its previous per-contribution choices when it is enabled again.
+   */
+  readonly disabledExtensions?: readonly string[]
+  /**
    * Contribution ids (`org.example/some-codec`) the user switched off.
    *
    * A disabled contribution stays in the inventory — listed, inspectable, its manifest readable —
@@ -199,6 +213,7 @@ export async function buildInventory(
   options: InventoryBuildOptions = {},
 ): Promise<Inventory> {
   const disabled = new Set(options.disabledContributions ?? [])
+  const disabledExtensions = new Set(options.disabledExtensions ?? [])
   const diagnostics: Diagnostic[] = []
   const extensions: InventoryExtension[] = []
 
@@ -221,6 +236,8 @@ export async function buildInventory(
       ...normalized.diagnostics.map(d => ({ ...d, path: [input.source, ...(d.path ?? [])] })),
     )
     if (!normalized.manifest || !normalized.container) continue
+    const extensionCoordinate = coordinate(normalized.manifest)
+    const extensionDisabled = disabledExtensions.has(extensionCoordinate)
 
     const expansion = expandContributionManifests(
       normalized.manifest.contributionManifests,
@@ -257,12 +274,26 @@ export async function buildInventory(
       let inventoryEligible = result.inventoryEligible
       let activationEligible = result.activationEligible && execution.valid
       const manifestId = result.manifest?.id
+      if (extensionDisabled) {
+        activationEligible = false
+        localDiagnostics.push(
+          diagnostic(
+            'information',
+            EXTENSION_DISABLED_CODE,
+            `extension «${extensionCoordinate}» is disabled by host settings; its contributions stay listed`,
+            [input.source, entry.path],
+          ),
+        )
+      }
+      // Keep the contribution's own switch visible even while its owning extension is off. When
+      // the extension is enabled again, this independent setting must still suppress only this
+      // contribution instead of silently resetting the user's prior choice.
       if (manifestId !== undefined && disabled.has(manifestId)) {
         activationEligible = false
         localDiagnostics.push(
           diagnostic(
             'information',
-            'x3.host/contribution-disabled',
+            CONTRIBUTION_DISABLED_CODE,
             `«${manifestId}» is disabled by host settings; it stays listed and can be re-enabled`,
             [input.source, entry.path],
           ),
@@ -284,7 +315,7 @@ export async function buildInventory(
           activationEligible = false
         } else {
           const context: ContributionProjectionContext = Object.freeze({
-            ownerExtensionId: coordinate(normalized.manifest),
+            ownerExtensionId: extensionCoordinate,
             extensionVersion: normalized.manifest.version,
             inventoryRecordId: `${input.artifact.inventoryRecordId}:${entry.path}`,
             manifestDigest,

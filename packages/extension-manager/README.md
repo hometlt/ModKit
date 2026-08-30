@@ -43,6 +43,14 @@ Relative paths are resolved from the workspace document. An environment variable
 explicit local override. `MODKIT_EXTENSION_WORKSPACE` can point every Node host at a different
 workspace document without changing source control.
 
+Node hosts can call `discoverLocalExtensionCandidates({ workspaceRoot })` to populate an inert
+local `Available` inventory. It finds the nearest parent workspace document, applies source
+environment overrides and returns repository, extension and contribution metadata without loading
+an extension module. Only configured `file:` repositories are inspected; network sources are
+reported as skipped, and there is no sibling-directory or recursive repository scan. Contribution
+inspection accepts exact manifest paths and the direct `*.json` form used by
+`./contributions/*.json`, with explicit entry, per-file and total-byte limits.
+
 ## Repository and registry sources
 
 A directory source contains `modkit.repository.json` and lists extension package roots. An HTTP,
@@ -87,3 +95,14 @@ paths to `root`, and rejects symlinks. `installedRoots()` returns every root fro
 as `{ root, expectedId }` for app-level Host composition; the manager itself has no Host dependency.
 Applications compose those roots directly on startup and reload. They keep manual folders in their
 own settings, but never mirror manager-owned roots or enablement into a second durable store.
+
+## Extension and contribution subjects
+
+`projectExtensionSubjects(...)` turns one validated extension root and its validated contribution
+manifests into ordinary Modkit subjects backed by `SubjectFactsSource`. The extension card links to
+every contribution card, and every contribution links back to its owner. `contractGroups` groups
+contributions by the exact manifest coordinate (`contract.id@contract.major`) for application trees;
+it never invents a separate codec entity. Hosts remain responsible for rendering cards and invoking
+enablement actions. `extensionSubjectRecordToWire(...)` materializes one card as function-free JSON
+for Webview, worker and RPC boundaries; `subjectFactsSourceFromWire(...)` restores the neutral facts
+ABI after transport.

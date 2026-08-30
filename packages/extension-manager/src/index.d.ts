@@ -1,4 +1,122 @@
 import type { VfsMount, VfsProvider, VirtualFileSystem } from '@modkitx-x3/vfs'
+import type {
+  ContractRefWire,
+  ContributionManifestV1Wire,
+  ExtensionManifest,
+  RelatedSubjectFact,
+  SubjectFact,
+  SubjectFactGroup,
+  SubjectFactsSource,
+  SubjectFactsSummary,
+} from '@modkitx-x3/sdk'
+import type { SourceRef, SubjectRef } from '@modkitx-x3/sdk/subjects'
+
+export const EXTENSION_SUBJECT_KIND: 'org.modkitx/extension'
+export const CONTRIBUTION_SUBJECT_KIND: 'org.modkitx/contribution'
+
+export interface ExtensionSubjectProjectionMetadata {
+  readonly displayName?: string
+  readonly description?: string
+  readonly homepage?: string
+  readonly source?: string
+  readonly trusted?: boolean
+}
+
+export interface ExtensionSubjectProjectionInput {
+  readonly extension: ExtensionManifest
+  readonly contributions: readonly ContributionManifestV1Wire[]
+  readonly metadata?: ExtensionSubjectProjectionMetadata
+  /** Logical inventory source; paths are deliberately not subject identities. */
+  readonly source?: SourceRef
+  readonly workspace?: string
+  readonly enabled?: boolean
+  /** Direct contribution state. Effective state also includes the extension state. */
+  readonly contributionEnablement?: Readonly<Record<string, boolean>>
+}
+
+export interface ExtensionSubjectRecord {
+  readonly kind: typeof EXTENSION_SUBJECT_KIND
+  readonly ref: SubjectRef
+  readonly subjectId: string
+  readonly id: string
+  readonly displayName: string
+  readonly version: string
+  readonly enabled: boolean
+  readonly manifest: ExtensionManifest
+  /** Direct input for the host-owned generic subject card. */
+  readonly facts: SubjectFactsSource
+}
+
+export interface ContributionSubjectRecord {
+  readonly kind: typeof CONTRIBUTION_SUBJECT_KIND
+  readonly ref: SubjectRef
+  readonly subjectId: string
+  readonly id: string
+  readonly displayName: string
+  readonly extensionId: string
+  readonly contract: ContractRefWire
+  /** Exact manifest contract coordinate (`id@major`), never a guessed category. */
+  readonly contractKey: string
+  readonly enabled: boolean
+  readonly effectiveEnabled: boolean
+  readonly manifest: ContributionManifestV1Wire
+  /** Direct input for the host-owned generic subject card. */
+  readonly facts: SubjectFactsSource
+}
+
+export interface ExtensionContractGroup {
+  readonly key: string
+  readonly contract: ContractRefWire
+  readonly contributions: readonly ContributionSubjectRecord[]
+}
+
+export interface ExtensionSubjectProjection {
+  readonly extension: ExtensionSubjectRecord
+  readonly contributions: readonly ContributionSubjectRecord[]
+  readonly contractGroups: readonly ExtensionContractGroup[]
+  readonly records: readonly (ExtensionSubjectRecord | ContributionSubjectRecord)[]
+  subject(subjectId: string): ExtensionSubjectRecord | ContributionSubjectRecord | undefined
+}
+
+export interface ExtensionSubjectCardWireGroup extends SubjectFactGroup {
+  readonly facts: readonly SubjectFact[]
+}
+
+export interface ExtensionSubjectCardWireDocument {
+  readonly schemaVersion: 1
+  readonly subject: {
+    readonly kind: typeof EXTENSION_SUBJECT_KIND | typeof CONTRIBUTION_SUBJECT_KIND
+    readonly subjectId: string
+    readonly id: string
+    readonly displayName: string
+    readonly enabled: boolean
+    readonly version?: string
+    readonly extensionId?: string
+    readonly contract?: ContractRefWire
+    readonly contractKey?: string
+    readonly effectiveEnabled?: boolean
+  }
+  readonly summary: SubjectFactsSummary
+  readonly groups: readonly ExtensionSubjectCardWireGroup[]
+  readonly relations: readonly RelatedSubjectFact[]
+}
+
+/**
+ * Projects validated JSON manifests into presentation-neutral subjects and fact sources.
+ * Contributions are grouped only by their exact declared contract; no codec entity is invented.
+ */
+export function projectExtensionSubjects(
+  input: ExtensionSubjectProjectionInput,
+): ExtensionSubjectProjection
+
+/** Materializes one projected card as function-free JSON for Webview, worker and RPC boundaries. */
+export function extensionSubjectRecordToWire(
+  record: ExtensionSubjectRecord | ContributionSubjectRecord,
+  signal?: AbortSignal,
+): Promise<ExtensionSubjectCardWireDocument>
+
+/** Restores the neutral facts ABI from an inert JSON card document. */
+export function subjectFactsSourceFromWire(value: unknown): SubjectFactsSource
 
 export interface ExtensionSourceDescriptor {
   readonly id: string

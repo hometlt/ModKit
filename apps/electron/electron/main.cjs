@@ -114,6 +114,7 @@ async function createWindow() {
     isAllowedElectronNavigation,
     createElectronSubjectServices,
     describeInventoryContributions,
+    describeInventoryExtensionSubjects,
     disabledContributionNotices,
     probeElectronExtensionRoot,
     composeElectronExtensionRoots,
@@ -135,6 +136,7 @@ async function createWindow() {
     commandRequest,
     createSubjectCommandEndpoint,
     createElectronExtensionManagerBackend,
+    readElectronManagedExtensionState,
   } = await root
 
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
@@ -220,9 +222,19 @@ async function createWindow() {
       const disabledContributions = (
         Array.isArray(raw?.disabledContributions) ? raw.disabledContributions : []
       ).filter(value => typeof value === 'string' && value.length > 0)
+      const disabledExtensions = new Set(
+        (Array.isArray(raw?.disabledExtensions) ? raw.disabledExtensions : []).filter(
+          value => typeof value === 'string' && value.length > 0,
+        ),
+      )
+      // Backward compatibility: older settings kept the same choice only on the manual root row.
+      for (const entry of entries) {
+        if (!entry.enabled && entry.id !== undefined) disabledExtensions.add(entry.id)
+      }
       return {
         location: settings.location,
         entries,
+        disabledExtensions: [...disabledExtensions],
         disabledContributions,
         ...(settings.problem === undefined ? {} : { problem: settings.problem }),
       }
@@ -231,6 +243,7 @@ async function createWindow() {
       return {
         location: 'settings',
         entries: [],
+        disabledExtensions: [],
         disabledContributions: [],
         problem: String(error),
       }
@@ -240,14 +253,22 @@ async function createWindow() {
   /** Compose the whole subject pipeline from manual settings and manager-owned package state. */
   const composeFromSettings = async () => {
     const configuration = await readExtensionConfiguration()
-    const managedRoots = await extensionManager.installedRoots()
+    const managed = await readElectronManagedExtensionState(extensionManager)
     const rootComposition = await composeElectronExtensionRoots({
       manualRoots: configuration.entries,
-      managedRoots,
+      managedRoots: managed.roots,
       probeManual: (root, claimed) => probeElectronExtensionRoot(root, claimed),
     })
+    const disabledExtensions = [
+      ...new Set([
+        ...managed.disabledExtensions,
+        ...configuration.disabledExtensions,
+        ...rootComposition.disabledExtensions,
+      ]),
+    ]
     const effectiveConfiguration = {
       ...configuration,
+      disabledExtensions,
       conflicts: rootComposition.conflicts,
     }
     const services = await createElectronSubjectServices(BUNDLED_ROOTS, {
@@ -255,6 +276,7 @@ async function createWindow() {
       onDiagnostic: diagnostic =>
         console.log(`[worker] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`),
       userRoots: rootComposition.roots,
+      disabledExtensions,
       disabledContributions: configuration.disabledContributions,
     })
     for (const failure of rootComposition.conflicts) {
@@ -1023,10 +1045,11 @@ async function createWindow() {
    * be handed one. A failure travels with its code and message unchanged: a user who pointed at
    * the wrong folder needs the loader's own sentence, not a paraphrase.
    */
-  const extensionReport = () => {
+  const extensionReport = async () => {
     const configuration = extensionConfiguration
     const failures = [...subjectServices.extensions.failures, ...(configuration.conflicts ?? [])]
     const installed = new Set(subjectServices.extensions.installed)
+    const disabledExtensions = new Set(configuration.disabledExtensions)
     const entries = configuration.entries.map(entry => {
       const failure = failures.find(item => item.root.toLowerCase() === entry.root.toLowerCase())
       /*
@@ -1036,7 +1059,8 @@ async function createWindow() {
        * would report a hand-written bare path as "absent" for no reason; that state is kept for
        * the one genuinely odd case, an entry naming a coordinate the inventory does not hold.
        */
-      const state = !entry.enabled
+      const enabled = entry.enabled && (entry.id === undefined || !disabledExtensions.has(entry.id))
+      const state = !enabled
         ? 'disabled'
         : failure !== undefined
           ? 'failed'
@@ -1047,7 +1071,7 @@ async function createWindow() {
         ...(entry.id === undefined ? {} : { id: entry.id }),
         path: entry.path,
         root: entry.root,
-        enabled: entry.enabled,
+        enabled,
         state,
         ...(failure === undefined ? {} : { code: failure.code, message: failure.message }),
       }
@@ -1071,6 +1095,11 @@ async function createWindow() {
       contributions: describeInventoryContributions(subjectServices.application.main.inventory).map(
         row => ({ ...row }),
       ),
+      subjectCards: await describeInventoryExtensionSubjects(
+        subjectServices.application.main.inventory,
+        configuration.disabledExtensions,
+      ),
+      disabledExtensions: [...configuration.disabledExtensions],
       disabledContributions: [...configuration.disabledContributions],
       supportedExtensions: [...subjectServices.supportedExtensions],
     }

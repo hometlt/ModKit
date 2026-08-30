@@ -22,6 +22,8 @@ export interface ElectronExtensionRootConflict {
 
 export interface ElectronExtensionRootComposition {
   readonly roots: readonly ElectronComposedExtensionRoot[]
+  /** Manual extension coordinates whose roots remain loaded for inventory but may not activate. */
+  readonly disabledExtensions: readonly string[]
   readonly conflicts: readonly ElectronExtensionRootConflict[]
 }
 
@@ -48,7 +50,7 @@ export const ELECTRON_MANUAL_MANAGED_COORDINATE_CONFLICT =
   'x3.electron/manual-managed-extension-coordinate-conflict'
 
 /**
- * Compose enabled manager-owned roots with the user's static folder settings.
+ * Compose manager-owned roots with the user's static folder settings.
  *
  * Manager coordinates are authoritative. A duplicate manager coordinate is rejected in full, so
  * ordering can never select one artifact accidentally. A manual folder that declares (or probes
@@ -75,9 +77,9 @@ export async function composeElectronExtensionRoots(
   })
   const claimed = Object.freeze(managed.map(root => root.expectedId))
   const roots: ElectronComposedExtensionRoot[] = managed.map(root => ({ ...root }))
+  const disabledExtensions = new Set<string>()
 
   for (const manual of options.manualRoots) {
-    if (!manual.enabled) continue
     if (manual.id !== undefined && claimed.includes(manual.id)) {
       conflicts.push({
         root: manual.root,
@@ -89,7 +91,8 @@ export async function composeElectronExtensionRoots(
 
     // A legacy/manual entry may omit its id. Probe only to prevent it from shadowing a manager
     // coordinate; other loader failures still travel through the normal host composition.
-    if (manual.id === undefined && claimed.length > 0) {
+    let discoveredId = manual.id
+    if (manual.id === undefined && (claimed.length > 0 || !manual.enabled)) {
       const probe = await options.probeManual(manual.root, claimed)
       if (probe.state === 'refused' && probe.code === 'x3.host/extension-coordinate-conflict') {
         conflicts.push({
@@ -99,12 +102,18 @@ export async function composeElectronExtensionRoots(
         })
         continue
       }
+      if (probe.state === 'extension') discoveredId = probe.id
     }
     roots.push({
       root: manual.root,
-      ...(manual.id === undefined ? {} : { expectedId: manual.id }),
+      ...(discoveredId === undefined ? {} : { expectedId: discoveredId }),
     })
+    if (!manual.enabled && discoveredId !== undefined) disabledExtensions.add(discoveredId)
   }
 
-  return Object.freeze({ roots: Object.freeze(roots), conflicts: Object.freeze(conflicts) })
+  return Object.freeze({
+    roots: Object.freeze(roots),
+    disabledExtensions: Object.freeze([...disabledExtensions].sort()),
+    conflicts: Object.freeze(conflicts),
+  })
 }

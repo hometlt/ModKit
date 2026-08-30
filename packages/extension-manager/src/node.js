@@ -571,4 +571,5 @@ export {
   createNodeExtensionManager,
   verifyExtensionCatalogSignature,
 } from './node-adapters.js'
+export { discoverLocalExtensionCandidates } from './local-candidates.js'
 export * from './index.js'

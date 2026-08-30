@@ -12,7 +12,12 @@ import { pathToFileURL } from 'node:url'
 import { MessageChannel } from 'node:worker_threads'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Diagnostic } from '@modkitx-x3/core'
-import { commandRequest, COMMAND_PROTOCOL_SCHEMA_VERSION } from '@modkitx-x3/host'
+import {
+  commandRequest,
+  COMMAND_PROTOCOL_SCHEMA_VERSION,
+  CONTRIBUTION_DISABLED_CODE,
+  EXTENSION_DISABLED_CODE,
+} from '@modkitx-x3/host'
 import { revisionId, type ArtifactByteSource } from '@modkitx-x3/sdk'
 import {
   installBrowserWorkerEntry,
@@ -188,6 +193,34 @@ describe('PWA product path — catalog → composition → worker-brokered open'
     expect(catalogToExtensionInputs(catalog, ORIGIN, 'installed')[0]?.execution?.origin).toBe(
       'installed',
     )
+  })
+
+  it('keeps a contribution card-addressable while its portable setting prevents activation', async () => {
+    const services = await createWebSubjectServices({
+      baseUrl: ORIGIN,
+      catalog,
+      identity,
+      probe,
+      disabledExtensions: ['org.modkitx/images'],
+      disabledContributions: ['org.modkitx/image-png'],
+      dom: {
+        fetch: diskOrigin().fetch,
+        subtle: webcrypto.subtle as never,
+        Blob: FakeBlob as never,
+        objectUrls,
+        Worker: FakeWorker,
+        MessageChannel: MessageChannel as never,
+      },
+      moduleMap: nodeModuleMap,
+    })
+    const contribution = services.main.inventory.extensions
+      .flatMap(extension => extension.contributions)
+      .find(item => item.manifest?.id === 'org.modkitx/image-png')
+    expect(contribution).toBeDefined()
+    expect(contribution?.activationEligible).toBe(false)
+    expect(contribution?.diagnostics.map(item => item.code)).toContain(CONTRIBUTION_DISABLED_CODE)
+    expect(contribution?.diagnostics.map(item => item.code)).toContain(EXTENSION_DISABLED_CODE)
+    await services.dispose()
   })
 
   it('opens a real PNG through the browser topology: portable variant, worker-brokered in the worker realm, tree data source answers over the RPC', async () => {

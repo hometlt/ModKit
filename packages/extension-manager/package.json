@@ -39,9 +39,10 @@
   "scripts": {
     "pack:standalone": "node ../../scripts/pack-first-party.mjs --package .",
     "test": "node --test",
-    "check": "node --check src/index.js && node --check src/catalog.js && node --check src/client.js && node --check src/node.js && node --check src/node-adapters.js && node --check src/browser.js && node --check src/cli.js && pnpm test"
+    "check": "node --check src/index.js && node --check src/catalog.js && node --check src/client.js && node --check src/subjects.js && node --check src/node.js && node --check src/local-candidates.js && node --check src/node-adapters.js && node --check src/browser.js && node --check src/cli.js && pnpm test"
   },
   "dependencies": {
+    "@modkitx-x3/sdk": "workspace:*",
     "@modkitx-x3/vfs": "workspace:*"
   }
 }

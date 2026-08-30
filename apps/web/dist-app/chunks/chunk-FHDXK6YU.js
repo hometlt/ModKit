@@ -1887,10 +1887,10 @@ function serializeRevisionRef(ref2) {
 function parseRevisionRef(value2) {
   if (!REVISION_ID.test(value2)) return void 0;
   const colon = value2.indexOf(":");
-  const coordinate2 = value2.slice(0, colon);
-  const dot = coordinate2.indexOf(".");
-  const kind = dot === -1 ? coordinate2 : coordinate2.slice(0, dot);
-  const algorithm = dot === -1 ? void 0 : coordinate2.slice(dot + 1);
+  const coordinate3 = value2.slice(0, colon);
+  const dot = coordinate3.indexOf(".");
+  const kind = dot === -1 ? coordinate3 : coordinate3.slice(0, dot);
+  const algorithm = dot === -1 ? void 0 : coordinate3.slice(dot + 1);
   const encoded = value2.slice(colon + 1);
   try {
     const decoded = decodeURIComponent(encoded);
@@ -3107,7 +3107,7 @@ function createSpecSchemaRegistry(entries) {
     if (typeof authoredEntry !== "object" || authoredEntry === null || Array.isArray(authoredEntry)) {
       invalidRegistration("spec schema registration must be an object", {});
     }
-    const coordinate2 = validatedCoordinate(authoredEntry.contract, authoredEntry.major);
+    const coordinate3 = validatedCoordinate(authoredEntry.contract, authoredEntry.major);
     const schema = authoredEntry.schema;
     const validator = authoredEntry.validator;
     const validateSemantics = authoredEntry.validateSemantics;
@@ -3115,7 +3115,7 @@ function createSpecSchemaRegistry(entries) {
     let registration;
     if (authoredRegistration !== void 0) {
       if (typeof authoredRegistration !== "object" || authoredRegistration === null || Array.isArray(authoredRegistration)) {
-        invalidRegistration("spec inventory registration must be an object", coordinate2);
+        invalidRegistration("spec inventory registration must be an object", coordinate3);
       }
       const candidate = authoredRegistration;
       const mode = candidate.mode;
@@ -3123,17 +3123,17 @@ function createSpecSchemaRegistry(entries) {
       const conformanceProfileValue = candidate.conformanceProfile;
       if (mode !== "data-only" && mode !== "executable") {
         invalidRegistration("spec inventory registration mode is invalid", {
-          ...coordinate2,
+          ...coordinate3,
           mode: safeContextValue(mode)
         });
       }
       if (typeof project !== "function") {
-        invalidRegistration("spec inventory projector must be a function", coordinate2);
+        invalidRegistration("spec inventory projector must be a function", coordinate3);
       }
       const conformanceProfile = validatedConformanceProfile(
         conformanceProfileValue,
-        coordinate2.contract,
-        coordinate2.major
+        coordinate3.contract,
+        coordinate3.major
       );
       registration = mode === "executable" ? Object.freeze({
         mode: "executable",
@@ -3141,8 +3141,8 @@ function createSpecSchemaRegistry(entries) {
         conformanceProfile,
         moduleAbi: validatedModuleAbi(
           candidate.moduleAbi,
-          coordinate2.contract,
-          coordinate2.major
+          coordinate3.contract,
+          coordinate3.major
         )
       }) : Object.freeze({
         mode: "data-only",
@@ -3151,11 +3151,11 @@ function createSpecSchemaRegistry(entries) {
       });
     }
     const entry2 = Object.freeze({
-      contract: coordinate2.contract,
-      major: coordinate2.major,
+      contract: coordinate3.contract,
+      major: coordinate3.major,
       schema: snapshotJsonWireObject(schema),
-      ...validator === void 0 ? {} : typeof validator === "function" ? { validator } : invalidRegistration("precompiled schema validator must be a function", coordinate2),
-      ...validateSemantics === void 0 ? {} : typeof validateSemantics === "function" ? { validateSemantics } : invalidRegistration("spec semantic validator must be a function", coordinate2),
+      ...validator === void 0 ? {} : typeof validator === "function" ? { validator } : invalidRegistration("precompiled schema validator must be a function", coordinate3),
+      ...validateSemantics === void 0 ? {} : typeof validateSemantics === "function" ? { validateSemantics } : invalidRegistration("spec semantic validator must be a function", coordinate3),
       ...registration === void 0 ? {} : { registration }
     });
     const key22 = `${entry2.contract}@${entry2.major}`;
@@ -4159,8 +4159,8 @@ var validateKnowledgePackSemantics = (manifest) => {
   const localesByLogicalId = /* @__PURE__ */ new Map();
   spec.entries.forEach((entry2, index) => {
     const targetKey = knowledgeTargetKey(entry2.target);
-    const coordinate2 = `${targetKey}\0${entry2.locale.toLowerCase()}`;
-    if (targetLocales.has(coordinate2)) {
+    const coordinate3 = `${targetKey}\0${entry2.locale.toLowerCase()}`;
+    if (targetLocales.has(coordinate3)) {
       diagnostics.push(
         diagnostic(
           "warning",
@@ -4170,7 +4170,7 @@ var validateKnowledgePackSemantics = (manifest) => {
         )
       );
     }
-    targetLocales.add(coordinate2);
+    targetLocales.add(coordinate3);
     const previousTarget = targetByLogicalId.get(entry2.id);
     if (previousTarget !== void 0 && previousTarget !== targetKey) {
       diagnostics.push(
@@ -4296,7 +4296,7 @@ function createContributionContractRegistry(entries) {
     if (typeof authoredEntry !== "object" || authoredEntry === null || Array.isArray(authoredEntry)) {
       invalidOpenRegistration("contribution contract registration must be an object", {});
     }
-    const coordinate2 = validatedRegistrationCoordinate(
+    const coordinate3 = validatedRegistrationCoordinate(
       authoredEntry.contract
     );
     const mode = authoredEntry.mode;
@@ -4306,36 +4306,36 @@ function createContributionContractRegistry(entries) {
     const validator = authoredEntry.validator;
     if (mode !== "data-only" && mode !== "executable") {
       invalidOpenRegistration("contribution contract registration mode is invalid", {
-        contract: coordinate2.id,
-        major: coordinate2.major,
+        contract: coordinate3.id,
+        major: coordinate3.major,
         mode: safeRegistrationContextValue(mode)
       });
     }
     if (typeof project !== "function") {
       invalidOpenRegistration("contribution inventory projector must be a function", {
-        contract: coordinate2.id,
-        major: coordinate2.major
+        contract: coordinate3.id,
+        major: coordinate3.major
       });
     }
     if (typeof validateSemantics !== "function") {
       invalidOpenRegistration("contribution semantic validator must be a function", {
-        contract: coordinate2.id,
-        major: coordinate2.major
+        contract: coordinate3.id,
+        major: coordinate3.major
       });
     }
     if (validator !== void 0 && typeof validator !== "function") {
       invalidOpenRegistration("precompiled schema validator must be a function", {
-        contract: coordinate2.id,
-        major: coordinate2.major
+        contract: coordinate3.id,
+        major: coordinate3.major
       });
     }
     const conformanceProfile = validatedRegistrationProfile(
       conformanceProfileValue,
-      coordinate2.id,
-      coordinate2.major
+      coordinate3.id,
+      coordinate3.major
     );
     const base = {
-      contract: coordinate2,
+      contract: coordinate3,
       schema: snapshotJsonWireObject(authoredEntry.schema),
       ...validator === void 0 ? {} : { validator },
       project,
@@ -4347,8 +4347,8 @@ function createContributionContractRegistry(entries) {
       mode: "executable",
       moduleAbi: validatedRegistrationModuleAbi(
         authoredEntry.moduleAbi,
-        coordinate2.id,
-        coordinate2.major
+        coordinate3.id,
+        coordinate3.major
       )
     }) : Object.freeze({ ...base, mode: "data-only" });
     const registrationKey2 = key(entry2.contract.id, entry2.contract.major);
@@ -6937,6 +6937,8 @@ var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
 };
+var EXTENSION_DISABLED_CODE = "x3.host/extension-disabled";
+var CONTRIBUTION_DISABLED_CODE = "x3.host/contribution-disabled";
 var INVENTORY_RECORD = /* @__PURE__ */ Symbol.for("x3.host/inventory-record");
 function deepFreezeJson(value2) {
   if (typeof value2 !== "object" || value2 === null || Object.isFrozen(value2)) return value2;
@@ -6972,6 +6974,7 @@ function snapshotExecutionPolicy(value2) {
 }
 async function buildInventory(inputs, registry, options = {}) {
   const disabled = new Set(options.disabledContributions ?? []);
+  const disabledExtensions = new Set(options.disabledExtensions ?? []);
   const diagnostics = [];
   const extensions = [];
   for (const input of inputs) {
@@ -6991,6 +6994,8 @@ async function buildInventory(inputs, registry, options = {}) {
       ...normalized.diagnostics.map((d) => ({ ...d, path: [input.source, ...d.path ?? []] }))
     );
     if (!normalized.manifest || !normalized.container) continue;
+    const extensionCoordinate2 = coordinate(normalized.manifest);
+    const extensionDisabled = disabledExtensions.has(extensionCoordinate2);
     const expansion = expandContributionManifests(
       normalized.manifest.contributionManifests,
       input.files
@@ -7022,12 +7027,23 @@ async function buildInventory(inputs, registry, options = {}) {
       let inventoryEligible = result.inventoryEligible;
       let activationEligible = result.activationEligible && execution.valid;
       const manifestId = result.manifest?.id;
+      if (extensionDisabled) {
+        activationEligible = false;
+        localDiagnostics.push(
+          diagnostic(
+            "information",
+            EXTENSION_DISABLED_CODE,
+            `extension \xAB${extensionCoordinate2}\xBB is disabled by host settings; its contributions stay listed`,
+            [input.source, entry2.path]
+          )
+        );
+      }
       if (manifestId !== void 0 && disabled.has(manifestId)) {
         activationEligible = false;
         localDiagnostics.push(
           diagnostic(
             "information",
-            "x3.host/contribution-disabled",
+            CONTRIBUTION_DISABLED_CODE,
             `\xAB${manifestId}\xBB is disabled by host settings; it stays listed and can be re-enabled`,
             [input.source, entry2.path]
           )
@@ -7049,7 +7065,7 @@ async function buildInventory(inputs, registry, options = {}) {
           activationEligible = false;
         } else {
           const context = Object.freeze({
-            ownerExtensionId: coordinate(normalized.manifest),
+            ownerExtensionId: extensionCoordinate2,
             extensionVersion: normalized.manifest.version,
             inventoryRecordId: `${input.artifact.inventoryRecordId}:${entry2.path}`,
             manifestDigest,
@@ -7062,7 +7078,7 @@ async function buildInventory(inputs, registry, options = {}) {
             const projected = registration?.project(ownedManifest, context);
             if (!Array.isArray(projected)) throw new TypeError("projector must return an array");
             facts = Object.freeze(
-              projected.map((fact2, index) => validateProjectedFact(fact2, context, index))
+              projected.map((fact22, index) => validateProjectedFact(fact22, context, index))
             );
             record3 = Object.freeze({
               inventoryRecordId: context.inventoryRecordId,
@@ -7477,11 +7493,11 @@ function offersFromInventory(inventory) {
       if (!contribution.activationEligible) continue;
       const privateRecord = inventoryRecordFor(contribution);
       if (privateRecord === void 0 || contribution.record === void 0) continue;
-      for (const fact2 of contribution.facts) {
-        if (fact2.contract.id !== PROVIDER_OFFER_INVENTORY_FACT || fact2.contract.major !== 1) {
+      for (const fact22 of contribution.facts) {
+        if (fact22.contract.id !== PROVIDER_OFFER_INVENTORY_FACT || fact22.contract.major !== 1) {
           continue;
         }
-        const offer = parseProviderOffer(fact2.value);
+        const offer = parseProviderOffer(fact22.value);
         const offerFingerprint = canonicalJsonStringify(offer);
         offerBindings.set(offer, {
           contribution,
@@ -7823,9 +7839,9 @@ var inspectCommand = {
             dataSources: (descriptor.dataSources ?? []).map(
               (item) => `${item.contract}@${item.major}`
             ),
-            metadataGroups: (descriptor.metadata ?? []).map((group) => ({
-              id: group.id,
-              entries: group.entries.length
+            metadataGroups: (descriptor.metadata ?? []).map((group2) => ({
+              id: group2.id,
+              entries: group2.entries.length
             }))
           },
           diagnostics
@@ -7885,14 +7901,14 @@ async function entryIdFor(session, wanted, signal) {
     const namespace = lease2.value;
     let cursor3;
     do {
-      const page = await namespace.list(
+      const page2 = await namespace.list(
         "",
         cursor3 === void 0 ? { limit: 512 } : { cursor: cursor3, limit: 512 },
         signal
       );
-      const found = page.items.find((item) => item.path === wanted || item.id === wanted);
+      const found = page2.items.find((item) => item.path === wanted || item.id === wanted);
       if (found !== void 0) return found.id;
-      cursor3 = page.nextCursor;
+      cursor3 = page2.nextCursor;
     } while (cursor3 !== void 0);
     return void 0;
   } finally {
@@ -11361,12 +11377,12 @@ function createNamespaceCompanionOrigin(options) {
       let cursor3;
       do {
         throwIfAborted(signal);
-        const page = await options.namespace.list(
+        const page2 = await options.namespace.list(
           spelling,
           cursor3 === void 0 ? { limit: pageLimit2 } : { cursor: cursor3, limit: pageLimit2 },
           signal
         );
-        for (const entry2 of page.items) {
+        for (const entry2 of page2.items) {
           if (entry2.kind !== "file") continue;
           const key22 = fold2(entry2.path);
           if (!built.has(key22)) {
@@ -11378,7 +11394,7 @@ function createNamespaceCompanionOrigin(options) {
             });
           }
         }
-        cursor3 = page.nextCursor;
+        cursor3 = page2.nextCursor;
       } while (cursor3 !== void 0);
     }
     index.set(prefix, built);
@@ -11489,14 +11505,14 @@ async function findEntry(namespace, entryId, pageLimit2, signal) {
   let cursor3;
   do {
     throwIfAborted(signal);
-    const page = await namespace.list(
+    const page2 = await namespace.list(
       "",
       cursor3 === void 0 ? { limit: pageLimit2 } : { cursor: cursor3, limit: pageLimit2 },
       signal
     );
-    const found = page.items.find((item) => item.id === entryId);
+    const found = page2.items.find((item) => item.id === entryId);
     if (found !== void 0) return found;
-    cursor3 = page.nextCursor;
+    cursor3 = page2.nextCursor;
   } while (cursor3 !== void 0);
   throw new ModkitError({
     code: NESTED_ENTRY_NOT_FOUND,
@@ -11934,18 +11950,18 @@ async function registerServiceContractDefinitionsFromInventory(inventory, regist
   for (const extension of inventory.extensions) {
     for (const contribution of extension.contributions) {
       if (!contribution.inventoryEligible) continue;
-      for (const fact2 of contribution.facts) {
-        if (fact2.contract.id !== CONTRACT_DEFINITION_FACT || fact2.contract.major !== 1) continue;
-        if (typeof fact2.value !== "object" || fact2.value === null || Array.isArray(fact2.value)) {
+      for (const fact22 of contribution.facts) {
+        if (fact22.contract.id !== CONTRACT_DEFINITION_FACT || fact22.contract.major !== 1) continue;
+        if (typeof fact22.value !== "object" || fact22.value === null || Array.isArray(fact22.value)) {
           continue;
         }
-        const definitionValue = fact2.value;
+        const definitionValue = fact22.value;
         if (definitionValue["kind"] !== "service") continue;
-        const owner = fact2.provenance.ownerExtensionId;
+        const owner = fact22.provenance.ownerExtensionId;
         const entries = byOwner.get(owner) ?? [];
         entries.push({
           definition: definitionValue,
-          provenance: fact2.provenance
+          provenance: fact22.provenance
         });
         byOwner.set(owner, entries);
       }
@@ -15702,9 +15718,9 @@ async function resolvePresentationPlan(options) {
   const selectedStages = [];
   const seenGroups = /* @__PURE__ */ new Set();
   for (const stage of eligible.filter((item) => item.kind === "stage")) {
-    const group = stage.singletonGroup ?? `slot:${stage.slotId}`;
-    if (seenGroups.has(group)) continue;
-    seenGroups.add(group);
+    const group2 = stage.singletonGroup ?? `slot:${stage.slotId}`;
+    if (seenGroups.has(group2)) continue;
+    seenGroups.add(group2);
     selectedStages.push(stage);
   }
   const active = selectedStages[0];
@@ -16520,14 +16536,14 @@ function createTreeDataSource(rootNode) {
     async root() {
       return ref2("root");
     },
-    async children(node, page, signal) {
+    async children(node, page2, signal) {
       if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-      if (!Number.isSafeInteger(page.limit) || page.limit <= 0) {
+      if (!Number.isSafeInteger(page2.limit) || page2.limit <= 0) {
         throw new TypeError("tree page limit must be a positive safe integer");
       }
-      const start = pageStart(page.cursor);
+      const start = pageStart(page2.cursor);
       const childIds = nodes.get(node.id)?.childIds ?? [];
-      const items = childIds.slice(start, start + page.limit).map(ref2);
+      const items = childIds.slice(start, start + page2.limit).map(ref2);
       return Object.freeze({
         items: Object.freeze(items),
         ...start + items.length < childIds.length ? { nextCursor: String(start + items.length) } : {}
@@ -16750,10 +16766,10 @@ function treeDataSource(document) {
     async root() {
       return { id: "root", hasChildren: true };
     },
-    async children(node, page) {
+    async children(node, page2) {
       const all = nodes.get(node.id)?.children ?? [];
-      const start = page.cursor ? Number(page.cursor) : 0;
-      const items = all.slice(start, start + page.limit);
+      const start = page2.cursor ? Number(page2.cursor) : 0;
+      const items = all.slice(start, start + page2.limit);
       return {
         items,
         ...start + items.length < all.length ? { nextCursor: String(start + items.length) } : {}
@@ -17790,7 +17806,7 @@ function defineLinkedExtension(init) {
       source: init.source
     });
   }
-  const coordinate2 = `${publisher}/${id}`;
+  const coordinate22 = `${publisher}/${id}`;
   const automaticExcluded = [];
   const contributions = init.contributions.flatMap((contribution) => {
     const variants = variantsOf(contribution.manifest);
@@ -17812,7 +17828,7 @@ function defineLinkedExtension(init) {
     ...contributions.map((item) => item.path),
     ...Object.keys(init.modules).map((path) => path.replace(/^\.\//u, ""))
   ]);
-  const artifactDigest = init.artifactDigest ?? `linked:${coordinate2}`;
+  const artifactDigest = init.artifactDigest ?? `linked:${coordinate22}`;
   const artifactRoot = new URL(`modkit-linked://${publisher}.${id}/`.toLowerCase());
   const moduleEntries = [];
   for (const contribution of contributions) {
@@ -17841,10 +17857,10 @@ function defineLinkedExtension(init) {
     files: Object.freeze([...files]),
     documents: new Map(contributions.map((item) => [item.path, item.manifest])),
     documentDigests: new Map(
-      contributions.map((item) => [item.path, item.digest ?? `linked:${coordinate2}:${item.path}`])
+      contributions.map((item) => [item.path, item.digest ?? `linked:${coordinate22}:${item.path}`])
     ),
     artifact: Object.freeze({
-      inventoryRecordId: `linked:${coordinate2}`,
+      inventoryRecordId: `linked:${coordinate22}`,
       artifactDigest,
       artifactRoot,
       // the bytes cannot change under a linked artifact: they are the caller's own bundle
@@ -17858,7 +17874,7 @@ function defineLinkedExtension(init) {
     execution: Object.freeze({ origin: "bundled", allowTrustedInProcess: true })
   });
   return Object.freeze({
-    coordinate: coordinate2,
+    coordinate: coordinate22,
     input,
     moduleEntries: Object.freeze(moduleEntries),
     excluded: Object.freeze([...automaticExcluded, ...init.excluded ?? []])
@@ -17946,7 +17962,10 @@ async function createHostComposition(options) {
   const inventory = await buildInventory(
     [NATIVE_TEXT_INPUT, ...options.extensions ?? []],
     options.contributionContracts ?? createHostContributionContractRegistry(),
-    options.disabledContributions === void 0 ? {} : { disabledContributions: options.disabledContributions }
+    {
+      ...options.disabledExtensions === void 0 ? {} : { disabledExtensions: options.disabledExtensions },
+      ...options.disabledContributions === void 0 ? {} : { disabledContributions: options.disabledContributions }
+    }
   );
   return Object.freeze({
     topology,
@@ -19267,16 +19286,16 @@ function builtinTextSource(bytes2) {
       start = parsed.character;
       requestedEnd = text3.length;
     }
-    const page = truncateUtf8(text3.slice(start, requestedEnd), request.maxBytes);
-    const actualEnd = start + page.length;
+    const page2 = truncateUtf8(text3.slice(start, requestedEnd), request.maxBytes);
+    const actualEnd = start + page2.length;
     const nextLine = cursorLine(index, actualEnd);
-    const lineCount = page === "" ? 0 : linesInRange(index, fromLine, actualEnd);
+    const lineCount = page2 === "" ? 0 : linesInRange(index, fromLine, actualEnd);
     if (actualEnd >= text3.length) {
-      return { complete: true, text: page, fromLine, lineCount };
+      return { complete: true, text: page2, fromLine, lineCount };
     }
     return {
       complete: false,
-      text: page,
+      text: page2,
       fromLine,
       lineCount,
       nextCursor: cursor(actualEnd, nextLine)
@@ -19539,60 +19558,60 @@ function createEditorArea(document, options) {
   const report2 = (status) => {
     options.onStatus?.(status);
   };
-  function drawBreadcrumb(group, entry2) {
-    group.breadcrumb.replaceChildren();
+  function drawBreadcrumb(group2, entry2) {
+    group2.breadcrumb.replaceChildren();
     if (entry2 === void 0) return;
     const parts = entry2.id.split(/[\\/]/u).filter(Boolean);
     for (const [index, part] of parts.slice(-4).entries()) {
-      if (index > 0) element(group.breadcrumb, "span", { part: "explorer.crumb", text: "\u203A" });
-      element(group.breadcrumb, "span", {
+      if (index > 0) element(group2.breadcrumb, "span", { part: "explorer.crumb", text: "\u203A" });
+      element(group2.breadcrumb, "span", {
         part: "explorer.crumb",
         text: safeViewerText(part, 120)
       });
     }
   }
-  function syncPicker(group) {
-    const handle = group.active?.handle;
-    group.picker.replaceChildren();
+  function syncPicker(group2) {
+    const handle = group2.active?.handle;
+    group2.picker.replaceChildren();
     if (handle === void 0 || handle.views.length === 0) {
-      group.picker.disabled = true;
+      group2.picker.disabled = true;
       return;
     }
     for (const view of handle.views) {
       const option = document.createElement("option");
       option.value = view.id;
       option.textContent = view.label;
-      group.picker.append(option);
+      group2.picker.append(option);
     }
-    group.picker.value = handle.activeView;
-    group.picker.disabled = handle.views.length < 2;
+    group2.picker.value = handle.activeView;
+    group2.picker.disabled = handle.views.length < 2;
   }
-  function placeholder(group, message) {
-    group.stage.replaceChildren();
-    element(group.stage, "p", { part: "explorer.placeholder", text: message });
+  function placeholder(group2, message) {
+    group2.stage.replaceChildren();
+    element(group2.stage, "p", { part: "explorer.placeholder", text: message });
   }
-  async function activate(group, tab) {
-    for (const other of group.tabs) {
+  async function activate(group2, tab) {
+    for (const other of group2.tabs) {
       const selected = other === tab;
       other.button.setAttribute("aria-selected", String(selected));
       setState(other.button, selected ? ["selected"] : []);
       other.content.hidden = !selected;
     }
-    group.active = tab;
-    drawBreadcrumb(group, tab.entry);
+    group2.active = tab;
+    drawBreadcrumb(group2, tab.entry);
     if (tab.handle === void 0) {
-      await load(group, tab);
+      await load(group2, tab);
       return;
     }
-    syncPicker(group);
+    syncPicker(group2);
     report2({
       path: tab.entry.id,
-      view: group.picker.selectedOptions[0]?.textContent ?? "",
+      view: group2.picker.selectedOptions[0]?.textContent ?? "",
       detail: tab.entry.name,
       severity: "info"
     });
   }
-  async function load(group, tab) {
+  async function load(group2, tab) {
     tab.run?.abort();
     const run = new AbortController();
     tab.run = run;
@@ -19607,12 +19626,12 @@ function createEditorArea(document, options) {
         return;
       }
       if (handle === void 0) {
-        placeholder({ ...group, stage: tab.content }, `Nothing could render \u201C${tab.entry.name}\u201D.`);
+        placeholder({ ...group2, stage: tab.content }, `Nothing could render \u201C${tab.entry.name}\u201D.`);
         report2({ path: tab.entry.id, detail: "no viewer", severity: "error" });
         return;
       }
       tab.handle = handle;
-      syncPicker(group);
+      syncPicker(group2);
       report2({
         path: tab.entry.id,
         view: handle.views.find((view) => view.id === handle.activeView)?.label ?? "",
@@ -19622,13 +19641,13 @@ function createEditorArea(document, options) {
     } catch (error3) {
       if (run.signal.aborted) return;
       placeholder(
-        { ...group, stage: tab.content },
+        { ...group2, stage: tab.content },
         `Could not preview ${tab.entry.name}: ${describe2(error3)}`
       );
       report2({ path: tab.entry.id, detail: describe2(error3), severity: "error" });
     }
   }
-  async function closeTab(group, tab) {
+  async function closeTab(group2, tab) {
     if (tab.dirty === true && options.confirmClose !== void 0) {
       const answer = await options.confirmClose(tab.entry);
       if (answer === "cancel") return;
@@ -19636,24 +19655,24 @@ function createEditorArea(document, options) {
     }
     tab.run?.abort();
     await tab.handle?.unmount();
-    const index = group.tabs.indexOf(tab);
-    if (index !== -1) group.tabs.splice(index, 1);
+    const index = group2.tabs.indexOf(tab);
+    if (index !== -1) group2.tabs.splice(index, 1);
     tab.button.remove();
     tab.content.remove();
-    if (group.active === tab) {
-      group.active = void 0;
-      const next = group.tabs[Math.max(0, index - 1)];
+    if (group2.active === tab) {
+      group2.active = void 0;
+      const next = group2.tabs[Math.max(0, index - 1)];
       if (next !== void 0) {
-        await activate(group, next);
+        await activate(group2, next);
       } else {
-        drawBreadcrumb(group, void 0);
-        syncPicker(group);
-        placeholder(group, "No file open in this group.");
+        drawBreadcrumb(group2, void 0);
+        syncPicker(group2);
+        placeholder(group2, "No file open in this group.");
       }
     }
-    if (group.tabs.length === 0 && groups.length > 1 && group !== groups[0]) {
-      groups.splice(groups.indexOf(group), 1);
-      group.root.remove();
+    if (group2.tabs.length === 0 && groups.length > 1 && group2 !== groups[0]) {
+      groups.splice(groups.indexOf(group2), 1);
+      group2.root.remove();
       const first = groups[0];
       if (first !== void 0) focus(first);
     }
@@ -19665,7 +19684,7 @@ function createEditorArea(document, options) {
     await options.save(tab.entry);
     return true;
   }
-  function openTabMenu(group, tab, x, y) {
+  function openTabMenu(group2, tab, x, y) {
     closeTabMenu();
     const menu = element(root, "div", { part: "explorer.tabmenu" });
     menu.setAttribute("role", "menu");
@@ -19685,23 +19704,23 @@ function createEditorArea(document, options) {
         run();
       });
     };
-    const index = group.tabs.indexOf(tab);
-    const others = group.tabs.filter((other) => other !== tab);
-    const toRight = group.tabs.slice(index + 1);
-    item("Close", true, () => void closeTab(group, tab));
+    const index = group2.tabs.indexOf(tab);
+    const others = group2.tabs.filter((other) => other !== tab);
+    const toRight = group2.tabs.slice(index + 1);
+    item("Close", true, () => void closeTab(group2, tab));
     item("Close Others", others.length > 0, () => {
       void (async () => {
-        for (const other of [...others]) await closeTab(group, other);
+        for (const other of [...others]) await closeTab(group2, other);
       })();
     });
     item("Close to the Right", toRight.length > 0, () => {
       void (async () => {
-        for (const other of [...toRight]) await closeTab(group, other);
+        for (const other of [...toRight]) await closeTab(group2, other);
       })();
     });
-    item("Close All", group.tabs.length > 0, () => {
+    item("Close All", group2.tabs.length > 0, () => {
       void (async () => {
-        for (const other of [...group.tabs]) await closeTab(group, other);
+        for (const other of [...group2.tabs]) await closeTab(group2, other);
       })();
     });
     const dismiss = (event) => {
@@ -19722,9 +19741,9 @@ function createEditorArea(document, options) {
     openMenu.element.remove();
     openMenu = void 0;
   }
-  function focus(group) {
-    focused = group;
-    for (const item of groups) setState(item.root, item === group ? ["active"] : []);
+  function focus(group2) {
+    focused = group2;
+    for (const item of groups) setState(item.root, item === group2 ? ["active"] : []);
   }
   function createGroup() {
     const groupRoot = element(root, "div", { part: "explorer.group" });
@@ -19739,25 +19758,25 @@ function createEditorArea(document, options) {
     picker.setAttribute("aria-label", "View");
     picker.disabled = true;
     const stage = element(groupRoot, "div", { part: "explorer.stage" });
-    const group = { root: groupRoot, strip, breadcrumb, picker, stage, tabs: [] };
+    const group2 = { root: groupRoot, strip, breadcrumb, picker, stage, tabs: [] };
     groupRoot.addEventListener("pointerdown", () => {
-      focus(group);
+      focus(group2);
     });
     picker.addEventListener("change", () => {
-      const handle = group.active?.handle;
+      const handle = group2.active?.handle;
       if (handle === void 0) return;
       void handle.show(picker.value).then(() => {
         report2({
-          ...group.active === void 0 ? {} : { path: group.active.entry.id },
+          ...group2.active === void 0 ? {} : { path: group2.active.entry.id },
           view: picker.selectedOptions[0]?.textContent ?? picker.value,
-          detail: group.active?.entry.name ?? "",
+          detail: group2.active?.entry.name ?? "",
           severity: "info"
         });
       });
     });
-    groups.push(group);
-    placeholder(group, "No file open in this group.");
-    return group;
+    groups.push(group2);
+    placeholder(group2, "No file open in this group.");
+    return group2;
   }
   focused = createGroup();
   focus(focused);
@@ -19767,67 +19786,67 @@ function createEditorArea(document, options) {
       return groups.length;
     },
     async close(entryId) {
-      for (const group of groups) {
-        const tab = group.tabs.find((item) => item.entry.id === entryId);
+      for (const group2 of groups) {
+        const tab = group2.tabs.find((item) => item.entry.id === entryId);
         if (tab === void 0) continue;
-        await closeTab(group, tab);
-        return !group.tabs.includes(tab);
+        await closeTab(group2, tab);
+        return !group2.tabs.includes(tab);
       }
       return false;
     },
     async save(entryId) {
-      for (const group of groups) {
-        const tab = group.tabs.find((item) => item.entry.id === entryId);
+      for (const group2 of groups) {
+        const tab = group2.tabs.find((item) => item.entry.id === entryId);
         if (tab !== void 0) return saveTab(tab);
       }
       return false;
     },
     async open(entry2) {
-      const group = focused;
-      const existing = group.tabs.find((tab2) => tab2.entry.id === entry2.id);
+      const group2 = focused;
+      const existing = group2.tabs.find((tab2) => tab2.entry.id === entry2.id);
       if (existing !== void 0) {
-        await activate(group, existing);
+        await activate(group2, existing);
         return;
       }
-      const button = element(group.strip, "div", { part: "explorer.filetab" });
+      const button = element(group2.strip, "div", { part: "explorer.filetab" });
       button.setAttribute("role", "tab");
       button.title = entry2.id;
       button.setAttribute("data-mk-kind", fileKindOf(entry2.name));
-      if (group.tabs.length === 0) group.stage.replaceChildren();
-      const content = element(group.stage, "div", { part: "explorer.tabcontent" });
+      if (group2.tabs.length === 0) group2.stage.replaceChildren();
+      const content = element(group2.stage, "div", { part: "explorer.tabcontent" });
       const tab = { entry: entry2, button, content };
       const label = element(button, "span", { text: safeViewerText(entry2.name, 120) });
       label.addEventListener("click", () => {
-        focus(group);
-        void activate(group, tab);
+        focus(group2);
+        void activate(group2, tab);
       });
       button.addEventListener("contextmenu", (event) => {
         event.preventDefault();
-        focus(group);
-        openTabMenu(group, tab, event.clientX, event.clientY);
+        focus(group2);
+        openTabMenu(group2, tab, event.clientX, event.clientY);
       });
       const close = element(button, "button", { part: "explorer.filetab-close", text: "\xD7" });
       close.setAttribute("type", "button");
       close.setAttribute("aria-label", `Close ${entry2.name}`);
       close.addEventListener("click", (event) => {
         event.stopPropagation();
-        void closeTab(group, tab);
+        void closeTab(group2, tab);
       });
-      group.tabs.push(tab);
-      await activate(group, tab);
+      group2.tabs.push(tab);
+      await activate(group2, tab);
     },
     markDirty(entryId, dirty) {
-      for (const group of groups) {
-        for (const tab of group.tabs) {
+      for (const group2 of groups) {
+        for (const tab of group2.tabs) {
           if (tab.entry.id !== entryId) continue;
           tab.dirty = dirty;
-          setState(tab.button, dirty ? ["mutating"] : tab === group.active ? ["selected"] : []);
-          if (dirty && tab === group.active) setState(tab.button, ["selected", "mutating"]);
+          setState(tab.button, dirty ? ["mutating"] : tab === group2.active ? ["selected"] : []);
+          if (dirty && tab === group2.active) setState(tab.button, ["selected", "mutating"]);
         }
       }
     },
     hasUnsaved() {
-      return groups.some((group) => group.tabs.some((tab) => tab.dirty === true));
+      return groups.some((group2) => group2.tabs.some((tab) => tab.dirty === true));
     },
     split() {
       focus(createGroup());
@@ -19836,8 +19855,8 @@ function createEditorArea(document, options) {
       if (destroyed) return;
       destroyed = true;
       closeTabMenu();
-      for (const group of groups) {
-        for (const tab of group.tabs) {
+      for (const group2 of groups) {
+        for (const tab of group2.tabs) {
           tab.run?.abort();
           void tab.handle?.unmount();
         }
@@ -39242,18 +39261,18 @@ async function loadUserExtensionRoots(requests, options) {
   for (const request of requests) {
     options.signal?.throwIfAborted();
     const label = request.handle.name === "" ? request.id : request.handle.name;
-    const fail4 = (code, message) => {
+    const fail5 = (code, message) => {
       failures.push({ root: label, rootId: request.id, code, message });
     };
     let permission;
     try {
       permission = await queryUserExtensionPermission(request.handle);
     } catch (error3) {
-      fail4(EXTENSION_ROOT_FAILURE_CODES.unreadable, messageOf(error3));
+      fail5(EXTENSION_ROOT_FAILURE_CODES.unreadable, messageOf(error3));
       continue;
     }
     if (permission !== "granted") {
-      fail4(
+      fail5(
         EXTENSION_ROOT_FAILURE_CODES.permissionRequired,
         `this page no longer holds read access to \xAB${label}\xBB; grant it again to load this extension`
       );
@@ -39263,33 +39282,33 @@ async function loadUserExtensionRoots(requests, options) {
     try {
       read = await readGrantedRoot(request, options);
     } catch (error3) {
-      fail4(codeOf(error3), messageOf(error3));
+      fail5(codeOf(error3), messageOf(error3));
       continue;
     }
-    const coordinate2 = extensionCoordinate(read.input);
-    if (coordinate2 === void 0) {
-      fail4(
+    const coordinate3 = extensionCoordinate(read.input);
+    if (coordinate3 === void 0) {
+      fail5(
         EXTENSION_ROOT_FAILURE_CODES.notAnExtension,
         "no authored container: the folder has neither package.json#modkit nor modkit.extension.json"
       );
       continue;
     }
-    if (claimed.has(coordinate2)) {
-      fail4(
+    if (claimed.has(coordinate3)) {
+      fail5(
         EXTENSION_ROOT_FAILURE_CODES.coordinateConflict,
-        `\xAB${coordinate2}\xBB is already loaded from another root; this one is ignored`
+        `\xAB${coordinate3}\xBB is already loaded from another root; this one is ignored`
       );
       continue;
     }
-    if (request.expectedId !== void 0 && request.expectedId !== coordinate2) {
-      fail4(
+    if (request.expectedId !== void 0 && request.expectedId !== coordinate3) {
+      fail5(
         EXTENSION_ROOT_FAILURE_CODES.identityMismatch,
-        `recorded as \xAB${request.expectedId}\xBB but the folder declares \xAB${coordinate2}\xBB`
+        `recorded as \xAB${request.expectedId}\xBB but the folder declares \xAB${coordinate3}\xBB`
       );
       continue;
     }
-    claimed.add(coordinate2);
-    coordinates.push(coordinate2);
+    claimed.add(coordinate3);
+    coordinates.push(coordinate3);
     rootIds.push(request.id);
     inputs.push(read.input);
     served.set(request.id, read.files);
@@ -41456,6 +41475,2425 @@ function createExtensionManagerClient(options) {
   });
 }
 
+// packages/sdk/dist/subjects/index.js
+var REVISION_KINDS2 = Object.freeze([
+  "content-hash",
+  "git-object",
+  "etag",
+  "database-version",
+  "provider-token",
+  "overlay-generation"
+]);
+var REVISION_KIND_PATTERN2 = REVISION_KINDS2.join("|");
+var REVISION_ALGORITHM_PATTERN2 = "[a-z0-9]+(?:-[a-z0-9]+)*";
+var REVISION_VALUE_PATTERN2 = "(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+";
+var REVISION_ID_PATTERN2 = `^(?:${REVISION_KIND_PATTERN2})(?:\\.${REVISION_ALGORITHM_PATTERN2})?:${REVISION_VALUE_PATTERN2}$`;
+var REVISION_ID2 = new RegExp(REVISION_ID_PATTERN2);
+function assertSourceChain2(source2) {
+  for (let current = source2; current !== void 0; current = current.parent) {
+    if (typeof current.id !== "string" || current.id.length === 0) {
+      throw new TypeError("subject source id must be non-empty");
+    }
+  }
+}
+function assertSubjectIdentity2(identity) {
+  if (typeof identity.kind !== "string" || typeof identity.key !== "string") {
+    throw new TypeError("subject identity kind and key must be strings");
+  }
+  if (identity.kind === "" && identity.key === "") return;
+  if (!isQualifiedId(identity.kind)) {
+    throw new TypeError(`nested subject kind must be a qualified id: ${identity.kind}`);
+  }
+  if (identity.key.length === 0) {
+    throw new TypeError("nested subject key must be non-empty");
+  }
+}
+function rootSubject2(source2, workspace) {
+  assertSourceChain2(source2);
+  return {
+    ...workspace === void 0 ? {} : { workspace },
+    source: source2,
+    identity: { kind: "", key: "" }
+  };
+}
+function nestedSubject2(owner, kind, key3) {
+  assertSourceChain2(owner.source);
+  assertSubjectIdentity2({ kind, key: key3 });
+  return { ...owner, identity: { kind, key: key3 } };
+}
+var EXTENDED_SUBJECT_PREFIX2 = "x3-subject:";
+function sourceIdChain2(source2) {
+  const chain = [];
+  for (let current = source2; current !== void 0; current = current.parent) {
+    chain.push(current.id);
+  }
+  return chain.reverse();
+}
+function serializeSubjectRef2(ref2) {
+  assertSourceChain2(ref2.source);
+  assertSubjectIdentity2(ref2.identity);
+  if (ref2.workspace !== void 0 || ref2.source.parent !== void 0 || ref2.source.id.includes("#") || ref2.source.id.startsWith(EXTENDED_SUBJECT_PREFIX2)) {
+    const payload = [
+      1,
+      ref2.workspace ?? null,
+      sourceIdChain2(ref2.source),
+      ref2.identity.kind,
+      ref2.identity.key
+    ];
+    return `${EXTENDED_SUBJECT_PREFIX2}${encodeURIComponent(JSON.stringify(payload))}`;
+  }
+  if (ref2.identity.key === "" && ref2.identity.kind === "") return ref2.source.id;
+  return `${ref2.source.id}#${encodeURIComponent(ref2.identity.kind)}/${encodeURIComponent(ref2.identity.key)}`;
+}
+var STANDARD_DATA_SOURCE_CONTRACTS2 = Object.freeze([
+  "common.view/text-data-source",
+  "common.view/byte-range-source",
+  "common.view/tree-data-source",
+  "common.view/table-data-source",
+  "common.view/transport-source",
+  "common.view/namespace-entry-source",
+  "common.view/raster-image-source",
+  "common.view/vector-scene-source",
+  "common.view/audio-media-source",
+  "common.view/video-media-source",
+  "common.view/model-scene-source",
+  "common.view/world-scene-source",
+  // optional model facets beside the base scene source (block 11, slice 11C0, plan item 11)
+  "common.view/model-resource-refs-source",
+  "common.view/model-skeleton-source",
+  "common.view/model-animation-source",
+  "common.view/model-collision-source",
+  "common.view/model-material-source",
+  "common.view/model-socket-source",
+  "common.view/relation-graph-source",
+  "common.view/subject-selector-source",
+  "common.view/subject-facts-source",
+  "common.view/subject-calculations-source",
+  "common.view/slide-deck-source"
+]);
+var DATA_SOURCE_MATURITY2 = Object.freeze({
+  "common.view/text-data-source": "admitted",
+  "common.view/byte-range-source": "admitted",
+  "common.view/tree-data-source": "admitted",
+  "common.view/table-data-source": "admitted",
+  "common.view/transport-source": "admitted",
+  "common.view/namespace-entry-source": "admitted",
+  "common.view/raster-image-source": "admitted",
+  "common.view/vector-scene-source": "admitted",
+  "common.view/audio-media-source": "admitted",
+  "common.view/video-media-source": "admitted",
+  "common.view/model-scene-source": "admitted",
+  "common.view/world-scene-source": "publisher-candidate",
+  "common.view/model-resource-refs-source": "admitted",
+  "common.view/model-skeleton-source": "admitted",
+  "common.view/model-animation-source": "admitted",
+  "common.view/model-collision-source": "admitted",
+  "common.view/model-material-source": "admitted",
+  "common.view/model-socket-source": "publisher-candidate",
+  "common.view/relation-graph-source": "admitted",
+  "common.view/subject-selector-source": "publisher-candidate",
+  "common.view/subject-facts-source": "admitted",
+  "common.view/subject-calculations-source": "admitted",
+  "common.view/slide-deck-source": "publisher-candidate"
+});
+var ADMITTED_DATA_SOURCE_CONTRACTS2 = Object.freeze(
+  STANDARD_DATA_SOURCE_CONTRACTS2.filter(
+    (contract) => DATA_SOURCE_MATURITY2[contract] === "admitted"
+  )
+);
+var KNOWLEDGE_LOCALE_PATTERN2 = "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$";
+var knowledgeLocalePattern2 = new RegExp(KNOWLEDGE_LOCALE_PATTERN2, "u");
+var DOTTED_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
+var NAMESPACED_DOTTED_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
+var OPERATION_PATTERN2 = "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$";
+var QUALIFIED_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
+var SEGMENT_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
+var SEMVER_PATTERN2 = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$";
+var RANGE_NUMBER2 = "(?:0|[1-9]\\d*)";
+var RANGE_NUMERIC2 = `${RANGE_NUMBER2}(?:\\.${RANGE_NUMBER2}){0,2}`;
+var RANGE_EXACT2 = `=?${RANGE_NUMBER2}\\.${RANGE_NUMBER2}\\.${RANGE_NUMBER2}`;
+var RANGE_WILDCARD2 = `(?:${RANGE_NUMBER2}\\.(?:x|\\*)|${RANGE_NUMBER2}\\.${RANGE_NUMBER2}\\.(?:x|\\*))`;
+var RANGE_CARET2 = `\\^${RANGE_NUMBER2}\\.${RANGE_NUMBER2}(?:\\.${RANGE_NUMBER2})?`;
+var RANGE_COMPARATOR2 = `[<>]=?${RANGE_NUMERIC2}`;
+var RANGE_ATOM2 = `(?:${RANGE_EXACT2}|${RANGE_WILDCARD2}|${RANGE_CARET2}|${RANGE_COMPARATOR2})`;
+var VERSION_RANGE_PATTERN2 = `^(?:\\*|x|${RANGE_ATOM2}(?: ${RANGE_ATOM2})*)$`;
+var RELATIVE_ENTRYPOINT_PATTERN2 = "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$";
+var METHOD_NAME_PATTERN2 = "^[a-z][a-zA-Z0-9]{0,63}$";
+var REQUIREMENT_SCOPE_KINDS2 = Object.freeze([
+  "contribution",
+  "offer",
+  "operation",
+  "intent",
+  "variant",
+  "profile",
+  "projection",
+  "slot"
+]);
+var requirementScopeSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["kind", "id"],
+  properties: {
+    kind: { enum: REQUIREMENT_SCOPE_KINDS2 },
+    id: { type: "string", minLength: 1 }
+  }
+};
+var extensionRequirementSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["extension", "mode", "scope"],
+  properties: {
+    extension: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    range: { type: "string", pattern: VERSION_RANGE_PATTERN2 },
+    mode: { enum: ["required", "default", "suggested", "integrates"] },
+    scope: requirementScopeSchema2
+  }
+};
+var contributionManifestsSchema2 = {
+  type: "array",
+  items: { type: "string", minLength: 1 }
+};
+var extensionManifestSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/extension-manifest.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "publisher", "id", "version", "license", "contributionManifests"],
+  properties: {
+    schemaVersion: { const: 1 },
+    publisher: { type: "string", pattern: DOTTED_PATTERN2 },
+    id: { type: "string", pattern: DOTTED_PATTERN2 },
+    version: { type: "string", pattern: SEMVER_PATTERN2 },
+    license: { type: "string", minLength: 1 },
+    contributionManifests: contributionManifestsSchema2,
+    dependsOn: { type: "array", items: extensionRequirementSchema2 }
+  }
+};
+var modkitBlockSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/extension-manifest-modkit-block.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "publisher", "id", "contributionManifests"],
+  properties: {
+    schemaVersion: { const: 1 },
+    publisher: { type: "string", pattern: DOTTED_PATTERN2 },
+    id: { type: "string", pattern: DOTTED_PATTERN2 },
+    contributionManifests: contributionManifestsSchema2,
+    dependsOn: { type: "array", items: extensionRequirementSchema2 }
+  }
+};
+deepFreeze(requirementScopeSchema2);
+deepFreeze(extensionRequirementSchema2);
+deepFreeze(extensionManifestSchema2);
+deepFreeze(modkitBlockSchema2);
+var EXECUTION_PROFILES2 = Object.freeze([
+  "browser-sandbox",
+  "worker-brokered",
+  "process-brokered",
+  "wasm-brokered",
+  "trusted-in-process",
+  "remote-provider"
+]);
+var PERMISSION_CLASSES2 = Object.freeze([
+  "read-source",
+  "write-source",
+  "filesystem-read",
+  "filesystem-write",
+  "network",
+  "process-launch",
+  "native-code",
+  "credentials",
+  "clipboard",
+  "persistent-storage"
+]);
+var RUNTIME_ENVIRONMENTS2 = Object.freeze([
+  "browser-main",
+  "browser-worker",
+  "node",
+  "node-worker",
+  "wasm",
+  "native",
+  "external-tool"
+]);
+var OPERATING_SYSTEMS2 = Object.freeze([
+  "any",
+  "windows",
+  "linux",
+  "darwin",
+  "android",
+  "ios"
+]);
+var ARCHITECTURES2 = Object.freeze([
+  "any",
+  "x86",
+  "x64",
+  "arm32",
+  "arm64",
+  "wasm32"
+]);
+var runtimeTargetConstraintSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    environments: { type: "array", items: { enum: RUNTIME_ENVIRONMENTS2 }, minItems: 1 },
+    operatingSystems: { type: "array", items: { enum: OPERATING_SYSTEMS2 }, minItems: 1 },
+    architectures: { type: "array", items: { enum: ARCHITECTURES2 }, minItems: 1 },
+    requiredHostCapabilities: { type: "array", items: { type: "string", minLength: 1 } },
+    requiredWebApis: { type: "array", items: { type: "string", minLength: 1 } },
+    externalTools: { type: "array", items: { type: "string", minLength: 1 } }
+  }
+};
+var runtimeVariantDeclarationSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"],
+  properties: {
+    variantId: { type: "string", pattern: SEGMENT_PATTERN2 },
+    // Containment is enforced twice: here (authoring gate) and again by the host before
+    // any import (MK3/24 §8) — the host never trusts that someone validated the input.
+    entrypoint: { type: "string", pattern: RELATIVE_ENTRYPOINT_PATTERN2 },
+    target: runtimeTargetConstraintSchema2,
+    executionProfile: { enum: EXECUTION_PROFILES2 },
+    requestedPermissionClasses: { type: "array", items: { enum: PERMISSION_CLASSES2 } }
+  }
+};
+var scopedContractRequirementSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["contract", "major", "mode", "scope"],
+  properties: {
+    contract: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    range: { type: "string", pattern: VERSION_RANGE_PATTERN2 },
+    mode: { enum: ["required", "default", "suggested", "integrates"] },
+    scope: requirementScopeSchema2
+  }
+};
+var contributionManifestSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/contribution-manifest.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "contract", "id", "displayName", "spec"],
+  properties: {
+    schemaVersion: { const: 1 },
+    contract: {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "major"],
+      properties: {
+        id: { type: "string", pattern: QUALIFIED_PATTERN2 },
+        major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+      }
+    },
+    id: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    displayName: { type: "string", minLength: 1 },
+    status: { enum: ["supported", "partial", "unsupported", "experimental"] },
+    runtimeVariants: { type: "array", items: runtimeVariantDeclarationSchema2 },
+    dependsOn: { type: "array", items: scopedContractRequirementSchema2 },
+    limitations: { type: "array", items: { type: "string", minLength: 1 } },
+    spec: { title: "JsonValue" }
+  }
+};
+deepFreeze(runtimeTargetConstraintSchema2);
+deepFreeze(runtimeVariantDeclarationSchema2);
+deepFreeze(scopedContractRequirementSchema2);
+deepFreeze(contributionManifestSchema2);
+var nonEmptyString7 = { type: "string", minLength: 1 };
+var qualifiedId2 = { type: "string", pattern: QUALIFIED_PATTERN2 };
+var namespacedDottedId3 = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN2 };
+var operationId3 = { type: "string", pattern: OPERATION_PATTERN2 };
+var decimalU642 = { type: "string", pattern: UINT64_DECIMAL_PATTERN };
+var jsonSchemaRefSchema3 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["$ref"],
+  properties: { $ref: nonEmptyString7 }
+};
+var resourceBudgetWireSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"],
+  properties: {
+    maxInputBytes: decimalU642,
+    maxDepth: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    maxNodes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    maxScalarBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    maxDiagnostics: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    deadlineMs: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+  }
+};
+var dataSourceRefWireSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["contract", "major"],
+      properties: {
+        contract: { enum: STANDARD_DATA_SOURCE_CONTRACTS2 },
+        major: { const: 1 }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["contract", "major", "opaque"],
+      properties: {
+        contract: { ...qualifiedId2, not: { enum: STANDARD_DATA_SOURCE_CONTRACTS2 } },
+        major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        opaque: { const: true }
+      }
+    }
+  ]
+};
+var contractRequirementSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["contract", "major"],
+  properties: {
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    range: { type: "string", pattern: VERSION_RANGE_PATTERN2 }
+  }
+};
+var formatRefSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["formatId", "label"],
+  properties: {
+    formatId: nonEmptyString7,
+    label: nonEmptyString7,
+    mediaType: nonEmptyString7
+  }
+};
+var signatureRuleSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["from", "offset", "bytesHex"],
+  properties: {
+    from: { enum: ["start", "end"] },
+    offset: { type: "integer", minimum: 0, maximum: 4096 },
+    bytesHex: { type: "string", pattern: "^(?:[0-9a-f]{2}){1,64}$" },
+    maskHex: { type: "string", pattern: "^(?:[0-9a-f]{2}){1,64}$" }
+  }
+};
+var matchRulesSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    extensions: { type: "array", items: nonEmptyString7 },
+    mediaTypes: { type: "array", items: nonEmptyString7 },
+    pathGlobs: { type: "array", items: nonEmptyString7 },
+    signatures: { type: "array", items: signatureRuleSchema2, maxItems: 8 }
+  }
+};
+var probePlanSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ranges", "maxBytes"],
+      properties: {
+        kind: { const: "bytes" },
+        ranges: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["from", "length"],
+            properties: {
+              from: { enum: ["start", "end"] },
+              length: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+            }
+          }
+        },
+        maxBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "markers", "maxEntries", "maxBytes", "maxDepth", "maxPathBytes"],
+      properties: {
+        kind: { const: "namespace" },
+        markers: {
+          type: "array",
+          items: nonEmptyString7,
+          minItems: 1,
+          maxItems: 256,
+          uniqueItems: true
+        },
+        prefixes: { type: "array", items: nonEmptyString7 },
+        maxEntries: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maxBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maxDepth: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maxPathBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "maxSubjects", "maxRelationDepth"],
+      properties: {
+        kind: { const: "derived" },
+        maxSubjects: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maxRelationDepth: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+      }
+    }
+  ]
+};
+var traitDefinitionRequirementSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id"],
+  properties: {
+    id: namespacedDottedId3,
+    definitionRange: { type: "string", pattern: VERSION_RANGE_PATTERN2 }
+  }
+};
+var traitQueryRequirementSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id"],
+  properties: {
+    ...traitDefinitionRequirementSchema2.properties,
+    states: {
+      type: "array",
+      items: { enum: ["available", "partial", "disabled", "dependency-required"] },
+      minItems: 1,
+      uniqueItems: true
+    }
+  }
+};
+var companionRuleSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "role", "required", "patterns", "searchScopes"],
+  properties: {
+    id: { type: "string", pattern: SEGMENT_PATTERN2 },
+    role: nonEmptyString7,
+    required: { type: "boolean" },
+    patterns: { type: "array", items: nonEmptyString7, minItems: 1 },
+    expected: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        all: { type: "array", items: traitQueryRequirementSchema2 },
+        any: { type: "array", items: traitQueryRequirementSchema2 },
+        none: { type: "array", items: traitQueryRequirementSchema2 }
+      }
+    },
+    searchScopes: {
+      type: "array",
+      minItems: 1,
+      items: {
+        enum: [
+          "sibling-directory",
+          "current-mount",
+          "enclosing-container",
+          "workspace-dependency-layer",
+          "explicit-user-selection"
+        ]
+      }
+    }
+  }
+};
+var representationDeclSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "contract", "major", "stage", "lossy"],
+  properties: {
+    id: nonEmptyString7,
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    stage: { enum: ["authored", "compiled", "runtime"] },
+    lossy: { type: "boolean" }
+  }
+};
+var operationDeclSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "handlerId", "mutatesSource"],
+  properties: {
+    id: operationId3,
+    handlerId: nonEmptyString7,
+    mutatesSource: { type: "boolean" },
+    requiredPermissions: { type: "array", items: { enum: PERMISSION_CLASSES2 } },
+    requiresContract: contractRequirementSchema2,
+    inputSchema: jsonSchemaRefSchema3,
+    outputKinds: {
+      type: "array",
+      items: {
+        enum: ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"]
+      }
+    }
+  }
+};
+var traitDeclarationSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "representation", "presence"],
+  properties: {
+    id: namespacedDottedId3,
+    definitionVersion: { type: "string", pattern: SEMVER_PATTERN2 },
+    representation: { enum: ["source", "compiled", "runtime"] },
+    presence: { enum: ["may-expose", "will-expose"] },
+    prerequisites: { type: "array", items: contractRequirementSchema2 },
+    evidenceRefs: { type: "array", items: nonEmptyString7, uniqueItems: true }
+  }
+};
+var fidelityNotesSchema2 = { type: "array", items: nonEmptyString7 };
+var fidelityClaimSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["roundTrip", "preservesUnknownData"],
+      properties: {
+        roundTrip: { const: "byte-identical" },
+        preservesUnknownData: { const: true },
+        notes: fidelityNotesSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["roundTrip", "preservesUnknownData"],
+      properties: {
+        roundTrip: { const: "semantic" },
+        preservesUnknownData: { type: "boolean" },
+        notes: fidelityNotesSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["roundTrip", "preservesUnknownData"],
+      properties: {
+        roundTrip: { enum: ["lossy", "none"] },
+        preservesUnknownData: { const: false },
+        notes: fidelityNotesSchema2
+      }
+    }
+  ]
+};
+var codecFidelityEvidenceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "formatId",
+    "representationId",
+    "claim",
+    "evidenceId",
+    "corpusId",
+    "corpusDigest",
+    "conformanceProfile",
+    "optionsFingerprint",
+    "inputClass",
+    "provenAt"
+  ],
+  properties: {
+    formatId: nonEmptyString7,
+    representationId: nonEmptyString7,
+    claim: fidelityClaimSchema2,
+    evidenceId: nonEmptyString7,
+    corpusId: nonEmptyString7,
+    corpusDigest: nonEmptyString7,
+    conformanceProfile: qualifiedId2,
+    optionsFingerprint: nonEmptyString7,
+    inputClass: nonEmptyString7,
+    provenAt: {
+      type: "string",
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+    }
+  }
+};
+var serviceProviderFidelityEvidenceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "offerId",
+    "evidenceId",
+    "claim",
+    "corpusId",
+    "corpusDigest",
+    "conformanceProfile",
+    "optionsFingerprint",
+    "inputClass",
+    "provenAt"
+  ],
+  properties: {
+    offerId: { type: "string", pattern: SEGMENT_PATTERN2 },
+    evidenceId: nonEmptyString7,
+    claim: fidelityClaimSchema2,
+    corpusId: nonEmptyString7,
+    corpusDigest: nonEmptyString7,
+    conformanceProfile: qualifiedId2,
+    optionsFingerprint: nonEmptyString7,
+    inputClass: nonEmptyString7,
+    provenAt: {
+      type: "string",
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+    }
+  }
+};
+var codecContributionRequired2 = [
+  "formatRefs",
+  "roles",
+  "sourceTopology",
+  "artifactStages",
+  "openIntents",
+  "match",
+  "probe",
+  "representations",
+  "publishesDataSources",
+  "operations",
+  "implementationTier",
+  "budgets"
+];
+var codecContributionProperties2 = {
+  formatRefs: { type: "array", items: formatRefSchema2, minItems: 1 },
+  roles: {
+    type: "array",
+    items: { enum: ["container", "media", "byte-transform", "semantic", "index", "sidecar"] },
+    minItems: 1
+  },
+  artifactStages: {
+    type: "array",
+    items: { enum: ["authored", "compiled", "runtime"] },
+    minItems: 1
+  },
+  openIntents: {
+    type: "array",
+    items: { enum: ["probe", "inspect", "thumbnail", "full", "stream", "export"] },
+    minItems: 1
+  },
+  match: matchRulesSchema2,
+  companions: { type: "array", items: companionRuleSchema2 },
+  representations: { type: "array", items: representationDeclSchema2, minItems: 1 },
+  publishesDataSources: { type: "array", items: dataSourceRefWireSchema2 },
+  requires: { type: "array", items: contractRequirementSchema2 },
+  operations: { type: "array", items: operationDeclSchema2 },
+  traitDeclarations: { type: "array", items: traitDeclarationSchema2 },
+  fidelityEvidence: { type: "array", items: codecFidelityEvidenceSchema2 },
+  implementationTier: {
+    type: "object",
+    additionalProperties: false,
+    required: ["claimed"],
+    properties: { claimed: { enum: [1, 2, 3, 4, 5] } }
+  },
+  budgets: resourceBudgetWireSchema2
+};
+var codecContributionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/codec-contribution-spec.v1.schema.json",
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: codecContributionRequired2,
+      properties: {
+        ...codecContributionProperties2,
+        sourceTopology: { enum: ["single", "bundle"] },
+        probe: probePlanSchema2.oneOf[0]
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: codecContributionRequired2,
+      properties: {
+        ...codecContributionProperties2,
+        sourceTopology: { const: "namespace" },
+        probe: probePlanSchema2.oneOf[1]
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: codecContributionRequired2,
+      properties: {
+        ...codecContributionProperties2,
+        sourceTopology: { const: "derived" },
+        probe: probePlanSchema2.oneOf[2]
+      }
+    }
+  ]
+};
+var serviceContractOfferDeclarationSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["offerId", "contract", "major", "version"],
+  properties: {
+    offerId: { type: "string", pattern: SEGMENT_PATTERN2 },
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    version: { type: "string", pattern: SEMVER_PATTERN2 },
+    facet: { title: "JsonValue" }
+  }
+};
+var serviceProviderContributionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/service-provider-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["provides", "lifecycleScope"],
+  properties: {
+    provides: { type: "array", items: serviceContractOfferDeclarationSchema2, minItems: 1 },
+    fidelityEvidence: { type: "array", items: serviceProviderFidelityEvidenceSchema2 },
+    requires: { type: "array", items: contractRequirementSchema2 },
+    inputs: { type: "array", items: nonEmptyString7 },
+    outputs: { type: "array", items: traitDeclarationSchema2 },
+    protocolOperations: { type: "array", items: nonEmptyString7 },
+    replacement: {
+      type: "object",
+      additionalProperties: false,
+      required: ["target", "compatible"],
+      properties: { target: contractRequirementSchema2, compatible: { type: "boolean" } }
+    },
+    lifecycleScope: { enum: ["session", "operation", "process"] },
+    applicableVariants: { type: "array", items: { type: "string", pattern: SEGMENT_PATTERN2 } }
+  }
+};
+var traitRequirementSchema2 = traitQueryRequirementSchema2;
+var viewerApplicabilitySchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    interpretation: { enum: ["none", "codec", "any"] },
+    sourceBytes: {
+      type: "object",
+      additionalProperties: false,
+      properties: { maximum: decimalU642 }
+    },
+    longestLineBytes: {
+      type: "object",
+      additionalProperties: false,
+      required: ["maximum", "whenUnknown"],
+      properties: {
+        maximum: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        whenUnknown: { enum: ["eligible", "ineligible"] }
+      }
+    }
+  }
+};
+var viewerContributionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/viewer-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["kind", "consumesDataSources", "priority"],
+  properties: {
+    kind: { enum: ["stage", "tree", "panel", "toolbar", "transport", "status", "fallback"] },
+    requiresTraits: { type: "array", items: traitRequirementSchema2 },
+    requiresOperations: { type: "array", items: operationId3 },
+    consumesDataSources: { type: "array", items: dataSourceRefWireSchema2 },
+    /*
+     * Sources a viewer reads when the subject publishes them and does without when it does not.
+     *
+     * Kept apart from `consumesDataSources` because that list decides eligibility: a facet named
+     * there would cost the stage every subject that publishes none of them, which is the opposite
+     * of optional. Naming them separately is what lets one generic viewer consume the optional
+     * model facets instead of splitting into a contribution per facet combination.
+     */
+    optionalDataSources: { type: "array", items: dataSourceRefWireSchema2 },
+    applicability: viewerApplicabilitySchema2,
+    hosts: { type: "array", items: nonEmptyString7 },
+    priority: { type: "number" },
+    conflicts: { type: "array", items: nonEmptyString7 },
+    singletonGroup: nonEmptyString7
+  }
+};
+var writerRequirementSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["formatId", "representationId", "mutationMode", "minimumRoundTrip"],
+  properties: {
+    formatId: nonEmptyString7,
+    representationId: nonEmptyString7,
+    mutationMode: { enum: ["export-only", "mutate"] },
+    minimumRoundTrip: { enum: ["byte-identical", "semantic", "lossy", "none"] }
+  }
+};
+var writerRequirementV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/writer-requirement.v1.schema.json",
+  ...writerRequirementSchema2
+};
+var writerOfferV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/writer-offer.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: [...writerRequirementSchema2.required, "providerId", "fidelityEvidenceId"],
+  properties: {
+    ...writerRequirementSchema2.properties,
+    providerId: nonEmptyString7,
+    fidelityEvidenceId: nonEmptyString7
+  }
+};
+var editorContributionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/editor-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "sessionModel",
+    "selectionKinds",
+    "semanticLocationKinds",
+    "requiresTransactions",
+    "requiresOperations",
+    "consumesDataSources",
+    "writer",
+    "priority"
+  ],
+  properties: {
+    sessionModel: { enum: ["single-subject", "multi-subject", "workspace"] },
+    selectionKinds: { type: "array", items: nonEmptyString7, uniqueItems: true },
+    semanticLocationKinds: { type: "array", items: nonEmptyString7, uniqueItems: true },
+    requiresTransactions: { type: "boolean" },
+    requiresOperations: { type: "array", items: operationId3, uniqueItems: true },
+    consumesDataSources: { type: "array", items: dataSourceRefWireSchema2, uniqueItems: true },
+    writer: writerRequirementSchema2,
+    hosts: { type: "array", items: nonEmptyString7, uniqueItems: true },
+    priority: { type: "number" },
+    scaleLimits: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        maximumSubjects: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maximumRows: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maximumSourceBytes: decimalU642
+      }
+    }
+  }
+};
+var localeTag2 = {
+  type: "string",
+  pattern: KNOWLEDGE_LOCALE_PATTERN2,
+  maxLength: 64
+};
+var knowledgeShortText2 = { type: "string", minLength: 1, maxLength: 128 };
+var knowledgeTitle2 = { type: "string", minLength: 1, maxLength: 256 };
+var boundedKnowledgeQualifiedId2 = {
+  type: "string",
+  pattern: QUALIFIED_PATTERN2,
+  maxLength: 256
+};
+var knowledgeSchemaCoordinate2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["contract", "major", "revision"],
+  properties: {
+    contract: boundedKnowledgeQualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    revision: { type: "string", minLength: 1, maxLength: 256 }
+  }
+};
+var knowledgeTargetSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ecosystem", "schema", "typeId", "canonicalPath"],
+      properties: {
+        kind: { const: "field" },
+        ecosystem: knowledgeShortText2,
+        schema: knowledgeSchemaCoordinate2,
+        typeId: knowledgeShortText2,
+        canonicalPath: {
+          type: "array",
+          items: knowledgeShortText2,
+          minItems: 1,
+          maxItems: 32
+        }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ecosystem", "subjectKind"],
+      properties: {
+        kind: { const: "subject" },
+        ecosystem: knowledgeShortText2,
+        subjectKind: knowledgeShortText2,
+        subjectId: { type: "string", minLength: 1, maxLength: 512 }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ecosystem", "formatId"],
+      properties: {
+        kind: { const: "format" },
+        ecosystem: knowledgeShortText2,
+        formatId: knowledgeShortText2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ecosystem", "code"],
+      properties: {
+        kind: { const: "diagnostic" },
+        ecosystem: knowledgeShortText2,
+        code: { type: "string", minLength: 1, maxLength: 256 }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ecosystem", "conceptId"],
+      properties: {
+        kind: { const: "concept" },
+        ecosystem: knowledgeShortText2,
+        conceptId: knowledgeShortText2
+      }
+    }
+  ]
+};
+var knowledgeSourceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["kind", "title", "reviewedAt"],
+  properties: {
+    kind: {
+      enum: [
+        "schema",
+        "official-documentation",
+        "source-code",
+        "community-wiki",
+        "observed-corpus",
+        "external-reference"
+      ]
+    },
+    title: knowledgeTitle2,
+    url: { type: "string", pattern: "^https://[^\\s]+$", maxLength: 2048 },
+    schema: knowledgeSchemaCoordinate2,
+    revision: { type: "string", minLength: 1, maxLength: 256 },
+    license: { type: "string", minLength: 1, maxLength: 256 },
+    reviewedAt: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+  }
+};
+var knowledgeEntrySchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "target", "locale", "title", "summary", "claimKind", "confidence", "sources"],
+  properties: {
+    id: boundedKnowledgeQualifiedId2,
+    target: knowledgeTargetSchema2,
+    locale: localeTag2,
+    title: knowledgeTitle2,
+    summary: { type: "string", minLength: 1, maxLength: 1024 },
+    claimKind: {
+      enum: [
+        "schema-derived-fact",
+        "documented-interpretation",
+        "community-note",
+        "external-reference"
+      ]
+    },
+    confidence: { enum: ["verified", "high", "medium", "low"] },
+    aliases: {
+      type: "array",
+      items: knowledgeShortText2,
+      maxItems: 32,
+      uniqueItems: true
+    },
+    keywords: {
+      type: "array",
+      items: knowledgeShortText2,
+      maxItems: 32,
+      uniqueItems: true
+    },
+    details: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        valueType: knowledgeShortText2,
+        units: knowledgeShortText2,
+        defaultValue: { title: "JsonValue" },
+        allowedValues: { type: "array", items: { title: "JsonValue" }, maxItems: 512 },
+        deprecated: { type: "boolean" },
+        formulaRole: { type: "string", minLength: 1, maxLength: 512 }
+      }
+    },
+    relations: {
+      type: "array",
+      maxItems: 64,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["role", "target"],
+        properties: { role: knowledgeShortText2, target: knowledgeTargetSchema2 }
+      }
+    },
+    examples: {
+      type: "array",
+      maxItems: 16,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "text"],
+        properties: {
+          title: knowledgeTitle2,
+          text: { type: "string", minLength: 1, maxLength: 2048 }
+        }
+      }
+    },
+    sources: { type: "array", items: knowledgeSourceSchema2, minItems: 1, maxItems: 16 }
+  }
+};
+var knowledgePackSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/knowledge-pack-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "sourceLocale", "priority", "entries"],
+  properties: {
+    schemaVersion: { const: 1 },
+    sourceLocale: localeTag2,
+    priority: { type: "number" },
+    gameIds: { type: "array", items: knowledgeShortText2, maxItems: 32, uniqueItems: true },
+    entries: { type: "array", items: knowledgeEntrySchema2, minItems: 1, maxItems: 1e4 }
+  }
+};
+var traitDefinitionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "id", "version", "scope", "parametersSchema", "transport"],
+  properties: {
+    schemaVersion: { const: 1 },
+    id: namespacedDottedId3,
+    version: { type: "string", pattern: SEMVER_PATTERN2 },
+    scope: {
+      anyOf: [
+        {
+          enum: [
+            "source",
+            "asset",
+            "subject",
+            "workspace",
+            "service",
+            "operation",
+            "view-session",
+            "representation"
+          ]
+        },
+        { type: "string", pattern: QUALIFIED_PATTERN2 }
+      ]
+    },
+    parametersSchema: jsonSchemaRefSchema3,
+    transport: { enum: ["json", "structured-clone"] },
+    documentation: nonEmptyString7,
+    imports: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "range"],
+        properties: {
+          id: namespacedDottedId3,
+          range: { type: "string", pattern: VERSION_RANGE_PATTERN2 }
+        }
+      }
+    }
+  }
+};
+var methodName2 = { type: "string", pattern: METHOD_NAME_PATTERN2 };
+var dataSourceSurfaceRefSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["contract", "major"],
+  properties: {
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+  }
+};
+var dataSourceMethodLimitsSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    maxPageItems: { type: "integer", minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
+    maxBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    maxStringLength: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+  }
+};
+var argKeyRefSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["arg", "key"],
+  properties: {
+    arg: { type: "integer", minimum: 0, maximum: 16 },
+    key: methodName2
+  }
+};
+var dataSourceMethodSurfaceCommon2 = {
+  /**
+   * Where the executing side places the `AbortSignal`: appended last, nowhere, or as a key of an
+   * object argument (the consumer strips that key before sending, the executor re-creates it).
+   */
+  signal: { anyOf: [{ enum: ["last", "none"] }, argKeyRefSchema2] },
+  /** Where a progress callback lives inside an object argument (`invoke(…, { onProgress })`). */
+  progress: argKeyRefSchema2,
+  /**
+   * Positional argument count before the signal. The executing side pads omitted trailing
+   * arguments with `undefined` up to `arity` before appending the signal, so
+   * `encoded(trackId?, signal?)` called as `encoded()` still receives its signal last.
+   */
+  arity: { type: "integer", minimum: 0, maximum: 16 },
+  /** The ABI declares the method with `?`; an implementation may lack it. */
+  optional: { type: "boolean" },
+  limits: dataSourceMethodLimitsSchema2
+};
+var dataSourceMethodSurfaceV1Schema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "result"],
+      properties: {
+        kind: { const: "lease" },
+        result: dataSourceSurfaceRefSchema2,
+        /** `'lease'` materializes `{ value, release }`; `'bare'` (default) the capability object itself. */
+        wrapper: { enum: ["lease", "bare"] },
+        ...dataSourceMethodSurfaceCommon2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: {
+        kind: { enum: ["value", "leased-value", "iterable", "events"] },
+        ...dataSourceMethodSurfaceCommon2
+      }
+    }
+  ]
+};
+var dataSourceSurfaceV1Schema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["methods"],
+  properties: {
+    /** A `value` method whose completion also releases the capability (`dispose`-style ABIs). */
+    releaseVia: methodName2,
+    /**
+     * Data properties of the object copied to the consumer with its handle (`TextSyntaxProvider.contract`);
+     * exposed as read-only properties next to the proxied methods.
+     */
+    fields: { type: "array", items: methodName2, maxItems: 64, uniqueItems: true },
+    methods: {
+      type: "object",
+      minProperties: 1,
+      propertyNames: methodName2,
+      additionalProperties: dataSourceMethodSurfaceV1Schema2
+    }
+  }
+};
+var serviceContractDefinitionSpecV1Schema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "schemaVersion",
+    "kind",
+    "contract",
+    "major",
+    "offerFacet",
+    "requestFacet",
+    "matching",
+    "conformanceProfile"
+  ],
+  properties: {
+    schemaVersion: { const: 1 },
+    kind: { const: "service" },
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    offerFacet: {
+      oneOf: [
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["presence"],
+          properties: { presence: { const: "forbidden" } }
+        },
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["presence", "schema"],
+          properties: {
+            presence: { enum: ["optional", "required"] },
+            schema: jsonSchemaRefSchema3
+          }
+        }
+      ]
+    },
+    requestFacet: {
+      oneOf: [
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["presence"],
+          properties: { presence: { const: "forbidden" } }
+        },
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["presence", "schema"],
+          properties: {
+            presence: { enum: ["optional", "required"] },
+            schema: jsonSchemaRefSchema3
+          }
+        }
+      ]
+    },
+    matching: {
+      type: "object",
+      additionalProperties: false,
+      required: ["profile", "major"],
+      properties: {
+        profile: qualifiedId2,
+        major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        configuration: { title: "JsonValue" }
+      }
+    },
+    conformanceProfile: nonEmptyString7,
+    surface: dataSourceSurfaceV1Schema2
+  }
+};
+var dataSourceContractDefinitionSpecV1Schema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"],
+  properties: {
+    schemaVersion: { const: 1 },
+    kind: { const: "data-source" },
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    schema: jsonSchemaRefSchema3,
+    conformanceProfile: nonEmptyString7,
+    surface: dataSourceSurfaceV1Schema2
+  }
+};
+var contractDefinitionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/contract-definition-spec.v1.schema.json",
+  oneOf: [serviceContractDefinitionSpecV1Schema2, dataSourceContractDefinitionSpecV1Schema2]
+};
+deepFreeze(jsonSchemaRefSchema3);
+deepFreeze(resourceBudgetWireSchema2);
+deepFreeze(dataSourceRefWireSchema2);
+deepFreeze(codecContributionSpecV1Schema2);
+deepFreeze(serviceProviderContributionSpecV1Schema2);
+deepFreeze(viewerContributionSpecV1Schema2);
+deepFreeze(editorContributionSpecV1Schema2);
+deepFreeze(knowledgePackSpecV1Schema2);
+deepFreeze(traitDefinitionSpecV1Schema2);
+deepFreeze(serviceContractDefinitionSpecV1Schema2);
+deepFreeze(dataSourceMethodSurfaceV1Schema2);
+deepFreeze(dataSourceSurfaceV1Schema2);
+deepFreeze(dataSourceContractDefinitionSpecV1Schema2);
+deepFreeze(contractDefinitionSpecV1Schema2);
+var sourceSpanValueSchema2 = { oneOf: sourceSpanSchema.oneOf };
+var nonEmptyString23 = { type: "string", minLength: 1 };
+var nonWhitespaceString2 = { type: "string", pattern: "\\S" };
+var revisionString2 = { type: "string", pattern: REVISION_ID_PATTERN2 };
+var namespacedDottedId22 = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN2 };
+var operationId23 = { type: "string", pattern: OPERATION_PATTERN2 };
+var stringArray2 = { type: "array", items: { type: "string" } };
+var jsonValueRef2 = { $ref: "#/$defs/jsonValue" };
+var jsonValueSchema2 = {
+  title: "JsonValue",
+  oneOf: [
+    { type: "null" },
+    { type: "boolean" },
+    { type: "number" },
+    { type: "string" },
+    { type: "array", items: jsonValueRef2 },
+    { type: "object", additionalProperties: jsonValueRef2 }
+  ]
+};
+var assetSourceRefSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "uri"],
+  properties: {
+    id: nonWhitespaceString2,
+    uri: nonWhitespaceString2,
+    parentIds: { type: "array", items: nonWhitespaceString2, minItems: 1 }
+  }
+};
+var sourceBindingDescriptorSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "role", "source", "required", "ownership", "revision"],
+  properties: {
+    id: nonEmptyString23,
+    role: nonEmptyString23,
+    source: assetSourceRefSchema2,
+    required: { type: "boolean" },
+    ownership: { enum: ["owned", "companion", "external"] },
+    revision: revisionString2,
+    mediaType: nonEmptyString23
+  }
+};
+var subjectSnapshotRefSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"],
+  properties: {
+    bindingId: nonEmptyString23,
+    role: nonEmptyString23,
+    subjectUri: nonEmptyString23,
+    revision: revisionString2,
+    compositionFingerprint: nonEmptyString23
+  }
+};
+var derivationRecipeSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["extensionId", "extensionVersion", "contributionId", "operation"],
+  properties: {
+    extensionId: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    extensionVersion: { type: "string", pattern: SEMVER_PATTERN2 },
+    contributionId: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    operation: operationId23,
+    parameters: jsonValueRef2
+  }
+};
+var materializedAssetSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["source", "revision"],
+  properties: {
+    source: assetSourceRefSchema2,
+    revision: revisionString2,
+    mediaType: nonEmptyString23
+  }
+};
+var assetOriginDescriptorSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "binding"],
+      properties: {
+        kind: { const: "single" },
+        binding: sourceBindingDescriptorSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "bindings"],
+      properties: {
+        kind: { const: "bundle" },
+        bindings: { type: "array", items: sourceBindingDescriptorSchema2, minItems: 1 },
+        primary: nonEmptyString23
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "root", "revision"],
+      properties: {
+        kind: { const: "namespace" },
+        root: assetSourceRefSchema2,
+        revision: revisionString2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "inputs"],
+      properties: {
+        kind: { const: "derived" },
+        inputs: { type: "array", items: subjectSnapshotRefSchema2, minItems: 1 },
+        recipe: derivationRecipeSchema2,
+        materialization: materializedAssetSchema2
+      }
+    }
+  ]
+};
+var diagnosticSourceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    extensionId: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    contributionId: { type: "string", pattern: QUALIFIED_PATTERN2 }
+  }
+};
+var assetDiagnosticSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "code", "category", "severity", "message"],
+  properties: {
+    id: nonEmptyString23,
+    code: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    category: {
+      enum: [
+        "syntax",
+        "structure",
+        "fidelity",
+        "dependency",
+        "security",
+        "performance",
+        "operation",
+        "io",
+        "unknown"
+      ]
+    },
+    severity: { enum: ["error", "warning", "information", "hint"] },
+    message: { type: "string" },
+    source: diagnosticSourceSchema2,
+    path: {
+      type: "array",
+      items: {
+        oneOf: [
+          { type: "string" },
+          { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+        ]
+      }
+    },
+    range: sourceSpanValueSchema2,
+    data: jsonValueRef2,
+    relatedIds: stringArray2
+  }
+};
+var traitProperties2 = {
+  id: namespacedDottedId22,
+  descriptorVersion: { const: 1 },
+  definitionVersion: { type: "string", pattern: SEMVER_PATTERN2 },
+  parameters: jsonValueRef2
+};
+var traitInstanceSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "descriptorVersion", "state"],
+      properties: { ...traitProperties2, state: { const: "available" } }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "descriptorVersion", "state", "diagnosticIds"],
+      properties: {
+        ...traitProperties2,
+        state: { enum: ["partial", "disabled", "dependency-required"] },
+        diagnosticIds: { ...stringArray2, minItems: 1 }
+      }
+    }
+  ]
+};
+var jsonSchemaRefSchema22 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["$ref"],
+  properties: { $ref: nonEmptyString23 }
+};
+var operationProperties2 = {
+  id: operationId23,
+  handlerId: nonEmptyString23,
+  mutatesSource: { type: "boolean" },
+  inputSchema: jsonSchemaRefSchema22
+};
+var assetOperationDescriptorSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "handlerId", "state", "mutatesSource"],
+      properties: { ...operationProperties2, state: { const: "available" } }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "handlerId", "state", "mutatesSource", "reason"],
+      properties: {
+        ...operationProperties2,
+        state: { enum: ["disabled", "dependency-required"] },
+        reason: nonEmptyString23
+      }
+    }
+  ]
+};
+var assetConstraintsSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["readOnly", "seekable", "randomAccess", "trusted"],
+  properties: {
+    readOnly: { type: "boolean" },
+    seekable: { type: "boolean" },
+    randomAccess: { type: "boolean" },
+    trusted: { type: "boolean" },
+    maxDecodedBytes: { type: "string", pattern: UINT64_DECIMAL_PATTERN },
+    unsupportedFeatures: stringArray2
+  }
+};
+var metadataEntrySchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["key", "value"],
+  properties: {
+    key: nonEmptyString23,
+    value: jsonValueRef2
+  }
+};
+var metadataGroupSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "label", "entries"],
+  properties: {
+    id: nonEmptyString23,
+    label: { type: "string" },
+    entries: { type: "array", items: metadataEntrySchema2 }
+  }
+};
+var companionBaseProperties2 = {
+  id: nonEmptyString23,
+  role: nonEmptyString23,
+  required: { type: "boolean" },
+  cardinality: { enum: ["one", "zero-or-one", "one-or-more", "many"] },
+  state: { enum: ["resolved", "missing", "ambiguous"] }
+};
+var requiredCompanionProperties2 = {
+  ...companionBaseProperties2,
+  required: { const: true },
+  cardinality: { enum: ["one", "one-or-more"] }
+};
+var optionalCompanionProperties2 = {
+  ...companionBaseProperties2,
+  required: { const: false },
+  cardinality: { enum: ["zero-or-one", "many"] }
+};
+var companionCandidateSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["source", "revision"],
+  properties: { source: assetSourceRefSchema2, revision: revisionString2 }
+};
+var companionBindingIdsSchema2 = {
+  type: "array",
+  items: nonEmptyString23,
+  minItems: 1,
+  uniqueItems: true
+};
+var singleCompanionBindingIdSchema2 = {
+  ...companionBindingIdsSchema2,
+  maxItems: 1
+};
+var companionDiagnosticIdsSchema2 = {
+  type: "array",
+  items: nonEmptyString23,
+  minItems: 1,
+  uniqueItems: true
+};
+var companionDescriptorSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
+      properties: {
+        ...requiredCompanionProperties2,
+        cardinality: { const: "one" },
+        state: { const: "resolved" },
+        bindingIds: singleCompanionBindingIdSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
+      properties: {
+        ...requiredCompanionProperties2,
+        cardinality: { const: "one-or-more" },
+        state: { const: "resolved" },
+        bindingIds: companionBindingIdsSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
+      properties: {
+        ...optionalCompanionProperties2,
+        cardinality: { const: "zero-or-one" },
+        state: { const: "resolved" },
+        bindingIds: singleCompanionBindingIdSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
+      properties: {
+        ...optionalCompanionProperties2,
+        cardinality: { const: "many" },
+        state: { const: "resolved" },
+        bindingIds: companionBindingIdsSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "diagnosticIds"],
+      properties: {
+        ...requiredCompanionProperties2,
+        state: { const: "missing" },
+        diagnosticIds: companionDiagnosticIdsSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state"],
+      properties: {
+        ...optionalCompanionProperties2,
+        state: { const: "missing" },
+        diagnosticIds: { type: "array", items: nonEmptyString23, uniqueItems: true }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"],
+      properties: {
+        ...requiredCompanionProperties2,
+        cardinality: { const: "one" },
+        state: { const: "ambiguous" },
+        candidates: {
+          type: "array",
+          items: companionCandidateSchema2,
+          minItems: 2,
+          uniqueItems: true
+        },
+        diagnosticIds: companionDiagnosticIdsSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"],
+      properties: {
+        ...optionalCompanionProperties2,
+        cardinality: { const: "zero-or-one" },
+        state: { const: "ambiguous" },
+        candidates: {
+          type: "array",
+          items: companionCandidateSchema2,
+          minItems: 2,
+          uniqueItems: true
+        },
+        diagnosticIds: companionDiagnosticIdsSchema2
+      }
+    }
+  ]
+};
+var detectionEvidenceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["kind", "weight"],
+  properties: {
+    kind: { enum: ["magic", "structure", "companion", "context", "extension", "user-override"] },
+    weight: { type: "number" },
+    note: { type: "string" }
+  }
+};
+var detectionResultSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["codecId", "confidence", "evidence", "requiredRanges"],
+  properties: {
+    codecId: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    confidence: { type: "number", minimum: 0, maximum: 1 },
+    evidence: { type: "array", items: detectionEvidenceSchema2 },
+    requiredRanges: { type: "array", items: sourceSpanValueSchema2 },
+    diagnostics: { type: "array", items: assetDiagnosticSchema2 }
+  }
+};
+var resolvedIdentitySchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["codecId", "codecVersion", "formatId", "formatLabel", "confidence", "detection"],
+  properties: {
+    codecId: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    codecVersion: { type: "string", pattern: SEMVER_PATTERN2 },
+    formatId: nonEmptyString23,
+    formatLabel: nonEmptyString23,
+    mediaType: nonEmptyString23,
+    confidence: { type: "number", minimum: 0, maximum: 1 },
+    detection: { type: "array", items: detectionEvidenceSchema2 }
+  }
+};
+var subjectRequired2 = [
+  "schemaVersion",
+  "subjectUri",
+  "origin",
+  "traits",
+  "operations",
+  "constraints",
+  "dataSources",
+  "diagnostics",
+  "revision"
+];
+var subjectProperties2 = {
+  schemaVersion: { const: 2 },
+  subjectUri: nonWhitespaceString2,
+  origin: assetOriginDescriptorSchema2,
+  traits: { type: "array", items: traitInstanceSchema2 },
+  operations: { type: "array", items: assetOperationDescriptorSchema2 },
+  constraints: assetConstraintsSchema2,
+  dataSources: { type: "array", items: dataSourceRefWireSchema2 },
+  diagnostics: { type: "array", items: assetDiagnosticSchema2 },
+  revision: revisionString2
+};
+var unresolvedSourceDescriptorSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: [...subjectRequired2, "interpretation", "candidates"],
+  properties: {
+    ...subjectProperties2,
+    interpretation: { const: "none" },
+    candidates: { type: "array", items: detectionResultSchema2 }
+  }
+};
+var resolvedAssetDescriptorSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: [...subjectRequired2, "interpretation", "identity", "metadata"],
+  properties: {
+    ...subjectProperties2,
+    interpretation: { const: "codec" },
+    identity: resolvedIdentitySchema2,
+    metadata: { type: "array", items: metadataGroupSchema2 },
+    companions: { type: "array", items: companionDescriptorSchema2 }
+  }
+};
+var subjectDescriptorV2Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/subject-descriptor.v2.schema.json",
+  $defs: { jsonValue: jsonValueSchema2 },
+  oneOf: [unresolvedSourceDescriptorSchema2, resolvedAssetDescriptorSchema2]
+};
+var subjectDescriptorV2InferenceSchema2 = {
+  ...subjectDescriptorV2Schema2,
+  $defs: {
+    ...subjectDescriptorV2Schema2.$defs,
+    jsonValue: { title: "JsonValue" }
+  }
+};
+deepFreeze(subjectDescriptorV2Schema2);
+deepFreeze(subjectDescriptorV2InferenceSchema2);
+var RESERVED_MODEL_FACET_SOURCES2 = Object.freeze([
+  Object.freeze({
+    contract: "common.view/model-lod-source",
+    major: 1,
+    minimalShape: Object.freeze([
+      "info(): { levels }",
+      "levels(page): { id, nodeIds, order, selection? }"
+    ]),
+    blockedBy: "no codec publishes discrete LOD levels today: MSFT_lod topology is readable in principle, and nothing reads it"
+  }),
+  Object.freeze({
+    contract: "common.view/model-variant-source",
+    major: 1,
+    minimalShape: Object.freeze([
+      "info(): { variants }",
+      "variants(page): { id, name, kind, targets }"
+    ]),
+    blockedBy: "no codec publishes named variants today: UV_game_variants exists in the schema and no reader surfaces it"
+  }),
+  Object.freeze({
+    contract: "common.view/model-effect-source",
+    major: 1,
+    minimalShape: Object.freeze([
+      "info(): { effects, byKind, profile? }",
+      "effects(page): { id, kind, nodeId?, materialId? }"
+    ]),
+    blockedBy: "the UVM reader publishes effect *counts* by kind, which fills info() and nothing else; per-emitter records have no publisher, and a page method no publisher can fill is not a contract"
+  })
+]);
+var TRAIT_IDS2 = Object.freeze([
+  "content.metadata",
+  "content.binary",
+  "content.text",
+  "content.images",
+  "content.fonts",
+  "content.styles",
+  "content.scripts",
+  "content.thumbnails",
+  "image.raster",
+  "image.channels",
+  "image.mipmaps",
+  "image.subresources",
+  "image.compressed-blocks",
+  "image.frames",
+  "image.palette",
+  "image.color-profile",
+  "vector.scene",
+  "vector.paths",
+  "vector.shapes",
+  "vector.text",
+  "vector.gradients",
+  "document.flow",
+  "document.pages",
+  "document.outline",
+  "document.annotations",
+  "table.sheets",
+  "table.cells",
+  "table.formulas",
+  "presentation.slides",
+  "presentation.masters",
+  "design.components",
+  "design.constraints",
+  "structure.hierarchy",
+  "structure.layers",
+  "structure.nodes",
+  "structure.timeline",
+  "project.editable",
+  "project.companions",
+  "model.geometry",
+  "model.materials",
+  "model.textures",
+  "model.skeleton",
+  "model.animations",
+  "model.lods",
+  "scene.objects",
+  "scene.cameras",
+  "scene.lights",
+  "scene.effects",
+  "audio.streams",
+  "audio.waveform",
+  "audio.loop-points",
+  "video.streams",
+  "video.tracks",
+  "media.duration",
+  "media.frames",
+  "media.seekable",
+  "media.interactive-runtime",
+  "container.entries",
+  "container.directories",
+  "container.nested",
+  "container.compression",
+  "container.encryption",
+  "container.overlay",
+  "source.dependencies",
+  "font.glyphs",
+  "font.metrics",
+  "font.character-map",
+  "code.source",
+  "code.shader",
+  "code.node-graph",
+  "game.map",
+  "game.replay",
+  "game.layout",
+  "game.localization",
+  "game.catalog"
+]);
+var STANDARD_TRAIT_SET2 = new Set(TRAIT_IDS2);
+
+// packages/extension-manager/src/subjects.js
+var EXTENSION_SUBJECT_KIND = "org.modkitx/extension";
+var CONTRIBUTION_SUBJECT_KIND = "org.modkitx/contribution";
+function fail4(message, context = {}) {
+  throw new ExtensionManagerError("extension-manager/subject-projection-invalid", message, context);
+}
+function requiredText(value2, label) {
+  if (typeof value2 !== "string" || value2.trim() === "") {
+    fail4(`${label} must be a non-empty string`);
+  }
+  return value2.trim();
+}
+function optionalText2(value2, label) {
+  return value2 === void 0 ? void 0 : requiredText(value2, label);
+}
+function snapshotJson(value2, label, seen = /* @__PURE__ */ new Set()) {
+  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean") return value2;
+  if (typeof value2 === "number") {
+    if (!Number.isFinite(value2)) fail4(`${label} must contain only finite JSON numbers`);
+    return value2;
+  }
+  if (typeof value2 !== "object") fail4(`${label} must contain only JSON values`);
+  if (seen.has(value2)) fail4(`${label} must not contain cycles`);
+  seen.add(value2);
+  try {
+    if (Array.isArray(value2)) {
+      return Object.freeze(
+        value2.map((item, index) => snapshotJson(item, `${label}[${index}]`, seen))
+      );
+    }
+    const prototype = Object.getPrototypeOf(value2);
+    if (prototype !== Object.prototype && prototype !== null) {
+      fail4(`${label} must contain only plain JSON objects`);
+    }
+    if (Object.getOwnPropertySymbols(value2).length !== 0) {
+      fail4(`${label} must not contain symbol properties`);
+    }
+    const result = {};
+    for (const [key3, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(value2))) {
+      if (!descriptor.enumerable || !("value" in descriptor)) {
+        fail4(`${label}.${key3} must be an enumerable data property`);
+      }
+      result[key3] = snapshotJson(descriptor.value, `${label}.${key3}`, seen);
+    }
+    return Object.freeze(result);
+  } finally {
+    seen.delete(value2);
+  }
+}
+function contractCoordinate(contract, label) {
+  if (contract === null || typeof contract !== "object" || Array.isArray(contract)) {
+    fail4(`${label}.contract must be an object`);
+  }
+  const id = requiredText(contract.id, `${label}.contract.id`);
+  if (!Number.isSafeInteger(contract.major) || contract.major < 0) {
+    fail4(`${label}.contract.major must be a non-negative safe integer`);
+  }
+  return Object.freeze({ id, major: contract.major });
+}
+function contractKey(contract) {
+  return `${contract.id}@${contract.major}`;
+}
+function compareText(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+function compareContribution(left, right) {
+  return compareText(left.displayName, right.displayName) || compareText(left.id, right.id);
+}
+function throwIfAborted2(signal) {
+  signal?.throwIfAborted();
+}
+function page(items, request, signal) {
+  throwIfAborted2(signal);
+  if (!Number.isSafeInteger(request?.limit) || request.limit <= 0) {
+    fail4("page limit must be a positive safe integer");
+  }
+  let offset = 0;
+  if (request.cursor !== void 0) {
+    if (!/^(?:0|[1-9]\d*)$/u.test(request.cursor)) fail4("page cursor is invalid");
+    offset = Number(request.cursor);
+    if (!Number.isSafeInteger(offset)) fail4("page cursor is outside the safe integer range");
+  }
+  const selected = items.slice(offset, offset + request.limit);
+  const nextOffset = offset + selected.length;
+  return Object.freeze({
+    items: Object.freeze(selected),
+    ...nextOffset < items.length ? { nextCursor: String(nextOffset) } : {}
+  });
+}
+function fact2(id, label, value2, provenance) {
+  return Object.freeze({ id, label, value: value2, provenance });
+}
+function factsSource({
+  snapshotId,
+  subjectId,
+  label,
+  kind,
+  type,
+  groups,
+  facts,
+  relations,
+  origin
+}) {
+  const summary = Object.freeze({
+    snapshotId,
+    identity: Object.freeze({
+      subjectId,
+      label,
+      kind,
+      ...type === void 0 ? {} : { type },
+      origins: origin
+    }),
+    groupCount: groups.length,
+    relationCount: relations.length
+  });
+  const factsByGroup = new Map(facts.map((entry2) => [entry2.groupId, entry2.items]));
+  return Object.freeze({
+    async summary(signal) {
+      throwIfAborted2(signal);
+      return summary;
+    },
+    async groups(request, signal) {
+      return page(groups, request, signal);
+    },
+    async facts(groupId, request, signal) {
+      const items = factsByGroup.get(groupId);
+      if (items === void 0) fail4(`unknown subject fact group \xAB${groupId}\xBB`, { groupId });
+      return page(items, request, signal);
+    },
+    async relations(request, signal) {
+      return page(relations, request, signal);
+    }
+  });
+}
+function group(id, label, items) {
+  return Object.freeze({ id, label, factCount: items.length });
+}
+function relation(role, record3) {
+  return Object.freeze({
+    role,
+    subjectId: record3.subjectId,
+    label: record3.displayName,
+    kind: record3.kind
+  });
+}
+async function collectPages(openPage, signal) {
+  const items = [];
+  const cursors = /* @__PURE__ */ new Set();
+  let cursor3;
+  do {
+    throwIfAborted2(signal);
+    const result = await openPage(
+      { ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit: 256 },
+      signal
+    );
+    if (result === null || typeof result !== "object" || !Array.isArray(result.items)) {
+      fail4("subject facts source returned an invalid page");
+    }
+    items.push(...result.items);
+    if (items.length > 1e5) fail4("subject card exceeds the 100000 item wire limit");
+    cursor3 = result.nextCursor;
+    if (cursor3 !== void 0) {
+      if (typeof cursor3 !== "string" || cursors.has(cursor3)) {
+        fail4("subject facts source returned an invalid or repeated cursor");
+      }
+      cursors.add(cursor3);
+    }
+  } while (cursor3 !== void 0);
+  return items;
+}
+async function extensionSubjectRecordToWire(record3, signal) {
+  if (record3 === null || typeof record3 !== "object" || record3.facts === void 0) {
+    fail4("extension subject record must provide facts");
+  }
+  const summary = await record3.facts.summary(signal);
+  const groups = await collectPages(
+    (request, pageSignal) => record3.facts.groups(request, pageSignal),
+    signal
+  );
+  const wireGroups = [];
+  for (const groupDescriptor of groups) {
+    const groupFacts = await collectPages(
+      (request, pageSignal) => record3.facts.facts(groupDescriptor.id, request, pageSignal),
+      signal
+    );
+    wireGroups.push(Object.freeze({ ...groupDescriptor, facts: Object.freeze(groupFacts) }));
+  }
+  const relations = await collectPages(
+    (request, pageSignal) => record3.facts.relations(request, pageSignal),
+    signal
+  );
+  const subject = {
+    kind: record3.kind,
+    subjectId: record3.subjectId,
+    id: record3.id,
+    displayName: record3.displayName,
+    enabled: record3.enabled,
+    ..."version" in record3 ? { version: record3.version } : {},
+    ..."extensionId" in record3 ? { extensionId: record3.extensionId } : {},
+    ..."contract" in record3 ? { contract: record3.contract, contractKey: record3.contractKey } : {},
+    ..."effectiveEnabled" in record3 ? { effectiveEnabled: record3.effectiveEnabled } : {}
+  };
+  return snapshotJson(
+    {
+      schemaVersion: 1,
+      subject,
+      summary,
+      groups: wireGroups,
+      relations
+    },
+    "extension subject card wire document"
+  );
+}
+function subjectFactsSourceFromWire(value2) {
+  const document = snapshotJson(value2, "extension subject card wire document");
+  if (document === null || typeof document !== "object" || Array.isArray(document)) {
+    fail4("extension subject card wire document must be an object");
+  }
+  if (document.schemaVersion !== 1) {
+    fail4("extension subject card wire schemaVersion must be 1");
+  }
+  if (document.summary === null || typeof document.summary !== "object" || Array.isArray(document.summary)) {
+    fail4("extension subject card wire summary must be an object");
+  }
+  if (!Array.isArray(document.groups) || !Array.isArray(document.relations)) {
+    fail4("extension subject card wire groups and relations must be lists");
+  }
+  const ids = /* @__PURE__ */ new Set();
+  const groups = [];
+  const entries = [];
+  for (const [index, wireGroup] of document.groups.entries()) {
+    if (wireGroup === null || typeof wireGroup !== "object" || Array.isArray(wireGroup)) {
+      fail4(`extension subject card wire groups[${index}] must be an object`);
+    }
+    const id = requiredText(wireGroup.id, `groups[${index}].id`);
+    if (ids.has(id)) fail4(`subject fact group \xAB${id}\xBB is duplicated`, { groupId: id });
+    ids.add(id);
+    const label = requiredText(wireGroup.label, `groups[${index}].label`);
+    if (!Array.isArray(wireGroup.facts)) fail4(`groups[${index}].facts must be a list`);
+    if (wireGroup.factCount !== wireGroup.facts.length) {
+      fail4(`groups[${index}].factCount does not match its facts list`);
+    }
+    groups.push(Object.freeze({ id, label, factCount: wireGroup.factCount }));
+    entries.push(Object.freeze({ groupId: id, items: wireGroup.facts }));
+  }
+  if (document.summary.groupCount !== groups.length) {
+    fail4("extension subject card wire summary.groupCount does not match its groups");
+  }
+  if (document.summary.relationCount !== document.relations.length) {
+    fail4("extension subject card wire summary.relationCount does not match its relations");
+  }
+  return factsSource({
+    snapshotId: document.summary.snapshotId,
+    subjectId: document.summary.identity?.subjectId,
+    label: document.summary.identity?.label,
+    kind: document.summary.identity?.kind,
+    type: document.summary.identity?.type,
+    groups: Object.freeze(groups),
+    facts: Object.freeze(entries),
+    relations: document.relations,
+    origin: document.summary.identity?.origins ?? Object.freeze([])
+  });
+}
+function contributionFacts(manifest, ownerId, enabled, effectiveEnabled, provenance) {
+  const overview = [
+    fact2("id", "Contribution ID", manifest.id, provenance),
+    fact2("display-name", "Display name", manifest.displayName, provenance),
+    fact2("owner-extension", "Owner extension", ownerId, provenance),
+    fact2("contract-id", "Contract", manifest.contract.id, provenance),
+    fact2("contract-major", "Contract major", manifest.contract.major, provenance),
+    fact2("contract-coordinate", "Contract coordinate", contractKey(manifest.contract), provenance),
+    fact2("status", "Status", manifest.status ?? "supported", provenance)
+  ];
+  const state = [
+    fact2("enabled", "Contribution enabled", enabled, provenance),
+    fact2("effective-enabled", "Effectively enabled", effectiveEnabled, provenance)
+  ];
+  const declaration = [];
+  if (manifest.dependsOn !== void 0) {
+    declaration.push(fact2("depends-on", "Dependencies", manifest.dependsOn, provenance));
+  }
+  if (manifest.limitations !== void 0) {
+    declaration.push(fact2("limitations", "Limitations", manifest.limitations, provenance));
+  }
+  if (manifest.runtimeVariants !== void 0) {
+    declaration.push(
+      fact2("runtime-variants", "Runtime variants", manifest.runtimeVariants, provenance)
+    );
+  }
+  const specification = [];
+  if (manifest.spec !== null && typeof manifest.spec === "object" && !Array.isArray(manifest.spec)) {
+    for (const key3 of Object.keys(manifest.spec).sort(compareText)) {
+      specification.push(fact2(`spec.${key3}`, key3, manifest.spec[key3], provenance));
+    }
+  } else {
+    specification.push(fact2("spec", "Specification", manifest.spec, provenance));
+  }
+  return Object.freeze([
+    Object.freeze({ id: "overview", label: "Overview", items: Object.freeze(overview) }),
+    Object.freeze({ id: "state", label: "State", items: Object.freeze(state) }),
+    ...declaration.length === 0 ? [] : [
+      Object.freeze({
+        id: "declaration",
+        label: "Declaration",
+        items: Object.freeze(declaration)
+      })
+    ],
+    Object.freeze({
+      id: "specification",
+      label: "Specification",
+      items: Object.freeze(specification)
+    })
+  ]);
+}
+function projectExtensionSubjects(input) {
+  if (input === null || typeof input !== "object" || Array.isArray(input)) {
+    fail4("extension subject projection input must be an object");
+  }
+  const normalizedInput = snapshotJson(input, "input");
+  const extensionInput = normalizedInput.extension;
+  if (extensionInput === null || typeof extensionInput !== "object" || Array.isArray(extensionInput)) {
+    fail4("extension must be an object");
+  }
+  const publisher = requiredText(extensionInput.publisher, "extension.publisher");
+  const localId = requiredText(extensionInput.id, "extension.id");
+  const extensionId = `${publisher}/${localId}`;
+  const version = requiredText(extensionInput.version, "extension.version");
+  const license = requiredText(extensionInput.license, "extension.license");
+  const metadata = normalizedInput.metadata ?? {};
+  const displayName = optionalText2(metadata.displayName, "metadata.displayName") ?? extensionId;
+  const description = optionalText2(metadata.description, "metadata.description");
+  const homepage = optionalText2(metadata.homepage, "metadata.homepage");
+  const sourceLabel = optionalText2(metadata.source, "metadata.source");
+  const trusted = metadata.trusted;
+  if (trusted !== void 0 && typeof trusted !== "boolean") {
+    fail4("metadata.trusted must be a boolean");
+  }
+  const extensionEnabled = normalizedInput.enabled !== false;
+  const contributionEnablement = normalizedInput.contributionEnablement ?? {};
+  if (contributionEnablement === null || typeof contributionEnablement !== "object" || Array.isArray(contributionEnablement)) {
+    fail4("contributionEnablement must be an object");
+  }
+  const source2 = normalizedInput.source ?? Object.freeze({ id: `modkit-extension:${encodeURIComponent(extensionId)}` });
+  const owner = rootSubject2(source2, normalizedInput.workspace);
+  const extensionRef = nestedSubject2(owner, EXTENSION_SUBJECT_KIND, extensionId);
+  const extensionSubjectId = serializeSubjectRef2(extensionRef);
+  const extensionOrigin = Object.freeze([Object.freeze({ label: "extension manifest" })]);
+  const contributionOrigin = Object.freeze([Object.freeze({ label: "contribution manifest" })]);
+  if (!Array.isArray(normalizedInput.contributions)) fail4("contributions must be a list");
+  const seen = /* @__PURE__ */ new Set();
+  const contributions = normalizedInput.contributions.map((manifest, index) => {
+    const id = requiredText(manifest.id, `contributions[${index}].id`);
+    if (seen.has(id)) fail4(`contribution \xAB${id}\xBB is duplicated`, { contributionId: id });
+    seen.add(id);
+    const contract = contractCoordinate(manifest.contract, `contributions[${index}]`);
+    const normalized = Object.freeze({
+      ...manifest,
+      id,
+      displayName: requiredText(manifest.displayName, `contributions[${index}].displayName`),
+      contract
+    });
+    const configured = contributionEnablement[id];
+    if (configured !== void 0 && typeof configured !== "boolean") {
+      fail4(`contributionEnablement.${id} must be a boolean`);
+    }
+    const enabled = configured !== false;
+    const effectiveEnabled = extensionEnabled && enabled;
+    const ref2 = nestedSubject2(owner, CONTRIBUTION_SUBJECT_KIND, id);
+    const subjectId = serializeSubjectRef2(ref2);
+    return {
+      kind: CONTRIBUTION_SUBJECT_KIND,
+      ref: ref2,
+      subjectId,
+      id,
+      displayName: normalized.displayName,
+      extensionId,
+      contract,
+      contractKey: contractKey(contract),
+      enabled,
+      effectiveEnabled,
+      manifest: normalized
+    };
+  });
+  contributions.sort(compareContribution);
+  const extensionRecord = {
+    kind: EXTENSION_SUBJECT_KIND,
+    ref: extensionRef,
+    subjectId: extensionSubjectId,
+    id: extensionId,
+    displayName,
+    version,
+    enabled: extensionEnabled,
+    manifest: extensionInput
+  };
+  for (const contribution of contributions) {
+    const sections = contributionFacts(
+      contribution.manifest,
+      extensionId,
+      contribution.enabled,
+      contribution.effectiveEnabled,
+      contributionOrigin
+    );
+    contribution.facts = factsSource({
+      snapshotId: `${extensionId}@${version}#${contribution.id}`,
+      subjectId: contribution.subjectId,
+      label: contribution.displayName,
+      kind: CONTRIBUTION_SUBJECT_KIND,
+      type: contribution.contractKey,
+      groups: Object.freeze(
+        sections.map((section) => group(section.id, section.label, section.items))
+      ),
+      facts: sections.map((section) => Object.freeze({ groupId: section.id, items: section.items })),
+      relations: Object.freeze([relation("belongs-to", extensionRecord)]),
+      origin: contributionOrigin
+    });
+    Object.freeze(contribution);
+  }
+  const grouped = /* @__PURE__ */ new Map();
+  for (const contribution of contributions) {
+    const entries = grouped.get(contribution.contractKey) ?? [];
+    entries.push(contribution);
+    grouped.set(contribution.contractKey, entries);
+  }
+  const contractGroups = [...grouped.entries()].sort(([left], [right]) => compareText(left, right)).map(
+    ([key3, entries]) => Object.freeze({
+      key: key3,
+      contract: entries[0].contract,
+      contributions: Object.freeze([...entries])
+    })
+  );
+  const overview = [
+    fact2("id", "Extension ID", extensionId, extensionOrigin),
+    fact2("display-name", "Display name", displayName, extensionOrigin),
+    fact2("publisher", "Publisher", publisher, extensionOrigin),
+    fact2("version", "Version", version, extensionOrigin),
+    fact2("license", "License", license, extensionOrigin),
+    ...description === void 0 ? [] : [fact2("description", "Description", description, extensionOrigin)],
+    ...homepage === void 0 ? [] : [fact2("homepage", "Homepage", homepage, extensionOrigin)],
+    ...sourceLabel === void 0 ? [] : [fact2("source", "Source", sourceLabel, extensionOrigin)],
+    ...trusted === void 0 ? [] : [fact2("trusted", "Trusted", trusted, extensionOrigin)]
+  ];
+  const state = [
+    fact2("enabled", "Extension enabled", extensionEnabled, extensionOrigin),
+    fact2("contribution-count", "Contributions", contributions.length, extensionOrigin),
+    fact2("contract-count", "Contracts", contractGroups.length, extensionOrigin)
+  ];
+  const contracts = contractGroups.map(
+    (contractGroup) => fact2(
+      `contract.${contractGroup.key}`,
+      contractGroup.key,
+      Object.freeze({
+        contract: contractGroup.contract,
+        contributionIds: Object.freeze(contractGroup.contributions.map((item) => item.id)),
+        count: contractGroup.contributions.length
+      }),
+      extensionOrigin
+    )
+  );
+  const extensionSections = [
+    Object.freeze({ id: "overview", label: "Overview", items: Object.freeze(overview) }),
+    Object.freeze({ id: "state", label: "State", items: Object.freeze(state) }),
+    Object.freeze({ id: "contracts", label: "Contracts", items: Object.freeze(contracts) })
+  ];
+  extensionRecord.facts = factsSource({
+    snapshotId: `${extensionId}@${version}`,
+    subjectId: extensionSubjectId,
+    label: displayName,
+    kind: EXTENSION_SUBJECT_KIND,
+    groups: Object.freeze(
+      extensionSections.map((section) => group(section.id, section.label, section.items))
+    ),
+    facts: extensionSections.map(
+      (section) => Object.freeze({ groupId: section.id, items: section.items })
+    ),
+    relations: Object.freeze(contributions.map((item) => relation("owns", item))),
+    origin: extensionOrigin
+  });
+  Object.freeze(extensionRecord);
+  const records = Object.freeze([extensionRecord, ...contributions]);
+  const recordsBySubjectId = new Map(records.map((record3) => [record3.subjectId, record3]));
+  return Object.freeze({
+    extension: extensionRecord,
+    contributions: Object.freeze(contributions),
+    contractGroups: Object.freeze(contractGroups),
+    records,
+    subject(subjectId) {
+      return recordsBySubjectId.get(subjectId);
+    }
+  });
+}
+
 // apps/web/src/managed-extension-roots.ts
 var MANAGED_EXTENSION_BUNDLE_FAILURE_CODES = Object.freeze({
   unavailable: "x3.host/managed-extension-package-unavailable",
@@ -41598,14 +44036,13 @@ async function loadManagedExtensionRoots(storage, options) {
   const failures = [];
   for (const record3 of records) {
     options.signal?.throwIfAborted();
-    if (!record3.enabled) continue;
-    const response2 = await storage.open(record3.id);
+    const response2 = await storage.openInstalled(record3.id);
     if (response2 === void 0) {
       failures.push(
         failure2(
           record3,
           MANAGED_EXTENSION_BUNDLE_FAILURE_CODES.unavailable,
-          `enabled package ${record3.id}@${record3.version} is absent or failed its stored digest`
+          `installed package ${record3.id}@${record3.version} is absent or failed its stored digest`
         )
       );
       continue;
@@ -41701,6 +44138,18 @@ async function loadManagedExtensionRoots(storage, options) {
     const record3 = rootId === void 0 ? void 0 : sources.get(rootId);
     return record3 === void 0 ? input : Object.freeze({ ...input, source: `managed-package/${record3.id}@${record3.version}` });
   });
+  const packageByCoordinate = Object.fromEntries(
+    loaded.coordinates.flatMap((coordinate3, index) => {
+      const rootId = loaded.rootIds[index];
+      const record3 = rootId === void 0 ? void 0 : sources.get(rootId);
+      return record3 === void 0 ? [] : [[coordinate3, record3.id]];
+    })
+  );
+  const disabledExtensionCoordinates = loaded.coordinates.filter((_, index) => {
+    const rootId = loaded.rootIds[index];
+    const record3 = rootId === void 0 ? void 0 : sources.get(rootId);
+    return record3?.enabled === false;
+  });
   return Object.freeze({
     inputs: Object.freeze(inputs),
     failures: Object.freeze([...failures, ...loaded.failures]),
@@ -41709,6 +44158,8 @@ async function loadManagedExtensionRoots(storage, options) {
     moduleMap: loaded.moduleMap,
     moduleMapOwners: loaded.moduleMapOwners,
     verifiedModuleRoots: loaded.verifiedModuleRoots,
+    packageByCoordinate: Object.freeze(packageByCoordinate),
+    disabledExtensionCoordinates: Object.freeze(disabledExtensionCoordinates),
     serve: loaded.serve
   });
 }
@@ -41751,14 +44202,14 @@ function combineLoadedExtensionRoots(...roots) {
   const kept = roots.flatMap(
     (root) => root.rootIds.flatMap((rootId, index) => {
       const input = root.inputs[index];
-      const coordinate2 = root.coordinates[index];
-      return conflictedRoots.has(rootId) || input === void 0 || coordinate2 === void 0 ? [] : [{ rootId, input, coordinate: coordinate2 }];
+      const coordinate3 = root.coordinates[index];
+      return conflictedRoots.has(rootId) || input === void 0 || coordinate3 === void 0 ? [] : [{ rootId, input, coordinate: coordinate3 }];
     })
   );
   return Object.freeze({
     inputs: Object.freeze(kept.map(({ input }) => input)),
     failures: Object.freeze([...roots.flatMap((root) => root.failures), ...collisionFailures]),
-    coordinates: Object.freeze(kept.map(({ coordinate: coordinate2 }) => coordinate2)),
+    coordinates: Object.freeze(kept.map(({ coordinate: coordinate3 }) => coordinate3)),
     rootIds: Object.freeze(kept.map(({ rootId }) => rootId)),
     moduleMap: Object.freeze(Object.fromEntries(moduleMapEntries)),
     moduleMapOwners: Object.freeze(Object.fromEntries(moduleMapOwnerEntries)),
@@ -42136,6 +44587,11 @@ function createBrowserExtensionStorage(options) {
     async open(id) {
       const record3 = findById(await options.metadata.list(), id);
       if (record3 === void 0 || !record3.enabled) return void 0;
+      return verifiedCachedResponse(record3);
+    },
+    async openInstalled(id) {
+      const record3 = findById(await options.metadata.list(), id);
+      if (record3 === void 0) return void 0;
       return verifiedCachedResponse(record3);
     }
   };
@@ -42532,6 +44988,76 @@ function createManagedExtensionsController(options) {
   };
 }
 
+// apps/web/src/extension-subjects.ts
+var coordinate2 = (extension) => `${extension.manifest.publisher}/${extension.manifest.id}`;
+function createWebExtensionSubjectCatalog(inventory, options = {}) {
+  const disabledExtensions = new Set(options.disabledExtensions ?? []);
+  const disabledContributions = new Set(options.disabledContributions ?? []);
+  const entries = inventory.extensions.map((extension) => {
+    const id = coordinate2(extension);
+    const packageId = options.managedPackageByExtension?.[id];
+    const contributionEnablement = Object.fromEntries(
+      extension.contributions.flatMap(
+        (contribution) => contribution.manifest === void 0 ? [] : [
+          [
+            contribution.manifest.id,
+            !disabledContributions.has(contribution.manifest.id)
+          ]
+        ]
+      )
+    );
+    const configuredEnabled = !disabledExtensions.has(id);
+    const enabled = configuredEnabled && (packageId === void 0 ? true : options.managedPackageEnablement?.[packageId] ?? true);
+    const projection = projectExtensionSubjects({
+      extension: extension.manifest,
+      contributions: extension.contributions.flatMap(
+        (contribution) => contribution.manifest === void 0 ? [] : [contribution.manifest]
+      ),
+      metadata: {
+        displayName: id,
+        source: extension.source,
+        trusted: extension.origin === "bundled"
+      },
+      enabled,
+      contributionEnablement: Object.freeze(contributionEnablement)
+    });
+    return Object.freeze({
+      id,
+      source: extension.source,
+      origin: extension.origin,
+      ...packageId === void 0 ? {} : { managedPackageId: packageId },
+      configuredEnabled,
+      projection
+    });
+  });
+  const frozenEntries = Object.freeze(entries);
+  const byExtension = new Map(frozenEntries.map((entry2) => [entry2.id, entry2]));
+  const bySubject = new Map(
+    frozenEntries.flatMap(
+      (entry2) => entry2.projection.records.map((record3) => [record3.subjectId, record3])
+    )
+  );
+  return Object.freeze({
+    entries: frozenEntries,
+    extension: (id) => byExtension.get(id),
+    subject: (subjectId) => bySubject.get(subjectId)
+  });
+}
+async function webExtensionSubjectCardBundle(entry2, subjectId = entry2.projection.extension.subjectId, signal) {
+  if (entry2.projection.subject(subjectId) === void 0) {
+    throw new Error(`extension ${entry2.id} has no subject ${subjectId}`);
+  }
+  return Object.freeze({
+    entry: entry2,
+    activeSubjectId: subjectId,
+    documents: Object.freeze(
+      await Promise.all(
+        entry2.projection.records.map((record3) => extensionSubjectRecordToWire(record3, signal))
+      )
+    )
+  });
+}
+
 // apps/web/src/index.ts
 var WEB_MAIN_REALM = "org.modkitx.app.web/main";
 var WEB_WORKER_REALM = "org.modkitx.app.web/worker";
@@ -42644,8 +45170,8 @@ function catalogToExtensionInputs(catalog, baseUrl, origin = "bundled") {
 function catalogCoordinates(catalog) {
   const coordinates = [];
   for (const entry2 of catalog.extensions) {
-    const coordinate2 = containerCoordinate(entry2.containers);
-    if (coordinate2 !== void 0) coordinates.push(coordinate2);
+    const coordinate3 = containerCoordinate(entry2.containers);
+    if (coordinate3 !== void 0) coordinates.push(coordinate3);
   }
   return Object.freeze(coordinates);
 }
@@ -42692,25 +45218,25 @@ async function createWebSubjectServices(options) {
   }
   const claimed = /* @__PURE__ */ new Set();
   for (const input of catalogInputs) {
-    const coordinate2 = extensionCoordinate(input);
-    if (coordinate2 !== void 0) claimed.add(coordinate2);
+    const coordinate3 = extensionCoordinate(input);
+    if (coordinate3 !== void 0) claimed.add(coordinate3);
   }
   const userInputs = [];
   const userExtensionConflicts = [...platformModuleConflicts];
   for (const [index, input] of user.inputs.entries()) {
     const rootId = user.rootIds[index] ?? input.source;
     if (platformConflictedRoots.has(rootId)) continue;
-    const coordinate2 = user.coordinates[index] ?? extensionCoordinate(input);
-    if (coordinate2 !== void 0 && claimed.has(coordinate2)) {
+    const coordinate3 = user.coordinates[index] ?? extensionCoordinate(input);
+    if (coordinate3 !== void 0 && claimed.has(coordinate3)) {
       userExtensionConflicts.push({
         root: input.source,
         rootId,
         code: "x3.host/extension-coordinate-conflict",
-        message: `\xAB${coordinate2}\xBB is already loaded from another root; this one is ignored`
+        message: `\xAB${coordinate3}\xBB is already loaded from another root; this one is ignored`
       });
       continue;
     }
-    if (coordinate2 !== void 0) claimed.add(coordinate2);
+    if (coordinate3 !== void 0) claimed.add(coordinate3);
     userInputs.push(input);
   }
   const extensions = [...catalogInputs, ...userInputs];
@@ -42762,8 +45288,22 @@ async function createWebSubjectServices(options) {
     })
   ]);
   const [main, worker] = await Promise.all([
-    createHostComposition({ topology, realmId: WEB_MAIN_REALM, extensions, executionBackends }),
-    createHostComposition({ topology, realmId: WEB_WORKER_REALM, extensions, executionBackends })
+    createHostComposition({
+      topology,
+      realmId: WEB_MAIN_REALM,
+      extensions,
+      executionBackends,
+      ...options.disabledExtensions === void 0 ? {} : { disabledExtensions: options.disabledExtensions },
+      ...options.disabledContributions === void 0 ? {} : { disabledContributions: options.disabledContributions }
+    }),
+    createHostComposition({
+      topology,
+      realmId: WEB_WORKER_REALM,
+      extensions,
+      executionBackends,
+      ...options.disabledExtensions === void 0 ? {} : { disabledExtensions: options.disabledExtensions },
+      ...options.disabledContributions === void 0 ? {} : { disabledContributions: options.disabledContributions }
+    })
   ]);
   if (definitions !== void 0)
     await registerServiceDefinitionsOrThrow(main.inventory, definitions);
@@ -45195,14 +47735,14 @@ function factValue(value2) {
     return String(value2);
   return JSON.stringify(value2);
 }
-function factField(fact2) {
-  const provenance = fact2.provenance.map((item) => item.label);
+function factField(fact3) {
+  const provenance = fact3.provenance.map((item) => item.label);
   return {
-    name: fact2.label,
-    value: factValue(fact2.value),
+    name: fact3.label,
+    value: factValue(fact3.value),
     ...provenance.length === 0 ? {} : { badge: provenance[0] },
     ...provenance.length <= 1 ? {} : { title: provenance.join(" \xB7 ") },
-    ...fact2.knowledgeTarget === void 0 ? {} : { knowledgeTarget: fact2.knowledgeTarget }
+    ...fact3.knowledgeTarget === void 0 ? {} : { knowledgeTarget: fact3.knowledgeTarget }
   };
 }
 async function loadSubjectCardSections(source2, options = {}) {
@@ -45244,11 +47784,11 @@ async function loadSubjectCardSections(source2, options = {}) {
     }
   ];
   const factGroups = await Promise.all(
-    groups.items.map(async (group) => ({
-      group,
+    groups.items.map(async (group2) => ({
+      group: group2,
       page: await loadCardPages(
         (cursor3, limit) => source2.facts(
-          group.id,
+          group2.id,
           { ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit },
           options.signal
         ),
@@ -45257,12 +47797,12 @@ async function loadSubjectCardSections(source2, options = {}) {
       )
     }))
   );
-  for (const { group, page } of factGroups) {
+  for (const { group: group2, page: page2 } of factGroups) {
     sections.push({
       kind: "fields",
-      id: group.id,
-      title: page.capped || page.items.length < group.factCount ? `${group.label} (capped)` : group.label,
-      fields: page.items.map(factField),
+      id: group2.id,
+      title: page2.capped || page2.items.length < group2.factCount ? `${group2.label} (capped)` : group2.label,
+      fields: page2.items.map(factField),
       expanded: true
     });
   }
@@ -45498,12 +48038,12 @@ function createSubjectCard(document, options) {
     knowledge.textContent = "Loading description\u2026";
     void (async () => {
       try {
-        const page = await options.knowledge?.resolve(
+        const page2 = await options.knowledge?.resolve(
           { target, locales: options.knowledgeLocales ?? [], limit: 1 },
           controller.signal
         );
         if (controller.signal.aborted || revision !== lookupRevision) return;
-        const hit = page?.items[0];
+        const hit = page2?.items[0];
         if (hit === void 0) showMissingKnowledge();
         else showKnowledge(hit);
       } catch {
@@ -46170,30 +48710,30 @@ async function loadPages(source2, maximum, pageSize, signal) {
   let cursor3;
   const seen = /* @__PURE__ */ new Set();
   while (items.length < maximum) {
-    const page = await source2.calculations(
+    const page2 = await source2.calculations(
       {
         ...cursor3 === void 0 ? {} : { cursor: cursor3 },
         limit: Math.min(pageSize, maximum - items.length)
       },
       signal
     );
-    items.push(...page.items);
-    if (page.nextCursor === void 0) return { items: Object.freeze(items), capped: false };
-    if (seen.has(page.nextCursor))
+    items.push(...page2.items);
+    if (page2.nextCursor === void 0) return { items: Object.freeze(items), capped: false };
+    if (seen.has(page2.nextCursor))
       throw new Error("subject calculations source repeated a page cursor");
-    seen.add(page.nextCursor);
-    cursor3 = page.nextCursor;
+    seen.add(page2.nextCursor);
+    cursor3 = page2.nextCursor;
   }
   return { items: Object.freeze(items), capped: cursor3 !== void 0 };
 }
 async function loadSubjectCalculations(source2, options = {}) {
   const maximum = positiveLimit3(options.maximum ?? 512, "maximum");
   const pageSize = positiveLimit3(options.pageSize ?? 64, "pageSize");
-  const [summary, page] = await Promise.all([
+  const [summary, page2] = await Promise.all([
     source2.summary(options.signal),
     loadPages(source2, maximum, pageSize, options.signal)
   ]);
-  return Object.freeze({ summary, calculations: page.items, capped: page.capped });
+  return Object.freeze({ summary, calculations: page2.items, capped: page2.capped });
 }
 function displayValue(value2) {
   if (value2 === void 0) return "not available";
@@ -47468,21 +50008,21 @@ async function loadPages2(read, maximum, pageSize, signal) {
     signal?.throwIfAborted();
     const remaining = maximum - items.length;
     const requested = Math.min(pageSize, remaining);
-    const page = await read(cursor3, requested);
+    const page2 = await read(cursor3, requested);
     signal?.throwIfAborted();
-    items.push(...page.items.slice(0, requested));
-    if (page.items.length > requested) {
+    items.push(...page2.items.slice(0, requested));
+    if (page2.items.length > requested) {
       return { items: Object.freeze(items), completeness: "capped" };
     }
-    if (page.nextCursor === void 0) {
+    if (page2.nextCursor === void 0) {
       return { items: Object.freeze(items), completeness: "complete" };
     }
-    if (page.items.length === 0) {
+    if (page2.items.length === 0) {
       throw new Error("relation graph source returned an empty page with a continuation cursor");
     }
-    if (seen.has(page.nextCursor)) throw new Error("relation graph source repeated a page cursor");
-    seen.add(page.nextCursor);
-    cursor3 = page.nextCursor;
+    if (seen.has(page2.nextCursor)) throw new Error("relation graph source repeated a page cursor");
+    seen.add(page2.nextCursor);
+    cursor3 = page2.nextCursor;
   }
   return { items: Object.freeze(items), completeness: "capped" };
 }
@@ -47692,14 +50232,14 @@ function createRelationGraph(document, options) {
   const footer = document.createElement("div");
   footer.className = "modkit-graph__footer";
   setPart9(footer, "graph.footer");
-  for (const group of options.footer ?? []) {
+  for (const group2 of options.footer ?? []) {
     const box = document.createElement("section");
     box.className = "modkit-graph__footer-group";
     setPart9(box, "graph.footer-group");
     const title = document.createElement("h4");
-    title.textContent = safeViewerText9(group.title, 64);
+    title.textContent = safeViewerText9(group2.title, 64);
     box.append(title);
-    for (const item of group.items) {
+    for (const item of group2.items) {
       const row = document.createElement("div");
       row.className = "modkit-graph__footer-item";
       setPart9(row, "graph.footer-item");
@@ -48462,11 +51002,11 @@ function createViewerMount6(root, scope, initial, render2) {
 function defineViewerModule7(module) {
   return Object.freeze(module);
 }
-function operationById(descriptor, operationId3) {
-  return descriptor.operations.find((operation) => operation.id === operationId3);
+function operationById(descriptor, operationId4) {
+  return descriptor.operations.find((operation) => operation.id === operationId4);
 }
-async function invokeOperation(descriptor, operations, operationId3, input, options) {
-  const declaration = operationById(descriptor, operationId3);
+async function invokeOperation(descriptor, operations, operationId4, input, options) {
+  const declaration = operationById(descriptor, operationId4);
   if (declaration === void 0) {
     return {
       state: "rejected",
@@ -51356,11 +53896,11 @@ function renderMetadata(root, descriptor) {
     element10(root, "p", { text: "No metadata reported by the codec.", part: "viewer.empty" });
     return;
   }
-  for (const group of groups) {
+  for (const group2 of groups) {
     const section2 = element10(root, "section", { part: "metadata.group" });
-    element10(section2, "h3", { text: group.label, part: "metadata.heading" });
+    element10(section2, "h3", { text: group2.label, part: "metadata.heading" });
     const list2 = element10(section2, "dl");
-    for (const entry2 of group.entries) {
+    for (const entry2 of group2.entries) {
       const row = element10(list2, "div", { part: "metadata.row" });
       element10(row, "dt", { text: entry2.key, part: "metadata.label" });
       const value2 = element10(row, "dd", { part: "metadata.value" });
@@ -52239,20 +54779,20 @@ async function loadModelStage(source2, signal) {
   const primitiveIds = [];
   let cursor3;
   do {
-    const page = await source2.meshes(
+    const page2 = await source2.meshes(
       {
         limit: Math.min(256, MODEL_MAXIMUM_PRIMITIVES - primitiveIds.length),
         ...cursor3 === void 0 ? {} : { cursor: cursor3 }
       },
       signal
     );
-    for (const mesh of page.items) {
+    for (const mesh of page2.items) {
       for (const id of mesh.primitiveIds) {
         if (primitiveIds.length >= MODEL_MAXIMUM_PRIMITIVES) break;
         primitiveIds.push(id);
       }
     }
-    cursor3 = primitiveIds.length >= MODEL_MAXIMUM_PRIMITIVES ? void 0 : page.nextCursor;
+    cursor3 = primitiveIds.length >= MODEL_MAXIMUM_PRIMITIVES ? void 0 : page2.nextCursor;
   } while (cursor3 !== void 0);
   const primitiveId = primitiveIds[0];
   const primitive = primitiveId === void 0 || source2.primitive === void 0 ? void 0 : await source2.primitive(primitiveId, { maxBytes: MODEL_MAXIMUM_PRIMITIVE_BYTES }, signal);
@@ -52311,14 +54851,14 @@ async function readModelFacetDetails(sources, slot, scope, signal) {
     scope.lease(lease2);
     const method = methods[contract];
     const source2 = lease2.value;
-    const page = await source2[method]?.({ limit: MODEL_FACET_DETAIL_LIMIT }, signal);
-    if (page === void 0) continue;
+    const page2 = await source2[method]?.({ limit: MODEL_FACET_DETAIL_LIMIT }, signal);
+    if (page2 === void 0) continue;
     details.push(
       Object.freeze({
         contract,
         label: FACET_READOUT[contract]?.label ?? contract,
-        items: Object.freeze(page.items.map((item) => facetItem(contract, item))),
-        truncated: page.nextCursor !== void 0
+        items: Object.freeze(page2.items.map((item) => facetItem(contract, item))),
+        truncated: page2.nextCursor !== void 0
       })
     );
   }
@@ -52459,12 +54999,12 @@ var modelViewer = defineViewerModule12({
         const panel = element11(stage, "section", { part: "model.facets" });
         panel.setAttribute("aria-label", "Model details");
         for (const detail of facetDetails) {
-          const group = element11(panel, "details", { part: "model.facet" });
-          element11(group, "summary", {
+          const group2 = element11(panel, "details", { part: "model.facet" });
+          element11(group2, "summary", {
             part: "model.facet-summary",
             text: `${detail.label} (${detail.items.length}${detail.truncated ? "+" : ""})`
           });
-          const list = element11(group, "ul", { part: "model.facet-list" });
+          const list = element11(group2, "ul", { part: "model.facet-list" });
           for (const item of detail.items) {
             element11(list, "li", { part: "model.facet-item", text: item });
           }
@@ -53052,12 +55592,12 @@ var NamespaceModel = class {
   #identities = /* @__PURE__ */ new Map();
   async list(prefix, cursor3, signal) {
     const normalized = normalizeNamespacePath(prefix);
-    const page = await this.source.list(
+    const page2 = await this.source.list(
       normalized,
       { limit: 200, ...cursor3 === void 0 ? {} : { cursor: cursor3 } },
       signal
     );
-    for (const entry2 of page.items) {
+    for (const entry2 of page2.items) {
       const path = normalizeNamespacePath(entry2.path);
       const identity = `${path}\0${entry2.revision}`;
       const existing = this.#identities.get(entry2.id);
@@ -53066,7 +55606,7 @@ var NamespaceModel = class {
       }
       this.#identities.set(entry2.id, identity);
     }
-    return page;
+    return page2;
   }
 };
 var namespaceViewer = defineViewerModule13({
@@ -53087,9 +55627,9 @@ var namespaceViewer = defineViewerModule13({
     const list = element12(root, "ul", { part: "namespace.list" });
     list.setAttribute("role", "group");
     const renderPrefix = async (prefix, parent) => {
-      const page = await model.list(prefix, void 0, scope.signal);
+      const page2 = await model.list(prefix, void 0, scope.signal);
       const seen = /* @__PURE__ */ new Set();
-      for (const entry2 of page.items) {
+      for (const entry2 of page2.items) {
         if (seen.has(entry2.id)) throw new TypeError(`duplicate namespace entry id: ${entry2.id}`);
         seen.add(entry2.id);
         const item = element12(parent, "li", { part: "namespace.item" });
@@ -53677,18 +56217,18 @@ var LazyTableModel = class {
     return this.source.cell(coord, signal);
   }
   async first(from = 0, signal) {
-    const page = await this.source.rows({ kind: "range", from, count: TABLE_PAGE_ROWS }, signal);
-    this.#cursor = page.nextCursor;
-    return page;
+    const page2 = await this.source.rows({ kind: "range", from, count: TABLE_PAGE_ROWS }, signal);
+    this.#cursor = page2.nextCursor;
+    return page2;
   }
   async next(signal) {
     if (this.#cursor === void 0) return void 0;
-    const page = await this.source.rows(
+    const page2 = await this.source.rows(
       { kind: "cursor", cursor: this.#cursor, count: TABLE_PAGE_ROWS },
       signal
     );
-    this.#cursor = page.nextCursor;
-    return page;
+    this.#cursor = page2.nextCursor;
+    return page2;
   }
 };
 var tableViewer = defineViewerModule14({
@@ -53781,12 +56321,12 @@ var tableViewer = defineViewerModule14({
             showMissingKnowledge();
             return;
           }
-          const page = await catalog.resolve(
+          const page2 = await catalog.resolve(
             { target: facts.knowledgeTarget, locales: [], limit: 1 },
             controller.signal
           );
           if (controller.signal.aborted || revision !== lookupRevision) return;
-          const hit = page.items[0];
+          const hit = page2.items[0];
           if (hit === void 0) showMissingKnowledge();
           else showKnowledge(hit);
         } catch {
@@ -53824,13 +56364,13 @@ var tableViewer = defineViewerModule14({
     next.type = "button";
     next.disabled = first.nextCursor === void 0;
     const advance = async () => {
-      const page = await model.next(scope.signal);
-      if (page === void 0) {
+      const page2 = await model.next(scope.signal);
+      if (page2 === void 0) {
         next.disabled = true;
         return;
       }
-      render2(page.items);
-      next.disabled = page.nextCursor === void 0;
+      render2(page2.items);
+      next.disabled = page2.nextCursor === void 0;
     };
     next.addEventListener("click", advance);
     scope.cleanup(() => next.removeEventListener("click", advance));
@@ -54340,21 +56880,21 @@ var VirtualTextModel = class {
   source;
   #cursor;
   async first(line = 0, signal) {
-    const page = await this.source.slice(
+    const page2 = await this.source.slice(
       { kind: "from-line", line, lineCount: 200, maxBytes: VIRTUAL_TEXT_PAGE_BYTES },
       signal
     );
-    this.#cursor = page.complete ? void 0 : page.nextCursor;
-    return page;
+    this.#cursor = page2.complete ? void 0 : page2.nextCursor;
+    return page2;
   }
   async next(signal) {
     if (this.#cursor === void 0) return void 0;
-    const page = await this.source.slice(
+    const page2 = await this.source.slice(
       { kind: "from-cursor", cursor: this.#cursor, maxBytes: VIRTUAL_TEXT_PAGE_BYTES },
       signal
     );
-    this.#cursor = page.complete ? void 0 : page.nextCursor;
-    return page;
+    this.#cursor = page2.complete ? void 0 : page2.nextCursor;
+    return page2;
   }
 };
 var virtualTextViewer = defineViewerModule15({
@@ -54374,15 +56914,15 @@ var virtualTextViewer = defineViewerModule15({
     viewport.setAttribute("aria-live", "polite");
     const more = element14(root, "button", { text: "Load next page" });
     more.type = "button";
-    const renderPage = (page, append) => {
-      if (page === void 0) {
+    const renderPage = (page2, append) => {
+      if (page2 === void 0) {
         more.disabled = true;
         return;
       }
-      const text3 = append ? `${viewport.textContent ?? ""}${page.text}` : page.text;
+      const text3 = append ? `${viewport.textContent ?? ""}${page2.text}` : page2.text;
       setViewerText14(viewport, text3, 2 * VIRTUAL_TEXT_PAGE_BYTES);
-      more.disabled = page.complete;
-      viewport.dataset["fromLine"] = String(page.fromLine);
+      more.disabled = page2.complete;
+      viewport.dataset["fromLine"] = String(page2.fromLine);
     };
     renderPage(await model.first(0, scope.signal), false);
     const next = async () => renderPage(await model.next(scope.signal), true);
@@ -54879,11 +57419,11 @@ function createViewerMount15(root, scope, initial, render2) {
 function defineViewerModule16(module) {
   return Object.freeze(module);
 }
-function operationById2(descriptor, operationId3) {
-  return descriptor.operations.find((operation) => operation.id === operationId3);
+function operationById2(descriptor, operationId4) {
+  return descriptor.operations.find((operation) => operation.id === operationId4);
 }
-async function invokeOperation2(descriptor, operations, operationId3, input, options) {
-  const declaration = operationById2(descriptor, operationId3);
+async function invokeOperation2(descriptor, operations, operationId4, input, options) {
+  const declaration = operationById2(descriptor, operationId4);
   if (declaration === void 0) {
     return {
       state: "rejected",
@@ -55537,8 +58077,8 @@ var treeViewer = defineViewerModule17({
       let loaded = false;
       const expand = async () => {
         if (!loaded) {
-          const page = await model.children(node, void 0, scope.signal);
-          for (const child of page.items) await renderNode(child, children);
+          const page2 = await model.children(node, void 0, scope.signal);
+          for (const child of page2.items) await renderNode(child, children);
           loaded = true;
         }
         children.hidden = !children.hidden;
@@ -57176,7 +59716,7 @@ async function inspectCandidateWorld(source2, options) {
     layers.map(async (layer) => {
       options.signal?.throwIfAborted();
       const lod = layer.lods.includes("sampled") ? "sampled" : layer.lods[0];
-      const page = await source2.page(
+      const page2 = await source2.page(
         {
           facet: layer.kind,
           layerId: layer.layerId,
@@ -57185,7 +59725,7 @@ async function inspectCandidateWorld(source2, options) {
         },
         options.signal
       );
-      return Object.freeze({ layer, page });
+      return Object.freeze({ layer, page: page2 });
     })
   );
   return Object.freeze({
@@ -57482,7 +60022,7 @@ function archiveStage(context) {
         const known = paths.get(entryId);
         if (known !== void 0 || source2 === void 0) return known;
         let cursor3;
-        for (let page = 0; page < ARCHIVE_LISTING_PAGES; page += 1) {
+        for (let page2 = 0; page2 < ARCHIVE_LISTING_PAGES; page2 += 1) {
           const listed = await source2.list(
             "",
             { limit: 200, ...cursor3 === void 0 ? {} : { cursor: cursor3 } },
@@ -57754,13 +60294,18 @@ export {
   resolveModuleMap,
   createWebSubjectServices,
   createIndexedDbExtensionStore,
+  subjectFactsSourceFromWire,
   loadManagedExtensionRoots,
   combineLoadedExtensionRoots,
   createBrowserExtensionManager,
   createManagedExtensionsController,
+  createWebExtensionSubjectCatalog,
+  webExtensionSubjectCardBundle,
   probeWebFacilities,
   createWebTopology,
   mountWebWorkbench,
+  loadSubjectCardSections,
+  createSubjectCard,
   sourceUriFor,
   sourceRevisionToken,
   describeEditability,

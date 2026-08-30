@@ -19,6 +19,8 @@ export interface HostCompositionOptions {
   readonly extensions?: readonly ExtensionInput[]
   readonly contributionContracts?: ContributionContractRegistry
   readonly executionBackends?: ExecutionBackendRegistry
+  /** Extension coordinates switched off by the user; see `InventoryBuildOptions`. */
+  readonly disabledExtensions?: readonly string[]
   /** Contribution ids switched off by the user; see `InventoryBuildOptions`. */
   readonly disabledContributions?: readonly string[]
 }
@@ -52,9 +54,14 @@ export async function createHostComposition(
   const inventory = await buildInventory(
     [NATIVE_TEXT_INPUT, ...(options.extensions ?? [])],
     options.contributionContracts ?? createHostContributionContractRegistry(),
-    options.disabledContributions === undefined
-      ? {}
-      : { disabledContributions: options.disabledContributions },
+    {
+      ...(options.disabledExtensions === undefined
+        ? {}
+        : { disabledExtensions: options.disabledExtensions }),
+      ...(options.disabledContributions === undefined
+        ? {}
+        : { disabledContributions: options.disabledContributions }),
+    },
   )
   return Object.freeze({
     topology,
