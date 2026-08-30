@@ -6000,537 +6000,6 @@ var WORLD_SCENE_SOURCE_CONTRACT = "common.view/world-scene-source";
 var MAP_SEMANTIC_MATCHER_PROFILE = "org.modkitx/map-semantic-matcher";
 var MAP_PREVIEW_PREPARATION_MATCHER_PROFILE = "org.modkitx/map-preview-preparation-matcher";
 
-// packages/codec-kit/src/text/codec-runtime.js
-var BASE_OPERATIONS = Object.freeze([
-  {
-    id: "view.inspect",
-    handlerId: "inspect",
-    mutatesSource: false,
-    requiredPermissions: ["read-source"],
-    outputKinds: ["json"]
-  },
-  {
-    id: "asset.validate",
-    handlerId: "validate",
-    mutatesSource: false,
-    requiredPermissions: ["read-source"],
-    outputKinds: ["none"]
-  },
-  {
-    id: "asset.search",
-    handlerId: "search",
-    mutatesSource: false,
-    requiredPermissions: ["read-source"],
-    outputKinds: ["json"]
-  },
-  {
-    id: "export.raw",
-    handlerId: "export-raw",
-    mutatesSource: false,
-    requiredPermissions: ["read-source"],
-    outputKinds: ["bytes"]
-  },
-  {
-    id: "data.parse",
-    handlerId: "parse",
-    mutatesSource: false,
-    requiredPermissions: ["read-source"],
-    outputKinds: ["json"]
-  },
-  {
-    id: "data.serialize",
-    handlerId: "serialize",
-    mutatesSource: false,
-    requiredPermissions: ["read-source"],
-    outputKinds: ["bytes"]
-  }
-]);
-var DELIMITED_SCAN_OPERATION = Object.freeze({
-  id: "data.scan",
-  handlerId: "scan",
-  mutatesSource: false,
-  requiredPermissions: ["read-source"],
-  outputKinds: ["json"]
-});
-function operationsFor(definition) {
-  return definition.semantic === "table" ? Object.freeze([...BASE_OPERATIONS, DELIMITED_SCAN_OPERATION]) : BASE_OPERATIONS;
-}
-function simpleLease(value2) {
-  let released = false;
-  return Object.freeze({
-    value: value2,
-    async release() {
-      released = true;
-    },
-    isReleased: () => released
-  });
-}
-function createTextCodec(definition, context) {
-  const operations = operationsFor(definition);
-  return Object.freeze({
-    async probe(request, signal) {
-      if (request.source.kind !== "bytes" || request.plan.kind !== "bytes") {
-        throw new TypeError("text codecs require byte probes");
-      }
-      const length = Math.min(
-        request.plan.maxBytes,
-        request.plan.ranges[0]?.length ?? request.plan.maxBytes
-      );
-      const bytes2 = await request.source.read(0n, length, signal);
-      let text3 = "";
-      try {
-        text3 = new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
-      } catch {
-        return {
-          codecId: `org.modkitx/text-${definition.format}`,
-          confidence: 0.01,
-          evidence: [{ kind: "structure", weight: -1, note: "invalid-utf8" }],
-          requiredRanges: [{ byteOffset: "0", byteLength: String(bytes2.byteLength) }]
-        };
-      }
-      const result = definition.detect(text3, request.source.ref.uri);
-      return {
-        codecId: `org.modkitx/text-${definition.format}`,
-        confidence: result.confidence,
-        evidence: [{ kind: "structure", weight: result.confidence, note: result.note }],
-        requiredRanges: [{ byteOffset: "0", byteLength: String(bytes2.byteLength) }]
-      };
-    },
-    async planInput() {
-      return {
-        originKind: "single",
-        candidate: { bindingId: "content", role: "content", ownership: "owned" },
-        requirements: []
-      };
-    },
-    async open(input, _intent, budget, signal) {
-      if (input.originKind !== "single") throw new TypeError("text codec requires a single source");
-      const binding = input.bindings[0];
-      const sourceLease = await input.openBinding(binding.bindingId, signal);
-      const source2 = sourceLease.value;
-      if (source2.kind !== "bytes" || source2.size === void 0 || source2.size > budget.maxInputBytes) {
-        await sourceLease.release();
-        throw new RangeError("text codec requires a sized source inside budget");
-      }
-      const bytes2 = await source2.read(0n, Number(source2.size), signal);
-      const providerLease = await context.contracts.resolve({
-        contract: definition.contract,
-        major: 1,
-        signal
-      });
-      const provider = providerLease.value;
-      const parsed = await provider.parse({
-        input: { bytes: bytes2 },
-        dialect: definition.dialect,
-        budget,
-        signal
-      });
-      if (parsed.state === "failed") {
-        await providerLease.release();
-        await sourceLease.release();
-        throw new TypeError(parsed.diagnostics[0]?.message ?? "parse failed");
-      }
-      const dataLease = await provider.dataSource({
-        input: { bytes: bytes2 },
-        dialect: definition.dialect,
-        budget,
-        signal
-      });
-      const byteSource = {
-        size: async () => source2.size,
-        read: (offset, length, readSignal) => source2.read(offset, length, readSignal)
-      };
-      const textSource = createUtf8TextDataSource(byteSource);
-      const textInfo = await textSource.info();
-      const semanticContract = definition.semantic === "tree" ? "common.view/tree-data-source" : "common.view/table-data-source";
-      const semanticTrait = definition.semantic === "tree" ? "structure.hierarchy" : "table.cells";
-      const descriptor = await assembleSubjectDescriptor({
-        schemaVersion: 2,
-        subjectUri: binding.source.uri,
-        origin: {
-          kind: "single",
-          binding: {
-            id: binding.bindingId,
-            role: binding.role,
-            source: binding.source,
-            required: true,
-            ownership: binding.ownership,
-            revision: binding.revision
-          }
-        },
-        interpretation: "codec",
-        identity: {
-          codecId: `org.modkitx/text-${definition.format}`,
-          codecVersion: "1.0.0",
-          formatId: definition.format,
-          formatLabel: definition.format.toUpperCase(),
-          confidence: 1,
-          detection: [{ kind: "structure", weight: 1 }]
-        },
-        traits: [
-          {
-            id: semanticTrait,
-            descriptorVersion: 1,
-            state: "available",
-            parameters: definition.semantic === "tree" ? { nodeCount: "unknown", lazy: true, hasLocations: true } : { rows: "unknown", columns: "unknown", sparse: false }
-          },
-          {
-            id: "content.text",
-            descriptorVersion: 1,
-            state: "available",
-            parameters: {
-              encoding: textInfo.encoding,
-              lineCount: textInfo.lines,
-              bom: textInfo.bom,
-              newline: textInfo.newline
-            }
-          },
-          {
-            id: "content.binary",
-            descriptorVersion: 1,
-            state: "available",
-            parameters: { bytes: source2.size.toString(10) }
-          }
-        ],
-        operations: operations.map((operation) => ({
-          id: operation.id,
-          handlerId: operation.handlerId,
-          mutatesSource: false,
-          state: "available"
-        })),
-        constraints: {
-          readOnly: true,
-          seekable: true,
-          randomAccess: true,
-          trusted: false,
-          maxDecodedBytes: source2.size.toString(10)
-        },
-        dataSources: [
-          { contract: semanticContract, major: 1 },
-          { contract: "common.view/text-data-source", major: 1 },
-          { contract: "common.view/byte-range-source", major: 1 }
-        ],
-        diagnostics: [],
-        metadata: [],
-        revision: input.revisions.revision
-      });
-      const handlers = /* @__PURE__ */ new Map([
-        [
-          "inspect",
-          async () => ({
-            kind: "json",
-            value: { format: definition.format, parseState: parsed.state }
-          })
-        ],
-        ["validate", async () => ({ kind: "none" })],
-        ["search", async () => ({ kind: "json", value: [] })],
-        ["export-raw", async () => ({ kind: "bytes", value: bytes2 })],
-        ["parse", async () => ({ kind: "json", value: { state: parsed.state } })],
-        [
-          "serialize",
-          async () => ({
-            kind: "bytes",
-            value: (await provider.serialize({
-              document: parsed.document,
-              dialect: definition.dialect,
-              budget,
-              signal
-            })).bytes
-          })
-        ]
-      ]);
-      if (definition.semantic === "table") {
-        handlers.set("scan", async (operationInput) => {
-          const request = operationInput && typeof operationInput === "object" && operationInput.kind === "cursor" ? { kind: "cursor", cursor: String(operationInput.cursor ?? "0"), count: 100 } : {
-            kind: "range",
-            from: operationInput && typeof operationInput === "object" && Number.isSafeInteger(operationInput.from) ? Math.max(0, operationInput.from) : 0,
-            count: operationInput && typeof operationInput === "object" && Number.isSafeInteger(operationInput.count) ? Math.min(1e3, Math.max(1, operationInput.count)) : 100
-          };
-          return { kind: "json", value: await dataLease.value.rows(request) };
-        });
-      }
-      const managed = createAssetSession({
-        revision: revisionId(input.revisions.revision),
-        descriptor,
-        operationDeclarations: operations,
-        permissionGrant: {
-          id: `text-${definition.format}-session`,
-          classes: ["read-source"]
-        },
-        handlers,
-        async openDataSource(contract) {
-          if (contract === semanticContract) return simpleLease(dataLease.value);
-          if (contract === "common.view/text-data-source") return simpleLease(textSource);
-          if (contract === "common.view/byte-range-source") return simpleLease(byteSource);
-          throw new TypeError(`text-${definition.format} does not publish ${contract}`);
-        },
-        release: [
-          () => dataLease.release(),
-          () => providerLease.release(),
-          () => sourceLease.release()
-        ]
-      });
-      return managed.session;
-    }
-  });
-}
-
-// packages/codec-kit/src/text/text.js
-function decodeInput(input) {
-  if (typeof input.text === "string") {
-    return {
-      text: input.text,
-      bytes: new TextEncoder().encode(input.text),
-      source: { encoding: "utf-8", bom: false, newline: newlineOf(input.text) }
-    };
-  }
-  const bytes2 = input.bytes;
-  let encoding = input.encoding;
-  let bom = false;
-  let offset = 0;
-  if (bytes2[0] === 239 && bytes2[1] === 187 && bytes2[2] === 191) {
-    encoding = encoding ?? "utf-8";
-    bom = true;
-    offset = 3;
-  } else if (bytes2[0] === 255 && bytes2[1] === 254) {
-    encoding = encoding ?? "utf-16le";
-    bom = true;
-    offset = 2;
-  } else if (bytes2[0] === 254 && bytes2[1] === 255) {
-    encoding = encoding ?? "utf-16be";
-    bom = true;
-    offset = 2;
-  }
-  encoding ??= "utf-8";
-  const content = bytes2.subarray(offset);
-  let text3;
-  if (encoding === "utf-16be") {
-    const swapped = new Uint8Array(content.length);
-    for (let index = 0; index + 1 < content.length; index += 2) {
-      swapped[index] = content[index + 1];
-      swapped[index + 1] = content[index];
-    }
-    text3 = new TextDecoder("utf-16le", { fatal: true }).decode(swapped);
-  } else {
-    text3 = new TextDecoder(encoding, { fatal: true }).decode(content);
-  }
-  return { text: text3, bytes: bytes2, source: { encoding, bom, newline: newlineOf(text3) } };
-}
-function newlineOf(text3) {
-  const crlf = (text3.match(/\r\n/gu) ?? []).length;
-  const withoutCrLf = text3.replace(/\r\n/gu, "");
-  const lf = (withoutCrLf.match(/\n/gu) ?? []).length;
-  const cr = (withoutCrLf.match(/\r/gu) ?? []).length;
-  const kinds = [crlf, lf, cr].filter((count2) => count2 > 0).length;
-  if (kinds > 1) return "mixed";
-  if (crlf > 0) return "crlf";
-  if (lf > 0) return "lf";
-  if (cr > 0) return "cr";
-  return "none";
-}
-function span(text3, offset = 0, length = text3.length) {
-  const prefix = text3.slice(0, offset);
-  const lastLf = prefix.lastIndexOf("\n");
-  return Object.freeze({
-    byteOffset: uint64(BigInt(new TextEncoder().encode(prefix).byteLength)),
-    byteLength: uint64(
-      BigInt(new TextEncoder().encode(text3.slice(offset, offset + length)).byteLength)
-    ),
-    utf16Offset: offset,
-    utf16Length: length,
-    line: (prefix.match(/\n/gu) ?? []).length,
-    column: offset - (lastLf === -1 ? 0 : lastLf + 1)
-  });
-}
-function failure(code, message, text3 = "", offset = 0, length = 0) {
-  return {
-    state: "failed",
-    diagnostics: [
-      diagnostic("error", code, message, void 0, void 0, span(text3, offset, length))
-    ]
-  };
-}
-function preflight(decoded, budget, signal) {
-  throwIfAborted(signal);
-  if (BigInt(decoded.bytes.byteLength) > budget.maxInputBytes) {
-    return failure(
-      "org.modkitx/text-data-input-budget",
-      "input exceeds maxInputBytes",
-      decoded.text
-    );
-  }
-  if (decoded.text.includes("\0")) {
-    return failure("org.modkitx/text-data-nul", "NUL is forbidden in text input", decoded.text);
-  }
-  return void 0;
-}
-function encodeText(text3, source2, target = {}) {
-  const facts = { ...source2, ...target };
-  const newline = facts.newline === "none" ? source2.newline : facts.newline;
-  const separator = newline === "crlf" ? "\r\n" : newline === "cr" ? "\r" : "\n";
-  const normalized = newline === "mixed" || newline === "none" ? text3 : text3.replace(/\r\n|\r|\n/gu, separator);
-  let bytes2;
-  if (facts.encoding === "utf-8") bytes2 = new TextEncoder().encode(normalized);
-  else {
-    const little = new Uint8Array(normalized.length * 2);
-    const view = new DataView(little.buffer);
-    for (let index = 0; index < normalized.length; index += 1) {
-      view.setUint16(index * 2, normalized.charCodeAt(index), facts.encoding === "utf-16le");
-    }
-    bytes2 = little;
-  }
-  if (facts.bom) {
-    const marker = facts.encoding === "utf-8" ? new Uint8Array([239, 187, 191]) : facts.encoding === "utf-16le" ? new Uint8Array([255, 254]) : new Uint8Array([254, 255]);
-    const joined = new Uint8Array(marker.length + bytes2.length);
-    joined.set(marker);
-    joined.set(bytes2, marker.length);
-    bytes2 = joined;
-  }
-  return {
-    bytes: bytes2,
-    encoding: facts.encoding,
-    bom: facts.bom,
-    newline: facts.newline,
-    diagnostics: []
-  };
-}
-function lease(value2) {
-  let released = false;
-  return Object.freeze({
-    value: value2,
-    async release() {
-      released = true;
-    },
-    isReleased: () => released
-  });
-}
-
-// packages/codec-kit/src/text/tree-data-source.js
-function treeDataSource(document) {
-  const nodes = /* @__PURE__ */ new Map();
-  const root = { id: "root", hasChildren: true };
-  nodes.set("root", { value: document, children: [] });
-  const entries = document.root?.kind === "object" ? document.root.members.map((member) => [member.key, member.value]) : Object.entries(document);
-  nodes.get("root").children = entries.map(([key3, value2], index) => {
-    const id = `root/${index}`;
-    nodes.set(id, { value: value2, label: String(key3), children: [] });
-    return { id, hasChildren: false };
-  });
-  return {
-    async root() {
-      return root;
-    },
-    async children(node, page) {
-      const all = nodes.get(node.id)?.children ?? [];
-      const start = page.cursor ? Number(page.cursor) : 0;
-      const items = all.slice(start, start + page.limit);
-      return {
-        items,
-        ...start + items.length < all.length ? { nextCursor: String(start + items.length) } : {}
-      };
-    },
-    async facts(node) {
-      const item = nodes.get(node.id);
-      return {
-        kind: item?.value?.kind ?? "value",
-        label: item?.label ?? "root",
-        preview: typeof item?.value === "string" ? item.value : void 0
-      };
-    },
-    async *search(query) {
-      for (const [id, item] of nodes) {
-        if ((item.label ?? "").includes(query.pattern)) {
-          yield { id, hasChildren: (item.children?.length ?? 0) > 0 };
-        }
-      }
-    }
-  };
-}
-
-// packages/codec-kit/src/text/provider-runtime.js
-function decode(request) {
-  try {
-    return { decoded: decodeInput(request.input) };
-  } catch (error3) {
-    return {
-      failed: failure(
-        "org.modkitx/text-data-decode",
-        error3 instanceof Error ? error3.message : String(error3)
-      )
-    };
-  }
-}
-function createTextSyntaxProvider(definition) {
-  const provider = {
-    contract: definition.contract,
-    async parse(request) {
-      throwIfAborted(request.signal);
-      const prepared = decode(request);
-      if (prepared.failed) return prepared.failed;
-      const rejected2 = preflight(prepared.decoded, request.budget, request.signal);
-      if (rejected2) return rejected2;
-      return definition.parse(prepared.decoded, request);
-    },
-    async serialize(request) {
-      throwIfAborted(request.signal);
-      const result = await definition.serialize(request);
-      if (BigInt(result.bytes.byteLength) <= request.budget.maxInputBytes) return result;
-      return {
-        ...result,
-        bytes: new Uint8Array(),
-        diagnostics: [
-          diagnostic(
-            "error",
-            "org.modkitx/text-data-output-budget",
-            "serialized output exceeds maxInputBytes"
-          )
-        ]
-      };
-    },
-    async dataSource(request) {
-      if (definition.dataSource) {
-        throwIfAborted(request.signal);
-        const prepared = decode(request);
-        if (prepared.failed) {
-          throw new TypeError(prepared.failed.diagnostics[0]?.message ?? "decode failed");
-        }
-        const rejected2 = preflight(prepared.decoded, request.budget, request.signal);
-        if (rejected2) throw new TypeError(rejected2.diagnostics[0]?.message ?? "preflight failed");
-        return lease(await definition.dataSource(prepared.decoded, request));
-      }
-      const parsed = await provider.parse(request);
-      if (parsed.state === "failed") {
-        throw new TypeError(parsed.diagnostics[0]?.message ?? "parse failed");
-      }
-      return lease(treeDataSource(parsed.document));
-    }
-  };
-  return Object.freeze(provider);
-}
-function createSelectedProvider(definition, selection, factory = createTextSyntaxProvider) {
-  if (selection?.contract !== definition.contract) {
-    throw new TypeError(`provider does not implement ${String(selection?.contract)}`);
-  }
-  return factory(definition);
-}
-
-// packages/codec-kit/src/text/scalars.js
-function scalar(value2, raw = JSON.stringify(value2)) {
-  if (value2 === null) return { kind: "null", raw: "null" };
-  if (typeof value2 === "boolean") return { kind: "boolean", value: value2, raw: String(value2) };
-  if (typeof value2 === "string") return { kind: "string", value: value2, raw: raw ?? JSON.stringify(value2) };
-  if (typeof value2 === "bigint")
-    return { kind: "integer", decimal: String(value2), raw: String(value2) };
-  if (typeof value2 === "number" && Number.isInteger(value2)) {
-    return { kind: "integer", decimal: String(value2), raw: raw ?? String(value2) };
-  }
-  if (typeof value2 === "number")
-    return { kind: "number", raw: raw ?? String(value2), finiteValue: value2 };
-  if (value2 instanceof Date)
-    return { kind: "date-time", iso: value2.toISOString(), raw: raw ?? value2.toISOString() };
-  return { kind: "string", value: String(value2), raw: raw ?? String(value2) };
-}
-
 // node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/scanner.js
 function createScanner(text3, ignoreTrivia = false) {
   const len = text3.length;
@@ -7460,192 +6929,6 @@ function printParseErrorCode(code) {
       return "InvalidCharacter";
   }
   return "<unknown ParseErrorCode>";
-}
-
-// packages/codec-kit/src/index.js
-var INSPECTION_OPERATIONS = Object.freeze([
-  Object.freeze({
-    id: "view.inspect",
-    handlerId: "inspect",
-    mutatesSource: false,
-    requiredPermissions: Object.freeze(["read-source"]),
-    outputKinds: Object.freeze(["json"])
-  }),
-  Object.freeze({
-    id: "asset.validate",
-    handlerId: "validate",
-    mutatesSource: false,
-    requiredPermissions: Object.freeze(["read-source"]),
-    outputKinds: Object.freeze(["none"])
-  }),
-  Object.freeze({
-    id: "export.raw",
-    handlerId: "export-raw",
-    mutatesSource: false,
-    requiredPermissions: Object.freeze(["read-source"]),
-    outputKinds: Object.freeze(["bytes"])
-  })
-]);
-function simpleLease2(value2) {
-  let released = false;
-  return Object.freeze({
-    value: value2,
-    async release() {
-      released = true;
-    },
-    isReleased: () => released
-  });
-}
-function pageStart(cursor3) {
-  if (cursor3 === void 0) return 0;
-  if (!/^(?:0|[1-9][0-9]*)$/u.test(cursor3)) throw new TypeError("invalid page cursor");
-  const value2 = Number(cursor3);
-  if (!Number.isSafeInteger(value2)) throw new TypeError("page cursor exceeds safe integer range");
-  return value2;
-}
-function createTreeDataSource(rootNode) {
-  const nodes = /* @__PURE__ */ new Map();
-  const register = (node, id) => {
-    const children = Array.isArray(node.children) ? node.children : [];
-    nodes.set(id, { node, childIds: children.map((_, index) => `${id}/${index}`) });
-    children.forEach((child, index) => register(child, `${id}/${index}`));
-  };
-  register(rootNode, "root");
-  const ref2 = (id) => {
-    const item = nodes.get(id);
-    return Object.freeze({ id, hasChildren: (item?.childIds.length ?? 0) > 0 });
-  };
-  return Object.freeze({
-    async root() {
-      return ref2("root");
-    },
-    async children(node, page, signal) {
-      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-      if (!Number.isSafeInteger(page.limit) || page.limit <= 0) {
-        throw new TypeError("tree page limit must be a positive safe integer");
-      }
-      const start = pageStart(page.cursor);
-      const childIds = nodes.get(node.id)?.childIds ?? [];
-      const items = childIds.slice(start, start + page.limit).map(ref2);
-      return Object.freeze({
-        items: Object.freeze(items),
-        ...start + items.length < childIds.length ? { nextCursor: String(start + items.length) } : {}
-      });
-    },
-    async facts(node) {
-      const value2 = nodes.get(node.id)?.node;
-      if (value2 === void 0) throw new TypeError(`unknown tree node ${node.id}`);
-      return Object.freeze({
-        kind: value2.kind,
-        label: value2.label,
-        ...value2.preview === void 0 ? {} : { preview: value2.preview },
-        ...value2.semanticPath === void 0 ? {} : { semanticPath: Object.freeze([...value2.semanticPath]) }
-      });
-    },
-    async *search(query, signal) {
-      const needle = query.pattern.toLocaleLowerCase();
-      for (const [id, item] of nodes) {
-        if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-        const haystack = `${item.node.label}
-${item.node.preview ?? ""}`.toLocaleLowerCase();
-        if (haystack.includes(needle)) yield ref2(id);
-      }
-    }
-  });
-}
-var TRANSPORT_OPERATIONS = Object.freeze([
-  Object.freeze({
-    id: "media.play-pause",
-    handlerId: "transport-play-pause",
-    mutatesSource: false,
-    requiredPermissions: Object.freeze(["read-source"]),
-    outputKinds: Object.freeze(["none"])
-  }),
-  Object.freeze({
-    id: "media.seek",
-    handlerId: "transport-seek",
-    mutatesSource: false,
-    requiredPermissions: Object.freeze(["read-source"]),
-    outputKinds: Object.freeze(["none"])
-  }),
-  Object.freeze({
-    id: "media.set-rate",
-    handlerId: "transport-set-rate",
-    mutatesSource: false,
-    requiredPermissions: Object.freeze(["read-source"]),
-    outputKinds: Object.freeze(["none"])
-  }),
-  Object.freeze({
-    id: "media.select-track",
-    handlerId: "transport-select-track",
-    mutatesSource: false,
-    requiredPermissions: Object.freeze(["read-source"]),
-    outputKinds: Object.freeze(["none"])
-  })
-]);
-var CODEC_SOURCE_IDENTITY = Object.freeze({
-  kind: "redacted",
-  reason: "a codec projects a subject the host already opened; its portable identity is the subject revision this receipt carries, and an ambient URI would leak the producing machine into every copy"
-});
-function defineWriter({
-  providerId,
-  providerVersion = "1.0.0",
-  artifactDigest,
-  offerId,
-  formatId,
-  representationId,
-  mutationMode = "mutate",
-  minimumRoundTrip,
-  fidelityEvidenceId,
-  fidelity,
-  validate,
-  planEdits,
-  plan
-}) {
-  const identity = Object.freeze({
-    providerId,
-    providerVersion,
-    artifactDigest,
-    formatId,
-    representationId
-  });
-  const offer = Object.freeze({
-    providerId,
-    fidelityEvidenceId,
-    formatId,
-    representationId,
-    mutationMode,
-    minimumRoundTrip
-  });
-  const writer = Object.freeze({
-    identity,
-    offer,
-    async validate(change, signal) {
-      if (validate !== void 0) return validate(change, signal);
-      return { valid: change.targets.length > 0 && change.edits.length > 0, diagnostics: [] };
-    },
-    async plan(change, signal) {
-      if (plan !== void 0) return plan(change, signal);
-      const edits = await planEdits(change, signal);
-      return Object.freeze({
-        planId: `${providerId}:${change.targets.map((target) => target.targetId).join("+")}`,
-        targets: change.targets,
-        edits,
-        semantics: Object.freeze({ mutationMode, minimumGuarantee: "atomic" }),
-        fidelity,
-        diagnostics: Object.freeze([])
-      });
-    }
-  });
-  return Object.freeze({
-    abiVersion: 1,
-    provides: Object.freeze(["common.edit/writer"]),
-    async createProvider(selection) {
-      if (selection.offerId !== offerId)
-        throw new TypeError(`unknown writer offer ${selection.offerId}`);
-      return simpleLease2(writer);
-    }
-  });
 }
 
 // packages/host/dist/index.js
@@ -8597,9 +7880,9 @@ var validateCommand = {
   }
 };
 async function entryIdFor(session, wanted, signal) {
-  const lease3 = await session.dataSource(NAMESPACE_ENTRY_SOURCE, 1);
+  const lease2 = await session.dataSource(NAMESPACE_ENTRY_SOURCE, 1);
   try {
-    const namespace = lease3.value;
+    const namespace = lease2.value;
     let cursor3;
     do {
       const page = await namespace.list(
@@ -8613,7 +7896,7 @@ async function entryIdFor(session, wanted, signal) {
     } while (cursor3 !== void 0);
     return void 0;
   } finally {
-    await lease3.release();
+    await lease2.release();
   }
 }
 var extractCommand = {
@@ -10028,7 +9311,7 @@ async function activateServiceProvider(options) {
     );
   }
   const createProvider5 = activation.module["createProvider"];
-  let lease3;
+  let lease2;
   try {
     const baseContext = options.contextFor(activation.effectiveGrant);
     const context = Object.freeze({
@@ -10039,12 +9322,12 @@ async function activateServiceProvider(options) {
         artifactDigest: ticket.artifactDigest
       })
     });
-    lease3 = await createProvider5(options.selection, context);
+    lease2 = await createProvider5(options.selection, context);
   } catch (error3) {
     await activation.release();
     throw error3;
   }
-  if (typeof lease3 !== "object" || lease3 === null || !("value" in lease3) || typeof lease3.release !== "function") {
+  if (typeof lease2 !== "object" || lease2 === null || !("value" in lease2) || typeof lease2.release !== "function") {
     return fail22(
       "x3.host/invalid-service-provider-lease",
       `provider ${providerId} returned an invalid lease`
@@ -10052,14 +9335,14 @@ async function activateServiceProvider(options) {
   }
   let released = false;
   return Object.freeze({
-    lease: lease3,
+    lease: lease2,
     effectiveGrant: activation.effectiveGrant,
     executionProfile: activation.variant.executionProfile,
     async release() {
       if (released) return;
       released = true;
       try {
-        await lease3.release();
+        await lease2.release();
       } finally {
         await activation.release();
       }
@@ -10782,9 +10065,9 @@ function boundedNamespaceProbeSource(source2, plan) {
   return Object.freeze({
     ...source2,
     async openNamespace(signal) {
-      const lease3 = await source2.openNamespace(signal);
+      const lease2 = await source2.openNamespace(signal);
       const guarded = Object.freeze({
-        revision: lease3.value.revision,
+        revision: lease2.value.revision,
         async *list() {
           throw new ModkitError({
             code: "x3.host/namespace-probe-traversal-refused",
@@ -10807,14 +10090,14 @@ function boundedNamespaceProbeSource(source2, plan) {
               message: `namespace probe exceeded its declared ${plan.maxEntries}-entry budget`
             });
           }
-          const opened = await lease3.value.open(normalized, openSignal);
+          const opened = await lease2.value.open(normalized, openSignal);
           return Object.freeze({
             value: guardMarkerSource(normalized, opened.value),
             release: () => opened.release()
           });
         }
       });
-      return Object.freeze({ value: guarded, release: () => lease3.release() });
+      return Object.freeze({ value: guarded, release: () => lease2.release() });
     }
   });
 }
@@ -11813,16 +11096,16 @@ function createCompanionInputResolver(origin, options = {}) {
         if (budget.probes > limits.maxProbes) exceeded("probes", limits.maxProbes);
         const remaining = limits.maxProbeBytes - budget.probeBytes;
         if (remaining <= 0) exceeded("probeBytes", limits.maxProbeBytes);
-        const lease3 = await origin.open(logicalId, signal);
+        const lease2 = await origin.open(logicalId, signal);
         let ok2 = false;
         try {
-          pinned.set(logicalId, { ref: lease3.value.ref, revision: lease3.value.revision });
+          pinned.set(logicalId, { ref: lease2.value.ref, revision: lease2.value.revision });
           ok2 = await options.traitProbe(
             {
               requirementId: requirement.id,
               logicalId,
               // every byte the probe pulls is counted by the host, not reported by the probe
-              source: countingSource(lease3.value, (read) => {
+              source: countingSource(lease2.value, (read) => {
                 budget.probeBytes += read;
                 if (budget.probeBytes > limits.maxProbeBytes) {
                   exceeded("probeBytes", limits.maxProbeBytes);
@@ -11834,7 +11117,7 @@ function createCompanionInputResolver(origin, options = {}) {
             signal
           );
         } finally {
-          await lease3.release();
+          await lease2.release();
         }
         ;
         (ok2 ? accepted : rejected2).push(logicalId);
@@ -11893,12 +11176,12 @@ function createCompanionInputResolver(origin, options = {}) {
         usedBindingIds.add(bindingId2);
         let identity = pinned.get(logicalId);
         if (identity === void 0) {
-          const lease3 = await origin.open(logicalId, signal);
+          const lease2 = await origin.open(logicalId, signal);
           try {
-            identity = { ref: lease3.value.ref, revision: lease3.value.revision };
+            identity = { ref: lease2.value.ref, revision: lease2.value.revision };
             pinned.set(logicalId, identity);
           } finally {
-            await lease3.release();
+            await lease2.release();
           }
         }
         selected.push({
@@ -11952,16 +11235,16 @@ function buildAssetInput(context, plan, origin, selected, signal) {
         message: `asset input has no binding ${bindingId2}`
       });
     }
-    const lease3 = await origin.open(item.logicalId, openSignal ?? signal);
-    if (lease3.value.revision !== item.revision) {
-      await lease3.release();
+    const lease2 = await origin.open(item.logicalId, openSignal ?? signal);
+    if (lease2.value.revision !== item.revision) {
+      await lease2.release();
       throw new ModkitError({
         code: "x3.host/source-revision-changed",
         message: `companion \xAB${item.logicalId}\xBB changed after it was bound (revision ${item.revision})`,
-        context: { bindingId: bindingId2, revision: item.revision, observed: lease3.value.revision }
+        context: { bindingId: bindingId2, revision: item.revision, observed: lease2.value.revision }
       });
     }
-    return lease3;
+    return lease2;
   };
   const bindingsFor = (requirementId) => Object.freeze(requirementBindings.filter((item) => item.requirementId === requirementId));
   if (plan.originKind === "namespace") {
@@ -16500,7 +15783,7 @@ var codec_json_default = {
   runtimeVariants: [
     {
       variantId: "trusted-node",
-      entrypoint: "./src/families/json/entrypoints/json-codec.js",
+      entrypoint: "./json/families/json/entrypoints/json-codec.js",
       target: {
         environments: ["node"]
       },
@@ -16509,7 +15792,7 @@ var codec_json_default = {
     },
     {
       variantId: "portable",
-      entrypoint: "./src/families/json/entrypoints/json-codec.js",
+      entrypoint: "./json/families/json/entrypoints/json-codec.js",
       target: {
         environments: ["browser-worker", "node-worker"]
       },
@@ -16657,7 +15940,7 @@ var codec_jsonc_default = {
   runtimeVariants: [
     {
       variantId: "trusted-node",
-      entrypoint: "./src/families/json/entrypoints/jsonc-codec.js",
+      entrypoint: "./json/families/json/entrypoints/jsonc-codec.js",
       target: {
         environments: ["node"]
       },
@@ -16666,7 +15949,7 @@ var codec_jsonc_default = {
     },
     {
       variantId: "portable",
-      entrypoint: "./src/families/json/entrypoints/jsonc-codec.js",
+      entrypoint: "./json/families/json/entrypoints/jsonc-codec.js",
       target: {
         environments: ["browser-worker", "node-worker"]
       },
@@ -16812,14 +16095,14 @@ var codec_txt_default = {
   runtimeVariants: [
     {
       variantId: "trusted-node",
-      entrypoint: "./src/txt/codec.js",
+      entrypoint: "./plain/txt/codec.js",
       target: { environments: ["node"] },
       executionProfile: "trusted-in-process",
       requestedPermissionClasses: ["read-source"]
     },
     {
       variantId: "portable",
-      entrypoint: "./src/txt/codec.js",
+      entrypoint: "./plain/txt/codec.js",
       target: { environments: ["browser-worker", "node-worker"] },
       executionProfile: "worker-brokered",
       requestedPermissionClasses: ["read-source"]
@@ -17024,7 +16307,7 @@ var provider_json_default_default = {
   runtimeVariants: [
     {
       variantId: "trusted-node",
-      entrypoint: "./src/families/json/entrypoints/json-provider.js",
+      entrypoint: "./json/families/json/entrypoints/json-provider.js",
       target: {
         environments: ["node"]
       },
@@ -17033,7 +16316,7 @@ var provider_json_default_default = {
     },
     {
       variantId: "portable",
-      entrypoint: "./src/families/json/entrypoints/json-provider.js",
+      entrypoint: "./json/families/json/entrypoints/json-provider.js",
       target: {
         environments: ["browser-worker", "node-worker"]
       },
@@ -17071,7 +16354,7 @@ var provider_jsonc_default_default = {
   runtimeVariants: [
     {
       variantId: "trusted-node",
-      entrypoint: "./src/families/json/entrypoints/jsonc-provider.js",
+      entrypoint: "./json/families/json/entrypoints/jsonc-provider.js",
       target: {
         environments: ["node"]
       },
@@ -17080,7 +16363,7 @@ var provider_jsonc_default_default = {
     },
     {
       variantId: "portable",
-      entrypoint: "./src/families/json/entrypoints/jsonc-provider.js",
+      entrypoint: "./json/families/json/entrypoints/jsonc-provider.js",
       target: {
         environments: ["browser-worker", "node-worker"]
       },
@@ -17118,7 +16401,7 @@ var writer_json_default = {
   runtimeVariants: [
     {
       variantId: "portable",
-      entrypoint: "./src/editing/text-writer.js",
+      entrypoint: "./json/editing/text-writer.js",
       target: {
         environments: ["browser-worker", "node-worker"]
       },
@@ -17171,7 +16454,7 @@ var writer_plain_text_default = {
   runtimeVariants: [
     {
       variantId: "portable",
-      entrypoint: "./src/editing/text-writer.js",
+      entrypoint: "./plain/editing/text-writer.js",
       target: {
         environments: ["browser-worker", "node-worker"]
       },
@@ -17204,6 +16487,578 @@ __export(json_codec_exports, {
   abiVersion: () => abiVersion,
   createCodec: () => createCodec
 });
+function lease(value2) {
+  let released = false;
+  return Object.freeze({
+    value: value2,
+    async release() {
+      released = true;
+    },
+    isReleased: () => released
+  });
+}
+function pageStart(cursor3) {
+  if (cursor3 === void 0) return 0;
+  if (!/^(?:0|[1-9][0-9]*)$/u.test(cursor3)) throw new TypeError("invalid page cursor");
+  const value2 = Number(cursor3);
+  if (!Number.isSafeInteger(value2)) throw new TypeError("page cursor exceeds safe integer range");
+  return value2;
+}
+function createTreeDataSource(rootNode) {
+  const nodes = /* @__PURE__ */ new Map();
+  const register = (node, id) => {
+    const children = Array.isArray(node.children) ? node.children : [];
+    nodes.set(id, { node, childIds: children.map((_, index) => `${id}/${index}`) });
+    children.forEach((child, index) => register(child, `${id}/${index}`));
+  };
+  register(rootNode, "root");
+  const ref2 = (id) => {
+    const item = nodes.get(id);
+    return Object.freeze({ id, hasChildren: (item?.childIds.length ?? 0) > 0 });
+  };
+  return Object.freeze({
+    async root() {
+      return ref2("root");
+    },
+    async children(node, page, signal) {
+      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+      if (!Number.isSafeInteger(page.limit) || page.limit <= 0) {
+        throw new TypeError("tree page limit must be a positive safe integer");
+      }
+      const start = pageStart(page.cursor);
+      const childIds = nodes.get(node.id)?.childIds ?? [];
+      const items = childIds.slice(start, start + page.limit).map(ref2);
+      return Object.freeze({
+        items: Object.freeze(items),
+        ...start + items.length < childIds.length ? { nextCursor: String(start + items.length) } : {}
+      });
+    },
+    async facts(node) {
+      const value2 = nodes.get(node.id)?.node;
+      if (value2 === void 0) throw new TypeError(`unknown tree node ${node.id}`);
+      return Object.freeze({
+        kind: value2.kind,
+        label: value2.label,
+        ...value2.preview === void 0 ? {} : { preview: value2.preview }
+      });
+    },
+    async *search(query) {
+      for (const [id, item] of nodes) {
+        const label = item.node.label ?? "";
+        const preview2 = item.node.preview ?? "";
+        if (label.includes(query.pattern) || preview2.includes(query.pattern)) yield ref2(id);
+      }
+    }
+  });
+}
+function newlineOf(text3) {
+  const crlf = (text3.match(/\r\n/gu) ?? []).length;
+  const withoutCrLf = text3.replace(/\r\n/gu, "");
+  const lf = (withoutCrLf.match(/\n/gu) ?? []).length;
+  const cr = (withoutCrLf.match(/\r/gu) ?? []).length;
+  if ([crlf, lf, cr].filter((count2) => count2 > 0).length > 1) return "mixed";
+  if (crlf > 0) return "crlf";
+  if (lf > 0) return "lf";
+  if (cr > 0) return "cr";
+  return "none";
+}
+function defineWriter({
+  providerId,
+  providerVersion = "1.0.0",
+  artifactDigest,
+  offerId,
+  formatId,
+  representationId,
+  mutationMode = "mutate",
+  minimumRoundTrip,
+  fidelityEvidenceId,
+  fidelity,
+  validate,
+  planEdits
+}) {
+  const identity = Object.freeze({
+    providerId,
+    providerVersion,
+    artifactDigest,
+    formatId,
+    representationId
+  });
+  const offer = Object.freeze({
+    providerId,
+    fidelityEvidenceId,
+    formatId,
+    representationId,
+    mutationMode,
+    minimumRoundTrip
+  });
+  const writer = Object.freeze({
+    identity,
+    offer,
+    async validate(change, signal) {
+      return validate(change, signal);
+    },
+    async plan(change, signal) {
+      const edits = await planEdits(change, signal);
+      return Object.freeze({
+        planId: `${providerId}:${change.targets.map((target) => target.targetId).join("+")}`,
+        targets: change.targets,
+        edits,
+        semantics: Object.freeze({ mutationMode, minimumGuarantee: "atomic" }),
+        fidelity,
+        diagnostics: Object.freeze([])
+      });
+    }
+  });
+  return Object.freeze({
+    abiVersion: 1,
+    provides: Object.freeze(["common.edit/writer"]),
+    async createProvider(selection) {
+      if (selection.offerId !== offerId)
+        throw new TypeError(`unknown writer offer ${selection.offerId}`);
+      return lease(writer);
+    }
+  });
+}
+function decodeInput(input) {
+  if (typeof input.text === "string") {
+    return {
+      text: input.text,
+      bytes: new TextEncoder().encode(input.text),
+      source: { encoding: "utf-8", bom: false, newline: newlineOf(input.text) }
+    };
+  }
+  const bytes2 = input.bytes;
+  let encoding = input.encoding;
+  let bom = false;
+  let offset = 0;
+  if (bytes2[0] === 239 && bytes2[1] === 187 && bytes2[2] === 191) {
+    encoding = encoding ?? "utf-8";
+    bom = true;
+    offset = 3;
+  } else if (bytes2[0] === 255 && bytes2[1] === 254) {
+    encoding = encoding ?? "utf-16le";
+    bom = true;
+    offset = 2;
+  } else if (bytes2[0] === 254 && bytes2[1] === 255) {
+    encoding = encoding ?? "utf-16be";
+    bom = true;
+    offset = 2;
+  }
+  encoding ??= "utf-8";
+  const content = bytes2.subarray(offset);
+  let text3;
+  if (encoding === "utf-16be") {
+    const swapped = new Uint8Array(content.length);
+    for (let index = 0; index + 1 < content.length; index += 2) {
+      swapped[index] = content[index + 1];
+      swapped[index + 1] = content[index];
+    }
+    text3 = new TextDecoder("utf-16le", { fatal: true }).decode(swapped);
+  } else {
+    text3 = new TextDecoder(encoding, { fatal: true }).decode(content);
+  }
+  return { text: text3, bytes: bytes2, source: { encoding, bom, newline: newlineOf(text3) } };
+}
+function span(text3, offset = 0, length = text3.length) {
+  const prefix = text3.slice(0, offset);
+  const lastLf = prefix.lastIndexOf("\n");
+  return Object.freeze({
+    byteOffset: uint64(BigInt(new TextEncoder().encode(prefix).byteLength)),
+    byteLength: uint64(
+      BigInt(new TextEncoder().encode(text3.slice(offset, offset + length)).byteLength)
+    ),
+    utf16Offset: offset,
+    utf16Length: length,
+    line: (prefix.match(/\n/gu) ?? []).length,
+    column: offset - (lastLf === -1 ? 0 : lastLf + 1)
+  });
+}
+function failure(code, message, text3 = "", offset = 0, length = 0) {
+  return {
+    state: "failed",
+    diagnostics: [
+      diagnostic("error", code, message, void 0, void 0, span(text3, offset, length))
+    ]
+  };
+}
+function preflight(decoded2, budget, signal) {
+  throwIfAborted(signal);
+  if (BigInt(decoded2.bytes.byteLength) > budget.maxInputBytes) {
+    return failure(
+      "org.modkitx/text-data-input-budget",
+      "input exceeds maxInputBytes",
+      decoded2.text
+    );
+  }
+  if (decoded2.text.includes("\0")) {
+    return failure("org.modkitx/text-data-nul", "NUL is forbidden in text input", decoded2.text);
+  }
+  return void 0;
+}
+function encodeText(text3, source2, target = {}) {
+  const facts = { ...source2, ...target };
+  const newline = facts.newline === "none" ? source2.newline : facts.newline;
+  const separator = newline === "crlf" ? "\r\n" : newline === "cr" ? "\r" : "\n";
+  const normalized = newline === "mixed" || newline === "none" ? text3 : text3.replace(/\r\n|\r|\n/gu, separator);
+  let bytes2;
+  if (facts.encoding === "utf-8") bytes2 = new TextEncoder().encode(normalized);
+  else {
+    const little = new Uint8Array(normalized.length * 2);
+    const view = new DataView(little.buffer);
+    for (let index = 0; index < normalized.length; index += 1) {
+      view.setUint16(index * 2, normalized.charCodeAt(index), facts.encoding === "utf-16le");
+    }
+    bytes2 = little;
+  }
+  if (facts.bom) {
+    const marker = facts.encoding === "utf-8" ? new Uint8Array([239, 187, 191]) : facts.encoding === "utf-16le" ? new Uint8Array([255, 254]) : new Uint8Array([254, 255]);
+    const joined = new Uint8Array(marker.length + bytes2.length);
+    joined.set(marker);
+    joined.set(bytes2, marker.length);
+    bytes2 = joined;
+  }
+  return {
+    bytes: bytes2,
+    encoding: facts.encoding,
+    bom: facts.bom,
+    newline: facts.newline,
+    diagnostics: []
+  };
+}
+function scalar(value2, raw = JSON.stringify(value2)) {
+  if (value2 === null) return { kind: "null", raw: "null" };
+  if (typeof value2 === "boolean") return { kind: "boolean", value: value2, raw: String(value2) };
+  if (typeof value2 === "string") return { kind: "string", value: value2, raw: raw ?? JSON.stringify(value2) };
+  if (typeof value2 === "bigint")
+    return { kind: "integer", decimal: String(value2), raw: String(value2) };
+  if (typeof value2 === "number" && Number.isInteger(value2)) {
+    return { kind: "integer", decimal: String(value2), raw: raw ?? String(value2) };
+  }
+  if (typeof value2 === "number")
+    return { kind: "number", raw: raw ?? String(value2), finiteValue: value2 };
+  return { kind: "string", value: String(value2), raw: raw ?? String(value2) };
+}
+function treeDataSource(document) {
+  const nodes = /* @__PURE__ */ new Map([["root", { value: document, children: [] }]]);
+  const entries = document.root?.kind === "object" ? document.root.members.map((member) => [member.key, member.value]) : Object.entries(document);
+  nodes.get("root").children = entries.map(([key22, value2], index) => {
+    const id = `root/${index}`;
+    nodes.set(id, { value: value2, label: String(key22), children: [] });
+    return { id, hasChildren: false };
+  });
+  return Object.freeze({
+    async root() {
+      return { id: "root", hasChildren: true };
+    },
+    async children(node, page) {
+      const all = nodes.get(node.id)?.children ?? [];
+      const start = page.cursor ? Number(page.cursor) : 0;
+      const items = all.slice(start, start + page.limit);
+      return {
+        items,
+        ...start + items.length < all.length ? { nextCursor: String(start + items.length) } : {}
+      };
+    },
+    async facts(node) {
+      const item = nodes.get(node.id);
+      return { kind: item?.value?.kind ?? "value", label: item?.label ?? "root" };
+    },
+    async *search(query) {
+      for (const [id, item] of nodes) {
+        if ((item.label ?? "").includes(query.pattern)) yield { id, hasChildren: false };
+      }
+    }
+  });
+}
+function createTextSyntaxProvider(definition) {
+  const provider = Object.freeze({
+    contract: definition.contract,
+    async parse(request) {
+      throwIfAborted(request.signal);
+      let decoded2;
+      try {
+        decoded2 = decodeInput(request.input);
+      } catch (cause) {
+        return failure(
+          "org.modkitx/text-data-decode",
+          cause instanceof Error ? cause.message : String(cause)
+        );
+      }
+      const rejected2 = preflight(decoded2, request.budget, request.signal);
+      return rejected2 ?? definition.parse(decoded2, request);
+    },
+    async serialize(request) {
+      throwIfAborted(request.signal);
+      const result = await definition.serialize(request);
+      if (BigInt(result.bytes.byteLength) <= request.budget.maxInputBytes) return result;
+      return {
+        ...result,
+        bytes: new Uint8Array(),
+        diagnostics: [
+          diagnostic(
+            "error",
+            "org.modkitx/text-data-output-budget",
+            "serialized output exceeds maxInputBytes"
+          )
+        ]
+      };
+    },
+    async dataSource(request) {
+      const parsed = await provider.parse(request);
+      if (parsed.state === "failed")
+        throw new TypeError(parsed.diagnostics[0]?.message ?? "parse failed");
+      return lease(treeDataSource(parsed.document));
+    }
+  });
+  return provider;
+}
+function createSelectedProvider(definition, selection, factory = createTextSyntaxProvider) {
+  if (selection?.contract !== definition.contract) {
+    throw new TypeError(`provider does not implement ${String(selection?.contract)}`);
+  }
+  return factory(definition);
+}
+var OPERATIONS = Object.freeze([
+  {
+    id: "view.inspect",
+    handlerId: "inspect",
+    mutatesSource: false,
+    requiredPermissions: ["read-source"],
+    outputKinds: ["json"]
+  },
+  {
+    id: "asset.validate",
+    handlerId: "validate",
+    mutatesSource: false,
+    requiredPermissions: ["read-source"],
+    outputKinds: ["none"]
+  },
+  {
+    id: "asset.search",
+    handlerId: "search",
+    mutatesSource: false,
+    requiredPermissions: ["read-source"],
+    outputKinds: ["json"]
+  },
+  {
+    id: "export.raw",
+    handlerId: "export-raw",
+    mutatesSource: false,
+    requiredPermissions: ["read-source"],
+    outputKinds: ["bytes"]
+  },
+  {
+    id: "data.parse",
+    handlerId: "parse",
+    mutatesSource: false,
+    requiredPermissions: ["read-source"],
+    outputKinds: ["json"]
+  },
+  {
+    id: "data.serialize",
+    handlerId: "serialize",
+    mutatesSource: false,
+    requiredPermissions: ["read-source"],
+    outputKinds: ["bytes"]
+  }
+]);
+function createTextCodec(definition, context) {
+  return Object.freeze({
+    async probe(request, signal) {
+      if (request.source.kind !== "bytes" || request.plan.kind !== "bytes")
+        throw new TypeError("text codecs require byte probes");
+      const declared = Math.min(
+        request.plan.maxBytes,
+        request.plan.ranges[0]?.length ?? request.plan.maxBytes
+      );
+      const available = request.source.size === void 0 ? declared : Number(request.source.size);
+      const bytes2 = await request.source.read(
+        0n,
+        Math.max(0, Math.min(declared, available)),
+        signal
+      );
+      let text3 = "";
+      try {
+        text3 = new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
+      } catch {
+        return {
+          codecId: `org.modkitx/text-${definition.format}`,
+          confidence: 0.01,
+          evidence: [{ kind: "structure", weight: -1, note: "invalid-utf8" }],
+          requiredRanges: [{ byteOffset: "0", byteLength: String(bytes2.byteLength) }]
+        };
+      }
+      const result = definition.detect(text3, request.source.ref.uri);
+      return {
+        codecId: `org.modkitx/text-${definition.format}`,
+        confidence: result.confidence,
+        evidence: [{ kind: "structure", weight: result.confidence, note: result.note }],
+        requiredRanges: [{ byteOffset: "0", byteLength: String(bytes2.byteLength) }]
+      };
+    },
+    async planInput() {
+      return {
+        originKind: "single",
+        candidate: { bindingId: "content", role: "content", ownership: "owned" },
+        requirements: []
+      };
+    },
+    async open(input, _intent, budget, signal) {
+      if (input.originKind !== "single") throw new TypeError("text codec requires a single source");
+      const binding = input.bindings[0];
+      const sourceLease = await input.openBinding(binding.bindingId, signal);
+      const source2 = sourceLease.value;
+      if (source2.kind !== "bytes" || source2.size === void 0 || source2.size > budget.maxInputBytes) {
+        await sourceLease.release();
+        throw new RangeError("text codec requires a sized source inside budget");
+      }
+      const bytes2 = await source2.read(0n, Number(source2.size), signal);
+      const providerLease = await context.contracts.resolve({
+        contract: definition.contract,
+        major: 1,
+        signal
+      });
+      const provider = providerLease.value;
+      const parsed = await provider.parse({
+        input: { bytes: bytes2 },
+        dialect: definition.dialect,
+        budget,
+        signal
+      });
+      if (parsed.state === "failed") {
+        await providerLease.release();
+        await sourceLease.release();
+        throw new TypeError(parsed.diagnostics[0]?.message ?? "parse failed");
+      }
+      const dataLease = await provider.dataSource({
+        input: { bytes: bytes2 },
+        dialect: definition.dialect,
+        budget,
+        signal
+      });
+      const byteSource = {
+        size: async () => source2.size,
+        read: (offset, length, readSignal) => source2.read(offset, length, readSignal)
+      };
+      const textSource = createUtf8TextDataSource(byteSource);
+      const textInfo = await textSource.info();
+      const descriptor = await assembleSubjectDescriptor({
+        schemaVersion: 2,
+        subjectUri: binding.source.uri,
+        origin: {
+          kind: "single",
+          binding: {
+            id: binding.bindingId,
+            role: binding.role,
+            source: binding.source,
+            required: true,
+            ownership: binding.ownership,
+            revision: binding.revision
+          }
+        },
+        interpretation: "codec",
+        identity: {
+          codecId: `org.modkitx/text-${definition.format}`,
+          codecVersion: "1.0.0",
+          formatId: definition.format,
+          formatLabel: definition.format.toUpperCase(),
+          mediaType: definition.mediaType,
+          confidence: 1,
+          detection: [{ kind: "structure", weight: 1 }]
+        },
+        traits: [
+          {
+            id: "structure.hierarchy",
+            descriptorVersion: 1,
+            state: "available",
+            parameters: { nodeCount: "unknown", lazy: true, hasLocations: true }
+          },
+          {
+            id: "content.text",
+            descriptorVersion: 1,
+            state: "available",
+            parameters: {
+              encoding: textInfo.encoding,
+              lineCount: textInfo.lines,
+              bom: textInfo.bom,
+              newline: textInfo.newline
+            }
+          },
+          {
+            id: "content.binary",
+            descriptorVersion: 1,
+            state: "available",
+            parameters: { bytes: source2.size.toString(10) }
+          }
+        ],
+        operations: OPERATIONS.map((operation) => ({
+          id: operation.id,
+          handlerId: operation.handlerId,
+          mutatesSource: false,
+          state: "available"
+        })),
+        constraints: {
+          readOnly: true,
+          seekable: true,
+          randomAccess: true,
+          trusted: false,
+          maxDecodedBytes: source2.size.toString(10)
+        },
+        dataSources: [
+          { contract: "common.view/tree-data-source", major: 1 },
+          { contract: "common.view/text-data-source", major: 1 },
+          { contract: "common.view/byte-range-source", major: 1 }
+        ],
+        diagnostics: [],
+        metadata: [],
+        revision: input.revisions.revision
+      });
+      const handlers = /* @__PURE__ */ new Map([
+        [
+          "inspect",
+          async () => ({
+            kind: "json",
+            value: { format: definition.format, parseState: parsed.state }
+          })
+        ],
+        ["validate", async () => ({ kind: "none" })],
+        ["search", async () => ({ kind: "json", value: [] })],
+        ["export-raw", async () => ({ kind: "bytes", value: bytes2 })],
+        ["parse", async () => ({ kind: "json", value: { state: parsed.state } })],
+        [
+          "serialize",
+          async () => ({
+            kind: "bytes",
+            value: (await provider.serialize({
+              document: parsed.document,
+              dialect: definition.dialect,
+              budget,
+              signal
+            })).bytes
+          })
+        ]
+      ]);
+      return createAssetSession({
+        revision: revisionId(input.revisions.revision),
+        descriptor,
+        operationDeclarations: OPERATIONS,
+        permissionGrant: { id: `text-${definition.format}-session`, classes: ["read-source"] },
+        handlers,
+        async openDataSource(contract) {
+          if (contract === "common.view/tree-data-source") return lease(dataLease.value);
+          if (contract === "common.view/text-data-source") return lease(textSource);
+          if (contract === "common.view/byte-range-source") return lease(byteSource);
+          throw new TypeError(`text-${definition.format} does not publish ${contract}`);
+        },
+        release: [
+          () => dataLease.release(),
+          () => providerLease.release(),
+          () => sourceLease.release()
+        ]
+      }).session;
+    }
+  });
+}
 function markerOutsideString(text3, marker) {
   let quote = false;
   let escaped = false;
@@ -17826,10 +17681,10 @@ var createCodec3 = () => Object.freeze({
       permissionGrant: { id: "plain-text-session", classes: ["read-source"] },
       handlers,
       async openDataSource(contract) {
-        if (contract === "common.view/tree-data-source") return simpleLease2(tree);
-        if (contract === "common.view/byte-range-source") return simpleLease2(bytes2);
+        if (contract === "common.view/tree-data-source") return lease(tree);
+        if (contract === "common.view/byte-range-source") return lease(bytes2);
         if (contract === "common.view/text-data-source" && text3 !== void 0) {
-          return simpleLease2(text3);
+          return lease(text3);
         }
         throw new TypeError(`org.modkitx/txt does not publish ${contract}`);
       },
@@ -18009,12 +17864,7 @@ function defineLinkedExtension(init) {
     excluded: Object.freeze([...automaticExcluded, ...init.excluded ?? []])
   });
 }
-var NATIVE_ENVIRONMENTS = Object.freeze([
-  "node",
-  "node-worker",
-  "browser-main",
-  "browser-worker"
-]);
+var NATIVE_ENVIRONMENTS = Object.freeze(["node", "node-worker", "browser-main", "browser-worker"]);
 var nativeExecutable = (manifest, entrypoint) => {
   const document = manifest;
   const variants = Array.isArray(document.runtimeVariants) ? document.runtimeVariants : [];
@@ -18053,27 +17903,30 @@ var nativeText = defineLinkedExtension({
     { path: "contributions/codec-txt.json", manifest: nativeExecutable(codec_txt_default) },
     {
       path: "contributions/writer-plain-text.json",
-      manifest: nativeExecutable(writer_plain_text_default, "./native/plain-writer.js")
+      manifest: nativeExecutable(writer_plain_text_default)
     },
     { path: "contributions/codec-json.json", manifest: nativeExecutable(codec_json_default) },
     { path: "contributions/codec-jsonc.json", manifest: nativeExecutable(codec_jsonc_default) },
     { path: "contributions/contract-json-syntax.json", manifest: contract_json_syntax_default },
     { path: "contributions/contract-jsonc-syntax.json", manifest: contract_jsonc_syntax_default },
     { path: "contributions/provider-json-default.json", manifest: nativeExecutable(provider_json_default_default) },
-    { path: "contributions/provider-jsonc-default.json", manifest: nativeExecutable(provider_jsonc_default_default) },
+    {
+      path: "contributions/provider-jsonc-default.json",
+      manifest: nativeExecutable(provider_jsonc_default_default)
+    },
     {
       path: "contributions/writer-json.json",
-      manifest: nativeExecutable(writer_json_default, "./native/json-writer.js")
+      manifest: nativeExecutable(writer_json_default)
     }
   ],
   modules: {
-    "./src/txt/codec.js": codec_exports,
-    "./native/plain-writer.js": text_writer_exports2,
-    "./native/json-writer.js": text_writer_exports,
-    "./src/families/json/entrypoints/json-codec.js": json_codec_exports,
-    "./src/families/json/entrypoints/json-provider.js": json_provider_exports,
-    "./src/families/json/entrypoints/jsonc-codec.js": jsonc_codec_exports,
-    "./src/families/json/entrypoints/jsonc-provider.js": jsonc_provider_exports
+    "./plain/txt/codec.js": codec_exports,
+    "./plain/editing/text-writer.js": text_writer_exports2,
+    "./json/editing/text-writer.js": text_writer_exports,
+    "./json/families/json/entrypoints/json-codec.js": json_codec_exports,
+    "./json/families/json/entrypoints/json-provider.js": json_provider_exports,
+    "./json/families/json/entrypoints/jsonc-codec.js": jsonc_codec_exports,
+    "./json/families/json/entrypoints/jsonc-provider.js": jsonc_provider_exports
   }
 });
 var NATIVE_TEXT_INPUT = nativeText.input;
@@ -18104,14 +17957,14 @@ async function createHostComposition(options) {
     executionBackends: options.executionBackends ?? DEFAULT_EXECUTION_BACKENDS
   });
 }
-var diagnostic18 = (severity, code, message) => ({ severity, code, message, path: [] });
+var diagnostic19 = (severity, code, message) => ({ severity, code, message, path: [] });
 async function resolveFormatWriter(request) {
   const identity = request.opened.descriptor.identity;
   const formatId = typeof identity?.formatId === "string" ? identity.formatId : void 0;
   if (formatId === void 0) {
     return {
       diagnostics: [
-        diagnostic18(
+        diagnostic19(
           "information",
           "x3.host/format-writer-unavailable",
           "the subject names no format (unresolved or built-in), so no format writer can be asked for"
@@ -18122,7 +17975,7 @@ async function resolveFormatWriter(request) {
   if (request.services.serviceDefinitions === void 0) {
     return {
       diagnostics: [
-        diagnostic18(
+        diagnostic19(
           "information",
           "x3.host/format-writer-unavailable",
           "this host registered no service-contract definitions, so writers cannot be resolved"
@@ -18145,18 +17998,18 @@ async function resolveFormatWriter(request) {
     budgets: request.budgets
   });
   try {
-    const lease3 = await resolver.port.resolve({
+    const lease2 = await resolver.port.resolve({
       contract: "common.edit/writer",
       major: 1,
       facet
     });
-    const writer = lease3.value;
+    const writer = lease2.value;
     return {
       writer,
-      release: () => lease3.release(),
+      release: () => lease2.release(),
       diagnostics: [
         ...resolver.diagnostics,
-        diagnostic18(
+        diagnostic19(
           "information",
           "x3.host/format-writer-selected",
           `\xAB${writer.offer.providerId}\xBB writes ${facet.formatId}/${facet.representationId} at ${writer.offer.minimumRoundTrip}`
@@ -18167,7 +18020,7 @@ async function resolveFormatWriter(request) {
     return {
       diagnostics: [
         ...resolver.diagnostics,
-        diagnostic18(
+        diagnostic19(
           "information",
           "x3.host/format-writer-unresolved",
           `no writer offers ${facet.formatId}/${facet.representationId} at ${facet.minimumRoundTrip} (${error3 instanceof Error ? error3.message : String(error3)})`
@@ -23800,7 +23653,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:cc9995bfcfe7a1873ac8d20c47bcd28780257fe42b794ef2d3e9687474c10dfb",
+        artifactDigest: "sha256:7b1359a891dd7811e4af034d3f85d1e1e6441e5b2a51f3d47762132631a081f0",
         fileDigests: {
           "README.md": "sha256:32b16af9cd40d5a69ccc3a44c7d74e40703c44ff0ac7f61a8f1289f093506a0d",
           "contributions/codec-csv.json": "sha256:e822428283b261aff304e476b7941ad4118565da7e78d4298ab24e8c5ba10fbc",
@@ -23825,12 +23678,12 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "src/families/delimited/provider.js": "sha256:3aad857e5b32b3823fbbc674daf201c8628a5fdb33192853b742ad1478096287",
           "src/formats.js": "sha256:9cd30c3d83e23764bed3378f2ff03b7e5843c5af3a88b4cd31c89daa7757857d",
           "src/index.js": "sha256:4d3c1f65a922238a9b5cd20832700b890e95abd3e1485f07bd472d9a074227d2",
-          "src/linked.js": "sha256:08acec9c2c0c086da98e4f106833311c5dc4eaf11cbb9b9d8a5fd7d09475281e",
+          "src/linked.js": "sha256:94da1f34a1d0dc98ea8e8f1d6546d4f0a137ff59987528c74c8cd445da426ae1",
           "src/tsv/codec.js": "sha256:b0af8e1d4a7981475ef0976233d8cc0dca51b6554fba7aead564f6c93dc55cc0",
           "src/tsv/provider.js": "sha256:aa4f33eb98f57ace139d6cddf04efefe42c51f6ab60f8f5c62016748c926313c",
           "test/fixtures/csv-rfc4180-parity.json": "sha256:518c4096fdf96326de1c0a83acab3674a66a2ccfa7f9b7279760e97fbb712ef5"
         },
-        inventoryRecordId: "artifact:sha256:cc9995bfcfe7a1873ac8d20c47bcd28780257fe42b794ef2d3e9687474c10dfb"
+        inventoryRecordId: "artifact:sha256:7b1359a891dd7811e4af034d3f85d1e1e6441e5b2a51f3d47762132631a081f0"
       },
       artifactRoot: "extensions/text-delimited/",
       containers: {
@@ -24555,7 +24408,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:8ac6ede610fa4c7d86a9cd1eb664cfef413836fc11f2f7be61ee75436fbcb0af",
+        artifactDigest: "sha256:3e50a3d8ebb2ddbbe7d79f31f0f3c394f8b3c8afd7d045d8fd45417fe4160c52",
         fileDigests: {
           "README.md": "sha256:9519219eb63529bab5e470614ac5a8c5506507cb35e567d4686f73c13023e546",
           "contributions/codec-ini.json": "sha256:2465934ced06e0f664774977a3fe02e63ff0e484f74362f4671b7d3492880a7e",
@@ -24570,9 +24423,9 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "src/ini/definition.js": "sha256:818494714eab867402779285234d227938d606a8737e50d4318ee6aa0cff6c45",
           "src/ini/provider.js": "sha256:90b04036cffdcb990e1f90e09882377d206081ba02e45cea85e93545422599da",
           "src/linked.js": "sha256:16ac97135e2a005c455352a1d572a0a4c7f450ec4aa330659637382e111fc517",
-          "test/fixtures/ini-sc2-parity.json": "sha256:205a176ec39d8c1adeebd8f9419ff9c9b8e2e2d45f4387541adc7e96c2090df9"
+          "test/fixtures/ini-structured-parity.json": "sha256:205a176ec39d8c1adeebd8f9419ff9c9b8e2e2d45f4387541adc7e96c2090df9"
         },
-        inventoryRecordId: "artifact:sha256:8ac6ede610fa4c7d86a9cd1eb664cfef413836fc11f2f7be61ee75436fbcb0af"
+        inventoryRecordId: "artifact:sha256:3e50a3d8ebb2ddbbe7d79f31f0f3c394f8b3c8afd7d045d8fd45417fe4160c52"
       },
       artifactRoot: "extensions/text-ini/",
       containers: {
@@ -24964,7 +24817,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         "src/ini/definition.js",
         "src/ini/provider.js",
         "src/linked.js",
-        "test/fixtures/ini-sc2-parity.json"
+        "test/fixtures/ini-structured-parity.json"
       ],
       name: "text-ini",
       source: "extensions/common/data/text-ini"
@@ -37191,7 +37044,7 @@ var EndpointImpl = class {
     }
   }
   decodeArgs(args) {
-    const decode2 = (value2) => {
+    const decode = (value2) => {
       if (isHandleRef(value2)) {
         const inner = value2[HANDLE_MARKER];
         if (this.table.owns(inner.id)) {
@@ -37212,15 +37065,15 @@ var EndpointImpl = class {
         }
         return this.materialize(this.proxy(value2));
       }
-      if (Array.isArray(value2)) return value2.map((item) => decode2(item));
+      if (Array.isArray(value2)) return value2.map((item) => decode(item));
       if (isPlainObject(value2)) {
         const out = {};
-        for (const [key3, item] of Object.entries(value2)) out[key3] = decode2(item);
+        for (const [key3, item] of Object.entries(value2)) out[key3] = decode(item);
         return out;
       }
       return value2;
     };
-    return args.map((arg) => decode2(arg));
+    return args.map((arg) => decode(arg));
   }
   reply(inReplyTo, outcome) {
     if (this.state !== "open") return;

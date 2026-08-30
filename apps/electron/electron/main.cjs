@@ -15,6 +15,7 @@ const { randomUUID } = require('node:crypto')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
 const { readSettings, writeSettings } = require('./settings-store.cjs')
+const { findInitialFileArgument } = require('./file-arguments.cjs')
 const BUNDLED_EXTENSION_DIRECTORIES = require('../generated/bundled-catalog.cjs')
 
 const RENDERER = path.join(__dirname, '..', 'dist-app', 'index.html')
@@ -932,9 +933,12 @@ async function createWindow() {
         selfTestPngOnly: process.argv.includes('--selftest-png'),
       }
     }
-    const candidate = process.argv
-      .slice(1)
-      .find(value => !value.startsWith('-') && fs.existsSync(value) && fs.statSync(value).isFile())
+    const candidate = findInitialFileArgument(
+      process.argv,
+      app.isPackaged,
+      value => fs.existsSync(value),
+      value => fs.statSync(value).isFile(),
+    )
     if (candidate === undefined) return { present: false }
     return { present: true, ...(await grantAndDescribe(candidate)) }
   })

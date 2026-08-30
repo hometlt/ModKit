@@ -12,7 +12,7 @@
     {
       "label": "Modkit Core: PWA Server",
       "type": "shell",
-      "command": "node scripts/debug/pwa-server.mjs --set ${input:extensionSet} --port 4173",
+      "command": "node scripts/debug/pwa-server.mjs --port 4173",
       "options": { "cwd": "${workspaceFolder}" },
       "dependsOn": "Modkit Core: Build",
       "dependsOrder": "sequence",
@@ -65,22 +65,6 @@
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": [],
       "group": "test"
-    }
-  ],
-  "inputs": [
-    {
-      "id": "extensionSet",
-      "type": "pickString",
-      "description": "Extension set for the PWA debug server",
-      "default": "structured-text",
-      "options": [
-        "structured-text",
-        "documents",
-        "media",
-        "models-and-archives",
-        "editor-and-documents",
-        "full-codecs"
-      ]
     }
   ]
 }

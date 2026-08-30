@@ -72,8 +72,8 @@ describe('VS Code debug launchers', () => {
       'Modkit Core: CLI',
       'Modkit Core: MCP Server (stdio)',
       'Modkit Core: PWA (Chrome)',
-      'Modkit Core: Electron Adapter',
-      'Modkit Core: VS Code Adapter',
+      'Modkit Core: Electron Composition Adapter (headless)',
+      'Modkit Core: VS Code Composition Adapter (headless)',
       // The adapters above compose topologies headlessly. These two launch the real shells, which
       // is a different thing to debug — a window and an extension host, not a Node process.
       'Modkit Core: Electron App (real window)',
@@ -120,7 +120,7 @@ describe('VS Code debug launchers', () => {
     })
   })
 
-  it('serves a hydrated extension inventory through the PWA debug server', async () => {
+  it('serves the real PWA shell and a bundled common file', async () => {
     const port = await availablePort()
     const child = spawn(
       process.execPath,
@@ -129,16 +129,14 @@ describe('VS Code debug launchers', () => {
     )
     try {
       await waitForReady(child)
-      const [html, payload, serviceWorker] = await Promise.all([
+      const [html, sample, serviceWorker] = await Promise.all([
         fetch(`http://127.0.0.1:${port}/`).then(response => response.text()),
-        fetch(`http://127.0.0.1:${port}/debug/extensions.json`).then(response => response.json()),
+        fetch(`http://127.0.0.1:${port}/samples/sample.csv`).then(response => response.text()),
         fetch(`http://127.0.0.1:${port}/service-worker.js`).then(response => response.text()),
       ])
-      expect(html).toContain('Modkit X3 PWA Debug')
-      expect(payload).toMatchObject({
-        set: 'documents',
-        extensions: [{ containers: { packageJson: { modkit: { id: 'documents' } } } }],
-      })
+      expect(html).toContain('<title>Modkit MK3</title>')
+      expect(html).toContain('src="./main.js"')
+      expect(sample).toContain('id,name,role,score')
       expect(serviceWorker).toContain("addEventListener('fetch'")
     } finally {
       child.kill('SIGTERM')

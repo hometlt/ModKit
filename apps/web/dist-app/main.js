@@ -77,7 +77,7 @@ import {
   stageIdOf,
   throwIfAborted,
   validateSubjectDescriptorV2
-} from "./chunks/chunk-EWFHUSBY.js";
+} from "./chunks/chunk-T4ZCUK7F.js";
 import "./chunks/chunk-HVXSZ42C.js";
 
 // packages/ui/dist/settings/index.js

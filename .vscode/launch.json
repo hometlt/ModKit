@@ -52,8 +52,7 @@
       "outFiles": ["${workspaceFolder}/apps/mcp/dist/**/*.js"],
       "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"],
       "env": {
-        "MODKIT_MCP_ROOTS": "${workspaceFolder}",
-        "MODKIT_MCP_EXTENSIONS": "${workspaceFolder}/extensions/common/data/plain-text"
+        "MODKIT_MCP_ROOTS": "${workspaceFolder}"
       }
     },
     {
@@ -70,7 +69,7 @@
       }
     },
     {
-      "name": "Modkit Core: Electron Adapter",
+      "name": "Modkit Core: Electron Composition Adapter (headless)",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/debug/app-runner.mjs",
@@ -83,7 +82,7 @@
       "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
     },
     {
-      "name": "Modkit Core: VS Code Adapter",
+      "name": "Modkit Core: VS Code Composition Adapter (headless)",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/scripts/debug/app-runner.mjs",
@@ -99,8 +98,8 @@
       "name": "Modkit Core: Electron App (real window)",
       "type": "node",
       "request": "launch",
-      "runtimeExecutable": "${workspaceFolder}/apps/electron/node_modules/electron/dist/electron.exe",
-      "runtimeArgs": ["${workspaceFolder}/apps/electron/electron/main.cjs"],
+      "program": "${workspaceFolder}/apps/electron/node_modules/electron/cli.js",
+      "args": ["${workspaceFolder}/apps/electron/electron/main.cjs"],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "Modkit Core: Build Electron Shell",
       "console": "internalConsole",

@@ -33,7 +33,9 @@ packages:
   - 'extensions/common/ui/monaco'
   - 'examples/extensions/counter-runtime'
   - 'examples/extensions/software-renderer'
-# esbuild works through its platform binary package (@esbuild/win32-x64); its postinstall
-# script is only a fallback/validator, so build scripts stay denied (pnpm default-secure).
+# esbuild works through its platform binary package (@esbuild/win32-x64); its postinstall is only a
+# fallback/validator. Electron's package, in contrast, uses its install script to download the
+# version-pinned application binary required by the real desktop debug profile.
 allowBuilds:
   esbuild: false
+  electron: true

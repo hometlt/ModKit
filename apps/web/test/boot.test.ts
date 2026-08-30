@@ -183,7 +183,7 @@ describe('PWA boot', () => {
     await page.close()
   }, 120_000)
 
-  it('closes a worker-backed page and opens the same subject in a fresh page', async () => {
+  it('closes a worker-backed page and opens the same common CSV in a fresh page', async () => {
     const failures: string[] = []
     const openSubjectPage = async () => {
       const page = await browser.newPage({ colorScheme: 'dark' })
@@ -191,8 +191,9 @@ describe('PWA boot', () => {
       page.on('console', message => {
         if (message.type() === 'error') failures.push(`console: ${message.text()}`)
       })
-      await page.goto(`${origin}/?open=./favicon-32.png`, { waitUntil: 'load' })
+      await page.goto(`${origin}/?open=./samples/sample.csv`, { waitUntil: 'load' })
       await page.waitForSelector('[data-mk-part="explorer.filetab"]', { timeout: 60_000 })
+      await page.waitForSelector('[data-mk-part="table"]', { timeout: 60_000 })
       return page
     }
     const waitForWorkerRequestAfter = async (before: number): Promise<number> => {

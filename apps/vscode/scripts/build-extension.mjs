@@ -97,6 +97,10 @@ async function buildInto(output, syncManifest) {
     format: 'cjs',
     platform: 'node',
     target: ['node20'],
+    // Prefer dependency ESM entry points. `jsonc-parser` publishes both an ESM `module` and an AMD/
+    // CommonJS `main`; selecting the latter leaves its relative `require('./impl/format')` calls in
+    // the single-file bundle, where those sibling files do not exist in an Extension Host.
+    mainFields: ['module', 'main'],
     // Supplied by the VS Code runtime; bundling it would shadow the real API.
     external: ['vscode'],
     /*
