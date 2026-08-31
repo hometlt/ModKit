@@ -3,8 +3,8 @@
   "schemaVersion": "bundle-graph-1",
   "entryCount": 74,
   "totals": {
-    "modules": 708,
-    "bytes": 7705790
+    "modules": 710,
+    "bytes": 7740281
   },
   "entries": [
     {
@@ -56,7 +56,7 @@
       "entry": "packages/host/dist/data/index.js",
       "surface": "host/data",
       "modules": 11,
-      "bytes": 77862,
+      "bytes": 77900,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -79,7 +79,7 @@
       "entry": "packages/host/dist/games/index.js",
       "surface": "host/games",
       "modules": 11,
-      "bytes": 64859,
+      "bytes": 64897,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -90,8 +90,8 @@
     {
       "entry": "packages/host/dist/index.js",
       "surface": "host",
-      "modules": 87,
-      "bytes": 807326,
+      "modules": 88,
+      "bytes": 817295,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -122,7 +122,7 @@
       "entry": "packages/host/dist/language/index.js",
       "surface": "host/language",
       "modules": 12,
-      "bytes": 94089,
+      "bytes": 94127,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -134,7 +134,7 @@
       "entry": "packages/host/dist/maps/index.js",
       "surface": "host/maps",
       "modules": 20,
-      "bytes": 206465,
+      "bytes": 206503,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -147,7 +147,7 @@
       "entry": "packages/host/dist/mods/index.js",
       "surface": "host/mods",
       "modules": 11,
-      "bytes": 53629,
+      "bytes": 53667,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -159,7 +159,7 @@
       "entry": "packages/host/dist/node/index.js",
       "surface": "host/node",
       "modules": 90,
-      "bytes": 614657,
+      "bytes": 615126,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -191,7 +191,7 @@
       "entry": "packages/host/dist/renderer/index.js",
       "surface": "host/renderer",
       "modules": 11,
-      "bytes": 54721,
+      "bytes": 54759,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -203,7 +203,7 @@
       "entry": "packages/host/dist/runtime/index.js",
       "surface": "host/runtime",
       "modules": 12,
-      "bytes": 59704,
+      "bytes": 59742,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -225,7 +225,7 @@
       "entry": "packages/sdk/dist/data-sources.js",
       "surface": "sdk/data-sources",
       "modules": 11,
-      "bytes": 71299,
+      "bytes": 72378,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -254,7 +254,7 @@
       "entry": "packages/sdk/dist/formats/index.js",
       "surface": "sdk/formats",
       "modules": 17,
-      "bytes": 95975,
+      "bytes": 98331,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core"
@@ -272,7 +272,7 @@
       "entry": "packages/sdk/dist/index.js",
       "surface": "sdk",
       "modules": 38,
-      "bytes": 232158,
+      "bytes": 234671,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -300,8 +300,8 @@
     {
       "entry": "packages/sdk/dist/manifest/validators.generated.js",
       "surface": "sdk/manifest/validators.generated",
-      "modules": 21,
-      "bytes": 2959876,
+      "modules": 22,
+      "bytes": 2975491,
       "reachesUnits": [],
       "externalUnits": []
     },
@@ -351,7 +351,7 @@
       "entry": "packages/sdk/dist/subjects/index.js",
       "surface": "sdk/subjects",
       "modules": 17,
-      "bytes": 97420,
+      "bytes": 98499,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -378,7 +378,7 @@
       "entry": "packages/sdk/dist/ui-contracts/index.js",
       "surface": "sdk/ui-contracts",
       "modules": 17,
-      "bytes": 107136,
+      "bytes": 108215,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -486,7 +486,7 @@
       "entry": "packages/ui/dist/index.js",
       "surface": "ui",
       "modules": 47,
-      "bytes": 464889,
+      "bytes": 464922,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -499,7 +499,7 @@
       "entry": "packages/ui/dist/localization/index.js",
       "surface": "ui/localization",
       "modules": 1,
-      "bytes": 127890,
+      "bytes": 127923,
       "reachesUnits": [],
       "externalUnits": []
     },

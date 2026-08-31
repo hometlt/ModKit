@@ -27,6 +27,8 @@ import {
   LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
   LANGUAGE_DOCUMENT_MATCHER_PROFILE,
   LEGACY_HOST_FACILITY_ALIASES,
+  LOCALIZATION_CONTRIBUTION_CONTRACT,
+  LOCALIZATION_CONTRIBUTION_FACT,
   MAP_PREVIEW_PREPARATION_CONTRACT,
   MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
   MAP_SEMANTIC_ANALYSIS_CONTRACT,
@@ -116,6 +118,7 @@ import {
   knowledgeLocaleFallbacks,
   knowledgePackSpecV1Schema,
   knowledgeTargetKey,
+  localizationContributionSpecV1Schema,
   modkitBlockSchema,
   narrowGrant,
   normalizeExtensionManifest,
@@ -143,6 +146,7 @@ import {
   validateContributionPattern,
   validateEditorContributionSemantics,
   validateKnowledgePackSemantics,
+  validateLocalizationContributionSemantics,
   validateSubjectDescriptorV2,
   validateWithSchema,
   viewerContributionSpecV1Schema,
@@ -150,7 +154,7 @@ import {
   writerOfferV1Schema,
   writerRequirementV1Schema,
   writerSelectionKey
-} from "../../chunks/chunk-ODEN2UNX.js";
+} from "../../chunks/chunk-RSMXYLAO.js";
 import "../../chunks/chunk-GZ3IOGQJ.js";
 export {
   A1_SPEC_SCHEMA_ENTRIES,
@@ -181,6 +185,8 @@ export {
   LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
   LANGUAGE_DOCUMENT_MATCHER_PROFILE,
   LEGACY_HOST_FACILITY_ALIASES,
+  LOCALIZATION_CONTRIBUTION_CONTRACT,
+  LOCALIZATION_CONTRIBUTION_FACT,
   MAP_PREVIEW_PREPARATION_CONTRACT,
   MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
   MAP_SEMANTIC_ANALYSIS_CONTRACT,
@@ -270,6 +276,7 @@ export {
   knowledgeLocaleFallbacks,
   knowledgePackSpecV1Schema,
   knowledgeTargetKey,
+  localizationContributionSpecV1Schema,
   modkitBlockSchema,
   narrowGrant,
   normalizeExtensionManifest,
@@ -297,6 +304,7 @@ export {
   validateContributionPattern,
   validateEditorContributionSemantics,
   validateKnowledgePackSemantics,
+  validateLocalizationContributionSemantics,
   validateSubjectDescriptorV2,
   validateWithSchema,
   viewerContributionSpecV1Schema,

@@ -20069,14 +20069,296 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
 }
 validate209.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 var func1Module5 = __toESM(require_ucs2length(), 1);
-var writerRequirementV1 = validate2010;
-var schema319 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/writer-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] } } };
+var localizationContributionSpecV1 = validate2010;
 var func19 = func1Module5.default?.default ?? func1Module5.default;
+var pattern410 = new RegExp("^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$", "u");
+var pattern56 = new RegExp("^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$", "u");
+var pattern67 = new RegExp("^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$", "u");
 function validate2010(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
   let errors = 0;
   const evaluated0 = validate2010.evaluated;
+  if (evaluated0.dynamicProps) {
+    evaluated0.props = void 0;
+  }
+  if (evaluated0.dynamicItems) {
+    evaluated0.items = void 0;
+  }
+  if (data && typeof data == "object" && !Array.isArray(data)) {
+    if (data.catalogs === void 0) {
+      const err0 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "catalogs" }, message: "must have required property 'catalogs'" };
+      if (vErrors === null) {
+        vErrors = [err0];
+      } else {
+        vErrors.push(err0);
+      }
+      errors++;
+    }
+    for (const key0 in data) {
+      if (!(key0 === "catalogs")) {
+        const err1 = { instancePath, schemaPath: "#/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties" };
+        if (vErrors === null) {
+          vErrors = [err1];
+        } else {
+          vErrors.push(err1);
+        }
+        errors++;
+      }
+    }
+    if (data.catalogs !== void 0) {
+      let data0 = data.catalogs;
+      if (Array.isArray(data0)) {
+        if (data0.length > 256) {
+          const err2 = { instancePath: instancePath + "/catalogs", schemaPath: "#/properties/catalogs/maxItems", keyword: "maxItems", params: { limit: 256 }, message: "must NOT have more than 256 items" };
+          if (vErrors === null) {
+            vErrors = [err2];
+          } else {
+            vErrors.push(err2);
+          }
+          errors++;
+        }
+        if (data0.length < 1) {
+          const err3 = { instancePath: instancePath + "/catalogs", schemaPath: "#/properties/catalogs/minItems", keyword: "minItems", params: { limit: 1 }, message: "must NOT have fewer than 1 items" };
+          if (vErrors === null) {
+            vErrors = [err3];
+          } else {
+            vErrors.push(err3);
+          }
+          errors++;
+        }
+        const len0 = data0.length;
+        for (let i0 = 0; i0 < len0; i0++) {
+          let data1 = data0[i0];
+          if (data1 && typeof data1 == "object" && !Array.isArray(data1)) {
+            if (data1.locale === void 0) {
+              const err4 = { instancePath: instancePath + "/catalogs/" + i0, schemaPath: "#/properties/catalogs/items/required", keyword: "required", params: { missingProperty: "locale" }, message: "must have required property 'locale'" };
+              if (vErrors === null) {
+                vErrors = [err4];
+              } else {
+                vErrors.push(err4);
+              }
+              errors++;
+            }
+            if (data1.path === void 0) {
+              const err5 = { instancePath: instancePath + "/catalogs/" + i0, schemaPath: "#/properties/catalogs/items/required", keyword: "required", params: { missingProperty: "path" }, message: "must have required property 'path'" };
+              if (vErrors === null) {
+                vErrors = [err5];
+              } else {
+                vErrors.push(err5);
+              }
+              errors++;
+            }
+            if (data1.messagePrefixes === void 0) {
+              const err6 = { instancePath: instancePath + "/catalogs/" + i0, schemaPath: "#/properties/catalogs/items/required", keyword: "required", params: { missingProperty: "messagePrefixes" }, message: "must have required property 'messagePrefixes'" };
+              if (vErrors === null) {
+                vErrors = [err6];
+              } else {
+                vErrors.push(err6);
+              }
+              errors++;
+            }
+            for (const key1 in data1) {
+              if (!(key1 === "locale" || key1 === "path" || key1 === "messagePrefixes")) {
+                const err7 = { instancePath: instancePath + "/catalogs/" + i0, schemaPath: "#/properties/catalogs/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key1 }, message: "must NOT have additional properties" };
+                if (vErrors === null) {
+                  vErrors = [err7];
+                } else {
+                  vErrors.push(err7);
+                }
+                errors++;
+              }
+            }
+            if (data1.locale !== void 0) {
+              let data2 = data1.locale;
+              if (typeof data2 === "string") {
+                if (func19(data2) > 64) {
+                  const err8 = { instancePath: instancePath + "/catalogs/" + i0 + "/locale", schemaPath: "#/properties/catalogs/items/properties/locale/maxLength", keyword: "maxLength", params: { limit: 64 }, message: "must NOT have more than 64 characters" };
+                  if (vErrors === null) {
+                    vErrors = [err8];
+                  } else {
+                    vErrors.push(err8);
+                  }
+                  errors++;
+                }
+                if (!pattern410.test(data2)) {
+                  const err9 = { instancePath: instancePath + "/catalogs/" + i0 + "/locale", schemaPath: "#/properties/catalogs/items/properties/locale/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$" }, message: 'must match pattern "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$"' };
+                  if (vErrors === null) {
+                    vErrors = [err9];
+                  } else {
+                    vErrors.push(err9);
+                  }
+                  errors++;
+                }
+              } else {
+                const err10 = { instancePath: instancePath + "/catalogs/" + i0 + "/locale", schemaPath: "#/properties/catalogs/items/properties/locale/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                if (vErrors === null) {
+                  vErrors = [err10];
+                } else {
+                  vErrors.push(err10);
+                }
+                errors++;
+              }
+            }
+            if (data1.path !== void 0) {
+              let data3 = data1.path;
+              if (typeof data3 === "string") {
+                if (func19(data3) > 1024) {
+                  const err11 = { instancePath: instancePath + "/catalogs/" + i0 + "/path", schemaPath: "#/properties/catalogs/items/properties/path/maxLength", keyword: "maxLength", params: { limit: 1024 }, message: "must NOT have more than 1024 characters" };
+                  if (vErrors === null) {
+                    vErrors = [err11];
+                  } else {
+                    vErrors.push(err11);
+                  }
+                  errors++;
+                }
+                if (!pattern56.test(data3)) {
+                  const err12 = { instancePath: instancePath + "/catalogs/" + i0 + "/path", schemaPath: "#/properties/catalogs/items/properties/path/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$" }, message: 'must match pattern "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$"' };
+                  if (vErrors === null) {
+                    vErrors = [err12];
+                  } else {
+                    vErrors.push(err12);
+                  }
+                  errors++;
+                }
+              } else {
+                const err13 = { instancePath: instancePath + "/catalogs/" + i0 + "/path", schemaPath: "#/properties/catalogs/items/properties/path/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                if (vErrors === null) {
+                  vErrors = [err13];
+                } else {
+                  vErrors.push(err13);
+                }
+                errors++;
+              }
+            }
+            if (data1.messagePrefixes !== void 0) {
+              let data4 = data1.messagePrefixes;
+              if (Array.isArray(data4)) {
+                if (data4.length > 64) {
+                  const err14 = { instancePath: instancePath + "/catalogs/" + i0 + "/messagePrefixes", schemaPath: "#/properties/catalogs/items/properties/messagePrefixes/maxItems", keyword: "maxItems", params: { limit: 64 }, message: "must NOT have more than 64 items" };
+                  if (vErrors === null) {
+                    vErrors = [err14];
+                  } else {
+                    vErrors.push(err14);
+                  }
+                  errors++;
+                }
+                if (data4.length < 1) {
+                  const err15 = { instancePath: instancePath + "/catalogs/" + i0 + "/messagePrefixes", schemaPath: "#/properties/catalogs/items/properties/messagePrefixes/minItems", keyword: "minItems", params: { limit: 1 }, message: "must NOT have fewer than 1 items" };
+                  if (vErrors === null) {
+                    vErrors = [err15];
+                  } else {
+                    vErrors.push(err15);
+                  }
+                  errors++;
+                }
+                const len1 = data4.length;
+                for (let i1 = 0; i1 < len1; i1++) {
+                  let data5 = data4[i1];
+                  if (typeof data5 === "string") {
+                    if (func19(data5) > 256) {
+                      const err16 = { instancePath: instancePath + "/catalogs/" + i0 + "/messagePrefixes/" + i1, schemaPath: "#/properties/catalogs/items/properties/messagePrefixes/items/maxLength", keyword: "maxLength", params: { limit: 256 }, message: "must NOT have more than 256 characters" };
+                      if (vErrors === null) {
+                        vErrors = [err16];
+                      } else {
+                        vErrors.push(err16);
+                      }
+                      errors++;
+                    }
+                    if (!pattern67.test(data5)) {
+                      const err17 = { instancePath: instancePath + "/catalogs/" + i0 + "/messagePrefixes/" + i1, schemaPath: "#/properties/catalogs/items/properties/messagePrefixes/items/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$" }, message: 'must match pattern "^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$"' };
+                      if (vErrors === null) {
+                        vErrors = [err17];
+                      } else {
+                        vErrors.push(err17);
+                      }
+                      errors++;
+                    }
+                  } else {
+                    const err18 = { instancePath: instancePath + "/catalogs/" + i0 + "/messagePrefixes/" + i1, schemaPath: "#/properties/catalogs/items/properties/messagePrefixes/items/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    if (vErrors === null) {
+                      vErrors = [err18];
+                    } else {
+                      vErrors.push(err18);
+                    }
+                    errors++;
+                  }
+                }
+                let i2 = data4.length;
+                let j0;
+                if (i2 > 1) {
+                  const indices0 = {};
+                  for (; i2--; ) {
+                    let item0 = data4[i2];
+                    if (typeof item0 !== "string") {
+                      continue;
+                    }
+                    if (typeof indices0[item0] == "number") {
+                      j0 = indices0[item0];
+                      const err19 = { instancePath: instancePath + "/catalogs/" + i0 + "/messagePrefixes", schemaPath: "#/properties/catalogs/items/properties/messagePrefixes/uniqueItems", keyword: "uniqueItems", params: { i: i2, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i2 + " are identical)" };
+                      if (vErrors === null) {
+                        vErrors = [err19];
+                      } else {
+                        vErrors.push(err19);
+                      }
+                      errors++;
+                      break;
+                    }
+                    indices0[item0] = i2;
+                  }
+                }
+              } else {
+                const err20 = { instancePath: instancePath + "/catalogs/" + i0 + "/messagePrefixes", schemaPath: "#/properties/catalogs/items/properties/messagePrefixes/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+                if (vErrors === null) {
+                  vErrors = [err20];
+                } else {
+                  vErrors.push(err20);
+                }
+                errors++;
+              }
+            }
+          } else {
+            const err21 = { instancePath: instancePath + "/catalogs/" + i0, schemaPath: "#/properties/catalogs/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+            if (vErrors === null) {
+              vErrors = [err21];
+            } else {
+              vErrors.push(err21);
+            }
+            errors++;
+          }
+        }
+      } else {
+        const err22 = { instancePath: instancePath + "/catalogs", schemaPath: "#/properties/catalogs/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+        if (vErrors === null) {
+          vErrors = [err22];
+        } else {
+          vErrors.push(err22);
+        }
+        errors++;
+      }
+    }
+  } else {
+    const err23 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+    if (vErrors === null) {
+      vErrors = [err23];
+    } else {
+      vErrors.push(err23);
+    }
+    errors++;
+  }
+  validate2010.errors = vErrors;
+  return errors === 0;
+}
+validate2010.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+var func1Module6 = __toESM(require_ucs2length(), 1);
+var writerRequirementV1 = validate2011;
+var schema319 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/writer-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] } } };
+var func110 = func1Module6.default?.default ?? func1Module6.default;
+function validate2011(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+  ;
+  let vErrors = null;
+  let errors = 0;
+  const evaluated0 = validate2011.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -20134,7 +20416,7 @@ function validate2010(data, { instancePath = "", parentData, parentDataProperty,
     if (data.formatId !== void 0) {
       let data0 = data.formatId;
       if (typeof data0 === "string") {
-        if (func19(data0) < 1) {
+        if (func110(data0) < 1) {
           const err5 = { instancePath: instancePath + "/formatId", schemaPath: "#/properties/formatId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err5];
@@ -20156,7 +20438,7 @@ function validate2010(data, { instancePath = "", parentData, parentDataProperty,
     if (data.representationId !== void 0) {
       let data1 = data.representationId;
       if (typeof data1 === "string") {
-        if (func19(data1) < 1) {
+        if (func110(data1) < 1) {
           const err7 = { instancePath: instancePath + "/representationId", schemaPath: "#/properties/representationId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err7];
@@ -20208,19 +20490,19 @@ function validate2010(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2010.errors = vErrors;
+  validate2011.errors = vErrors;
   return errors === 0;
 }
-validate2010.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-var func1Module6 = __toESM(require_ucs2length(), 1);
-var writerOfferV1 = validate2011;
+validate2011.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+var func1Module7 = __toESM(require_ucs2length(), 1);
+var writerOfferV1 = validate2012;
 var schema3110 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/writer-offer.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip", "providerId", "fidelityEvidenceId"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] }, "providerId": { "type": "string", "minLength": 1 }, "fidelityEvidenceId": { "type": "string", "minLength": 1 } } };
-var func110 = func1Module6.default?.default ?? func1Module6.default;
-function validate2011(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+var func111 = func1Module7.default?.default ?? func1Module7.default;
+function validate2012(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2011.evaluated;
+  const evaluated0 = validate2012.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -20296,7 +20578,7 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
     if (data.formatId !== void 0) {
       let data0 = data.formatId;
       if (typeof data0 === "string") {
-        if (func110(data0) < 1) {
+        if (func111(data0) < 1) {
           const err7 = { instancePath: instancePath + "/formatId", schemaPath: "#/properties/formatId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err7];
@@ -20318,7 +20600,7 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
     if (data.representationId !== void 0) {
       let data1 = data.representationId;
       if (typeof data1 === "string") {
-        if (func110(data1) < 1) {
+        if (func111(data1) < 1) {
           const err9 = { instancePath: instancePath + "/representationId", schemaPath: "#/properties/representationId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err9];
@@ -20364,7 +20646,7 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
     if (data.providerId !== void 0) {
       let data4 = data.providerId;
       if (typeof data4 === "string") {
-        if (func110(data4) < 1) {
+        if (func111(data4) < 1) {
           const err13 = { instancePath: instancePath + "/providerId", schemaPath: "#/properties/providerId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err13];
@@ -20386,7 +20668,7 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
     if (data.fidelityEvidenceId !== void 0) {
       let data5 = data.fidelityEvidenceId;
       if (typeof data5 === "string") {
-        if (func110(data5) < 1) {
+        if (func111(data5) < 1) {
           const err15 = { instancePath: instancePath + "/fidelityEvidenceId", schemaPath: "#/properties/fidelityEvidenceId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err15];
@@ -20414,23 +20696,23 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2011.errors = vErrors;
+  validate2012.errors = vErrors;
   return errors === 0;
 }
-validate2011.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-var func1Module7 = __toESM(require_ucs2length(), 1);
-var traitDefinitionSpecV1 = validate2012;
+validate2012.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+var func1Module8 = __toESM(require_ucs2length(), 1);
+var traitDefinitionSpecV1 = validate2013;
 var schema3111 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "id", "version", "scope", "parametersSchema", "transport"], "properties": { "schemaVersion": { "const": 1 }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "scope": { "anyOf": [{ "enum": ["source", "asset", "subject", "workspace", "service", "operation", "view-session", "representation"] }, { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }] }, "parametersSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "transport": { "enum": ["json", "structured-clone"] }, "documentation": { "type": "string", "minLength": 1 }, "imports": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "range"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } } } };
-var pattern410 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-var pattern56 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
-var pattern67 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+var pattern411 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+var pattern57 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
+var pattern68 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
 var pattern83 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
-var func111 = func1Module7.default?.default ?? func1Module7.default;
-function validate2012(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+var func112 = func1Module8.default?.default ?? func1Module8.default;
+function validate2013(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2012.evaluated;
+  const evaluated0 = validate2013.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -20517,7 +20799,7 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
     if (data.id !== void 0) {
       let data1 = data.id;
       if (typeof data1 === "string") {
-        if (!pattern410.test(data1)) {
+        if (!pattern411.test(data1)) {
           const err8 = { instancePath: instancePath + "/id", schemaPath: "#/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
           if (vErrors === null) {
             vErrors = [err8];
@@ -20539,7 +20821,7 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
     if (data.version !== void 0) {
       let data2 = data.version;
       if (typeof data2 === "string") {
-        if (!pattern56.test(data2)) {
+        if (!pattern57.test(data2)) {
           const err10 = { instancePath: instancePath + "/version", schemaPath: "#/properties/version/pattern", keyword: "pattern", params: { pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, message: 'must match pattern "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"' };
           if (vErrors === null) {
             vErrors = [err10];
@@ -20576,7 +20858,7 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
       valid1 = valid1 || _valid0;
       const _errs10 = errors;
       if (typeof data3 === "string") {
-        if (!pattern67.test(data3)) {
+        if (!pattern68.test(data3)) {
           const err13 = { instancePath: instancePath + "/scope", schemaPath: "#/properties/scope/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
           if (vErrors === null) {
             vErrors = [err13];
@@ -20641,7 +20923,7 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
         if (data4.$ref !== void 0) {
           let data5 = data4.$ref;
           if (typeof data5 === "string") {
-            if (func111(data5) < 1) {
+            if (func112(data5) < 1) {
               const err18 = { instancePath: instancePath + "/parametersSchema/$ref", schemaPath: "#/properties/parametersSchema/properties/%24ref/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
               if (vErrors === null) {
                 vErrors = [err18];
@@ -20685,7 +20967,7 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
     if (data.documentation !== void 0) {
       let data7 = data.documentation;
       if (typeof data7 === "string") {
-        if (func111(data7) < 1) {
+        if (func112(data7) < 1) {
           const err22 = { instancePath: instancePath + "/documentation", schemaPath: "#/properties/documentation/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err22];
@@ -20743,7 +21025,7 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
             if (data9.id !== void 0) {
               let data10 = data9.id;
               if (typeof data10 === "string") {
-                if (!pattern410.test(data10)) {
+                if (!pattern411.test(data10)) {
                   const err27 = { instancePath: instancePath + "/imports/" + i0 + "/id", schemaPath: "#/properties/imports/items/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
                   if (vErrors === null) {
                     vErrors = [err27];
@@ -20813,22 +21095,22 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2012.errors = vErrors;
+  validate2013.errors = vErrors;
   return errors === 0;
 }
-validate2012.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+validate2013.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 var func2Module3 = __toESM(require_ucs2length(), 1);
-var contractDefinitionSpecV1 = validate2013;
+var contractDefinitionSpecV1 = validate2014;
 var schema3112 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/contract-definition-spec.v1.schema.json", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "offerFacet", "requestFacet", "matching", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "service" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "offerFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } } } }] }, "requestFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } } } }] }, "matching": { "type": "object", "additionalProperties": false, "required": ["profile", "major"], "properties": { "profile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "configuration": { "title": "JsonValue" } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }, { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }] };
-var func112 = Object.prototype.hasOwnProperty;
+var func113 = Object.prototype.hasOwnProperty;
 var func23 = func2Module3.default?.default ?? func2Module3.default;
-var pattern411 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-var pattern68 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
-function validate2013(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+var pattern412 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+var pattern69 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
+function validate2014(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2013.evaluated;
+  const evaluated0 = validate2014.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -20913,7 +21195,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
       errors++;
     }
     for (const key0 in data) {
-      if (!func112.call(schema3112.oneOf[0].properties, key0)) {
+      if (!func113.call(schema3112.oneOf[0].properties, key0)) {
         const err8 = { instancePath, schemaPath: "#/oneOf/0/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties" };
         if (vErrors === null) {
           vErrors = [err8];
@@ -20948,7 +21230,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
     if (data.contract !== void 0) {
       let data2 = data.contract;
       if (typeof data2 === "string") {
-        if (!pattern411.test(data2)) {
+        if (!pattern412.test(data2)) {
           const err11 = { instancePath: instancePath + "/contract", schemaPath: "#/oneOf/0/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
           if (vErrors === null) {
             vErrors = [err11];
@@ -21418,7 +21700,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
         if (data14.profile !== void 0) {
           let data15 = data14.profile;
           if (typeof data15 === "string") {
-            if (!pattern411.test(data15)) {
+            if (!pattern412.test(data15)) {
               const err49 = { instancePath: instancePath + "/matching/profile", schemaPath: "#/oneOf/0/properties/matching/properties/profile/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
               if (vErrors === null) {
                 vErrors = [err49];
@@ -21527,7 +21809,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
         if (data18.releaseVia !== void 0) {
           let data19 = data18.releaseVia;
           if (typeof data19 === "string") {
-            if (!pattern68.test(data19)) {
+            if (!pattern69.test(data19)) {
               const err59 = { instancePath: instancePath + "/surface/releaseVia", schemaPath: "#/oneOf/0/properties/surface/properties/releaseVia/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err59];
@@ -21562,7 +21844,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
             for (let i0 = 0; i0 < len0; i0++) {
               let data21 = data20[i0];
               if (typeof data21 === "string") {
-                if (!pattern68.test(data21)) {
+                if (!pattern69.test(data21)) {
                   const err62 = { instancePath: instancePath + "/surface/fields/" + i0, schemaPath: "#/oneOf/0/properties/surface/properties/fields/items/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                   if (vErrors === null) {
                     vErrors = [err62];
@@ -21629,7 +21911,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
             for (const key9 in data22) {
               const _errs60 = errors;
               if (typeof key9 === "string") {
-                if (!pattern68.test(key9)) {
+                if (!pattern69.test(key9)) {
                   const err67 = { instancePath: instancePath + "/surface/methods", schemaPath: "#/oneOf/0/properties/surface/properties/methods/propertyNames/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"', propertyName: key9 };
                   if (vErrors === null) {
                     vErrors = [err67];
@@ -21740,7 +22022,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data25.contract !== void 0) {
                       let data26 = data25.contract;
                       if (typeof data26 === "string") {
-                        if (!pattern411.test(data26)) {
+                        if (!pattern412.test(data26)) {
                           const err77 = { instancePath: instancePath + "/surface/methods/" + key10.replace(/~/g, "~0").replace(/\//g, "~1") + "/result/contract", schemaPath: "#/oneOf/0/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/result/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
                           if (vErrors === null) {
                             vErrors = [err77];
@@ -21895,7 +22177,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data29.key !== void 0) {
                       let data31 = data29.key;
                       if (typeof data31 === "string") {
-                        if (!pattern68.test(data31)) {
+                        if (!pattern69.test(data31)) {
                           const err91 = { instancePath: instancePath + "/surface/methods/" + key10.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/oneOf/0/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err91];
@@ -22011,7 +22293,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data32.key !== void 0) {
                       let data34 = data32.key;
                       if (typeof data34 === "string") {
-                        if (!pattern68.test(data34)) {
+                        if (!pattern69.test(data34)) {
                           const err101 = { instancePath: instancePath + "/surface/methods/" + key10.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/oneOf/0/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err101];
@@ -22334,7 +22616,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data42.key !== void 0) {
                       let data44 = data42.key;
                       if (typeof data44 === "string") {
-                        if (!pattern68.test(data44)) {
+                        if (!pattern69.test(data44)) {
                           const err130 = { instancePath: instancePath + "/surface/methods/" + key10.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/oneOf/0/properties/surface/properties/methods/additionalProperties/oneOf/1/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err130];
@@ -22450,7 +22732,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data45.key !== void 0) {
                       let data47 = data45.key;
                       if (typeof data47 === "string") {
-                        if (!pattern68.test(data47)) {
+                        if (!pattern69.test(data47)) {
                           const err140 = { instancePath: instancePath + "/surface/methods/" + key10.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/oneOf/0/properties/surface/properties/methods/additionalProperties/oneOf/1/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err140];
@@ -22810,7 +23092,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
     if (data.contract !== void 0) {
       let data56 = data.contract;
       if (typeof data56 === "string") {
-        if (!pattern411.test(data56)) {
+        if (!pattern412.test(data56)) {
           const err172 = { instancePath: instancePath + "/contract", schemaPath: "#/oneOf/1/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
           if (vErrors === null) {
             vErrors = [err172];
@@ -22964,7 +23246,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
         if (data61.releaseVia !== void 0) {
           let data62 = data61.releaseVia;
           if (typeof data62 === "string") {
-            if (!pattern68.test(data62)) {
+            if (!pattern69.test(data62)) {
               const err186 = { instancePath: instancePath + "/surface/releaseVia", schemaPath: "#/oneOf/1/properties/surface/properties/releaseVia/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err186];
@@ -22999,7 +23281,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
             for (let i2 = 0; i2 < len1; i2++) {
               let data64 = data63[i2];
               if (typeof data64 === "string") {
-                if (!pattern68.test(data64)) {
+                if (!pattern69.test(data64)) {
                   const err189 = { instancePath: instancePath + "/surface/fields/" + i2, schemaPath: "#/oneOf/1/properties/surface/properties/fields/items/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                   if (vErrors === null) {
                     vErrors = [err189];
@@ -23066,7 +23348,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
             for (const key23 in data65) {
               const _errs168 = errors;
               if (typeof key23 === "string") {
-                if (!pattern68.test(key23)) {
+                if (!pattern69.test(key23)) {
                   const err194 = { instancePath: instancePath + "/surface/methods", schemaPath: "#/oneOf/1/properties/surface/properties/methods/propertyNames/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"', propertyName: key23 };
                   if (vErrors === null) {
                     vErrors = [err194];
@@ -23177,7 +23459,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data68.contract !== void 0) {
                       let data69 = data68.contract;
                       if (typeof data69 === "string") {
-                        if (!pattern411.test(data69)) {
+                        if (!pattern412.test(data69)) {
                           const err204 = { instancePath: instancePath + "/surface/methods/" + key24.replace(/~/g, "~0").replace(/\//g, "~1") + "/result/contract", schemaPath: "#/oneOf/1/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/result/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
                           if (vErrors === null) {
                             vErrors = [err204];
@@ -23332,7 +23614,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data72.key !== void 0) {
                       let data74 = data72.key;
                       if (typeof data74 === "string") {
-                        if (!pattern68.test(data74)) {
+                        if (!pattern69.test(data74)) {
                           const err218 = { instancePath: instancePath + "/surface/methods/" + key24.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/oneOf/1/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err218];
@@ -23448,7 +23730,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data75.key !== void 0) {
                       let data77 = data75.key;
                       if (typeof data77 === "string") {
-                        if (!pattern68.test(data77)) {
+                        if (!pattern69.test(data77)) {
                           const err228 = { instancePath: instancePath + "/surface/methods/" + key24.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/oneOf/1/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err228];
@@ -23771,7 +24053,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data85.key !== void 0) {
                       let data87 = data85.key;
                       if (typeof data87 === "string") {
-                        if (!pattern68.test(data87)) {
+                        if (!pattern69.test(data87)) {
                           const err257 = { instancePath: instancePath + "/surface/methods/" + key24.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/oneOf/1/properties/surface/properties/methods/additionalProperties/oneOf/1/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err257];
@@ -23887,7 +24169,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data88.key !== void 0) {
                       let data90 = data88.key;
                       if (typeof data90 === "string") {
-                        if (!pattern68.test(data90)) {
+                        if (!pattern69.test(data90)) {
                           const err267 = { instancePath: instancePath + "/surface/methods/" + key24.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/oneOf/1/properties/surface/properties/methods/additionalProperties/oneOf/1/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err267];
@@ -24180,19 +24462,19 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
       }
     }
   }
-  validate2013.errors = vErrors;
+  validate2014.errors = vErrors;
   evaluated0.props = props5;
   return errors === 0;
 }
-validate2013.evaluated = { "dynamicProps": true, "dynamicItems": false };
+validate2014.evaluated = { "dynamicProps": true, "dynamicItems": false };
 var func2Module4 = __toESM(require_ucs2length(), 1);
 var func0Module4 = __toESM(require_equal(), 1);
-var subjectDescriptorV2 = validate2014;
+var subjectDescriptorV2 = validate2015;
 var schema3113 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/subject-descriptor.v2.schema.json", "$defs": { "jsonValue": { "title": "JsonValue", "oneOf": [{ "type": "null" }, { "type": "boolean" }, { "type": "number" }, { "type": "string" }, { "type": "array", "items": { "$ref": "#/$defs/jsonValue" } }, { "type": "object", "additionalProperties": { "$ref": "#/$defs/jsonValue" } }] } }, "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["schemaVersion", "subjectUri", "origin", "traits", "operations", "constraints", "dataSources", "diagnostics", "revision", "interpretation", "candidates"], "properties": { "schemaVersion": { "const": 2 }, "subjectUri": { "type": "string", "pattern": "\\S" }, "origin": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "binding"], "properties": { "kind": { "const": "single" }, "binding": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "bindings"], "properties": { "kind": { "const": "bundle" }, "bindings": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "primary": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "root", "revision"], "properties": { "kind": { "const": "namespace" }, "root": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "inputs"], "properties": { "kind": { "const": "derived" }, "inputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"], "properties": { "bindingId": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "subjectUri": { "type": "string", "minLength": 1 }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "compositionFingerprint": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "recipe": { "type": "object", "additionalProperties": false, "required": ["extensionId", "extensionVersion", "contributionId", "operation"], "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "extensionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "operation": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "parameters": { "$ref": "#/$defs/jsonValue" } } }, "materialization": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }] }, "traits": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "enum": ["partial", "disabled", "dependency-required"] }, "diagnosticIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 } } }] } }, "operations": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource", "reason"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "enum": ["disabled", "dependency-required"] }, "reason": { "type": "string", "minLength": 1 } } }] } }, "constraints": { "type": "object", "additionalProperties": false, "required": ["readOnly", "seekable", "randomAccess", "trusted"], "properties": { "readOnly": { "type": "boolean" }, "seekable": { "type": "boolean" }, "randomAccess": { "type": "boolean" }, "trusted": { "type": "boolean" }, "maxDecodedBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "unsupportedFeatures": { "type": "array", "items": { "type": "string" } } } }, "dataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "interpretation": { "const": "none" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["codecId", "confidence", "evidence", "requiredRanges"], "properties": { "codecId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "evidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "weight"], "properties": { "kind": { "enum": ["magic", "structure", "companion", "context", "extension", "user-override"] }, "weight": { "type": "number" }, "note": { "type": "string" } } } }, "requiredRanges": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } } } } } } }, { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "subjectUri", "origin", "traits", "operations", "constraints", "dataSources", "diagnostics", "revision", "interpretation", "identity", "metadata"], "properties": { "schemaVersion": { "const": 2 }, "subjectUri": { "type": "string", "pattern": "\\S" }, "origin": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "binding"], "properties": { "kind": { "const": "single" }, "binding": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "bindings"], "properties": { "kind": { "const": "bundle" }, "bindings": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "primary": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "root", "revision"], "properties": { "kind": { "const": "namespace" }, "root": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "inputs"], "properties": { "kind": { "const": "derived" }, "inputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"], "properties": { "bindingId": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "subjectUri": { "type": "string", "minLength": 1 }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "compositionFingerprint": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "recipe": { "type": "object", "additionalProperties": false, "required": ["extensionId", "extensionVersion", "contributionId", "operation"], "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "extensionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "operation": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "parameters": { "$ref": "#/$defs/jsonValue" } } }, "materialization": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }] }, "traits": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "enum": ["partial", "disabled", "dependency-required"] }, "diagnosticIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 } } }] } }, "operations": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource", "reason"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "enum": ["disabled", "dependency-required"] }, "reason": { "type": "string", "minLength": 1 } } }] } }, "constraints": { "type": "object", "additionalProperties": false, "required": ["readOnly", "seekable", "randomAccess", "trusted"], "properties": { "readOnly": { "type": "boolean" }, "seekable": { "type": "boolean" }, "randomAccess": { "type": "boolean" }, "trusted": { "type": "boolean" }, "maxDecodedBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "unsupportedFeatures": { "type": "array", "items": { "type": "string" } } } }, "dataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "interpretation": { "const": "codec" }, "identity": { "type": "object", "additionalProperties": false, "required": ["codecId", "codecVersion", "formatId", "formatLabel", "confidence", "detection"], "properties": { "codecId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "codecVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "formatId": { "type": "string", "minLength": 1 }, "formatLabel": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "detection": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "weight"], "properties": { "kind": { "enum": ["magic", "structure", "companion", "context", "extension", "user-override"] }, "weight": { "type": "number" }, "note": { "type": "string" } } } } } }, "metadata": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "label", "entries"], "properties": { "id": { "type": "string", "minLength": 1 }, "label": { "type": "string" }, "entries": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["key", "value"], "properties": { "key": { "type": "string", "minLength": 1 }, "value": { "$ref": "#/$defs/jsonValue" } } } } } } }, "companions": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true, "maxItems": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one-or-more" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "zero-or-one" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true, "maxItems": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "many" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "enum": ["one", "one-or-more"] }, "state": { "const": "missing" }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "enum": ["zero-or-one", "many"] }, "state": { "const": "missing" }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one" }, "state": { "const": "ambiguous" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, "minItems": 2, "uniqueItems": true }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "zero-or-one" }, "state": { "const": "ambiguous" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, "minItems": 2, "uniqueItems": true }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }] } } } }] };
-var func113 = Object.prototype.hasOwnProperty;
+var func114 = Object.prototype.hasOwnProperty;
 var func24 = func2Module4.default?.default ?? func2Module4.default;
 var func04 = func0Module4.default?.default ?? func0Module4.default;
-var pattern412 = new RegExp("\\S", "u");
+var pattern413 = new RegExp("\\S", "u");
 var pattern84 = new RegExp("^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$", "u");
 var pattern18 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
 var pattern19 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
@@ -24369,11 +24651,11 @@ function validate21(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 validate21.evaluated = { "dynamicProps": true, "dynamicItems": true };
-function validate2014(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+function validate2015(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2014.evaluated;
+  const evaluated0 = validate2015.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -24485,7 +24767,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
       errors++;
     }
     for (const key0 in data) {
-      if (!func113.call(schema3113.oneOf[0].properties, key0)) {
+      if (!func114.call(schema3113.oneOf[0].properties, key0)) {
         const err11 = { instancePath, schemaPath: "#/oneOf/0/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties" };
         if (vErrors === null) {
           vErrors = [err11];
@@ -24509,7 +24791,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
     if (data.subjectUri !== void 0) {
       let data1 = data.subjectUri;
       if (typeof data1 === "string") {
-        if (!pattern412.test(data1)) {
+        if (!pattern413.test(data1)) {
           const err13 = { instancePath: instancePath + "/subjectUri", schemaPath: "#/oneOf/0/properties/subjectUri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
           if (vErrors === null) {
             vErrors = [err13];
@@ -24722,7 +25004,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                 if (data7.id !== void 0) {
                   let data8 = data7.id;
                   if (typeof data8 === "string") {
-                    if (!pattern412.test(data8)) {
+                    if (!pattern413.test(data8)) {
                       const err33 = { instancePath: instancePath + "/origin/binding/source/id", schemaPath: "#/oneOf/0/properties/origin/oneOf/0/properties/binding/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                       if (vErrors === null) {
                         vErrors = [err33];
@@ -24744,7 +25026,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                 if (data7.uri !== void 0) {
                   let data9 = data7.uri;
                   if (typeof data9 === "string") {
-                    if (!pattern412.test(data9)) {
+                    if (!pattern413.test(data9)) {
                       const err35 = { instancePath: instancePath + "/origin/binding/source/uri", schemaPath: "#/oneOf/0/properties/origin/oneOf/0/properties/binding/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                       if (vErrors === null) {
                         vErrors = [err35];
@@ -24779,7 +25061,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     for (let i0 = 0; i0 < len0; i0++) {
                       let data11 = data10[i0];
                       if (typeof data11 === "string") {
-                        if (!pattern412.test(data11)) {
+                        if (!pattern413.test(data11)) {
                           const err38 = { instancePath: instancePath + "/origin/binding/source/parentIds/" + i0, schemaPath: "#/oneOf/0/properties/origin/oneOf/0/properties/binding/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err38];
@@ -25112,7 +25394,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data21.id !== void 0) {
                       let data22 = data21.id;
                       if (typeof data22 === "string") {
-                        if (!pattern412.test(data22)) {
+                        if (!pattern413.test(data22)) {
                           const err69 = { instancePath: instancePath + "/origin/bindings/" + i1 + "/source/id", schemaPath: "#/oneOf/0/properties/origin/oneOf/1/properties/bindings/items/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err69];
@@ -25134,7 +25416,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data21.uri !== void 0) {
                       let data23 = data21.uri;
                       if (typeof data23 === "string") {
-                        if (!pattern412.test(data23)) {
+                        if (!pattern413.test(data23)) {
                           const err71 = { instancePath: instancePath + "/origin/bindings/" + i1 + "/source/uri", schemaPath: "#/oneOf/0/properties/origin/oneOf/1/properties/bindings/items/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err71];
@@ -25169,7 +25451,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                         for (let i2 = 0; i2 < len2; i2++) {
                           let data25 = data24[i2];
                           if (typeof data25 === "string") {
-                            if (!pattern412.test(data25)) {
+                            if (!pattern413.test(data25)) {
                               const err74 = { instancePath: instancePath + "/origin/bindings/" + i1 + "/source/parentIds/" + i2, schemaPath: "#/oneOf/0/properties/origin/oneOf/1/properties/bindings/items/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                               if (vErrors === null) {
                                 vErrors = [err74];
@@ -25424,7 +25706,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
               if (data32.id !== void 0) {
                 let data33 = data32.id;
                 if (typeof data33 === "string") {
-                  if (!pattern412.test(data33)) {
+                  if (!pattern413.test(data33)) {
                     const err97 = { instancePath: instancePath + "/origin/root/id", schemaPath: "#/oneOf/0/properties/origin/oneOf/2/properties/root/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                     if (vErrors === null) {
                       vErrors = [err97];
@@ -25446,7 +25728,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
               if (data32.uri !== void 0) {
                 let data34 = data32.uri;
                 if (typeof data34 === "string") {
-                  if (!pattern412.test(data34)) {
+                  if (!pattern413.test(data34)) {
                     const err99 = { instancePath: instancePath + "/origin/root/uri", schemaPath: "#/oneOf/0/properties/origin/oneOf/2/properties/root/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                     if (vErrors === null) {
                       vErrors = [err99];
@@ -25481,7 +25763,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                   for (let i3 = 0; i3 < len3; i3++) {
                     let data36 = data35[i3];
                     if (typeof data36 === "string") {
-                      if (!pattern412.test(data36)) {
+                      if (!pattern413.test(data36)) {
                         const err102 = { instancePath: instancePath + "/origin/root/parentIds/" + i3, schemaPath: "#/oneOf/0/properties/origin/oneOf/2/properties/root/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                         if (vErrors === null) {
                           vErrors = [err102];
@@ -26028,7 +26310,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data53.id !== void 0) {
                       let data54 = data53.id;
                       if (typeof data54 === "string") {
-                        if (!pattern412.test(data54)) {
+                        if (!pattern413.test(data54)) {
                           const err152 = { instancePath: instancePath + "/origin/materialization/source/id", schemaPath: "#/oneOf/0/properties/origin/oneOf/3/properties/materialization/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err152];
@@ -26050,7 +26332,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data53.uri !== void 0) {
                       let data55 = data53.uri;
                       if (typeof data55 === "string") {
-                        if (!pattern412.test(data55)) {
+                        if (!pattern413.test(data55)) {
                           const err154 = { instancePath: instancePath + "/origin/materialization/source/uri", schemaPath: "#/oneOf/0/properties/origin/oneOf/3/properties/materialization/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err154];
@@ -26085,7 +26367,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                         for (let i5 = 0; i5 < len5; i5++) {
                           let data57 = data56[i5];
                           if (typeof data57 === "string") {
-                            if (!pattern412.test(data57)) {
+                            if (!pattern413.test(data57)) {
                               const err157 = { instancePath: instancePath + "/origin/materialization/source/parentIds/" + i5, schemaPath: "#/oneOf/0/properties/origin/oneOf/3/properties/materialization/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                               if (vErrors === null) {
                                 vErrors = [err157];
@@ -27479,7 +27761,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
               errors++;
             }
             for (const key23 in data105) {
-              if (!func113.call(schema3113.oneOf[0].properties.diagnostics.items.properties, key23)) {
+              if (!func114.call(schema3113.oneOf[0].properties.diagnostics.items.properties, key23)) {
                 const err275 = { instancePath: instancePath + "/diagnostics/" + i11, schemaPath: "#/oneOf/0/properties/diagnostics/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key23 }, message: "must NOT have additional properties" };
                 if (vErrors === null) {
                   vErrors = [err275];
@@ -29226,7 +29508,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                       errors++;
                     }
                     for (const key33 in data158) {
-                      if (!func113.call(schema3113.oneOf[0].properties.candidates.items.properties.diagnostics.items.properties, key33)) {
+                      if (!func114.call(schema3113.oneOf[0].properties.candidates.items.properties.diagnostics.items.properties, key33)) {
                         const err428 = { instancePath: instancePath + "/candidates/" + i14 + "/diagnostics/" + i17, schemaPath: "#/oneOf/0/properties/candidates/items/properties/diagnostics/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key33 }, message: "must NOT have additional properties" };
                         if (vErrors === null) {
                           vErrors = [err428];
@@ -30247,7 +30529,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
       errors++;
     }
     for (const key38 in data) {
-      if (!func113.call(schema3113.oneOf[1].properties, key38)) {
+      if (!func114.call(schema3113.oneOf[1].properties, key38)) {
         const err518 = { instancePath, schemaPath: "#/oneOf/1/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key38 }, message: "must NOT have additional properties" };
         if (vErrors === null) {
           vErrors = [err518];
@@ -30271,7 +30553,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
     if (data.subjectUri !== void 0) {
       let data186 = data.subjectUri;
       if (typeof data186 === "string") {
-        if (!pattern412.test(data186)) {
+        if (!pattern413.test(data186)) {
           const err520 = { instancePath: instancePath + "/subjectUri", schemaPath: "#/oneOf/1/properties/subjectUri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
           if (vErrors === null) {
             vErrors = [err520];
@@ -30484,7 +30766,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                 if (data192.id !== void 0) {
                   let data193 = data192.id;
                   if (typeof data193 === "string") {
-                    if (!pattern412.test(data193)) {
+                    if (!pattern413.test(data193)) {
                       const err540 = { instancePath: instancePath + "/origin/binding/source/id", schemaPath: "#/oneOf/1/properties/origin/oneOf/0/properties/binding/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                       if (vErrors === null) {
                         vErrors = [err540];
@@ -30506,7 +30788,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                 if (data192.uri !== void 0) {
                   let data194 = data192.uri;
                   if (typeof data194 === "string") {
-                    if (!pattern412.test(data194)) {
+                    if (!pattern413.test(data194)) {
                       const err542 = { instancePath: instancePath + "/origin/binding/source/uri", schemaPath: "#/oneOf/1/properties/origin/oneOf/0/properties/binding/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                       if (vErrors === null) {
                         vErrors = [err542];
@@ -30541,7 +30823,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     for (let i20 = 0; i20 < len20; i20++) {
                       let data196 = data195[i20];
                       if (typeof data196 === "string") {
-                        if (!pattern412.test(data196)) {
+                        if (!pattern413.test(data196)) {
                           const err545 = { instancePath: instancePath + "/origin/binding/source/parentIds/" + i20, schemaPath: "#/oneOf/1/properties/origin/oneOf/0/properties/binding/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err545];
@@ -30874,7 +31156,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data206.id !== void 0) {
                       let data207 = data206.id;
                       if (typeof data207 === "string") {
-                        if (!pattern412.test(data207)) {
+                        if (!pattern413.test(data207)) {
                           const err576 = { instancePath: instancePath + "/origin/bindings/" + i21 + "/source/id", schemaPath: "#/oneOf/1/properties/origin/oneOf/1/properties/bindings/items/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err576];
@@ -30896,7 +31178,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data206.uri !== void 0) {
                       let data208 = data206.uri;
                       if (typeof data208 === "string") {
-                        if (!pattern412.test(data208)) {
+                        if (!pattern413.test(data208)) {
                           const err578 = { instancePath: instancePath + "/origin/bindings/" + i21 + "/source/uri", schemaPath: "#/oneOf/1/properties/origin/oneOf/1/properties/bindings/items/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err578];
@@ -30931,7 +31213,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                         for (let i22 = 0; i22 < len22; i22++) {
                           let data210 = data209[i22];
                           if (typeof data210 === "string") {
-                            if (!pattern412.test(data210)) {
+                            if (!pattern413.test(data210)) {
                               const err581 = { instancePath: instancePath + "/origin/bindings/" + i21 + "/source/parentIds/" + i22, schemaPath: "#/oneOf/1/properties/origin/oneOf/1/properties/bindings/items/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                               if (vErrors === null) {
                                 vErrors = [err581];
@@ -31186,7 +31468,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
               if (data217.id !== void 0) {
                 let data218 = data217.id;
                 if (typeof data218 === "string") {
-                  if (!pattern412.test(data218)) {
+                  if (!pattern413.test(data218)) {
                     const err604 = { instancePath: instancePath + "/origin/root/id", schemaPath: "#/oneOf/1/properties/origin/oneOf/2/properties/root/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                     if (vErrors === null) {
                       vErrors = [err604];
@@ -31208,7 +31490,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
               if (data217.uri !== void 0) {
                 let data219 = data217.uri;
                 if (typeof data219 === "string") {
-                  if (!pattern412.test(data219)) {
+                  if (!pattern413.test(data219)) {
                     const err606 = { instancePath: instancePath + "/origin/root/uri", schemaPath: "#/oneOf/1/properties/origin/oneOf/2/properties/root/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                     if (vErrors === null) {
                       vErrors = [err606];
@@ -31243,7 +31525,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                   for (let i23 = 0; i23 < len23; i23++) {
                     let data221 = data220[i23];
                     if (typeof data221 === "string") {
-                      if (!pattern412.test(data221)) {
+                      if (!pattern413.test(data221)) {
                         const err609 = { instancePath: instancePath + "/origin/root/parentIds/" + i23, schemaPath: "#/oneOf/1/properties/origin/oneOf/2/properties/root/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                         if (vErrors === null) {
                           vErrors = [err609];
@@ -31790,7 +32072,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data238.id !== void 0) {
                       let data239 = data238.id;
                       if (typeof data239 === "string") {
-                        if (!pattern412.test(data239)) {
+                        if (!pattern413.test(data239)) {
                           const err659 = { instancePath: instancePath + "/origin/materialization/source/id", schemaPath: "#/oneOf/1/properties/origin/oneOf/3/properties/materialization/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err659];
@@ -31812,7 +32094,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data238.uri !== void 0) {
                       let data240 = data238.uri;
                       if (typeof data240 === "string") {
-                        if (!pattern412.test(data240)) {
+                        if (!pattern413.test(data240)) {
                           const err661 = { instancePath: instancePath + "/origin/materialization/source/uri", schemaPath: "#/oneOf/1/properties/origin/oneOf/3/properties/materialization/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err661];
@@ -31847,7 +32129,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                         for (let i25 = 0; i25 < len25; i25++) {
                           let data242 = data241[i25];
                           if (typeof data242 === "string") {
-                            if (!pattern412.test(data242)) {
+                            if (!pattern413.test(data242)) {
                               const err664 = { instancePath: instancePath + "/origin/materialization/source/parentIds/" + i25, schemaPath: "#/oneOf/1/properties/origin/oneOf/3/properties/materialization/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                               if (vErrors === null) {
                                 vErrors = [err664];
@@ -33241,7 +33523,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
               errors++;
             }
             for (const key61 in data290) {
-              if (!func113.call(schema3113.oneOf[1].properties.diagnostics.items.properties, key61)) {
+              if (!func114.call(schema3113.oneOf[1].properties.diagnostics.items.properties, key61)) {
                 const err782 = { instancePath: instancePath + "/diagnostics/" + i31, schemaPath: "#/oneOf/1/properties/diagnostics/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key61 }, message: "must NOT have additional properties" };
                 if (vErrors === null) {
                   vErrors = [err782];
@@ -36277,7 +36559,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                                   if (data390.id !== void 0) {
                                     let data391 = data390.id;
                                     if (typeof data391 === "string") {
-                                      if (!pattern412.test(data391)) {
+                                      if (!pattern413.test(data391)) {
                                         const err1047 = { instancePath: instancePath + "/companions/" + i37 + "/candidates/" + i50 + "/source/id", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/items/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                                         if (vErrors === null) {
                                           vErrors = [err1047];
@@ -36299,7 +36581,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                                   if (data390.uri !== void 0) {
                                     let data392 = data390.uri;
                                     if (typeof data392 === "string") {
-                                      if (!pattern412.test(data392)) {
+                                      if (!pattern413.test(data392)) {
                                         const err1049 = { instancePath: instancePath + "/companions/" + i37 + "/candidates/" + i50 + "/source/uri", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/items/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                                         if (vErrors === null) {
                                           vErrors = [err1049];
@@ -36334,7 +36616,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                                       for (let i51 = 0; i51 < len45; i51++) {
                                         let data394 = data393[i51];
                                         if (typeof data394 === "string") {
-                                          if (!pattern412.test(data394)) {
+                                          if (!pattern413.test(data394)) {
                                             const err1052 = { instancePath: instancePath + "/companions/" + i37 + "/candidates/" + i50 + "/source/parentIds/" + i51, schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/items/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                                             if (vErrors === null) {
                                               vErrors = [err1052];
@@ -36756,7 +37038,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                                     if (data405.id !== void 0) {
                                       let data406 = data405.id;
                                       if (typeof data406 === "string") {
-                                        if (!pattern412.test(data406)) {
+                                        if (!pattern413.test(data406)) {
                                           const err1089 = { instancePath: instancePath + "/companions/" + i37 + "/candidates/" + i55 + "/source/id", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/items/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                                           if (vErrors === null) {
                                             vErrors = [err1089];
@@ -36778,7 +37060,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                                     if (data405.uri !== void 0) {
                                       let data407 = data405.uri;
                                       if (typeof data407 === "string") {
-                                        if (!pattern412.test(data407)) {
+                                        if (!pattern413.test(data407)) {
                                           const err1091 = { instancePath: instancePath + "/companions/" + i37 + "/candidates/" + i55 + "/source/uri", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/items/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                                           if (vErrors === null) {
                                             vErrors = [err1091];
@@ -36813,7 +37095,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                                         for (let i56 = 0; i56 < len48; i56++) {
                                           let data409 = data408[i56];
                                           if (typeof data409 === "string") {
-                                            if (!pattern412.test(data409)) {
+                                            if (!pattern413.test(data409)) {
                                               const err1094 = { instancePath: instancePath + "/companions/" + i37 + "/candidates/" + i55 + "/source/parentIds/" + i56, schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/items/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                                               if (vErrors === null) {
                                                 vErrors = [err1094];
@@ -37078,25 +37360,25 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
       }
     }
   }
-  validate2014.errors = vErrors;
+  validate2015.errors = vErrors;
   evaluated0.props = props12;
   return errors === 0;
 }
-validate2014.evaluated = { "dynamicProps": true, "dynamicItems": false };
+validate2015.evaluated = { "dynamicProps": true, "dynamicItems": false };
 var func2Module5 = __toESM(require_ucs2length(), 1);
-var contributionManifestV1 = validate2015;
+var contributionManifestV1 = validate2016;
 var schema3114 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/contribution-manifest.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "contract", "id", "displayName", "spec"], "properties": { "schemaVersion": { "const": 1 }, "contract": { "type": "object", "additionalProperties": false, "required": ["id", "major"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 }, "status": { "enum": ["supported", "partial", "unsupported", "experimental"] }, "runtimeVariants": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "spec": { "title": "JsonValue" } } };
-var func114 = Object.prototype.hasOwnProperty;
+var func115 = Object.prototype.hasOwnProperty;
 var func25 = func2Module5.default?.default ?? func2Module5.default;
-var pattern413 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-var pattern69 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
+var pattern414 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+var pattern610 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
 var pattern75 = new RegExp("^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$", "u");
 var pattern94 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
-function validate2015(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+function validate2016(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2015.evaluated;
+  const evaluated0 = validate2016.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -37150,7 +37432,7 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
       errors++;
     }
     for (const key0 in data) {
-      if (!func114.call(schema3114.properties, key0)) {
+      if (!func115.call(schema3114.properties, key0)) {
         const err5 = { instancePath, schemaPath: "#/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties" };
         if (vErrors === null) {
           vErrors = [err5];
@@ -37206,7 +37488,7 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
         if (data1.id !== void 0) {
           let data2 = data1.id;
           if (typeof data2 === "string") {
-            if (!pattern413.test(data2)) {
+            if (!pattern414.test(data2)) {
               const err10 = { instancePath: instancePath + "/contract/id", schemaPath: "#/properties/contract/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
               if (vErrors === null) {
                 vErrors = [err10];
@@ -37270,7 +37552,7 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
     if (data.id !== void 0) {
       let data4 = data.id;
       if (typeof data4 === "string") {
-        if (!pattern413.test(data4)) {
+        if (!pattern414.test(data4)) {
           const err16 = { instancePath: instancePath + "/id", schemaPath: "#/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
           if (vErrors === null) {
             vErrors = [err16];
@@ -37389,7 +37671,7 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
             if (data8.variantId !== void 0) {
               let data9 = data8.variantId;
               if (typeof data9 === "string") {
-                if (!pattern69.test(data9)) {
+                if (!pattern610.test(data9)) {
                   const err27 = { instancePath: instancePath + "/runtimeVariants/" + i0 + "/variantId", schemaPath: "#/properties/runtimeVariants/items/properties/variantId/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*$"' };
                   if (vErrors === null) {
                     vErrors = [err27];
@@ -37782,7 +38064,7 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
             if (data28.contract !== void 0) {
               let data29 = data28.contract;
               if (typeof data29 === "string") {
-                if (!pattern413.test(data29)) {
+                if (!pattern414.test(data29)) {
                   const err61 = { instancePath: instancePath + "/dependsOn/" + i8 + "/contract", schemaPath: "#/properties/dependsOn/items/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
                   if (vErrors === null) {
                     vErrors = [err61];
@@ -38008,21 +38290,21 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2015.errors = vErrors;
+  validate2016.errors = vErrors;
   return errors === 0;
 }
-validate2015.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-var func1Module8 = __toESM(require_ucs2length(), 1);
-var runtimeVariantDeclarationV1 = validate2016;
+validate2016.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+var func1Module9 = __toESM(require_ucs2length(), 1);
+var runtimeVariantDeclarationV1 = validate2017;
 var schema3115 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } };
-var pattern414 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
-var pattern57 = new RegExp("^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$", "u");
-var func115 = func1Module8.default?.default ?? func1Module8.default;
-function validate2016(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+var pattern415 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
+var pattern58 = new RegExp("^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$", "u");
+var func116 = func1Module9.default?.default ?? func1Module9.default;
+function validate2017(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2016.evaluated;
+  const evaluated0 = validate2017.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -38089,7 +38371,7 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
     if (data.variantId !== void 0) {
       let data0 = data.variantId;
       if (typeof data0 === "string") {
-        if (!pattern414.test(data0)) {
+        if (!pattern415.test(data0)) {
           const err6 = { instancePath: instancePath + "/variantId", schemaPath: "#/properties/variantId/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*$"' };
           if (vErrors === null) {
             vErrors = [err6];
@@ -38111,7 +38393,7 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
     if (data.entrypoint !== void 0) {
       let data1 = data.entrypoint;
       if (typeof data1 === "string") {
-        if (!pattern57.test(data1)) {
+        if (!pattern58.test(data1)) {
           const err8 = { instancePath: instancePath + "/entrypoint", schemaPath: "#/properties/entrypoint/pattern", keyword: "pattern", params: { pattern: "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, message: 'must match pattern "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$"' };
           if (vErrors === null) {
             vErrors = [err8];
@@ -38256,7 +38538,7 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
             for (let i3 = 0; i3 < len3; i3++) {
               let data10 = data9[i3];
               if (typeof data10 === "string") {
-                if (func115(data10) < 1) {
+                if (func116(data10) < 1) {
                   const err20 = { instancePath: instancePath + "/target/requiredHostCapabilities/" + i3, schemaPath: "#/properties/target/properties/requiredHostCapabilities/items/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
                   if (vErrors === null) {
                     vErrors = [err20];
@@ -38292,7 +38574,7 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
             for (let i4 = 0; i4 < len4; i4++) {
               let data12 = data11[i4];
               if (typeof data12 === "string") {
-                if (func115(data12) < 1) {
+                if (func116(data12) < 1) {
                   const err23 = { instancePath: instancePath + "/target/requiredWebApis/" + i4, schemaPath: "#/properties/target/properties/requiredWebApis/items/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
                   if (vErrors === null) {
                     vErrors = [err23];
@@ -38328,7 +38610,7 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
             for (let i5 = 0; i5 < len5; i5++) {
               let data14 = data13[i5];
               if (typeof data14 === "string") {
-                if (func115(data14) < 1) {
+                if (func116(data14) < 1) {
                   const err26 = { instancePath: instancePath + "/target/externalTools/" + i5, schemaPath: "#/properties/target/properties/externalTools/items/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
                   if (vErrors === null) {
                     vErrors = [err26];
@@ -38414,21 +38696,21 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2016.errors = vErrors;
+  validate2017.errors = vErrors;
   return errors === 0;
 }
-validate2016.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-var func1Module9 = __toESM(require_ucs2length(), 1);
-var scopedContractRequirementV1 = validate2017;
+validate2017.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+var func1Module10 = __toESM(require_ucs2length(), 1);
+var scopedContractRequirementV1 = validate2018;
 var schema3116 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } };
-var pattern415 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-var pattern58 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
-var func116 = func1Module9.default?.default ?? func1Module9.default;
-function validate2017(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+var pattern416 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+var pattern59 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
+var func117 = func1Module10.default?.default ?? func1Module10.default;
+function validate2018(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2017.evaluated;
+  const evaluated0 = validate2018.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -38486,7 +38768,7 @@ function validate2017(data, { instancePath = "", parentData, parentDataProperty,
     if (data.contract !== void 0) {
       let data0 = data.contract;
       if (typeof data0 === "string") {
-        if (!pattern415.test(data0)) {
+        if (!pattern416.test(data0)) {
           const err5 = { instancePath: instancePath + "/contract", schemaPath: "#/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
           if (vErrors === null) {
             vErrors = [err5];
@@ -38540,7 +38822,7 @@ function validate2017(data, { instancePath = "", parentData, parentDataProperty,
     if (data.range !== void 0) {
       let data2 = data.range;
       if (typeof data2 === "string") {
-        if (!pattern58.test(data2)) {
+        if (!pattern59.test(data2)) {
           const err10 = { instancePath: instancePath + "/range", schemaPath: "#/properties/range/pattern", keyword: "pattern", params: { pattern: "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, message: 'must match pattern "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$"' };
           if (vErrors === null) {
             vErrors = [err10];
@@ -38618,7 +38900,7 @@ function validate2017(data, { instancePath = "", parentData, parentDataProperty,
         if (data4.id !== void 0) {
           let data6 = data4.id;
           if (typeof data6 === "string") {
-            if (func116(data6) < 1) {
+            if (func117(data6) < 1) {
               const err17 = { instancePath: instancePath + "/scope/id", schemaPath: "#/properties/scope/properties/id/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
               if (vErrors === null) {
                 vErrors = [err17];
@@ -38656,20 +38938,20 @@ function validate2017(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2017.errors = vErrors;
+  validate2018.errors = vErrors;
   return errors === 0;
 }
-validate2017.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-var func1Module10 = __toESM(require_ucs2length(), 1);
-var dataSourceContractDefinitionV1 = validate2018;
+validate2018.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+var func1Module11 = __toESM(require_ucs2length(), 1);
+var dataSourceContractDefinitionV1 = validate2019;
 var schema3117 = { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } };
-var pattern416 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-var pattern59 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
-var func117 = func1Module10.default?.default ?? func1Module10.default;
-function validate2018(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+var pattern417 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+var pattern510 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
+var func118 = func1Module11.default?.default ?? func1Module11.default;
+function validate2019(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2018.evaluated;
+  const evaluated0 = validate2019.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -38767,7 +39049,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
     if (data.contract !== void 0) {
       let data2 = data.contract;
       if (typeof data2 === "string") {
-        if (!pattern416.test(data2)) {
+        if (!pattern417.test(data2)) {
           const err9 = { instancePath: instancePath + "/contract", schemaPath: "#/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
           if (vErrors === null) {
             vErrors = [err9];
@@ -38844,7 +39126,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
         if (data4.$ref !== void 0) {
           let data5 = data4.$ref;
           if (typeof data5 === "string") {
-            if (func117(data5) < 1) {
+            if (func118(data5) < 1) {
               const err16 = { instancePath: instancePath + "/schema/$ref", schemaPath: "#/properties/schema/properties/%24ref/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
               if (vErrors === null) {
                 vErrors = [err16];
@@ -38876,7 +39158,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
     if (data.conformanceProfile !== void 0) {
       let data6 = data.conformanceProfile;
       if (typeof data6 === "string") {
-        if (func117(data6) < 1) {
+        if (func118(data6) < 1) {
           const err19 = { instancePath: instancePath + "/conformanceProfile", schemaPath: "#/properties/conformanceProfile/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err19];
@@ -38921,7 +39203,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
         if (data7.releaseVia !== void 0) {
           let data8 = data7.releaseVia;
           if (typeof data8 === "string") {
-            if (!pattern59.test(data8)) {
+            if (!pattern510.test(data8)) {
               const err23 = { instancePath: instancePath + "/surface/releaseVia", schemaPath: "#/properties/surface/properties/releaseVia/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err23];
@@ -38956,7 +39238,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
             for (let i0 = 0; i0 < len0; i0++) {
               let data10 = data9[i0];
               if (typeof data10 === "string") {
-                if (!pattern59.test(data10)) {
+                if (!pattern510.test(data10)) {
                   const err26 = { instancePath: instancePath + "/surface/fields/" + i0, schemaPath: "#/properties/surface/properties/fields/items/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                   if (vErrors === null) {
                     vErrors = [err26];
@@ -39023,7 +39305,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
             for (const key3 in data11) {
               const _errs26 = errors;
               if (typeof key3 === "string") {
-                if (!pattern59.test(key3)) {
+                if (!pattern510.test(key3)) {
                   const err31 = { instancePath: instancePath + "/surface/methods", schemaPath: "#/properties/surface/properties/methods/propertyNames/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"', propertyName: key3 };
                   if (vErrors === null) {
                     vErrors = [err31];
@@ -39134,7 +39416,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
                     if (data14.contract !== void 0) {
                       let data15 = data14.contract;
                       if (typeof data15 === "string") {
-                        if (!pattern416.test(data15)) {
+                        if (!pattern417.test(data15)) {
                           const err41 = { instancePath: instancePath + "/surface/methods/" + key4.replace(/~/g, "~0").replace(/\//g, "~1") + "/result/contract", schemaPath: "#/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/result/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
                           if (vErrors === null) {
                             vErrors = [err41];
@@ -39289,7 +39571,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
                     if (data18.key !== void 0) {
                       let data20 = data18.key;
                       if (typeof data20 === "string") {
-                        if (!pattern59.test(data20)) {
+                        if (!pattern510.test(data20)) {
                           const err55 = { instancePath: instancePath + "/surface/methods/" + key4.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err55];
@@ -39405,7 +39687,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
                     if (data21.key !== void 0) {
                       let data23 = data21.key;
                       if (typeof data23 === "string") {
-                        if (!pattern59.test(data23)) {
+                        if (!pattern510.test(data23)) {
                           const err65 = { instancePath: instancePath + "/surface/methods/" + key4.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err65];
@@ -39728,7 +40010,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
                     if (data31.key !== void 0) {
                       let data33 = data31.key;
                       if (typeof data33 === "string") {
-                        if (!pattern59.test(data33)) {
+                        if (!pattern510.test(data33)) {
                           const err94 = { instancePath: instancePath + "/surface/methods/" + key4.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/properties/surface/properties/methods/additionalProperties/oneOf/1/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err94];
@@ -39844,7 +40126,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
                     if (data34.key !== void 0) {
                       let data36 = data34.key;
                       if (typeof data36 === "string") {
-                        if (!pattern59.test(data36)) {
+                        if (!pattern510.test(data36)) {
                           const err104 = { instancePath: instancePath + "/surface/methods/" + key4.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/properties/surface/properties/methods/additionalProperties/oneOf/1/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err104];
@@ -40106,18 +40388,18 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2018.errors = vErrors;
+  validate2019.errors = vErrors;
   return errors === 0;
 }
-validate2018.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-var dataSourceSurfaceV1 = validate2019;
+validate2019.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+var dataSourceSurfaceV1 = validate2020;
 var schema3118 = { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } };
-var pattern417 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
+var pattern418 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
 var pattern76 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-function validate2019(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+function validate2020(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2019.evaluated;
+  const evaluated0 = validate2020.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -40148,7 +40430,7 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
     if (data.releaseVia !== void 0) {
       let data0 = data.releaseVia;
       if (typeof data0 === "string") {
-        if (!pattern417.test(data0)) {
+        if (!pattern418.test(data0)) {
           const err2 = { instancePath: instancePath + "/releaseVia", schemaPath: "#/properties/releaseVia/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
           if (vErrors === null) {
             vErrors = [err2];
@@ -40183,7 +40465,7 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
         for (let i0 = 0; i0 < len0; i0++) {
           let data2 = data1[i0];
           if (typeof data2 === "string") {
-            if (!pattern417.test(data2)) {
+            if (!pattern418.test(data2)) {
               const err5 = { instancePath: instancePath + "/fields/" + i0, schemaPath: "#/properties/fields/items/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err5];
@@ -40250,7 +40532,7 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
         for (const key1 in data3) {
           const _errs10 = errors;
           if (typeof key1 === "string") {
-            if (!pattern417.test(key1)) {
+            if (!pattern418.test(key1)) {
               const err10 = { instancePath: instancePath + "/methods", schemaPath: "#/properties/methods/propertyNames/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"', propertyName: key1 };
               if (vErrors === null) {
                 vErrors = [err10];
@@ -40516,7 +40798,7 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
                 if (data10.key !== void 0) {
                   let data12 = data10.key;
                   if (typeof data12 === "string") {
-                    if (!pattern417.test(data12)) {
+                    if (!pattern418.test(data12)) {
                       const err34 = { instancePath: instancePath + "/methods/" + key2.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/properties/methods/additionalProperties/oneOf/0/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                       if (vErrors === null) {
                         vErrors = [err34];
@@ -40632,7 +40914,7 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
                 if (data13.key !== void 0) {
                   let data15 = data13.key;
                   if (typeof data15 === "string") {
-                    if (!pattern417.test(data15)) {
+                    if (!pattern418.test(data15)) {
                       const err44 = { instancePath: instancePath + "/methods/" + key2.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/properties/methods/additionalProperties/oneOf/0/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                       if (vErrors === null) {
                         vErrors = [err44];
@@ -40955,7 +41237,7 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
                 if (data23.key !== void 0) {
                   let data25 = data23.key;
                   if (typeof data25 === "string") {
-                    if (!pattern417.test(data25)) {
+                    if (!pattern418.test(data25)) {
                       const err73 = { instancePath: instancePath + "/methods/" + key2.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/properties/methods/additionalProperties/oneOf/1/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                       if (vErrors === null) {
                         vErrors = [err73];
@@ -41071,7 +41353,7 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
                 if (data26.key !== void 0) {
                   let data28 = data26.key;
                   if (typeof data28 === "string") {
-                    if (!pattern417.test(data28)) {
+                    if (!pattern418.test(data28)) {
                       const err83 = { instancePath: instancePath + "/methods/" + key2.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/properties/methods/additionalProperties/oneOf/1/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                       if (vErrors === null) {
                         vErrors = [err83];
@@ -41323,18 +41605,18 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2019.errors = vErrors;
+  validate2020.errors = vErrors;
   return errors === 0;
 }
-validate2019.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-var dataSourceMethodSurfaceV1 = validate2020;
+validate2020.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+var dataSourceMethodSurfaceV1 = validate2021;
 var schema3119 = { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] };
-var pattern418 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-var pattern510 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
-function validate2020(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+var pattern419 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+var pattern511 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
+function validate2021(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2020.evaluated;
+  const evaluated0 = validate2021.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -41421,7 +41703,7 @@ function validate2020(data, { instancePath = "", parentData, parentDataProperty,
         if (data1.contract !== void 0) {
           let data2 = data1.contract;
           if (typeof data2 === "string") {
-            if (!pattern418.test(data2)) {
+            if (!pattern419.test(data2)) {
               const err7 = { instancePath: instancePath + "/result/contract", schemaPath: "#/oneOf/0/properties/result/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
               if (vErrors === null) {
                 vErrors = [err7];
@@ -41576,7 +41858,7 @@ function validate2020(data, { instancePath = "", parentData, parentDataProperty,
         if (data5.key !== void 0) {
           let data7 = data5.key;
           if (typeof data7 === "string") {
-            if (!pattern510.test(data7)) {
+            if (!pattern511.test(data7)) {
               const err21 = { instancePath: instancePath + "/signal/key", schemaPath: "#/oneOf/0/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err21];
@@ -41692,7 +41974,7 @@ function validate2020(data, { instancePath = "", parentData, parentDataProperty,
         if (data8.key !== void 0) {
           let data10 = data8.key;
           if (typeof data10 === "string") {
-            if (!pattern510.test(data10)) {
+            if (!pattern511.test(data10)) {
               const err31 = { instancePath: instancePath + "/progress/key", schemaPath: "#/oneOf/0/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err31];
@@ -42015,7 +42297,7 @@ function validate2020(data, { instancePath = "", parentData, parentDataProperty,
         if (data18.key !== void 0) {
           let data20 = data18.key;
           if (typeof data20 === "string") {
-            if (!pattern510.test(data20)) {
+            if (!pattern511.test(data20)) {
               const err60 = { instancePath: instancePath + "/signal/key", schemaPath: "#/oneOf/1/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err60];
@@ -42131,7 +42413,7 @@ function validate2020(data, { instancePath = "", parentData, parentDataProperty,
         if (data21.key !== void 0) {
           let data23 = data21.key;
           if (typeof data23 === "string") {
-            if (!pattern510.test(data23)) {
+            if (!pattern511.test(data23)) {
               const err70 = { instancePath: instancePath + "/progress/key", schemaPath: "#/oneOf/1/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err70];
@@ -42363,11 +42645,11 @@ function validate2020(data, { instancePath = "", parentData, parentDataProperty,
       }
     }
   }
-  validate2020.errors = vErrors;
+  validate2021.errors = vErrors;
   evaluated0.props = props1;
   return errors === 0;
 }
-validate2020.evaluated = { "dynamicProps": true, "dynamicItems": false };
+validate2021.evaluated = { "dynamicProps": true, "dynamicItems": false };
 var PRECOMPILED_SCHEMA_VALIDATORS = /* @__PURE__ */ new Map([
   ['{\n  "$id": "https://schemas.modkitx.org/x3/source-span.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "oneOf": [\n    {\n      "additionalProperties": false,\n      "properties": {\n        "byteLength": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "byteOffset": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        }\n      },\n      "required": [\n        "byteOffset",\n        "byteLength"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "column": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "line": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Length": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Offset": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "required": [\n        "utf16Offset",\n        "utf16Length",\n        "line",\n        "column"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "byteLength": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "byteOffset": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "column": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "line": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Length": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Offset": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "required": [\n        "byteOffset",\n        "byteLength",\n        "utf16Offset",\n        "utf16Length",\n        "line",\n        "column"\n      ],\n      "type": "object"\n    }\n  ]\n}\n', sourceSpanV1],
   ['{\n  "$id": "https://schemas.modkitx.org/x3/extension-manifest.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "contributionManifests": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "dependsOn": {\n      "items": {\n        "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json",\n        "$schema": "https://json-schema.org/draft/2020-12/schema",\n        "additionalProperties": false,\n        "properties": {\n          "extension": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "mode": {\n            "enum": [\n              "required",\n              "default",\n              "suggested",\n              "integrates"\n            ]\n          },\n          "range": {\n            "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n            "type": "string"\n          },\n          "scope": {\n            "additionalProperties": false,\n            "properties": {\n              "id": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "kind": {\n                "enum": [\n                  "contribution",\n                  "offer",\n                  "operation",\n                  "intent",\n                  "variant",\n                  "profile",\n                  "projection",\n                  "slot"\n                ]\n              }\n            },\n            "required": [\n              "kind",\n              "id"\n            ],\n            "type": "object"\n          }\n        },\n        "required": [\n          "extension",\n          "mode",\n          "scope"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "id": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "license": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "publisher": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "schemaVersion": {\n      "const": 1\n    },\n    "version": {\n      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-((?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\\\.(?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\\+([0-9a-zA-Z-]+(?:\\\\.[0-9a-zA-Z-]+)*))?$",\n      "type": "string"\n    }\n  },\n  "required": [\n    "schemaVersion",\n    "publisher",\n    "id",\n    "version",\n    "license",\n    "contributionManifests"\n  ],\n  "type": "object"\n}\n', extensionManifestV1],
@@ -42378,6 +42660,7 @@ var PRECOMPILED_SCHEMA_VALIDATORS = /* @__PURE__ */ new Map([
   ['{\n  "$id": "https://schemas.modkitx.org/x3/viewer-contribution-spec.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "applicability": {\n      "additionalProperties": false,\n      "properties": {\n        "interpretation": {\n          "enum": [\n            "none",\n            "codec",\n            "any"\n          ]\n        },\n        "longestLineBytes": {\n          "additionalProperties": false,\n          "properties": {\n            "maximum": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "whenUnknown": {\n              "enum": [\n                "eligible",\n                "ineligible"\n              ]\n            }\n          },\n          "required": [\n            "maximum",\n            "whenUnknown"\n          ],\n          "type": "object"\n        },\n        "sourceBytes": {\n          "additionalProperties": false,\n          "properties": {\n            "maximum": {\n              "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n              "type": "string"\n            }\n          },\n          "type": "object"\n        }\n      },\n      "type": "object"\n    },\n    "conflicts": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "consumesDataSources": {\n      "items": {\n        "oneOf": [\n          {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "enum": [\n                  "common.view/text-data-source",\n                  "common.view/byte-range-source",\n                  "common.view/tree-data-source",\n                  "common.view/table-data-source",\n                  "common.view/transport-source",\n                  "common.view/namespace-entry-source",\n                  "common.view/raster-image-source",\n                  "common.view/vector-scene-source",\n                  "common.view/audio-media-source",\n                  "common.view/video-media-source",\n                  "common.view/model-scene-source",\n                  "common.view/world-scene-source",\n                  "common.view/model-resource-refs-source",\n                  "common.view/model-skeleton-source",\n                  "common.view/model-animation-source",\n                  "common.view/model-collision-source",\n                  "common.view/model-material-source",\n                  "common.view/model-socket-source",\n                  "common.view/relation-graph-source",\n                  "common.view/subject-selector-source",\n                  "common.view/subject-facts-source",\n                  "common.view/subject-calculations-source",\n                  "common.view/slide-deck-source"\n                ]\n              },\n              "major": {\n                "const": 1\n              }\n            },\n            "required": [\n              "contract",\n              "major"\n            ],\n            "type": "object"\n          },\n          {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "not": {\n                  "enum": [\n                    "common.view/text-data-source",\n                    "common.view/byte-range-source",\n                    "common.view/tree-data-source",\n                    "common.view/table-data-source",\n                    "common.view/transport-source",\n                    "common.view/namespace-entry-source",\n                    "common.view/raster-image-source",\n                    "common.view/vector-scene-source",\n                    "common.view/audio-media-source",\n                    "common.view/video-media-source",\n                    "common.view/model-scene-source",\n                    "common.view/world-scene-source",\n                    "common.view/model-resource-refs-source",\n                    "common.view/model-skeleton-source",\n                    "common.view/model-animation-source",\n                    "common.view/model-collision-source",\n                    "common.view/model-material-source",\n                    "common.view/model-socket-source",\n                    "common.view/relation-graph-source",\n                    "common.view/subject-selector-source",\n                    "common.view/subject-facts-source",\n                    "common.view/subject-calculations-source",\n                    "common.view/slide-deck-source"\n                  ]\n                },\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "major": {\n                "maximum": 9007199254740991,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "opaque": {\n                "const": true\n              }\n            },\n            "required": [\n              "contract",\n              "major",\n              "opaque"\n            ],\n            "type": "object"\n          }\n        ]\n      },\n      "type": "array"\n    },\n    "hosts": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "kind": {\n      "enum": [\n        "stage",\n        "tree",\n        "panel",\n        "toolbar",\n        "transport",\n        "status",\n        "fallback"\n      ]\n    },\n    "optionalDataSources": {\n      "items": {\n        "oneOf": [\n          {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "enum": [\n                  "common.view/text-data-source",\n                  "common.view/byte-range-source",\n                  "common.view/tree-data-source",\n                  "common.view/table-data-source",\n                  "common.view/transport-source",\n                  "common.view/namespace-entry-source",\n                  "common.view/raster-image-source",\n                  "common.view/vector-scene-source",\n                  "common.view/audio-media-source",\n                  "common.view/video-media-source",\n                  "common.view/model-scene-source",\n                  "common.view/world-scene-source",\n                  "common.view/model-resource-refs-source",\n                  "common.view/model-skeleton-source",\n                  "common.view/model-animation-source",\n                  "common.view/model-collision-source",\n                  "common.view/model-material-source",\n                  "common.view/model-socket-source",\n                  "common.view/relation-graph-source",\n                  "common.view/subject-selector-source",\n                  "common.view/subject-facts-source",\n                  "common.view/subject-calculations-source",\n                  "common.view/slide-deck-source"\n                ]\n              },\n              "major": {\n                "const": 1\n              }\n            },\n            "required": [\n              "contract",\n              "major"\n            ],\n            "type": "object"\n          },\n          {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "not": {\n                  "enum": [\n                    "common.view/text-data-source",\n                    "common.view/byte-range-source",\n                    "common.view/tree-data-source",\n                    "common.view/table-data-source",\n                    "common.view/transport-source",\n                    "common.view/namespace-entry-source",\n                    "common.view/raster-image-source",\n                    "common.view/vector-scene-source",\n                    "common.view/audio-media-source",\n                    "common.view/video-media-source",\n                    "common.view/model-scene-source",\n                    "common.view/world-scene-source",\n                    "common.view/model-resource-refs-source",\n                    "common.view/model-skeleton-source",\n                    "common.view/model-animation-source",\n                    "common.view/model-collision-source",\n                    "common.view/model-material-source",\n                    "common.view/model-socket-source",\n                    "common.view/relation-graph-source",\n                    "common.view/subject-selector-source",\n                    "common.view/subject-facts-source",\n                    "common.view/subject-calculations-source",\n                    "common.view/slide-deck-source"\n                  ]\n                },\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "major": {\n                "maximum": 9007199254740991,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "opaque": {\n                "const": true\n              }\n            },\n            "required": [\n              "contract",\n              "major",\n              "opaque"\n            ],\n            "type": "object"\n          }\n        ]\n      },\n      "type": "array"\n    },\n    "priority": {\n      "type": "number"\n    },\n    "requiresOperations": {\n      "items": {\n        "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)$",\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "requiresTraits": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "definitionRange": {\n            "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n            "type": "string"\n          },\n          "id": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "states": {\n            "items": {\n              "enum": [\n                "available",\n                "partial",\n                "disabled",\n                "dependency-required"\n              ]\n            },\n            "minItems": 1,\n            "type": "array",\n            "uniqueItems": true\n          }\n        },\n        "required": [\n          "id"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "singletonGroup": {\n      "minLength": 1,\n      "type": "string"\n    }\n  },\n  "required": [\n    "kind",\n    "consumesDataSources",\n    "priority"\n  ],\n  "type": "object"\n}\n', viewerContributionSpecV1],
   ['{\n  "$id": "https://schemas.modkitx.org/x3/editor-contribution-spec.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "consumesDataSources": {\n      "items": {\n        "oneOf": [\n          {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "enum": [\n                  "common.view/text-data-source",\n                  "common.view/byte-range-source",\n                  "common.view/tree-data-source",\n                  "common.view/table-data-source",\n                  "common.view/transport-source",\n                  "common.view/namespace-entry-source",\n                  "common.view/raster-image-source",\n                  "common.view/vector-scene-source",\n                  "common.view/audio-media-source",\n                  "common.view/video-media-source",\n                  "common.view/model-scene-source",\n                  "common.view/world-scene-source",\n                  "common.view/model-resource-refs-source",\n                  "common.view/model-skeleton-source",\n                  "common.view/model-animation-source",\n                  "common.view/model-collision-source",\n                  "common.view/model-material-source",\n                  "common.view/model-socket-source",\n                  "common.view/relation-graph-source",\n                  "common.view/subject-selector-source",\n                  "common.view/subject-facts-source",\n                  "common.view/subject-calculations-source",\n                  "common.view/slide-deck-source"\n                ]\n              },\n              "major": {\n                "const": 1\n              }\n            },\n            "required": [\n              "contract",\n              "major"\n            ],\n            "type": "object"\n          },\n          {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "not": {\n                  "enum": [\n                    "common.view/text-data-source",\n                    "common.view/byte-range-source",\n                    "common.view/tree-data-source",\n                    "common.view/table-data-source",\n                    "common.view/transport-source",\n                    "common.view/namespace-entry-source",\n                    "common.view/raster-image-source",\n                    "common.view/vector-scene-source",\n                    "common.view/audio-media-source",\n                    "common.view/video-media-source",\n                    "common.view/model-scene-source",\n                    "common.view/world-scene-source",\n                    "common.view/model-resource-refs-source",\n                    "common.view/model-skeleton-source",\n                    "common.view/model-animation-source",\n                    "common.view/model-collision-source",\n                    "common.view/model-material-source",\n                    "common.view/model-socket-source",\n                    "common.view/relation-graph-source",\n                    "common.view/subject-selector-source",\n                    "common.view/subject-facts-source",\n                    "common.view/subject-calculations-source",\n                    "common.view/slide-deck-source"\n                  ]\n                },\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "major": {\n                "maximum": 9007199254740991,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "opaque": {\n                "const": true\n              }\n            },\n            "required": [\n              "contract",\n              "major",\n              "opaque"\n            ],\n            "type": "object"\n          }\n        ]\n      },\n      "type": "array",\n      "uniqueItems": true\n    },\n    "hosts": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array",\n      "uniqueItems": true\n    },\n    "priority": {\n      "type": "number"\n    },\n    "requiresOperations": {\n      "items": {\n        "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)$",\n        "type": "string"\n      },\n      "type": "array",\n      "uniqueItems": true\n    },\n    "requiresTransactions": {\n      "type": "boolean"\n    },\n    "scaleLimits": {\n      "additionalProperties": false,\n      "properties": {\n        "maximumRows": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "maximumSourceBytes": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "maximumSubjects": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "type": "object"\n    },\n    "selectionKinds": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array",\n      "uniqueItems": true\n    },\n    "semanticLocationKinds": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array",\n      "uniqueItems": true\n    },\n    "sessionModel": {\n      "enum": [\n        "single-subject",\n        "multi-subject",\n        "workspace"\n      ]\n    },\n    "writer": {\n      "additionalProperties": false,\n      "properties": {\n        "formatId": {\n          "minLength": 1,\n          "type": "string"\n        },\n        "minimumRoundTrip": {\n          "enum": [\n            "byte-identical",\n            "semantic",\n            "lossy",\n            "none"\n          ]\n        },\n        "mutationMode": {\n          "enum": [\n            "export-only",\n            "mutate"\n          ]\n        },\n        "representationId": {\n          "minLength": 1,\n          "type": "string"\n        }\n      },\n      "required": [\n        "formatId",\n        "representationId",\n        "mutationMode",\n        "minimumRoundTrip"\n      ],\n      "type": "object"\n    }\n  },\n  "required": [\n    "sessionModel",\n    "selectionKinds",\n    "semanticLocationKinds",\n    "requiresTransactions",\n    "requiresOperations",\n    "consumesDataSources",\n    "writer",\n    "priority"\n  ],\n  "type": "object"\n}\n', editorContributionSpecV1],
   ['{\n  "$id": "https://schemas.modkitx.org/x3/knowledge-pack-spec.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "entries": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "aliases": {\n            "items": {\n              "maxLength": 128,\n              "minLength": 1,\n              "type": "string"\n            },\n            "maxItems": 32,\n            "type": "array",\n            "uniqueItems": true\n          },\n          "claimKind": {\n            "enum": [\n              "schema-derived-fact",\n              "documented-interpretation",\n              "community-note",\n              "external-reference"\n            ]\n          },\n          "confidence": {\n            "enum": [\n              "verified",\n              "high",\n              "medium",\n              "low"\n            ]\n          },\n          "details": {\n            "additionalProperties": false,\n            "properties": {\n              "allowedValues": {\n                "items": {\n                  "title": "JsonValue"\n                },\n                "maxItems": 512,\n                "type": "array"\n              },\n              "defaultValue": {\n                "title": "JsonValue"\n              },\n              "deprecated": {\n                "type": "boolean"\n              },\n              "formulaRole": {\n                "maxLength": 512,\n                "minLength": 1,\n                "type": "string"\n              },\n              "units": {\n                "maxLength": 128,\n                "minLength": 1,\n                "type": "string"\n              },\n              "valueType": {\n                "maxLength": 128,\n                "minLength": 1,\n                "type": "string"\n              }\n            },\n            "type": "object"\n          },\n          "examples": {\n            "items": {\n              "additionalProperties": false,\n              "properties": {\n                "text": {\n                  "maxLength": 2048,\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "title": {\n                  "maxLength": 256,\n                  "minLength": 1,\n                  "type": "string"\n                }\n              },\n              "required": [\n                "title",\n                "text"\n              ],\n              "type": "object"\n            },\n            "maxItems": 16,\n            "type": "array"\n          },\n          "id": {\n            "maxLength": 256,\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "keywords": {\n            "items": {\n              "maxLength": 128,\n              "minLength": 1,\n              "type": "string"\n            },\n            "maxItems": 32,\n            "type": "array",\n            "uniqueItems": true\n          },\n          "locale": {\n            "maxLength": 64,\n            "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$",\n            "type": "string"\n          },\n          "relations": {\n            "items": {\n              "additionalProperties": false,\n              "properties": {\n                "role": {\n                  "maxLength": 128,\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "target": {\n                  "oneOf": [\n                    {\n                      "additionalProperties": false,\n                      "properties": {\n                        "canonicalPath": {\n                          "items": {\n                            "maxLength": 128,\n                            "minLength": 1,\n                            "type": "string"\n                          },\n                          "maxItems": 32,\n                          "minItems": 1,\n                          "type": "array"\n                        },\n                        "ecosystem": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "kind": {\n                          "const": "field"\n                        },\n                        "schema": {\n                          "additionalProperties": false,\n                          "properties": {\n                            "contract": {\n                              "maxLength": 256,\n                              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                              "type": "string"\n                            },\n                            "major": {\n                              "maximum": 9007199254740991,\n                              "minimum": 0,\n                              "type": "integer"\n                            },\n                            "revision": {\n                              "maxLength": 256,\n                              "minLength": 1,\n                              "type": "string"\n                            }\n                          },\n                          "required": [\n                            "contract",\n                            "major",\n                            "revision"\n                          ],\n                          "type": "object"\n                        },\n                        "typeId": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        }\n                      },\n                      "required": [\n                        "kind",\n                        "ecosystem",\n                        "schema",\n                        "typeId",\n                        "canonicalPath"\n                      ],\n                      "type": "object"\n                    },\n                    {\n                      "additionalProperties": false,\n                      "properties": {\n                        "ecosystem": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "kind": {\n                          "const": "subject"\n                        },\n                        "subjectId": {\n                          "maxLength": 512,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "subjectKind": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        }\n                      },\n                      "required": [\n                        "kind",\n                        "ecosystem",\n                        "subjectKind"\n                      ],\n                      "type": "object"\n                    },\n                    {\n                      "additionalProperties": false,\n                      "properties": {\n                        "ecosystem": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "formatId": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "kind": {\n                          "const": "format"\n                        }\n                      },\n                      "required": [\n                        "kind",\n                        "ecosystem",\n                        "formatId"\n                      ],\n                      "type": "object"\n                    },\n                    {\n                      "additionalProperties": false,\n                      "properties": {\n                        "code": {\n                          "maxLength": 256,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "ecosystem": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "kind": {\n                          "const": "diagnostic"\n                        }\n                      },\n                      "required": [\n                        "kind",\n                        "ecosystem",\n                        "code"\n                      ],\n                      "type": "object"\n                    },\n                    {\n                      "additionalProperties": false,\n                      "properties": {\n                        "conceptId": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "ecosystem": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "kind": {\n                          "const": "concept"\n                        }\n                      },\n                      "required": [\n                        "kind",\n                        "ecosystem",\n                        "conceptId"\n                      ],\n                      "type": "object"\n                    }\n                  ]\n                }\n              },\n              "required": [\n                "role",\n                "target"\n              ],\n              "type": "object"\n            },\n            "maxItems": 64,\n            "type": "array"\n          },\n          "sources": {\n            "items": {\n              "additionalProperties": false,\n              "properties": {\n                "kind": {\n                  "enum": [\n                    "schema",\n                    "official-documentation",\n                    "source-code",\n                    "community-wiki",\n                    "observed-corpus",\n                    "external-reference"\n                  ]\n                },\n                "license": {\n                  "maxLength": 256,\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "reviewedAt": {\n                  "pattern": "^\\\\d{4}-\\\\d{2}-\\\\d{2}$",\n                  "type": "string"\n                },\n                "revision": {\n                  "maxLength": 256,\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "schema": {\n                  "additionalProperties": false,\n                  "properties": {\n                    "contract": {\n                      "maxLength": 256,\n                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                      "type": "string"\n                    },\n                    "major": {\n                      "maximum": 9007199254740991,\n                      "minimum": 0,\n                      "type": "integer"\n                    },\n                    "revision": {\n                      "maxLength": 256,\n                      "minLength": 1,\n                      "type": "string"\n                    }\n                  },\n                  "required": [\n                    "contract",\n                    "major",\n                    "revision"\n                  ],\n                  "type": "object"\n                },\n                "title": {\n                  "maxLength": 256,\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "url": {\n                  "maxLength": 2048,\n                  "pattern": "^https://[^\\\\s]+$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "kind",\n                "title",\n                "reviewedAt"\n              ],\n              "type": "object"\n            },\n            "maxItems": 16,\n            "minItems": 1,\n            "type": "array"\n          },\n          "summary": {\n            "maxLength": 1024,\n            "minLength": 1,\n            "type": "string"\n          },\n          "target": {\n            "oneOf": [\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "canonicalPath": {\n                    "items": {\n                      "maxLength": 128,\n                      "minLength": 1,\n                      "type": "string"\n                    },\n                    "maxItems": 32,\n                    "minItems": 1,\n                    "type": "array"\n                  },\n                  "ecosystem": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "kind": {\n                    "const": "field"\n                  },\n                  "schema": {\n                    "additionalProperties": false,\n                    "properties": {\n                      "contract": {\n                        "maxLength": 256,\n                        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                        "type": "string"\n                      },\n                      "major": {\n                        "maximum": 9007199254740991,\n                        "minimum": 0,\n                        "type": "integer"\n                      },\n                      "revision": {\n                        "maxLength": 256,\n                        "minLength": 1,\n                        "type": "string"\n                      }\n                    },\n                    "required": [\n                      "contract",\n                      "major",\n                      "revision"\n                    ],\n                    "type": "object"\n                  },\n                  "typeId": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  }\n                },\n                "required": [\n                  "kind",\n                  "ecosystem",\n                  "schema",\n                  "typeId",\n                  "canonicalPath"\n                ],\n                "type": "object"\n              },\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "ecosystem": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "kind": {\n                    "const": "subject"\n                  },\n                  "subjectId": {\n                    "maxLength": 512,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "subjectKind": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  }\n                },\n                "required": [\n                  "kind",\n                  "ecosystem",\n                  "subjectKind"\n                ],\n                "type": "object"\n              },\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "ecosystem": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "formatId": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "kind": {\n                    "const": "format"\n                  }\n                },\n                "required": [\n                  "kind",\n                  "ecosystem",\n                  "formatId"\n                ],\n                "type": "object"\n              },\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "code": {\n                    "maxLength": 256,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "ecosystem": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "kind": {\n                    "const": "diagnostic"\n                  }\n                },\n                "required": [\n                  "kind",\n                  "ecosystem",\n                  "code"\n                ],\n                "type": "object"\n              },\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "conceptId": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "ecosystem": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "kind": {\n                    "const": "concept"\n                  }\n                },\n                "required": [\n                  "kind",\n                  "ecosystem",\n                  "conceptId"\n                ],\n                "type": "object"\n              }\n            ]\n          },\n          "title": {\n            "maxLength": 256,\n            "minLength": 1,\n            "type": "string"\n          }\n        },\n        "required": [\n          "id",\n          "target",\n          "locale",\n          "title",\n          "summary",\n          "claimKind",\n          "confidence",\n          "sources"\n        ],\n        "type": "object"\n      },\n      "maxItems": 10000,\n      "minItems": 1,\n      "type": "array"\n    },\n    "gameIds": {\n      "items": {\n        "maxLength": 128,\n        "minLength": 1,\n        "type": "string"\n      },\n      "maxItems": 32,\n      "type": "array",\n      "uniqueItems": true\n    },\n    "priority": {\n      "type": "number"\n    },\n    "schemaVersion": {\n      "const": 1\n    },\n    "sourceLocale": {\n      "maxLength": 64,\n      "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$",\n      "type": "string"\n    }\n  },\n  "required": [\n    "schemaVersion",\n    "sourceLocale",\n    "priority",\n    "entries"\n  ],\n  "type": "object"\n}\n', knowledgePackSpecV1],
+  ['{\n  "$id": "https://schemas.modkitx.org/x3/localization-contribution-spec.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "catalogs": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "locale": {\n            "maxLength": 64,\n            "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$",\n            "type": "string"\n          },\n          "messagePrefixes": {\n            "items": {\n              "maxLength": 256,\n              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\\\.$",\n              "type": "string"\n            },\n            "maxItems": 64,\n            "minItems": 1,\n            "type": "array",\n            "uniqueItems": true\n          },\n          "path": {\n            "maxLength": 1024,\n            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\\\.json$",\n            "type": "string"\n          }\n        },\n        "required": [\n          "locale",\n          "path",\n          "messagePrefixes"\n        ],\n        "type": "object"\n      },\n      "maxItems": 256,\n      "minItems": 1,\n      "type": "array"\n    }\n  },\n  "required": [\n    "catalogs"\n  ],\n  "type": "object"\n}\n', localizationContributionSpecV1],
   ['{\n  "$id": "https://schemas.modkitx.org/x3/writer-requirement.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "formatId": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "minimumRoundTrip": {\n      "enum": [\n        "byte-identical",\n        "semantic",\n        "lossy",\n        "none"\n      ]\n    },\n    "mutationMode": {\n      "enum": [\n        "export-only",\n        "mutate"\n      ]\n    },\n    "representationId": {\n      "minLength": 1,\n      "type": "string"\n    }\n  },\n  "required": [\n    "formatId",\n    "representationId",\n    "mutationMode",\n    "minimumRoundTrip"\n  ],\n  "type": "object"\n}\n', writerRequirementV1],
   ['{\n  "$id": "https://schemas.modkitx.org/x3/writer-offer.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "fidelityEvidenceId": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "formatId": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "minimumRoundTrip": {\n      "enum": [\n        "byte-identical",\n        "semantic",\n        "lossy",\n        "none"\n      ]\n    },\n    "mutationMode": {\n      "enum": [\n        "export-only",\n        "mutate"\n      ]\n    },\n    "providerId": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "representationId": {\n      "minLength": 1,\n      "type": "string"\n    }\n  },\n  "required": [\n    "formatId",\n    "representationId",\n    "mutationMode",\n    "minimumRoundTrip",\n    "providerId",\n    "fidelityEvidenceId"\n  ],\n  "type": "object"\n}\n', writerOfferV1],
   ['{\n  "$id": "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "documentation": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "id": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "imports": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "id": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "range": {\n            "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n            "type": "string"\n          }\n        },\n        "required": [\n          "id",\n          "range"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "parametersSchema": {\n      "additionalProperties": false,\n      "properties": {\n        "$ref": {\n          "minLength": 1,\n          "type": "string"\n        }\n      },\n      "required": [\n        "$ref"\n      ],\n      "type": "object"\n    },\n    "schemaVersion": {\n      "const": 1\n    },\n    "scope": {\n      "anyOf": [\n        {\n          "enum": [\n            "source",\n            "asset",\n            "subject",\n            "workspace",\n            "service",\n            "operation",\n            "view-session",\n            "representation"\n          ]\n        },\n        {\n          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n          "type": "string"\n        }\n      ]\n    },\n    "transport": {\n      "enum": [\n        "json",\n        "structured-clone"\n      ]\n    },\n    "version": {\n      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-((?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\\\.(?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\\+([0-9a-zA-Z-]+(?:\\\\.[0-9a-zA-Z-]+)*))?$",\n      "type": "string"\n    }\n  },\n  "required": [\n    "schemaVersion",\n    "id",\n    "version",\n    "scope",\n    "parametersSchema",\n    "transport"\n  ],\n  "type": "object"\n}\n', traitDefinitionSpecV1],

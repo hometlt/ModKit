@@ -6,8 +6,8 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:691d5098a9d57d1ab4b27b61de7d66b928f1a87cbacea4a99085cef66a6b0b8d",
-      "size": 50132480
+      "sha256": "sha256:3f37cb458699285b48a24b19ce25917e6dfd90feeb8c85cc0df2f32691fc88ef",
+      "size": 50258944
     },
     {
       "catalog": [
@@ -248,7 +248,7 @@
       },
       {
         "path": "scripts/bundle-hashes.json",
-        "sha256": "sha256:4bd57ca9351623b33fc9bfdced6bca508ef9ca1aad0ff497bb40a6d9772415cb"
+        "sha256": "sha256:e7c2f75ae0ba7810b9ad315d177012f5eb05daa6764a06b75d14b95f2ec28ee9"
       }
     ],
     "closure": "mk3-ga",

@@ -1587,6 +1587,45 @@ var knowledgePackSpecV1Schema = {
     entries: { type: "array", items: knowledgeEntrySchema, minItems: 1, maxItems: 1e4 }
   }
 };
+var localizationCatalogResourceV1Schema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["locale", "path", "messagePrefixes"],
+  properties: {
+    locale: localeTag,
+    path: {
+      type: "string",
+      maxLength: 1024,
+      pattern: "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$"
+    },
+    messagePrefixes: {
+      type: "array",
+      minItems: 1,
+      maxItems: 64,
+      uniqueItems: true,
+      items: {
+        type: "string",
+        maxLength: 256,
+        pattern: "^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$"
+      }
+    }
+  }
+};
+var localizationContributionSpecV1Schema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/localization-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["catalogs"],
+  properties: {
+    catalogs: {
+      type: "array",
+      minItems: 1,
+      maxItems: 256,
+      items: localizationCatalogResourceV1Schema
+    }
+  }
+};
 var traitDefinitionSpecV1Schema = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json",
@@ -1819,6 +1858,7 @@ deepFreeze(serviceProviderContributionSpecV1Schema);
 deepFreeze(viewerContributionSpecV1Schema);
 deepFreeze(editorContributionSpecV1Schema);
 deepFreeze(knowledgePackSpecV1Schema);
+deepFreeze(localizationContributionSpecV1Schema);
 deepFreeze(traitDefinitionSpecV1Schema);
 deepFreeze(serviceContractDefinitionSpecV1Schema);
 deepFreeze(dataSourceMethodSurfaceV1Schema);
@@ -2509,7 +2549,7 @@ deepFreeze(subjectDescriptorV2Schema);
 deepFreeze(subjectDescriptorV2InferenceSchema);
 var platformValidatorsPromise;
 function platformValidators() {
-  platformValidatorsPromise ??= import("./validators.generated-SRSQZDV2.js").then(
+  platformValidatorsPromise ??= import("./validators.generated-ADSNF3S6.js").then(
     (module) => module.PRECOMPILED_SCHEMA_VALIDATORS
   );
   return platformValidatorsPromise;
@@ -3529,6 +3569,9 @@ var CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT = contractId(
 var KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT = contractId(
   "org.modkitx/knowledge-pack"
 );
+var LOCALIZATION_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/localization-contribution"
+);
 var TRAIT_DEFINITION_FACT = contractId(
   "org.modkitx.inventory/trait-definition"
 );
@@ -3539,6 +3582,9 @@ var EDITOR_CONTRIBUTION_FACT = contractId(
   "org.modkitx.inventory/editor-contribution"
 );
 var KNOWLEDGE_PACK_FACT = contractId("org.modkitx.inventory/knowledge-pack");
+var LOCALIZATION_CONTRIBUTION_FACT = contractId(
+  "org.modkitx.inventory/localization-contribution"
+);
 function duplicateFieldDiagnostics(values, path, label) {
   const first = /* @__PURE__ */ new Map();
   const diagnostics = [];
@@ -4219,6 +4265,29 @@ var validateKnowledgePackSemantics = (manifest) => {
   }
   return diagnostics;
 };
+var validateLocalizationContributionSemantics = (manifest) => {
+  const spec = manifest.spec;
+  const diagnostics = duplicateFieldDiagnostics(
+    spec.catalogs.map((catalog) => catalog.path.toLowerCase()),
+    ["spec", "catalogs"],
+    "localization catalog path"
+  );
+  spec.catalogs.forEach((catalog, index) => {
+    try {
+      Intl.getCanonicalLocales(catalog.locale);
+    } catch {
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-localization-locale",
+          `localization catalog locale ${catalog.locale} is not a valid BCP-47 language tag`,
+          ["spec", "catalogs", index, "locale"]
+        )
+      );
+    }
+  });
+  return diagnostics;
+};
 function key(contract, major) {
   return `${contract}@${major}`;
 }
@@ -4456,6 +4525,17 @@ var A1_SPEC_SCHEMA_ENTRIES = [
       mode: "data-only",
       project: dataOnlyProjector(KNOWLEDGE_PACK_FACT),
       conformanceProfile: "org.modkitx/knowledge-pack-v1"
+    }
+  },
+  {
+    contract: LOCALIZATION_CONTRIBUTION_CONTRACT,
+    major: 1,
+    schema: localizationContributionSpecV1Schema,
+    validateSemantics: validateLocalizationContributionSemantics,
+    registration: {
+      mode: "data-only",
+      project: dataOnlyProjector(LOCALIZATION_CONTRIBUTION_FACT),
+      conformanceProfile: "org.modkitx/localization-contribution-v1"
     }
   }
 ];
@@ -6994,8 +7074,8 @@ async function buildInventory(inputs, registry, options = {}) {
       ...normalized.diagnostics.map((d) => ({ ...d, path: [input.source, ...d.path ?? []] }))
     );
     if (!normalized.manifest || !normalized.container) continue;
-    const extensionCoordinate2 = coordinate(normalized.manifest);
-    const extensionDisabled = disabledExtensions.has(extensionCoordinate2);
+    const extensionCoordinate22 = coordinate(normalized.manifest);
+    const extensionDisabled = disabledExtensions.has(extensionCoordinate22);
     const expansion = expandContributionManifests(
       normalized.manifest.contributionManifests,
       input.files
@@ -7033,7 +7113,7 @@ async function buildInventory(inputs, registry, options = {}) {
           diagnostic(
             "information",
             EXTENSION_DISABLED_CODE,
-            `extension \xAB${extensionCoordinate2}\xBB is disabled by host settings; its contributions stay listed`,
+            `extension \xAB${extensionCoordinate22}\xBB is disabled by host settings; its contributions stay listed`,
             [input.source, entry2.path]
           )
         );
@@ -7065,7 +7145,7 @@ async function buildInventory(inputs, registry, options = {}) {
           activationEligible = false;
         } else {
           const context = Object.freeze({
-            ownerExtensionId: extensionCoordinate2,
+            ownerExtensionId: extensionCoordinate22,
             extensionVersion: normalized.manifest.version,
             inventoryRecordId: `${input.artifact.inventoryRecordId}:${entry2.path}`,
             manifestDigest,
@@ -7293,7 +7373,8 @@ function builtins() {
   const trait = entry(TRAIT_DEFINITION_CONTRIBUTION_CONTRACT);
   const definition = entry(CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT);
   const knowledge = entry(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT);
-  if (trait.registration === void 0 || definition.registration === void 0 || knowledge.registration === void 0) {
+  const localization = entry(LOCALIZATION_CONTRIBUTION_CONTRACT);
+  if (trait.registration === void 0 || definition.registration === void 0 || knowledge.registration === void 0 || localization.registration === void 0) {
     throw new TypeError("A-1 definition registrations are missing");
   }
   return [
@@ -7360,6 +7441,14 @@ function builtins() {
       project: knowledge.registration.project,
       validateSemantics: knowledge.validateSemantics,
       conformanceProfile: knowledge.registration.conformanceProfile
+    },
+    {
+      contract: { id: localization.contract, major: localization.major },
+      schema: localization.schema,
+      mode: "data-only",
+      project: localization.registration.project,
+      validateSemantics: localization.validateSemantics,
+      conformanceProfile: localization.registration.conformanceProfile
     }
   ];
 }
@@ -7513,6 +7602,255 @@ function offersFromInventory(inventory) {
       (left, right) => compareUtf8(canonicalJsonStringify(left), canonicalJsonStringify(right))
     )
   );
+}
+var SCHEME2 = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
+var WINDOWS_DRIVE = /^[a-zA-Z]:/;
+function refuse(entrypoint, why) {
+  return new ModkitError({
+    code: "x3.host/entrypoint-not-contained",
+    message: `entry point \xAB${entrypoint}\xBB is not a relative path inside the artifact: ${why}`,
+    context: { entrypoint, why }
+  });
+}
+function assertRelativeEntrypoint(entrypoint) {
+  if (entrypoint.trim().length === 0) throw refuse(entrypoint, "empty");
+  if (/[\u0000-\u001f\u007f]/.test(entrypoint)) {
+    throw refuse(entrypoint, "contains control characters");
+  }
+  if (SCHEME2.test(entrypoint) && !WINDOWS_DRIVE.test(entrypoint)) {
+    throw refuse(entrypoint, "URL schemes are not allowed");
+  }
+  if (WINDOWS_DRIVE.test(entrypoint)) throw refuse(entrypoint, "absolute Windows path");
+  if (entrypoint.startsWith("/") || entrypoint.startsWith("\\")) {
+    throw refuse(entrypoint, "absolute path");
+  }
+  if (entrypoint.includes("\\")) throw refuse(entrypoint, "use forward slashes");
+  if (entrypoint.split("/").includes("..")) throw refuse(entrypoint, "`..` traversal");
+}
+function resolveContainedEntrypoint(baseUrl, entrypoint) {
+  assertRelativeEntrypoint(entrypoint);
+  const root = baseUrl.href.endsWith("/") ? baseUrl : new URL(`${baseUrl.href}/`);
+  const resolved2 = new URL(entrypoint, root);
+  if (resolved2.protocol !== root.protocol) {
+    throw refuse(entrypoint, `resolved to a different protocol (${resolved2.protocol})`);
+  }
+  if (!resolved2.href.startsWith(root.href)) {
+    throw refuse(entrypoint, `resolved outside the artifact root (${root.href})`);
+  }
+  return resolved2;
+}
+var LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES = 8 * 1024 * 1024;
+var encoder2 = new TextEncoder();
+var decoder = new TextDecoder("utf-8", { fatal: true });
+function extensionCoordinate(extension) {
+  return `${extension.manifest.publisher}/${extension.manifest.id}`;
+}
+function catalogPath(candidate) {
+  return Object.freeze([
+    candidate.extension.source,
+    candidate.contribution.path,
+    candidate.resource.path
+  ]);
+}
+function catalogDiagnostic(candidate, message, data) {
+  return diagnostic(
+    "warning",
+    "x3.host/localization-catalog-refused",
+    message,
+    catalogPath(candidate),
+    data
+  );
+}
+function candidatesFrom(inventory) {
+  const candidates = [];
+  for (const extension of inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const disabled = contribution.diagnostics.some(
+        (item) => item.code === CONTRIBUTION_DISABLED_CODE || item.code === EXTENSION_DISABLED_CODE
+      );
+      if (!contribution.inventoryEligible || disabled) continue;
+      const manifest = contribution.manifest;
+      if (manifest?.contract.id !== LOCALIZATION_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1) {
+        continue;
+      }
+      const spec = manifest.spec;
+      for (const resource of spec.catalogs) candidates.push({ extension, contribution, resource });
+    }
+  }
+  candidates.sort((left, right) => {
+    const leftKey = `${extensionCoordinate(left.extension)}\0${left.contribution.manifest?.id ?? ""}\0${left.resource.path}\0${left.resource.locale}`;
+    const rightKey = `${extensionCoordinate(right.extension)}\0${right.contribution.manifest?.id ?? ""}\0${right.resource.path}\0${right.resource.locale}`;
+    return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
+  });
+  return Object.freeze(candidates);
+}
+function confinedResourcePath(candidate, artifactRoot) {
+  const authored = candidate.resource.path;
+  if (authored.startsWith("/") || authored.startsWith("\\") || authored.includes("\\")) {
+    throw new TypeError("localization catalog path must be a portable relative POSIX path");
+  }
+  const normalized = normalizeVfsPath(authored);
+  if (normalized === "" || !normalized.toLowerCase().endsWith(".json")) {
+    throw new TypeError("localization catalog path must identify a JSON file");
+  }
+  resolveContainedEntrypoint(artifactRoot, normalized);
+  return normalized;
+}
+async function sha256(bytes2) {
+  const copy = Uint8Array.from(bytes2);
+  const subtle = globalThis.crypto?.subtle;
+  if (subtle === void 0) throw new TypeError("WebCrypto SHA-256 is unavailable");
+  const digest = new Uint8Array(await subtle.digest("SHA-256", copy.buffer));
+  return `sha256:${[...digest].map((byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+}
+function maximumJsonBytes(requested) {
+  if (requested === void 0) return LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES;
+  if (!Number.isSafeInteger(requested) || requested <= 0) {
+    throw new TypeError("localization maxJsonBytes must be a positive safe integer");
+  }
+  return Math.min(requested, LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES);
+}
+function namespaceOwnedMessagePrefix(namespace) {
+  const tail = namespace.split(/[./]/u).at(-1) ?? namespace;
+  const owner = tail.replace(/-(?:app|ui|localization|messages)$/u, "") || tail;
+  return `${owner}.`;
+}
+function catalogNamespace(value2) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2)) return void 0;
+  const descriptor = Object.getOwnPropertyDescriptor(value2, "namespace");
+  return descriptor !== void 0 && "value" in descriptor && typeof descriptor.value === "string" ? descriptor.value : void 0;
+}
+async function authorizedPrefixes(candidate, document, authorizer) {
+  const requested = Object.freeze([...candidate.resource.messagePrefixes]);
+  const namespace = catalogNamespace(document);
+  if (namespace === void 0) {
+    throw new TypeError("localization catalog namespace must be a string data property");
+  }
+  if (authorizer === void 0) {
+    const owned = namespaceOwnedMessagePrefix(namespace);
+    return Object.freeze(requested.filter((prefix) => prefix === owned));
+  }
+  const contributionId2 = candidate.contribution.manifest?.id ?? candidate.contribution.path;
+  const granted = await authorizer(
+    Object.freeze({
+      ownerExtensionId: extensionCoordinate(candidate.extension),
+      contributionId: contributionId2,
+      catalogPath: candidate.resource.path,
+      locale: candidate.resource.locale,
+      catalogNamespace: namespace,
+      requestedMessagePrefixes: requested
+    })
+  );
+  if (!Array.isArray(granted)) throw new TypeError("message-prefix authorizer must return an array");
+  const requestedSet = new Set(requested);
+  return Object.freeze(
+    [...new Set(granted)].filter(
+      (prefix) => typeof prefix === "string" && requestedSet.has(prefix)
+    )
+  );
+}
+async function readCatalogBytes(candidate, options, maxBytes) {
+  const record3 = inventoryRecordFor(candidate.contribution);
+  if (record3 === void 0)
+    throw new TypeError("localization contribution has no trusted inventory record");
+  const path = confinedResourcePath(candidate, record3.artifactRoot);
+  const expectedDigest = record3.fileDigests?.[path];
+  if (expectedDigest === void 0) {
+    throw new TypeError(
+      `localization catalog ${path} is absent from the attested artifact file map`
+    );
+  }
+  const mount = await options.vfs.openMount(record3.artifactRoot.href, {
+    limits: {
+      // Opening an artifact mount may account all of its files (a model pack can legitimately be
+      // much larger than one catalog), so retain the platform's artifact ceilings here. Exact
+      // catalog size and all bytes actually read remain capped to the localization ceiling.
+      maxEntries: DEFAULT_VFS_LIMITS.maxEntries,
+      maxMaterializedBytes: DEFAULT_VFS_LIMITS.maxMaterializedBytes,
+      maxFileBytes: DEFAULT_VFS_LIMITS.maxFileBytes,
+      maxReadBytes: BigInt(LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES),
+      maxReadRangeBytes: LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES,
+      maxStreamBytes: DEFAULT_VFS_LIMITS.maxStreamBytes,
+      maxPathBytes: Math.max(256, encoder2.encode(path).byteLength)
+    },
+    ...options.signal === void 0 ? {} : { signal: options.signal }
+  });
+  try {
+    const node = await mount.stat(path, options.signal);
+    if (node?.kind !== "file") throw new TypeError(`localization catalog ${path} is not a file`);
+    if (node.size !== void 0 && node.size > BigInt(maxBytes)) {
+      throw new TypeError(`localization catalog ${path} exceeds the ${maxBytes}-byte raw limit`);
+    }
+    const source2 = await mount.open(path, options.signal);
+    try {
+      const size = await source2.size(options.signal);
+      if (!Number.isSafeInteger(size) || size < 0 || size > maxBytes) {
+        throw new TypeError(`localization catalog ${path} exceeds the ${maxBytes}-byte raw limit`);
+      }
+      const bytes2 = await source2.readAt(0, size, options.signal);
+      const actualDigest = await (options.digest ?? sha256)(bytes2);
+      if (actualDigest !== expectedDigest) {
+        throw new TypeError(`localization catalog ${path} does not match its attested SHA-256`);
+      }
+      return bytes2;
+    } finally {
+      await source2.dispose();
+    }
+  } finally {
+    await mount.dispose();
+  }
+}
+async function loadLocalizationCatalogs(inventory, options) {
+  const maxBytes = maximumJsonBytes(options.maxJsonBytes);
+  const catalogs = [];
+  const diagnostics = [];
+  for (const candidate of candidatesFrom(inventory)) {
+    try {
+      const bytes2 = await readCatalogBytes(
+        candidate,
+        options,
+        maxBytes
+      );
+      let document;
+      try {
+        document = JSON.parse(decoder.decode(bytes2));
+      } catch (error3) {
+        throw new TypeError(
+          `localization catalog is not valid UTF-8 JSON: ${error3 instanceof Error ? error3.message : String(error3)}`
+        );
+      }
+      const prefixes = await authorizedPrefixes(
+        candidate,
+        document,
+        options.authorizeMessagePrefixes
+      );
+      if (prefixes.length === 0) {
+        throw new TypeError("localization catalog was granted no requested message-key prefix");
+      }
+      const catalog = options.parseCatalog(document, {
+        authorizedMessagePrefixes: prefixes,
+        ...options.fallbackCatalog === void 0 ? {} : { fallbackCatalog: options.fallbackCatalog }
+      });
+      if (catalog.locale.toLowerCase() !== candidate.resource.locale.toLowerCase()) {
+        throw new TypeError(
+          `catalog locale ${catalog.locale} does not match contribution locale ${candidate.resource.locale}`
+        );
+      }
+      catalogs.push(catalog);
+    } catch (error3) {
+      diagnostics.push(
+        catalogDiagnostic(
+          candidate,
+          `localization catalog \xAB${candidate.resource.path}\xBB was refused; built-in fallback remains active`,
+          { reason: error3 instanceof Error ? error3.message : String(error3) }
+        )
+      );
+    }
+  }
+  return Object.freeze({
+    catalogs: Object.freeze(catalogs),
+    diagnostics: Object.freeze(diagnostics)
+  });
 }
 var COMMAND_CANCELLED = "x3.command/cancelled";
 var COMMAND_SUBJECT_UNRESOLVED = "x3.command/subject-unresolved";
@@ -8853,42 +9191,6 @@ function createContractResolverPort(options) {
       return resolve(request);
     }
   };
-}
-var SCHEME2 = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
-var WINDOWS_DRIVE = /^[a-zA-Z]:/;
-function refuse(entrypoint, why) {
-  return new ModkitError({
-    code: "x3.host/entrypoint-not-contained",
-    message: `entry point \xAB${entrypoint}\xBB is not a relative path inside the artifact: ${why}`,
-    context: { entrypoint, why }
-  });
-}
-function assertRelativeEntrypoint(entrypoint) {
-  if (entrypoint.trim().length === 0) throw refuse(entrypoint, "empty");
-  if (/[\u0000-\u001f\u007f]/.test(entrypoint)) {
-    throw refuse(entrypoint, "contains control characters");
-  }
-  if (SCHEME2.test(entrypoint) && !WINDOWS_DRIVE.test(entrypoint)) {
-    throw refuse(entrypoint, "URL schemes are not allowed");
-  }
-  if (WINDOWS_DRIVE.test(entrypoint)) throw refuse(entrypoint, "absolute Windows path");
-  if (entrypoint.startsWith("/") || entrypoint.startsWith("\\")) {
-    throw refuse(entrypoint, "absolute path");
-  }
-  if (entrypoint.includes("\\")) throw refuse(entrypoint, "use forward slashes");
-  if (entrypoint.split("/").includes("..")) throw refuse(entrypoint, "`..` traversal");
-}
-function resolveContainedEntrypoint(baseUrl, entrypoint) {
-  assertRelativeEntrypoint(entrypoint);
-  const root = baseUrl.href.endsWith("/") ? baseUrl : new URL(`${baseUrl.href}/`);
-  const resolved2 = new URL(entrypoint, root);
-  if (resolved2.protocol !== root.protocol) {
-    throw refuse(entrypoint, `resolved to a different protocol (${resolved2.protocol})`);
-  }
-  if (!resolved2.href.startsWith(root.href)) {
-    throw refuse(entrypoint, `resolved outside the artifact root (${root.href})`);
-  }
-  return resolved2;
 }
 var PROFILE_VALUES = Object.freeze([
   "browser-sandbox",
@@ -17976,14 +18278,14 @@ async function createHostComposition(options) {
     executionBackends: options.executionBackends ?? DEFAULT_EXECUTION_BACKENDS
   });
 }
-var diagnostic19 = (severity, code, message) => ({ severity, code, message, path: [] });
+var diagnostic20 = (severity, code, message) => ({ severity, code, message, path: [] });
 async function resolveFormatWriter(request) {
   const identity = request.opened.descriptor.identity;
   const formatId = typeof identity?.formatId === "string" ? identity.formatId : void 0;
   if (formatId === void 0) {
     return {
       diagnostics: [
-        diagnostic19(
+        diagnostic20(
           "information",
           "x3.host/format-writer-unavailable",
           "the subject names no format (unresolved or built-in), so no format writer can be asked for"
@@ -17994,7 +18296,7 @@ async function resolveFormatWriter(request) {
   if (request.services.serviceDefinitions === void 0) {
     return {
       diagnostics: [
-        diagnostic19(
+        diagnostic20(
           "information",
           "x3.host/format-writer-unavailable",
           "this host registered no service-contract definitions, so writers cannot be resolved"
@@ -18028,7 +18330,7 @@ async function resolveFormatWriter(request) {
       release: () => lease2.release(),
       diagnostics: [
         ...resolver.diagnostics,
-        diagnostic19(
+        diagnostic20(
           "information",
           "x3.host/format-writer-selected",
           `\xAB${writer.offer.providerId}\xBB writes ${facet.formatId}/${facet.representationId} at ${writer.offer.minimumRoundTrip}`
@@ -18039,7 +18341,7 @@ async function resolveFormatWriter(request) {
     return {
       diagnostics: [
         ...resolver.diagnostics,
-        diagnostic19(
+        diagnostic20(
           "information",
           "x3.host/format-writer-unresolved",
           `no writer offers ${facet.formatId}/${facet.representationId} at ${facet.minimumRoundTrip} (${error3 instanceof Error ? error3.message : String(error3)})`
@@ -19278,7 +19580,7 @@ function createSearchField(document, options) {
     }
   };
 }
-var encoder2 = new TextEncoder();
+var encoder3 = new TextEncoder();
 function decodeUtf8(bytes2) {
   try {
     return new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
@@ -19302,7 +19604,7 @@ function indexText(text3) {
     const start = lineStarts[line] ?? text3.length;
     const next = lineStarts[line + 1] ?? text3.length;
     const withoutNewline = text3.slice(start, next).replace(/\r\n$|\r$|\n$/u, "");
-    longestLineBytes = Math.max(longestLineBytes, encoder2.encode(withoutNewline).byteLength);
+    longestLineBytes = Math.max(longestLineBytes, encoder3.encode(withoutNewline).byteLength);
   }
   const values = [...kinds];
   return Object.freeze({
@@ -19332,11 +19634,11 @@ function parseCursor2(value2) {
   return { character, line };
 }
 function truncateUtf8(value2, maximumBytes) {
-  if (encoder2.encode(value2).byteLength <= maximumBytes) return value2;
+  if (encoder3.encode(value2).byteLength <= maximumBytes) return value2;
   let result = "";
   let used = 0;
   for (const character of value2) {
-    const size = encoder2.encode(character).byteLength;
+    const size = encoder3.encode(character).byteLength;
     if (used + size > maximumBytes) {
       if (result === "") throw new RangeError("text page maxBytes cannot fit the next code point");
       break;
@@ -19424,8 +19726,8 @@ function builtinTextSource(bytes2) {
       for (const match of text3.matchAll(expression)) {
         signal?.throwIfAborted();
         const character = match.index ?? 0;
-        const byteOffset = encoder2.encode(text3.slice(0, character)).byteLength;
-        const byteLength = encoder2.encode(match[0]).byteLength;
+        const byteOffset = encoder3.encode(text3.slice(0, character)).byteLength;
+        const byteLength = encoder3.encode(match[0]).byteLength;
         yield Object.freeze({
           byteOffset: uint64(BigInt(byteOffset)),
           byteLength: uint64(BigInt(byteLength))
@@ -31992,6 +32294,142 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
   schemaVersion: 1
 });
 
+// apps/web/src/files.ts
+function isWritableHandle(handle) {
+  return handle !== void 0 && typeof handle.createWritable === "function";
+}
+var MAXIMUM_DIRECTORY_ENTRIES = 2e3;
+function describeFileCapability(scope) {
+  const pickers = scope;
+  const directories = typeof pickers.showDirectoryPicker === "function";
+  const filePicker = typeof pickers.showOpenFilePicker === "function";
+  const notice = directories ? "This browser grants folder access: pick a folder and the tree browses it in place." : filePicker ? "This browser has no folder picker, only a file picker: one file opens at a time and there is no tree to browse." : "This browser has neither picker, so files arrive through a plain file input: one file opens at a time and there is no tree to browse.";
+  return Object.freeze({ directories, filePicker, inputFallback: true, notice });
+}
+var joinPath = (parent, name) => parent === "" ? name : `${parent}/${name}`;
+async function* iterateDirectoryChildren(directory) {
+  const entries = directory.entries;
+  if (entries !== void 0) {
+    for await (const pair of entries.call(directory)) yield pair[1];
+    return;
+  }
+  const values = directory.values;
+  if (values === void 0) {
+    throw new TypeError("directory handle exposes neither entries() nor values()");
+  }
+  for await (const handle of values.call(directory)) yield handle;
+}
+var describe4 = (error3) => error3 instanceof Error ? error3.message : String(error3);
+function createDirectoryAccess(root, options = {}) {
+  const directories = /* @__PURE__ */ new Map([["", root]]);
+  const files = /* @__PURE__ */ new Map();
+  const sizes = /* @__PURE__ */ new Map();
+  const requireDirectory = (entryId) => {
+    const found = directories.get(entryId ?? "");
+    if (found === void 0) {
+      throw new TypeError(`\xAB${entryId ?? ""}\xBB is not a folder this session has browsed`);
+    }
+    return found;
+  };
+  return {
+    label: root.name === "" ? "Granted folder" : root.name,
+    /*
+     * One `readwrite` grant covers the whole tree: the user picked this folder, so asking again per
+     * file would be a prompt storm for a permission the browser already scopes to the directory.
+     */
+    writeGrant: root,
+    async list(entryId, signal) {
+      signal?.throwIfAborted();
+      const directory = requireDirectory(entryId);
+      const prefix = entryId ?? "";
+      const listed = [];
+      let truncated = false;
+      for await (const handle of iterateDirectoryChildren(directory)) {
+        signal?.throwIfAborted();
+        if (listed.length >= MAXIMUM_DIRECTORY_ENTRIES) {
+          truncated = true;
+          break;
+        }
+        const path = joinPath(prefix, handle.name);
+        if (handle.kind === "directory") {
+          directories.set(path, handle);
+          listed.push({ id: path, name: handle.name, directory: true });
+          continue;
+        }
+        files.set(path, handle);
+        try {
+          const file = await handle.getFile();
+          sizes.set(path, file.size);
+          listed.push({ id: path, name: handle.name, directory: false, size: file.size });
+        } catch (error3) {
+          options.onNotice?.(`${path} could not be read: ${describe4(error3)}`);
+          listed.push({ id: path, name: handle.name, directory: false });
+        }
+      }
+      if (truncated) {
+        options.onNotice?.(
+          `${prefix === "" ? root.name : prefix} has more than ${MAXIMUM_DIRECTORY_ENTRIES} entries; the tree shows the first ones only.`
+        );
+      }
+      return listed;
+    },
+    sizeOf(entryId) {
+      return sizes.get(entryId);
+    },
+    handleOf(entryId) {
+      return files.get(entryId);
+    },
+    async snapshotOf(entryId, signal) {
+      signal?.throwIfAborted();
+      const handle = files.get(entryId);
+      if (handle === void 0) return void 0;
+      const file = await handle.getFile();
+      return { size: file.size, lastModified: file.lastModified };
+    },
+    async read(entryId, maxBytes, signal) {
+      signal?.throwIfAborted();
+      const handle = files.get(entryId);
+      if (handle === void 0) {
+        throw new TypeError(`\xAB${entryId}\xBB is not a file this session has browsed`);
+      }
+      const file = await handle.getFile();
+      const length = Math.min(file.size, maxBytes);
+      return new Uint8Array(await file.slice(0, length).arrayBuffer());
+    }
+  };
+}
+function createSingleFileAccess(file, handle) {
+  const entry2 = { id: file.name, name: file.name, directory: false, size: file.size };
+  const access = {
+    label: file.name,
+    ...handle === void 0 ? {} : { writeGrant: handle },
+    async list(entryId, signal) {
+      signal?.throwIfAborted();
+      return entryId === void 0 ? [entry2] : [];
+    },
+    sizeOf(entryId) {
+      return entryId === entry2.id ? file.size : void 0;
+    },
+    handleOf(entryId) {
+      return entryId === entry2.id ? handle : void 0;
+    },
+    async snapshotOf(entryId, signal) {
+      signal?.throwIfAborted();
+      if (entryId !== entry2.id) return void 0;
+      const current = handle === void 0 ? file : await handle.getFile();
+      return { size: current.size, lastModified: current.lastModified };
+    },
+    async read(entryId, maxBytes, signal) {
+      signal?.throwIfAborted();
+      if (entryId !== entry2.id) throw new TypeError(`\xAB${entryId}\xBB is not the opened file`);
+      const current = handle === void 0 ? file : await handle.getFile();
+      const length = Math.min(current.size, maxBytes);
+      return new Uint8Array(await current.slice(0, length).arrayBuffer());
+    }
+  };
+  return { access, entry: entry2 };
+}
+
 // packages/ui/dist/localization/index.js
 var UI_CATALOG_SCHEMA = "org.modkitx/ui-message-catalog@1";
 var UI_CATALOG_RECOMMENDED_MAXIMUM_JSON_BYTES = 8 * 1024 * 1024;
@@ -33172,13 +33610,13 @@ function ownDataProperty(object3, key3) {
   if (descriptor === void 0 || !("value" in descriptor)) return void 0;
   return descriptor.value;
 }
-function namespaceOwnedMessagePrefix(namespace) {
+function namespaceOwnedMessagePrefix2(namespace) {
   const tail = namespace.split(/[./]/u).at(-1) ?? namespace;
   const owner = tail.replace(/-(?:app|ui|localization|messages)$/u, "") || tail;
   return `${owner}.`;
 }
 function validateMessagePrefixes(namespace, requested) {
-  const prefixes = requested ?? [namespaceOwnedMessagePrefix(namespace)];
+  const prefixes = requested ?? [namespaceOwnedMessagePrefix2(namespace)];
   if (prefixes.length === 0) {
     throw new TypeError("UI catalog must have at least one authorised message prefix");
   }
@@ -33301,7 +33739,7 @@ function contributionContractKind(exactContract) {
   if (name === "editor-contribution") return "editors";
   if (name === "service-provider-contribution" || name === "service-contribution") return "services";
   if (name === "viewer-contribution") return "viewers";
-  if (name.includes("language")) return "languages";
+  if (name.includes("language") || name.includes("localization")) return "languages";
   if (name.includes("renderer")) return "renderers";
   if (name.includes("runtime")) return "runtimes";
   if (name.includes("command")) return "commands";
@@ -33319,515 +33757,6 @@ function contributionContractLabel(localizer, exactContract) {
   if (kind !== "other") return localizer.text(`extensions.contract.${kind}`);
   const name = exactContract === void 0 ? "" : humanizeContractName(exactContract);
   return name === "" ? localizer.text("extensions.contract.other") : localizer.text("extensions.contract.custom", { name });
-}
-
-// apps/web/src/localization.ts
-var EN = parseUiCatalogDocument(
-  {
-    schema: "org.modkitx/ui-message-catalog@1",
-    locale: "en",
-    namespace: "org.modkitx/web-app",
-    messages: {
-      "web.capability.folder": "This browser grants folder access: pick a folder to browse it in place.",
-      "web.capability.file": "This browser has no folder picker. It can open one file at a time.",
-      "web.capability.input": "This browser has no file-system picker. Files open one at a time through the basic file input.",
-      "web.editing.notice": "Files opened from a granted handle can be saved in place; fetched and dropped files remain read-only.",
-      "web.status.noCodec": "{name} \u2014 no codec claimed it ({reason}); showing raw bytes.",
-      "web.status.noNestedCodec": "{name} \u2014 no codec claimed it inside this container ({reason}).",
-      "web.status.sharedCommandsUnavailable": "{name} \u2014 shared commands unavailable: {reason}",
-      "web.status.unsavedClose": "{name} has unsaved changes. Close the tab and discard them?",
-      "web.status.bootFailed": "Boot failed: {reason}",
-      "web.sample.png": "favicon-32.png \u2014 PNG image",
-      "web.sample.csv": "sample.csv \u2014 delimited table",
-      "web.sample.ini": "sample.ini \u2014 INI tree",
-      "web.sample.svg": "sample.svg \u2014 vector scene",
-      "web.sample.md": "sample.md \u2014 Markdown document",
-      "web.sample.mp3": "sample.mp3 \u2014 one second of MP3 silence",
-      "web.sample.zip": "sample.zip \u2014 container namespace",
-      "web.embed.view": "View",
-      "web.embed.waiting": "Waiting for a file: set the src attribute or assign the file property.",
-      "web.embed.loading": "Loading {name}\u2026",
-      "web.embed.catalog.invalidUrl": "extension-catalog \xAB{url}\xBB is not a valid URL.",
-      "web.embed.catalog.protocol": "extension-catalog must use http or https; {protocol} is not admitted.",
-      "web.embed.catalog.origin": "The extension catalog origin {origin} is not in this embed.js build-time allowlist. The embedding page cannot add an origin; the deployer must rebuild embed.js with it.",
-      "web.embed.catalog.schema": "extension catalog must be a schemaVersion 1 object with array entries",
-      "web.embed.catalog.exclusion": "extension catalog exclusions require string name and reason fields",
-      "web.embed.catalog.malformed": "extension catalog contains a malformed extension entry",
-      "web.embed.asset.invalidUrl": "asset-base \xAB{base}\xBB is not a URL this page can resolve.",
-      "web.embed.asset.crossOrigin": "The modkit assets at {origin} are cross-origin to this page ({pageOrigin}). A module worker script is fetched in same-origin mode, so no CORS header can make that work: serve the modkit assets from this origin (copy or reverse-proxy them) and point asset-base there.",
-      "web.embed.stylesFetch": "modkit-ui.css could not be fetched from {base} ({status})",
-      "web.embed.catalogFetch": "extension catalog {url} could not be fetched: {reason}",
-      "web.embed.catalogHttp": "extension catalog {url} could not be fetched ({status} {statusText})",
-      "web.embed.catalogInvalid": "extension catalog {url} is invalid: {reason}",
-      "web.embed.stageFailed": "\xAB{view}\xBB could not be shown: {reason}",
-      "web.embed.fileFetch": "{url} could not be fetched ({reason}). A cross-origin file needs CORS headers from its own server and an entry for its origin in this page\u2019s content-security-policy connect-src.",
-      "web.embed.fileHttp": "{url} could not be fetched ({status} {statusText})",
-      "web.embed.catalogAttributeInvalid": "extension-catalog \xAB{url}\xBB is not a URL this page can resolve.",
-      "web.embed.tooLarge": "{name} is {size} bytes; this element reads at most {limit}.",
-      "web.embed.noStage": "{name} could not be shown: no stage matched what the codecs published.",
-      "web.archive.openSubject": "Open as subject",
-      "web.archive.entries": "Entries",
-      "web.archive.pick": "Pick an entry in the tree to inspect it.",
-      "web.archive.openFailed": "Opening {path} as a subject failed: {reason}",
-      "web.archive.noReference": "no source reference",
-      "web.archive.noExtract": "this subject has no available extract operation",
-      "web.archive.sessionGone": "The session that opened this container is no longer held.",
-      "web.archive.unknownEntry": "The namespace does not list an entry with id {entry}.",
-      "web.archive.wrongOutput": "The operation returned {kind}, not bytes.",
-      "web.archive.rejected": "Rejected: {reason}",
-      "web.archive.shown": "{path} \xB7 {bytes} bytes \xB7 shown as {mode}",
-      "web.archive.modeHex": "hex",
-      "web.archive.modeText": "text",
-      "web.archive.readFailed": "Entry read failed: {reason}",
-      "web.view.code": "Code",
-      "web.view.video": "Video",
-      "web.view.image": "Image",
-      "web.view.audio": "Audio",
-      "web.view.world": "World",
-      "web.view.model": "Model",
-      "web.view.vector": "Vector",
-      "web.view.archive": "Entries",
-      "web.view.template": "Template",
-      "web.view.card": "Card",
-      "web.view.calculations": "Calculations",
-      "web.view.table": "Table",
-      "web.view.tree": "Tree",
-      "web.view.relations": "Relations",
-      "web.view.text": "Text",
-      "web.view.virtualText": "Text (streaming)",
-      "web.view.metadata": "Metadata",
-      "web.view.hex": "Hex",
-      "web.view.textEditor": "Text (editor)",
-      "web.view.hexEditor": "Hex (editor)",
-      "web.inspector.label": "Inspector",
-      "web.inspector.edit": "Edit",
-      "web.inspector.noFile": "No file is open.",
-      "web.inspector.summary": "{label} \xB7 {read} non-mutating operation(s) \xB7 {forms} edit form(s) over {write} mutating operation(s) \xB7 {diagnostics} diagnostic(s)",
-      "web.inspector.needInput": "{operations}: not in the toolbar \u2014 they require input supplied by another stage or panel.",
-      "web.inspector.noEdit": "{operations}: no Edit panel \u2014 {reason}",
-      "web.inspector.noWritableHandle": "this page holds no writable handle for the file.",
-      "web.inspector.noForm": "{operation}: no editing form \u2014 {reason}.",
-      "web.edit.unsupported": "{operation}: not available in this host yet \u2014 {reason}",
-      "web.edit.invoking": "{operation}: invoking {handler}\u2026",
-      "web.edit.codecRefused": "The codec refused the operation: {reason}",
-      "web.edit.hostRefused": "The host refused the plan: {reason}",
-      "web.edit.appliedReopening": "{outcome}; reopening the file to show the new revision",
-      "web.edit.appliedReopenFailed": "{outcome}; the tab could not be reopened, so this view is stale",
-      "web.edit.noneDrivableCount": "{unsupported} of {declared} mutating operation(s) cannot be driven here.",
-      "web.edit.formsAvailable": "{forms} form(s) over {declared} mutating operation(s)",
-      "web.editability.noHandle": "{name} has no writable handle: it arrived through a file input, a drop or a fetch, so this page can show it but can never save it back. Pick it through \u201COpen file\u2026\u201D or a folder to edit it.",
-      "web.editability.queryFailed": "{name} has a writable handle, but this browser could not report its write permission ({reason}); the first save is where it is decided.",
-      "web.editability.noQuery": "{name} has a writable handle, but this browser exposes no permission query, so whether the write is allowed is decided by the first save.",
-      "web.editability.denied": "Write access was denied for {name}, so its text and hex editors are dropped. This build will not offer a save it already knows the browser refuses.",
-      "web.editability.granted": "{name} can be saved in place: write access is granted.",
-      "web.editability.prompt": "{name} can be saved in place once you allow write access; the browser asks on the first save, or use \u201CEnable editing\u201D to answer it now.",
-      "web.editability.request.noFile": "Open a folder or pick a file before enabling editing.",
-      "web.editability.request.noHandle": "{name} has no writable handle: files opened through a drop, a plain file input or a fetch cannot be written back. Use \u201COpen file\u2026\u201D or a granted folder instead.",
-      "web.editability.request.noSurface": "{name} cannot be asked for write permission in this browser; a save will try directly and report what the browser answers.",
-      "web.editability.request.granted": "Write access granted for {name}: the text and hex editors can save.",
-      "web.editability.request.denied": "Write access denied for {name}; files opened from now on show no editor.",
-      "web.editability.request.notGranted": "Write access was not granted for {name}; nothing was changed.",
-      "web.editability.request.failed": "Asking for write access to {name} failed: {reason}",
-      "web.edit.rejection.staleRevision": "the file changed on disk after this tab read it",
-      "web.edit.rejection.permissionMissing": "the grant this subject was opened under does not carry write permission",
-      "web.edit.rejection.scopeMismatch": "the plan names a source outside this subject",
-      "web.edit.rejection.guarantee": "this backend cannot promise the guarantee the plan asks for",
-      "web.edit.rejection.fidelity": "no evidence proves the writer keeps what the plan claims it keeps",
-      "web.edit.rejection.confirmation": "a lossy write needs an explicit confirmation this host does not collect",
-      "web.edit.rejection.payload": "the edited bytes exceed what this host will hand over inline",
-      "web.edit.rejection.readOnly": "the backend behind this source is read-only",
-      "web.edit.rejection.cancelled": "the save was cancelled",
-      "web.edit.rejection.unknown": "the plan did not describe this subject at its open revision",
-      "web.edit.changeUnsupported": "this editor produced a change this host cannot express as a literal replacement",
-      "web.edit.writerRefused": "the writer refused the change",
-      "web.edit.planUnsupported": "this host cannot plan the change set this editor produced",
-      "web.edit.commit.writtenReopen": "{what} \u2014 written to the file this tab opened. Reopen it before editing again: this tab still holds the revision it read.",
-      "web.edit.commit.refused": "{what} refused \u2014 {reason}{diagnostic}.",
-      "web.edit.commit.rolledBack": "{what} failed and the file was rolled back to what it held before.",
-      "web.edit.commit.partial": "{what} landed only partly; recovery is available in the receipt.",
-      "web.edit.commit.conflict": "refused \u2014 the file changed on disk after this tab read it, so nothing was overwritten. Reopen it and redo the edit.",
-      "web.edit.commit.rejected": "refused before writing \u2014 {reason}.",
-      "web.edit.action.saved": "Saved",
-      "web.edit.action.undo": "Undo",
-      "web.edit.action.redo": "Redo",
-      "web.edit.authorization.denied": "not saved \u2014 this browser denied write access to the file.",
-      "web.edit.authorization.notGranted": "not saved \u2014 write access was not granted ({state}).",
-      "web.edit.apply.noAccess": "{name} was not written: this browser did not grant write access",
-      "web.edit.apply.conflict": "refused before writing: {reason} ({conflicts} conflict(s))",
-      "web.edit.apply.rejected": "refused before writing: {reason} ({code})",
-      "web.edit.apply.committed": "applied and written to {name}",
-      "web.edit.apply.notApplied": "not applied: {reason} ({code})",
-      "web.edit.apply.rolledBack": "not applied: the write failed and {name} was rolled back",
-      "web.edit.apply.partial": "{name} was only partly written; recovery is in the receipt",
-      "web.edit.cannotEdit": "{name} cannot be edited here: {reason}",
-      "web.edit.noWriter": "{name} cannot be edited here: no writer backs this subject.",
-      "web.edit.bytesLabel": "Edit bytes",
-      "web.error.noPicker": "This browser has no folder picker.",
-      "web.map.choose": "Choose a map for the World view by entering its ID:\n\n{candidates}",
-      "web.map.permissionRequired": "{name} \u2014 map preview needs installation resources the browser cannot search; the ordinary archive view remains open.",
-      "web.map.selectionRequired": "{name} \u2014 map preview needs a choice ({candidates}); the ordinary archive view remains open.",
-      "web.map.diagnostic.selectionRequired": "Map preview needs an explicit selection; choose one of the returned map-preview candidates to continue.",
-      "web.map.diagnostic.permissionRequired": "This map needs installation resources that the browser cannot search for automatically; grant or select them in a desktop host.",
-      "web.extensions.subjectsDescription": "Cards come from validated extension and contribution JSON; hover a group to see its exact contract.",
-      "web.extensions.downloadableDescription": "The catalog is checked only when you ask. Installing stores verified package bytes; nothing on this page imports or runs them.",
-      "web.extensions.notInCatalog": "Not in catalog",
-      "web.extensions.updateAvailable": "Update available",
-      "web.extensions.trusted": "Trusted",
-      "web.extensions.notTrusted": "Not trusted",
-      "web.extensions.catalogEmpty": "The catalog contains no extensions.",
-      "web.extensions.noDownloaded": "No downloaded extensions are installed. Check the catalog to see what is available.",
-      "web.extensions.packageDisabled": "The extension is enabled directly, but its distribution package is disabled.",
-      "web.extensions.reloadPending": "Reload the page to rebuild the running host.",
-      "web.extensions.removedPending": "Removed. The extension is gone from the list; reload to rebuild the host.",
-      "web.extensions.trustSentence": "A folder you add here is trusted because you picked it and for no other reason \u2014 nothing is signed and nobody has reviewed it; this page hashes every file as it reads them so that a file changed afterwards is refused instead of run, and user extensions always run in a worker, never on the page.",
-      "web.extensions.provenanceNote": "Bundled extensions carry digests this app recorded when it was built. Folders you added carry digests this page computed itself just now \u2014 a measurement of the bytes it read, not a claim about who wrote them.",
-      "web.extensions.remembered": "Added folders are remembered in {location}.",
-      "web.extensions.added": "Added \xAB{name}\xBB{coordinate}.",
-      "web.extensions.actionFailed": "Extension action failed: {reason}",
-      "web.extensions.addFailed": "Could not add that folder: {reason}",
-      "web.extensions.removeFailed": "Could not remove it: {reason}",
-      "web.extensions.accessFailed": "Could not ask for access: {reason}",
-      "web.extensions.accessGranted": "Access to \xAB{name}\xBB granted again.",
-      "web.extensions.accessDenied": "Access to \xAB{name}\xBB was not granted ({state}).",
-      "web.extensions.catalogChecked": "Extension catalog checked at {location}.",
-      "web.extensions.catalogLoaded": "Catalog loaded from {location}.",
-      "web.extensions.catalogNotContacted": "Catalog {location} has not been contacted in this session.",
-      "web.extensions.installedStatus": "Installed {name}. Reload the page to load the changed extension set.",
-      "web.extensions.updatedStatus": "Updated {name}. Reload the page to load the changed extension set.",
-      "web.extensions.removedStatus": "Removed {name}. Reload the page to load the changed extension set.",
-      "web.extensions.cardFailed": "Could not open extension card: {reason}",
-      "web.extensions.bundledProvenance": "Bundled with this build, served from {root}; its digests were recorded when the app was built.",
-      "web.extensions.userProvenance": "Folder you granted (\xAB{label}\xBB); its digests were computed by this page from the bytes it just read."
-    }
-  },
-  { authorizedMessagePrefixes: ["web."] }
-);
-var RU = parseUiCatalogDocument(
-  {
-    schema: "org.modkitx/ui-message-catalog@1",
-    locale: "ru",
-    namespace: "org.modkitx/web-app",
-    messages: {
-      "web.capability.folder": "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u0440\u0430\u0437\u0440\u0435\u0448\u0430\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F \u043A \u043F\u0430\u043F\u043A\u0430\u043C: \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043F\u0430\u043F\u043A\u0443 \u0434\u043B\u044F \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u043D\u0430 \u043C\u0435\u0441\u0442\u0435.",
-      "web.capability.file": "\u0412 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435 \u043D\u0435\u0442 \u0432\u044B\u0431\u043E\u0440\u0430 \u043F\u0430\u043F\u043A\u0438; \u043C\u043E\u0436\u043D\u043E \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0442\u044C \u043F\u043E \u043E\u0434\u043D\u043E\u043C\u0443 \u0444\u0430\u0439\u043B\u0443.",
-      "web.capability.input": "\u0412 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435 \u043D\u0435\u0442 \u0441\u0438\u0441\u0442\u0435\u043C\u043D\u043E\u0433\u043E \u0432\u044B\u0431\u043E\u0440\u0430 \u0444\u0430\u0439\u043B\u043E\u0432; \u0444\u0430\u0439\u043B\u044B \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u044E\u0442\u0441\u044F \u043F\u043E \u043E\u0434\u043D\u043E\u043C\u0443 \u0447\u0435\u0440\u0435\u0437 \u043E\u0431\u044B\u0447\u043D\u043E\u0435 \u043F\u043E\u043B\u0435 \u0432\u044B\u0431\u043E\u0440\u0430.",
-      "web.editing.notice": "\u0424\u0430\u0439\u043B\u044B \u0438\u0437 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u043E\u0433\u043E \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0442\u044C \u043D\u0430 \u043C\u0435\u0441\u0442\u0435; \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043D\u044B\u0435 \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u0430 \u0438 \u043F\u0435\u0440\u0435\u0442\u0430\u0449\u0435\u043D\u043D\u044B\u0435 \u0444\u0430\u0439\u043B\u044B \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u043B\u044F \u0447\u0442\u0435\u043D\u0438\u044F.",
-      "web.status.noCodec": "{name} \u2014 \u043A\u043E\u0434\u0435\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D ({reason}); \u043F\u043E\u043A\u0430\u0437\u0430\u043D\u044B \u0438\u0441\u0445\u043E\u0434\u043D\u044B\u0435 \u0431\u0430\u0439\u0442\u044B.",
-      "web.status.noNestedCodec": "{name} \u2014 \u0432\u043D\u0443\u0442\u0440\u0438 \u043A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440\u0430 \u043A\u043E\u0434\u0435\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D ({reason}).",
-      "web.status.sharedCommandsUnavailable": "{name} \u2014 \u043E\u0431\u0449\u0438\u0435 \u043A\u043E\u043C\u0430\u043D\u0434\u044B \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B: {reason}",
-      "web.status.unsavedClose": "\u0412 {name} \u0435\u0441\u0442\u044C \u043D\u0435\u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F. \u0417\u0430\u043A\u0440\u044B\u0442\u044C \u0432\u043A\u043B\u0430\u0434\u043A\u0443 \u0438 \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0438\u0445?",
-      "web.status.bootFailed": "\u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u043F\u0443\u0441\u043A\u0430: {reason}",
-      "web.sample.png": "favicon-32.png \u2014 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 PNG",
-      "web.sample.csv": "sample.csv \u2014 \u0442\u0430\u0431\u043B\u0438\u0446\u0430 \u0441 \u0440\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u044F\u043C\u0438",
-      "web.sample.ini": "sample.ini \u2014 \u0434\u0435\u0440\u0435\u0432\u043E INI",
-      "web.sample.svg": "sample.svg \u2014 \u0432\u0435\u043A\u0442\u043E\u0440\u043D\u0430\u044F \u0441\u0446\u0435\u043D\u0430",
-      "web.sample.md": "sample.md \u2014 \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442 Markdown",
-      "web.sample.mp3": "sample.mp3 \u2014 \u0441\u0435\u043A\u0443\u043D\u0434\u0430 \u0442\u0438\u0448\u0438\u043D\u044B MP3",
-      "web.sample.zip": "sample.zip \u2014 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435 \u043A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440\u0430",
-      "web.embed.view": "\u0420\u0435\u0436\u0438\u043C \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430",
-      "web.embed.waiting": "\u041E\u0436\u0438\u0434\u0430\u043D\u0438\u0435 \u0444\u0430\u0439\u043B\u0430: \u0437\u0430\u0434\u0430\u0439\u0442\u0435 \u0430\u0442\u0440\u0438\u0431\u0443\u0442 src \u0438\u043B\u0438 \u0441\u0432\u043E\u0439\u0441\u0442\u0432\u043E file.",
-      "web.embed.loading": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 {name}\u2026",
-      "web.embed.catalog.invalidUrl": "extension-catalog \xAB{url}\xBB \u043D\u0435 \u044F\u0432\u043B\u044F\u0435\u0442\u0441\u044F \u0434\u043E\u043F\u0443\u0441\u0442\u0438\u043C\u044B\u043C URL.",
-      "web.embed.catalog.protocol": "extension-catalog \u0434\u043E\u043B\u0436\u0435\u043D \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u044C http \u0438\u043B\u0438 https; \u043F\u0440\u043E\u0442\u043E\u043A\u043E\u043B {protocol} \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D.",
-      "web.embed.catalog.origin": "\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 {origin} \u043E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442 \u0432 \u0441\u043F\u0438\u0441\u043A\u0435, \u0437\u0430\u0434\u0430\u043D\u043D\u043E\u043C \u043F\u0440\u0438 \u0441\u0431\u043E\u0440\u043A\u0435 embed.js. \u0412\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u044E\u0449\u0430\u044F \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A; \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E \u043F\u0435\u0440\u0435\u0441\u043E\u0431\u0440\u0430\u0442\u044C embed.js.",
-      "web.embed.catalog.schema": "\u043A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u043C schemaVersion 1 \u0441 \u043C\u0430\u0441\u0441\u0438\u0432\u0430\u043C\u0438 \u0437\u0430\u043F\u0438\u0441\u0435\u0439",
-      "web.embed.catalog.exclusion": "\u0438\u0441\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0434\u043E\u043B\u0436\u043D\u044B \u0441\u043E\u0434\u0435\u0440\u0436\u0430\u0442\u044C \u0441\u0442\u0440\u043E\u043A\u043E\u0432\u044B\u0435 \u043F\u043E\u043B\u044F name \u0438 reason",
-      "web.embed.catalog.malformed": "\u043A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u0442 \u043D\u0435\u0432\u0435\u0440\u043D\u0443\u044E \u0437\u0430\u043F\u0438\u0441\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
-      "web.embed.asset.invalidUrl": "asset-base \xAB{base}\xBB \u043D\u0435 \u044F\u0432\u043B\u044F\u0435\u0442\u0441\u044F URL, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u043C\u043E\u0436\u0435\u0442 \u0440\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044C \u044D\u0442\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430.",
-      "web.embed.asset.crossOrigin": "\u0420\u0435\u0441\u0443\u0440\u0441\u044B Modkit \u043D\u0430 {origin} \u043D\u0430\u0445\u043E\u0434\u044F\u0442\u0441\u044F \u0432\u043D\u0435 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u044D\u0442\u043E\u0439 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B ({pageOrigin}). \u041C\u043E\u0434\u0443\u043B\u044C\u043D\u044B\u0439 \u0440\u0430\u0431\u043E\u0447\u0438\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441 \u0437\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u0438\u0437 \u0442\u043E\u0433\u043E \u0436\u0435 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430, \u0438 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0438 CORS \u044D\u0442\u043E \u043D\u0435 \u0438\u0437\u043C\u0435\u043D\u044F\u0442: \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u0443\u0439\u0442\u0435 \u0440\u0435\u0441\u0443\u0440\u0441\u044B Modkit \u0438\u0437 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u0438 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u0435\u0433\u043E \u0432 asset-base.",
-      "web.embed.stylesFetch": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C modkit-ui.css \u0438\u0437 {base} ({status})",
-      "web.embed.catalogFetch": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u043A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 {url}: {reason}",
-      "web.embed.catalogHttp": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u043A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 {url} ({status} {statusText})",
-      "web.embed.catalogInvalid": "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 {url} \u043D\u0435\u0432\u0435\u0440\u0435\u043D: {reason}",
-      "web.embed.stageFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \xAB{view}\xBB: {reason}",
-      "web.embed.fileFetch": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C {url} ({reason}). \u0414\u043B\u044F \u0444\u0430\u0439\u043B\u0430 \u0438\u0437 \u0434\u0440\u0443\u0433\u043E\u0433\u043E \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u043D\u0443\u0436\u043D\u044B \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0438 CORS \u043D\u0430 \u0435\u0433\u043E \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u0438 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u0432 \u0434\u0438\u0440\u0435\u043A\u0442\u0438\u0432\u0435 connect-src \u043F\u043E\u043B\u0438\u0442\u0438\u043A\u0438 \u0431\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u043E\u0441\u0442\u0438 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B.",
-      "web.embed.fileHttp": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C {url} ({status} {statusText})",
-      "web.embed.catalogAttributeInvalid": "extension-catalog \xAB{url}\xBB \u043D\u0435 \u044F\u0432\u043B\u044F\u0435\u0442\u0441\u044F URL, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u043C\u043E\u0436\u0435\u0442 \u0440\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044C \u044D\u0442\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430.",
-      "web.embed.tooLarge": "\u0420\u0430\u0437\u043C\u0435\u0440 {name} \u2014 {size} \u0431\u0430\u0439\u0442; \u044D\u043B\u0435\u043C\u0435\u043D\u0442 \u0447\u0438\u0442\u0430\u0435\u0442 \u043D\u0435 \u0431\u043E\u043B\u0435\u0435 {limit} \u0431\u0430\u0439\u0442.",
-      "web.embed.noStage": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C {name}: \u043D\u0438 \u043E\u0434\u0438\u043D \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u043D\u044B\u0439 \u043A\u043E\u0434\u0435\u043A\u0430\u043C\u0438 \u0440\u0435\u0436\u0438\u043C \u043D\u0435 \u043F\u043E\u0434\u043E\u0448\u0451\u043B.",
-      "web.archive.openSubject": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043A\u0430\u043A \u0441\u0443\u0431\u044A\u0435\u043A\u0442",
-      "web.archive.entries": "\u0421\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435",
-      "web.archive.pick": "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442 \u0432 \u0434\u0435\u0440\u0435\u0432\u0435 \u0434\u043B\u044F \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430.",
-      "web.archive.openFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C {path} \u043A\u0430\u043A \u0441\u0443\u0431\u044A\u0435\u043A\u0442: {reason}",
-      "web.archive.noReference": "\u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u043E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442",
-      "web.archive.noExtract": "\u0443 \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0430 \u043D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E\u0439 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438 \u0438\u0437\u0432\u043B\u0435\u0447\u0435\u043D\u0438\u044F",
-      "web.archive.sessionGone": "\u0421\u0435\u0430\u043D\u0441, \u043E\u0442\u043A\u0440\u044B\u0432\u0448\u0438\u0439 \u044D\u0442\u043E\u0442 \u043A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440, \u0431\u043E\u043B\u044C\u0448\u0435 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D.",
-      "web.archive.unknownEntry": "\u0412 \u043F\u0440\u043E\u0441\u0442\u0440\u0430\u043D\u0441\u0442\u0432\u0435 \u0438\u043C\u0451\u043D \u043D\u0435\u0442 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u0430 \u0441 id {entry}.",
-      "web.archive.wrongOutput": "\u041E\u043F\u0435\u0440\u0430\u0446\u0438\u044F \u0432\u0435\u0440\u043D\u0443\u043B\u0430 {kind} \u0432\u043C\u0435\u0441\u0442\u043E \u0431\u0430\u0439\u0442\u043E\u0432.",
-      "web.archive.rejected": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E: {reason}",
-      "web.archive.shown": "{path} \xB7 {bytes} \u0431\u0430\u0439\u0442 \xB7 \u0440\u0435\u0436\u0438\u043C: {mode}",
-      "web.archive.modeHex": "hex",
-      "web.archive.modeText": "\u0442\u0435\u043A\u0441\u0442",
-      "web.archive.readFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u044D\u043B\u0435\u043C\u0435\u043D\u0442: {reason}",
-      "web.view.code": "\u041A\u043E\u0434",
-      "web.view.video": "\u0412\u0438\u0434\u0435\u043E",
-      "web.view.image": "\u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435",
-      "web.view.audio": "\u0410\u0443\u0434\u0438\u043E",
-      "web.view.world": "\u041C\u0438\u0440",
-      "web.view.model": "\u041C\u043E\u0434\u0435\u043B\u044C",
-      "web.view.vector": "\u0412\u0435\u043A\u0442\u043E\u0440",
-      "web.view.archive": "\u0421\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435",
-      "web.view.template": "\u0428\u0430\u0431\u043B\u043E\u043D",
-      "web.view.card": "\u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0430",
-      "web.view.calculations": "\u0420\u0430\u0441\u0447\u0451\u0442\u044B",
-      "web.view.table": "\u0422\u0430\u0431\u043B\u0438\u0446\u0430",
-      "web.view.tree": "\u0414\u0435\u0440\u0435\u0432\u043E",
-      "web.view.relations": "\u0421\u0432\u044F\u0437\u0438",
-      "web.view.text": "\u0422\u0435\u043A\u0441\u0442",
-      "web.view.virtualText": "\u0422\u0435\u043A\u0441\u0442 (\u043F\u043E\u0442\u043E\u043A)",
-      "web.view.metadata": "\u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435",
-      "web.view.hex": "Hex",
-      "web.view.textEditor": "\u0422\u0435\u043A\u0441\u0442 (\u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435)",
-      "web.view.hexEditor": "Hex (\u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435)",
-      "web.inspector.label": "\u0418\u043D\u0441\u043F\u0435\u043A\u0442\u043E\u0440",
-      "web.inspector.edit": "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435",
-      "web.inspector.noFile": "\u041D\u0435\u0442 \u043E\u0442\u043A\u0440\u044B\u0442\u043E\u0433\u043E \u0444\u0430\u0439\u043B\u0430.",
-      "web.inspector.summary": "{label} \xB7 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439 \u0447\u0442\u0435\u043D\u0438\u044F: {read} \xB7 \u0444\u043E\u0440\u043C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F: {forms} \u0438\u0437 {write} \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439 \xB7 \u0434\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A: {diagnostics}",
-      "web.inspector.needInput": "{operations}: \u043D\u0435\u0442 \u043D\u0430 \u043F\u0430\u043D\u0435\u043B\u0438 \u0438\u043D\u0441\u0442\u0440\u0443\u043C\u0435\u043D\u0442\u043E\u0432 \u2014 \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044F \u0432\u0432\u043E\u0434 \u0438\u0437 \u0434\u0440\u0443\u0433\u043E\u0433\u043E \u0440\u0435\u0436\u0438\u043C\u0430 \u0438\u043B\u0438 \u043F\u0430\u043D\u0435\u043B\u0438.",
-      "web.inspector.noEdit": "{operations}: \u043D\u0435\u0442 \u043F\u0430\u043D\u0435\u043B\u0438 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u2014 {reason}",
-      "web.inspector.noWritableHandle": "\u0443 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u043D\u0435\u0442 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u044F \u043D\u0430 \u0437\u0430\u043F\u0438\u0441\u044C \u0432 \u0444\u0430\u0439\u043B.",
-      "web.inspector.noForm": "{operation}: \u043D\u0435\u0442 \u0444\u043E\u0440\u043C\u044B \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u2014 {reason}.",
-      "web.edit.unsupported": "{operation}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E \u0432 \u044D\u0442\u043E\u043C \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0438 \u2014 {reason}",
-      "web.edit.invoking": "{operation}: \u0437\u0430\u043F\u0443\u0441\u043A {handler}\u2026",
-      "web.edit.codecRefused": "\u041A\u043E\u0434\u0435\u043A \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u044E: {reason}",
-      "web.edit.hostRefused": "\u041F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B\u043E \u043F\u043B\u0430\u043D \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F: {reason}",
-      "web.edit.appliedReopening": "{outcome}; \u0444\u0430\u0439\u043B \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442\u0441\u044F \u0437\u0430\u043D\u043E\u0432\u043E \u0432 \u043D\u043E\u0432\u043E\u0439 \u0432\u0435\u0440\u0441\u0438\u0438",
-      "web.edit.appliedReopenFailed": "{outcome}; \u0432\u043A\u043B\u0430\u0434\u043A\u0443 \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u0437\u0430\u043D\u043E\u0432\u043E, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435 \u0443\u0441\u0442\u0430\u0440\u0435\u043B\u043E",
-      "web.edit.noneDrivableCount": "\u041D\u0435\u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043C\u044B\u0445 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F: {unsupported} \u0438\u0437 {declared}.",
-      "web.edit.formsAvailable": "\u0424\u043E\u0440\u043C: {forms}; \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F: {declared}",
-      "web.editability.noHandle": "\u0423 {name} \u043D\u0435\u0442 \u0434\u0435\u0441\u043A\u0440\u0438\u043F\u0442\u043E\u0440\u0430 \u0434\u043B\u044F \u0437\u0430\u043F\u0438\u0441\u0438: \u0444\u0430\u0439\u043B \u043E\u0442\u043A\u0440\u044B\u0442 \u0447\u0435\u0440\u0435\u0437 \u043F\u043E\u043B\u0435 \u0432\u044B\u0431\u043E\u0440\u0430, \u043F\u0435\u0440\u0435\u0442\u0430\u0441\u043A\u0438\u0432\u0430\u043D\u0438\u0435 \u0438\u043B\u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0443, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u043C\u043E\u0436\u0435\u0442 \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0435\u0433\u043E, \u043D\u043E \u043D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043E\u0431\u0440\u0430\u0442\u043D\u043E. \u0414\u043B\u044F \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0444\u0430\u0439\u043B \u0447\u0435\u0440\u0435\u0437 \xAB\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0444\u0430\u0439\u043B\u2026\xBB \u0438\u043B\u0438 \u043F\u0430\u043F\u043A\u0443.",
-      "web.editability.queryFailed": "\u0423 {name} \u0435\u0441\u0442\u044C \u0434\u0435\u0441\u043A\u0440\u0438\u043F\u0442\u043E\u0440 \u0434\u043B\u044F \u0437\u0430\u043F\u0438\u0441\u0438, \u043D\u043E \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u0441\u043C\u043E\u0433 \u0441\u043E\u043E\u0431\u0449\u0438\u0442\u044C \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435 ({reason}); \u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u0431\u0443\u0434\u0435\u0442 \u043F\u0440\u0438\u043D\u044F\u0442\u043E \u043F\u0440\u0438 \u043F\u0435\u0440\u0432\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0438.",
-      "web.editability.noQuery": "\u0423 {name} \u0435\u0441\u0442\u044C \u0434\u0435\u0441\u043A\u0440\u0438\u043F\u0442\u043E\u0440 \u0434\u043B\u044F \u0437\u0430\u043F\u0438\u0441\u0438, \u043D\u043E \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u0443\u043C\u0435\u0435\u0442 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0442\u044C \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435; \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u0438 \u0432\u044B\u044F\u0441\u043D\u0438\u0442\u0441\u044F \u043F\u0440\u0438 \u043F\u0435\u0440\u0432\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0438.",
-      "web.editability.denied": "\u0417\u0430\u043F\u0438\u0441\u044C {name} \u0437\u0430\u043F\u0440\u0435\u0449\u0435\u043D\u0430, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u044B \u0442\u0435\u043A\u0441\u0442\u0430 \u0438 hex \u0441\u043A\u0440\u044B\u0442\u044B. \u041F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0435 \u043F\u0440\u0435\u0434\u043B\u0430\u0433\u0430\u0435\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435, \u043A\u043E\u0442\u043E\u0440\u043E\u0435 \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u0443\u0436\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B.",
-      "web.editability.granted": "\u0424\u0430\u0439\u043B {name} \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043D\u0430 \u043C\u0435\u0441\u0442\u0435: \u0437\u0430\u043F\u0438\u0441\u044C \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0430.",
-      "web.editability.prompt": "\u0424\u0430\u0439\u043B {name} \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043F\u043E\u0441\u043B\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u044F \u0437\u0430\u043F\u0438\u0441\u0438; \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u0441\u043F\u0440\u043E\u0441\u0438\u0442 \u043F\u0440\u0438 \u043F\u0435\u0440\u0432\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0438, \u043B\u0438\u0431\u043E \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435\xBB \u0441\u0435\u0439\u0447\u0430\u0441.",
-      "web.editability.request.noFile": "\u041F\u0435\u0440\u0435\u0434 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435\u043C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u043F\u0430\u043F\u043A\u0443 \u0438\u043B\u0438 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0444\u0430\u0439\u043B.",
-      "web.editability.request.noHandle": "\u0423 {name} \u043D\u0435\u0442 \u0434\u0435\u0441\u043A\u0440\u0438\u043F\u0442\u043E\u0440\u0430 \u0434\u043B\u044F \u0437\u0430\u043F\u0438\u0441\u0438: \u0444\u0430\u0439\u043B \u0438\u0437 \u043F\u0435\u0440\u0435\u0442\u0430\u0441\u043A\u0438\u0432\u0430\u043D\u0438\u044F, \u043E\u0431\u044B\u0447\u043D\u043E\u0433\u043E \u043F\u043E\u043B\u044F \u0432\u044B\u0431\u043E\u0440\u0430 \u0438\u043B\u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u043D\u0435\u043B\u044C\u0437\u044F \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043E\u0431\u0440\u0430\u0442\u043D\u043E. \u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \xAB\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0444\u0430\u0439\u043B\u2026\xBB \u0438\u043B\u0438 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u0443\u044E \u043F\u0430\u043F\u043A\u0443.",
-      "web.editability.request.noSurface": "\u0412 \u044D\u0442\u043E\u043C \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435 \u043D\u0435\u043B\u044C\u0437\u044F \u0437\u0430\u0440\u0430\u043D\u0435\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u043D\u0430 \u0437\u0430\u043F\u0438\u0441\u044C {name}; \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435 \u043F\u043E\u043F\u0440\u043E\u0431\u0443\u0435\u0442 \u0437\u0430\u043F\u0438\u0441\u0430\u0442\u044C \u043D\u0430\u043F\u0440\u044F\u043C\u0443\u044E \u0438 \u043F\u043E\u043A\u0430\u0436\u0435\u0442 \u043E\u0442\u0432\u0435\u0442 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430.",
-      "web.editability.request.granted": "\u0417\u0430\u043F\u0438\u0441\u044C {name} \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0430: \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u044B \u0442\u0435\u043A\u0441\u0442\u0430 \u0438 hex \u043C\u043E\u0433\u0443\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F.",
-      "web.editability.request.denied": "\u0417\u0430\u043F\u0438\u0441\u044C {name} \u0437\u0430\u043F\u0440\u0435\u0449\u0435\u043D\u0430; \u043D\u043E\u0432\u044B\u0435 \u0444\u0430\u0439\u043B\u044B \u0431\u0443\u0434\u0443\u0442 \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0442\u044C\u0441\u044F \u0431\u0435\u0437 \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u0430.",
-      "web.editability.request.notGranted": "\u0417\u0430\u043F\u0438\u0441\u044C {name} \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0430; \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u043E.",
-      "web.editability.request.failed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u043D\u0430 \u0437\u0430\u043F\u0438\u0441\u044C {name}: {reason}",
-      "web.edit.rejection.staleRevision": "\u0444\u0430\u0439\u043B \u043D\u0430 \u0434\u0438\u0441\u043A\u0435 \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0447\u0442\u0435\u043D\u0438\u044F \u0432 \u044D\u0442\u043E\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u0435",
-      "web.edit.rejection.permissionMissing": "\u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435, \u0441 \u043A\u043E\u0442\u043E\u0440\u044B\u043C \u043E\u0442\u043A\u0440\u044B\u0442 \u0441\u0443\u0431\u044A\u0435\u043A\u0442, \u043D\u0435 \u0434\u043E\u043F\u0443\u0441\u043A\u0430\u0435\u0442 \u0437\u0430\u043F\u0438\u0441\u044C \u0444\u0430\u0439\u043B\u0430",
-      "web.edit.rejection.scopeMismatch": "\u043F\u043B\u0430\u043D \u0443\u043A\u0430\u0437\u044B\u0432\u0430\u0435\u0442 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u0437\u0430 \u043F\u0440\u0435\u0434\u0435\u043B\u0430\u043C\u0438 \u044D\u0442\u043E\u0433\u043E \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0430",
-      "web.edit.rejection.guarantee": "\u0441\u0440\u0435\u0434\u0441\u0442\u0432\u043E \u0437\u0430\u043F\u0438\u0441\u0438 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043E\u0431\u0435\u0441\u043F\u0435\u0447\u0438\u0442\u044C \u0442\u0440\u0435\u0431\u0443\u0435\u043C\u0443\u044E \u043F\u043B\u0430\u043D\u043E\u043C \u0433\u0430\u0440\u0430\u043D\u0442\u0438\u044E",
-      "web.edit.rejection.fidelity": "\u043D\u0435\u0442 \u0434\u043E\u043A\u0430\u0437\u0430\u0442\u0435\u043B\u044C\u0441\u0442\u0432 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044F \u0437\u0430\u044F\u0432\u043B\u0435\u043D\u043D\u044B\u0445 \u043F\u043B\u0430\u043D\u043E\u043C \u0434\u0430\u043D\u043D\u044B\u0445",
-      "web.edit.rejection.confirmation": "\u0437\u0430\u043F\u0438\u0441\u044C \u0441 \u043F\u043E\u0442\u0435\u0440\u044F\u043C\u0438 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u044F\u0432\u043D\u043E\u0433\u043E \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F, \u043A\u043E\u0442\u043E\u0440\u043E\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0435 \u0437\u0430\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0435\u0442",
-      "web.edit.rejection.payload": "\u0438\u0437\u043C\u0435\u043D\u0451\u043D\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u043F\u0440\u0435\u0432\u044B\u0448\u0430\u044E\u0442 \u043F\u0440\u0435\u0434\u0435\u043B \u043F\u0435\u0440\u0435\u0434\u0430\u0447\u0438 \u044D\u0442\u043E\u0433\u043E \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F",
-      "web.edit.rejection.readOnly": "\u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u043B\u044F \u0447\u0442\u0435\u043D\u0438\u044F",
-      "web.edit.rejection.cancelled": "\u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435 \u043E\u0442\u043C\u0435\u043D\u0435\u043D\u043E",
-      "web.edit.rejection.unknown": "\u043F\u043B\u0430\u043D \u043D\u0435 \u043E\u043F\u0438\u0441\u044B\u0432\u0430\u0435\u0442 \u044D\u0442\u043E\u0442 \u0441\u0443\u0431\u044A\u0435\u043A\u0442 \u0432 \u043E\u0442\u043A\u0440\u044B\u0442\u043E\u0439 \u0432\u0435\u0440\u0441\u0438\u0438",
-      "web.edit.changeUnsupported": "\u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0441\u043E\u0437\u0434\u0430\u043B \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435, \u043A\u043E\u0442\u043E\u0440\u043E\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0432\u044B\u0440\u0430\u0437\u0438\u0442\u044C \u043A\u0430\u043A \u0431\u0443\u043A\u0432\u0430\u043B\u044C\u043D\u0443\u044E \u0437\u0430\u043C\u0435\u043D\u0443",
-      "web.edit.writerRefused": "\u0441\u0440\u0435\u0434\u0441\u0442\u0432\u043E \u0437\u0430\u043F\u0438\u0441\u0438 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B\u043E \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435",
-      "web.edit.planUnsupported": "\u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0441\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u043F\u043B\u0430\u043D \u0434\u043B\u044F \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u044D\u0442\u043E\u0433\u043E \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u0430",
-      "web.edit.commit.writtenReopen": "{what} \u2014 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u043E \u0432 \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u043E\u0439 \u0444\u0430\u0439\u043B. \u041F\u0435\u0440\u0435\u0434 \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u043C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435\u043C \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0435\u0433\u043E \u0437\u0430\u043D\u043E\u0432\u043E: \u0432\u043A\u043B\u0430\u0434\u043A\u0430 \u0432\u0441\u0451 \u0435\u0449\u0451 \u0445\u0440\u0430\u043D\u0438\u0442 \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u0443\u044E \u0432\u0435\u0440\u0441\u0438\u044E.",
-      "web.edit.commit.refused": "{what}: \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u2014 {reason}{diagnostic}.",
-      "web.edit.commit.rolledBack": "{what}: \u043E\u0448\u0438\u0431\u043A\u0430; \u0444\u0430\u0439\u043B \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \u0434\u043E \u043F\u0440\u0435\u0436\u043D\u0435\u0433\u043E \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F.",
-      "web.edit.commit.partial": "{what}: \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u043E \u0442\u043E\u043B\u044C\u043A\u043E \u0447\u0430\u0441\u0442\u0438\u0447\u043D\u043E; \u0441\u0432\u0435\u0434\u0435\u043D\u0438\u044F \u043E \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0438 \u043D\u0430\u0445\u043E\u0434\u044F\u0442\u0441\u044F \u0432 \u043A\u0432\u0438\u0442\u0430\u043D\u0446\u0438\u0438.",
-      "web.edit.commit.conflict": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E: \u0444\u0430\u0439\u043B \u043D\u0430 \u0434\u0438\u0441\u043A\u0435 \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0447\u0442\u0435\u043D\u0438\u044F \u0432 \u044D\u0442\u043E\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u0435, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0438\u0441\u0430\u043D\u043E. \u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0444\u0430\u0439\u043B \u0437\u0430\u043D\u043E\u0432\u043E \u0438 \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435.",
-      "web.edit.commit.rejected": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u0434\u043E \u0437\u0430\u043F\u0438\u0441\u0438: {reason}.",
-      "web.edit.action.saved": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435",
-      "web.edit.action.undo": "\u041E\u0442\u043C\u0435\u043D\u0430 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F",
-      "web.edit.action.redo": "\u041F\u043E\u0432\u0442\u043E\u0440 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F",
-      "web.edit.authorization.denied": "\u041D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u0437\u0430\u043F\u0440\u0435\u0442\u0438\u043B \u0437\u0430\u043F\u0438\u0441\u044C \u0444\u0430\u0439\u043B\u0430.",
-      "web.edit.authorization.notGranted": "\u041D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u0437\u0430\u043F\u0438\u0441\u044C \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0430 ({state}).",
-      "web.edit.apply.noAccess": "{name} \u043D\u0435 \u0437\u0430\u043F\u0438\u0441\u0430\u043D: \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0438\u043B \u0437\u0430\u043F\u0438\u0441\u044C",
-      "web.edit.apply.conflict": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u0434\u043E \u0437\u0430\u043F\u0438\u0441\u0438: {reason} (\u043A\u043E\u043D\u0444\u043B\u0438\u043A\u0442\u043E\u0432: {conflicts})",
-      "web.edit.apply.rejected": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u0434\u043E \u0437\u0430\u043F\u0438\u0441\u0438: {reason} ({code})",
-      "web.edit.apply.committed": "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u043E \u0438 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u043E \u0432 {name}",
-      "web.edit.apply.notApplied": "\u041D\u0435 \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u043E: {reason} ({code})",
-      "web.edit.apply.rolledBack": "\u041D\u0435 \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u043E: \u043E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u043F\u0438\u0441\u0438; \u0444\u0430\u0439\u043B {name} \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D",
-      "web.edit.apply.partial": "\u0424\u0430\u0439\u043B {name} \u0437\u0430\u043F\u0438\u0441\u0430\u043D \u0442\u043E\u043B\u044C\u043A\u043E \u0447\u0430\u0441\u0442\u0438\u0447\u043D\u043E; \u0441\u0432\u0435\u0434\u0435\u043D\u0438\u044F \u043E \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0438 \u043D\u0430\u0445\u043E\u0434\u044F\u0442\u0441\u044F \u0432 \u043A\u0432\u0438\u0442\u0430\u043D\u0446\u0438\u0438",
-      "web.edit.cannotEdit": "\u0417\u0434\u0435\u0441\u044C \u043D\u0435\u043B\u044C\u0437\u044F \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u044C {name}: {reason}",
-      "web.edit.noWriter": "\u0417\u0434\u0435\u0441\u044C \u043D\u0435\u043B\u044C\u0437\u044F \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u044C {name}: \u0434\u043B\u044F \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0430 \u043D\u0435\u0442 \u0441\u0440\u0435\u0434\u0441\u0442\u0432\u0430 \u0437\u0430\u043F\u0438\u0441\u0438.",
-      "web.edit.bytesLabel": "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u0431\u0430\u0439\u0442\u044B",
-      "web.error.noPicker": "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u0432\u044B\u0431\u043E\u0440 \u043F\u0430\u043F\u043A\u0438.",
-      "web.map.choose": "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 ID \u043A\u0430\u0440\u0442\u044B \u0434\u043B\u044F \u043E\u0442\u043A\u0440\u044B\u0442\u0438\u044F \u0432 \u0440\u0435\u0436\u0438\u043C\u0435 \u043C\u0438\u0440\u0430:\n\n{candidates}",
-      "web.map.permissionRequired": "{name} \u2014 \u0434\u043B\u044F \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u043A\u0430\u0440\u0442\u044B \u043D\u0443\u0436\u043D\u044B \u0440\u0435\u0441\u0443\u0440\u0441\u044B \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043D\u043E\u0439 \u0438\u0433\u0440\u044B, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043D\u0430\u0439\u0442\u0438 \u0441\u0430\u043C; \u043E\u0431\u044B\u0447\u043D\u044B\u0439 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0430\u0440\u0445\u0438\u0432\u0430 \u043E\u0441\u0442\u0430\u0451\u0442\u0441\u044F \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u043C.",
-      "web.map.selectionRequired": "{name} \u2014 \u0434\u043B\u044F \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u043A\u0430\u0440\u0442\u044B \u043D\u0443\u0436\u043D\u043E \u0432\u044B\u0431\u0440\u0430\u0442\u044C \u0432\u0430\u0440\u0438\u0430\u043D\u0442 ({candidates}); \u043E\u0431\u044B\u0447\u043D\u044B\u0439 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0430\u0440\u0445\u0438\u0432\u0430 \u043E\u0441\u0442\u0430\u0451\u0442\u0441\u044F \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u043C.",
-      "web.map.diagnostic.selectionRequired": "\u0414\u043B\u044F \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u043A\u0430\u0440\u0442\u044B \u043D\u0443\u0436\u043D\u043E \u044F\u0432\u043D\u043E \u0432\u044B\u0431\u0440\u0430\u0442\u044C \u0432\u0430\u0440\u0438\u0430\u043D\u0442; \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043E\u0434\u043D\u0443 \u0438\u0437 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0451\u043D\u043D\u044B\u0445 \u043A\u0430\u0440\u0442 \u0438 \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0438\u0442\u0435.",
-      "web.map.diagnostic.permissionRequired": "\u0414\u043B\u044F \u044D\u0442\u043E\u0439 \u043A\u0430\u0440\u0442\u044B \u043D\u0443\u0436\u043D\u044B \u0440\u0435\u0441\u0443\u0440\u0441\u044B \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043D\u043E\u0439 \u0438\u0433\u0440\u044B, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043D\u0430\u0439\u0442\u0438 \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438; \u043F\u0440\u0435\u0434\u043E\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u0434\u043E\u0441\u0442\u0443\u043F \u0438\u043B\u0438 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u0445 \u0432 \u043D\u0430\u0441\u0442\u043E\u043B\u044C\u043D\u043E\u043C \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0438.",
-      "web.extensions.subjectsDescription": "\u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0438 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D\u044B \u0438\u0437 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u044B\u0445 JSON \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0438 \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0435\u0439; \u0442\u043E\u0447\u043D\u044B\u0439 \u043A\u043E\u043D\u0442\u0440\u0430\u043A\u0442 \u0443\u043A\u0430\u0437\u0430\u043D \u0432\u043E \u0432\u0441\u043F\u043B\u044B\u0432\u0430\u044E\u0449\u0435\u0439 \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0435.",
-      "web.extensions.downloadableDescription": "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u043E \u0432\u0430\u0448\u0435\u0439 \u043A\u043E\u043C\u0430\u043D\u0434\u0435; \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430 \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0435\u0442 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u044B\u0435 \u0444\u0430\u0439\u043B\u044B \u043F\u0430\u043A\u0435\u0442\u0430, \u043D\u043E \u043D\u0435 \u0437\u0430\u043F\u0443\u0441\u043A\u0430\u0435\u0442 \u0438\u0445.",
-      "web.extensions.notInCatalog": "\u041D\u0435\u0442 \u0432 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0435",
-      "web.extensions.updateAvailable": "\u0414\u043E\u0441\u0442\u0443\u043F\u043D\u043E \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435",
-      "web.extensions.trusted": "\u0414\u043E\u0432\u0435\u0440\u0435\u043D\u043E",
-      "web.extensions.notTrusted": "\u041D\u0435 \u0434\u043E\u0432\u0435\u0440\u0435\u043D\u043E",
-      "web.extensions.catalogEmpty": "\u0412 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0435 \u043D\u0435\u0442 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439.",
-      "web.extensions.noDownloaded": "\u0417\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043D\u044B\u0435 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F \u043D\u0435 \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B; \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043A\u0430\u0442\u0430\u043B\u043E\u0433.",
-      "web.extensions.packageDisabled": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E \u043D\u0430\u043F\u0440\u044F\u043C\u0443\u044E, \u043D\u043E \u0435\u0433\u043E \u043F\u0430\u043A\u0435\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D.",
-      "web.extensions.reloadPending": "\u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443, \u0447\u0442\u043E\u0431\u044B \u043F\u0435\u0440\u0435\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u043D\u044B\u0439 \u0445\u043E\u0441\u0442.",
-      "web.extensions.removedPending": "\u0423\u0434\u0430\u043B\u0435\u043D\u043E \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430; \u043F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443, \u0447\u0442\u043E\u0431\u044B \u043F\u0435\u0440\u0435\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u0445\u043E\u0441\u0442.",
-      "web.extensions.trustSentence": "\u041F\u0430\u043F\u043A\u0430, \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u043D\u0430\u044F \u0437\u0434\u0435\u0441\u044C, \u0441\u0447\u0438\u0442\u0430\u0435\u0442\u0441\u044F \u0434\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u043E\u0439 \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u043E\u0442\u043E\u043C\u0443, \u0447\u0442\u043E \u0432\u044B \u0432\u044B\u0431\u0440\u0430\u043B\u0438 \u0435\u0451 \u0441\u0430\u043C\u0438: \u043E\u043D\u0430 \u043D\u0435 \u043F\u043E\u0434\u043F\u0438\u0441\u0430\u043D\u0430 \u0438 \u043D\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D\u0430. \u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u0432\u044B\u0447\u0438\u0441\u043B\u044F\u0435\u0442 \u0445\u0435\u0448 \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u0444\u0430\u0439\u043B\u0430 \u0438 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u0442 \u0435\u0433\u043E, \u0435\u0441\u043B\u0438 \u043E\u043D \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0447\u0442\u0435\u043D\u0438\u044F; \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C\u0441\u043A\u0438\u0435 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F \u0432\u0441\u0435\u0433\u0434\u0430 \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442 \u0432 \u0440\u0430\u0431\u043E\u0447\u0435\u043C \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0435.",
-      "web.extensions.provenanceNote": "\u0425\u0435\u0448\u0438 \u0432\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u0445 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u044B \u043F\u0440\u0438 \u0441\u0431\u043E\u0440\u043A\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F. \u0414\u043B\u044F \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0445 \u043F\u0430\u043F\u043E\u043A \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u0432\u044B\u0447\u0438\u0441\u043B\u044F\u0435\u0442 \u0445\u0435\u0448\u0438 \u0441\u0430\u043C\u0430 \u2014 \u044D\u0442\u043E \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0430 \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u044B\u0445 \u0431\u0430\u0439\u0442\u043E\u0432, \u0430 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u0435 \u0438\u0445 \u0430\u0432\u0442\u043E\u0440\u0430.",
-      "web.extensions.remembered": "\u0414\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0435 \u043F\u0430\u043F\u043A\u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u044E\u0442\u0441\u044F \u0432 {location}.",
-      "web.extensions.added": "\u0414\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u0430 \u043F\u0430\u043F\u043A\u0430 \xAB{name}\xBB{coordinate}.",
-      "web.extensions.actionFailed": "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u0441 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435\u043C \u043D\u0435 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043E: {reason}",
-      "web.extensions.addFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043F\u0430\u043F\u043A\u0443: {reason}",
-      "web.extensions.removeFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435: {reason}",
-      "web.extensions.accessFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u0434\u043E\u0441\u0442\u0443\u043F: {reason}",
-      "web.extensions.accessGranted": "\u0414\u043E\u0441\u0442\u0443\u043F \u043A \xAB{name}\xBB \u0441\u043D\u043E\u0432\u0430 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D.",
-      "web.extensions.accessDenied": "\u0414\u043E\u0441\u0442\u0443\u043F \u043A \xAB{name}\xBB \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D ({state}).",
-      "web.extensions.catalogChecked": "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D: {location}.",
-      "web.extensions.catalogLoaded": "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D \u0438\u0437 {location}.",
-      "web.extensions.catalogNotContacted": "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 {location} \u0435\u0449\u0451 \u043D\u0435 \u0437\u0430\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u043B\u0441\u044F \u0432 \u044D\u0442\u043E\u043C \u0441\u0435\u0430\u043D\u0441\u0435.",
-      "web.extensions.installedStatus": "{name} \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043E. \u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443, \u0447\u0442\u043E\u0431\u044B \u043F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F.",
-      "web.extensions.updatedStatus": "{name} \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u043E. \u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443, \u0447\u0442\u043E\u0431\u044B \u043F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F.",
-      "web.extensions.removedStatus": "{name} \u0443\u0434\u0430\u043B\u0435\u043D\u043E. \u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443, \u0447\u0442\u043E\u0431\u044B \u043F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F.",
-      "web.extensions.cardFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F: {reason}",
-      "web.extensions.bundledProvenance": "\u0412\u0441\u0442\u0440\u043E\u0435\u043D\u043E \u0432 \u044D\u0442\u0443 \u0441\u0431\u043E\u0440\u043A\u0443 \u0438 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u043E \u0438\u0437 {root}; \u0445\u0435\u0448\u0438 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u044B \u043F\u0440\u0438 \u0441\u0431\u043E\u0440\u043A\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F.",
-      "web.extensions.userProvenance": "\u0420\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u0430\u044F \u0432\u0430\u043C\u0438 \u043F\u0430\u043F\u043A\u0430 (\xAB{label}\xBB); \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u0432\u044B\u0447\u0438\u0441\u043B\u0438\u043B\u0430 \u0445\u0435\u0448\u0438 \u0442\u043E\u043B\u044C\u043A\u043E \u0447\u0442\u043E \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u044B\u0445 \u0431\u0430\u0439\u0442\u043E\u0432."
-    }
-  },
-  {
-    authorizedMessagePrefixes: ["web."],
-    fallbackCatalog: EN.messages
-  }
-);
-var WEB_UI_CATALOGS = Object.freeze([EN, RU]);
-function createWebLocalizer(requested, catalogs = []) {
-  const locale = resolveUiLocale(requested, {
-    availableLocales: ["en", "ru", ...catalogs.map((catalog) => catalog.locale)],
-    systemLocales: globalThis.navigator?.languages
-  });
-  return createUiLocalizer(locale, { catalogs: [...WEB_UI_CATALOGS, ...catalogs] });
-}
-
-// apps/web/src/files.ts
-function isWritableHandle(handle) {
-  return handle !== void 0 && typeof handle.createWritable === "function";
-}
-var MAXIMUM_DIRECTORY_ENTRIES = 2e3;
-function describeFileCapability(scope) {
-  const pickers = scope;
-  const directories = typeof pickers.showDirectoryPicker === "function";
-  const filePicker = typeof pickers.showOpenFilePicker === "function";
-  const notice = directories ? "This browser grants folder access: pick a folder and the tree browses it in place." : filePicker ? "This browser has no folder picker, only a file picker: one file opens at a time and there is no tree to browse." : "This browser has neither picker, so files arrive through a plain file input: one file opens at a time and there is no tree to browse.";
-  return Object.freeze({ directories, filePicker, inputFallback: true, notice });
-}
-var joinPath = (parent, name) => parent === "" ? name : `${parent}/${name}`;
-async function* iterateDirectoryChildren(directory) {
-  const entries = directory.entries;
-  if (entries !== void 0) {
-    for await (const pair of entries.call(directory)) yield pair[1];
-    return;
-  }
-  const values = directory.values;
-  if (values === void 0) {
-    throw new TypeError("directory handle exposes neither entries() nor values()");
-  }
-  for await (const handle of values.call(directory)) yield handle;
-}
-var describe4 = (error3) => error3 instanceof Error ? error3.message : String(error3);
-function createDirectoryAccess(root, options = {}) {
-  const directories = /* @__PURE__ */ new Map([["", root]]);
-  const files = /* @__PURE__ */ new Map();
-  const sizes = /* @__PURE__ */ new Map();
-  const requireDirectory = (entryId) => {
-    const found = directories.get(entryId ?? "");
-    if (found === void 0) {
-      throw new TypeError(`\xAB${entryId ?? ""}\xBB is not a folder this session has browsed`);
-    }
-    return found;
-  };
-  return {
-    label: root.name === "" ? "Granted folder" : root.name,
-    /*
-     * One `readwrite` grant covers the whole tree: the user picked this folder, so asking again per
-     * file would be a prompt storm for a permission the browser already scopes to the directory.
-     */
-    writeGrant: root,
-    async list(entryId, signal) {
-      signal?.throwIfAborted();
-      const directory = requireDirectory(entryId);
-      const prefix = entryId ?? "";
-      const listed = [];
-      let truncated = false;
-      for await (const handle of iterateDirectoryChildren(directory)) {
-        signal?.throwIfAborted();
-        if (listed.length >= MAXIMUM_DIRECTORY_ENTRIES) {
-          truncated = true;
-          break;
-        }
-        const path = joinPath(prefix, handle.name);
-        if (handle.kind === "directory") {
-          directories.set(path, handle);
-          listed.push({ id: path, name: handle.name, directory: true });
-          continue;
-        }
-        files.set(path, handle);
-        try {
-          const file = await handle.getFile();
-          sizes.set(path, file.size);
-          listed.push({ id: path, name: handle.name, directory: false, size: file.size });
-        } catch (error3) {
-          options.onNotice?.(`${path} could not be read: ${describe4(error3)}`);
-          listed.push({ id: path, name: handle.name, directory: false });
-        }
-      }
-      if (truncated) {
-        options.onNotice?.(
-          `${prefix === "" ? root.name : prefix} has more than ${MAXIMUM_DIRECTORY_ENTRIES} entries; the tree shows the first ones only.`
-        );
-      }
-      return listed;
-    },
-    sizeOf(entryId) {
-      return sizes.get(entryId);
-    },
-    handleOf(entryId) {
-      return files.get(entryId);
-    },
-    async snapshotOf(entryId, signal) {
-      signal?.throwIfAborted();
-      const handle = files.get(entryId);
-      if (handle === void 0) return void 0;
-      const file = await handle.getFile();
-      return { size: file.size, lastModified: file.lastModified };
-    },
-    async read(entryId, maxBytes, signal) {
-      signal?.throwIfAborted();
-      const handle = files.get(entryId);
-      if (handle === void 0) {
-        throw new TypeError(`\xAB${entryId}\xBB is not a file this session has browsed`);
-      }
-      const file = await handle.getFile();
-      const length = Math.min(file.size, maxBytes);
-      return new Uint8Array(await file.slice(0, length).arrayBuffer());
-    }
-  };
-}
-function createSingleFileAccess(file, handle) {
-  const entry2 = { id: file.name, name: file.name, directory: false, size: file.size };
-  const access = {
-    label: file.name,
-    ...handle === void 0 ? {} : { writeGrant: handle },
-    async list(entryId, signal) {
-      signal?.throwIfAborted();
-      return entryId === void 0 ? [entry2] : [];
-    },
-    sizeOf(entryId) {
-      return entryId === entry2.id ? file.size : void 0;
-    },
-    handleOf(entryId) {
-      return entryId === entry2.id ? handle : void 0;
-    },
-    async snapshotOf(entryId, signal) {
-      signal?.throwIfAborted();
-      if (entryId !== entry2.id) return void 0;
-      const current = handle === void 0 ? file : await handle.getFile();
-      return { size: current.size, lastModified: current.lastModified };
-    },
-    async read(entryId, maxBytes, signal) {
-      signal?.throwIfAborted();
-      if (entryId !== entry2.id) throw new TypeError(`\xAB${entryId}\xBB is not the opened file`);
-      const current = handle === void 0 ? file : await handle.getFile();
-      const length = Math.min(current.size, maxBytes);
-      return new Uint8Array(await current.slice(0, length).arrayBuffer());
-    }
-  };
-  return { access, entry: entry2 };
 }
 
 // packages/vfs/dist/providers/browser-file/index.js
@@ -34838,6 +34767,4853 @@ var HttpVfsProvider = class {
 };
 function createHttpVfsProvider(options = {}) {
   return new HttpVfsProvider(options);
+}
+
+// packages/vfs/dist/providers/memory/index.js
+function rangeError3(id, offset, length, size) {
+  return new ModkitError({
+    code: "x3.vfs/read-out-of-range",
+    message: `read [${offset}, ${offset + length}) exceeds source \xAB${id}\xBB of size ${size}`,
+    context: { id, offset, length, size }
+  });
+}
+var CHUNK4 = 64 * 1024;
+function createMemorySource(id, bytes2) {
+  let disposed = false;
+  const ensureLive = () => {
+    if (disposed) {
+      throw new ModkitError({ code: "x3.vfs/source-disposed", message: `source \xAB${id}\xBB disposed` });
+    }
+  };
+  return {
+    id,
+    // async so cancellation/disposal surface as rejections, never sync throws
+    async size(signal) {
+      throwIfAborted(signal);
+      ensureLive();
+      return bytes2.length;
+    },
+    async readAt(offset, length, signal) {
+      throwIfAborted(signal);
+      ensureLive();
+      if (offset < 0 || length < 0 || offset + length > bytes2.length) {
+        throw rangeError3(id, offset, length, bytes2.length);
+      }
+      return bytes2.slice(offset, offset + length);
+    },
+    stream(start = 0, end = bytes2.length, signal) {
+      ensureLive();
+      let position = Math.max(0, start);
+      const stop = Math.min(end, bytes2.length);
+      return new ReadableStream({
+        pull(controller) {
+          throwIfAborted(signal);
+          if (position >= stop) {
+            controller.close();
+            return;
+          }
+          const next = Math.min(position + CHUNK4, stop);
+          controller.enqueue(bytes2.slice(position, next));
+          position = next;
+        }
+      });
+    },
+    dispose() {
+      disposed = true;
+    }
+  };
+}
+var VfsReadBudget3 = class {
+  constructor(maximum) {
+    this.maximum = maximum;
+  }
+  maximum;
+  consumed = 0n;
+  reserved = 0n;
+  reserve(bytes2, sourceId) {
+    const requested = BigInt(bytes2);
+    if (this.consumed + this.reserved + requested > this.maximum) {
+      throw new ModkitError({
+        code: "x3.vfs/read-byte-budget-exceeded",
+        message: "VFS mount exhausted its cumulative read-byte budget",
+        context: {
+          sourceId,
+          requestedBytes: bytes2,
+          consumedBytes: String(this.consumed),
+          reservedBytes: String(this.reserved),
+          maxReadBytes: String(this.maximum)
+        }
+      });
+    }
+    this.reserved += requested;
+    let remaining = requested;
+    return {
+      commit: (bytesRead) => {
+        const committed = BigInt(bytesRead);
+        if (committed < 0n || committed > remaining) {
+          throw new ModkitError({
+            code: "x3.vfs/read-budget-accounting-invalid",
+            message: "VFS provider reported an invalid read-budget commitment",
+            context: {
+              sourceId,
+              committedBytes: bytesRead,
+              reservedBytes: String(remaining)
+            }
+          });
+        }
+        remaining -= committed;
+        this.reserved -= committed;
+        this.consumed += committed;
+      },
+      release: () => {
+        this.reserved -= remaining;
+        remaining = 0n;
+      }
+    };
+  }
+};
+function assertReadRangeLimit3(sourceId, length, limits) {
+  if (length <= limits.maxReadRangeBytes) return;
+  throw new ModkitError({
+    code: "x3.vfs/read-range-limit-exceeded",
+    message: "random-access read exceeds the configured per-range limit",
+    context: { sourceId, length, maxReadRangeBytes: limits.maxReadRangeBytes }
+  });
+}
+function assertStreamLimit3(sourceId, start, end, limits) {
+  const bytes2 = BigInt(end - start);
+  if (bytes2 <= limits.maxStreamBytes) return;
+  throw new ModkitError({
+    code: "x3.vfs/stream-byte-limit-exceeded",
+    message: "random-access stream exceeds the configured per-stream limit",
+    context: { sourceId, bytes: String(bytes2), maxStreamBytes: String(limits.maxStreamBytes) }
+  });
+}
+function budgetRandomAccessSource3(source2, size, limits, budget) {
+  let disposed = false;
+  const assertLive = () => {
+    if (!disposed) return;
+    throw new ModkitError({
+      code: "x3.vfs/source-disposed",
+      message: `source \xAB${source2.id}\xBB disposed`
+    });
+  };
+  const checkedRange = (start, end) => {
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end < start || end > size) {
+      throw new ModkitError({
+        code: "x3.vfs/read-out-of-range",
+        message: `stream [${start}, ${end}) exceeds source \xAB${source2.id}\xBB of size ${size}`,
+        context: { id: source2.id, start, end, size }
+      });
+    }
+  };
+  const wrapped = {
+    id: source2.id,
+    async size(signal) {
+      assertLive();
+      return source2.size(signal);
+    },
+    async readAt(offset, length, signal) {
+      assertLive();
+      throwIfAborted(signal);
+      if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length) || offset < 0 || length < 0 || offset + length > size) {
+        throw rangeError3(source2.id, offset, length, size);
+      }
+      assertReadRangeLimit3(source2.id, length, limits);
+      const reservation = budget.reserve(length, source2.id);
+      try {
+        const bytes2 = await source2.readAt(offset, length, signal);
+        reservation.commit(bytes2.byteLength);
+        return bytes2;
+      } finally {
+        reservation.release();
+      }
+    },
+    stream(start = 0, end = size, signal) {
+      assertLive();
+      checkedRange(start, end);
+      assertStreamLimit3(source2.id, start, end, limits);
+      let position = start;
+      return new ReadableStream({
+        pull: async (controller) => {
+          if (position >= end) {
+            controller.close();
+            return;
+          }
+          const length = Math.min(64 * 1024, end - position);
+          const bytes2 = await wrapped.readAt(position, length, signal);
+          position += bytes2.byteLength;
+          controller.enqueue(bytes2);
+        }
+      });
+    },
+    async dispose() {
+      if (disposed) return;
+      disposed = true;
+      await source2.dispose();
+    }
+  };
+  return wrapped;
+}
+var DEFAULT_VFS_LIMITS4 = Object.freeze({
+  // Large installed-game indexes are normal inputs (the pinned BAR rapid package has 18,413
+  // records). Providers still count before exposing an entry; this ceiling merely lets a caller
+  // grant a bounded installed-game-sized index instead of making that valid input impossible.
+  maxEntries: 25e3,
+  maxMaterializedBytes: 512n * 1024n * 1024n,
+  maxFileBytes: 8n * 1024n * 1024n * 1024n * 1024n,
+  maxReadBytes: 512n * 1024n * 1024n,
+  maxReadRangeBytes: 16 * 1024 * 1024,
+  maxStreamBytes: 512n * 1024n * 1024n,
+  maxPathBytes: 4096
+});
+var PATH_ENCODER4 = new TextEncoder();
+function invalidPath4(path, reason) {
+  return new ModkitError({
+    code: "x3.vfs/path-invalid",
+    message: `VFS path \xAB${path}\xBB is invalid: ${reason}`,
+    context: { path, reason }
+  });
+}
+function normalizeVfsPath4(path) {
+  if (path.includes("\0")) throw invalidPath4(path, "NUL bytes are forbidden");
+  const parts = [];
+  for (const part of path.replaceAll("\\", "/").split("/")) {
+    if (part === "" || part === ".") continue;
+    if (part === "..") {
+      throw new ModkitError({
+        code: "x3.vfs/path-escape-refused",
+        message: `VFS path \xAB${path}\xBB attempts to escape its mounted root`,
+        context: { path }
+      });
+    }
+    parts.push(part);
+  }
+  return parts.join("/");
+}
+function positiveSafeInteger4(value2, name) {
+  if (!Number.isSafeInteger(value2) || value2 <= 0) {
+    throw new ModkitError({
+      code: "x3.vfs/limit-invalid",
+      message: `${name} must be a positive safe integer`,
+      context: { name, value: value2 }
+    });
+  }
+  return value2;
+}
+function positiveBigInt4(value2, name) {
+  if (value2 <= 0n) {
+    throw new ModkitError({
+      code: "x3.vfs/limit-invalid",
+      message: `${name} must be positive`,
+      context: { name, value: String(value2) }
+    });
+  }
+  return value2;
+}
+function minimumBigInt4(requested, maximum) {
+  return requested < maximum ? requested : maximum;
+}
+function clampVfsLimits4(requested = {}, maximum = DEFAULT_VFS_LIMITS4) {
+  const requestedEntries = positiveSafeInteger4(
+    requested.maxEntries ?? maximum.maxEntries,
+    "maxEntries"
+  );
+  const requestedPathBytes = positiveSafeInteger4(
+    requested.maxPathBytes ?? maximum.maxPathBytes,
+    "maxPathBytes"
+  );
+  const requestedMaterializedBytes = positiveBigInt4(
+    requested.maxMaterializedBytes ?? maximum.maxMaterializedBytes,
+    "maxMaterializedBytes"
+  );
+  const requestedFileBytes = positiveBigInt4(
+    requested.maxFileBytes ?? maximum.maxFileBytes,
+    "maxFileBytes"
+  );
+  const requestedReadBytes = positiveBigInt4(
+    requested.maxReadBytes ?? maximum.maxReadBytes,
+    "maxReadBytes"
+  );
+  const requestedReadRangeBytes = positiveSafeInteger4(
+    requested.maxReadRangeBytes ?? maximum.maxReadRangeBytes,
+    "maxReadRangeBytes"
+  );
+  const requestedStreamBytes = positiveBigInt4(
+    requested.maxStreamBytes ?? maximum.maxStreamBytes,
+    "maxStreamBytes"
+  );
+  return Object.freeze({
+    maxEntries: Math.min(requestedEntries, maximum.maxEntries),
+    maxMaterializedBytes: minimumBigInt4(requestedMaterializedBytes, maximum.maxMaterializedBytes),
+    maxFileBytes: minimumBigInt4(requestedFileBytes, maximum.maxFileBytes),
+    maxReadBytes: minimumBigInt4(requestedReadBytes, maximum.maxReadBytes),
+    maxReadRangeBytes: Math.min(requestedReadRangeBytes, maximum.maxReadRangeBytes),
+    maxStreamBytes: minimumBigInt4(requestedStreamBytes, maximum.maxStreamBytes),
+    maxPathBytes: Math.min(requestedPathBytes, maximum.maxPathBytes)
+  });
+}
+function assertVfsPathBudget(path, limits) {
+  const bytes2 = PATH_ENCODER4.encode(path).byteLength;
+  if (bytes2 > limits.maxPathBytes) {
+    throw new ModkitError({
+      code: "x3.vfs/path-budget-exceeded",
+      message: `VFS path exceeds the ${limits.maxPathBytes}-byte provider limit`,
+      context: { path, pathBytes: bytes2, maxPathBytes: limits.maxPathBytes }
+    });
+  }
+}
+function relativeToRoot(root, path) {
+  if (root === "") return path;
+  if (path === root) return "";
+  return path.startsWith(`${root}/`) ? path.slice(root.length + 1) : void 0;
+}
+function nameOf(path) {
+  const parts = path.split("/");
+  return parts.at(-1) ?? path;
+}
+function entryNode(path, kind, entry2) {
+  return Object.freeze({
+    path,
+    name: nameOf(path),
+    kind,
+    ...entry2 === void 0 ? {} : { size: BigInt(entry2.bytes.byteLength) }
+  });
+}
+var MemoryMount = class {
+  constructor(rootUri, root, entries, limits, revision) {
+    this.rootUri = rootUri;
+    this.root = root;
+    this.entries = entries;
+    this.limits = limits;
+    this.id = rootUri;
+    this.revision = revision;
+    this.readBudget = new VfsReadBudget3(limits.maxReadBytes);
+  }
+  rootUri;
+  root;
+  entries;
+  limits;
+  id;
+  revision;
+  disposed = false;
+  readBudget;
+  async stat(path, signal) {
+    throwIfAborted(signal);
+    this.assertLive();
+    const relative = normalizeVfsPath4(path);
+    assertVfsPathBudget(relative, this.limits);
+    const absolute = this.absolute(relative);
+    const file = this.entries.get(absolute);
+    if (file !== void 0) return entryNode(relative, "file", file);
+    const prefix = absolute === "" ? "" : `${absolute}/`;
+    for (const key3 of this.entries.keys()) {
+      if (key3.startsWith(prefix)) return entryNode(relative, "directory");
+    }
+    return void 0;
+  }
+  async *list(path, signal) {
+    throwIfAborted(signal);
+    this.assertLive();
+    const relative = normalizeVfsPath4(path);
+    assertVfsPathBudget(relative, this.limits);
+    const absolute = this.absolute(relative);
+    if (this.entries.has(absolute)) {
+      throw new ModkitError({
+        code: "x3.vfs/not-a-directory",
+        message: `memory VFS path \xAB${relative}\xBB is not a directory`,
+        context: { path: relative }
+      });
+    }
+    const prefix = absolute === "" ? "" : `${absolute}/`;
+    const children = /* @__PURE__ */ new Map();
+    for (const entry2 of this.entries.values()) {
+      throwIfAborted(signal);
+      if (!entry2.path.startsWith(prefix)) continue;
+      const remainder = entry2.path.slice(prefix.length);
+      const slash = remainder.indexOf("/");
+      const childName = slash === -1 ? remainder : remainder.slice(0, slash);
+      if (childName === "") continue;
+      const childPath = relative === "" ? childName : `${relative}/${childName}`;
+      const exact = slash === -1 ? entry2 : void 0;
+      if (!children.has(childPath) || exact !== void 0) children.set(childPath, exact);
+    }
+    if (children.size > this.limits.maxEntries) {
+      throw new ModkitError({
+        code: "x3.vfs/memory-entry-budget-exceeded",
+        message: "memory provider exceeded its configured entry boundary",
+        context: { entries: children.size, maxEntries: this.limits.maxEntries }
+      });
+    }
+    for (const [childPath, entry2] of [...children.entries()].sort(
+      ([a2], [b2]) => a2.localeCompare(b2)
+    )) {
+      throwIfAborted(signal);
+      yield entryNode(childPath, entry2 === void 0 ? "directory" : "file", entry2);
+    }
+  }
+  async open(path, signal) {
+    throwIfAborted(signal);
+    this.assertLive();
+    const relative = normalizeVfsPath4(path);
+    assertVfsPathBudget(relative, this.limits);
+    const entry2 = this.entries.get(this.absolute(relative));
+    if (entry2 === void 0) {
+      throw new ModkitError({
+        code: "x3.vfs/file-not-found",
+        message: `memory VFS file \xAB${relative}\xBB does not exist`,
+        context: { path: relative, rootUri: this.rootUri }
+      });
+    }
+    const source2 = createMemorySource(
+      `${this.rootUri}#${encodeURIComponent(relative)}`,
+      entry2.bytes
+    );
+    return budgetRandomAccessSource3(source2, entry2.bytes.byteLength, this.limits, this.readBudget);
+  }
+  dispose() {
+    this.disposed = true;
+  }
+  absolute(path) {
+    if (this.root === "") return path;
+    return path === "" ? this.root : `${this.root}/${path}`;
+  }
+  assertLive() {
+    if (!this.disposed) return;
+    throw new ModkitError({
+      code: "x3.vfs/mount-disposed",
+      message: `memory VFS mount \xAB${this.rootUri}\xBB is disposed`
+    });
+  }
+};
+var MemoryVfsProvider = class {
+  id;
+  scheme = "memory";
+  authority;
+  revision;
+  entries;
+  limits;
+  constructor(options = {}) {
+    this.id = options.id ?? "org.modkitx-x3.vfs.memory";
+    this.authority = options.authority;
+    this.limits = clampVfsLimits4(options.limits);
+    const entries = /* @__PURE__ */ new Map();
+    let totalBytes = 0n;
+    for (const [path, bytes2] of Object.entries(options.entries ?? {})) {
+      const normalized = normalizeVfsPath4(path);
+      assertVfsPathBudget(normalized, this.limits);
+      if (normalized === "") {
+        throw new ModkitError({
+          code: "x3.vfs/path-invalid",
+          message: "memory provider entries require non-empty paths",
+          context: { path }
+        });
+      }
+      const copy = bytes2.slice();
+      if (BigInt(copy.byteLength) > this.limits.maxFileBytes) {
+        throw new ModkitError({
+          code: "x3.vfs/file-size-limit-exceeded",
+          message: "memory provider encountered a file above its logical size limit",
+          context: {
+            path: normalized,
+            fileBytes: String(copy.byteLength),
+            maxFileBytes: String(this.limits.maxFileBytes)
+          }
+        });
+      }
+      totalBytes += BigInt(copy.byteLength);
+      entries.set(normalized, { path: normalized, bytes: copy });
+    }
+    if (entries.size > this.limits.maxEntries) {
+      throw new ModkitError({
+        code: "x3.vfs/memory-entry-budget-exceeded",
+        message: "memory provider exceeded its configured entry boundary",
+        context: { entries: entries.size, maxEntries: this.limits.maxEntries }
+      });
+    }
+    if (totalBytes > this.limits.maxMaterializedBytes) {
+      throw new ModkitError({
+        code: "x3.vfs/memory-byte-budget-exceeded",
+        message: "memory provider exceeded its materialized-byte boundary",
+        context: {
+          bytes: String(totalBytes),
+          maxMaterializedBytes: String(this.limits.maxMaterializedBytes)
+        }
+      });
+    }
+    this.entries = entries;
+    this.revision = options.revision ?? `provider-token:memory-${this.id}-${entries.size}-${totalBytes}`;
+  }
+  async open(uri, context) {
+    throwIfAborted(context.signal);
+    let parsed;
+    try {
+      parsed = new URL(uri);
+    } catch (cause) {
+      throw new ModkitError({
+        code: "x3.vfs/uri-invalid",
+        message: `memory provider cannot parse source URI \xAB${uri}\xBB`,
+        context: { uri },
+        cause
+      });
+    }
+    if (parsed.protocol !== "memory:") {
+      throw new ModkitError({
+        code: "x3.vfs/provider-scheme-mismatch",
+        message: `memory provider cannot open protocol \xAB${parsed.protocol}\xBB`,
+        context: { uri, protocol: parsed.protocol }
+      });
+    }
+    if (this.authority !== void 0 && parsed.host !== this.authority) {
+      throw new ModkitError({
+        code: "x3.vfs/memory-authority-refused",
+        message: `memory provider \xAB${this.id}\xBB refuses authority \xAB${parsed.host}\xBB`,
+        context: { expected: this.authority, actual: parsed.host }
+      });
+    }
+    const root = normalizeVfsPath4(decodeURIComponent(parsed.pathname));
+    const limits = clampVfsLimits4(context.limits, this.limits);
+    assertVfsPathBudget(root, limits);
+    let entries = 0;
+    let bytes2 = 0n;
+    for (const entry2 of this.entries.values()) {
+      if (relativeToRoot(root, entry2.path) === void 0) continue;
+      entries += 1;
+      bytes2 += BigInt(entry2.bytes.byteLength);
+    }
+    if (entries === 0) {
+      throw new ModkitError({
+        code: "x3.vfs/memory-root-not-found",
+        message: `memory provider root \xAB${root}\xBB has no entries`,
+        context: { root, uri }
+      });
+    }
+    if (entries > limits.maxEntries) {
+      throw new ModkitError({
+        code: "x3.vfs/memory-entry-budget-exceeded",
+        message: "memory provider exceeded its configured entry boundary",
+        context: { entries, maxEntries: limits.maxEntries }
+      });
+    }
+    if (bytes2 > limits.maxMaterializedBytes) {
+      throw new ModkitError({
+        code: "x3.vfs/memory-byte-budget-exceeded",
+        message: "memory provider exceeded its materialized-byte boundary",
+        context: {
+          bytes: String(bytes2),
+          maxMaterializedBytes: String(limits.maxMaterializedBytes)
+        }
+      });
+    }
+    return new MemoryMount(uri, root, this.entries, limits, this.revision);
+  }
+};
+function createMemoryVfsProvider(options = {}) {
+  return new MemoryVfsProvider(options);
+}
+
+// packages/extension-manager/src/schema.js
+var EXTENSION_ID = /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/i;
+var ExtensionManagerError = class extends Error {
+  constructor(code, message, context = {}, cause) {
+    super(message, cause === void 0 ? void 0 : { cause });
+    this.name = "ExtensionManagerError";
+    this.code = code;
+    this.context = Object.freeze({ ...context });
+  }
+};
+function fail2(code, message, context) {
+  throw new ExtensionManagerError(code, message, context);
+}
+function object2(value2, label) {
+  if (value2 === null || typeof value2 !== "object" || Array.isArray(value2)) {
+    fail2("extension-manager/schema-invalid", `${label} must be an object`);
+  }
+  return value2;
+}
+function text(value2, label) {
+  if (typeof value2 !== "string" || value2.trim() === "") {
+    fail2("extension-manager/schema-invalid", `${label} must be a non-empty string`);
+  }
+  return value2.trim();
+}
+function optionalText(value2, label) {
+  return value2 === void 0 ? void 0 : text(value2, label);
+}
+function normalizeRepositoryManifest(value2) {
+  const input = object2(value2, "repository manifest");
+  if (input.schemaVersion !== 1) {
+    fail2("extension-manager/schema-version-unsupported", "repository schemaVersion must be 1");
+  }
+  if (!Array.isArray(input.extensions)) {
+    fail2("extension-manager/schema-invalid", "repository extensions must be a list");
+  }
+  const ids = /* @__PURE__ */ new Set();
+  const extensions = input.extensions.map((raw, index) => {
+    const entry2 = object2(raw, `extensions[${index}]`);
+    const id = optionalText(entry2.id, `extensions[${index}].id`);
+    if (id !== void 0 && !EXTENSION_ID.test(id)) {
+      fail2("extension-manager/extension-id-invalid", `invalid extension id \xAB${id}\xBB`);
+    }
+    if (id !== void 0 && ids.has(id)) {
+      fail2("extension-manager/extension-duplicate", `extension \xAB${id}\xBB is duplicated`);
+    }
+    if (id !== void 0) ids.add(id);
+    const path = optionalText(entry2.path, `extensions[${index}].path`);
+    let files;
+    if (entry2.files !== void 0) {
+      const rawFiles = object2(entry2.files, `extensions[${index}].files`);
+      files = Object.freeze(
+        Object.fromEntries(
+          Object.entries(rawFiles).map(([name, encoded]) => [
+            text(name, `extensions[${index}].files key`),
+            text(encoded, `extensions[${index}].files.${name}`)
+          ])
+        )
+      );
+    }
+    if (path === void 0 && files === void 0) {
+      fail2(
+        "extension-manager/schema-invalid",
+        `extensions[${index}] must declare path or embedded files`
+      );
+    }
+    return Object.freeze({
+      ...id === void 0 ? {} : { id },
+      ...path === void 0 ? {} : { path },
+      ...files === void 0 ? {} : { files },
+      enabled: entry2.enabled !== false
+    });
+  });
+  return Object.freeze({
+    schemaVersion: 1,
+    extensions: Object.freeze(extensions)
+  });
+}
+
+// packages/extension-manager/src/vfs.js
+var decoder2 = new TextDecoder("utf-8", { fatal: true });
+function createExtensionVfs(providers) {
+  const vfs = new VirtualFileSystem();
+  const protocols = [];
+  for (const provider of providers) {
+    vfs.registerProvider(provider);
+    protocols.push(provider.scheme);
+  }
+  return Object.freeze({ vfs, protocols: Object.freeze(protocols.sort()) });
+}
+async function readMountBytes(mount, path = "", signal) {
+  const source2 = await mount.open(normalizeVfsPath(path), signal);
+  try {
+    return await collectStream(source2.stream(0, void 0, signal), signal);
+  } finally {
+    await source2.dispose();
+  }
+}
+
+// packages/extension-manager/src/providers-browser.js
+function createBrowserExtensionVfs(options = {}) {
+  const browser = createBrowserFileVfsProvider({
+    ...options.resolve === void 0 ? {} : { resolve: options.resolve },
+    ...options.limits === void 0 ? {} : { limits: options.limits }
+  });
+  for (const [uri, input] of Object.entries(options.files ?? {})) browser.register(uri, input);
+  return createExtensionVfs([
+    createMemoryVfsProvider({
+      ...options.memoryEntries === void 0 ? {} : { entries: options.memoryEntries },
+      ...options.limits === void 0 ? {} : { limits: options.limits }
+    }),
+    createHttpVfsProvider({
+      scheme: "http",
+      ...options.fetch === void 0 ? {} : { fetch: options.fetch },
+      ...options.allowedOrigins === void 0 ? {} : { allowedOrigins: options.allowedOrigins },
+      ...options.limits === void 0 ? {} : { limits: options.limits }
+    }),
+    createHttpVfsProvider({
+      scheme: "https",
+      ...options.fetch === void 0 ? {} : { fetch: options.fetch },
+      ...options.allowedOrigins === void 0 ? {} : { allowedOrigins: options.allowedOrigins },
+      ...options.limits === void 0 ? {} : { limits: options.limits }
+    }),
+    browser
+  ]);
+}
+
+// packages/extension-manager/src/catalog.js
+var COORDINATE = /^[a-z0-9]+(?:[.-][a-z0-9]+)*\/[a-z0-9]+(?:[.-][a-z0-9]+)*$/u;
+var SEMVER2 = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z.-]+))?$/u;
+var INTEGRITY = /^sha256:[0-9a-f]{64}$/u;
+var BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u;
+var DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
+var CHANNELS = /* @__PURE__ */ new Set(["stable", "preview", "development"]);
+var SOURCE_KINDS = /* @__PURE__ */ new Set(["repository", "bundle"]);
+var TRUST_MODES = /* @__PURE__ */ new Set(["local-user", "signed"]);
+var LOCAL_SOURCE_PROTOCOLS = /* @__PURE__ */ new Set(["file:", "memory:", "browser-file:", "rapid+file:"]);
+var textEncoder = new TextEncoder();
+function record(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+}
+function deepFreeze3(value2) {
+  if (!record(value2) && !Array.isArray(value2)) return value2;
+  for (const child of Object.values(value2)) deepFreeze3(child);
+  return Object.freeze(value2);
+}
+function jsonClone(value2) {
+  if (Array.isArray(value2)) return value2.map(jsonClone);
+  if (!record(value2)) return value2;
+  return Object.fromEntries(Object.entries(value2).map(([key3, child]) => [key3, jsonClone(child)]));
+}
+function sortedJson(value2) {
+  if (Array.isArray(value2)) return value2.map(sortedJson);
+  if (!record(value2)) return value2;
+  return Object.fromEntries(
+    Object.keys(value2).sort().map((key3) => [key3, sortedJson(value2[key3])])
+  );
+}
+function issue(issues, path, message) {
+  issues.push(Object.freeze({ path, message }));
+}
+function checkKeys(value2, allowed, path, issues) {
+  for (const key3 of Object.keys(value2)) {
+    if (!allowed.has(key3)) issue(issues, path === "" ? key3 : `${path}.${key3}`, "is not allowed");
+  }
+}
+function nonEmptyText(value2, path, issues) {
+  if (typeof value2 !== "string" || value2.length === 0) {
+    issue(issues, path, "must be a non-empty string");
+    return false;
+  }
+  return true;
+}
+function signature(value2, path, issues) {
+  if (!record(value2)) {
+    issue(issues, path, "must be an object");
+    return;
+  }
+  checkKeys(value2, /* @__PURE__ */ new Set(["algorithm", "keyId", "value"]), path, issues);
+  if (value2.algorithm !== "Ed25519") issue(issues, `${path}.algorithm`, "must be Ed25519");
+  nonEmptyText(value2.keyId, `${path}.keyId`, issues);
+  if (!nonEmptyText(value2.value, `${path}.value`, issues) || !BASE64.test(value2.value)) {
+    issue(issues, `${path}.value`, "must be canonical base64");
+  }
+}
+function isRemoteCatalogUri(uri) {
+  if (typeof uri !== "string") return false;
+  if (uri.startsWith("//") || uri.startsWith("\\\\")) return true;
+  try {
+    const parsed = new URL(uri);
+    const protocol = parsed.protocol;
+    if (protocol === "file:" || protocol === "rapid+file:") {
+      return parsed.host !== "" || parsed.pathname.startsWith("//");
+    }
+    return !LOCAL_SOURCE_PROTOCOLS.has(protocol);
+  } catch {
+    return false;
+  }
+}
+function source(value2, path, issues) {
+  if (!record(value2)) {
+    issue(issues, path, "must be an object");
+    return false;
+  }
+  checkKeys(value2, /* @__PURE__ */ new Set(["kind", "uri", "integrity", "bytes", "trust"]), path, issues);
+  if (!SOURCE_KINDS.has(value2.kind)) {
+    issue(issues, `${path}.kind`, "must be repository or bundle");
+  }
+  nonEmptyText(value2.uri, `${path}.uri`, issues);
+  if (value2.integrity !== void 0 && !INTEGRITY.test(value2.integrity)) {
+    issue(issues, `${path}.integrity`, "must be sha256:<64 lowercase hex characters>");
+  }
+  if (value2.bytes !== void 0 && (!Number.isSafeInteger(value2.bytes) || value2.bytes < 0)) {
+    issue(issues, `${path}.bytes`, "must be a non-negative safe integer");
+  }
+  if (!record(value2.trust)) {
+    issue(issues, `${path}.trust`, "must be an object");
+  } else {
+    checkKeys(value2.trust, /* @__PURE__ */ new Set(["mode", "signature"]), `${path}.trust`, issues);
+    if (!TRUST_MODES.has(value2.trust.mode)) {
+      issue(issues, `${path}.trust.mode`, "must be local-user or signed");
+    }
+    if (value2.trust.signature !== void 0) {
+      signature(value2.trust.signature, `${path}.trust.signature`, issues);
+    }
+  }
+  const remote = isRemoteCatalogUri(value2.uri);
+  if (remote && value2.trust?.mode !== "signed") {
+    issue(issues, `${path}.trust.mode`, "remote sources must use signed trust");
+  }
+  if (remote && !INTEGRITY.test(value2.integrity ?? "")) {
+    issue(issues, `${path}.integrity`, "remote sources require sha256 integrity");
+  }
+  return remote;
+}
+function catalogVersion(value2, path, issues) {
+  if (!record(value2)) {
+    issue(issues, path, "must be an object");
+    return false;
+  }
+  checkKeys(
+    value2,
+    /* @__PURE__ */ new Set(["version", "channel", "source", "extensions", "hostApi", "platforms"]),
+    path,
+    issues
+  );
+  if (typeof value2.version !== "string" || !SEMVER2.test(value2.version)) {
+    issue(issues, `${path}.version`, "must be a semantic version");
+  }
+  if (!CHANNELS.has(value2.channel)) {
+    issue(issues, `${path}.channel`, "must be stable, preview or development");
+  }
+  const remote = source(value2.source, `${path}.source`, issues);
+  if (!Array.isArray(value2.extensions) || value2.extensions.length === 0) {
+    issue(issues, `${path}.extensions`, "must contain at least one extension coordinate");
+  } else {
+    const ids = /* @__PURE__ */ new Set();
+    value2.extensions.forEach((id, index) => {
+      const idPath = `${path}.extensions[${index}]`;
+      if (typeof id !== "string" || !COORDINATE.test(id)) {
+        issue(issues, idPath, "must be a publisher/id coordinate");
+      } else if (ids.has(id)) issue(issues, idPath, "is duplicated");
+      else ids.add(id);
+    });
+  }
+  if (value2.hostApi !== void 0) nonEmptyText(value2.hostApi, `${path}.hostApi`, issues);
+  if (value2.platforms !== void 0) {
+    if (!Array.isArray(value2.platforms)) issue(issues, `${path}.platforms`, "must be an array");
+    else
+      value2.platforms.forEach(
+        (platform, index) => nonEmptyText(platform, `${path}.platforms[${index}]`, issues)
+      );
+  }
+  return remote;
+}
+function catalogPackage(value2, path, issues) {
+  if (!record(value2)) {
+    issue(issues, path, "must be an object");
+    return false;
+  }
+  checkKeys(
+    value2,
+    /* @__PURE__ */ new Set(["id", "publisher", "displayName", "summary", "license", "homepage", "versions"]),
+    path,
+    issues
+  );
+  if (typeof value2.id !== "string" || !COORDINATE.test(value2.id)) {
+    issue(issues, `${path}.id`, "must be a publisher/id coordinate");
+  }
+  for (const field of ["publisher", "displayName", "summary"]) {
+    nonEmptyText(value2[field], `${path}.${field}`, issues);
+  }
+  if (value2.license !== void 0) nonEmptyText(value2.license, `${path}.license`, issues);
+  if (value2.homepage !== void 0) {
+    if (nonEmptyText(value2.homepage, `${path}.homepage`, issues)) {
+      try {
+        const parsed = new URL(value2.homepage);
+        if (parsed.protocol === "") throw new Error("URI has no protocol");
+      } catch {
+        issue(issues, `${path}.homepage`, "must be an absolute URI");
+      }
+    }
+  }
+  if (!Array.isArray(value2.versions) || value2.versions.length === 0) {
+    issue(issues, `${path}.versions`, "must contain at least one version");
+    return false;
+  }
+  const versions = /* @__PURE__ */ new Set();
+  let remote = false;
+  value2.versions.forEach((version, index) => {
+    const versionPath = `${path}.versions[${index}]`;
+    const versionRemote = catalogVersion(version, versionPath, issues);
+    remote = versionRemote || remote;
+    if (record(version) && typeof version.version === "string") {
+      if (versions.has(version.version)) issue(issues, `${versionPath}.version`, "is duplicated");
+      else versions.add(version.version);
+    }
+  });
+  return remote;
+}
+function validateExtensionCatalog(value2) {
+  const issues = [];
+  if (!record(value2)) {
+    issue(issues, "catalog", "must be an object");
+    return Object.freeze(issues);
+  }
+  checkKeys(
+    value2,
+    /* @__PURE__ */ new Set(["$schema", "schemaVersion", "registryId", "generatedAt", "packages", "signature"]),
+    "",
+    issues
+  );
+  if (value2.$schema !== void 0) nonEmptyText(value2.$schema, "$schema", issues);
+  if (value2.schemaVersion !== 1) issue(issues, "schemaVersion", "must be 1");
+  if (typeof value2.registryId !== "string" || !COORDINATE.test(value2.registryId)) {
+    issue(issues, "registryId", "must be a publisher/id coordinate");
+  }
+  if (typeof value2.generatedAt !== "string" || value2.generatedAt.length === 0 || !DATE_TIME.test(value2.generatedAt) || Number.isNaN(Date.parse(value2.generatedAt))) {
+    issue(issues, "generatedAt", "must be an ISO date-time");
+  }
+  if (value2.signature !== void 0) signature(value2.signature, "signature", issues);
+  if (!Array.isArray(value2.packages)) {
+    issue(issues, "packages", "must be an array");
+    return Object.freeze(issues);
+  }
+  const ids = /* @__PURE__ */ new Set();
+  let remote = false;
+  value2.packages.forEach((item, index) => {
+    const path = `packages[${index}]`;
+    const packageRemote = catalogPackage(item, path, issues);
+    remote = packageRemote || remote;
+    if (record(item) && typeof item.id === "string") {
+      if (ids.has(item.id)) issue(issues, `${path}.id`, "is duplicated");
+      else ids.add(item.id);
+    }
+  });
+  if (remote && !record(value2.signature)) {
+    issue(issues, "signature", "catalogs with remote sources must be signed");
+  }
+  return Object.freeze(issues);
+}
+function parseExtensionCatalog(value2) {
+  const issues = validateExtensionCatalog(value2);
+  if (issues.length > 0) {
+    throw new ExtensionManagerError(
+      "extension-manager/catalog-invalid",
+      `extension catalog is invalid (${issues[0].path}: ${issues[0].message})`,
+      { issues }
+    );
+  }
+  return deepFreeze3(jsonClone(value2));
+}
+function extensionCatalogSigningBytes(value2) {
+  const issues = validateExtensionCatalog(value2);
+  const signingIssues = issues.filter(
+    (item) => item.path !== "signature" || item.message !== "catalogs with remote sources must be signed"
+  );
+  if (signingIssues.length > 0) {
+    throw new ExtensionManagerError(
+      "extension-manager/catalog-invalid",
+      `extension catalog is invalid (${signingIssues[0].path}: ${signingIssues[0].message})`,
+      { issues: signingIssues }
+    );
+  }
+  const catalog = deepFreeze3(jsonClone(value2));
+  const unsigned = Object.fromEntries(
+    Object.entries(catalog).filter(([key3]) => key3 !== "signature")
+  );
+  return textEncoder.encode(`${JSON.stringify(sortedJson(unsigned))}
+`);
+}
+function semverParts(value2) {
+  const match = SEMVER2.exec(value2);
+  if (match === null) return void 0;
+  return {
+    numbers: [Number(match[1]), Number(match[2]), Number(match[3])],
+    prerelease: match[4]?.split(".")
+  };
+}
+function compareCatalogVersions(left, right) {
+  const leftParts = semverParts(left);
+  const rightParts = semverParts(right);
+  if (leftParts === void 0 || rightParts === void 0) {
+    throw new ExtensionManagerError(
+      "extension-manager/version-invalid",
+      "catalog version comparison requires semantic versions",
+      { left, right }
+    );
+  }
+  for (let index = 0; index < 3; index += 1) {
+    if (leftParts.numbers[index] !== rightParts.numbers[index]) {
+      return leftParts.numbers[index] < rightParts.numbers[index] ? -1 : 1;
+    }
+  }
+  if (leftParts.prerelease === void 0) return rightParts.prerelease === void 0 ? 0 : 1;
+  if (rightParts.prerelease === void 0) return -1;
+  const length = Math.max(leftParts.prerelease.length, rightParts.prerelease.length);
+  for (let index = 0; index < length; index += 1) {
+    const leftId = leftParts.prerelease[index];
+    const rightId = rightParts.prerelease[index];
+    if (leftId === void 0) return -1;
+    if (rightId === void 0) return 1;
+    if (leftId === rightId) continue;
+    const leftNumeric = /^[0-9]+$/u.test(leftId);
+    const rightNumeric = /^[0-9]+$/u.test(rightId);
+    if (leftNumeric && rightNumeric) return Number(leftId) < Number(rightId) ? -1 : 1;
+    if (leftNumeric !== rightNumeric) return leftNumeric ? -1 : 1;
+    return leftId < rightId ? -1 : 1;
+  }
+  return 0;
+}
+
+// packages/extension-manager/src/client.js
+var ALL_CHANNELS = Object.freeze(["stable", "preview", "development"]);
+var SHA256_INTEGRITY = /^sha256:[0-9a-f]{64}$/u;
+function record2(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+}
+function fail3(code, message, context = {}) {
+  throw new ExtensionManagerError(code, message, context);
+}
+function requirePort(port, name, methods) {
+  if (!record2(port)) fail3("extension-manager/port-invalid", `${name} must be an object`, { name });
+  for (const method of methods) {
+    if (typeof port[method] !== "function") {
+      fail3("extension-manager/port-invalid", `${name}.${method} must be a function`, {
+        name,
+        method
+      });
+    }
+  }
+  return port;
+}
+function catalogEnvelope(value2, label) {
+  if (value2 === void 0) return void 0;
+  if (record2(value2) && Object.hasOwn(value2, "catalog")) {
+    if (value2.signatureVerified !== void 0 && typeof value2.signatureVerified !== "boolean") {
+      fail3("extension-manager/catalog-source-invalid", `${label}.signatureVerified must be boolean`);
+    }
+    return Object.freeze({
+      catalog: parseExtensionCatalog(value2.catalog),
+      source: typeof value2.source === "string" ? value2.source : label,
+      signatureVerified: value2.signatureVerified === true
+    });
+  }
+  return Object.freeze({
+    catalog: parseExtensionCatalog(value2),
+    source: label,
+    signatureVerified: false
+  });
+}
+function publisherFrom(id) {
+  const slash = id.indexOf("/");
+  return slash < 1 ? "unknown" : id.slice(0, slash);
+}
+function selectedVersion(item, channels, requested) {
+  if (requested !== void 0) {
+    return item.versions.find((version) => version.version === requested);
+  }
+  return item.versions.filter((version) => channels.has(version.channel)).sort((left, right) => compareCatalogVersions(left.version, right.version)).at(-1);
+}
+function sourceWithCatalogBase(source2, catalogSource) {
+  let uri = source2.uri;
+  try {
+    const catalogUrl = new URL(catalogSource);
+    if (catalogUrl.protocol === "http:" || catalogUrl.protocol === "https:") {
+      uri = new URL(uri, catalogUrl).href;
+    }
+  } catch {
+  }
+  return Object.freeze({ ...source2, uri });
+}
+function isHttpTransport(uri) {
+  try {
+    const protocol = new URL(uri).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+function candidateOf(state, item, channels, requested) {
+  const version = selectedVersion(item, channels, requested);
+  if (version === void 0) return void 0;
+  const source2 = sourceWithCatalogBase(version.source, state.source);
+  const remote = isRemoteCatalogUri(source2.uri);
+  const catalogRemote = isRemoteCatalogUri(state.source);
+  const catalogSigned = state.catalog.signature !== void 0 && state.signatureVerified;
+  const remoteCatalogTransportAllowed = !catalogRemote || isHttpTransport(source2.uri);
+  const trusted = remoteCatalogTransportAllowed && (!catalogRemote || catalogSigned) && (!catalogRemote && !remote && source2.trust.mode === "local-user" || source2.trust.mode === "signed" && catalogSigned && (!(catalogRemote || remote) || SHA256_INTEGRITY.test(source2.integrity ?? "")));
+  return Object.freeze({
+    id: item.id,
+    displayName: item.displayName,
+    publisher: item.publisher,
+    version: version.version,
+    channel: version.channel,
+    summary: item.summary,
+    extensions: version.extensions,
+    source: source2,
+    catalogId: state.catalog.registryId,
+    catalogSource: state.source,
+    catalogSignature: state.catalog.signature,
+    signatureVerified: state.signatureVerified,
+    remote,
+    trusted
+  });
+}
+function candidatesOf(state, channels) {
+  if (state === void 0) return Object.freeze([]);
+  return Object.freeze(
+    state.catalog.packages.map((item) => candidateOf(state, item, channels)).filter((candidate) => candidate !== void 0)
+  );
+}
+function installedRecords(value2) {
+  if (!Array.isArray(value2)) {
+    fail3("extension-manager/artifact-store-invalid", "ArtifactStore.list() must return an array");
+  }
+  const ids = /* @__PURE__ */ new Set();
+  return Object.freeze(
+    value2.map((entry2, index) => {
+      if (!record2(entry2) || typeof entry2.id !== "string" || typeof entry2.version !== "string" || !Array.isArray(entry2.roots) || entry2.roots.length === 0) {
+        fail3(
+          "extension-manager/artifact-store-invalid",
+          `ArtifactStore.list()[${index}] must contain id, version and roots`
+        );
+      }
+      const rootIds = /* @__PURE__ */ new Set();
+      entry2.roots.forEach((root, rootIndex) => {
+        if (!record2(root) || !Object.hasOwn(root, "root") || typeof root.expectedId !== "string") {
+          fail3(
+            "extension-manager/artifact-store-invalid",
+            `ArtifactStore.list()[${index}].roots[${rootIndex}] must contain root and expectedId`
+          );
+        }
+        if (rootIds.has(root.expectedId)) {
+          fail3(
+            "extension-manager/artifact-store-invalid",
+            `ArtifactStore.list()[${index}] contains duplicate root \xAB${root.expectedId}\xBB`
+          );
+        }
+        rootIds.add(root.expectedId);
+      });
+      if (ids.has(entry2.id)) {
+        fail3(
+          "extension-manager/artifact-store-invalid",
+          `ArtifactStore.list() contains duplicate id \xAB${entry2.id}\xBB`
+        );
+      }
+      ids.add(entry2.id);
+      return entry2;
+    })
+  );
+}
+function enablementRecords(value2) {
+  if (!Array.isArray(value2)) {
+    fail3(
+      "extension-manager/enablement-store-invalid",
+      "EnablementStore.list() must return an array"
+    );
+  }
+  const enabled = /* @__PURE__ */ new Map();
+  value2.forEach((entry2, index) => {
+    if (!record2(entry2) || typeof entry2.id !== "string" || typeof entry2.enabled !== "boolean") {
+      fail3(
+        "extension-manager/enablement-store-invalid",
+        `EnablementStore.list()[${index}] must contain id and enabled`
+      );
+    }
+    if (enabled.has(entry2.id)) {
+      fail3(
+        "extension-manager/enablement-store-invalid",
+        `EnablementStore.list() contains duplicate id \xAB${entry2.id}\xBB`
+      );
+    }
+    enabled.set(entry2.id, entry2.enabled);
+  });
+  return enabled;
+}
+function assertInstallable(candidate) {
+  if (!candidate.trusted) {
+    fail3(
+      "extension-manager/artifact-untrusted",
+      `extension \xAB${candidate.id}\xBB is not signed by a trusted catalog`,
+      { id: candidate.id, source: candidate.source.uri }
+    );
+  }
+  if (candidate.remote) {
+    if (candidate.source.trust.mode !== "signed" || typeof candidate.source.integrity !== "string" || !candidate.signatureVerified || candidate.catalogSignature === void 0) {
+      fail3(
+        "extension-manager/remote-artifact-refused",
+        `remote extension \xAB${candidate.id}\xBB requires a verified signature and sha256 integrity`,
+        { id: candidate.id, source: candidate.source.uri }
+      );
+    }
+  }
+}
+function validateAcquired(candidate, acquired) {
+  if (!record2(acquired) || !Object.hasOwn(acquired, "artifact")) {
+    fail3(
+      "extension-manager/acquirer-invalid",
+      "ArtifactAcquirer.acquire() must return an artifact record",
+      { id: candidate.id }
+    );
+  }
+  const expected = candidate.source.integrity;
+  if (expected !== void 0 && acquired.integrity !== expected) {
+    fail3(
+      "extension-manager/integrity-mismatch",
+      `artifact for \xAB${candidate.id}\xBB does not match ${expected}`,
+      { id: candidate.id, expected, actual: acquired.integrity }
+    );
+  }
+  return acquired;
+}
+function validateInstalled(candidate, installed) {
+  const [validated] = installedRecords([installed]);
+  if (validated.id !== candidate.id || validated.version !== candidate.version) {
+    fail3(
+      "extension-manager/artifact-store-invalid",
+      "ArtifactStore.install() returned a different extension identity",
+      {
+        expectedId: candidate.id,
+        expectedVersion: candidate.version,
+        actual: installed
+      }
+    );
+  }
+  const expectedRoots = [...candidate.extensions].sort();
+  const actualRoots = validated.roots.map((root) => root.expectedId).sort();
+  if (actualRoots.length !== expectedRoots.length || actualRoots.some((id, index) => id !== expectedRoots[index])) {
+    fail3(
+      "extension-manager/artifact-store-invalid",
+      "ArtifactStore.install() did not return every extension root in the catalog package",
+      { id: candidate.id, expectedRoots, actualRoots }
+    );
+  }
+}
+function createExtensionManagerClient(options) {
+  if (!record2(options)) fail3("extension-manager/options-invalid", "options must be an object");
+  const catalogSource = requirePort(options.catalogSource, "CatalogSource", ["cached", "refresh"]);
+  const artifactAcquirer = requirePort(options.artifactAcquirer, "ArtifactAcquirer", ["acquire"]);
+  const artifactStore = requirePort(options.artifactStore, "ArtifactStore", [
+    "list",
+    "install",
+    "remove"
+  ]);
+  const enablementStore = requirePort(options.enablementStore, "EnablementStore", [
+    "list",
+    "setEnabled",
+    "remove"
+  ]);
+  const channels = new Set(options.channels ?? ALL_CHANNELS);
+  for (const channel of channels) {
+    if (!ALL_CHANNELS.includes(channel)) {
+      fail3("extension-manager/channel-invalid", `unsupported catalog channel \xAB${channel}\xBB`);
+    }
+  }
+  let mutationTail = Promise.resolve();
+  const mutate = (operation) => {
+    const result = mutationTail.then(operation, operation);
+    mutationTail = result.then(
+      () => void 0,
+      () => void 0
+    );
+    return result;
+  };
+  let cachedStatePromise;
+  const cachedState = () => {
+    cachedStatePromise ??= Promise.resolve(catalogSource.cached()).then(
+      (value2) => catalogEnvelope(value2, "cached catalog")
+    );
+    return cachedStatePromise;
+  };
+  const catalogCandidate = async (id, requestedVersion) => {
+    const state = await cachedState();
+    const item = state?.catalog.packages.find((candidate2) => candidate2.id === id);
+    if (item === void 0) {
+      fail3("extension-manager/catalog-entry-missing", `extension \xAB${id}\xBB is not in the catalog`, {
+        id
+      });
+    }
+    const candidate = candidateOf(state, item, channels, requestedVersion);
+    if (candidate === void 0) {
+      fail3(
+        "extension-manager/catalog-version-missing",
+        requestedVersion === void 0 ? `extension \xAB${id}\xBB has no version in the selected channels` : `extension \xAB${id}\xBB has no version \xAB${requestedVersion}\xBB`,
+        { id, requestedVersion }
+      );
+    }
+    return candidate;
+  };
+  const acquireAndInstall = async (candidate) => {
+    assertInstallable(candidate);
+    const acquired = validateAcquired(candidate, await artifactAcquirer.acquire(candidate));
+    const installed = await artifactStore.install(
+      Object.freeze({
+        entry: candidate,
+        artifact: acquired.artifact,
+        ...acquired.integrity === void 0 ? {} : { integrity: acquired.integrity }
+      })
+    );
+    validateInstalled(candidate, installed);
+    return installed;
+  };
+  return Object.freeze({
+    async snapshot() {
+      const [state, installedValue, enablementValue] = await Promise.all([
+        cachedState(),
+        artifactStore.list(),
+        enablementStore.list()
+      ]);
+      const available = candidatesOf(state, channels);
+      const installed = installedRecords(installedValue);
+      const enablement = enablementRecords(enablementValue);
+      const availableById = new Map(available.map((entry2) => [entry2.id, entry2]));
+      const installedById = new Map(installed.map((entry2) => [entry2.id, entry2]));
+      const ids = [.../* @__PURE__ */ new Set([...availableById.keys(), ...installedById.keys()])].sort();
+      return Object.freeze({
+        entries: Object.freeze(
+          ids.map((id) => {
+            const offered = availableById.get(id);
+            const present = installedById.get(id);
+            const availableVersion = offered?.version ?? present?.version ?? "unknown";
+            return Object.freeze({
+              id,
+              displayName: offered?.displayName ?? present?.displayName ?? id,
+              publisher: offered?.publisher ?? present?.publisher ?? publisherFrom(id),
+              availableVersion,
+              ...present === void 0 ? {} : { installedVersion: present.version },
+              enabled: present !== void 0 && (enablement.get(id) ?? (typeof present.enabled === "boolean" && present.enabled)),
+              updateAvailable: present !== void 0 && offered !== void 0 && compareCatalogVersions(offered.version, present.version) > 0,
+              source: offered?.source.uri ?? present?.source ?? "local",
+              trusted: offered?.trusted ?? present?.trusted ?? false
+            });
+          })
+        )
+      });
+    },
+    refresh() {
+      return mutate(async () => {
+        const refreshed = catalogEnvelope(await catalogSource.refresh(), "refreshed catalog");
+        if (refreshed === void 0) {
+          fail3(
+            "extension-manager/catalog-refresh-empty",
+            "CatalogSource.refresh() returned no catalog"
+          );
+        }
+        cachedStatePromise = Promise.resolve(refreshed);
+      });
+    },
+    install(id, version) {
+      return mutate(async () => {
+        const installed = installedRecords(await artifactStore.list()).find(
+          (entry2) => entry2.id === id
+        );
+        if (installed !== void 0) {
+          fail3(
+            "extension-manager/artifact-already-installed",
+            `extension \xAB${id}\xBB is already installed`,
+            { id, version: installed.version }
+          );
+        }
+        const candidate = await catalogCandidate(id, version);
+        await enablementStore.setEnabled(id, false);
+        try {
+          await acquireAndInstall(candidate);
+          await enablementStore.setEnabled(id, true);
+        } catch (error3) {
+          let artifactError;
+          let enablementError;
+          try {
+            await artifactStore.remove(id);
+          } catch (cause) {
+            artifactError = cause;
+          }
+          try {
+            await enablementStore.setEnabled(id, false);
+            if (artifactError === void 0) await enablementStore.remove(id);
+          } catch (cause) {
+            enablementError = cause;
+          }
+          if (artifactError !== void 0 || enablementError !== void 0) {
+            fail3(
+              "extension-manager/install-compensation-failed",
+              `extension \xAB${id}\xBB failed installation and could not be removed`,
+              { id, error: error3, artifactError, enablementError }
+            );
+          }
+          throw error3;
+        }
+      });
+    },
+    update(id) {
+      return mutate(async () => {
+        const installed = installedRecords(await artifactStore.list()).find(
+          (entry2) => entry2.id === id
+        );
+        if (installed === void 0) {
+          fail3("extension-manager/artifact-not-installed", `extension \xAB${id}\xBB is not installed`, {
+            id
+          });
+        }
+        const candidate = await catalogCandidate(id);
+        if (compareCatalogVersions(candidate.version, installed.version) <= 0) return;
+        const wasEnabled = enablementRecords(await enablementStore.list()).get(id) === true;
+        await enablementStore.setEnabled(id, false);
+        await acquireAndInstall(candidate);
+        if (wasEnabled) await enablementStore.setEnabled(id, true);
+      });
+    },
+    remove(id) {
+      return mutate(async () => {
+        await artifactStore.remove(id);
+        await enablementStore.remove(id);
+      });
+    },
+    setEnabled(id, enabled) {
+      return mutate(async () => {
+        if (typeof enabled !== "boolean") {
+          fail3("extension-manager/enablement-invalid", "enabled must be boolean", { id, enabled });
+        }
+        const installed = installedRecords(await artifactStore.list()).some(
+          (entry2) => entry2.id === id
+        );
+        if (!installed) {
+          fail3("extension-manager/artifact-not-installed", `extension \xAB${id}\xBB is not installed`, {
+            id
+          });
+        }
+        await enablementStore.setEnabled(id, enabled);
+      });
+    }
+  });
+}
+
+// packages/sdk/dist/subjects/index.js
+var REVISION_KINDS2 = Object.freeze([
+  "content-hash",
+  "git-object",
+  "etag",
+  "database-version",
+  "provider-token",
+  "overlay-generation"
+]);
+var REVISION_KIND_PATTERN2 = REVISION_KINDS2.join("|");
+var REVISION_ALGORITHM_PATTERN2 = "[a-z0-9]+(?:-[a-z0-9]+)*";
+var REVISION_VALUE_PATTERN2 = "(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+";
+var REVISION_ID_PATTERN2 = `^(?:${REVISION_KIND_PATTERN2})(?:\\.${REVISION_ALGORITHM_PATTERN2})?:${REVISION_VALUE_PATTERN2}$`;
+var REVISION_ID2 = new RegExp(REVISION_ID_PATTERN2);
+function assertSourceChain2(source2) {
+  for (let current = source2; current !== void 0; current = current.parent) {
+    if (typeof current.id !== "string" || current.id.length === 0) {
+      throw new TypeError("subject source id must be non-empty");
+    }
+  }
+}
+function assertSubjectIdentity2(identity) {
+  if (typeof identity.kind !== "string" || typeof identity.key !== "string") {
+    throw new TypeError("subject identity kind and key must be strings");
+  }
+  if (identity.kind === "" && identity.key === "") return;
+  if (!isQualifiedId(identity.kind)) {
+    throw new TypeError(`nested subject kind must be a qualified id: ${identity.kind}`);
+  }
+  if (identity.key.length === 0) {
+    throw new TypeError("nested subject key must be non-empty");
+  }
+}
+function rootSubject2(source2, workspace) {
+  assertSourceChain2(source2);
+  return {
+    ...workspace === void 0 ? {} : { workspace },
+    source: source2,
+    identity: { kind: "", key: "" }
+  };
+}
+function nestedSubject2(owner, kind, key3) {
+  assertSourceChain2(owner.source);
+  assertSubjectIdentity2({ kind, key: key3 });
+  return { ...owner, identity: { kind, key: key3 } };
+}
+var EXTENDED_SUBJECT_PREFIX2 = "x3-subject:";
+function sourceIdChain2(source2) {
+  const chain = [];
+  for (let current = source2; current !== void 0; current = current.parent) {
+    chain.push(current.id);
+  }
+  return chain.reverse();
+}
+function serializeSubjectRef2(ref2) {
+  assertSourceChain2(ref2.source);
+  assertSubjectIdentity2(ref2.identity);
+  if (ref2.workspace !== void 0 || ref2.source.parent !== void 0 || ref2.source.id.includes("#") || ref2.source.id.startsWith(EXTENDED_SUBJECT_PREFIX2)) {
+    const payload = [
+      1,
+      ref2.workspace ?? null,
+      sourceIdChain2(ref2.source),
+      ref2.identity.kind,
+      ref2.identity.key
+    ];
+    return `${EXTENDED_SUBJECT_PREFIX2}${encodeURIComponent(JSON.stringify(payload))}`;
+  }
+  if (ref2.identity.key === "" && ref2.identity.kind === "") return ref2.source.id;
+  return `${ref2.source.id}#${encodeURIComponent(ref2.identity.kind)}/${encodeURIComponent(ref2.identity.key)}`;
+}
+var STANDARD_DATA_SOURCE_CONTRACTS2 = Object.freeze([
+  "common.view/text-data-source",
+  "common.view/byte-range-source",
+  "common.view/tree-data-source",
+  "common.view/table-data-source",
+  "common.view/transport-source",
+  "common.view/namespace-entry-source",
+  "common.view/raster-image-source",
+  "common.view/vector-scene-source",
+  "common.view/audio-media-source",
+  "common.view/video-media-source",
+  "common.view/model-scene-source",
+  "common.view/world-scene-source",
+  // optional model facets beside the base scene source (block 11, slice 11C0, plan item 11)
+  "common.view/model-resource-refs-source",
+  "common.view/model-skeleton-source",
+  "common.view/model-animation-source",
+  "common.view/model-collision-source",
+  "common.view/model-material-source",
+  "common.view/model-socket-source",
+  "common.view/relation-graph-source",
+  "common.view/subject-selector-source",
+  "common.view/subject-facts-source",
+  "common.view/subject-calculations-source",
+  "common.view/slide-deck-source"
+]);
+var DATA_SOURCE_MATURITY2 = Object.freeze({
+  "common.view/text-data-source": "admitted",
+  "common.view/byte-range-source": "admitted",
+  "common.view/tree-data-source": "admitted",
+  "common.view/table-data-source": "admitted",
+  "common.view/transport-source": "admitted",
+  "common.view/namespace-entry-source": "admitted",
+  "common.view/raster-image-source": "admitted",
+  "common.view/vector-scene-source": "admitted",
+  "common.view/audio-media-source": "admitted",
+  "common.view/video-media-source": "admitted",
+  "common.view/model-scene-source": "admitted",
+  "common.view/world-scene-source": "publisher-candidate",
+  "common.view/model-resource-refs-source": "admitted",
+  "common.view/model-skeleton-source": "admitted",
+  "common.view/model-animation-source": "admitted",
+  "common.view/model-collision-source": "admitted",
+  "common.view/model-material-source": "admitted",
+  "common.view/model-socket-source": "publisher-candidate",
+  "common.view/relation-graph-source": "admitted",
+  "common.view/subject-selector-source": "publisher-candidate",
+  "common.view/subject-facts-source": "admitted",
+  "common.view/subject-calculations-source": "admitted",
+  "common.view/slide-deck-source": "publisher-candidate"
+});
+var ADMITTED_DATA_SOURCE_CONTRACTS2 = Object.freeze(
+  STANDARD_DATA_SOURCE_CONTRACTS2.filter(
+    (contract) => DATA_SOURCE_MATURITY2[contract] === "admitted"
+  )
+);
+var KNOWLEDGE_LOCALE_PATTERN2 = "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$";
+var knowledgeLocalePattern2 = new RegExp(KNOWLEDGE_LOCALE_PATTERN2, "u");
+var DOTTED_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
+var NAMESPACED_DOTTED_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
+var OPERATION_PATTERN2 = "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$";
+var QUALIFIED_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
+var SEGMENT_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
+var SEMVER_PATTERN2 = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$";
+var RANGE_NUMBER2 = "(?:0|[1-9]\\d*)";
+var RANGE_NUMERIC2 = `${RANGE_NUMBER2}(?:\\.${RANGE_NUMBER2}){0,2}`;
+var RANGE_EXACT2 = `=?${RANGE_NUMBER2}\\.${RANGE_NUMBER2}\\.${RANGE_NUMBER2}`;
+var RANGE_WILDCARD2 = `(?:${RANGE_NUMBER2}\\.(?:x|\\*)|${RANGE_NUMBER2}\\.${RANGE_NUMBER2}\\.(?:x|\\*))`;
+var RANGE_CARET2 = `\\^${RANGE_NUMBER2}\\.${RANGE_NUMBER2}(?:\\.${RANGE_NUMBER2})?`;
+var RANGE_COMPARATOR2 = `[<>]=?${RANGE_NUMERIC2}`;
+var RANGE_ATOM2 = `(?:${RANGE_EXACT2}|${RANGE_WILDCARD2}|${RANGE_CARET2}|${RANGE_COMPARATOR2})`;
+var VERSION_RANGE_PATTERN2 = `^(?:\\*|x|${RANGE_ATOM2}(?: ${RANGE_ATOM2})*)$`;
+var RELATIVE_ENTRYPOINT_PATTERN2 = "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$";
+var METHOD_NAME_PATTERN2 = "^[a-z][a-zA-Z0-9]{0,63}$";
+var REQUIREMENT_SCOPE_KINDS2 = Object.freeze([
+  "contribution",
+  "offer",
+  "operation",
+  "intent",
+  "variant",
+  "profile",
+  "projection",
+  "slot"
+]);
+var requirementScopeSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["kind", "id"],
+  properties: {
+    kind: { enum: REQUIREMENT_SCOPE_KINDS2 },
+    id: { type: "string", minLength: 1 }
+  }
+};
+var extensionRequirementSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["extension", "mode", "scope"],
+  properties: {
+    extension: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    range: { type: "string", pattern: VERSION_RANGE_PATTERN2 },
+    mode: { enum: ["required", "default", "suggested", "integrates"] },
+    scope: requirementScopeSchema2
+  }
+};
+var contributionManifestsSchema2 = {
+  type: "array",
+  items: { type: "string", minLength: 1 }
+};
+var extensionManifestSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/extension-manifest.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "publisher", "id", "version", "license", "contributionManifests"],
+  properties: {
+    schemaVersion: { const: 1 },
+    publisher: { type: "string", pattern: DOTTED_PATTERN2 },
+    id: { type: "string", pattern: DOTTED_PATTERN2 },
+    version: { type: "string", pattern: SEMVER_PATTERN2 },
+    license: { type: "string", minLength: 1 },
+    contributionManifests: contributionManifestsSchema2,
+    dependsOn: { type: "array", items: extensionRequirementSchema2 }
+  }
+};
+var modkitBlockSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/extension-manifest-modkit-block.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "publisher", "id", "contributionManifests"],
+  properties: {
+    schemaVersion: { const: 1 },
+    publisher: { type: "string", pattern: DOTTED_PATTERN2 },
+    id: { type: "string", pattern: DOTTED_PATTERN2 },
+    contributionManifests: contributionManifestsSchema2,
+    dependsOn: { type: "array", items: extensionRequirementSchema2 }
+  }
+};
+deepFreeze(requirementScopeSchema2);
+deepFreeze(extensionRequirementSchema2);
+deepFreeze(extensionManifestSchema2);
+deepFreeze(modkitBlockSchema2);
+var EXECUTION_PROFILES2 = Object.freeze([
+  "browser-sandbox",
+  "worker-brokered",
+  "process-brokered",
+  "wasm-brokered",
+  "trusted-in-process",
+  "remote-provider"
+]);
+var PERMISSION_CLASSES2 = Object.freeze([
+  "read-source",
+  "write-source",
+  "filesystem-read",
+  "filesystem-write",
+  "network",
+  "process-launch",
+  "native-code",
+  "credentials",
+  "clipboard",
+  "persistent-storage"
+]);
+var RUNTIME_ENVIRONMENTS2 = Object.freeze([
+  "browser-main",
+  "browser-worker",
+  "node",
+  "node-worker",
+  "wasm",
+  "native",
+  "external-tool"
+]);
+var OPERATING_SYSTEMS2 = Object.freeze([
+  "any",
+  "windows",
+  "linux",
+  "darwin",
+  "android",
+  "ios"
+]);
+var ARCHITECTURES2 = Object.freeze([
+  "any",
+  "x86",
+  "x64",
+  "arm32",
+  "arm64",
+  "wasm32"
+]);
+var runtimeTargetConstraintSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    environments: { type: "array", items: { enum: RUNTIME_ENVIRONMENTS2 }, minItems: 1 },
+    operatingSystems: { type: "array", items: { enum: OPERATING_SYSTEMS2 }, minItems: 1 },
+    architectures: { type: "array", items: { enum: ARCHITECTURES2 }, minItems: 1 },
+    requiredHostCapabilities: { type: "array", items: { type: "string", minLength: 1 } },
+    requiredWebApis: { type: "array", items: { type: "string", minLength: 1 } },
+    externalTools: { type: "array", items: { type: "string", minLength: 1 } }
+  }
+};
+var runtimeVariantDeclarationSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"],
+  properties: {
+    variantId: { type: "string", pattern: SEGMENT_PATTERN2 },
+    // Containment is enforced twice: here (authoring gate) and again by the host before
+    // any import (MK3/24 §8) — the host never trusts that someone validated the input.
+    entrypoint: { type: "string", pattern: RELATIVE_ENTRYPOINT_PATTERN2 },
+    target: runtimeTargetConstraintSchema2,
+    executionProfile: { enum: EXECUTION_PROFILES2 },
+    requestedPermissionClasses: { type: "array", items: { enum: PERMISSION_CLASSES2 } }
+  }
+};
+var scopedContractRequirementSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["contract", "major", "mode", "scope"],
+  properties: {
+    contract: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    range: { type: "string", pattern: VERSION_RANGE_PATTERN2 },
+    mode: { enum: ["required", "default", "suggested", "integrates"] },
+    scope: requirementScopeSchema2
+  }
+};
+var contributionManifestSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/contribution-manifest.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "contract", "id", "displayName", "spec"],
+  properties: {
+    schemaVersion: { const: 1 },
+    contract: {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "major"],
+      properties: {
+        id: { type: "string", pattern: QUALIFIED_PATTERN2 },
+        major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+      }
+    },
+    id: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    displayName: { type: "string", minLength: 1 },
+    status: { enum: ["supported", "partial", "unsupported", "experimental"] },
+    runtimeVariants: { type: "array", items: runtimeVariantDeclarationSchema2 },
+    dependsOn: { type: "array", items: scopedContractRequirementSchema2 },
+    limitations: { type: "array", items: { type: "string", minLength: 1 } },
+    spec: { title: "JsonValue" }
+  }
+};
+deepFreeze(runtimeTargetConstraintSchema2);
+deepFreeze(runtimeVariantDeclarationSchema2);
+deepFreeze(scopedContractRequirementSchema2);
+deepFreeze(contributionManifestSchema2);
+var nonEmptyString7 = { type: "string", minLength: 1 };
+var qualifiedId2 = { type: "string", pattern: QUALIFIED_PATTERN2 };
+var namespacedDottedId3 = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN2 };
+var operationId3 = { type: "string", pattern: OPERATION_PATTERN2 };
+var decimalU642 = { type: "string", pattern: UINT64_DECIMAL_PATTERN };
+var jsonSchemaRefSchema3 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["$ref"],
+  properties: { $ref: nonEmptyString7 }
+};
+var resourceBudgetWireSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"],
+  properties: {
+    maxInputBytes: decimalU642,
+    maxDepth: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    maxNodes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    maxScalarBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    maxDiagnostics: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    deadlineMs: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+  }
+};
+var dataSourceRefWireSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["contract", "major"],
+      properties: {
+        contract: { enum: STANDARD_DATA_SOURCE_CONTRACTS2 },
+        major: { const: 1 }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["contract", "major", "opaque"],
+      properties: {
+        contract: { ...qualifiedId2, not: { enum: STANDARD_DATA_SOURCE_CONTRACTS2 } },
+        major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        opaque: { const: true }
+      }
+    }
+  ]
+};
+var contractRequirementSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["contract", "major"],
+  properties: {
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    range: { type: "string", pattern: VERSION_RANGE_PATTERN2 }
+  }
+};
+var formatRefSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["formatId", "label"],
+  properties: {
+    formatId: nonEmptyString7,
+    label: nonEmptyString7,
+    mediaType: nonEmptyString7
+  }
+};
+var signatureRuleSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["from", "offset", "bytesHex"],
+  properties: {
+    from: { enum: ["start", "end"] },
+    offset: { type: "integer", minimum: 0, maximum: 4096 },
+    bytesHex: { type: "string", pattern: "^(?:[0-9a-f]{2}){1,64}$" },
+    maskHex: { type: "string", pattern: "^(?:[0-9a-f]{2}){1,64}$" }
+  }
+};
+var matchRulesSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    extensions: { type: "array", items: nonEmptyString7 },
+    mediaTypes: { type: "array", items: nonEmptyString7 },
+    pathGlobs: { type: "array", items: nonEmptyString7 },
+    signatures: { type: "array", items: signatureRuleSchema2, maxItems: 8 }
+  }
+};
+var probePlanSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ranges", "maxBytes"],
+      properties: {
+        kind: { const: "bytes" },
+        ranges: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["from", "length"],
+            properties: {
+              from: { enum: ["start", "end"] },
+              length: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+            }
+          }
+        },
+        maxBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "markers", "maxEntries", "maxBytes", "maxDepth", "maxPathBytes"],
+      properties: {
+        kind: { const: "namespace" },
+        markers: {
+          type: "array",
+          items: nonEmptyString7,
+          minItems: 1,
+          maxItems: 256,
+          uniqueItems: true
+        },
+        prefixes: { type: "array", items: nonEmptyString7 },
+        maxEntries: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maxBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maxDepth: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maxPathBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "maxSubjects", "maxRelationDepth"],
+      properties: {
+        kind: { const: "derived" },
+        maxSubjects: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maxRelationDepth: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+      }
+    }
+  ]
+};
+var traitDefinitionRequirementSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id"],
+  properties: {
+    id: namespacedDottedId3,
+    definitionRange: { type: "string", pattern: VERSION_RANGE_PATTERN2 }
+  }
+};
+var traitQueryRequirementSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id"],
+  properties: {
+    ...traitDefinitionRequirementSchema2.properties,
+    states: {
+      type: "array",
+      items: { enum: ["available", "partial", "disabled", "dependency-required"] },
+      minItems: 1,
+      uniqueItems: true
+    }
+  }
+};
+var companionRuleSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "role", "required", "patterns", "searchScopes"],
+  properties: {
+    id: { type: "string", pattern: SEGMENT_PATTERN2 },
+    role: nonEmptyString7,
+    required: { type: "boolean" },
+    patterns: { type: "array", items: nonEmptyString7, minItems: 1 },
+    expected: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        all: { type: "array", items: traitQueryRequirementSchema2 },
+        any: { type: "array", items: traitQueryRequirementSchema2 },
+        none: { type: "array", items: traitQueryRequirementSchema2 }
+      }
+    },
+    searchScopes: {
+      type: "array",
+      minItems: 1,
+      items: {
+        enum: [
+          "sibling-directory",
+          "current-mount",
+          "enclosing-container",
+          "workspace-dependency-layer",
+          "explicit-user-selection"
+        ]
+      }
+    }
+  }
+};
+var representationDeclSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "contract", "major", "stage", "lossy"],
+  properties: {
+    id: nonEmptyString7,
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    stage: { enum: ["authored", "compiled", "runtime"] },
+    lossy: { type: "boolean" }
+  }
+};
+var operationDeclSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "handlerId", "mutatesSource"],
+  properties: {
+    id: operationId3,
+    handlerId: nonEmptyString7,
+    mutatesSource: { type: "boolean" },
+    requiredPermissions: { type: "array", items: { enum: PERMISSION_CLASSES2 } },
+    requiresContract: contractRequirementSchema2,
+    inputSchema: jsonSchemaRefSchema3,
+    outputKinds: {
+      type: "array",
+      items: {
+        enum: ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"]
+      }
+    }
+  }
+};
+var traitDeclarationSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "representation", "presence"],
+  properties: {
+    id: namespacedDottedId3,
+    definitionVersion: { type: "string", pattern: SEMVER_PATTERN2 },
+    representation: { enum: ["source", "compiled", "runtime"] },
+    presence: { enum: ["may-expose", "will-expose"] },
+    prerequisites: { type: "array", items: contractRequirementSchema2 },
+    evidenceRefs: { type: "array", items: nonEmptyString7, uniqueItems: true }
+  }
+};
+var fidelityNotesSchema2 = { type: "array", items: nonEmptyString7 };
+var fidelityClaimSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["roundTrip", "preservesUnknownData"],
+      properties: {
+        roundTrip: { const: "byte-identical" },
+        preservesUnknownData: { const: true },
+        notes: fidelityNotesSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["roundTrip", "preservesUnknownData"],
+      properties: {
+        roundTrip: { const: "semantic" },
+        preservesUnknownData: { type: "boolean" },
+        notes: fidelityNotesSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["roundTrip", "preservesUnknownData"],
+      properties: {
+        roundTrip: { enum: ["lossy", "none"] },
+        preservesUnknownData: { const: false },
+        notes: fidelityNotesSchema2
+      }
+    }
+  ]
+};
+var codecFidelityEvidenceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "formatId",
+    "representationId",
+    "claim",
+    "evidenceId",
+    "corpusId",
+    "corpusDigest",
+    "conformanceProfile",
+    "optionsFingerprint",
+    "inputClass",
+    "provenAt"
+  ],
+  properties: {
+    formatId: nonEmptyString7,
+    representationId: nonEmptyString7,
+    claim: fidelityClaimSchema2,
+    evidenceId: nonEmptyString7,
+    corpusId: nonEmptyString7,
+    corpusDigest: nonEmptyString7,
+    conformanceProfile: qualifiedId2,
+    optionsFingerprint: nonEmptyString7,
+    inputClass: nonEmptyString7,
+    provenAt: {
+      type: "string",
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+    }
+  }
+};
+var serviceProviderFidelityEvidenceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "offerId",
+    "evidenceId",
+    "claim",
+    "corpusId",
+    "corpusDigest",
+    "conformanceProfile",
+    "optionsFingerprint",
+    "inputClass",
+    "provenAt"
+  ],
+  properties: {
+    offerId: { type: "string", pattern: SEGMENT_PATTERN2 },
+    evidenceId: nonEmptyString7,
+    claim: fidelityClaimSchema2,
+    corpusId: nonEmptyString7,
+    corpusDigest: nonEmptyString7,
+    conformanceProfile: qualifiedId2,
+    optionsFingerprint: nonEmptyString7,
+    inputClass: nonEmptyString7,
+    provenAt: {
+      type: "string",
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+    }
+  }
+};
+var codecContributionRequired2 = [
+  "formatRefs",
+  "roles",
+  "sourceTopology",
+  "artifactStages",
+  "openIntents",
+  "match",
+  "probe",
+  "representations",
+  "publishesDataSources",
+  "operations",
+  "implementationTier",
+  "budgets"
+];
+var codecContributionProperties2 = {
+  formatRefs: { type: "array", items: formatRefSchema2, minItems: 1 },
+  roles: {
+    type: "array",
+    items: { enum: ["container", "media", "byte-transform", "semantic", "index", "sidecar"] },
+    minItems: 1
+  },
+  artifactStages: {
+    type: "array",
+    items: { enum: ["authored", "compiled", "runtime"] },
+    minItems: 1
+  },
+  openIntents: {
+    type: "array",
+    items: { enum: ["probe", "inspect", "thumbnail", "full", "stream", "export"] },
+    minItems: 1
+  },
+  match: matchRulesSchema2,
+  companions: { type: "array", items: companionRuleSchema2 },
+  representations: { type: "array", items: representationDeclSchema2, minItems: 1 },
+  publishesDataSources: { type: "array", items: dataSourceRefWireSchema2 },
+  requires: { type: "array", items: contractRequirementSchema2 },
+  operations: { type: "array", items: operationDeclSchema2 },
+  traitDeclarations: { type: "array", items: traitDeclarationSchema2 },
+  fidelityEvidence: { type: "array", items: codecFidelityEvidenceSchema2 },
+  implementationTier: {
+    type: "object",
+    additionalProperties: false,
+    required: ["claimed"],
+    properties: { claimed: { enum: [1, 2, 3, 4, 5] } }
+  },
+  budgets: resourceBudgetWireSchema2
+};
+var codecContributionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/codec-contribution-spec.v1.schema.json",
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: codecContributionRequired2,
+      properties: {
+        ...codecContributionProperties2,
+        sourceTopology: { enum: ["single", "bundle"] },
+        probe: probePlanSchema2.oneOf[0]
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: codecContributionRequired2,
+      properties: {
+        ...codecContributionProperties2,
+        sourceTopology: { const: "namespace" },
+        probe: probePlanSchema2.oneOf[1]
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: codecContributionRequired2,
+      properties: {
+        ...codecContributionProperties2,
+        sourceTopology: { const: "derived" },
+        probe: probePlanSchema2.oneOf[2]
+      }
+    }
+  ]
+};
+var serviceContractOfferDeclarationSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["offerId", "contract", "major", "version"],
+  properties: {
+    offerId: { type: "string", pattern: SEGMENT_PATTERN2 },
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    version: { type: "string", pattern: SEMVER_PATTERN2 },
+    facet: { title: "JsonValue" }
+  }
+};
+var serviceProviderContributionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/service-provider-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["provides", "lifecycleScope"],
+  properties: {
+    provides: { type: "array", items: serviceContractOfferDeclarationSchema2, minItems: 1 },
+    fidelityEvidence: { type: "array", items: serviceProviderFidelityEvidenceSchema2 },
+    requires: { type: "array", items: contractRequirementSchema2 },
+    inputs: { type: "array", items: nonEmptyString7 },
+    outputs: { type: "array", items: traitDeclarationSchema2 },
+    protocolOperations: { type: "array", items: nonEmptyString7 },
+    replacement: {
+      type: "object",
+      additionalProperties: false,
+      required: ["target", "compatible"],
+      properties: { target: contractRequirementSchema2, compatible: { type: "boolean" } }
+    },
+    lifecycleScope: { enum: ["session", "operation", "process"] },
+    applicableVariants: { type: "array", items: { type: "string", pattern: SEGMENT_PATTERN2 } }
+  }
+};
+var traitRequirementSchema2 = traitQueryRequirementSchema2;
+var viewerApplicabilitySchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    interpretation: { enum: ["none", "codec", "any"] },
+    sourceBytes: {
+      type: "object",
+      additionalProperties: false,
+      properties: { maximum: decimalU642 }
+    },
+    longestLineBytes: {
+      type: "object",
+      additionalProperties: false,
+      required: ["maximum", "whenUnknown"],
+      properties: {
+        maximum: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        whenUnknown: { enum: ["eligible", "ineligible"] }
+      }
+    }
+  }
+};
+var viewerContributionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/viewer-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["kind", "consumesDataSources", "priority"],
+  properties: {
+    kind: { enum: ["stage", "tree", "panel", "toolbar", "transport", "status", "fallback"] },
+    requiresTraits: { type: "array", items: traitRequirementSchema2 },
+    requiresOperations: { type: "array", items: operationId3 },
+    consumesDataSources: { type: "array", items: dataSourceRefWireSchema2 },
+    /*
+     * Sources a viewer reads when the subject publishes them and does without when it does not.
+     *
+     * Kept apart from `consumesDataSources` because that list decides eligibility: a facet named
+     * there would cost the stage every subject that publishes none of them, which is the opposite
+     * of optional. Naming them separately is what lets one generic viewer consume the optional
+     * model facets instead of splitting into a contribution per facet combination.
+     */
+    optionalDataSources: { type: "array", items: dataSourceRefWireSchema2 },
+    applicability: viewerApplicabilitySchema2,
+    hosts: { type: "array", items: nonEmptyString7 },
+    priority: { type: "number" },
+    conflicts: { type: "array", items: nonEmptyString7 },
+    singletonGroup: nonEmptyString7
+  }
+};
+var writerRequirementSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["formatId", "representationId", "mutationMode", "minimumRoundTrip"],
+  properties: {
+    formatId: nonEmptyString7,
+    representationId: nonEmptyString7,
+    mutationMode: { enum: ["export-only", "mutate"] },
+    minimumRoundTrip: { enum: ["byte-identical", "semantic", "lossy", "none"] }
+  }
+};
+var writerRequirementV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/writer-requirement.v1.schema.json",
+  ...writerRequirementSchema2
+};
+var writerOfferV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/writer-offer.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: [...writerRequirementSchema2.required, "providerId", "fidelityEvidenceId"],
+  properties: {
+    ...writerRequirementSchema2.properties,
+    providerId: nonEmptyString7,
+    fidelityEvidenceId: nonEmptyString7
+  }
+};
+var editorContributionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/editor-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "sessionModel",
+    "selectionKinds",
+    "semanticLocationKinds",
+    "requiresTransactions",
+    "requiresOperations",
+    "consumesDataSources",
+    "writer",
+    "priority"
+  ],
+  properties: {
+    sessionModel: { enum: ["single-subject", "multi-subject", "workspace"] },
+    selectionKinds: { type: "array", items: nonEmptyString7, uniqueItems: true },
+    semanticLocationKinds: { type: "array", items: nonEmptyString7, uniqueItems: true },
+    requiresTransactions: { type: "boolean" },
+    requiresOperations: { type: "array", items: operationId3, uniqueItems: true },
+    consumesDataSources: { type: "array", items: dataSourceRefWireSchema2, uniqueItems: true },
+    writer: writerRequirementSchema2,
+    hosts: { type: "array", items: nonEmptyString7, uniqueItems: true },
+    priority: { type: "number" },
+    scaleLimits: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        maximumSubjects: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maximumRows: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maximumSourceBytes: decimalU642
+      }
+    }
+  }
+};
+var localeTag2 = {
+  type: "string",
+  pattern: KNOWLEDGE_LOCALE_PATTERN2,
+  maxLength: 64
+};
+var knowledgeShortText2 = { type: "string", minLength: 1, maxLength: 128 };
+var knowledgeTitle2 = { type: "string", minLength: 1, maxLength: 256 };
+var boundedKnowledgeQualifiedId2 = {
+  type: "string",
+  pattern: QUALIFIED_PATTERN2,
+  maxLength: 256
+};
+var knowledgeSchemaCoordinate2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["contract", "major", "revision"],
+  properties: {
+    contract: boundedKnowledgeQualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    revision: { type: "string", minLength: 1, maxLength: 256 }
+  }
+};
+var knowledgeTargetSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ecosystem", "schema", "typeId", "canonicalPath"],
+      properties: {
+        kind: { const: "field" },
+        ecosystem: knowledgeShortText2,
+        schema: knowledgeSchemaCoordinate2,
+        typeId: knowledgeShortText2,
+        canonicalPath: {
+          type: "array",
+          items: knowledgeShortText2,
+          minItems: 1,
+          maxItems: 32
+        }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ecosystem", "subjectKind"],
+      properties: {
+        kind: { const: "subject" },
+        ecosystem: knowledgeShortText2,
+        subjectKind: knowledgeShortText2,
+        subjectId: { type: "string", minLength: 1, maxLength: 512 }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ecosystem", "formatId"],
+      properties: {
+        kind: { const: "format" },
+        ecosystem: knowledgeShortText2,
+        formatId: knowledgeShortText2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ecosystem", "code"],
+      properties: {
+        kind: { const: "diagnostic" },
+        ecosystem: knowledgeShortText2,
+        code: { type: "string", minLength: 1, maxLength: 256 }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ecosystem", "conceptId"],
+      properties: {
+        kind: { const: "concept" },
+        ecosystem: knowledgeShortText2,
+        conceptId: knowledgeShortText2
+      }
+    }
+  ]
+};
+var knowledgeSourceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["kind", "title", "reviewedAt"],
+  properties: {
+    kind: {
+      enum: [
+        "schema",
+        "official-documentation",
+        "source-code",
+        "community-wiki",
+        "observed-corpus",
+        "external-reference"
+      ]
+    },
+    title: knowledgeTitle2,
+    url: { type: "string", pattern: "^https://[^\\s]+$", maxLength: 2048 },
+    schema: knowledgeSchemaCoordinate2,
+    revision: { type: "string", minLength: 1, maxLength: 256 },
+    license: { type: "string", minLength: 1, maxLength: 256 },
+    reviewedAt: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+  }
+};
+var knowledgeEntrySchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "target", "locale", "title", "summary", "claimKind", "confidence", "sources"],
+  properties: {
+    id: boundedKnowledgeQualifiedId2,
+    target: knowledgeTargetSchema2,
+    locale: localeTag2,
+    title: knowledgeTitle2,
+    summary: { type: "string", minLength: 1, maxLength: 1024 },
+    claimKind: {
+      enum: [
+        "schema-derived-fact",
+        "documented-interpretation",
+        "community-note",
+        "external-reference"
+      ]
+    },
+    confidence: { enum: ["verified", "high", "medium", "low"] },
+    aliases: {
+      type: "array",
+      items: knowledgeShortText2,
+      maxItems: 32,
+      uniqueItems: true
+    },
+    keywords: {
+      type: "array",
+      items: knowledgeShortText2,
+      maxItems: 32,
+      uniqueItems: true
+    },
+    details: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        valueType: knowledgeShortText2,
+        units: knowledgeShortText2,
+        defaultValue: { title: "JsonValue" },
+        allowedValues: { type: "array", items: { title: "JsonValue" }, maxItems: 512 },
+        deprecated: { type: "boolean" },
+        formulaRole: { type: "string", minLength: 1, maxLength: 512 }
+      }
+    },
+    relations: {
+      type: "array",
+      maxItems: 64,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["role", "target"],
+        properties: { role: knowledgeShortText2, target: knowledgeTargetSchema2 }
+      }
+    },
+    examples: {
+      type: "array",
+      maxItems: 16,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "text"],
+        properties: {
+          title: knowledgeTitle2,
+          text: { type: "string", minLength: 1, maxLength: 2048 }
+        }
+      }
+    },
+    sources: { type: "array", items: knowledgeSourceSchema2, minItems: 1, maxItems: 16 }
+  }
+};
+var knowledgePackSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/knowledge-pack-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "sourceLocale", "priority", "entries"],
+  properties: {
+    schemaVersion: { const: 1 },
+    sourceLocale: localeTag2,
+    priority: { type: "number" },
+    gameIds: { type: "array", items: knowledgeShortText2, maxItems: 32, uniqueItems: true },
+    entries: { type: "array", items: knowledgeEntrySchema2, minItems: 1, maxItems: 1e4 }
+  }
+};
+var localizationCatalogResourceV1Schema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["locale", "path", "messagePrefixes"],
+  properties: {
+    locale: localeTag2,
+    path: {
+      type: "string",
+      maxLength: 1024,
+      pattern: "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$"
+    },
+    messagePrefixes: {
+      type: "array",
+      minItems: 1,
+      maxItems: 64,
+      uniqueItems: true,
+      items: {
+        type: "string",
+        maxLength: 256,
+        pattern: "^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$"
+      }
+    }
+  }
+};
+var localizationContributionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/localization-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["catalogs"],
+  properties: {
+    catalogs: {
+      type: "array",
+      minItems: 1,
+      maxItems: 256,
+      items: localizationCatalogResourceV1Schema2
+    }
+  }
+};
+var traitDefinitionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "id", "version", "scope", "parametersSchema", "transport"],
+  properties: {
+    schemaVersion: { const: 1 },
+    id: namespacedDottedId3,
+    version: { type: "string", pattern: SEMVER_PATTERN2 },
+    scope: {
+      anyOf: [
+        {
+          enum: [
+            "source",
+            "asset",
+            "subject",
+            "workspace",
+            "service",
+            "operation",
+            "view-session",
+            "representation"
+          ]
+        },
+        { type: "string", pattern: QUALIFIED_PATTERN2 }
+      ]
+    },
+    parametersSchema: jsonSchemaRefSchema3,
+    transport: { enum: ["json", "structured-clone"] },
+    documentation: nonEmptyString7,
+    imports: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "range"],
+        properties: {
+          id: namespacedDottedId3,
+          range: { type: "string", pattern: VERSION_RANGE_PATTERN2 }
+        }
+      }
+    }
+  }
+};
+var methodName2 = { type: "string", pattern: METHOD_NAME_PATTERN2 };
+var dataSourceSurfaceRefSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["contract", "major"],
+  properties: {
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+  }
+};
+var dataSourceMethodLimitsSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    maxPageItems: { type: "integer", minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
+    maxBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    maxStringLength: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+  }
+};
+var argKeyRefSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["arg", "key"],
+  properties: {
+    arg: { type: "integer", minimum: 0, maximum: 16 },
+    key: methodName2
+  }
+};
+var dataSourceMethodSurfaceCommon2 = {
+  /**
+   * Where the executing side places the `AbortSignal`: appended last, nowhere, or as a key of an
+   * object argument (the consumer strips that key before sending, the executor re-creates it).
+   */
+  signal: { anyOf: [{ enum: ["last", "none"] }, argKeyRefSchema2] },
+  /** Where a progress callback lives inside an object argument (`invoke(…, { onProgress })`). */
+  progress: argKeyRefSchema2,
+  /**
+   * Positional argument count before the signal. The executing side pads omitted trailing
+   * arguments with `undefined` up to `arity` before appending the signal, so
+   * `encoded(trackId?, signal?)` called as `encoded()` still receives its signal last.
+   */
+  arity: { type: "integer", minimum: 0, maximum: 16 },
+  /** The ABI declares the method with `?`; an implementation may lack it. */
+  optional: { type: "boolean" },
+  limits: dataSourceMethodLimitsSchema2
+};
+var dataSourceMethodSurfaceV1Schema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "result"],
+      properties: {
+        kind: { const: "lease" },
+        result: dataSourceSurfaceRefSchema2,
+        /** `'lease'` materializes `{ value, release }`; `'bare'` (default) the capability object itself. */
+        wrapper: { enum: ["lease", "bare"] },
+        ...dataSourceMethodSurfaceCommon2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: {
+        kind: { enum: ["value", "leased-value", "iterable", "events"] },
+        ...dataSourceMethodSurfaceCommon2
+      }
+    }
+  ]
+};
+var dataSourceSurfaceV1Schema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["methods"],
+  properties: {
+    /** A `value` method whose completion also releases the capability (`dispose`-style ABIs). */
+    releaseVia: methodName2,
+    /**
+     * Data properties of the object copied to the consumer with its handle (`TextSyntaxProvider.contract`);
+     * exposed as read-only properties next to the proxied methods.
+     */
+    fields: { type: "array", items: methodName2, maxItems: 64, uniqueItems: true },
+    methods: {
+      type: "object",
+      minProperties: 1,
+      propertyNames: methodName2,
+      additionalProperties: dataSourceMethodSurfaceV1Schema2
+    }
+  }
+};
+var serviceContractDefinitionSpecV1Schema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "schemaVersion",
+    "kind",
+    "contract",
+    "major",
+    "offerFacet",
+    "requestFacet",
+    "matching",
+    "conformanceProfile"
+  ],
+  properties: {
+    schemaVersion: { const: 1 },
+    kind: { const: "service" },
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    offerFacet: {
+      oneOf: [
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["presence"],
+          properties: { presence: { const: "forbidden" } }
+        },
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["presence", "schema"],
+          properties: {
+            presence: { enum: ["optional", "required"] },
+            schema: jsonSchemaRefSchema3
+          }
+        }
+      ]
+    },
+    requestFacet: {
+      oneOf: [
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["presence"],
+          properties: { presence: { const: "forbidden" } }
+        },
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["presence", "schema"],
+          properties: {
+            presence: { enum: ["optional", "required"] },
+            schema: jsonSchemaRefSchema3
+          }
+        }
+      ]
+    },
+    matching: {
+      type: "object",
+      additionalProperties: false,
+      required: ["profile", "major"],
+      properties: {
+        profile: qualifiedId2,
+        major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        configuration: { title: "JsonValue" }
+      }
+    },
+    conformanceProfile: nonEmptyString7,
+    surface: dataSourceSurfaceV1Schema2
+  }
+};
+var dataSourceContractDefinitionSpecV1Schema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"],
+  properties: {
+    schemaVersion: { const: 1 },
+    kind: { const: "data-source" },
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    schema: jsonSchemaRefSchema3,
+    conformanceProfile: nonEmptyString7,
+    surface: dataSourceSurfaceV1Schema2
+  }
+};
+var contractDefinitionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/contract-definition-spec.v1.schema.json",
+  oneOf: [serviceContractDefinitionSpecV1Schema2, dataSourceContractDefinitionSpecV1Schema2]
+};
+deepFreeze(jsonSchemaRefSchema3);
+deepFreeze(resourceBudgetWireSchema2);
+deepFreeze(dataSourceRefWireSchema2);
+deepFreeze(codecContributionSpecV1Schema2);
+deepFreeze(serviceProviderContributionSpecV1Schema2);
+deepFreeze(viewerContributionSpecV1Schema2);
+deepFreeze(editorContributionSpecV1Schema2);
+deepFreeze(knowledgePackSpecV1Schema2);
+deepFreeze(localizationContributionSpecV1Schema2);
+deepFreeze(traitDefinitionSpecV1Schema2);
+deepFreeze(serviceContractDefinitionSpecV1Schema2);
+deepFreeze(dataSourceMethodSurfaceV1Schema2);
+deepFreeze(dataSourceSurfaceV1Schema2);
+deepFreeze(dataSourceContractDefinitionSpecV1Schema2);
+deepFreeze(contractDefinitionSpecV1Schema2);
+var sourceSpanValueSchema2 = { oneOf: sourceSpanSchema.oneOf };
+var nonEmptyString23 = { type: "string", minLength: 1 };
+var nonWhitespaceString2 = { type: "string", pattern: "\\S" };
+var revisionString2 = { type: "string", pattern: REVISION_ID_PATTERN2 };
+var namespacedDottedId22 = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN2 };
+var operationId23 = { type: "string", pattern: OPERATION_PATTERN2 };
+var stringArray2 = { type: "array", items: { type: "string" } };
+var jsonValueRef2 = { $ref: "#/$defs/jsonValue" };
+var jsonValueSchema2 = {
+  title: "JsonValue",
+  oneOf: [
+    { type: "null" },
+    { type: "boolean" },
+    { type: "number" },
+    { type: "string" },
+    { type: "array", items: jsonValueRef2 },
+    { type: "object", additionalProperties: jsonValueRef2 }
+  ]
+};
+var assetSourceRefSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "uri"],
+  properties: {
+    id: nonWhitespaceString2,
+    uri: nonWhitespaceString2,
+    parentIds: { type: "array", items: nonWhitespaceString2, minItems: 1 }
+  }
+};
+var sourceBindingDescriptorSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "role", "source", "required", "ownership", "revision"],
+  properties: {
+    id: nonEmptyString23,
+    role: nonEmptyString23,
+    source: assetSourceRefSchema2,
+    required: { type: "boolean" },
+    ownership: { enum: ["owned", "companion", "external"] },
+    revision: revisionString2,
+    mediaType: nonEmptyString23
+  }
+};
+var subjectSnapshotRefSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"],
+  properties: {
+    bindingId: nonEmptyString23,
+    role: nonEmptyString23,
+    subjectUri: nonEmptyString23,
+    revision: revisionString2,
+    compositionFingerprint: nonEmptyString23
+  }
+};
+var derivationRecipeSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["extensionId", "extensionVersion", "contributionId", "operation"],
+  properties: {
+    extensionId: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    extensionVersion: { type: "string", pattern: SEMVER_PATTERN2 },
+    contributionId: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    operation: operationId23,
+    parameters: jsonValueRef2
+  }
+};
+var materializedAssetSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["source", "revision"],
+  properties: {
+    source: assetSourceRefSchema2,
+    revision: revisionString2,
+    mediaType: nonEmptyString23
+  }
+};
+var assetOriginDescriptorSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "binding"],
+      properties: {
+        kind: { const: "single" },
+        binding: sourceBindingDescriptorSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "bindings"],
+      properties: {
+        kind: { const: "bundle" },
+        bindings: { type: "array", items: sourceBindingDescriptorSchema2, minItems: 1 },
+        primary: nonEmptyString23
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "root", "revision"],
+      properties: {
+        kind: { const: "namespace" },
+        root: assetSourceRefSchema2,
+        revision: revisionString2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "inputs"],
+      properties: {
+        kind: { const: "derived" },
+        inputs: { type: "array", items: subjectSnapshotRefSchema2, minItems: 1 },
+        recipe: derivationRecipeSchema2,
+        materialization: materializedAssetSchema2
+      }
+    }
+  ]
+};
+var diagnosticSourceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    extensionId: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    contributionId: { type: "string", pattern: QUALIFIED_PATTERN2 }
+  }
+};
+var assetDiagnosticSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "code", "category", "severity", "message"],
+  properties: {
+    id: nonEmptyString23,
+    code: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    category: {
+      enum: [
+        "syntax",
+        "structure",
+        "fidelity",
+        "dependency",
+        "security",
+        "performance",
+        "operation",
+        "io",
+        "unknown"
+      ]
+    },
+    severity: { enum: ["error", "warning", "information", "hint"] },
+    message: { type: "string" },
+    source: diagnosticSourceSchema2,
+    path: {
+      type: "array",
+      items: {
+        oneOf: [
+          { type: "string" },
+          { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+        ]
+      }
+    },
+    range: sourceSpanValueSchema2,
+    data: jsonValueRef2,
+    relatedIds: stringArray2
+  }
+};
+var traitProperties2 = {
+  id: namespacedDottedId22,
+  descriptorVersion: { const: 1 },
+  definitionVersion: { type: "string", pattern: SEMVER_PATTERN2 },
+  parameters: jsonValueRef2
+};
+var traitInstanceSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "descriptorVersion", "state"],
+      properties: { ...traitProperties2, state: { const: "available" } }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "descriptorVersion", "state", "diagnosticIds"],
+      properties: {
+        ...traitProperties2,
+        state: { enum: ["partial", "disabled", "dependency-required"] },
+        diagnosticIds: { ...stringArray2, minItems: 1 }
+      }
+    }
+  ]
+};
+var jsonSchemaRefSchema22 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["$ref"],
+  properties: { $ref: nonEmptyString23 }
+};
+var operationProperties2 = {
+  id: operationId23,
+  handlerId: nonEmptyString23,
+  mutatesSource: { type: "boolean" },
+  inputSchema: jsonSchemaRefSchema22
+};
+var assetOperationDescriptorSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "handlerId", "state", "mutatesSource"],
+      properties: { ...operationProperties2, state: { const: "available" } }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "handlerId", "state", "mutatesSource", "reason"],
+      properties: {
+        ...operationProperties2,
+        state: { enum: ["disabled", "dependency-required"] },
+        reason: nonEmptyString23
+      }
+    }
+  ]
+};
+var assetConstraintsSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["readOnly", "seekable", "randomAccess", "trusted"],
+  properties: {
+    readOnly: { type: "boolean" },
+    seekable: { type: "boolean" },
+    randomAccess: { type: "boolean" },
+    trusted: { type: "boolean" },
+    maxDecodedBytes: { type: "string", pattern: UINT64_DECIMAL_PATTERN },
+    unsupportedFeatures: stringArray2
+  }
+};
+var metadataEntrySchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["key", "value"],
+  properties: {
+    key: nonEmptyString23,
+    value: jsonValueRef2
+  }
+};
+var metadataGroupSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "label", "entries"],
+  properties: {
+    id: nonEmptyString23,
+    label: { type: "string" },
+    entries: { type: "array", items: metadataEntrySchema2 }
+  }
+};
+var companionBaseProperties2 = {
+  id: nonEmptyString23,
+  role: nonEmptyString23,
+  required: { type: "boolean" },
+  cardinality: { enum: ["one", "zero-or-one", "one-or-more", "many"] },
+  state: { enum: ["resolved", "missing", "ambiguous"] }
+};
+var requiredCompanionProperties2 = {
+  ...companionBaseProperties2,
+  required: { const: true },
+  cardinality: { enum: ["one", "one-or-more"] }
+};
+var optionalCompanionProperties2 = {
+  ...companionBaseProperties2,
+  required: { const: false },
+  cardinality: { enum: ["zero-or-one", "many"] }
+};
+var companionCandidateSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["source", "revision"],
+  properties: { source: assetSourceRefSchema2, revision: revisionString2 }
+};
+var companionBindingIdsSchema2 = {
+  type: "array",
+  items: nonEmptyString23,
+  minItems: 1,
+  uniqueItems: true
+};
+var singleCompanionBindingIdSchema2 = {
+  ...companionBindingIdsSchema2,
+  maxItems: 1
+};
+var companionDiagnosticIdsSchema2 = {
+  type: "array",
+  items: nonEmptyString23,
+  minItems: 1,
+  uniqueItems: true
+};
+var companionDescriptorSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
+      properties: {
+        ...requiredCompanionProperties2,
+        cardinality: { const: "one" },
+        state: { const: "resolved" },
+        bindingIds: singleCompanionBindingIdSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
+      properties: {
+        ...requiredCompanionProperties2,
+        cardinality: { const: "one-or-more" },
+        state: { const: "resolved" },
+        bindingIds: companionBindingIdsSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
+      properties: {
+        ...optionalCompanionProperties2,
+        cardinality: { const: "zero-or-one" },
+        state: { const: "resolved" },
+        bindingIds: singleCompanionBindingIdSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
+      properties: {
+        ...optionalCompanionProperties2,
+        cardinality: { const: "many" },
+        state: { const: "resolved" },
+        bindingIds: companionBindingIdsSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "diagnosticIds"],
+      properties: {
+        ...requiredCompanionProperties2,
+        state: { const: "missing" },
+        diagnosticIds: companionDiagnosticIdsSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state"],
+      properties: {
+        ...optionalCompanionProperties2,
+        state: { const: "missing" },
+        diagnosticIds: { type: "array", items: nonEmptyString23, uniqueItems: true }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"],
+      properties: {
+        ...requiredCompanionProperties2,
+        cardinality: { const: "one" },
+        state: { const: "ambiguous" },
+        candidates: {
+          type: "array",
+          items: companionCandidateSchema2,
+          minItems: 2,
+          uniqueItems: true
+        },
+        diagnosticIds: companionDiagnosticIdsSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"],
+      properties: {
+        ...optionalCompanionProperties2,
+        cardinality: { const: "zero-or-one" },
+        state: { const: "ambiguous" },
+        candidates: {
+          type: "array",
+          items: companionCandidateSchema2,
+          minItems: 2,
+          uniqueItems: true
+        },
+        diagnosticIds: companionDiagnosticIdsSchema2
+      }
+    }
+  ]
+};
+var detectionEvidenceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["kind", "weight"],
+  properties: {
+    kind: { enum: ["magic", "structure", "companion", "context", "extension", "user-override"] },
+    weight: { type: "number" },
+    note: { type: "string" }
+  }
+};
+var detectionResultSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["codecId", "confidence", "evidence", "requiredRanges"],
+  properties: {
+    codecId: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    confidence: { type: "number", minimum: 0, maximum: 1 },
+    evidence: { type: "array", items: detectionEvidenceSchema2 },
+    requiredRanges: { type: "array", items: sourceSpanValueSchema2 },
+    diagnostics: { type: "array", items: assetDiagnosticSchema2 }
+  }
+};
+var resolvedIdentitySchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["codecId", "codecVersion", "formatId", "formatLabel", "confidence", "detection"],
+  properties: {
+    codecId: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    codecVersion: { type: "string", pattern: SEMVER_PATTERN2 },
+    formatId: nonEmptyString23,
+    formatLabel: nonEmptyString23,
+    mediaType: nonEmptyString23,
+    confidence: { type: "number", minimum: 0, maximum: 1 },
+    detection: { type: "array", items: detectionEvidenceSchema2 }
+  }
+};
+var subjectRequired2 = [
+  "schemaVersion",
+  "subjectUri",
+  "origin",
+  "traits",
+  "operations",
+  "constraints",
+  "dataSources",
+  "diagnostics",
+  "revision"
+];
+var subjectProperties2 = {
+  schemaVersion: { const: 2 },
+  subjectUri: nonWhitespaceString2,
+  origin: assetOriginDescriptorSchema2,
+  traits: { type: "array", items: traitInstanceSchema2 },
+  operations: { type: "array", items: assetOperationDescriptorSchema2 },
+  constraints: assetConstraintsSchema2,
+  dataSources: { type: "array", items: dataSourceRefWireSchema2 },
+  diagnostics: { type: "array", items: assetDiagnosticSchema2 },
+  revision: revisionString2
+};
+var unresolvedSourceDescriptorSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: [...subjectRequired2, "interpretation", "candidates"],
+  properties: {
+    ...subjectProperties2,
+    interpretation: { const: "none" },
+    candidates: { type: "array", items: detectionResultSchema2 }
+  }
+};
+var resolvedAssetDescriptorSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: [...subjectRequired2, "interpretation", "identity", "metadata"],
+  properties: {
+    ...subjectProperties2,
+    interpretation: { const: "codec" },
+    identity: resolvedIdentitySchema2,
+    metadata: { type: "array", items: metadataGroupSchema2 },
+    companions: { type: "array", items: companionDescriptorSchema2 }
+  }
+};
+var subjectDescriptorV2Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/subject-descriptor.v2.schema.json",
+  $defs: { jsonValue: jsonValueSchema2 },
+  oneOf: [unresolvedSourceDescriptorSchema2, resolvedAssetDescriptorSchema2]
+};
+var subjectDescriptorV2InferenceSchema2 = {
+  ...subjectDescriptorV2Schema2,
+  $defs: {
+    ...subjectDescriptorV2Schema2.$defs,
+    jsonValue: { title: "JsonValue" }
+  }
+};
+deepFreeze(subjectDescriptorV2Schema2);
+deepFreeze(subjectDescriptorV2InferenceSchema2);
+var RESERVED_MODEL_FACET_SOURCES2 = Object.freeze([
+  Object.freeze({
+    contract: "common.view/model-lod-source",
+    major: 1,
+    minimalShape: Object.freeze([
+      "info(): { levels }",
+      "levels(page): { id, nodeIds, order, selection? }"
+    ]),
+    blockedBy: "no codec publishes discrete LOD levels today: MSFT_lod topology is readable in principle, and nothing reads it"
+  }),
+  Object.freeze({
+    contract: "common.view/model-variant-source",
+    major: 1,
+    minimalShape: Object.freeze([
+      "info(): { variants }",
+      "variants(page): { id, name, kind, targets }"
+    ]),
+    blockedBy: "no codec publishes named variants today: UV_game_variants exists in the schema and no reader surfaces it"
+  }),
+  Object.freeze({
+    contract: "common.view/model-effect-source",
+    major: 1,
+    minimalShape: Object.freeze([
+      "info(): { effects, byKind, profile? }",
+      "effects(page): { id, kind, nodeId?, materialId? }"
+    ]),
+    blockedBy: "the UVM reader publishes effect *counts* by kind, which fills info() and nothing else; per-emitter records have no publisher, and a page method no publisher can fill is not a contract"
+  })
+]);
+var TRAIT_IDS2 = Object.freeze([
+  "content.metadata",
+  "content.binary",
+  "content.text",
+  "content.images",
+  "content.fonts",
+  "content.styles",
+  "content.scripts",
+  "content.thumbnails",
+  "image.raster",
+  "image.channels",
+  "image.mipmaps",
+  "image.subresources",
+  "image.compressed-blocks",
+  "image.frames",
+  "image.palette",
+  "image.color-profile",
+  "vector.scene",
+  "vector.paths",
+  "vector.shapes",
+  "vector.text",
+  "vector.gradients",
+  "document.flow",
+  "document.pages",
+  "document.outline",
+  "document.annotations",
+  "table.sheets",
+  "table.cells",
+  "table.formulas",
+  "presentation.slides",
+  "presentation.masters",
+  "design.components",
+  "design.constraints",
+  "structure.hierarchy",
+  "structure.layers",
+  "structure.nodes",
+  "structure.timeline",
+  "project.editable",
+  "project.companions",
+  "model.geometry",
+  "model.materials",
+  "model.textures",
+  "model.skeleton",
+  "model.animations",
+  "model.lods",
+  "scene.objects",
+  "scene.cameras",
+  "scene.lights",
+  "scene.effects",
+  "audio.streams",
+  "audio.waveform",
+  "audio.loop-points",
+  "video.streams",
+  "video.tracks",
+  "media.duration",
+  "media.frames",
+  "media.seekable",
+  "media.interactive-runtime",
+  "container.entries",
+  "container.directories",
+  "container.nested",
+  "container.compression",
+  "container.encryption",
+  "container.overlay",
+  "source.dependencies",
+  "font.glyphs",
+  "font.metrics",
+  "font.character-map",
+  "code.source",
+  "code.shader",
+  "code.node-graph",
+  "game.map",
+  "game.replay",
+  "game.layout",
+  "game.localization",
+  "game.catalog"
+]);
+var STANDARD_TRAIT_SET2 = new Set(TRAIT_IDS2);
+
+// packages/extension-manager/src/subjects.js
+var EXTENSION_SUBJECT_KIND = "org.modkitx/extension";
+var CONTRIBUTION_SUBJECT_KIND = "org.modkitx/contribution";
+function fail4(message, context = {}) {
+  throw new ExtensionManagerError("extension-manager/subject-projection-invalid", message, context);
+}
+function requiredText(value2, label) {
+  if (typeof value2 !== "string" || value2.trim() === "") {
+    fail4(`${label} must be a non-empty string`);
+  }
+  return value2.trim();
+}
+function optionalText2(value2, label) {
+  return value2 === void 0 ? void 0 : requiredText(value2, label);
+}
+function snapshotJson(value2, label, seen = /* @__PURE__ */ new Set()) {
+  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean") return value2;
+  if (typeof value2 === "number") {
+    if (!Number.isFinite(value2)) fail4(`${label} must contain only finite JSON numbers`);
+    return value2;
+  }
+  if (typeof value2 !== "object") fail4(`${label} must contain only JSON values`);
+  if (seen.has(value2)) fail4(`${label} must not contain cycles`);
+  seen.add(value2);
+  try {
+    if (Array.isArray(value2)) {
+      return Object.freeze(
+        value2.map((item, index) => snapshotJson(item, `${label}[${index}]`, seen))
+      );
+    }
+    const prototype = Object.getPrototypeOf(value2);
+    if (prototype !== Object.prototype && prototype !== null) {
+      fail4(`${label} must contain only plain JSON objects`);
+    }
+    if (Object.getOwnPropertySymbols(value2).length !== 0) {
+      fail4(`${label} must not contain symbol properties`);
+    }
+    const result = {};
+    for (const [key3, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(value2))) {
+      if (!descriptor.enumerable || !("value" in descriptor)) {
+        fail4(`${label}.${key3} must be an enumerable data property`);
+      }
+      result[key3] = snapshotJson(descriptor.value, `${label}.${key3}`, seen);
+    }
+    return Object.freeze(result);
+  } finally {
+    seen.delete(value2);
+  }
+}
+function contractCoordinate(contract, label) {
+  if (contract === null || typeof contract !== "object" || Array.isArray(contract)) {
+    fail4(`${label}.contract must be an object`);
+  }
+  const id = requiredText(contract.id, `${label}.contract.id`);
+  if (!Number.isSafeInteger(contract.major) || contract.major < 0) {
+    fail4(`${label}.contract.major must be a non-negative safe integer`);
+  }
+  return Object.freeze({ id, major: contract.major });
+}
+function contractKey(contract) {
+  return `${contract.id}@${contract.major}`;
+}
+function compareText(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+function compareContribution(left, right) {
+  return compareText(left.displayName, right.displayName) || compareText(left.id, right.id);
+}
+function throwIfAborted2(signal) {
+  signal?.throwIfAborted();
+}
+function page(items, request, signal) {
+  throwIfAborted2(signal);
+  if (!Number.isSafeInteger(request?.limit) || request.limit <= 0) {
+    fail4("page limit must be a positive safe integer");
+  }
+  let offset = 0;
+  if (request.cursor !== void 0) {
+    if (!/^(?:0|[1-9]\d*)$/u.test(request.cursor)) fail4("page cursor is invalid");
+    offset = Number(request.cursor);
+    if (!Number.isSafeInteger(offset)) fail4("page cursor is outside the safe integer range");
+  }
+  const selected = items.slice(offset, offset + request.limit);
+  const nextOffset = offset + selected.length;
+  return Object.freeze({
+    items: Object.freeze(selected),
+    ...nextOffset < items.length ? { nextCursor: String(nextOffset) } : {}
+  });
+}
+function fact2(id, label, value2, provenance) {
+  return Object.freeze({ id, label, value: value2, provenance });
+}
+function factsSource({
+  snapshotId,
+  subjectId,
+  label,
+  kind,
+  type,
+  groups,
+  facts,
+  relations,
+  origin
+}) {
+  const summary = Object.freeze({
+    snapshotId,
+    identity: Object.freeze({
+      subjectId,
+      label,
+      kind,
+      ...type === void 0 ? {} : { type },
+      origins: origin
+    }),
+    groupCount: groups.length,
+    relationCount: relations.length
+  });
+  const factsByGroup = new Map(facts.map((entry2) => [entry2.groupId, entry2.items]));
+  return Object.freeze({
+    async summary(signal) {
+      throwIfAborted2(signal);
+      return summary;
+    },
+    async groups(request, signal) {
+      return page(groups, request, signal);
+    },
+    async facts(groupId, request, signal) {
+      const items = factsByGroup.get(groupId);
+      if (items === void 0) fail4(`unknown subject fact group \xAB${groupId}\xBB`, { groupId });
+      return page(items, request, signal);
+    },
+    async relations(request, signal) {
+      return page(relations, request, signal);
+    }
+  });
+}
+function group(id, label, items) {
+  return Object.freeze({ id, label, factCount: items.length });
+}
+function relation(role, record3) {
+  return Object.freeze({
+    role,
+    subjectId: record3.subjectId,
+    label: record3.displayName,
+    kind: record3.kind
+  });
+}
+async function collectPages(openPage, signal) {
+  const items = [];
+  const cursors = /* @__PURE__ */ new Set();
+  let cursor3;
+  do {
+    throwIfAborted2(signal);
+    const result = await openPage(
+      { ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit: 256 },
+      signal
+    );
+    if (result === null || typeof result !== "object" || !Array.isArray(result.items)) {
+      fail4("subject facts source returned an invalid page");
+    }
+    items.push(...result.items);
+    if (items.length > 1e5) fail4("subject card exceeds the 100000 item wire limit");
+    cursor3 = result.nextCursor;
+    if (cursor3 !== void 0) {
+      if (typeof cursor3 !== "string" || cursors.has(cursor3)) {
+        fail4("subject facts source returned an invalid or repeated cursor");
+      }
+      cursors.add(cursor3);
+    }
+  } while (cursor3 !== void 0);
+  return items;
+}
+async function extensionSubjectRecordToWire(record3, signal) {
+  if (record3 === null || typeof record3 !== "object" || record3.facts === void 0) {
+    fail4("extension subject record must provide facts");
+  }
+  const summary = await record3.facts.summary(signal);
+  const groups = await collectPages(
+    (request, pageSignal) => record3.facts.groups(request, pageSignal),
+    signal
+  );
+  const wireGroups = [];
+  for (const groupDescriptor of groups) {
+    const groupFacts = await collectPages(
+      (request, pageSignal) => record3.facts.facts(groupDescriptor.id, request, pageSignal),
+      signal
+    );
+    wireGroups.push(Object.freeze({ ...groupDescriptor, facts: Object.freeze(groupFacts) }));
+  }
+  const relations = await collectPages(
+    (request, pageSignal) => record3.facts.relations(request, pageSignal),
+    signal
+  );
+  const subject = {
+    kind: record3.kind,
+    subjectId: record3.subjectId,
+    id: record3.id,
+    displayName: record3.displayName,
+    enabled: record3.enabled,
+    ..."version" in record3 ? { version: record3.version } : {},
+    ..."extensionId" in record3 ? { extensionId: record3.extensionId } : {},
+    ..."contract" in record3 ? { contract: record3.contract, contractKey: record3.contractKey } : {},
+    ..."effectiveEnabled" in record3 ? { effectiveEnabled: record3.effectiveEnabled } : {}
+  };
+  return snapshotJson(
+    {
+      schemaVersion: 1,
+      subject,
+      summary,
+      groups: wireGroups,
+      relations
+    },
+    "extension subject card wire document"
+  );
+}
+function subjectFactsSourceFromWire(value2) {
+  const document = snapshotJson(value2, "extension subject card wire document");
+  if (document === null || typeof document !== "object" || Array.isArray(document)) {
+    fail4("extension subject card wire document must be an object");
+  }
+  if (document.schemaVersion !== 1) {
+    fail4("extension subject card wire schemaVersion must be 1");
+  }
+  if (document.summary === null || typeof document.summary !== "object" || Array.isArray(document.summary)) {
+    fail4("extension subject card wire summary must be an object");
+  }
+  if (!Array.isArray(document.groups) || !Array.isArray(document.relations)) {
+    fail4("extension subject card wire groups and relations must be lists");
+  }
+  const ids = /* @__PURE__ */ new Set();
+  const groups = [];
+  const entries = [];
+  for (const [index, wireGroup] of document.groups.entries()) {
+    if (wireGroup === null || typeof wireGroup !== "object" || Array.isArray(wireGroup)) {
+      fail4(`extension subject card wire groups[${index}] must be an object`);
+    }
+    const id = requiredText(wireGroup.id, `groups[${index}].id`);
+    if (ids.has(id)) fail4(`subject fact group \xAB${id}\xBB is duplicated`, { groupId: id });
+    ids.add(id);
+    const label = requiredText(wireGroup.label, `groups[${index}].label`);
+    if (!Array.isArray(wireGroup.facts)) fail4(`groups[${index}].facts must be a list`);
+    if (wireGroup.factCount !== wireGroup.facts.length) {
+      fail4(`groups[${index}].factCount does not match its facts list`);
+    }
+    groups.push(Object.freeze({ id, label, factCount: wireGroup.factCount }));
+    entries.push(Object.freeze({ groupId: id, items: wireGroup.facts }));
+  }
+  if (document.summary.groupCount !== groups.length) {
+    fail4("extension subject card wire summary.groupCount does not match its groups");
+  }
+  if (document.summary.relationCount !== document.relations.length) {
+    fail4("extension subject card wire summary.relationCount does not match its relations");
+  }
+  return factsSource({
+    snapshotId: document.summary.snapshotId,
+    subjectId: document.summary.identity?.subjectId,
+    label: document.summary.identity?.label,
+    kind: document.summary.identity?.kind,
+    type: document.summary.identity?.type,
+    groups: Object.freeze(groups),
+    facts: Object.freeze(entries),
+    relations: document.relations,
+    origin: document.summary.identity?.origins ?? Object.freeze([])
+  });
+}
+function contributionFacts(manifest, ownerId, enabled, effectiveEnabled, provenance) {
+  const overview = [
+    fact2("id", "Contribution ID", manifest.id, provenance),
+    fact2("display-name", "Display name", manifest.displayName, provenance),
+    fact2("owner-extension", "Owner extension", ownerId, provenance),
+    fact2("contract-id", "Contract", manifest.contract.id, provenance),
+    fact2("contract-major", "Contract major", manifest.contract.major, provenance),
+    fact2("contract-coordinate", "Contract coordinate", contractKey(manifest.contract), provenance),
+    fact2("status", "Status", manifest.status ?? "supported", provenance)
+  ];
+  const state = [
+    fact2("enabled", "Contribution enabled", enabled, provenance),
+    fact2("effective-enabled", "Effectively enabled", effectiveEnabled, provenance)
+  ];
+  const declaration = [];
+  if (manifest.dependsOn !== void 0) {
+    declaration.push(fact2("depends-on", "Dependencies", manifest.dependsOn, provenance));
+  }
+  if (manifest.limitations !== void 0) {
+    declaration.push(fact2("limitations", "Limitations", manifest.limitations, provenance));
+  }
+  if (manifest.runtimeVariants !== void 0) {
+    declaration.push(
+      fact2("runtime-variants", "Runtime variants", manifest.runtimeVariants, provenance)
+    );
+  }
+  const specification = [];
+  if (manifest.spec !== null && typeof manifest.spec === "object" && !Array.isArray(manifest.spec)) {
+    for (const key3 of Object.keys(manifest.spec).sort(compareText)) {
+      specification.push(fact2(`spec.${key3}`, key3, manifest.spec[key3], provenance));
+    }
+  } else {
+    specification.push(fact2("spec", "Specification", manifest.spec, provenance));
+  }
+  return Object.freeze([
+    Object.freeze({ id: "overview", label: "Overview", items: Object.freeze(overview) }),
+    Object.freeze({ id: "state", label: "State", items: Object.freeze(state) }),
+    ...declaration.length === 0 ? [] : [
+      Object.freeze({
+        id: "declaration",
+        label: "Declaration",
+        items: Object.freeze(declaration)
+      })
+    ],
+    Object.freeze({
+      id: "specification",
+      label: "Specification",
+      items: Object.freeze(specification)
+    })
+  ]);
+}
+function projectExtensionSubjects(input) {
+  if (input === null || typeof input !== "object" || Array.isArray(input)) {
+    fail4("extension subject projection input must be an object");
+  }
+  const normalizedInput = snapshotJson(input, "input");
+  const extensionInput = normalizedInput.extension;
+  if (extensionInput === null || typeof extensionInput !== "object" || Array.isArray(extensionInput)) {
+    fail4("extension must be an object");
+  }
+  const publisher = requiredText(extensionInput.publisher, "extension.publisher");
+  const localId = requiredText(extensionInput.id, "extension.id");
+  const extensionId = `${publisher}/${localId}`;
+  const version = requiredText(extensionInput.version, "extension.version");
+  const license = requiredText(extensionInput.license, "extension.license");
+  const metadata = normalizedInput.metadata ?? {};
+  const displayName = optionalText2(metadata.displayName, "metadata.displayName") ?? extensionId;
+  const description = optionalText2(metadata.description, "metadata.description");
+  const homepage = optionalText2(metadata.homepage, "metadata.homepage");
+  const sourceLabel = optionalText2(metadata.source, "metadata.source");
+  const trusted = metadata.trusted;
+  if (trusted !== void 0 && typeof trusted !== "boolean") {
+    fail4("metadata.trusted must be a boolean");
+  }
+  const extensionEnabled = normalizedInput.enabled !== false;
+  const contributionEnablement = normalizedInput.contributionEnablement ?? {};
+  if (contributionEnablement === null || typeof contributionEnablement !== "object" || Array.isArray(contributionEnablement)) {
+    fail4("contributionEnablement must be an object");
+  }
+  const source2 = normalizedInput.source ?? Object.freeze({ id: `modkit-extension:${encodeURIComponent(extensionId)}` });
+  const owner = rootSubject2(source2, normalizedInput.workspace);
+  const extensionRef = nestedSubject2(owner, EXTENSION_SUBJECT_KIND, extensionId);
+  const extensionSubjectId = serializeSubjectRef2(extensionRef);
+  const extensionOrigin = Object.freeze([Object.freeze({ label: "extension manifest" })]);
+  const contributionOrigin = Object.freeze([Object.freeze({ label: "contribution manifest" })]);
+  if (!Array.isArray(normalizedInput.contributions)) fail4("contributions must be a list");
+  const seen = /* @__PURE__ */ new Set();
+  const contributions = normalizedInput.contributions.map((manifest, index) => {
+    const id = requiredText(manifest.id, `contributions[${index}].id`);
+    if (seen.has(id)) fail4(`contribution \xAB${id}\xBB is duplicated`, { contributionId: id });
+    seen.add(id);
+    const contract = contractCoordinate(manifest.contract, `contributions[${index}]`);
+    const normalized = Object.freeze({
+      ...manifest,
+      id,
+      displayName: requiredText(manifest.displayName, `contributions[${index}].displayName`),
+      contract
+    });
+    const configured = contributionEnablement[id];
+    if (configured !== void 0 && typeof configured !== "boolean") {
+      fail4(`contributionEnablement.${id} must be a boolean`);
+    }
+    const enabled = configured !== false;
+    const effectiveEnabled = extensionEnabled && enabled;
+    const ref2 = nestedSubject2(owner, CONTRIBUTION_SUBJECT_KIND, id);
+    const subjectId = serializeSubjectRef2(ref2);
+    return {
+      kind: CONTRIBUTION_SUBJECT_KIND,
+      ref: ref2,
+      subjectId,
+      id,
+      displayName: normalized.displayName,
+      extensionId,
+      contract,
+      contractKey: contractKey(contract),
+      enabled,
+      effectiveEnabled,
+      manifest: normalized
+    };
+  });
+  contributions.sort(compareContribution);
+  const extensionRecord = {
+    kind: EXTENSION_SUBJECT_KIND,
+    ref: extensionRef,
+    subjectId: extensionSubjectId,
+    id: extensionId,
+    displayName,
+    version,
+    enabled: extensionEnabled,
+    manifest: extensionInput
+  };
+  for (const contribution of contributions) {
+    const sections = contributionFacts(
+      contribution.manifest,
+      extensionId,
+      contribution.enabled,
+      contribution.effectiveEnabled,
+      contributionOrigin
+    );
+    contribution.facts = factsSource({
+      snapshotId: `${extensionId}@${version}#${contribution.id}`,
+      subjectId: contribution.subjectId,
+      label: contribution.displayName,
+      kind: CONTRIBUTION_SUBJECT_KIND,
+      type: contribution.contractKey,
+      groups: Object.freeze(
+        sections.map((section) => group(section.id, section.label, section.items))
+      ),
+      facts: sections.map((section) => Object.freeze({ groupId: section.id, items: section.items })),
+      relations: Object.freeze([relation("belongs-to", extensionRecord)]),
+      origin: contributionOrigin
+    });
+    Object.freeze(contribution);
+  }
+  const grouped = /* @__PURE__ */ new Map();
+  for (const contribution of contributions) {
+    const entries = grouped.get(contribution.contractKey) ?? [];
+    entries.push(contribution);
+    grouped.set(contribution.contractKey, entries);
+  }
+  const contractGroups = [...grouped.entries()].sort(([left], [right]) => compareText(left, right)).map(
+    ([key3, entries]) => Object.freeze({
+      key: key3,
+      contract: entries[0].contract,
+      contributions: Object.freeze([...entries])
+    })
+  );
+  const overview = [
+    fact2("id", "Extension ID", extensionId, extensionOrigin),
+    fact2("display-name", "Display name", displayName, extensionOrigin),
+    fact2("publisher", "Publisher", publisher, extensionOrigin),
+    fact2("version", "Version", version, extensionOrigin),
+    fact2("license", "License", license, extensionOrigin),
+    ...description === void 0 ? [] : [fact2("description", "Description", description, extensionOrigin)],
+    ...homepage === void 0 ? [] : [fact2("homepage", "Homepage", homepage, extensionOrigin)],
+    ...sourceLabel === void 0 ? [] : [fact2("source", "Source", sourceLabel, extensionOrigin)],
+    ...trusted === void 0 ? [] : [fact2("trusted", "Trusted", trusted, extensionOrigin)]
+  ];
+  const state = [
+    fact2("enabled", "Extension enabled", extensionEnabled, extensionOrigin),
+    fact2("contribution-count", "Contributions", contributions.length, extensionOrigin),
+    fact2("contract-count", "Contracts", contractGroups.length, extensionOrigin)
+  ];
+  const contracts = contractGroups.map(
+    (contractGroup) => fact2(
+      `contract.${contractGroup.key}`,
+      contractGroup.key,
+      Object.freeze({
+        contract: contractGroup.contract,
+        contributionIds: Object.freeze(contractGroup.contributions.map((item) => item.id)),
+        count: contractGroup.contributions.length
+      }),
+      extensionOrigin
+    )
+  );
+  const extensionSections = [
+    Object.freeze({ id: "overview", label: "Overview", items: Object.freeze(overview) }),
+    Object.freeze({ id: "state", label: "State", items: Object.freeze(state) }),
+    Object.freeze({ id: "contracts", label: "Contracts", items: Object.freeze(contracts) })
+  ];
+  extensionRecord.facts = factsSource({
+    snapshotId: `${extensionId}@${version}`,
+    subjectId: extensionSubjectId,
+    label: displayName,
+    kind: EXTENSION_SUBJECT_KIND,
+    groups: Object.freeze(
+      extensionSections.map((section) => group(section.id, section.label, section.items))
+    ),
+    facts: extensionSections.map(
+      (section) => Object.freeze({ groupId: section.id, items: section.items })
+    ),
+    relations: Object.freeze(contributions.map((item) => relation("owns", item))),
+    origin: extensionOrigin
+  });
+  Object.freeze(extensionRecord);
+  const records = Object.freeze([extensionRecord, ...contributions]);
+  const recordsBySubjectId = new Map(records.map((record3) => [record3.subjectId, record3]));
+  return Object.freeze({
+    extension: extensionRecord,
+    contributions: Object.freeze(contributions),
+    contractGroups: Object.freeze(contractGroups),
+    records,
+    subject(subjectId) {
+      return recordsBySubjectId.get(subjectId);
+    }
+  });
+}
+
+// apps/web/src/extension-roots.ts
+var EXTENSION_ROOT_FAILURE_CODES = Object.freeze({
+  unreadable: "x3.host/extension-root-unreadable",
+  notAnExtension: "x3.host/extension-not-an-extension",
+  coordinateConflict: "x3.host/extension-coordinate-conflict",
+  identityMismatch: "x3.host/extension-identity-mismatch",
+  permissionRequired: "x3.host/extension-root-permission-required",
+  tooLarge: "x3.host/extension-root-too-large",
+  moduleMapInvalid: "x3.host/extension-module-map-invalid",
+  moduleMapConflict: "x3.host/extension-module-map-conflict"
+});
+var USER_EXTENSION_ORIGIN = "installed";
+var USER_EXTENSION_ARTIFACT_ORIGIN = "https://user-extension.invalid/";
+var DEFAULT_EXTENSION_ROOT_MAX_FILES = 2e3;
+var DEFAULT_EXTENSION_ROOT_MAX_TOTAL_BYTES = 32 * 1024 * 1024;
+var SKIPPED_EVERYWHERE = /* @__PURE__ */ new Set(["node_modules", ".git"]);
+var SKIPPED_FROM_LISTING = "dist";
+var messageOf = (error3) => error3 instanceof ModkitError || error3 instanceof Error ? error3.message : String(error3);
+var codeOf = (error3) => error3 instanceof ModkitError ? error3.code : EXTENSION_ROOT_FAILURE_CODES.unreadable;
+var compareNames = (left, right) => left < right ? -1 : left > right ? 1 : 0;
+function refuse3(code, message, context) {
+  return new ModkitError({ code, message, ...context === void 0 ? {} : { context } });
+}
+function containerCoordinate(containers) {
+  const blocks = [
+    containers.packageJson?.modkit,
+    containers.standalone
+  ];
+  for (const block of blocks) {
+    if (typeof block !== "object" || block === null) continue;
+    const authored = block;
+    if (typeof authored.publisher === "string" && typeof authored.id === "string") {
+      return `${authored.publisher}/${authored.id}`;
+    }
+  }
+  return void 0;
+}
+var extensionCoordinate2 = (input) => containerCoordinate(input.containers);
+async function sha2562(subtle, bytes2) {
+  const hash = new Uint8Array(await subtle.digest("SHA-256", bytes2));
+  let hex = "";
+  for (const byte of hash) hex += byte.toString(16).padStart(2, "0");
+  return `sha256:${hex}`;
+}
+var encoder4 = new TextEncoder();
+function concatenate(chunks) {
+  let total = 0;
+  for (const chunk of chunks) total += chunk.byteLength;
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return out;
+}
+function userExtensionArtifactRoot(rootId) {
+  return `${USER_EXTENSION_ARTIFACT_ORIGIN}${encodeURIComponent(rootId)}/`;
+}
+async function walkGrantedFolder(root, label, maxFiles, maxTotalBytes, signal) {
+  const walked = [];
+  let totalBytes = 0;
+  const visit2 = async (directory, prefix) => {
+    signal?.throwIfAborted();
+    const children = [];
+    for await (const child of iterateDirectoryChildren(directory)) {
+      children.push({ name: child.name, handle: child });
+    }
+    children.sort((left, right) => compareNames(left.name, right.name));
+    for (const child of children) {
+      signal?.throwIfAborted();
+      if (SKIPPED_EVERYWHERE.has(child.name)) continue;
+      const handle = child.handle;
+      const path = prefix === "" ? child.name : `${prefix}/${child.name}`;
+      if (handle.kind === "directory") {
+        await visit2(handle, path);
+        continue;
+      }
+      if (walked.length >= maxFiles) {
+        throw refuse3(
+          EXTENSION_ROOT_FAILURE_CODES.tooLarge,
+          `\xAB${label}\xBB holds more than ${maxFiles} files; this host reads at most that many per extension folder (bound: maxFiles=${maxFiles})`,
+          { bound: "maxFiles", maxFiles }
+        );
+      }
+      const file = await handle.getFile();
+      totalBytes += file.size;
+      if (totalBytes > maxTotalBytes) {
+        throw refuse3(
+          EXTENSION_ROOT_FAILURE_CODES.tooLarge,
+          `\xAB${label}\xBB holds more than ${maxTotalBytes} bytes; this host reads at most that many per extension folder (bound: maxTotalBytes=${maxTotalBytes})`,
+          { bound: "maxTotalBytes", maxTotalBytes }
+        );
+      }
+      walked.push({ path, handle, size: file.size });
+    }
+  };
+  await visit2(root, "");
+  return walked;
+}
+async function readAll(handle) {
+  const file = await handle.getFile();
+  return new Uint8Array(await file.slice(0, file.size).arrayBuffer());
+}
+function parseJson2(bytes2, path) {
+  const text3 = new TextDecoder().decode(bytes2);
+  try {
+    return JSON.parse(text3);
+  } catch (error3) {
+    throw refuse3(
+      EXTENSION_ROOT_FAILURE_CODES.unreadable,
+      `${path} is not valid JSON: ${messageOf(error3)}`,
+      { path }
+    );
+  }
+}
+var PACKAGE_NAME = /^(?:@[A-Za-z0-9._~-]+\/[A-Za-z0-9._~-]+|[A-Za-z0-9._~-]+)$/u;
+function moduleMapFromPackage(packageJson, artifactRoot, fileDigests) {
+  if (typeof packageJson !== "object" || packageJson === null) return Object.freeze({});
+  const candidate = packageJson;
+  if (candidate.exports === void 0) return Object.freeze({});
+  if (typeof candidate.name !== "string" || !PACKAGE_NAME.test(candidate.name)) {
+    throw refuse3(
+      EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+      "package.json with exports must declare a bounded bare package name",
+      { field: "name" }
+    );
+  }
+  const declared = typeof candidate.exports === "string" ? [[".", candidate.exports]] : typeof candidate.exports === "object" && candidate.exports !== null ? Object.entries(candidate.exports) : [];
+  if (declared.length === 0 && candidate.exports !== void 0) {
+    throw refuse3(
+      EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+      "package.json exports must be a relative string or a subpath-to-file object",
+      { field: "exports" }
+    );
+  }
+  const map = /* @__PURE__ */ new Map();
+  for (const [subpath, target] of declared) {
+    if (subpath !== "." && !subpath.startsWith("./") || typeof target !== "string") {
+      throw refuse3(
+        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+        `package export \xAB${subpath}\xBB must map directly to one relative file`,
+        { subpath }
+      );
+    }
+    if (!target.startsWith("./") || target.includes("\\") || target.includes("?") || target.includes("#") || target.slice(2).split("/").some((part) => part === "" || part === "." || part === "..")) {
+      throw refuse3(
+        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+        `package export \xAB${subpath}\xBB escapes or does not name a bounded relative file`,
+        { subpath, target }
+      );
+    }
+    const subpathStars = [...subpath.matchAll(/\*/gu)].length;
+    const targetStars = [...target.matchAll(/\*/gu)].length;
+    if (subpathStars !== targetStars || subpathStars > 1) {
+      throw refuse3(
+        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+        `package export \xAB${subpath}\xBB must use at most one matching wildcard`,
+        { subpath, target }
+      );
+    }
+    const targetRelative = target.slice(2);
+    const targets = targetStars === 0 ? [[subpath, targetRelative]] : Object.keys(fileDigests).map((path) => {
+      const [prefix = "", suffix = ""] = targetRelative.split("*");
+      if (!path.startsWith(prefix) || !path.endsWith(suffix)) return void 0;
+      const capture = path.slice(prefix.length, path.length - suffix.length);
+      if (capture === "") return void 0;
+      return [subpath.replace("*", capture), path];
+    }).filter((entry2) => entry2 !== void 0);
+    if (targets.length === 0 || targets.some(([, relative]) => fileDigests[relative] === void 0)) {
+      throw refuse3(
+        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+        `package export \xAB${subpath}\xBB targets no inventoried file`,
+        { subpath, target }
+      );
+    }
+    for (const [resolvedSubpath, relative] of targets) {
+      const specifier = resolvedSubpath === "." ? candidate.name : `${candidate.name}/${resolvedSubpath.slice(2)}`;
+      const url = new URL(relative, artifactRoot).href;
+      if (map.has(specifier) && map.get(specifier) !== url) {
+        throw refuse3(
+          EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
+          `package exports declare duplicate specifier \xAB${specifier}\xBB`,
+          { specifier }
+        );
+      }
+      map.set(specifier, url);
+    }
+  }
+  return Object.freeze(Object.fromEntries(map));
+}
+async function readGrantedRoot(request, options) {
+  const label = request.handle.name === "" ? request.id : request.handle.name;
+  const walked = await walkGrantedFolder(
+    request.handle,
+    label,
+    options.maxFiles ?? DEFAULT_EXTENSION_ROOT_MAX_FILES,
+    options.maxTotalBytes ?? DEFAULT_EXTENSION_ROOT_MAX_TOTAL_BYTES,
+    options.signal
+  );
+  const handles = /* @__PURE__ */ new Map();
+  const fileDigests = {};
+  const bytesByPath = /* @__PURE__ */ new Map();
+  const artifactStream = [];
+  for (const entry2 of walked) {
+    options.signal?.throwIfAborted();
+    const bytes2 = await readAll(entry2.handle);
+    handles.set(entry2.path, entry2.handle);
+    fileDigests[entry2.path] = await sha2562(options.subtle, bytes2);
+    bytesByPath.set(entry2.path, bytes2);
+    const pathBytes = encoder4.encode(entry2.path);
+    artifactStream.push(
+      encoder4.encode(String(pathBytes.byteLength)),
+      new Uint8Array([0]),
+      pathBytes,
+      new Uint8Array([0]),
+      encoder4.encode(String(bytes2.byteLength)),
+      new Uint8Array([0]),
+      bytes2
+    );
+  }
+  const artifactDigest = await sha2562(options.subtle, concatenate(artifactStream));
+  const packageBytes = bytesByPath.get("package.json");
+  const standaloneBytes = bytesByPath.get("modkit.extension.json");
+  const containers = {
+    ...packageBytes === void 0 ? {} : { packageJson: parseJson2(packageBytes, "package.json") },
+    ...standaloneBytes === void 0 ? {} : { standalone: parseJson2(standaloneBytes, "modkit.extension.json") }
+  };
+  const files = walked.map((entry2) => entry2.path).filter((path) => !path.split("/").includes(SKIPPED_FROM_LISTING));
+  const documents = /* @__PURE__ */ new Map();
+  const documentDigests = /* @__PURE__ */ new Map();
+  const normalized = await normalizeExtensionManifest(containers);
+  if (normalized.manifest) {
+    options.signal?.throwIfAborted();
+    const expansion = expandContributionManifests(normalized.manifest.contributionManifests, files);
+    for (const entry2 of expansion.entries) {
+      const bytes2 = bytesByPath.get(entry2.path);
+      const digest = fileDigests[entry2.path];
+      if (bytes2 === void 0 || digest === void 0) continue;
+      documents.set(entry2.path, parseJson2(bytes2, entry2.path));
+      documentDigests.set(entry2.path, digest);
+    }
+  }
+  const artifactRoot = userExtensionArtifactRoot(request.id);
+  const moduleMap = moduleMapFromPackage(containers.packageJson, artifactRoot, fileDigests);
+  return {
+    files: handles,
+    moduleMap,
+    verifiedModuleRoot: Object.freeze({ artifactRoot, fileDigests: Object.freeze(fileDigests) }),
+    input: {
+      source: `user-folder/${label}`,
+      containers,
+      files,
+      documents,
+      documentDigests,
+      artifact: {
+        inventoryRecordId: `artifact:${artifactDigest}`,
+        artifactDigest,
+        artifactRoot: new URL(artifactRoot),
+        fileDigests: Object.freeze(fileDigests),
+        verifyArtifactDigest: (expected) => expected === artifactDigest
+      },
+      execution: { origin: USER_EXTENSION_ORIGIN, allowTrustedInProcess: false }
+    }
+  };
+}
+function decodeUserExtensionUrl(url) {
+  if (!url.startsWith(USER_EXTENSION_ARTIFACT_ORIGIN)) return void 0;
+  const rest = url.slice(USER_EXTENSION_ARTIFACT_ORIGIN.length);
+  const slash = rest.indexOf("/");
+  if (slash <= 0) return void 0;
+  const query = rest.indexOf("?");
+  const tail = query === -1 ? rest.slice(slash + 1) : rest.slice(slash + 1, query);
+  try {
+    return { id: decodeURIComponent(rest.slice(0, slash)), path: decodeURIComponent(tail) };
+  } catch {
+    return void 0;
+  }
+}
+var isUserExtensionUrl = (url) => url.startsWith(USER_EXTENSION_ARTIFACT_ORIGIN);
+var notFound = (url) => ({
+  ok: false,
+  status: 404,
+  arrayBuffer: () => Promise.reject(new Error(`404 ${url}`))
+});
+function createUserExtensionFetch(roots) {
+  return async (url, init) => {
+    init?.signal?.throwIfAborted();
+    const decoded = decodeUserExtensionUrl(url);
+    if (decoded === void 0) return notFound(url);
+    const handle = roots.get(decoded.id)?.get(decoded.path);
+    if (handle === void 0) return notFound(url);
+    const file = await handle.getFile();
+    const buffer = await file.slice(0, file.size).arrayBuffer();
+    return { ok: true, status: 200, arrayBuffer: async () => buffer };
+  };
+}
+async function queryUserExtensionPermission(handle) {
+  if (handle.queryPermission === void 0) return "granted";
+  return handle.queryPermission({ mode: "read" });
+}
+async function requestUserExtensionPermission(handle) {
+  if (handle.requestPermission === void 0) return queryUserExtensionPermission(handle);
+  return handle.requestPermission({ mode: "read" });
+}
+async function loadUserExtensionRoots(requests, options) {
+  if (options.allowTrustedInProcess === true) {
+    throw refuse3(
+      "x3.host/extension-trust-misdeclared",
+      `only bundled roots may be admitted in-process; \xAB${USER_EXTENSION_ORIGIN}\xBB roots may not, and a browser host has no in-page boundary to admit them to`,
+      { origin: USER_EXTENSION_ORIGIN }
+    );
+  }
+  const inputs = [];
+  const failures = [];
+  const coordinates = [];
+  const rootIds = [];
+  const served = /* @__PURE__ */ new Map();
+  const claimed = new Set(options.claimed ?? []);
+  const moduleMaps = /* @__PURE__ */ new Map();
+  const verifiedRoots = /* @__PURE__ */ new Map();
+  const specifierOwner = /* @__PURE__ */ new Map();
+  const conflictedRoots = /* @__PURE__ */ new Set();
+  const reportedConflicts = /* @__PURE__ */ new Set();
+  for (const request of requests) {
+    options.signal?.throwIfAborted();
+    const label = request.handle.name === "" ? request.id : request.handle.name;
+    const fail5 = (code, message) => {
+      failures.push({ root: label, rootId: request.id, code, message });
+    };
+    let permission;
+    try {
+      permission = await queryUserExtensionPermission(request.handle);
+    } catch (error3) {
+      fail5(EXTENSION_ROOT_FAILURE_CODES.unreadable, messageOf(error3));
+      continue;
+    }
+    if (permission !== "granted") {
+      fail5(
+        EXTENSION_ROOT_FAILURE_CODES.permissionRequired,
+        `this page no longer holds read access to \xAB${label}\xBB; grant it again to load this extension`
+      );
+      continue;
+    }
+    let read;
+    try {
+      read = await readGrantedRoot(request, options);
+    } catch (error3) {
+      fail5(codeOf(error3), messageOf(error3));
+      continue;
+    }
+    const coordinate3 = extensionCoordinate2(read.input);
+    if (coordinate3 === void 0) {
+      fail5(
+        EXTENSION_ROOT_FAILURE_CODES.notAnExtension,
+        "no authored container: the folder has neither package.json#modkit nor modkit.extension.json"
+      );
+      continue;
+    }
+    if (claimed.has(coordinate3)) {
+      fail5(
+        EXTENSION_ROOT_FAILURE_CODES.coordinateConflict,
+        `\xAB${coordinate3}\xBB is already loaded from another root; this one is ignored`
+      );
+      continue;
+    }
+    if (request.expectedId !== void 0 && request.expectedId !== coordinate3) {
+      fail5(
+        EXTENSION_ROOT_FAILURE_CODES.identityMismatch,
+        `recorded as \xAB${request.expectedId}\xBB but the folder declares \xAB${coordinate3}\xBB`
+      );
+      continue;
+    }
+    claimed.add(coordinate3);
+    coordinates.push(coordinate3);
+    rootIds.push(request.id);
+    inputs.push(read.input);
+    served.set(request.id, read.files);
+    moduleMaps.set(request.id, read.moduleMap);
+    verifiedRoots.set(request.id, read.verifiedModuleRoot);
+    for (const specifier of Object.keys(read.moduleMap)) {
+      const existing = specifierOwner.get(specifier);
+      if (existing === void 0) {
+        specifierOwner.set(specifier, request.id);
+        continue;
+      }
+      conflictedRoots.add(existing);
+      conflictedRoots.add(request.id);
+      for (const owner of [existing, request.id]) {
+        const key3 = `${owner}\0${specifier}`;
+        if (reportedConflicts.has(key3)) continue;
+        reportedConflicts.add(key3);
+        failures.push({
+          root: owner,
+          rootId: owner,
+          code: EXTENSION_ROOT_FAILURE_CODES.moduleMapConflict,
+          message: `bare module specifier \xAB${specifier}\xBB is exported by more than one extension root; every claimant is refused`
+        });
+      }
+    }
+  }
+  const kept = rootIds.map((rootId, index) => ({ rootId, index })).filter(({ rootId }) => !conflictedRoots.has(rootId));
+  const moduleMapEntries = /* @__PURE__ */ new Map();
+  const moduleMapOwnerEntries = /* @__PURE__ */ new Map();
+  const keptVerifiedRoots = [];
+  for (const { rootId } of kept) {
+    for (const [specifier, url] of Object.entries(moduleMaps.get(rootId) ?? {})) {
+      moduleMapEntries.set(specifier, url);
+      moduleMapOwnerEntries.set(specifier, rootId);
+    }
+    const verified = verifiedRoots.get(rootId);
+    if (verified !== void 0) keptVerifiedRoots.push(Object.freeze({ ...verified, rootId }));
+  }
+  return Object.freeze({
+    inputs: Object.freeze(kept.map(({ index }) => inputs[index])),
+    failures: Object.freeze(failures),
+    coordinates: Object.freeze(kept.map(({ index }) => coordinates[index])),
+    rootIds: Object.freeze(kept.map(({ rootId }) => rootId)),
+    moduleMap: Object.freeze(Object.fromEntries(moduleMapEntries)),
+    moduleMapOwners: Object.freeze(Object.fromEntries(moduleMapOwnerEntries)),
+    verifiedModuleRoots: Object.freeze(keptVerifiedRoots),
+    serve: createUserExtensionFetch(served)
+  });
+}
+var NO_USER_EXTENSION_ROOTS = Object.freeze({
+  inputs: Object.freeze([]),
+  failures: Object.freeze([]),
+  coordinates: Object.freeze([]),
+  rootIds: Object.freeze([]),
+  moduleMap: Object.freeze({}),
+  moduleMapOwners: Object.freeze({}),
+  verifiedModuleRoots: Object.freeze([]),
+  serve: async (url) => notFound(url)
+});
+
+// apps/web/src/localization.ts
+var EN = parseUiCatalogDocument(
+  {
+    schema: "org.modkitx/ui-message-catalog@1",
+    locale: "en",
+    namespace: "org.modkitx/web-app",
+    messages: {
+      "web.capability.folder": "This browser grants folder access: pick a folder to browse it in place.",
+      "web.capability.file": "This browser has no folder picker. It can open one file at a time.",
+      "web.capability.input": "This browser has no file-system picker. Files open one at a time through the basic file input.",
+      "web.editing.notice": "Files opened from a granted handle can be saved in place; fetched and dropped files remain read-only.",
+      "web.status.noCodec": "{name} \u2014 no codec claimed it ({reason}); showing raw bytes.",
+      "web.status.noNestedCodec": "{name} \u2014 no codec claimed it inside this container ({reason}).",
+      "web.status.sharedCommandsUnavailable": "{name} \u2014 shared commands unavailable: {reason}",
+      "web.status.unsavedClose": "{name} has unsaved changes. Close the tab and discard them?",
+      "web.status.bootFailed": "Boot failed: {reason}",
+      "web.sample.png": "favicon-32.png \u2014 PNG image",
+      "web.sample.csv": "sample.csv \u2014 delimited table",
+      "web.sample.ini": "sample.ini \u2014 INI tree",
+      "web.sample.svg": "sample.svg \u2014 vector scene",
+      "web.sample.md": "sample.md \u2014 Markdown document",
+      "web.sample.mp3": "sample.mp3 \u2014 one second of MP3 silence",
+      "web.sample.zip": "sample.zip \u2014 container namespace",
+      "web.embed.view": "View",
+      "web.embed.waiting": "Waiting for a file: set the src attribute or assign the file property.",
+      "web.embed.loading": "Loading {name}\u2026",
+      "web.embed.catalog.invalidUrl": "extension-catalog \xAB{url}\xBB is not a valid URL.",
+      "web.embed.catalog.protocol": "extension-catalog must use http or https; {protocol} is not admitted.",
+      "web.embed.catalog.origin": "The extension catalog origin {origin} is not in this embed.js build-time allowlist. The embedding page cannot add an origin; the deployer must rebuild embed.js with it.",
+      "web.embed.catalog.schema": "extension catalog must be a schemaVersion 1 object with array entries",
+      "web.embed.catalog.exclusion": "extension catalog exclusions require string name and reason fields",
+      "web.embed.catalog.malformed": "extension catalog contains a malformed extension entry",
+      "web.embed.asset.invalidUrl": "asset-base \xAB{base}\xBB is not a URL this page can resolve.",
+      "web.embed.asset.crossOrigin": "The modkit assets at {origin} are cross-origin to this page ({pageOrigin}). A module worker script is fetched in same-origin mode, so no CORS header can make that work: serve the modkit assets from this origin (copy or reverse-proxy them) and point asset-base there.",
+      "web.embed.stylesFetch": "modkit-ui.css could not be fetched from {base} ({status})",
+      "web.embed.catalogFetch": "extension catalog {url} could not be fetched: {reason}",
+      "web.embed.catalogHttp": "extension catalog {url} could not be fetched ({status} {statusText})",
+      "web.embed.catalogInvalid": "extension catalog {url} is invalid: {reason}",
+      "web.embed.stageFailed": "\xAB{view}\xBB could not be shown: {reason}",
+      "web.embed.fileFetch": "{url} could not be fetched ({reason}). A cross-origin file needs CORS headers from its own server and an entry for its origin in this page\u2019s content-security-policy connect-src.",
+      "web.embed.fileHttp": "{url} could not be fetched ({status} {statusText})",
+      "web.embed.catalogAttributeInvalid": "extension-catalog \xAB{url}\xBB is not a URL this page can resolve.",
+      "web.embed.tooLarge": "{name} is {size} bytes; this element reads at most {limit}.",
+      "web.embed.noStage": "{name} could not be shown: no stage matched what the codecs published.",
+      "web.archive.openSubject": "Open as subject",
+      "web.archive.entries": "Entries",
+      "web.archive.pick": "Pick an entry in the tree to inspect it.",
+      "web.archive.openFailed": "Opening {path} as a subject failed: {reason}",
+      "web.archive.noReference": "no source reference",
+      "web.archive.noExtract": "this subject has no available extract operation",
+      "web.archive.sessionGone": "The session that opened this container is no longer held.",
+      "web.archive.unknownEntry": "The namespace does not list an entry with id {entry}.",
+      "web.archive.wrongOutput": "The operation returned {kind}, not bytes.",
+      "web.archive.rejected": "Rejected: {reason}",
+      "web.archive.shown": "{path} \xB7 {bytes} bytes \xB7 shown as {mode}",
+      "web.archive.modeHex": "hex",
+      "web.archive.modeText": "text",
+      "web.archive.readFailed": "Entry read failed: {reason}",
+      "web.view.code": "Code",
+      "web.view.video": "Video",
+      "web.view.image": "Image",
+      "web.view.audio": "Audio",
+      "web.view.world": "World",
+      "web.view.model": "Model",
+      "web.view.vector": "Vector",
+      "web.view.archive": "Entries",
+      "web.view.template": "Template",
+      "web.view.card": "Card",
+      "web.view.calculations": "Calculations",
+      "web.view.table": "Table",
+      "web.view.tree": "Tree",
+      "web.view.relations": "Relations",
+      "web.view.text": "Text",
+      "web.view.virtualText": "Text (streaming)",
+      "web.view.metadata": "Metadata",
+      "web.view.hex": "Hex",
+      "web.view.textEditor": "Text (editor)",
+      "web.view.hexEditor": "Hex (editor)",
+      "web.inspector.label": "Inspector",
+      "web.inspector.edit": "Edit",
+      "web.inspector.noFile": "No file is open.",
+      "web.inspector.summary": "{label} \xB7 {read} non-mutating operation(s) \xB7 {forms} edit form(s) over {write} mutating operation(s) \xB7 {diagnostics} diagnostic(s)",
+      "web.inspector.needInput": "{operations}: not in the toolbar \u2014 they require input supplied by another stage or panel.",
+      "web.inspector.noEdit": "{operations}: no Edit panel \u2014 {reason}",
+      "web.inspector.noWritableHandle": "this page holds no writable handle for the file.",
+      "web.inspector.noForm": "{operation}: no editing form \u2014 {reason}.",
+      "web.edit.unsupported": "{operation}: not available in this host yet \u2014 {reason}",
+      "web.edit.invoking": "{operation}: invoking {handler}\u2026",
+      "web.edit.codecRefused": "The codec refused the operation: {reason}",
+      "web.edit.hostRefused": "The host refused the plan: {reason}",
+      "web.edit.appliedReopening": "{outcome}; reopening the file to show the new revision",
+      "web.edit.appliedReopenFailed": "{outcome}; the tab could not be reopened, so this view is stale",
+      "web.edit.noneDrivableCount": "{unsupported} of {declared} mutating operation(s) cannot be driven here.",
+      "web.edit.formsAvailable": "{forms} form(s) over {declared} mutating operation(s)",
+      "web.editability.noHandle": "{name} has no writable handle: it arrived through a file input, a drop or a fetch, so this page can show it but can never save it back. Pick it through \u201COpen file\u2026\u201D or a folder to edit it.",
+      "web.editability.queryFailed": "{name} has a writable handle, but this browser could not report its write permission ({reason}); the first save is where it is decided.",
+      "web.editability.noQuery": "{name} has a writable handle, but this browser exposes no permission query, so whether the write is allowed is decided by the first save.",
+      "web.editability.denied": "Write access was denied for {name}, so its text and hex editors are dropped. This build will not offer a save it already knows the browser refuses.",
+      "web.editability.granted": "{name} can be saved in place: write access is granted.",
+      "web.editability.prompt": "{name} can be saved in place once you allow write access; the browser asks on the first save, or use \u201CEnable editing\u201D to answer it now.",
+      "web.editability.request.noFile": "Open a folder or pick a file before enabling editing.",
+      "web.editability.request.noHandle": "{name} has no writable handle: files opened through a drop, a plain file input or a fetch cannot be written back. Use \u201COpen file\u2026\u201D or a granted folder instead.",
+      "web.editability.request.noSurface": "{name} cannot be asked for write permission in this browser; a save will try directly and report what the browser answers.",
+      "web.editability.request.granted": "Write access granted for {name}: the text and hex editors can save.",
+      "web.editability.request.denied": "Write access denied for {name}; files opened from now on show no editor.",
+      "web.editability.request.notGranted": "Write access was not granted for {name}; nothing was changed.",
+      "web.editability.request.failed": "Asking for write access to {name} failed: {reason}",
+      "web.edit.rejection.staleRevision": "the file changed on disk after this tab read it",
+      "web.edit.rejection.permissionMissing": "the grant this subject was opened under does not carry write permission",
+      "web.edit.rejection.scopeMismatch": "the plan names a source outside this subject",
+      "web.edit.rejection.guarantee": "this backend cannot promise the guarantee the plan asks for",
+      "web.edit.rejection.fidelity": "no evidence proves the writer keeps what the plan claims it keeps",
+      "web.edit.rejection.confirmation": "a lossy write needs an explicit confirmation this host does not collect",
+      "web.edit.rejection.payload": "the edited bytes exceed what this host will hand over inline",
+      "web.edit.rejection.readOnly": "the backend behind this source is read-only",
+      "web.edit.rejection.cancelled": "the save was cancelled",
+      "web.edit.rejection.unknown": "the plan did not describe this subject at its open revision",
+      "web.edit.changeUnsupported": "this editor produced a change this host cannot express as a literal replacement",
+      "web.edit.writerRefused": "the writer refused the change",
+      "web.edit.planUnsupported": "this host cannot plan the change set this editor produced",
+      "web.edit.commit.writtenReopen": "{what} \u2014 written to the file this tab opened. Reopen it before editing again: this tab still holds the revision it read.",
+      "web.edit.commit.refused": "{what} refused \u2014 {reason}{diagnostic}.",
+      "web.edit.commit.rolledBack": "{what} failed and the file was rolled back to what it held before.",
+      "web.edit.commit.partial": "{what} landed only partly; recovery is available in the receipt.",
+      "web.edit.commit.conflict": "refused \u2014 the file changed on disk after this tab read it, so nothing was overwritten. Reopen it and redo the edit.",
+      "web.edit.commit.rejected": "refused before writing \u2014 {reason}.",
+      "web.edit.action.saved": "Saved",
+      "web.edit.action.undo": "Undo",
+      "web.edit.action.redo": "Redo",
+      "web.edit.authorization.denied": "not saved \u2014 this browser denied write access to the file.",
+      "web.edit.authorization.notGranted": "not saved \u2014 write access was not granted ({state}).",
+      "web.edit.apply.noAccess": "{name} was not written: this browser did not grant write access",
+      "web.edit.apply.conflict": "refused before writing: {reason} ({conflicts} conflict(s))",
+      "web.edit.apply.rejected": "refused before writing: {reason} ({code})",
+      "web.edit.apply.committed": "applied and written to {name}",
+      "web.edit.apply.notApplied": "not applied: {reason} ({code})",
+      "web.edit.apply.rolledBack": "not applied: the write failed and {name} was rolled back",
+      "web.edit.apply.partial": "{name} was only partly written; recovery is in the receipt",
+      "web.edit.cannotEdit": "{name} cannot be edited here: {reason}",
+      "web.edit.noWriter": "{name} cannot be edited here: no writer backs this subject.",
+      "web.edit.bytesLabel": "Edit bytes",
+      "web.error.noPicker": "This browser has no folder picker.",
+      "web.map.choose": "Choose a map for the World view by entering its ID:\n\n{candidates}",
+      "web.map.permissionRequired": "{name} \u2014 map preview needs installation resources the browser cannot search; the ordinary archive view remains open.",
+      "web.map.selectionRequired": "{name} \u2014 map preview needs a choice ({candidates}); the ordinary archive view remains open.",
+      "web.map.diagnostic.selectionRequired": "Map preview needs an explicit selection; choose one of the returned map-preview candidates to continue.",
+      "web.map.diagnostic.permissionRequired": "This map needs installation resources that the browser cannot search for automatically; grant or select them in a desktop host.",
+      "web.extensions.subjectsDescription": "Cards come from validated extension and contribution JSON; hover a group to see its exact contract.",
+      "web.extensions.downloadableDescription": "The catalog is checked only when you ask. Installing stores verified package bytes; nothing on this page imports or runs them.",
+      "web.extensions.notInCatalog": "Not in catalog",
+      "web.extensions.updateAvailable": "Update available",
+      "web.extensions.trusted": "Trusted",
+      "web.extensions.notTrusted": "Not trusted",
+      "web.extensions.catalogEmpty": "The catalog contains no extensions.",
+      "web.extensions.noDownloaded": "No downloaded extensions are installed. Check the catalog to see what is available.",
+      "web.extensions.packageDisabled": "The extension is enabled directly, but its distribution package is disabled.",
+      "web.extensions.reloadPending": "Reload the page to rebuild the running host.",
+      "web.extensions.removedPending": "Removed. The extension is gone from the list; reload to rebuild the host.",
+      "web.extensions.trustSentence": "A folder you add here is trusted because you picked it and for no other reason \u2014 nothing is signed and nobody has reviewed it; this page hashes every file as it reads them so that a file changed afterwards is refused instead of run, and user extensions always run in a worker, never on the page.",
+      "web.extensions.provenanceNote": "Bundled extensions carry digests this app recorded when it was built. Folders you added carry digests this page computed itself just now \u2014 a measurement of the bytes it read, not a claim about who wrote them.",
+      "web.extensions.remembered": "Added folders are remembered in {location}.",
+      "web.extensions.added": "Added \xAB{name}\xBB{coordinate}.",
+      "web.extensions.actionFailed": "Extension action failed: {reason}",
+      "web.extensions.addFailed": "Could not add that folder: {reason}",
+      "web.extensions.removeFailed": "Could not remove it: {reason}",
+      "web.extensions.accessFailed": "Could not ask for access: {reason}",
+      "web.extensions.accessGranted": "Access to \xAB{name}\xBB granted again.",
+      "web.extensions.accessDenied": "Access to \xAB{name}\xBB was not granted ({state}).",
+      "web.extensions.catalogChecked": "Extension catalog checked at {location}.",
+      "web.extensions.catalogLoaded": "Catalog loaded from {location}.",
+      "web.extensions.catalogNotContacted": "Catalog {location} has not been contacted in this session.",
+      "web.extensions.installedStatus": "Installed {name}. Reload the page to load the changed extension set.",
+      "web.extensions.updatedStatus": "Updated {name}. Reload the page to load the changed extension set.",
+      "web.extensions.removedStatus": "Removed {name}. Reload the page to load the changed extension set.",
+      "web.extensions.cardFailed": "Could not open extension card: {reason}",
+      "web.extensions.bundledProvenance": "Bundled with this build, served from {root}; its digests were recorded when the app was built.",
+      "web.extensions.userProvenance": "Folder you granted (\xAB{label}\xBB); its digests were computed by this page from the bytes it just read."
+    }
+  },
+  { authorizedMessagePrefixes: ["web."] }
+);
+var RU = parseUiCatalogDocument(
+  {
+    schema: "org.modkitx/ui-message-catalog@1",
+    locale: "ru",
+    namespace: "org.modkitx/web-app",
+    messages: {
+      "web.capability.folder": "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u0440\u0430\u0437\u0440\u0435\u0448\u0430\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F \u043A \u043F\u0430\u043F\u043A\u0430\u043C: \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043F\u0430\u043F\u043A\u0443 \u0434\u043B\u044F \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u043D\u0430 \u043C\u0435\u0441\u0442\u0435.",
+      "web.capability.file": "\u0412 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435 \u043D\u0435\u0442 \u0432\u044B\u0431\u043E\u0440\u0430 \u043F\u0430\u043F\u043A\u0438; \u043C\u043E\u0436\u043D\u043E \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0442\u044C \u043F\u043E \u043E\u0434\u043D\u043E\u043C\u0443 \u0444\u0430\u0439\u043B\u0443.",
+      "web.capability.input": "\u0412 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435 \u043D\u0435\u0442 \u0441\u0438\u0441\u0442\u0435\u043C\u043D\u043E\u0433\u043E \u0432\u044B\u0431\u043E\u0440\u0430 \u0444\u0430\u0439\u043B\u043E\u0432; \u0444\u0430\u0439\u043B\u044B \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u044E\u0442\u0441\u044F \u043F\u043E \u043E\u0434\u043D\u043E\u043C\u0443 \u0447\u0435\u0440\u0435\u0437 \u043E\u0431\u044B\u0447\u043D\u043E\u0435 \u043F\u043E\u043B\u0435 \u0432\u044B\u0431\u043E\u0440\u0430.",
+      "web.editing.notice": "\u0424\u0430\u0439\u043B\u044B \u0438\u0437 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u043E\u0433\u043E \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0442\u044C \u043D\u0430 \u043C\u0435\u0441\u0442\u0435; \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043D\u044B\u0435 \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u0430 \u0438 \u043F\u0435\u0440\u0435\u0442\u0430\u0449\u0435\u043D\u043D\u044B\u0435 \u0444\u0430\u0439\u043B\u044B \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u043B\u044F \u0447\u0442\u0435\u043D\u0438\u044F.",
+      "web.status.noCodec": "{name} \u2014 \u043A\u043E\u0434\u0435\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D ({reason}); \u043F\u043E\u043A\u0430\u0437\u0430\u043D\u044B \u0438\u0441\u0445\u043E\u0434\u043D\u044B\u0435 \u0431\u0430\u0439\u0442\u044B.",
+      "web.status.noNestedCodec": "{name} \u2014 \u0432\u043D\u0443\u0442\u0440\u0438 \u043A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440\u0430 \u043A\u043E\u0434\u0435\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D ({reason}).",
+      "web.status.sharedCommandsUnavailable": "{name} \u2014 \u043E\u0431\u0449\u0438\u0435 \u043A\u043E\u043C\u0430\u043D\u0434\u044B \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B: {reason}",
+      "web.status.unsavedClose": "\u0412 {name} \u0435\u0441\u0442\u044C \u043D\u0435\u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F. \u0417\u0430\u043A\u0440\u044B\u0442\u044C \u0432\u043A\u043B\u0430\u0434\u043A\u0443 \u0438 \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0438\u0445?",
+      "web.status.bootFailed": "\u041E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u043F\u0443\u0441\u043A\u0430: {reason}",
+      "web.sample.png": "favicon-32.png \u2014 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 PNG",
+      "web.sample.csv": "sample.csv \u2014 \u0442\u0430\u0431\u043B\u0438\u0446\u0430 \u0441 \u0440\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u044F\u043C\u0438",
+      "web.sample.ini": "sample.ini \u2014 \u0434\u0435\u0440\u0435\u0432\u043E INI",
+      "web.sample.svg": "sample.svg \u2014 \u0432\u0435\u043A\u0442\u043E\u0440\u043D\u0430\u044F \u0441\u0446\u0435\u043D\u0430",
+      "web.sample.md": "sample.md \u2014 \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442 Markdown",
+      "web.sample.mp3": "sample.mp3 \u2014 \u0441\u0435\u043A\u0443\u043D\u0434\u0430 \u0442\u0438\u0448\u0438\u043D\u044B MP3",
+      "web.sample.zip": "sample.zip \u2014 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435 \u043A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440\u0430",
+      "web.embed.view": "\u0420\u0435\u0436\u0438\u043C \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430",
+      "web.embed.waiting": "\u041E\u0436\u0438\u0434\u0430\u043D\u0438\u0435 \u0444\u0430\u0439\u043B\u0430: \u0437\u0430\u0434\u0430\u0439\u0442\u0435 \u0430\u0442\u0440\u0438\u0431\u0443\u0442 src \u0438\u043B\u0438 \u0441\u0432\u043E\u0439\u0441\u0442\u0432\u043E file.",
+      "web.embed.loading": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 {name}\u2026",
+      "web.embed.catalog.invalidUrl": "extension-catalog \xAB{url}\xBB \u043D\u0435 \u044F\u0432\u043B\u044F\u0435\u0442\u0441\u044F \u0434\u043E\u043F\u0443\u0441\u0442\u0438\u043C\u044B\u043C URL.",
+      "web.embed.catalog.protocol": "extension-catalog \u0434\u043E\u043B\u0436\u0435\u043D \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u044C http \u0438\u043B\u0438 https; \u043F\u0440\u043E\u0442\u043E\u043A\u043E\u043B {protocol} \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D.",
+      "web.embed.catalog.origin": "\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 {origin} \u043E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442 \u0432 \u0441\u043F\u0438\u0441\u043A\u0435, \u0437\u0430\u0434\u0430\u043D\u043D\u043E\u043C \u043F\u0440\u0438 \u0441\u0431\u043E\u0440\u043A\u0435 embed.js. \u0412\u0441\u0442\u0440\u0430\u0438\u0432\u0430\u044E\u0449\u0430\u044F \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A; \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E \u043F\u0435\u0440\u0435\u0441\u043E\u0431\u0440\u0430\u0442\u044C embed.js.",
+      "web.embed.catalog.schema": "\u043A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u043C schemaVersion 1 \u0441 \u043C\u0430\u0441\u0441\u0438\u0432\u0430\u043C\u0438 \u0437\u0430\u043F\u0438\u0441\u0435\u0439",
+      "web.embed.catalog.exclusion": "\u0438\u0441\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0434\u043E\u043B\u0436\u043D\u044B \u0441\u043E\u0434\u0435\u0440\u0436\u0430\u0442\u044C \u0441\u0442\u0440\u043E\u043A\u043E\u0432\u044B\u0435 \u043F\u043E\u043B\u044F name \u0438 reason",
+      "web.embed.catalog.malformed": "\u043A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u0442 \u043D\u0435\u0432\u0435\u0440\u043D\u0443\u044E \u0437\u0430\u043F\u0438\u0441\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
+      "web.embed.asset.invalidUrl": "asset-base \xAB{base}\xBB \u043D\u0435 \u044F\u0432\u043B\u044F\u0435\u0442\u0441\u044F URL, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u043C\u043E\u0436\u0435\u0442 \u0440\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044C \u044D\u0442\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430.",
+      "web.embed.asset.crossOrigin": "\u0420\u0435\u0441\u0443\u0440\u0441\u044B Modkit \u043D\u0430 {origin} \u043D\u0430\u0445\u043E\u0434\u044F\u0442\u0441\u044F \u0432\u043D\u0435 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u044D\u0442\u043E\u0439 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B ({pageOrigin}). \u041C\u043E\u0434\u0443\u043B\u044C\u043D\u044B\u0439 \u0440\u0430\u0431\u043E\u0447\u0438\u0439 \u043F\u0440\u043E\u0446\u0435\u0441\u0441 \u0437\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u0438\u0437 \u0442\u043E\u0433\u043E \u0436\u0435 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430, \u0438 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0438 CORS \u044D\u0442\u043E \u043D\u0435 \u0438\u0437\u043C\u0435\u043D\u044F\u0442: \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u0443\u0439\u0442\u0435 \u0440\u0435\u0441\u0443\u0440\u0441\u044B Modkit \u0438\u0437 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u0438 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u0435\u0433\u043E \u0432 asset-base.",
+      "web.embed.stylesFetch": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C modkit-ui.css \u0438\u0437 {base} ({status})",
+      "web.embed.catalogFetch": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u043A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 {url}: {reason}",
+      "web.embed.catalogHttp": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u043A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 {url} ({status} {statusText})",
+      "web.embed.catalogInvalid": "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 {url} \u043D\u0435\u0432\u0435\u0440\u0435\u043D: {reason}",
+      "web.embed.stageFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \xAB{view}\xBB: {reason}",
+      "web.embed.fileFetch": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C {url} ({reason}). \u0414\u043B\u044F \u0444\u0430\u0439\u043B\u0430 \u0438\u0437 \u0434\u0440\u0443\u0433\u043E\u0433\u043E \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u043D\u0443\u0436\u043D\u044B \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0438 CORS \u043D\u0430 \u0435\u0433\u043E \u0441\u0435\u0440\u0432\u0435\u0440\u0435 \u0438 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u0432 \u0434\u0438\u0440\u0435\u043A\u0442\u0438\u0432\u0435 connect-src \u043F\u043E\u043B\u0438\u0442\u0438\u043A\u0438 \u0431\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u043E\u0441\u0442\u0438 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B.",
+      "web.embed.fileHttp": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C {url} ({status} {statusText})",
+      "web.embed.catalogAttributeInvalid": "extension-catalog \xAB{url}\xBB \u043D\u0435 \u044F\u0432\u043B\u044F\u0435\u0442\u0441\u044F URL, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u043C\u043E\u0436\u0435\u0442 \u0440\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044C \u044D\u0442\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430.",
+      "web.embed.tooLarge": "\u0420\u0430\u0437\u043C\u0435\u0440 {name} \u2014 {size} \u0431\u0430\u0439\u0442; \u044D\u043B\u0435\u043C\u0435\u043D\u0442 \u0447\u0438\u0442\u0430\u0435\u0442 \u043D\u0435 \u0431\u043E\u043B\u0435\u0435 {limit} \u0431\u0430\u0439\u0442.",
+      "web.embed.noStage": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C {name}: \u043D\u0438 \u043E\u0434\u0438\u043D \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u043D\u044B\u0439 \u043A\u043E\u0434\u0435\u043A\u0430\u043C\u0438 \u0440\u0435\u0436\u0438\u043C \u043D\u0435 \u043F\u043E\u0434\u043E\u0448\u0451\u043B.",
+      "web.archive.openSubject": "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043A\u0430\u043A \u0441\u0443\u0431\u044A\u0435\u043A\u0442",
+      "web.archive.entries": "\u0421\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435",
+      "web.archive.pick": "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u044D\u043B\u0435\u043C\u0435\u043D\u0442 \u0432 \u0434\u0435\u0440\u0435\u0432\u0435 \u0434\u043B\u044F \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430.",
+      "web.archive.openFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C {path} \u043A\u0430\u043A \u0441\u0443\u0431\u044A\u0435\u043A\u0442: {reason}",
+      "web.archive.noReference": "\u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u043E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442",
+      "web.archive.noExtract": "\u0443 \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0430 \u043D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E\u0439 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438 \u0438\u0437\u0432\u043B\u0435\u0447\u0435\u043D\u0438\u044F",
+      "web.archive.sessionGone": "\u0421\u0435\u0430\u043D\u0441, \u043E\u0442\u043A\u0440\u044B\u0432\u0448\u0438\u0439 \u044D\u0442\u043E\u0442 \u043A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440, \u0431\u043E\u043B\u044C\u0448\u0435 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D.",
+      "web.archive.unknownEntry": "\u0412 \u043F\u0440\u043E\u0441\u0442\u0440\u0430\u043D\u0441\u0442\u0432\u0435 \u0438\u043C\u0451\u043D \u043D\u0435\u0442 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u0430 \u0441 id {entry}.",
+      "web.archive.wrongOutput": "\u041E\u043F\u0435\u0440\u0430\u0446\u0438\u044F \u0432\u0435\u0440\u043D\u0443\u043B\u0430 {kind} \u0432\u043C\u0435\u0441\u0442\u043E \u0431\u0430\u0439\u0442\u043E\u0432.",
+      "web.archive.rejected": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E: {reason}",
+      "web.archive.shown": "{path} \xB7 {bytes} \u0431\u0430\u0439\u0442 \xB7 \u0440\u0435\u0436\u0438\u043C: {mode}",
+      "web.archive.modeHex": "hex",
+      "web.archive.modeText": "\u0442\u0435\u043A\u0441\u0442",
+      "web.archive.readFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u044D\u043B\u0435\u043C\u0435\u043D\u0442: {reason}",
+      "web.view.code": "\u041A\u043E\u0434",
+      "web.view.video": "\u0412\u0438\u0434\u0435\u043E",
+      "web.view.image": "\u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435",
+      "web.view.audio": "\u0410\u0443\u0434\u0438\u043E",
+      "web.view.world": "\u041C\u0438\u0440",
+      "web.view.model": "\u041C\u043E\u0434\u0435\u043B\u044C",
+      "web.view.vector": "\u0412\u0435\u043A\u0442\u043E\u0440",
+      "web.view.archive": "\u0421\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435",
+      "web.view.template": "\u0428\u0430\u0431\u043B\u043E\u043D",
+      "web.view.card": "\u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0430",
+      "web.view.calculations": "\u0420\u0430\u0441\u0447\u0451\u0442\u044B",
+      "web.view.table": "\u0422\u0430\u0431\u043B\u0438\u0446\u0430",
+      "web.view.tree": "\u0414\u0435\u0440\u0435\u0432\u043E",
+      "web.view.relations": "\u0421\u0432\u044F\u0437\u0438",
+      "web.view.text": "\u0422\u0435\u043A\u0441\u0442",
+      "web.view.virtualText": "\u0422\u0435\u043A\u0441\u0442 (\u043F\u043E\u0442\u043E\u043A)",
+      "web.view.metadata": "\u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435",
+      "web.view.hex": "Hex",
+      "web.view.textEditor": "\u0422\u0435\u043A\u0441\u0442 (\u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435)",
+      "web.view.hexEditor": "Hex (\u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435)",
+      "web.inspector.label": "\u0418\u043D\u0441\u043F\u0435\u043A\u0442\u043E\u0440",
+      "web.inspector.edit": "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435",
+      "web.inspector.noFile": "\u041D\u0435\u0442 \u043E\u0442\u043A\u0440\u044B\u0442\u043E\u0433\u043E \u0444\u0430\u0439\u043B\u0430.",
+      "web.inspector.summary": "{label} \xB7 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439 \u0447\u0442\u0435\u043D\u0438\u044F: {read} \xB7 \u0444\u043E\u0440\u043C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F: {forms} \u0438\u0437 {write} \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439 \xB7 \u0434\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A: {diagnostics}",
+      "web.inspector.needInput": "{operations}: \u043D\u0435\u0442 \u043D\u0430 \u043F\u0430\u043D\u0435\u043B\u0438 \u0438\u043D\u0441\u0442\u0440\u0443\u043C\u0435\u043D\u0442\u043E\u0432 \u2014 \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044F \u0432\u0432\u043E\u0434 \u0438\u0437 \u0434\u0440\u0443\u0433\u043E\u0433\u043E \u0440\u0435\u0436\u0438\u043C\u0430 \u0438\u043B\u0438 \u043F\u0430\u043D\u0435\u043B\u0438.",
+      "web.inspector.noEdit": "{operations}: \u043D\u0435\u0442 \u043F\u0430\u043D\u0435\u043B\u0438 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u2014 {reason}",
+      "web.inspector.noWritableHandle": "\u0443 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u043D\u0435\u0442 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u044F \u043D\u0430 \u0437\u0430\u043F\u0438\u0441\u044C \u0432 \u0444\u0430\u0439\u043B.",
+      "web.inspector.noForm": "{operation}: \u043D\u0435\u0442 \u0444\u043E\u0440\u043C\u044B \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u2014 {reason}.",
+      "web.edit.unsupported": "{operation}: \u043F\u043E\u043A\u0430 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E \u0432 \u044D\u0442\u043E\u043C \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0438 \u2014 {reason}",
+      "web.edit.invoking": "{operation}: \u0437\u0430\u043F\u0443\u0441\u043A {handler}\u2026",
+      "web.edit.codecRefused": "\u041A\u043E\u0434\u0435\u043A \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u044E: {reason}",
+      "web.edit.hostRefused": "\u041F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B\u043E \u043F\u043B\u0430\u043D \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F: {reason}",
+      "web.edit.appliedReopening": "{outcome}; \u0444\u0430\u0439\u043B \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442\u0441\u044F \u0437\u0430\u043D\u043E\u0432\u043E \u0432 \u043D\u043E\u0432\u043E\u0439 \u0432\u0435\u0440\u0441\u0438\u0438",
+      "web.edit.appliedReopenFailed": "{outcome}; \u0432\u043A\u043B\u0430\u0434\u043A\u0443 \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u0437\u0430\u043D\u043E\u0432\u043E, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u043C\u043E\u0435 \u0443\u0441\u0442\u0430\u0440\u0435\u043B\u043E",
+      "web.edit.noneDrivableCount": "\u041D\u0435\u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043C\u044B\u0445 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F: {unsupported} \u0438\u0437 {declared}.",
+      "web.edit.formsAvailable": "\u0424\u043E\u0440\u043C: {forms}; \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F: {declared}",
+      "web.editability.noHandle": "\u0423 {name} \u043D\u0435\u0442 \u0434\u0435\u0441\u043A\u0440\u0438\u043F\u0442\u043E\u0440\u0430 \u0434\u043B\u044F \u0437\u0430\u043F\u0438\u0441\u0438: \u0444\u0430\u0439\u043B \u043E\u0442\u043A\u0440\u044B\u0442 \u0447\u0435\u0440\u0435\u0437 \u043F\u043E\u043B\u0435 \u0432\u044B\u0431\u043E\u0440\u0430, \u043F\u0435\u0440\u0435\u0442\u0430\u0441\u043A\u0438\u0432\u0430\u043D\u0438\u0435 \u0438\u043B\u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0443, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u043C\u043E\u0436\u0435\u0442 \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0435\u0433\u043E, \u043D\u043E \u043D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043E\u0431\u0440\u0430\u0442\u043D\u043E. \u0414\u043B\u044F \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0444\u0430\u0439\u043B \u0447\u0435\u0440\u0435\u0437 \xAB\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0444\u0430\u0439\u043B\u2026\xBB \u0438\u043B\u0438 \u043F\u0430\u043F\u043A\u0443.",
+      "web.editability.queryFailed": "\u0423 {name} \u0435\u0441\u0442\u044C \u0434\u0435\u0441\u043A\u0440\u0438\u043F\u0442\u043E\u0440 \u0434\u043B\u044F \u0437\u0430\u043F\u0438\u0441\u0438, \u043D\u043E \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u0441\u043C\u043E\u0433 \u0441\u043E\u043E\u0431\u0449\u0438\u0442\u044C \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435 ({reason}); \u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u0431\u0443\u0434\u0435\u0442 \u043F\u0440\u0438\u043D\u044F\u0442\u043E \u043F\u0440\u0438 \u043F\u0435\u0440\u0432\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0438.",
+      "web.editability.noQuery": "\u0423 {name} \u0435\u0441\u0442\u044C \u0434\u0435\u0441\u043A\u0440\u0438\u043F\u0442\u043E\u0440 \u0434\u043B\u044F \u0437\u0430\u043F\u0438\u0441\u0438, \u043D\u043E \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u0443\u043C\u0435\u0435\u0442 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0442\u044C \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435; \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u0438 \u0432\u044B\u044F\u0441\u043D\u0438\u0442\u0441\u044F \u043F\u0440\u0438 \u043F\u0435\u0440\u0432\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0438.",
+      "web.editability.denied": "\u0417\u0430\u043F\u0438\u0441\u044C {name} \u0437\u0430\u043F\u0440\u0435\u0449\u0435\u043D\u0430, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u044B \u0442\u0435\u043A\u0441\u0442\u0430 \u0438 hex \u0441\u043A\u0440\u044B\u0442\u044B. \u041F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0435 \u043F\u0440\u0435\u0434\u043B\u0430\u0433\u0430\u0435\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435, \u043A\u043E\u0442\u043E\u0440\u043E\u0435 \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u0443\u0436\u0435 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B.",
+      "web.editability.granted": "\u0424\u0430\u0439\u043B {name} \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043D\u0430 \u043C\u0435\u0441\u0442\u0435: \u0437\u0430\u043F\u0438\u0441\u044C \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0430.",
+      "web.editability.prompt": "\u0424\u0430\u0439\u043B {name} \u043C\u043E\u0436\u043D\u043E \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043F\u043E\u0441\u043B\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u044F \u0437\u0430\u043F\u0438\u0441\u0438; \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u0441\u043F\u0440\u043E\u0441\u0438\u0442 \u043F\u0440\u0438 \u043F\u0435\u0440\u0432\u043E\u043C \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0438, \u043B\u0438\u0431\u043E \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435\xBB \u0441\u0435\u0439\u0447\u0430\u0441.",
+      "web.editability.request.noFile": "\u041F\u0435\u0440\u0435\u0434 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435\u043C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u043F\u0430\u043F\u043A\u0443 \u0438\u043B\u0438 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0444\u0430\u0439\u043B.",
+      "web.editability.request.noHandle": "\u0423 {name} \u043D\u0435\u0442 \u0434\u0435\u0441\u043A\u0440\u0438\u043F\u0442\u043E\u0440\u0430 \u0434\u043B\u044F \u0437\u0430\u043F\u0438\u0441\u0438: \u0444\u0430\u0439\u043B \u0438\u0437 \u043F\u0435\u0440\u0435\u0442\u0430\u0441\u043A\u0438\u0432\u0430\u043D\u0438\u044F, \u043E\u0431\u044B\u0447\u043D\u043E\u0433\u043E \u043F\u043E\u043B\u044F \u0432\u044B\u0431\u043E\u0440\u0430 \u0438\u043B\u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0438 \u043D\u0435\u043B\u044C\u0437\u044F \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043E\u0431\u0440\u0430\u0442\u043D\u043E. \u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \xAB\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0444\u0430\u0439\u043B\u2026\xBB \u0438\u043B\u0438 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u0443\u044E \u043F\u0430\u043F\u043A\u0443.",
+      "web.editability.request.noSurface": "\u0412 \u044D\u0442\u043E\u043C \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435 \u043D\u0435\u043B\u044C\u0437\u044F \u0437\u0430\u0440\u0430\u043D\u0435\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u043D\u0430 \u0437\u0430\u043F\u0438\u0441\u044C {name}; \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435 \u043F\u043E\u043F\u0440\u043E\u0431\u0443\u0435\u0442 \u0437\u0430\u043F\u0438\u0441\u0430\u0442\u044C \u043D\u0430\u043F\u0440\u044F\u043C\u0443\u044E \u0438 \u043F\u043E\u043A\u0430\u0436\u0435\u0442 \u043E\u0442\u0432\u0435\u0442 \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0430.",
+      "web.editability.request.granted": "\u0417\u0430\u043F\u0438\u0441\u044C {name} \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0430: \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u044B \u0442\u0435\u043A\u0441\u0442\u0430 \u0438 hex \u043C\u043E\u0433\u0443\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F.",
+      "web.editability.request.denied": "\u0417\u0430\u043F\u0438\u0441\u044C {name} \u0437\u0430\u043F\u0440\u0435\u0449\u0435\u043D\u0430; \u043D\u043E\u0432\u044B\u0435 \u0444\u0430\u0439\u043B\u044B \u0431\u0443\u0434\u0443\u0442 \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0442\u044C\u0441\u044F \u0431\u0435\u0437 \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u0430.",
+      "web.editability.request.notGranted": "\u0417\u0430\u043F\u0438\u0441\u044C {name} \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0430; \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u043E.",
+      "web.editability.request.failed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u043D\u0430 \u0437\u0430\u043F\u0438\u0441\u044C {name}: {reason}",
+      "web.edit.rejection.staleRevision": "\u0444\u0430\u0439\u043B \u043D\u0430 \u0434\u0438\u0441\u043A\u0435 \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0447\u0442\u0435\u043D\u0438\u044F \u0432 \u044D\u0442\u043E\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u0435",
+      "web.edit.rejection.permissionMissing": "\u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0438\u0435, \u0441 \u043A\u043E\u0442\u043E\u0440\u044B\u043C \u043E\u0442\u043A\u0440\u044B\u0442 \u0441\u0443\u0431\u044A\u0435\u043A\u0442, \u043D\u0435 \u0434\u043E\u043F\u0443\u0441\u043A\u0430\u0435\u0442 \u0437\u0430\u043F\u0438\u0441\u044C \u0444\u0430\u0439\u043B\u0430",
+      "web.edit.rejection.scopeMismatch": "\u043F\u043B\u0430\u043D \u0443\u043A\u0430\u0437\u044B\u0432\u0430\u0435\u0442 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u0437\u0430 \u043F\u0440\u0435\u0434\u0435\u043B\u0430\u043C\u0438 \u044D\u0442\u043E\u0433\u043E \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0430",
+      "web.edit.rejection.guarantee": "\u0441\u0440\u0435\u0434\u0441\u0442\u0432\u043E \u0437\u0430\u043F\u0438\u0441\u0438 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043E\u0431\u0435\u0441\u043F\u0435\u0447\u0438\u0442\u044C \u0442\u0440\u0435\u0431\u0443\u0435\u043C\u0443\u044E \u043F\u043B\u0430\u043D\u043E\u043C \u0433\u0430\u0440\u0430\u043D\u0442\u0438\u044E",
+      "web.edit.rejection.fidelity": "\u043D\u0435\u0442 \u0434\u043E\u043A\u0430\u0437\u0430\u0442\u0435\u043B\u044C\u0441\u0442\u0432 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044F \u0437\u0430\u044F\u0432\u043B\u0435\u043D\u043D\u044B\u0445 \u043F\u043B\u0430\u043D\u043E\u043C \u0434\u0430\u043D\u043D\u044B\u0445",
+      "web.edit.rejection.confirmation": "\u0437\u0430\u043F\u0438\u0441\u044C \u0441 \u043F\u043E\u0442\u0435\u0440\u044F\u043C\u0438 \u0442\u0440\u0435\u0431\u0443\u0435\u0442 \u044F\u0432\u043D\u043E\u0433\u043E \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F, \u043A\u043E\u0442\u043E\u0440\u043E\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0435 \u0437\u0430\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u0435\u0442",
+      "web.edit.rejection.payload": "\u0438\u0437\u043C\u0435\u043D\u0451\u043D\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u043F\u0440\u0435\u0432\u044B\u0448\u0430\u044E\u0442 \u043F\u0440\u0435\u0434\u0435\u043B \u043F\u0435\u0440\u0435\u0434\u0430\u0447\u0438 \u044D\u0442\u043E\u0433\u043E \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F",
+      "web.edit.rejection.readOnly": "\u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u043B\u044F \u0447\u0442\u0435\u043D\u0438\u044F",
+      "web.edit.rejection.cancelled": "\u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435 \u043E\u0442\u043C\u0435\u043D\u0435\u043D\u043E",
+      "web.edit.rejection.unknown": "\u043F\u043B\u0430\u043D \u043D\u0435 \u043E\u043F\u0438\u0441\u044B\u0432\u0430\u0435\u0442 \u044D\u0442\u043E\u0442 \u0441\u0443\u0431\u044A\u0435\u043A\u0442 \u0432 \u043E\u0442\u043A\u0440\u044B\u0442\u043E\u0439 \u0432\u0435\u0440\u0441\u0438\u0438",
+      "web.edit.changeUnsupported": "\u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u0441\u043E\u0437\u0434\u0430\u043B \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435, \u043A\u043E\u0442\u043E\u0440\u043E\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0432\u044B\u0440\u0430\u0437\u0438\u0442\u044C \u043A\u0430\u043A \u0431\u0443\u043A\u0432\u0430\u043B\u044C\u043D\u0443\u044E \u0437\u0430\u043C\u0435\u043D\u0443",
+      "web.edit.writerRefused": "\u0441\u0440\u0435\u0434\u0441\u0442\u0432\u043E \u0437\u0430\u043F\u0438\u0441\u0438 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B\u043E \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435",
+      "web.edit.planUnsupported": "\u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0441\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u043F\u043B\u0430\u043D \u0434\u043B\u044F \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u044D\u0442\u043E\u0433\u043E \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440\u0430",
+      "web.edit.commit.writtenReopen": "{what} \u2014 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u043E \u0432 \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u043E\u0439 \u0444\u0430\u0439\u043B. \u041F\u0435\u0440\u0435\u0434 \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u043C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435\u043C \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0435\u0433\u043E \u0437\u0430\u043D\u043E\u0432\u043E: \u0432\u043A\u043B\u0430\u0434\u043A\u0430 \u0432\u0441\u0451 \u0435\u0449\u0451 \u0445\u0440\u0430\u043D\u0438\u0442 \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u0443\u044E \u0432\u0435\u0440\u0441\u0438\u044E.",
+      "web.edit.commit.refused": "{what}: \u043E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u2014 {reason}{diagnostic}.",
+      "web.edit.commit.rolledBack": "{what}: \u043E\u0448\u0438\u0431\u043A\u0430; \u0444\u0430\u0439\u043B \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \u0434\u043E \u043F\u0440\u0435\u0436\u043D\u0435\u0433\u043E \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F.",
+      "web.edit.commit.partial": "{what}: \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u043E \u0442\u043E\u043B\u044C\u043A\u043E \u0447\u0430\u0441\u0442\u0438\u0447\u043D\u043E; \u0441\u0432\u0435\u0434\u0435\u043D\u0438\u044F \u043E \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0438 \u043D\u0430\u0445\u043E\u0434\u044F\u0442\u0441\u044F \u0432 \u043A\u0432\u0438\u0442\u0430\u043D\u0446\u0438\u0438.",
+      "web.edit.commit.conflict": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E: \u0444\u0430\u0439\u043B \u043D\u0430 \u0434\u0438\u0441\u043A\u0435 \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0447\u0442\u0435\u043D\u0438\u044F \u0432 \u044D\u0442\u043E\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u0435, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043F\u0435\u0440\u0435\u0437\u0430\u043F\u0438\u0441\u0430\u043D\u043E. \u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0444\u0430\u0439\u043B \u0437\u0430\u043D\u043E\u0432\u043E \u0438 \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435.",
+      "web.edit.commit.rejected": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u0434\u043E \u0437\u0430\u043F\u0438\u0441\u0438: {reason}.",
+      "web.edit.action.saved": "\u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435",
+      "web.edit.action.undo": "\u041E\u0442\u043C\u0435\u043D\u0430 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F",
+      "web.edit.action.redo": "\u041F\u043E\u0432\u0442\u043E\u0440 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F",
+      "web.edit.authorization.denied": "\u041D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u0437\u0430\u043F\u0440\u0435\u0442\u0438\u043B \u0437\u0430\u043F\u0438\u0441\u044C \u0444\u0430\u0439\u043B\u0430.",
+      "web.edit.authorization.notGranted": "\u041D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: \u0437\u0430\u043F\u0438\u0441\u044C \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0435\u043D\u0430 ({state}).",
+      "web.edit.apply.noAccess": "{name} \u043D\u0435 \u0437\u0430\u043F\u0438\u0441\u0430\u043D: \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0438\u043B \u0437\u0430\u043F\u0438\u0441\u044C",
+      "web.edit.apply.conflict": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u0434\u043E \u0437\u0430\u043F\u0438\u0441\u0438: {reason} (\u043A\u043E\u043D\u0444\u043B\u0438\u043A\u0442\u043E\u0432: {conflicts})",
+      "web.edit.apply.rejected": "\u041E\u0442\u043A\u043B\u043E\u043D\u0435\u043D\u043E \u0434\u043E \u0437\u0430\u043F\u0438\u0441\u0438: {reason} ({code})",
+      "web.edit.apply.committed": "\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u043E \u0438 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u043E \u0432 {name}",
+      "web.edit.apply.notApplied": "\u041D\u0435 \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u043E: {reason} ({code})",
+      "web.edit.apply.rolledBack": "\u041D\u0435 \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u043E: \u043E\u0448\u0438\u0431\u043A\u0430 \u0437\u0430\u043F\u0438\u0441\u0438; \u0444\u0430\u0439\u043B {name} \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D",
+      "web.edit.apply.partial": "\u0424\u0430\u0439\u043B {name} \u0437\u0430\u043F\u0438\u0441\u0430\u043D \u0442\u043E\u043B\u044C\u043A\u043E \u0447\u0430\u0441\u0442\u0438\u0447\u043D\u043E; \u0441\u0432\u0435\u0434\u0435\u043D\u0438\u044F \u043E \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0438 \u043D\u0430\u0445\u043E\u0434\u044F\u0442\u0441\u044F \u0432 \u043A\u0432\u0438\u0442\u0430\u043D\u0446\u0438\u0438",
+      "web.edit.cannotEdit": "\u0417\u0434\u0435\u0441\u044C \u043D\u0435\u043B\u044C\u0437\u044F \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u044C {name}: {reason}",
+      "web.edit.noWriter": "\u0417\u0434\u0435\u0441\u044C \u043D\u0435\u043B\u044C\u0437\u044F \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u044C {name}: \u0434\u043B\u044F \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u0430 \u043D\u0435\u0442 \u0441\u0440\u0435\u0434\u0441\u0442\u0432\u0430 \u0437\u0430\u043F\u0438\u0441\u0438.",
+      "web.edit.bytesLabel": "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u0431\u0430\u0439\u0442\u044B",
+      "web.error.noPicker": "\u0411\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u0432\u044B\u0431\u043E\u0440 \u043F\u0430\u043F\u043A\u0438.",
+      "web.map.choose": "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 ID \u043A\u0430\u0440\u0442\u044B \u0434\u043B\u044F \u043E\u0442\u043A\u0440\u044B\u0442\u0438\u044F \u0432 \u0440\u0435\u0436\u0438\u043C\u0435 \u043C\u0438\u0440\u0430:\n\n{candidates}",
+      "web.map.permissionRequired": "{name} \u2014 \u0434\u043B\u044F \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u043A\u0430\u0440\u0442\u044B \u043D\u0443\u0436\u043D\u044B \u0440\u0435\u0441\u0443\u0440\u0441\u044B \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043D\u043E\u0439 \u0438\u0433\u0440\u044B, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043D\u0430\u0439\u0442\u0438 \u0441\u0430\u043C; \u043E\u0431\u044B\u0447\u043D\u044B\u0439 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0430\u0440\u0445\u0438\u0432\u0430 \u043E\u0441\u0442\u0430\u0451\u0442\u0441\u044F \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u043C.",
+      "web.map.selectionRequired": "{name} \u2014 \u0434\u043B\u044F \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u043A\u0430\u0440\u0442\u044B \u043D\u0443\u0436\u043D\u043E \u0432\u044B\u0431\u0440\u0430\u0442\u044C \u0432\u0430\u0440\u0438\u0430\u043D\u0442 ({candidates}); \u043E\u0431\u044B\u0447\u043D\u044B\u0439 \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0430\u0440\u0445\u0438\u0432\u0430 \u043E\u0441\u0442\u0430\u0451\u0442\u0441\u044F \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u043C.",
+      "web.map.diagnostic.selectionRequired": "\u0414\u043B\u044F \u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440\u0430 \u043A\u0430\u0440\u0442\u044B \u043D\u0443\u0436\u043D\u043E \u044F\u0432\u043D\u043E \u0432\u044B\u0431\u0440\u0430\u0442\u044C \u0432\u0430\u0440\u0438\u0430\u043D\u0442; \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043E\u0434\u043D\u0443 \u0438\u0437 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0451\u043D\u043D\u044B\u0445 \u043A\u0430\u0440\u0442 \u0438 \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0438\u0442\u0435.",
+      "web.map.diagnostic.permissionRequired": "\u0414\u043B\u044F \u044D\u0442\u043E\u0439 \u043A\u0430\u0440\u0442\u044B \u043D\u0443\u0436\u043D\u044B \u0440\u0435\u0441\u0443\u0440\u0441\u044B \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043D\u043E\u0439 \u0438\u0433\u0440\u044B, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u0431\u0440\u0430\u0443\u0437\u0435\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043D\u0430\u0439\u0442\u0438 \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438; \u043F\u0440\u0435\u0434\u043E\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u0434\u043E\u0441\u0442\u0443\u043F \u0438\u043B\u0438 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u0445 \u0432 \u043D\u0430\u0441\u0442\u043E\u043B\u044C\u043D\u043E\u043C \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0438.",
+      "web.extensions.subjectsDescription": "\u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0438 \u043F\u043E\u0441\u0442\u0440\u043E\u0435\u043D\u044B \u0438\u0437 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u044B\u0445 JSON \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0438 \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0435\u0439; \u0442\u043E\u0447\u043D\u044B\u0439 \u043A\u043E\u043D\u0442\u0440\u0430\u043A\u0442 \u0443\u043A\u0430\u0437\u0430\u043D \u0432\u043E \u0432\u0441\u043F\u043B\u044B\u0432\u0430\u044E\u0449\u0435\u0439 \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0435.",
+      "web.extensions.downloadableDescription": "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u043E \u0432\u0430\u0448\u0435\u0439 \u043A\u043E\u043C\u0430\u043D\u0434\u0435; \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430 \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0435\u0442 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u044B\u0435 \u0444\u0430\u0439\u043B\u044B \u043F\u0430\u043A\u0435\u0442\u0430, \u043D\u043E \u043D\u0435 \u0437\u0430\u043F\u0443\u0441\u043A\u0430\u0435\u0442 \u0438\u0445.",
+      "web.extensions.notInCatalog": "\u041D\u0435\u0442 \u0432 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0435",
+      "web.extensions.updateAvailable": "\u0414\u043E\u0441\u0442\u0443\u043F\u043D\u043E \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u0435",
+      "web.extensions.trusted": "\u0414\u043E\u0432\u0435\u0440\u0435\u043D\u043E",
+      "web.extensions.notTrusted": "\u041D\u0435 \u0434\u043E\u0432\u0435\u0440\u0435\u043D\u043E",
+      "web.extensions.catalogEmpty": "\u0412 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0435 \u043D\u0435\u0442 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439.",
+      "web.extensions.noDownloaded": "\u0417\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043D\u044B\u0435 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F \u043D\u0435 \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u044B; \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043A\u0430\u0442\u0430\u043B\u043E\u0433.",
+      "web.extensions.packageDisabled": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E \u043D\u0430\u043F\u0440\u044F\u043C\u0443\u044E, \u043D\u043E \u0435\u0433\u043E \u043F\u0430\u043A\u0435\u0442 \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D.",
+      "web.extensions.reloadPending": "\u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443, \u0447\u0442\u043E\u0431\u044B \u043F\u0435\u0440\u0435\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u0437\u0430\u043F\u0443\u0449\u0435\u043D\u043D\u044B\u0439 \u0445\u043E\u0441\u0442.",
+      "web.extensions.removedPending": "\u0423\u0434\u0430\u043B\u0435\u043D\u043E \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430; \u043F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443, \u0447\u0442\u043E\u0431\u044B \u043F\u0435\u0440\u0435\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u0445\u043E\u0441\u0442.",
+      "web.extensions.trustSentence": "\u041F\u0430\u043F\u043A\u0430, \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u043D\u0430\u044F \u0437\u0434\u0435\u0441\u044C, \u0441\u0447\u0438\u0442\u0430\u0435\u0442\u0441\u044F \u0434\u043E\u0432\u0435\u0440\u0435\u043D\u043D\u043E\u0439 \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u043E\u0442\u043E\u043C\u0443, \u0447\u0442\u043E \u0432\u044B \u0432\u044B\u0431\u0440\u0430\u043B\u0438 \u0435\u0451 \u0441\u0430\u043C\u0438: \u043E\u043D\u0430 \u043D\u0435 \u043F\u043E\u0434\u043F\u0438\u0441\u0430\u043D\u0430 \u0438 \u043D\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D\u0430. \u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u0432\u044B\u0447\u0438\u0441\u043B\u044F\u0435\u0442 \u0445\u0435\u0448 \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u0444\u0430\u0439\u043B\u0430 \u0438 \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u0442 \u0435\u0433\u043E, \u0435\u0441\u043B\u0438 \u043E\u043D \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0447\u0442\u0435\u043D\u0438\u044F; \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C\u0441\u043A\u0438\u0435 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F \u0432\u0441\u0435\u0433\u0434\u0430 \u0440\u0430\u0431\u043E\u0442\u0430\u044E\u0442 \u0432 \u0440\u0430\u0431\u043E\u0447\u0435\u043C \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0435.",
+      "web.extensions.provenanceNote": "\u0425\u0435\u0448\u0438 \u0432\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u044B\u0445 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u044B \u043F\u0440\u0438 \u0441\u0431\u043E\u0440\u043A\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F. \u0414\u043B\u044F \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0445 \u043F\u0430\u043F\u043E\u043A \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u0432\u044B\u0447\u0438\u0441\u043B\u044F\u0435\u0442 \u0445\u0435\u0448\u0438 \u0441\u0430\u043C\u0430 \u2014 \u044D\u0442\u043E \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0430 \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u044B\u0445 \u0431\u0430\u0439\u0442\u043E\u0432, \u0430 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u0435 \u0438\u0445 \u0430\u0432\u0442\u043E\u0440\u0430.",
+      "web.extensions.remembered": "\u0414\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0435 \u043F\u0430\u043F\u043A\u0438 \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u044E\u0442\u0441\u044F \u0432 {location}.",
+      "web.extensions.added": "\u0414\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u0430 \u043F\u0430\u043F\u043A\u0430 \xAB{name}\xBB{coordinate}.",
+      "web.extensions.actionFailed": "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u0441 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435\u043C \u043D\u0435 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043E: {reason}",
+      "web.extensions.addFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043F\u0430\u043F\u043A\u0443: {reason}",
+      "web.extensions.removeFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435: {reason}",
+      "web.extensions.accessFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u0434\u043E\u0441\u0442\u0443\u043F: {reason}",
+      "web.extensions.accessGranted": "\u0414\u043E\u0441\u0442\u0443\u043F \u043A \xAB{name}\xBB \u0441\u043D\u043E\u0432\u0430 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D.",
+      "web.extensions.accessDenied": "\u0414\u043E\u0441\u0442\u0443\u043F \u043A \xAB{name}\xBB \u043D\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043D ({state}).",
+      "web.extensions.catalogChecked": "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0439 \u043F\u0440\u043E\u0432\u0435\u0440\u0435\u043D: {location}.",
+      "web.extensions.catalogLoaded": "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D \u0438\u0437 {location}.",
+      "web.extensions.catalogNotContacted": "\u041A\u0430\u0442\u0430\u043B\u043E\u0433 {location} \u0435\u0449\u0451 \u043D\u0435 \u0437\u0430\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u043B\u0441\u044F \u0432 \u044D\u0442\u043E\u043C \u0441\u0435\u0430\u043D\u0441\u0435.",
+      "web.extensions.installedStatus": "{name} \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043E. \u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443, \u0447\u0442\u043E\u0431\u044B \u043F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F.",
+      "web.extensions.updatedStatus": "{name} \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u043E. \u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443, \u0447\u0442\u043E\u0431\u044B \u043F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F.",
+      "web.extensions.removedStatus": "{name} \u0443\u0434\u0430\u043B\u0435\u043D\u043E. \u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443, \u0447\u0442\u043E\u0431\u044B \u043F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F.",
+      "web.extensions.cardFailed": "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F: {reason}",
+      "web.extensions.bundledProvenance": "\u0412\u0441\u0442\u0440\u043E\u0435\u043D\u043E \u0432 \u044D\u0442\u0443 \u0441\u0431\u043E\u0440\u043A\u0443 \u0438 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u043E \u0438\u0437 {root}; \u0445\u0435\u0448\u0438 \u0437\u0430\u043F\u0438\u0441\u0430\u043D\u044B \u043F\u0440\u0438 \u0441\u0431\u043E\u0440\u043A\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F.",
+      "web.extensions.userProvenance": "\u0420\u0430\u0437\u0440\u0435\u0448\u0451\u043D\u043D\u0430\u044F \u0432\u0430\u043C\u0438 \u043F\u0430\u043F\u043A\u0430 (\xAB{label}\xBB); \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u0432\u044B\u0447\u0438\u0441\u043B\u0438\u043B\u0430 \u0445\u0435\u0448\u0438 \u0442\u043E\u043B\u044C\u043A\u043E \u0447\u0442\u043E \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u043D\u043D\u044B\u0445 \u0431\u0430\u0439\u0442\u043E\u0432."
+    }
+  },
+  {
+    authorizedMessagePrefixes: ["web."],
+    fallbackCatalog: EN.messages
+  }
+);
+var WEB_UI_CATALOGS = Object.freeze([EN, RU]);
+var WEB_ENGLISH_FALLBACK = Object.freeze({
+  ...UI_MESSAGES.en,
+  ...EN.messages
+});
+var WEB_LOCALIZATION_TRANSLATABLE_PREFIXES = Object.freeze(
+  [...new Set(Object.keys(WEB_ENGLISH_FALLBACK).map((key3) => `${key3.split(".")[0]}.`))].sort()
+);
+var emptyHeaders = Object.freeze({ get: () => null });
+function byteHeaders(length) {
+  return Object.freeze({
+    get(name) {
+      switch (name.toLowerCase()) {
+        case "accept-ranges":
+          return "bytes";
+        case "content-length":
+          return String(length);
+        default:
+          return null;
+      }
+    }
+  });
+}
+function arrayBuffer(bytes2) {
+  const copy = new Uint8Array(bytes2.byteLength);
+  copy.set(bytes2);
+  return copy.buffer;
+}
+function syntheticCatalogFetch(roots) {
+  const cache = /* @__PURE__ */ new Map();
+  const bytesFor = (url, signal) => {
+    let pending = cache.get(url);
+    if (pending === void 0) {
+      pending = roots.serve(url, signal === void 0 ? void 0 : { signal }).then(async (value2) => value2.ok ? new Uint8Array(await value2.arrayBuffer()) : void 0);
+      cache.set(url, pending);
+    }
+    return pending;
+  };
+  return async (url, init) => {
+    init?.signal?.throwIfAborted();
+    const bytes2 = await bytesFor(url, init?.signal);
+    if (bytes2 === void 0) {
+      return Object.freeze({
+        ok: false,
+        status: 404,
+        headers: emptyHeaders,
+        url,
+        arrayBuffer: async () => new ArrayBuffer(0)
+      });
+    }
+    const headers = byteHeaders(bytes2.byteLength);
+    if (init?.method === "HEAD") {
+      return Object.freeze({
+        ok: true,
+        status: 200,
+        headers,
+        url,
+        arrayBuffer: async () => new ArrayBuffer(0)
+      });
+    }
+    const range = init?.headers?.["Range"] ?? init?.headers?.["range"];
+    const match = range?.match(/^bytes=(\d+)-(\d+)$/u);
+    if (match !== void 0 && match !== null) {
+      const start = Number(match[1]);
+      const end = Number(match[2]);
+      if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end < start || end >= bytes2.byteLength) {
+        return Object.freeze({
+          ok: false,
+          status: 416,
+          headers,
+          url,
+          arrayBuffer: async () => new ArrayBuffer(0)
+        });
+      }
+      const selected = bytes2.slice(start, end + 1);
+      return Object.freeze({
+        ok: true,
+        status: 206,
+        headers: byteHeaders(selected.byteLength),
+        url,
+        arrayBuffer: async () => arrayBuffer(selected)
+      });
+    }
+    return Object.freeze({
+      ok: true,
+      status: 200,
+      headers,
+      url,
+      arrayBuffer: async () => arrayBuffer(bytes2)
+    });
+  };
+}
+function containedCatalogUrl(rootUri, path) {
+  const root = new URL(rootUri);
+  if (!root.href.endsWith("/") || root.search !== "" || root.hash !== "") {
+    throw new TypeError("localization artifact root must be a query-free directory URL");
+  }
+  const target = new URL(path, root);
+  if (target.origin !== root.origin || !target.pathname.startsWith(root.pathname) || target.username !== root.username || target.password !== root.password) {
+    throw new TypeError(`localization resource escapes artifact root: ${path}`);
+  }
+  return target.href;
+}
+function directoryCatalogVfs(vfs) {
+  return {
+    async openMount(rootUri, options) {
+      const children = /* @__PURE__ */ new Map();
+      let disposed = false;
+      const child = async (path) => {
+        if (disposed) throw new Error(`localization artifact mount is disposed: ${rootUri}`);
+        let mount2 = children.get(path);
+        if (mount2 === void 0) {
+          mount2 = await vfs.openMount(containedCatalogUrl(rootUri, path), options);
+          children.set(path, mount2);
+        }
+        return mount2;
+      };
+      const mount = {
+        id: rootUri,
+        rootUri,
+        revision: `provider-token:web-localization-${encodeURIComponent(rootUri)}`,
+        async stat(path, signal) {
+          const exact = await child(path);
+          const node = await exact.stat("", signal);
+          return node === void 0 ? void 0 : Object.freeze({ ...node, path, name: path.split("/").at(-1) ?? path });
+        },
+        async *list() {
+          throw new Error("localization artifact mounts do not allow directory enumeration");
+        },
+        async open(path, signal) {
+          return (await child(path)).open("", signal);
+        },
+        async dispose() {
+          if (disposed) return;
+          disposed = true;
+          await Promise.all([...children.values()].map(async (value2) => value2.dispose()));
+          children.clear();
+        }
+      };
+      return mount;
+    }
+  };
+}
+function namespaceMessagePrefix(namespace) {
+  const tail = namespace.split(/[./]/u).at(-1) ?? namespace;
+  const owner = tail.replace(/-(?:app|ui|localization|messages)$/u, "") || tail;
+  return `${owner}.`;
+}
+async function loadWebLocalizationCatalogs(options) {
+  const roots = options.loadedExtensionRoots ?? NO_USER_EXTENSION_ROOTS;
+  const pageFetch = options.fetch ?? globalThis.fetch.bind(globalThis);
+  const syntheticFetch = syntheticCatalogFetch(roots);
+  const routedFetch = (url, init) => isUserExtensionUrl(url) ? syntheticFetch(url, init) : pageFetch(url, init);
+  const baseOrigin = new URL(options.baseUrl).origin;
+  const allowedOrigins = Object.freeze(
+    [
+      .../* @__PURE__ */ new Set([
+        baseOrigin,
+        new URL(USER_EXTENSION_ARTIFACT_ORIGIN).origin,
+        ...options.allowedOrigins ?? []
+      ])
+    ].sort()
+  );
+  const created = createBrowserExtensionVfs({
+    fetch: routedFetch,
+    allowedOrigins
+  });
+  try {
+    return await loadLocalizationCatalogs(options.inventory, {
+      vfs: directoryCatalogVfs(created.vfs),
+      parseCatalog: parseUiCatalogDocument,
+      fallbackCatalog: WEB_ENGLISH_FALLBACK,
+      authorizeMessagePrefixes: (request) => {
+        const owned = namespaceMessagePrefix(request.catalogNamespace);
+        return request.requestedMessagePrefixes.filter(
+          (prefix) => prefix === owned || WEB_LOCALIZATION_TRANSLATABLE_PREFIXES.includes(prefix)
+        );
+      },
+      ...options.signal === void 0 ? {} : { signal: options.signal }
+    });
+  } finally {
+    await created.vfs.dispose();
+  }
+}
+function createWebLocalizer(requested, catalogs = []) {
+  const locale = resolveUiLocale(requested, {
+    availableLocales: ["en", "ru", ...catalogs.map((catalog) => catalog.locale)],
+    systemLocales: globalThis.navigator?.languages
+  });
+  return createUiLocalizer(locale, { catalogs: [...WEB_UI_CATALOGS, ...catalogs] });
 }
 
 // node_modules/.pnpm/es-module-lexer@1.7.0/node_modules/es-module-lexer/dist/lexer.asm.js
@@ -40652,7 +45428,7 @@ function revisionFor(bindingId2, source2, token, namespaceRevision) {
     })
   });
 }
-async function readAll(snapshot3) {
+async function readAll2(snapshot3) {
   return new Uint8Array(await snapshot3.slice(0, snapshot3.size).arrayBuffer());
 }
 function createBrowserEditingBackend(options) {
@@ -40712,7 +45488,7 @@ function createBrowserEditingBackend(options) {
           { expected: applyOptions.expectedRevision, actual: live }
         );
       }
-      const original = await readAll(await file.getFile());
+      const original = await readAll2(await file.getFile());
       const next = await replacedBytes(
         edit,
         original,
@@ -40775,441 +45551,6 @@ function createBrowserEditingBackend(options) {
   };
   return Object.freeze(backend);
 }
-
-// apps/web/src/extension-roots.ts
-var EXTENSION_ROOT_FAILURE_CODES = Object.freeze({
-  unreadable: "x3.host/extension-root-unreadable",
-  notAnExtension: "x3.host/extension-not-an-extension",
-  coordinateConflict: "x3.host/extension-coordinate-conflict",
-  identityMismatch: "x3.host/extension-identity-mismatch",
-  permissionRequired: "x3.host/extension-root-permission-required",
-  tooLarge: "x3.host/extension-root-too-large",
-  moduleMapInvalid: "x3.host/extension-module-map-invalid",
-  moduleMapConflict: "x3.host/extension-module-map-conflict"
-});
-var USER_EXTENSION_ORIGIN = "installed";
-var USER_EXTENSION_ARTIFACT_ORIGIN = "https://user-extension.invalid/";
-var DEFAULT_EXTENSION_ROOT_MAX_FILES = 2e3;
-var DEFAULT_EXTENSION_ROOT_MAX_TOTAL_BYTES = 32 * 1024 * 1024;
-var SKIPPED_EVERYWHERE = /* @__PURE__ */ new Set(["node_modules", ".git"]);
-var SKIPPED_FROM_LISTING = "dist";
-var messageOf = (error3) => error3 instanceof ModkitError || error3 instanceof Error ? error3.message : String(error3);
-var codeOf = (error3) => error3 instanceof ModkitError ? error3.code : EXTENSION_ROOT_FAILURE_CODES.unreadable;
-var compareNames = (left, right) => left < right ? -1 : left > right ? 1 : 0;
-function refuse3(code, message, context) {
-  return new ModkitError({ code, message, ...context === void 0 ? {} : { context } });
-}
-function containerCoordinate(containers) {
-  const blocks = [
-    containers.packageJson?.modkit,
-    containers.standalone
-  ];
-  for (const block of blocks) {
-    if (typeof block !== "object" || block === null) continue;
-    const authored = block;
-    if (typeof authored.publisher === "string" && typeof authored.id === "string") {
-      return `${authored.publisher}/${authored.id}`;
-    }
-  }
-  return void 0;
-}
-var extensionCoordinate = (input) => containerCoordinate(input.containers);
-async function sha256(subtle, bytes2) {
-  const hash = new Uint8Array(await subtle.digest("SHA-256", bytes2));
-  let hex = "";
-  for (const byte of hash) hex += byte.toString(16).padStart(2, "0");
-  return `sha256:${hex}`;
-}
-var encoder3 = new TextEncoder();
-function concatenate(chunks) {
-  let total = 0;
-  for (const chunk of chunks) total += chunk.byteLength;
-  const out = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    out.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return out;
-}
-function userExtensionArtifactRoot(rootId) {
-  return `${USER_EXTENSION_ARTIFACT_ORIGIN}${encodeURIComponent(rootId)}/`;
-}
-async function walkGrantedFolder(root, label, maxFiles, maxTotalBytes, signal) {
-  const walked = [];
-  let totalBytes = 0;
-  const visit2 = async (directory, prefix) => {
-    signal?.throwIfAborted();
-    const children = [];
-    for await (const child of iterateDirectoryChildren(directory)) {
-      children.push({ name: child.name, handle: child });
-    }
-    children.sort((left, right) => compareNames(left.name, right.name));
-    for (const child of children) {
-      signal?.throwIfAborted();
-      if (SKIPPED_EVERYWHERE.has(child.name)) continue;
-      const handle = child.handle;
-      const path = prefix === "" ? child.name : `${prefix}/${child.name}`;
-      if (handle.kind === "directory") {
-        await visit2(handle, path);
-        continue;
-      }
-      if (walked.length >= maxFiles) {
-        throw refuse3(
-          EXTENSION_ROOT_FAILURE_CODES.tooLarge,
-          `\xAB${label}\xBB holds more than ${maxFiles} files; this host reads at most that many per extension folder (bound: maxFiles=${maxFiles})`,
-          { bound: "maxFiles", maxFiles }
-        );
-      }
-      const file = await handle.getFile();
-      totalBytes += file.size;
-      if (totalBytes > maxTotalBytes) {
-        throw refuse3(
-          EXTENSION_ROOT_FAILURE_CODES.tooLarge,
-          `\xAB${label}\xBB holds more than ${maxTotalBytes} bytes; this host reads at most that many per extension folder (bound: maxTotalBytes=${maxTotalBytes})`,
-          { bound: "maxTotalBytes", maxTotalBytes }
-        );
-      }
-      walked.push({ path, handle, size: file.size });
-    }
-  };
-  await visit2(root, "");
-  return walked;
-}
-async function readAll2(handle) {
-  const file = await handle.getFile();
-  return new Uint8Array(await file.slice(0, file.size).arrayBuffer());
-}
-function parseJson2(bytes2, path) {
-  const text3 = new TextDecoder().decode(bytes2);
-  try {
-    return JSON.parse(text3);
-  } catch (error3) {
-    throw refuse3(
-      EXTENSION_ROOT_FAILURE_CODES.unreadable,
-      `${path} is not valid JSON: ${messageOf(error3)}`,
-      { path }
-    );
-  }
-}
-var PACKAGE_NAME = /^(?:@[A-Za-z0-9._~-]+\/[A-Za-z0-9._~-]+|[A-Za-z0-9._~-]+)$/u;
-function moduleMapFromPackage(packageJson, artifactRoot, fileDigests) {
-  if (typeof packageJson !== "object" || packageJson === null) return Object.freeze({});
-  const candidate = packageJson;
-  if (candidate.exports === void 0) return Object.freeze({});
-  if (typeof candidate.name !== "string" || !PACKAGE_NAME.test(candidate.name)) {
-    throw refuse3(
-      EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
-      "package.json with exports must declare a bounded bare package name",
-      { field: "name" }
-    );
-  }
-  const declared = typeof candidate.exports === "string" ? [[".", candidate.exports]] : typeof candidate.exports === "object" && candidate.exports !== null ? Object.entries(candidate.exports) : [];
-  if (declared.length === 0 && candidate.exports !== void 0) {
-    throw refuse3(
-      EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
-      "package.json exports must be a relative string or a subpath-to-file object",
-      { field: "exports" }
-    );
-  }
-  const map = /* @__PURE__ */ new Map();
-  for (const [subpath, target] of declared) {
-    if (subpath !== "." && !subpath.startsWith("./") || typeof target !== "string") {
-      throw refuse3(
-        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
-        `package export \xAB${subpath}\xBB must map directly to one relative file`,
-        { subpath }
-      );
-    }
-    if (!target.startsWith("./") || target.includes("\\") || target.includes("?") || target.includes("#") || target.slice(2).split("/").some((part) => part === "" || part === "." || part === "..")) {
-      throw refuse3(
-        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
-        `package export \xAB${subpath}\xBB escapes or does not name a bounded relative file`,
-        { subpath, target }
-      );
-    }
-    const subpathStars = [...subpath.matchAll(/\*/gu)].length;
-    const targetStars = [...target.matchAll(/\*/gu)].length;
-    if (subpathStars !== targetStars || subpathStars > 1) {
-      throw refuse3(
-        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
-        `package export \xAB${subpath}\xBB must use at most one matching wildcard`,
-        { subpath, target }
-      );
-    }
-    const targetRelative = target.slice(2);
-    const targets = targetStars === 0 ? [[subpath, targetRelative]] : Object.keys(fileDigests).map((path) => {
-      const [prefix = "", suffix = ""] = targetRelative.split("*");
-      if (!path.startsWith(prefix) || !path.endsWith(suffix)) return void 0;
-      const capture = path.slice(prefix.length, path.length - suffix.length);
-      if (capture === "") return void 0;
-      return [subpath.replace("*", capture), path];
-    }).filter((entry2) => entry2 !== void 0);
-    if (targets.length === 0 || targets.some(([, relative]) => fileDigests[relative] === void 0)) {
-      throw refuse3(
-        EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
-        `package export \xAB${subpath}\xBB targets no inventoried file`,
-        { subpath, target }
-      );
-    }
-    for (const [resolvedSubpath, relative] of targets) {
-      const specifier = resolvedSubpath === "." ? candidate.name : `${candidate.name}/${resolvedSubpath.slice(2)}`;
-      const url = new URL(relative, artifactRoot).href;
-      if (map.has(specifier) && map.get(specifier) !== url) {
-        throw refuse3(
-          EXTENSION_ROOT_FAILURE_CODES.moduleMapInvalid,
-          `package exports declare duplicate specifier \xAB${specifier}\xBB`,
-          { specifier }
-        );
-      }
-      map.set(specifier, url);
-    }
-  }
-  return Object.freeze(Object.fromEntries(map));
-}
-async function readGrantedRoot(request, options) {
-  const label = request.handle.name === "" ? request.id : request.handle.name;
-  const walked = await walkGrantedFolder(
-    request.handle,
-    label,
-    options.maxFiles ?? DEFAULT_EXTENSION_ROOT_MAX_FILES,
-    options.maxTotalBytes ?? DEFAULT_EXTENSION_ROOT_MAX_TOTAL_BYTES,
-    options.signal
-  );
-  const handles = /* @__PURE__ */ new Map();
-  const fileDigests = {};
-  const bytesByPath = /* @__PURE__ */ new Map();
-  const artifactStream = [];
-  for (const entry2 of walked) {
-    options.signal?.throwIfAborted();
-    const bytes2 = await readAll2(entry2.handle);
-    handles.set(entry2.path, entry2.handle);
-    fileDigests[entry2.path] = await sha256(options.subtle, bytes2);
-    bytesByPath.set(entry2.path, bytes2);
-    const pathBytes = encoder3.encode(entry2.path);
-    artifactStream.push(
-      encoder3.encode(String(pathBytes.byteLength)),
-      new Uint8Array([0]),
-      pathBytes,
-      new Uint8Array([0]),
-      encoder3.encode(String(bytes2.byteLength)),
-      new Uint8Array([0]),
-      bytes2
-    );
-  }
-  const artifactDigest = await sha256(options.subtle, concatenate(artifactStream));
-  const packageBytes = bytesByPath.get("package.json");
-  const standaloneBytes = bytesByPath.get("modkit.extension.json");
-  const containers = {
-    ...packageBytes === void 0 ? {} : { packageJson: parseJson2(packageBytes, "package.json") },
-    ...standaloneBytes === void 0 ? {} : { standalone: parseJson2(standaloneBytes, "modkit.extension.json") }
-  };
-  const files = walked.map((entry2) => entry2.path).filter((path) => !path.split("/").includes(SKIPPED_FROM_LISTING));
-  const documents = /* @__PURE__ */ new Map();
-  const documentDigests = /* @__PURE__ */ new Map();
-  const normalized = await normalizeExtensionManifest(containers);
-  if (normalized.manifest) {
-    options.signal?.throwIfAborted();
-    const expansion = expandContributionManifests(normalized.manifest.contributionManifests, files);
-    for (const entry2 of expansion.entries) {
-      const bytes2 = bytesByPath.get(entry2.path);
-      const digest = fileDigests[entry2.path];
-      if (bytes2 === void 0 || digest === void 0) continue;
-      documents.set(entry2.path, parseJson2(bytes2, entry2.path));
-      documentDigests.set(entry2.path, digest);
-    }
-  }
-  const artifactRoot = userExtensionArtifactRoot(request.id);
-  const moduleMap = moduleMapFromPackage(containers.packageJson, artifactRoot, fileDigests);
-  return {
-    files: handles,
-    moduleMap,
-    verifiedModuleRoot: Object.freeze({ artifactRoot, fileDigests: Object.freeze(fileDigests) }),
-    input: {
-      source: `user-folder/${label}`,
-      containers,
-      files,
-      documents,
-      documentDigests,
-      artifact: {
-        inventoryRecordId: `artifact:${artifactDigest}`,
-        artifactDigest,
-        artifactRoot: new URL(artifactRoot),
-        fileDigests: Object.freeze(fileDigests),
-        verifyArtifactDigest: (expected) => expected === artifactDigest
-      },
-      execution: { origin: USER_EXTENSION_ORIGIN, allowTrustedInProcess: false }
-    }
-  };
-}
-function decodeUserExtensionUrl(url) {
-  if (!url.startsWith(USER_EXTENSION_ARTIFACT_ORIGIN)) return void 0;
-  const rest = url.slice(USER_EXTENSION_ARTIFACT_ORIGIN.length);
-  const slash = rest.indexOf("/");
-  if (slash <= 0) return void 0;
-  const query = rest.indexOf("?");
-  const tail = query === -1 ? rest.slice(slash + 1) : rest.slice(slash + 1, query);
-  try {
-    return { id: decodeURIComponent(rest.slice(0, slash)), path: decodeURIComponent(tail) };
-  } catch {
-    return void 0;
-  }
-}
-var isUserExtensionUrl = (url) => url.startsWith(USER_EXTENSION_ARTIFACT_ORIGIN);
-var notFound = (url) => ({
-  ok: false,
-  status: 404,
-  arrayBuffer: () => Promise.reject(new Error(`404 ${url}`))
-});
-function createUserExtensionFetch(roots) {
-  return async (url, init) => {
-    init?.signal?.throwIfAborted();
-    const decoded = decodeUserExtensionUrl(url);
-    if (decoded === void 0) return notFound(url);
-    const handle = roots.get(decoded.id)?.get(decoded.path);
-    if (handle === void 0) return notFound(url);
-    const file = await handle.getFile();
-    const buffer = await file.slice(0, file.size).arrayBuffer();
-    return { ok: true, status: 200, arrayBuffer: async () => buffer };
-  };
-}
-async function queryUserExtensionPermission(handle) {
-  if (handle.queryPermission === void 0) return "granted";
-  return handle.queryPermission({ mode: "read" });
-}
-async function requestUserExtensionPermission(handle) {
-  if (handle.requestPermission === void 0) return queryUserExtensionPermission(handle);
-  return handle.requestPermission({ mode: "read" });
-}
-async function loadUserExtensionRoots(requests, options) {
-  if (options.allowTrustedInProcess === true) {
-    throw refuse3(
-      "x3.host/extension-trust-misdeclared",
-      `only bundled roots may be admitted in-process; \xAB${USER_EXTENSION_ORIGIN}\xBB roots may not, and a browser host has no in-page boundary to admit them to`,
-      { origin: USER_EXTENSION_ORIGIN }
-    );
-  }
-  const inputs = [];
-  const failures = [];
-  const coordinates = [];
-  const rootIds = [];
-  const served = /* @__PURE__ */ new Map();
-  const claimed = new Set(options.claimed ?? []);
-  const moduleMaps = /* @__PURE__ */ new Map();
-  const verifiedRoots = /* @__PURE__ */ new Map();
-  const specifierOwner = /* @__PURE__ */ new Map();
-  const conflictedRoots = /* @__PURE__ */ new Set();
-  const reportedConflicts = /* @__PURE__ */ new Set();
-  for (const request of requests) {
-    options.signal?.throwIfAborted();
-    const label = request.handle.name === "" ? request.id : request.handle.name;
-    const fail5 = (code, message) => {
-      failures.push({ root: label, rootId: request.id, code, message });
-    };
-    let permission;
-    try {
-      permission = await queryUserExtensionPermission(request.handle);
-    } catch (error3) {
-      fail5(EXTENSION_ROOT_FAILURE_CODES.unreadable, messageOf(error3));
-      continue;
-    }
-    if (permission !== "granted") {
-      fail5(
-        EXTENSION_ROOT_FAILURE_CODES.permissionRequired,
-        `this page no longer holds read access to \xAB${label}\xBB; grant it again to load this extension`
-      );
-      continue;
-    }
-    let read;
-    try {
-      read = await readGrantedRoot(request, options);
-    } catch (error3) {
-      fail5(codeOf(error3), messageOf(error3));
-      continue;
-    }
-    const coordinate3 = extensionCoordinate(read.input);
-    if (coordinate3 === void 0) {
-      fail5(
-        EXTENSION_ROOT_FAILURE_CODES.notAnExtension,
-        "no authored container: the folder has neither package.json#modkit nor modkit.extension.json"
-      );
-      continue;
-    }
-    if (claimed.has(coordinate3)) {
-      fail5(
-        EXTENSION_ROOT_FAILURE_CODES.coordinateConflict,
-        `\xAB${coordinate3}\xBB is already loaded from another root; this one is ignored`
-      );
-      continue;
-    }
-    if (request.expectedId !== void 0 && request.expectedId !== coordinate3) {
-      fail5(
-        EXTENSION_ROOT_FAILURE_CODES.identityMismatch,
-        `recorded as \xAB${request.expectedId}\xBB but the folder declares \xAB${coordinate3}\xBB`
-      );
-      continue;
-    }
-    claimed.add(coordinate3);
-    coordinates.push(coordinate3);
-    rootIds.push(request.id);
-    inputs.push(read.input);
-    served.set(request.id, read.files);
-    moduleMaps.set(request.id, read.moduleMap);
-    verifiedRoots.set(request.id, read.verifiedModuleRoot);
-    for (const specifier of Object.keys(read.moduleMap)) {
-      const existing = specifierOwner.get(specifier);
-      if (existing === void 0) {
-        specifierOwner.set(specifier, request.id);
-        continue;
-      }
-      conflictedRoots.add(existing);
-      conflictedRoots.add(request.id);
-      for (const owner of [existing, request.id]) {
-        const key3 = `${owner}\0${specifier}`;
-        if (reportedConflicts.has(key3)) continue;
-        reportedConflicts.add(key3);
-        failures.push({
-          root: owner,
-          rootId: owner,
-          code: EXTENSION_ROOT_FAILURE_CODES.moduleMapConflict,
-          message: `bare module specifier \xAB${specifier}\xBB is exported by more than one extension root; every claimant is refused`
-        });
-      }
-    }
-  }
-  const kept = rootIds.map((rootId, index) => ({ rootId, index })).filter(({ rootId }) => !conflictedRoots.has(rootId));
-  const moduleMapEntries = /* @__PURE__ */ new Map();
-  const moduleMapOwnerEntries = /* @__PURE__ */ new Map();
-  const keptVerifiedRoots = [];
-  for (const { rootId } of kept) {
-    for (const [specifier, url] of Object.entries(moduleMaps.get(rootId) ?? {})) {
-      moduleMapEntries.set(specifier, url);
-      moduleMapOwnerEntries.set(specifier, rootId);
-    }
-    const verified = verifiedRoots.get(rootId);
-    if (verified !== void 0) keptVerifiedRoots.push(Object.freeze({ ...verified, rootId }));
-  }
-  return Object.freeze({
-    inputs: Object.freeze(kept.map(({ index }) => inputs[index])),
-    failures: Object.freeze(failures),
-    coordinates: Object.freeze(kept.map(({ index }) => coordinates[index])),
-    rootIds: Object.freeze(kept.map(({ rootId }) => rootId)),
-    moduleMap: Object.freeze(Object.fromEntries(moduleMapEntries)),
-    moduleMapOwners: Object.freeze(Object.fromEntries(moduleMapOwnerEntries)),
-    verifiedModuleRoots: Object.freeze(keptVerifiedRoots),
-    serve: createUserExtensionFetch(served)
-  });
-}
-var NO_USER_EXTENSION_ROOTS = Object.freeze({
-  inputs: Object.freeze([]),
-  failures: Object.freeze([]),
-  coordinates: Object.freeze([]),
-  rootIds: Object.freeze([]),
-  moduleMap: Object.freeze({}),
-  moduleMapOwners: Object.freeze({}),
-  verifiedModuleRoots: Object.freeze([]),
-  serve: async (url) => notFound(url)
-});
 
 // packages/ui/dist/workbench/index.js
 var PARTS3 = Object.freeze([
@@ -41953,3822 +46294,6 @@ function createIndexedDbExtensionStore(factory, databaseName = USER_EXTENSION_DA
   };
 }
 
-// packages/vfs/dist/providers/memory/index.js
-function rangeError3(id, offset, length, size) {
-  return new ModkitError({
-    code: "x3.vfs/read-out-of-range",
-    message: `read [${offset}, ${offset + length}) exceeds source \xAB${id}\xBB of size ${size}`,
-    context: { id, offset, length, size }
-  });
-}
-var CHUNK4 = 64 * 1024;
-function createMemorySource(id, bytes2) {
-  let disposed = false;
-  const ensureLive = () => {
-    if (disposed) {
-      throw new ModkitError({ code: "x3.vfs/source-disposed", message: `source \xAB${id}\xBB disposed` });
-    }
-  };
-  return {
-    id,
-    // async so cancellation/disposal surface as rejections, never sync throws
-    async size(signal) {
-      throwIfAborted(signal);
-      ensureLive();
-      return bytes2.length;
-    },
-    async readAt(offset, length, signal) {
-      throwIfAborted(signal);
-      ensureLive();
-      if (offset < 0 || length < 0 || offset + length > bytes2.length) {
-        throw rangeError3(id, offset, length, bytes2.length);
-      }
-      return bytes2.slice(offset, offset + length);
-    },
-    stream(start = 0, end = bytes2.length, signal) {
-      ensureLive();
-      let position = Math.max(0, start);
-      const stop = Math.min(end, bytes2.length);
-      return new ReadableStream({
-        pull(controller) {
-          throwIfAborted(signal);
-          if (position >= stop) {
-            controller.close();
-            return;
-          }
-          const next = Math.min(position + CHUNK4, stop);
-          controller.enqueue(bytes2.slice(position, next));
-          position = next;
-        }
-      });
-    },
-    dispose() {
-      disposed = true;
-    }
-  };
-}
-var VfsReadBudget3 = class {
-  constructor(maximum) {
-    this.maximum = maximum;
-  }
-  maximum;
-  consumed = 0n;
-  reserved = 0n;
-  reserve(bytes2, sourceId) {
-    const requested = BigInt(bytes2);
-    if (this.consumed + this.reserved + requested > this.maximum) {
-      throw new ModkitError({
-        code: "x3.vfs/read-byte-budget-exceeded",
-        message: "VFS mount exhausted its cumulative read-byte budget",
-        context: {
-          sourceId,
-          requestedBytes: bytes2,
-          consumedBytes: String(this.consumed),
-          reservedBytes: String(this.reserved),
-          maxReadBytes: String(this.maximum)
-        }
-      });
-    }
-    this.reserved += requested;
-    let remaining = requested;
-    return {
-      commit: (bytesRead) => {
-        const committed = BigInt(bytesRead);
-        if (committed < 0n || committed > remaining) {
-          throw new ModkitError({
-            code: "x3.vfs/read-budget-accounting-invalid",
-            message: "VFS provider reported an invalid read-budget commitment",
-            context: {
-              sourceId,
-              committedBytes: bytesRead,
-              reservedBytes: String(remaining)
-            }
-          });
-        }
-        remaining -= committed;
-        this.reserved -= committed;
-        this.consumed += committed;
-      },
-      release: () => {
-        this.reserved -= remaining;
-        remaining = 0n;
-      }
-    };
-  }
-};
-function assertReadRangeLimit3(sourceId, length, limits) {
-  if (length <= limits.maxReadRangeBytes) return;
-  throw new ModkitError({
-    code: "x3.vfs/read-range-limit-exceeded",
-    message: "random-access read exceeds the configured per-range limit",
-    context: { sourceId, length, maxReadRangeBytes: limits.maxReadRangeBytes }
-  });
-}
-function assertStreamLimit3(sourceId, start, end, limits) {
-  const bytes2 = BigInt(end - start);
-  if (bytes2 <= limits.maxStreamBytes) return;
-  throw new ModkitError({
-    code: "x3.vfs/stream-byte-limit-exceeded",
-    message: "random-access stream exceeds the configured per-stream limit",
-    context: { sourceId, bytes: String(bytes2), maxStreamBytes: String(limits.maxStreamBytes) }
-  });
-}
-function budgetRandomAccessSource3(source2, size, limits, budget) {
-  let disposed = false;
-  const assertLive = () => {
-    if (!disposed) return;
-    throw new ModkitError({
-      code: "x3.vfs/source-disposed",
-      message: `source \xAB${source2.id}\xBB disposed`
-    });
-  };
-  const checkedRange = (start, end) => {
-    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end < start || end > size) {
-      throw new ModkitError({
-        code: "x3.vfs/read-out-of-range",
-        message: `stream [${start}, ${end}) exceeds source \xAB${source2.id}\xBB of size ${size}`,
-        context: { id: source2.id, start, end, size }
-      });
-    }
-  };
-  const wrapped = {
-    id: source2.id,
-    async size(signal) {
-      assertLive();
-      return source2.size(signal);
-    },
-    async readAt(offset, length, signal) {
-      assertLive();
-      throwIfAborted(signal);
-      if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length) || offset < 0 || length < 0 || offset + length > size) {
-        throw rangeError3(source2.id, offset, length, size);
-      }
-      assertReadRangeLimit3(source2.id, length, limits);
-      const reservation = budget.reserve(length, source2.id);
-      try {
-        const bytes2 = await source2.readAt(offset, length, signal);
-        reservation.commit(bytes2.byteLength);
-        return bytes2;
-      } finally {
-        reservation.release();
-      }
-    },
-    stream(start = 0, end = size, signal) {
-      assertLive();
-      checkedRange(start, end);
-      assertStreamLimit3(source2.id, start, end, limits);
-      let position = start;
-      return new ReadableStream({
-        pull: async (controller) => {
-          if (position >= end) {
-            controller.close();
-            return;
-          }
-          const length = Math.min(64 * 1024, end - position);
-          const bytes2 = await wrapped.readAt(position, length, signal);
-          position += bytes2.byteLength;
-          controller.enqueue(bytes2);
-        }
-      });
-    },
-    async dispose() {
-      if (disposed) return;
-      disposed = true;
-      await source2.dispose();
-    }
-  };
-  return wrapped;
-}
-var DEFAULT_VFS_LIMITS4 = Object.freeze({
-  // Large installed-game indexes are normal inputs (the pinned BAR rapid package has 18,413
-  // records). Providers still count before exposing an entry; this ceiling merely lets a caller
-  // grant a bounded installed-game-sized index instead of making that valid input impossible.
-  maxEntries: 25e3,
-  maxMaterializedBytes: 512n * 1024n * 1024n,
-  maxFileBytes: 8n * 1024n * 1024n * 1024n * 1024n,
-  maxReadBytes: 512n * 1024n * 1024n,
-  maxReadRangeBytes: 16 * 1024 * 1024,
-  maxStreamBytes: 512n * 1024n * 1024n,
-  maxPathBytes: 4096
-});
-var PATH_ENCODER4 = new TextEncoder();
-function invalidPath4(path, reason) {
-  return new ModkitError({
-    code: "x3.vfs/path-invalid",
-    message: `VFS path \xAB${path}\xBB is invalid: ${reason}`,
-    context: { path, reason }
-  });
-}
-function normalizeVfsPath4(path) {
-  if (path.includes("\0")) throw invalidPath4(path, "NUL bytes are forbidden");
-  const parts = [];
-  for (const part of path.replaceAll("\\", "/").split("/")) {
-    if (part === "" || part === ".") continue;
-    if (part === "..") {
-      throw new ModkitError({
-        code: "x3.vfs/path-escape-refused",
-        message: `VFS path \xAB${path}\xBB attempts to escape its mounted root`,
-        context: { path }
-      });
-    }
-    parts.push(part);
-  }
-  return parts.join("/");
-}
-function positiveSafeInteger4(value2, name) {
-  if (!Number.isSafeInteger(value2) || value2 <= 0) {
-    throw new ModkitError({
-      code: "x3.vfs/limit-invalid",
-      message: `${name} must be a positive safe integer`,
-      context: { name, value: value2 }
-    });
-  }
-  return value2;
-}
-function positiveBigInt4(value2, name) {
-  if (value2 <= 0n) {
-    throw new ModkitError({
-      code: "x3.vfs/limit-invalid",
-      message: `${name} must be positive`,
-      context: { name, value: String(value2) }
-    });
-  }
-  return value2;
-}
-function minimumBigInt4(requested, maximum) {
-  return requested < maximum ? requested : maximum;
-}
-function clampVfsLimits4(requested = {}, maximum = DEFAULT_VFS_LIMITS4) {
-  const requestedEntries = positiveSafeInteger4(
-    requested.maxEntries ?? maximum.maxEntries,
-    "maxEntries"
-  );
-  const requestedPathBytes = positiveSafeInteger4(
-    requested.maxPathBytes ?? maximum.maxPathBytes,
-    "maxPathBytes"
-  );
-  const requestedMaterializedBytes = positiveBigInt4(
-    requested.maxMaterializedBytes ?? maximum.maxMaterializedBytes,
-    "maxMaterializedBytes"
-  );
-  const requestedFileBytes = positiveBigInt4(
-    requested.maxFileBytes ?? maximum.maxFileBytes,
-    "maxFileBytes"
-  );
-  const requestedReadBytes = positiveBigInt4(
-    requested.maxReadBytes ?? maximum.maxReadBytes,
-    "maxReadBytes"
-  );
-  const requestedReadRangeBytes = positiveSafeInteger4(
-    requested.maxReadRangeBytes ?? maximum.maxReadRangeBytes,
-    "maxReadRangeBytes"
-  );
-  const requestedStreamBytes = positiveBigInt4(
-    requested.maxStreamBytes ?? maximum.maxStreamBytes,
-    "maxStreamBytes"
-  );
-  return Object.freeze({
-    maxEntries: Math.min(requestedEntries, maximum.maxEntries),
-    maxMaterializedBytes: minimumBigInt4(requestedMaterializedBytes, maximum.maxMaterializedBytes),
-    maxFileBytes: minimumBigInt4(requestedFileBytes, maximum.maxFileBytes),
-    maxReadBytes: minimumBigInt4(requestedReadBytes, maximum.maxReadBytes),
-    maxReadRangeBytes: Math.min(requestedReadRangeBytes, maximum.maxReadRangeBytes),
-    maxStreamBytes: minimumBigInt4(requestedStreamBytes, maximum.maxStreamBytes),
-    maxPathBytes: Math.min(requestedPathBytes, maximum.maxPathBytes)
-  });
-}
-function assertVfsPathBudget(path, limits) {
-  const bytes2 = PATH_ENCODER4.encode(path).byteLength;
-  if (bytes2 > limits.maxPathBytes) {
-    throw new ModkitError({
-      code: "x3.vfs/path-budget-exceeded",
-      message: `VFS path exceeds the ${limits.maxPathBytes}-byte provider limit`,
-      context: { path, pathBytes: bytes2, maxPathBytes: limits.maxPathBytes }
-    });
-  }
-}
-function relativeToRoot(root, path) {
-  if (root === "") return path;
-  if (path === root) return "";
-  return path.startsWith(`${root}/`) ? path.slice(root.length + 1) : void 0;
-}
-function nameOf(path) {
-  const parts = path.split("/");
-  return parts.at(-1) ?? path;
-}
-function entryNode(path, kind, entry2) {
-  return Object.freeze({
-    path,
-    name: nameOf(path),
-    kind,
-    ...entry2 === void 0 ? {} : { size: BigInt(entry2.bytes.byteLength) }
-  });
-}
-var MemoryMount = class {
-  constructor(rootUri, root, entries, limits, revision) {
-    this.rootUri = rootUri;
-    this.root = root;
-    this.entries = entries;
-    this.limits = limits;
-    this.id = rootUri;
-    this.revision = revision;
-    this.readBudget = new VfsReadBudget3(limits.maxReadBytes);
-  }
-  rootUri;
-  root;
-  entries;
-  limits;
-  id;
-  revision;
-  disposed = false;
-  readBudget;
-  async stat(path, signal) {
-    throwIfAborted(signal);
-    this.assertLive();
-    const relative = normalizeVfsPath4(path);
-    assertVfsPathBudget(relative, this.limits);
-    const absolute = this.absolute(relative);
-    const file = this.entries.get(absolute);
-    if (file !== void 0) return entryNode(relative, "file", file);
-    const prefix = absolute === "" ? "" : `${absolute}/`;
-    for (const key3 of this.entries.keys()) {
-      if (key3.startsWith(prefix)) return entryNode(relative, "directory");
-    }
-    return void 0;
-  }
-  async *list(path, signal) {
-    throwIfAborted(signal);
-    this.assertLive();
-    const relative = normalizeVfsPath4(path);
-    assertVfsPathBudget(relative, this.limits);
-    const absolute = this.absolute(relative);
-    if (this.entries.has(absolute)) {
-      throw new ModkitError({
-        code: "x3.vfs/not-a-directory",
-        message: `memory VFS path \xAB${relative}\xBB is not a directory`,
-        context: { path: relative }
-      });
-    }
-    const prefix = absolute === "" ? "" : `${absolute}/`;
-    const children = /* @__PURE__ */ new Map();
-    for (const entry2 of this.entries.values()) {
-      throwIfAborted(signal);
-      if (!entry2.path.startsWith(prefix)) continue;
-      const remainder = entry2.path.slice(prefix.length);
-      const slash = remainder.indexOf("/");
-      const childName = slash === -1 ? remainder : remainder.slice(0, slash);
-      if (childName === "") continue;
-      const childPath = relative === "" ? childName : `${relative}/${childName}`;
-      const exact = slash === -1 ? entry2 : void 0;
-      if (!children.has(childPath) || exact !== void 0) children.set(childPath, exact);
-    }
-    if (children.size > this.limits.maxEntries) {
-      throw new ModkitError({
-        code: "x3.vfs/memory-entry-budget-exceeded",
-        message: "memory provider exceeded its configured entry boundary",
-        context: { entries: children.size, maxEntries: this.limits.maxEntries }
-      });
-    }
-    for (const [childPath, entry2] of [...children.entries()].sort(
-      ([a2], [b2]) => a2.localeCompare(b2)
-    )) {
-      throwIfAborted(signal);
-      yield entryNode(childPath, entry2 === void 0 ? "directory" : "file", entry2);
-    }
-  }
-  async open(path, signal) {
-    throwIfAborted(signal);
-    this.assertLive();
-    const relative = normalizeVfsPath4(path);
-    assertVfsPathBudget(relative, this.limits);
-    const entry2 = this.entries.get(this.absolute(relative));
-    if (entry2 === void 0) {
-      throw new ModkitError({
-        code: "x3.vfs/file-not-found",
-        message: `memory VFS file \xAB${relative}\xBB does not exist`,
-        context: { path: relative, rootUri: this.rootUri }
-      });
-    }
-    const source2 = createMemorySource(
-      `${this.rootUri}#${encodeURIComponent(relative)}`,
-      entry2.bytes
-    );
-    return budgetRandomAccessSource3(source2, entry2.bytes.byteLength, this.limits, this.readBudget);
-  }
-  dispose() {
-    this.disposed = true;
-  }
-  absolute(path) {
-    if (this.root === "") return path;
-    return path === "" ? this.root : `${this.root}/${path}`;
-  }
-  assertLive() {
-    if (!this.disposed) return;
-    throw new ModkitError({
-      code: "x3.vfs/mount-disposed",
-      message: `memory VFS mount \xAB${this.rootUri}\xBB is disposed`
-    });
-  }
-};
-var MemoryVfsProvider = class {
-  id;
-  scheme = "memory";
-  authority;
-  revision;
-  entries;
-  limits;
-  constructor(options = {}) {
-    this.id = options.id ?? "org.modkitx-x3.vfs.memory";
-    this.authority = options.authority;
-    this.limits = clampVfsLimits4(options.limits);
-    const entries = /* @__PURE__ */ new Map();
-    let totalBytes = 0n;
-    for (const [path, bytes2] of Object.entries(options.entries ?? {})) {
-      const normalized = normalizeVfsPath4(path);
-      assertVfsPathBudget(normalized, this.limits);
-      if (normalized === "") {
-        throw new ModkitError({
-          code: "x3.vfs/path-invalid",
-          message: "memory provider entries require non-empty paths",
-          context: { path }
-        });
-      }
-      const copy = bytes2.slice();
-      if (BigInt(copy.byteLength) > this.limits.maxFileBytes) {
-        throw new ModkitError({
-          code: "x3.vfs/file-size-limit-exceeded",
-          message: "memory provider encountered a file above its logical size limit",
-          context: {
-            path: normalized,
-            fileBytes: String(copy.byteLength),
-            maxFileBytes: String(this.limits.maxFileBytes)
-          }
-        });
-      }
-      totalBytes += BigInt(copy.byteLength);
-      entries.set(normalized, { path: normalized, bytes: copy });
-    }
-    if (entries.size > this.limits.maxEntries) {
-      throw new ModkitError({
-        code: "x3.vfs/memory-entry-budget-exceeded",
-        message: "memory provider exceeded its configured entry boundary",
-        context: { entries: entries.size, maxEntries: this.limits.maxEntries }
-      });
-    }
-    if (totalBytes > this.limits.maxMaterializedBytes) {
-      throw new ModkitError({
-        code: "x3.vfs/memory-byte-budget-exceeded",
-        message: "memory provider exceeded its materialized-byte boundary",
-        context: {
-          bytes: String(totalBytes),
-          maxMaterializedBytes: String(this.limits.maxMaterializedBytes)
-        }
-      });
-    }
-    this.entries = entries;
-    this.revision = options.revision ?? `provider-token:memory-${this.id}-${entries.size}-${totalBytes}`;
-  }
-  async open(uri, context) {
-    throwIfAborted(context.signal);
-    let parsed;
-    try {
-      parsed = new URL(uri);
-    } catch (cause) {
-      throw new ModkitError({
-        code: "x3.vfs/uri-invalid",
-        message: `memory provider cannot parse source URI \xAB${uri}\xBB`,
-        context: { uri },
-        cause
-      });
-    }
-    if (parsed.protocol !== "memory:") {
-      throw new ModkitError({
-        code: "x3.vfs/provider-scheme-mismatch",
-        message: `memory provider cannot open protocol \xAB${parsed.protocol}\xBB`,
-        context: { uri, protocol: parsed.protocol }
-      });
-    }
-    if (this.authority !== void 0 && parsed.host !== this.authority) {
-      throw new ModkitError({
-        code: "x3.vfs/memory-authority-refused",
-        message: `memory provider \xAB${this.id}\xBB refuses authority \xAB${parsed.host}\xBB`,
-        context: { expected: this.authority, actual: parsed.host }
-      });
-    }
-    const root = normalizeVfsPath4(decodeURIComponent(parsed.pathname));
-    const limits = clampVfsLimits4(context.limits, this.limits);
-    assertVfsPathBudget(root, limits);
-    let entries = 0;
-    let bytes2 = 0n;
-    for (const entry2 of this.entries.values()) {
-      if (relativeToRoot(root, entry2.path) === void 0) continue;
-      entries += 1;
-      bytes2 += BigInt(entry2.bytes.byteLength);
-    }
-    if (entries === 0) {
-      throw new ModkitError({
-        code: "x3.vfs/memory-root-not-found",
-        message: `memory provider root \xAB${root}\xBB has no entries`,
-        context: { root, uri }
-      });
-    }
-    if (entries > limits.maxEntries) {
-      throw new ModkitError({
-        code: "x3.vfs/memory-entry-budget-exceeded",
-        message: "memory provider exceeded its configured entry boundary",
-        context: { entries, maxEntries: limits.maxEntries }
-      });
-    }
-    if (bytes2 > limits.maxMaterializedBytes) {
-      throw new ModkitError({
-        code: "x3.vfs/memory-byte-budget-exceeded",
-        message: "memory provider exceeded its materialized-byte boundary",
-        context: {
-          bytes: String(bytes2),
-          maxMaterializedBytes: String(limits.maxMaterializedBytes)
-        }
-      });
-    }
-    return new MemoryMount(uri, root, this.entries, limits, this.revision);
-  }
-};
-function createMemoryVfsProvider(options = {}) {
-  return new MemoryVfsProvider(options);
-}
-
-// packages/extension-manager/src/schema.js
-var EXTENSION_ID = /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/i;
-var ExtensionManagerError = class extends Error {
-  constructor(code, message, context = {}, cause) {
-    super(message, cause === void 0 ? void 0 : { cause });
-    this.name = "ExtensionManagerError";
-    this.code = code;
-    this.context = Object.freeze({ ...context });
-  }
-};
-function fail2(code, message, context) {
-  throw new ExtensionManagerError(code, message, context);
-}
-function object2(value2, label) {
-  if (value2 === null || typeof value2 !== "object" || Array.isArray(value2)) {
-    fail2("extension-manager/schema-invalid", `${label} must be an object`);
-  }
-  return value2;
-}
-function text(value2, label) {
-  if (typeof value2 !== "string" || value2.trim() === "") {
-    fail2("extension-manager/schema-invalid", `${label} must be a non-empty string`);
-  }
-  return value2.trim();
-}
-function optionalText(value2, label) {
-  return value2 === void 0 ? void 0 : text(value2, label);
-}
-function normalizeRepositoryManifest(value2) {
-  const input = object2(value2, "repository manifest");
-  if (input.schemaVersion !== 1) {
-    fail2("extension-manager/schema-version-unsupported", "repository schemaVersion must be 1");
-  }
-  if (!Array.isArray(input.extensions)) {
-    fail2("extension-manager/schema-invalid", "repository extensions must be a list");
-  }
-  const ids = /* @__PURE__ */ new Set();
-  const extensions = input.extensions.map((raw, index) => {
-    const entry2 = object2(raw, `extensions[${index}]`);
-    const id = optionalText(entry2.id, `extensions[${index}].id`);
-    if (id !== void 0 && !EXTENSION_ID.test(id)) {
-      fail2("extension-manager/extension-id-invalid", `invalid extension id \xAB${id}\xBB`);
-    }
-    if (id !== void 0 && ids.has(id)) {
-      fail2("extension-manager/extension-duplicate", `extension \xAB${id}\xBB is duplicated`);
-    }
-    if (id !== void 0) ids.add(id);
-    const path = optionalText(entry2.path, `extensions[${index}].path`);
-    let files;
-    if (entry2.files !== void 0) {
-      const rawFiles = object2(entry2.files, `extensions[${index}].files`);
-      files = Object.freeze(
-        Object.fromEntries(
-          Object.entries(rawFiles).map(([name, encoded]) => [
-            text(name, `extensions[${index}].files key`),
-            text(encoded, `extensions[${index}].files.${name}`)
-          ])
-        )
-      );
-    }
-    if (path === void 0 && files === void 0) {
-      fail2(
-        "extension-manager/schema-invalid",
-        `extensions[${index}] must declare path or embedded files`
-      );
-    }
-    return Object.freeze({
-      ...id === void 0 ? {} : { id },
-      ...path === void 0 ? {} : { path },
-      ...files === void 0 ? {} : { files },
-      enabled: entry2.enabled !== false
-    });
-  });
-  return Object.freeze({
-    schemaVersion: 1,
-    extensions: Object.freeze(extensions)
-  });
-}
-
-// packages/extension-manager/src/vfs.js
-var decoder = new TextDecoder("utf-8", { fatal: true });
-function createExtensionVfs(providers) {
-  const vfs = new VirtualFileSystem();
-  const protocols = [];
-  for (const provider of providers) {
-    vfs.registerProvider(provider);
-    protocols.push(provider.scheme);
-  }
-  return Object.freeze({ vfs, protocols: Object.freeze(protocols.sort()) });
-}
-async function readMountBytes(mount, path = "", signal) {
-  const source2 = await mount.open(normalizeVfsPath(path), signal);
-  try {
-    return await collectStream(source2.stream(0, void 0, signal), signal);
-  } finally {
-    await source2.dispose();
-  }
-}
-
-// packages/extension-manager/src/providers-browser.js
-function createBrowserExtensionVfs(options = {}) {
-  const browser = createBrowserFileVfsProvider({
-    ...options.resolve === void 0 ? {} : { resolve: options.resolve },
-    ...options.limits === void 0 ? {} : { limits: options.limits }
-  });
-  for (const [uri, input] of Object.entries(options.files ?? {})) browser.register(uri, input);
-  return createExtensionVfs([
-    createMemoryVfsProvider({
-      ...options.memoryEntries === void 0 ? {} : { entries: options.memoryEntries },
-      ...options.limits === void 0 ? {} : { limits: options.limits }
-    }),
-    createHttpVfsProvider({
-      scheme: "http",
-      ...options.fetch === void 0 ? {} : { fetch: options.fetch },
-      ...options.allowedOrigins === void 0 ? {} : { allowedOrigins: options.allowedOrigins },
-      ...options.limits === void 0 ? {} : { limits: options.limits }
-    }),
-    createHttpVfsProvider({
-      scheme: "https",
-      ...options.fetch === void 0 ? {} : { fetch: options.fetch },
-      ...options.allowedOrigins === void 0 ? {} : { allowedOrigins: options.allowedOrigins },
-      ...options.limits === void 0 ? {} : { limits: options.limits }
-    }),
-    browser
-  ]);
-}
-
-// packages/extension-manager/src/catalog.js
-var COORDINATE = /^[a-z0-9]+(?:[.-][a-z0-9]+)*\/[a-z0-9]+(?:[.-][a-z0-9]+)*$/u;
-var SEMVER2 = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z.-]+))?$/u;
-var INTEGRITY = /^sha256:[0-9a-f]{64}$/u;
-var BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u;
-var DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
-var CHANNELS = /* @__PURE__ */ new Set(["stable", "preview", "development"]);
-var SOURCE_KINDS = /* @__PURE__ */ new Set(["repository", "bundle"]);
-var TRUST_MODES = /* @__PURE__ */ new Set(["local-user", "signed"]);
-var LOCAL_SOURCE_PROTOCOLS = /* @__PURE__ */ new Set(["file:", "memory:", "browser-file:", "rapid+file:"]);
-var textEncoder = new TextEncoder();
-function record(value2) {
-  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
-}
-function deepFreeze3(value2) {
-  if (!record(value2) && !Array.isArray(value2)) return value2;
-  for (const child of Object.values(value2)) deepFreeze3(child);
-  return Object.freeze(value2);
-}
-function jsonClone(value2) {
-  if (Array.isArray(value2)) return value2.map(jsonClone);
-  if (!record(value2)) return value2;
-  return Object.fromEntries(Object.entries(value2).map(([key3, child]) => [key3, jsonClone(child)]));
-}
-function sortedJson(value2) {
-  if (Array.isArray(value2)) return value2.map(sortedJson);
-  if (!record(value2)) return value2;
-  return Object.fromEntries(
-    Object.keys(value2).sort().map((key3) => [key3, sortedJson(value2[key3])])
-  );
-}
-function issue(issues, path, message) {
-  issues.push(Object.freeze({ path, message }));
-}
-function checkKeys(value2, allowed, path, issues) {
-  for (const key3 of Object.keys(value2)) {
-    if (!allowed.has(key3)) issue(issues, path === "" ? key3 : `${path}.${key3}`, "is not allowed");
-  }
-}
-function nonEmptyText(value2, path, issues) {
-  if (typeof value2 !== "string" || value2.length === 0) {
-    issue(issues, path, "must be a non-empty string");
-    return false;
-  }
-  return true;
-}
-function signature(value2, path, issues) {
-  if (!record(value2)) {
-    issue(issues, path, "must be an object");
-    return;
-  }
-  checkKeys(value2, /* @__PURE__ */ new Set(["algorithm", "keyId", "value"]), path, issues);
-  if (value2.algorithm !== "Ed25519") issue(issues, `${path}.algorithm`, "must be Ed25519");
-  nonEmptyText(value2.keyId, `${path}.keyId`, issues);
-  if (!nonEmptyText(value2.value, `${path}.value`, issues) || !BASE64.test(value2.value)) {
-    issue(issues, `${path}.value`, "must be canonical base64");
-  }
-}
-function isRemoteCatalogUri(uri) {
-  if (typeof uri !== "string") return false;
-  if (uri.startsWith("//") || uri.startsWith("\\\\")) return true;
-  try {
-    const parsed = new URL(uri);
-    const protocol = parsed.protocol;
-    if (protocol === "file:" || protocol === "rapid+file:") {
-      return parsed.host !== "" || parsed.pathname.startsWith("//");
-    }
-    return !LOCAL_SOURCE_PROTOCOLS.has(protocol);
-  } catch {
-    return false;
-  }
-}
-function source(value2, path, issues) {
-  if (!record(value2)) {
-    issue(issues, path, "must be an object");
-    return false;
-  }
-  checkKeys(value2, /* @__PURE__ */ new Set(["kind", "uri", "integrity", "bytes", "trust"]), path, issues);
-  if (!SOURCE_KINDS.has(value2.kind)) {
-    issue(issues, `${path}.kind`, "must be repository or bundle");
-  }
-  nonEmptyText(value2.uri, `${path}.uri`, issues);
-  if (value2.integrity !== void 0 && !INTEGRITY.test(value2.integrity)) {
-    issue(issues, `${path}.integrity`, "must be sha256:<64 lowercase hex characters>");
-  }
-  if (value2.bytes !== void 0 && (!Number.isSafeInteger(value2.bytes) || value2.bytes < 0)) {
-    issue(issues, `${path}.bytes`, "must be a non-negative safe integer");
-  }
-  if (!record(value2.trust)) {
-    issue(issues, `${path}.trust`, "must be an object");
-  } else {
-    checkKeys(value2.trust, /* @__PURE__ */ new Set(["mode", "signature"]), `${path}.trust`, issues);
-    if (!TRUST_MODES.has(value2.trust.mode)) {
-      issue(issues, `${path}.trust.mode`, "must be local-user or signed");
-    }
-    if (value2.trust.signature !== void 0) {
-      signature(value2.trust.signature, `${path}.trust.signature`, issues);
-    }
-  }
-  const remote = isRemoteCatalogUri(value2.uri);
-  if (remote && value2.trust?.mode !== "signed") {
-    issue(issues, `${path}.trust.mode`, "remote sources must use signed trust");
-  }
-  if (remote && !INTEGRITY.test(value2.integrity ?? "")) {
-    issue(issues, `${path}.integrity`, "remote sources require sha256 integrity");
-  }
-  return remote;
-}
-function catalogVersion(value2, path, issues) {
-  if (!record(value2)) {
-    issue(issues, path, "must be an object");
-    return false;
-  }
-  checkKeys(
-    value2,
-    /* @__PURE__ */ new Set(["version", "channel", "source", "extensions", "hostApi", "platforms"]),
-    path,
-    issues
-  );
-  if (typeof value2.version !== "string" || !SEMVER2.test(value2.version)) {
-    issue(issues, `${path}.version`, "must be a semantic version");
-  }
-  if (!CHANNELS.has(value2.channel)) {
-    issue(issues, `${path}.channel`, "must be stable, preview or development");
-  }
-  const remote = source(value2.source, `${path}.source`, issues);
-  if (!Array.isArray(value2.extensions) || value2.extensions.length === 0) {
-    issue(issues, `${path}.extensions`, "must contain at least one extension coordinate");
-  } else {
-    const ids = /* @__PURE__ */ new Set();
-    value2.extensions.forEach((id, index) => {
-      const idPath = `${path}.extensions[${index}]`;
-      if (typeof id !== "string" || !COORDINATE.test(id)) {
-        issue(issues, idPath, "must be a publisher/id coordinate");
-      } else if (ids.has(id)) issue(issues, idPath, "is duplicated");
-      else ids.add(id);
-    });
-  }
-  if (value2.hostApi !== void 0) nonEmptyText(value2.hostApi, `${path}.hostApi`, issues);
-  if (value2.platforms !== void 0) {
-    if (!Array.isArray(value2.platforms)) issue(issues, `${path}.platforms`, "must be an array");
-    else
-      value2.platforms.forEach(
-        (platform, index) => nonEmptyText(platform, `${path}.platforms[${index}]`, issues)
-      );
-  }
-  return remote;
-}
-function catalogPackage(value2, path, issues) {
-  if (!record(value2)) {
-    issue(issues, path, "must be an object");
-    return false;
-  }
-  checkKeys(
-    value2,
-    /* @__PURE__ */ new Set(["id", "publisher", "displayName", "summary", "license", "homepage", "versions"]),
-    path,
-    issues
-  );
-  if (typeof value2.id !== "string" || !COORDINATE.test(value2.id)) {
-    issue(issues, `${path}.id`, "must be a publisher/id coordinate");
-  }
-  for (const field of ["publisher", "displayName", "summary"]) {
-    nonEmptyText(value2[field], `${path}.${field}`, issues);
-  }
-  if (value2.license !== void 0) nonEmptyText(value2.license, `${path}.license`, issues);
-  if (value2.homepage !== void 0) {
-    if (nonEmptyText(value2.homepage, `${path}.homepage`, issues)) {
-      try {
-        const parsed = new URL(value2.homepage);
-        if (parsed.protocol === "") throw new Error("URI has no protocol");
-      } catch {
-        issue(issues, `${path}.homepage`, "must be an absolute URI");
-      }
-    }
-  }
-  if (!Array.isArray(value2.versions) || value2.versions.length === 0) {
-    issue(issues, `${path}.versions`, "must contain at least one version");
-    return false;
-  }
-  const versions = /* @__PURE__ */ new Set();
-  let remote = false;
-  value2.versions.forEach((version, index) => {
-    const versionPath = `${path}.versions[${index}]`;
-    const versionRemote = catalogVersion(version, versionPath, issues);
-    remote = versionRemote || remote;
-    if (record(version) && typeof version.version === "string") {
-      if (versions.has(version.version)) issue(issues, `${versionPath}.version`, "is duplicated");
-      else versions.add(version.version);
-    }
-  });
-  return remote;
-}
-function validateExtensionCatalog(value2) {
-  const issues = [];
-  if (!record(value2)) {
-    issue(issues, "catalog", "must be an object");
-    return Object.freeze(issues);
-  }
-  checkKeys(
-    value2,
-    /* @__PURE__ */ new Set(["$schema", "schemaVersion", "registryId", "generatedAt", "packages", "signature"]),
-    "",
-    issues
-  );
-  if (value2.$schema !== void 0) nonEmptyText(value2.$schema, "$schema", issues);
-  if (value2.schemaVersion !== 1) issue(issues, "schemaVersion", "must be 1");
-  if (typeof value2.registryId !== "string" || !COORDINATE.test(value2.registryId)) {
-    issue(issues, "registryId", "must be a publisher/id coordinate");
-  }
-  if (typeof value2.generatedAt !== "string" || value2.generatedAt.length === 0 || !DATE_TIME.test(value2.generatedAt) || Number.isNaN(Date.parse(value2.generatedAt))) {
-    issue(issues, "generatedAt", "must be an ISO date-time");
-  }
-  if (value2.signature !== void 0) signature(value2.signature, "signature", issues);
-  if (!Array.isArray(value2.packages)) {
-    issue(issues, "packages", "must be an array");
-    return Object.freeze(issues);
-  }
-  const ids = /* @__PURE__ */ new Set();
-  let remote = false;
-  value2.packages.forEach((item, index) => {
-    const path = `packages[${index}]`;
-    const packageRemote = catalogPackage(item, path, issues);
-    remote = packageRemote || remote;
-    if (record(item) && typeof item.id === "string") {
-      if (ids.has(item.id)) issue(issues, `${path}.id`, "is duplicated");
-      else ids.add(item.id);
-    }
-  });
-  if (remote && !record(value2.signature)) {
-    issue(issues, "signature", "catalogs with remote sources must be signed");
-  }
-  return Object.freeze(issues);
-}
-function parseExtensionCatalog(value2) {
-  const issues = validateExtensionCatalog(value2);
-  if (issues.length > 0) {
-    throw new ExtensionManagerError(
-      "extension-manager/catalog-invalid",
-      `extension catalog is invalid (${issues[0].path}: ${issues[0].message})`,
-      { issues }
-    );
-  }
-  return deepFreeze3(jsonClone(value2));
-}
-function extensionCatalogSigningBytes(value2) {
-  const issues = validateExtensionCatalog(value2);
-  const signingIssues = issues.filter(
-    (item) => item.path !== "signature" || item.message !== "catalogs with remote sources must be signed"
-  );
-  if (signingIssues.length > 0) {
-    throw new ExtensionManagerError(
-      "extension-manager/catalog-invalid",
-      `extension catalog is invalid (${signingIssues[0].path}: ${signingIssues[0].message})`,
-      { issues: signingIssues }
-    );
-  }
-  const catalog = deepFreeze3(jsonClone(value2));
-  const unsigned = Object.fromEntries(
-    Object.entries(catalog).filter(([key3]) => key3 !== "signature")
-  );
-  return textEncoder.encode(`${JSON.stringify(sortedJson(unsigned))}
-`);
-}
-function semverParts(value2) {
-  const match = SEMVER2.exec(value2);
-  if (match === null) return void 0;
-  return {
-    numbers: [Number(match[1]), Number(match[2]), Number(match[3])],
-    prerelease: match[4]?.split(".")
-  };
-}
-function compareCatalogVersions(left, right) {
-  const leftParts = semverParts(left);
-  const rightParts = semverParts(right);
-  if (leftParts === void 0 || rightParts === void 0) {
-    throw new ExtensionManagerError(
-      "extension-manager/version-invalid",
-      "catalog version comparison requires semantic versions",
-      { left, right }
-    );
-  }
-  for (let index = 0; index < 3; index += 1) {
-    if (leftParts.numbers[index] !== rightParts.numbers[index]) {
-      return leftParts.numbers[index] < rightParts.numbers[index] ? -1 : 1;
-    }
-  }
-  if (leftParts.prerelease === void 0) return rightParts.prerelease === void 0 ? 0 : 1;
-  if (rightParts.prerelease === void 0) return -1;
-  const length = Math.max(leftParts.prerelease.length, rightParts.prerelease.length);
-  for (let index = 0; index < length; index += 1) {
-    const leftId = leftParts.prerelease[index];
-    const rightId = rightParts.prerelease[index];
-    if (leftId === void 0) return -1;
-    if (rightId === void 0) return 1;
-    if (leftId === rightId) continue;
-    const leftNumeric = /^[0-9]+$/u.test(leftId);
-    const rightNumeric = /^[0-9]+$/u.test(rightId);
-    if (leftNumeric && rightNumeric) return Number(leftId) < Number(rightId) ? -1 : 1;
-    if (leftNumeric !== rightNumeric) return leftNumeric ? -1 : 1;
-    return leftId < rightId ? -1 : 1;
-  }
-  return 0;
-}
-
-// packages/extension-manager/src/client.js
-var ALL_CHANNELS = Object.freeze(["stable", "preview", "development"]);
-var SHA256_INTEGRITY = /^sha256:[0-9a-f]{64}$/u;
-function record2(value2) {
-  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
-}
-function fail3(code, message, context = {}) {
-  throw new ExtensionManagerError(code, message, context);
-}
-function requirePort(port, name, methods) {
-  if (!record2(port)) fail3("extension-manager/port-invalid", `${name} must be an object`, { name });
-  for (const method of methods) {
-    if (typeof port[method] !== "function") {
-      fail3("extension-manager/port-invalid", `${name}.${method} must be a function`, {
-        name,
-        method
-      });
-    }
-  }
-  return port;
-}
-function catalogEnvelope(value2, label) {
-  if (value2 === void 0) return void 0;
-  if (record2(value2) && Object.hasOwn(value2, "catalog")) {
-    if (value2.signatureVerified !== void 0 && typeof value2.signatureVerified !== "boolean") {
-      fail3("extension-manager/catalog-source-invalid", `${label}.signatureVerified must be boolean`);
-    }
-    return Object.freeze({
-      catalog: parseExtensionCatalog(value2.catalog),
-      source: typeof value2.source === "string" ? value2.source : label,
-      signatureVerified: value2.signatureVerified === true
-    });
-  }
-  return Object.freeze({
-    catalog: parseExtensionCatalog(value2),
-    source: label,
-    signatureVerified: false
-  });
-}
-function publisherFrom(id) {
-  const slash = id.indexOf("/");
-  return slash < 1 ? "unknown" : id.slice(0, slash);
-}
-function selectedVersion(item, channels, requested) {
-  if (requested !== void 0) {
-    return item.versions.find((version) => version.version === requested);
-  }
-  return item.versions.filter((version) => channels.has(version.channel)).sort((left, right) => compareCatalogVersions(left.version, right.version)).at(-1);
-}
-function sourceWithCatalogBase(source2, catalogSource) {
-  let uri = source2.uri;
-  try {
-    const catalogUrl = new URL(catalogSource);
-    if (catalogUrl.protocol === "http:" || catalogUrl.protocol === "https:") {
-      uri = new URL(uri, catalogUrl).href;
-    }
-  } catch {
-  }
-  return Object.freeze({ ...source2, uri });
-}
-function isHttpTransport(uri) {
-  try {
-    const protocol = new URL(uri).protocol;
-    return protocol === "http:" || protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-function candidateOf(state, item, channels, requested) {
-  const version = selectedVersion(item, channels, requested);
-  if (version === void 0) return void 0;
-  const source2 = sourceWithCatalogBase(version.source, state.source);
-  const remote = isRemoteCatalogUri(source2.uri);
-  const catalogRemote = isRemoteCatalogUri(state.source);
-  const catalogSigned = state.catalog.signature !== void 0 && state.signatureVerified;
-  const remoteCatalogTransportAllowed = !catalogRemote || isHttpTransport(source2.uri);
-  const trusted = remoteCatalogTransportAllowed && (!catalogRemote || catalogSigned) && (!catalogRemote && !remote && source2.trust.mode === "local-user" || source2.trust.mode === "signed" && catalogSigned && (!(catalogRemote || remote) || SHA256_INTEGRITY.test(source2.integrity ?? "")));
-  return Object.freeze({
-    id: item.id,
-    displayName: item.displayName,
-    publisher: item.publisher,
-    version: version.version,
-    channel: version.channel,
-    summary: item.summary,
-    extensions: version.extensions,
-    source: source2,
-    catalogId: state.catalog.registryId,
-    catalogSource: state.source,
-    catalogSignature: state.catalog.signature,
-    signatureVerified: state.signatureVerified,
-    remote,
-    trusted
-  });
-}
-function candidatesOf(state, channels) {
-  if (state === void 0) return Object.freeze([]);
-  return Object.freeze(
-    state.catalog.packages.map((item) => candidateOf(state, item, channels)).filter((candidate) => candidate !== void 0)
-  );
-}
-function installedRecords(value2) {
-  if (!Array.isArray(value2)) {
-    fail3("extension-manager/artifact-store-invalid", "ArtifactStore.list() must return an array");
-  }
-  const ids = /* @__PURE__ */ new Set();
-  return Object.freeze(
-    value2.map((entry2, index) => {
-      if (!record2(entry2) || typeof entry2.id !== "string" || typeof entry2.version !== "string" || !Array.isArray(entry2.roots) || entry2.roots.length === 0) {
-        fail3(
-          "extension-manager/artifact-store-invalid",
-          `ArtifactStore.list()[${index}] must contain id, version and roots`
-        );
-      }
-      const rootIds = /* @__PURE__ */ new Set();
-      entry2.roots.forEach((root, rootIndex) => {
-        if (!record2(root) || !Object.hasOwn(root, "root") || typeof root.expectedId !== "string") {
-          fail3(
-            "extension-manager/artifact-store-invalid",
-            `ArtifactStore.list()[${index}].roots[${rootIndex}] must contain root and expectedId`
-          );
-        }
-        if (rootIds.has(root.expectedId)) {
-          fail3(
-            "extension-manager/artifact-store-invalid",
-            `ArtifactStore.list()[${index}] contains duplicate root \xAB${root.expectedId}\xBB`
-          );
-        }
-        rootIds.add(root.expectedId);
-      });
-      if (ids.has(entry2.id)) {
-        fail3(
-          "extension-manager/artifact-store-invalid",
-          `ArtifactStore.list() contains duplicate id \xAB${entry2.id}\xBB`
-        );
-      }
-      ids.add(entry2.id);
-      return entry2;
-    })
-  );
-}
-function enablementRecords(value2) {
-  if (!Array.isArray(value2)) {
-    fail3(
-      "extension-manager/enablement-store-invalid",
-      "EnablementStore.list() must return an array"
-    );
-  }
-  const enabled = /* @__PURE__ */ new Map();
-  value2.forEach((entry2, index) => {
-    if (!record2(entry2) || typeof entry2.id !== "string" || typeof entry2.enabled !== "boolean") {
-      fail3(
-        "extension-manager/enablement-store-invalid",
-        `EnablementStore.list()[${index}] must contain id and enabled`
-      );
-    }
-    if (enabled.has(entry2.id)) {
-      fail3(
-        "extension-manager/enablement-store-invalid",
-        `EnablementStore.list() contains duplicate id \xAB${entry2.id}\xBB`
-      );
-    }
-    enabled.set(entry2.id, entry2.enabled);
-  });
-  return enabled;
-}
-function assertInstallable(candidate) {
-  if (!candidate.trusted) {
-    fail3(
-      "extension-manager/artifact-untrusted",
-      `extension \xAB${candidate.id}\xBB is not signed by a trusted catalog`,
-      { id: candidate.id, source: candidate.source.uri }
-    );
-  }
-  if (candidate.remote) {
-    if (candidate.source.trust.mode !== "signed" || typeof candidate.source.integrity !== "string" || !candidate.signatureVerified || candidate.catalogSignature === void 0) {
-      fail3(
-        "extension-manager/remote-artifact-refused",
-        `remote extension \xAB${candidate.id}\xBB requires a verified signature and sha256 integrity`,
-        { id: candidate.id, source: candidate.source.uri }
-      );
-    }
-  }
-}
-function validateAcquired(candidate, acquired) {
-  if (!record2(acquired) || !Object.hasOwn(acquired, "artifact")) {
-    fail3(
-      "extension-manager/acquirer-invalid",
-      "ArtifactAcquirer.acquire() must return an artifact record",
-      { id: candidate.id }
-    );
-  }
-  const expected = candidate.source.integrity;
-  if (expected !== void 0 && acquired.integrity !== expected) {
-    fail3(
-      "extension-manager/integrity-mismatch",
-      `artifact for \xAB${candidate.id}\xBB does not match ${expected}`,
-      { id: candidate.id, expected, actual: acquired.integrity }
-    );
-  }
-  return acquired;
-}
-function validateInstalled(candidate, installed) {
-  const [validated] = installedRecords([installed]);
-  if (validated.id !== candidate.id || validated.version !== candidate.version) {
-    fail3(
-      "extension-manager/artifact-store-invalid",
-      "ArtifactStore.install() returned a different extension identity",
-      {
-        expectedId: candidate.id,
-        expectedVersion: candidate.version,
-        actual: installed
-      }
-    );
-  }
-  const expectedRoots = [...candidate.extensions].sort();
-  const actualRoots = validated.roots.map((root) => root.expectedId).sort();
-  if (actualRoots.length !== expectedRoots.length || actualRoots.some((id, index) => id !== expectedRoots[index])) {
-    fail3(
-      "extension-manager/artifact-store-invalid",
-      "ArtifactStore.install() did not return every extension root in the catalog package",
-      { id: candidate.id, expectedRoots, actualRoots }
-    );
-  }
-}
-function createExtensionManagerClient(options) {
-  if (!record2(options)) fail3("extension-manager/options-invalid", "options must be an object");
-  const catalogSource = requirePort(options.catalogSource, "CatalogSource", ["cached", "refresh"]);
-  const artifactAcquirer = requirePort(options.artifactAcquirer, "ArtifactAcquirer", ["acquire"]);
-  const artifactStore = requirePort(options.artifactStore, "ArtifactStore", [
-    "list",
-    "install",
-    "remove"
-  ]);
-  const enablementStore = requirePort(options.enablementStore, "EnablementStore", [
-    "list",
-    "setEnabled",
-    "remove"
-  ]);
-  const channels = new Set(options.channels ?? ALL_CHANNELS);
-  for (const channel of channels) {
-    if (!ALL_CHANNELS.includes(channel)) {
-      fail3("extension-manager/channel-invalid", `unsupported catalog channel \xAB${channel}\xBB`);
-    }
-  }
-  let mutationTail = Promise.resolve();
-  const mutate = (operation) => {
-    const result = mutationTail.then(operation, operation);
-    mutationTail = result.then(
-      () => void 0,
-      () => void 0
-    );
-    return result;
-  };
-  let cachedStatePromise;
-  const cachedState = () => {
-    cachedStatePromise ??= Promise.resolve(catalogSource.cached()).then(
-      (value2) => catalogEnvelope(value2, "cached catalog")
-    );
-    return cachedStatePromise;
-  };
-  const catalogCandidate = async (id, requestedVersion) => {
-    const state = await cachedState();
-    const item = state?.catalog.packages.find((candidate2) => candidate2.id === id);
-    if (item === void 0) {
-      fail3("extension-manager/catalog-entry-missing", `extension \xAB${id}\xBB is not in the catalog`, {
-        id
-      });
-    }
-    const candidate = candidateOf(state, item, channels, requestedVersion);
-    if (candidate === void 0) {
-      fail3(
-        "extension-manager/catalog-version-missing",
-        requestedVersion === void 0 ? `extension \xAB${id}\xBB has no version in the selected channels` : `extension \xAB${id}\xBB has no version \xAB${requestedVersion}\xBB`,
-        { id, requestedVersion }
-      );
-    }
-    return candidate;
-  };
-  const acquireAndInstall = async (candidate) => {
-    assertInstallable(candidate);
-    const acquired = validateAcquired(candidate, await artifactAcquirer.acquire(candidate));
-    const installed = await artifactStore.install(
-      Object.freeze({
-        entry: candidate,
-        artifact: acquired.artifact,
-        ...acquired.integrity === void 0 ? {} : { integrity: acquired.integrity }
-      })
-    );
-    validateInstalled(candidate, installed);
-    return installed;
-  };
-  return Object.freeze({
-    async snapshot() {
-      const [state, installedValue, enablementValue] = await Promise.all([
-        cachedState(),
-        artifactStore.list(),
-        enablementStore.list()
-      ]);
-      const available = candidatesOf(state, channels);
-      const installed = installedRecords(installedValue);
-      const enablement = enablementRecords(enablementValue);
-      const availableById = new Map(available.map((entry2) => [entry2.id, entry2]));
-      const installedById = new Map(installed.map((entry2) => [entry2.id, entry2]));
-      const ids = [.../* @__PURE__ */ new Set([...availableById.keys(), ...installedById.keys()])].sort();
-      return Object.freeze({
-        entries: Object.freeze(
-          ids.map((id) => {
-            const offered = availableById.get(id);
-            const present = installedById.get(id);
-            const availableVersion = offered?.version ?? present?.version ?? "unknown";
-            return Object.freeze({
-              id,
-              displayName: offered?.displayName ?? present?.displayName ?? id,
-              publisher: offered?.publisher ?? present?.publisher ?? publisherFrom(id),
-              availableVersion,
-              ...present === void 0 ? {} : { installedVersion: present.version },
-              enabled: present !== void 0 && (enablement.get(id) ?? (typeof present.enabled === "boolean" && present.enabled)),
-              updateAvailable: present !== void 0 && offered !== void 0 && compareCatalogVersions(offered.version, present.version) > 0,
-              source: offered?.source.uri ?? present?.source ?? "local",
-              trusted: offered?.trusted ?? present?.trusted ?? false
-            });
-          })
-        )
-      });
-    },
-    refresh() {
-      return mutate(async () => {
-        const refreshed = catalogEnvelope(await catalogSource.refresh(), "refreshed catalog");
-        if (refreshed === void 0) {
-          fail3(
-            "extension-manager/catalog-refresh-empty",
-            "CatalogSource.refresh() returned no catalog"
-          );
-        }
-        cachedStatePromise = Promise.resolve(refreshed);
-      });
-    },
-    install(id, version) {
-      return mutate(async () => {
-        const installed = installedRecords(await artifactStore.list()).find(
-          (entry2) => entry2.id === id
-        );
-        if (installed !== void 0) {
-          fail3(
-            "extension-manager/artifact-already-installed",
-            `extension \xAB${id}\xBB is already installed`,
-            { id, version: installed.version }
-          );
-        }
-        const candidate = await catalogCandidate(id, version);
-        await enablementStore.setEnabled(id, false);
-        try {
-          await acquireAndInstall(candidate);
-          await enablementStore.setEnabled(id, true);
-        } catch (error3) {
-          let artifactError;
-          let enablementError;
-          try {
-            await artifactStore.remove(id);
-          } catch (cause) {
-            artifactError = cause;
-          }
-          try {
-            await enablementStore.setEnabled(id, false);
-            if (artifactError === void 0) await enablementStore.remove(id);
-          } catch (cause) {
-            enablementError = cause;
-          }
-          if (artifactError !== void 0 || enablementError !== void 0) {
-            fail3(
-              "extension-manager/install-compensation-failed",
-              `extension \xAB${id}\xBB failed installation and could not be removed`,
-              { id, error: error3, artifactError, enablementError }
-            );
-          }
-          throw error3;
-        }
-      });
-    },
-    update(id) {
-      return mutate(async () => {
-        const installed = installedRecords(await artifactStore.list()).find(
-          (entry2) => entry2.id === id
-        );
-        if (installed === void 0) {
-          fail3("extension-manager/artifact-not-installed", `extension \xAB${id}\xBB is not installed`, {
-            id
-          });
-        }
-        const candidate = await catalogCandidate(id);
-        if (compareCatalogVersions(candidate.version, installed.version) <= 0) return;
-        const wasEnabled = enablementRecords(await enablementStore.list()).get(id) === true;
-        await enablementStore.setEnabled(id, false);
-        await acquireAndInstall(candidate);
-        if (wasEnabled) await enablementStore.setEnabled(id, true);
-      });
-    },
-    remove(id) {
-      return mutate(async () => {
-        await artifactStore.remove(id);
-        await enablementStore.remove(id);
-      });
-    },
-    setEnabled(id, enabled) {
-      return mutate(async () => {
-        if (typeof enabled !== "boolean") {
-          fail3("extension-manager/enablement-invalid", "enabled must be boolean", { id, enabled });
-        }
-        const installed = installedRecords(await artifactStore.list()).some(
-          (entry2) => entry2.id === id
-        );
-        if (!installed) {
-          fail3("extension-manager/artifact-not-installed", `extension \xAB${id}\xBB is not installed`, {
-            id
-          });
-        }
-        await enablementStore.setEnabled(id, enabled);
-      });
-    }
-  });
-}
-
-// packages/sdk/dist/subjects/index.js
-var REVISION_KINDS2 = Object.freeze([
-  "content-hash",
-  "git-object",
-  "etag",
-  "database-version",
-  "provider-token",
-  "overlay-generation"
-]);
-var REVISION_KIND_PATTERN2 = REVISION_KINDS2.join("|");
-var REVISION_ALGORITHM_PATTERN2 = "[a-z0-9]+(?:-[a-z0-9]+)*";
-var REVISION_VALUE_PATTERN2 = "(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+";
-var REVISION_ID_PATTERN2 = `^(?:${REVISION_KIND_PATTERN2})(?:\\.${REVISION_ALGORITHM_PATTERN2})?:${REVISION_VALUE_PATTERN2}$`;
-var REVISION_ID2 = new RegExp(REVISION_ID_PATTERN2);
-function assertSourceChain2(source2) {
-  for (let current = source2; current !== void 0; current = current.parent) {
-    if (typeof current.id !== "string" || current.id.length === 0) {
-      throw new TypeError("subject source id must be non-empty");
-    }
-  }
-}
-function assertSubjectIdentity2(identity) {
-  if (typeof identity.kind !== "string" || typeof identity.key !== "string") {
-    throw new TypeError("subject identity kind and key must be strings");
-  }
-  if (identity.kind === "" && identity.key === "") return;
-  if (!isQualifiedId(identity.kind)) {
-    throw new TypeError(`nested subject kind must be a qualified id: ${identity.kind}`);
-  }
-  if (identity.key.length === 0) {
-    throw new TypeError("nested subject key must be non-empty");
-  }
-}
-function rootSubject2(source2, workspace) {
-  assertSourceChain2(source2);
-  return {
-    ...workspace === void 0 ? {} : { workspace },
-    source: source2,
-    identity: { kind: "", key: "" }
-  };
-}
-function nestedSubject2(owner, kind, key3) {
-  assertSourceChain2(owner.source);
-  assertSubjectIdentity2({ kind, key: key3 });
-  return { ...owner, identity: { kind, key: key3 } };
-}
-var EXTENDED_SUBJECT_PREFIX2 = "x3-subject:";
-function sourceIdChain2(source2) {
-  const chain = [];
-  for (let current = source2; current !== void 0; current = current.parent) {
-    chain.push(current.id);
-  }
-  return chain.reverse();
-}
-function serializeSubjectRef2(ref2) {
-  assertSourceChain2(ref2.source);
-  assertSubjectIdentity2(ref2.identity);
-  if (ref2.workspace !== void 0 || ref2.source.parent !== void 0 || ref2.source.id.includes("#") || ref2.source.id.startsWith(EXTENDED_SUBJECT_PREFIX2)) {
-    const payload = [
-      1,
-      ref2.workspace ?? null,
-      sourceIdChain2(ref2.source),
-      ref2.identity.kind,
-      ref2.identity.key
-    ];
-    return `${EXTENDED_SUBJECT_PREFIX2}${encodeURIComponent(JSON.stringify(payload))}`;
-  }
-  if (ref2.identity.key === "" && ref2.identity.kind === "") return ref2.source.id;
-  return `${ref2.source.id}#${encodeURIComponent(ref2.identity.kind)}/${encodeURIComponent(ref2.identity.key)}`;
-}
-var STANDARD_DATA_SOURCE_CONTRACTS2 = Object.freeze([
-  "common.view/text-data-source",
-  "common.view/byte-range-source",
-  "common.view/tree-data-source",
-  "common.view/table-data-source",
-  "common.view/transport-source",
-  "common.view/namespace-entry-source",
-  "common.view/raster-image-source",
-  "common.view/vector-scene-source",
-  "common.view/audio-media-source",
-  "common.view/video-media-source",
-  "common.view/model-scene-source",
-  "common.view/world-scene-source",
-  // optional model facets beside the base scene source (block 11, slice 11C0, plan item 11)
-  "common.view/model-resource-refs-source",
-  "common.view/model-skeleton-source",
-  "common.view/model-animation-source",
-  "common.view/model-collision-source",
-  "common.view/model-material-source",
-  "common.view/model-socket-source",
-  "common.view/relation-graph-source",
-  "common.view/subject-selector-source",
-  "common.view/subject-facts-source",
-  "common.view/subject-calculations-source",
-  "common.view/slide-deck-source"
-]);
-var DATA_SOURCE_MATURITY2 = Object.freeze({
-  "common.view/text-data-source": "admitted",
-  "common.view/byte-range-source": "admitted",
-  "common.view/tree-data-source": "admitted",
-  "common.view/table-data-source": "admitted",
-  "common.view/transport-source": "admitted",
-  "common.view/namespace-entry-source": "admitted",
-  "common.view/raster-image-source": "admitted",
-  "common.view/vector-scene-source": "admitted",
-  "common.view/audio-media-source": "admitted",
-  "common.view/video-media-source": "admitted",
-  "common.view/model-scene-source": "admitted",
-  "common.view/world-scene-source": "publisher-candidate",
-  "common.view/model-resource-refs-source": "admitted",
-  "common.view/model-skeleton-source": "admitted",
-  "common.view/model-animation-source": "admitted",
-  "common.view/model-collision-source": "admitted",
-  "common.view/model-material-source": "admitted",
-  "common.view/model-socket-source": "publisher-candidate",
-  "common.view/relation-graph-source": "admitted",
-  "common.view/subject-selector-source": "publisher-candidate",
-  "common.view/subject-facts-source": "admitted",
-  "common.view/subject-calculations-source": "admitted",
-  "common.view/slide-deck-source": "publisher-candidate"
-});
-var ADMITTED_DATA_SOURCE_CONTRACTS2 = Object.freeze(
-  STANDARD_DATA_SOURCE_CONTRACTS2.filter(
-    (contract) => DATA_SOURCE_MATURITY2[contract] === "admitted"
-  )
-);
-var KNOWLEDGE_LOCALE_PATTERN2 = "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$";
-var knowledgeLocalePattern2 = new RegExp(KNOWLEDGE_LOCALE_PATTERN2, "u");
-var DOTTED_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
-var NAMESPACED_DOTTED_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
-var OPERATION_PATTERN2 = "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$";
-var QUALIFIED_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
-var SEGMENT_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
-var SEMVER_PATTERN2 = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$";
-var RANGE_NUMBER2 = "(?:0|[1-9]\\d*)";
-var RANGE_NUMERIC2 = `${RANGE_NUMBER2}(?:\\.${RANGE_NUMBER2}){0,2}`;
-var RANGE_EXACT2 = `=?${RANGE_NUMBER2}\\.${RANGE_NUMBER2}\\.${RANGE_NUMBER2}`;
-var RANGE_WILDCARD2 = `(?:${RANGE_NUMBER2}\\.(?:x|\\*)|${RANGE_NUMBER2}\\.${RANGE_NUMBER2}\\.(?:x|\\*))`;
-var RANGE_CARET2 = `\\^${RANGE_NUMBER2}\\.${RANGE_NUMBER2}(?:\\.${RANGE_NUMBER2})?`;
-var RANGE_COMPARATOR2 = `[<>]=?${RANGE_NUMERIC2}`;
-var RANGE_ATOM2 = `(?:${RANGE_EXACT2}|${RANGE_WILDCARD2}|${RANGE_CARET2}|${RANGE_COMPARATOR2})`;
-var VERSION_RANGE_PATTERN2 = `^(?:\\*|x|${RANGE_ATOM2}(?: ${RANGE_ATOM2})*)$`;
-var RELATIVE_ENTRYPOINT_PATTERN2 = "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$";
-var METHOD_NAME_PATTERN2 = "^[a-z][a-zA-Z0-9]{0,63}$";
-var REQUIREMENT_SCOPE_KINDS2 = Object.freeze([
-  "contribution",
-  "offer",
-  "operation",
-  "intent",
-  "variant",
-  "profile",
-  "projection",
-  "slot"
-]);
-var requirementScopeSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["kind", "id"],
-  properties: {
-    kind: { enum: REQUIREMENT_SCOPE_KINDS2 },
-    id: { type: "string", minLength: 1 }
-  }
-};
-var extensionRequirementSchema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json",
-  type: "object",
-  additionalProperties: false,
-  required: ["extension", "mode", "scope"],
-  properties: {
-    extension: { type: "string", pattern: QUALIFIED_PATTERN2 },
-    range: { type: "string", pattern: VERSION_RANGE_PATTERN2 },
-    mode: { enum: ["required", "default", "suggested", "integrates"] },
-    scope: requirementScopeSchema2
-  }
-};
-var contributionManifestsSchema2 = {
-  type: "array",
-  items: { type: "string", minLength: 1 }
-};
-var extensionManifestSchema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/extension-manifest.v1.schema.json",
-  type: "object",
-  additionalProperties: false,
-  required: ["schemaVersion", "publisher", "id", "version", "license", "contributionManifests"],
-  properties: {
-    schemaVersion: { const: 1 },
-    publisher: { type: "string", pattern: DOTTED_PATTERN2 },
-    id: { type: "string", pattern: DOTTED_PATTERN2 },
-    version: { type: "string", pattern: SEMVER_PATTERN2 },
-    license: { type: "string", minLength: 1 },
-    contributionManifests: contributionManifestsSchema2,
-    dependsOn: { type: "array", items: extensionRequirementSchema2 }
-  }
-};
-var modkitBlockSchema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/extension-manifest-modkit-block.v1.schema.json",
-  type: "object",
-  additionalProperties: false,
-  required: ["schemaVersion", "publisher", "id", "contributionManifests"],
-  properties: {
-    schemaVersion: { const: 1 },
-    publisher: { type: "string", pattern: DOTTED_PATTERN2 },
-    id: { type: "string", pattern: DOTTED_PATTERN2 },
-    contributionManifests: contributionManifestsSchema2,
-    dependsOn: { type: "array", items: extensionRequirementSchema2 }
-  }
-};
-deepFreeze(requirementScopeSchema2);
-deepFreeze(extensionRequirementSchema2);
-deepFreeze(extensionManifestSchema2);
-deepFreeze(modkitBlockSchema2);
-var EXECUTION_PROFILES2 = Object.freeze([
-  "browser-sandbox",
-  "worker-brokered",
-  "process-brokered",
-  "wasm-brokered",
-  "trusted-in-process",
-  "remote-provider"
-]);
-var PERMISSION_CLASSES2 = Object.freeze([
-  "read-source",
-  "write-source",
-  "filesystem-read",
-  "filesystem-write",
-  "network",
-  "process-launch",
-  "native-code",
-  "credentials",
-  "clipboard",
-  "persistent-storage"
-]);
-var RUNTIME_ENVIRONMENTS2 = Object.freeze([
-  "browser-main",
-  "browser-worker",
-  "node",
-  "node-worker",
-  "wasm",
-  "native",
-  "external-tool"
-]);
-var OPERATING_SYSTEMS2 = Object.freeze([
-  "any",
-  "windows",
-  "linux",
-  "darwin",
-  "android",
-  "ios"
-]);
-var ARCHITECTURES2 = Object.freeze([
-  "any",
-  "x86",
-  "x64",
-  "arm32",
-  "arm64",
-  "wasm32"
-]);
-var runtimeTargetConstraintSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    environments: { type: "array", items: { enum: RUNTIME_ENVIRONMENTS2 }, minItems: 1 },
-    operatingSystems: { type: "array", items: { enum: OPERATING_SYSTEMS2 }, minItems: 1 },
-    architectures: { type: "array", items: { enum: ARCHITECTURES2 }, minItems: 1 },
-    requiredHostCapabilities: { type: "array", items: { type: "string", minLength: 1 } },
-    requiredWebApis: { type: "array", items: { type: "string", minLength: 1 } },
-    externalTools: { type: "array", items: { type: "string", minLength: 1 } }
-  }
-};
-var runtimeVariantDeclarationSchema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json",
-  type: "object",
-  additionalProperties: false,
-  required: ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"],
-  properties: {
-    variantId: { type: "string", pattern: SEGMENT_PATTERN2 },
-    // Containment is enforced twice: here (authoring gate) and again by the host before
-    // any import (MK3/24 §8) — the host never trusts that someone validated the input.
-    entrypoint: { type: "string", pattern: RELATIVE_ENTRYPOINT_PATTERN2 },
-    target: runtimeTargetConstraintSchema2,
-    executionProfile: { enum: EXECUTION_PROFILES2 },
-    requestedPermissionClasses: { type: "array", items: { enum: PERMISSION_CLASSES2 } }
-  }
-};
-var scopedContractRequirementSchema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json",
-  type: "object",
-  additionalProperties: false,
-  required: ["contract", "major", "mode", "scope"],
-  properties: {
-    contract: { type: "string", pattern: QUALIFIED_PATTERN2 },
-    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-    range: { type: "string", pattern: VERSION_RANGE_PATTERN2 },
-    mode: { enum: ["required", "default", "suggested", "integrates"] },
-    scope: requirementScopeSchema2
-  }
-};
-var contributionManifestSchema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/contribution-manifest.v1.schema.json",
-  type: "object",
-  additionalProperties: false,
-  required: ["schemaVersion", "contract", "id", "displayName", "spec"],
-  properties: {
-    schemaVersion: { const: 1 },
-    contract: {
-      type: "object",
-      additionalProperties: false,
-      required: ["id", "major"],
-      properties: {
-        id: { type: "string", pattern: QUALIFIED_PATTERN2 },
-        major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
-      }
-    },
-    id: { type: "string", pattern: QUALIFIED_PATTERN2 },
-    displayName: { type: "string", minLength: 1 },
-    status: { enum: ["supported", "partial", "unsupported", "experimental"] },
-    runtimeVariants: { type: "array", items: runtimeVariantDeclarationSchema2 },
-    dependsOn: { type: "array", items: scopedContractRequirementSchema2 },
-    limitations: { type: "array", items: { type: "string", minLength: 1 } },
-    spec: { title: "JsonValue" }
-  }
-};
-deepFreeze(runtimeTargetConstraintSchema2);
-deepFreeze(runtimeVariantDeclarationSchema2);
-deepFreeze(scopedContractRequirementSchema2);
-deepFreeze(contributionManifestSchema2);
-var nonEmptyString7 = { type: "string", minLength: 1 };
-var qualifiedId2 = { type: "string", pattern: QUALIFIED_PATTERN2 };
-var namespacedDottedId3 = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN2 };
-var operationId3 = { type: "string", pattern: OPERATION_PATTERN2 };
-var decimalU642 = { type: "string", pattern: UINT64_DECIMAL_PATTERN };
-var jsonSchemaRefSchema3 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["$ref"],
-  properties: { $ref: nonEmptyString7 }
-};
-var resourceBudgetWireSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"],
-  properties: {
-    maxInputBytes: decimalU642,
-    maxDepth: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-    maxNodes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-    maxScalarBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-    maxDiagnostics: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-    deadlineMs: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
-  }
-};
-var dataSourceRefWireSchema2 = {
-  oneOf: [
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["contract", "major"],
-      properties: {
-        contract: { enum: STANDARD_DATA_SOURCE_CONTRACTS2 },
-        major: { const: 1 }
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["contract", "major", "opaque"],
-      properties: {
-        contract: { ...qualifiedId2, not: { enum: STANDARD_DATA_SOURCE_CONTRACTS2 } },
-        major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-        opaque: { const: true }
-      }
-    }
-  ]
-};
-var contractRequirementSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["contract", "major"],
-  properties: {
-    contract: qualifiedId2,
-    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-    range: { type: "string", pattern: VERSION_RANGE_PATTERN2 }
-  }
-};
-var formatRefSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["formatId", "label"],
-  properties: {
-    formatId: nonEmptyString7,
-    label: nonEmptyString7,
-    mediaType: nonEmptyString7
-  }
-};
-var signatureRuleSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["from", "offset", "bytesHex"],
-  properties: {
-    from: { enum: ["start", "end"] },
-    offset: { type: "integer", minimum: 0, maximum: 4096 },
-    bytesHex: { type: "string", pattern: "^(?:[0-9a-f]{2}){1,64}$" },
-    maskHex: { type: "string", pattern: "^(?:[0-9a-f]{2}){1,64}$" }
-  }
-};
-var matchRulesSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    extensions: { type: "array", items: nonEmptyString7 },
-    mediaTypes: { type: "array", items: nonEmptyString7 },
-    pathGlobs: { type: "array", items: nonEmptyString7 },
-    signatures: { type: "array", items: signatureRuleSchema2, maxItems: 8 }
-  }
-};
-var probePlanSchema2 = {
-  oneOf: [
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["kind", "ranges", "maxBytes"],
-      properties: {
-        kind: { const: "bytes" },
-        ranges: {
-          type: "array",
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["from", "length"],
-            properties: {
-              from: { enum: ["start", "end"] },
-              length: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
-            }
-          }
-        },
-        maxBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["kind", "markers", "maxEntries", "maxBytes", "maxDepth", "maxPathBytes"],
-      properties: {
-        kind: { const: "namespace" },
-        markers: {
-          type: "array",
-          items: nonEmptyString7,
-          minItems: 1,
-          maxItems: 256,
-          uniqueItems: true
-        },
-        prefixes: { type: "array", items: nonEmptyString7 },
-        maxEntries: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-        maxBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-        maxDepth: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-        maxPathBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["kind", "maxSubjects", "maxRelationDepth"],
-      properties: {
-        kind: { const: "derived" },
-        maxSubjects: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-        maxRelationDepth: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
-      }
-    }
-  ]
-};
-var traitDefinitionRequirementSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["id"],
-  properties: {
-    id: namespacedDottedId3,
-    definitionRange: { type: "string", pattern: VERSION_RANGE_PATTERN2 }
-  }
-};
-var traitQueryRequirementSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["id"],
-  properties: {
-    ...traitDefinitionRequirementSchema2.properties,
-    states: {
-      type: "array",
-      items: { enum: ["available", "partial", "disabled", "dependency-required"] },
-      minItems: 1,
-      uniqueItems: true
-    }
-  }
-};
-var companionRuleSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["id", "role", "required", "patterns", "searchScopes"],
-  properties: {
-    id: { type: "string", pattern: SEGMENT_PATTERN2 },
-    role: nonEmptyString7,
-    required: { type: "boolean" },
-    patterns: { type: "array", items: nonEmptyString7, minItems: 1 },
-    expected: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        all: { type: "array", items: traitQueryRequirementSchema2 },
-        any: { type: "array", items: traitQueryRequirementSchema2 },
-        none: { type: "array", items: traitQueryRequirementSchema2 }
-      }
-    },
-    searchScopes: {
-      type: "array",
-      minItems: 1,
-      items: {
-        enum: [
-          "sibling-directory",
-          "current-mount",
-          "enclosing-container",
-          "workspace-dependency-layer",
-          "explicit-user-selection"
-        ]
-      }
-    }
-  }
-};
-var representationDeclSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["id", "contract", "major", "stage", "lossy"],
-  properties: {
-    id: nonEmptyString7,
-    contract: qualifiedId2,
-    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-    stage: { enum: ["authored", "compiled", "runtime"] },
-    lossy: { type: "boolean" }
-  }
-};
-var operationDeclSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["id", "handlerId", "mutatesSource"],
-  properties: {
-    id: operationId3,
-    handlerId: nonEmptyString7,
-    mutatesSource: { type: "boolean" },
-    requiredPermissions: { type: "array", items: { enum: PERMISSION_CLASSES2 } },
-    requiresContract: contractRequirementSchema2,
-    inputSchema: jsonSchemaRefSchema3,
-    outputKinds: {
-      type: "array",
-      items: {
-        enum: ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"]
-      }
-    }
-  }
-};
-var traitDeclarationSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["id", "representation", "presence"],
-  properties: {
-    id: namespacedDottedId3,
-    definitionVersion: { type: "string", pattern: SEMVER_PATTERN2 },
-    representation: { enum: ["source", "compiled", "runtime"] },
-    presence: { enum: ["may-expose", "will-expose"] },
-    prerequisites: { type: "array", items: contractRequirementSchema2 },
-    evidenceRefs: { type: "array", items: nonEmptyString7, uniqueItems: true }
-  }
-};
-var fidelityNotesSchema2 = { type: "array", items: nonEmptyString7 };
-var fidelityClaimSchema2 = {
-  oneOf: [
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["roundTrip", "preservesUnknownData"],
-      properties: {
-        roundTrip: { const: "byte-identical" },
-        preservesUnknownData: { const: true },
-        notes: fidelityNotesSchema2
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["roundTrip", "preservesUnknownData"],
-      properties: {
-        roundTrip: { const: "semantic" },
-        preservesUnknownData: { type: "boolean" },
-        notes: fidelityNotesSchema2
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["roundTrip", "preservesUnknownData"],
-      properties: {
-        roundTrip: { enum: ["lossy", "none"] },
-        preservesUnknownData: { const: false },
-        notes: fidelityNotesSchema2
-      }
-    }
-  ]
-};
-var codecFidelityEvidenceSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "formatId",
-    "representationId",
-    "claim",
-    "evidenceId",
-    "corpusId",
-    "corpusDigest",
-    "conformanceProfile",
-    "optionsFingerprint",
-    "inputClass",
-    "provenAt"
-  ],
-  properties: {
-    formatId: nonEmptyString7,
-    representationId: nonEmptyString7,
-    claim: fidelityClaimSchema2,
-    evidenceId: nonEmptyString7,
-    corpusId: nonEmptyString7,
-    corpusDigest: nonEmptyString7,
-    conformanceProfile: qualifiedId2,
-    optionsFingerprint: nonEmptyString7,
-    inputClass: nonEmptyString7,
-    provenAt: {
-      type: "string",
-      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
-    }
-  }
-};
-var serviceProviderFidelityEvidenceSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "offerId",
-    "evidenceId",
-    "claim",
-    "corpusId",
-    "corpusDigest",
-    "conformanceProfile",
-    "optionsFingerprint",
-    "inputClass",
-    "provenAt"
-  ],
-  properties: {
-    offerId: { type: "string", pattern: SEGMENT_PATTERN2 },
-    evidenceId: nonEmptyString7,
-    claim: fidelityClaimSchema2,
-    corpusId: nonEmptyString7,
-    corpusDigest: nonEmptyString7,
-    conformanceProfile: qualifiedId2,
-    optionsFingerprint: nonEmptyString7,
-    inputClass: nonEmptyString7,
-    provenAt: {
-      type: "string",
-      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
-    }
-  }
-};
-var codecContributionRequired2 = [
-  "formatRefs",
-  "roles",
-  "sourceTopology",
-  "artifactStages",
-  "openIntents",
-  "match",
-  "probe",
-  "representations",
-  "publishesDataSources",
-  "operations",
-  "implementationTier",
-  "budgets"
-];
-var codecContributionProperties2 = {
-  formatRefs: { type: "array", items: formatRefSchema2, minItems: 1 },
-  roles: {
-    type: "array",
-    items: { enum: ["container", "media", "byte-transform", "semantic", "index", "sidecar"] },
-    minItems: 1
-  },
-  artifactStages: {
-    type: "array",
-    items: { enum: ["authored", "compiled", "runtime"] },
-    minItems: 1
-  },
-  openIntents: {
-    type: "array",
-    items: { enum: ["probe", "inspect", "thumbnail", "full", "stream", "export"] },
-    minItems: 1
-  },
-  match: matchRulesSchema2,
-  companions: { type: "array", items: companionRuleSchema2 },
-  representations: { type: "array", items: representationDeclSchema2, minItems: 1 },
-  publishesDataSources: { type: "array", items: dataSourceRefWireSchema2 },
-  requires: { type: "array", items: contractRequirementSchema2 },
-  operations: { type: "array", items: operationDeclSchema2 },
-  traitDeclarations: { type: "array", items: traitDeclarationSchema2 },
-  fidelityEvidence: { type: "array", items: codecFidelityEvidenceSchema2 },
-  implementationTier: {
-    type: "object",
-    additionalProperties: false,
-    required: ["claimed"],
-    properties: { claimed: { enum: [1, 2, 3, 4, 5] } }
-  },
-  budgets: resourceBudgetWireSchema2
-};
-var codecContributionSpecV1Schema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/codec-contribution-spec.v1.schema.json",
-  oneOf: [
-    {
-      type: "object",
-      additionalProperties: false,
-      required: codecContributionRequired2,
-      properties: {
-        ...codecContributionProperties2,
-        sourceTopology: { enum: ["single", "bundle"] },
-        probe: probePlanSchema2.oneOf[0]
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: codecContributionRequired2,
-      properties: {
-        ...codecContributionProperties2,
-        sourceTopology: { const: "namespace" },
-        probe: probePlanSchema2.oneOf[1]
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: codecContributionRequired2,
-      properties: {
-        ...codecContributionProperties2,
-        sourceTopology: { const: "derived" },
-        probe: probePlanSchema2.oneOf[2]
-      }
-    }
-  ]
-};
-var serviceContractOfferDeclarationSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["offerId", "contract", "major", "version"],
-  properties: {
-    offerId: { type: "string", pattern: SEGMENT_PATTERN2 },
-    contract: qualifiedId2,
-    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-    version: { type: "string", pattern: SEMVER_PATTERN2 },
-    facet: { title: "JsonValue" }
-  }
-};
-var serviceProviderContributionSpecV1Schema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/service-provider-contribution-spec.v1.schema.json",
-  type: "object",
-  additionalProperties: false,
-  required: ["provides", "lifecycleScope"],
-  properties: {
-    provides: { type: "array", items: serviceContractOfferDeclarationSchema2, minItems: 1 },
-    fidelityEvidence: { type: "array", items: serviceProviderFidelityEvidenceSchema2 },
-    requires: { type: "array", items: contractRequirementSchema2 },
-    inputs: { type: "array", items: nonEmptyString7 },
-    outputs: { type: "array", items: traitDeclarationSchema2 },
-    protocolOperations: { type: "array", items: nonEmptyString7 },
-    replacement: {
-      type: "object",
-      additionalProperties: false,
-      required: ["target", "compatible"],
-      properties: { target: contractRequirementSchema2, compatible: { type: "boolean" } }
-    },
-    lifecycleScope: { enum: ["session", "operation", "process"] },
-    applicableVariants: { type: "array", items: { type: "string", pattern: SEGMENT_PATTERN2 } }
-  }
-};
-var traitRequirementSchema2 = traitQueryRequirementSchema2;
-var viewerApplicabilitySchema2 = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    interpretation: { enum: ["none", "codec", "any"] },
-    sourceBytes: {
-      type: "object",
-      additionalProperties: false,
-      properties: { maximum: decimalU642 }
-    },
-    longestLineBytes: {
-      type: "object",
-      additionalProperties: false,
-      required: ["maximum", "whenUnknown"],
-      properties: {
-        maximum: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-        whenUnknown: { enum: ["eligible", "ineligible"] }
-      }
-    }
-  }
-};
-var viewerContributionSpecV1Schema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/viewer-contribution-spec.v1.schema.json",
-  type: "object",
-  additionalProperties: false,
-  required: ["kind", "consumesDataSources", "priority"],
-  properties: {
-    kind: { enum: ["stage", "tree", "panel", "toolbar", "transport", "status", "fallback"] },
-    requiresTraits: { type: "array", items: traitRequirementSchema2 },
-    requiresOperations: { type: "array", items: operationId3 },
-    consumesDataSources: { type: "array", items: dataSourceRefWireSchema2 },
-    /*
-     * Sources a viewer reads when the subject publishes them and does without when it does not.
-     *
-     * Kept apart from `consumesDataSources` because that list decides eligibility: a facet named
-     * there would cost the stage every subject that publishes none of them, which is the opposite
-     * of optional. Naming them separately is what lets one generic viewer consume the optional
-     * model facets instead of splitting into a contribution per facet combination.
-     */
-    optionalDataSources: { type: "array", items: dataSourceRefWireSchema2 },
-    applicability: viewerApplicabilitySchema2,
-    hosts: { type: "array", items: nonEmptyString7 },
-    priority: { type: "number" },
-    conflicts: { type: "array", items: nonEmptyString7 },
-    singletonGroup: nonEmptyString7
-  }
-};
-var writerRequirementSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["formatId", "representationId", "mutationMode", "minimumRoundTrip"],
-  properties: {
-    formatId: nonEmptyString7,
-    representationId: nonEmptyString7,
-    mutationMode: { enum: ["export-only", "mutate"] },
-    minimumRoundTrip: { enum: ["byte-identical", "semantic", "lossy", "none"] }
-  }
-};
-var writerRequirementV1Schema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/writer-requirement.v1.schema.json",
-  ...writerRequirementSchema2
-};
-var writerOfferV1Schema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/writer-offer.v1.schema.json",
-  type: "object",
-  additionalProperties: false,
-  required: [...writerRequirementSchema2.required, "providerId", "fidelityEvidenceId"],
-  properties: {
-    ...writerRequirementSchema2.properties,
-    providerId: nonEmptyString7,
-    fidelityEvidenceId: nonEmptyString7
-  }
-};
-var editorContributionSpecV1Schema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/editor-contribution-spec.v1.schema.json",
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "sessionModel",
-    "selectionKinds",
-    "semanticLocationKinds",
-    "requiresTransactions",
-    "requiresOperations",
-    "consumesDataSources",
-    "writer",
-    "priority"
-  ],
-  properties: {
-    sessionModel: { enum: ["single-subject", "multi-subject", "workspace"] },
-    selectionKinds: { type: "array", items: nonEmptyString7, uniqueItems: true },
-    semanticLocationKinds: { type: "array", items: nonEmptyString7, uniqueItems: true },
-    requiresTransactions: { type: "boolean" },
-    requiresOperations: { type: "array", items: operationId3, uniqueItems: true },
-    consumesDataSources: { type: "array", items: dataSourceRefWireSchema2, uniqueItems: true },
-    writer: writerRequirementSchema2,
-    hosts: { type: "array", items: nonEmptyString7, uniqueItems: true },
-    priority: { type: "number" },
-    scaleLimits: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        maximumSubjects: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-        maximumRows: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-        maximumSourceBytes: decimalU642
-      }
-    }
-  }
-};
-var localeTag2 = {
-  type: "string",
-  pattern: KNOWLEDGE_LOCALE_PATTERN2,
-  maxLength: 64
-};
-var knowledgeShortText2 = { type: "string", minLength: 1, maxLength: 128 };
-var knowledgeTitle2 = { type: "string", minLength: 1, maxLength: 256 };
-var boundedKnowledgeQualifiedId2 = {
-  type: "string",
-  pattern: QUALIFIED_PATTERN2,
-  maxLength: 256
-};
-var knowledgeSchemaCoordinate2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["contract", "major", "revision"],
-  properties: {
-    contract: boundedKnowledgeQualifiedId2,
-    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-    revision: { type: "string", minLength: 1, maxLength: 256 }
-  }
-};
-var knowledgeTargetSchema2 = {
-  oneOf: [
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["kind", "ecosystem", "schema", "typeId", "canonicalPath"],
-      properties: {
-        kind: { const: "field" },
-        ecosystem: knowledgeShortText2,
-        schema: knowledgeSchemaCoordinate2,
-        typeId: knowledgeShortText2,
-        canonicalPath: {
-          type: "array",
-          items: knowledgeShortText2,
-          minItems: 1,
-          maxItems: 32
-        }
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["kind", "ecosystem", "subjectKind"],
-      properties: {
-        kind: { const: "subject" },
-        ecosystem: knowledgeShortText2,
-        subjectKind: knowledgeShortText2,
-        subjectId: { type: "string", minLength: 1, maxLength: 512 }
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["kind", "ecosystem", "formatId"],
-      properties: {
-        kind: { const: "format" },
-        ecosystem: knowledgeShortText2,
-        formatId: knowledgeShortText2
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["kind", "ecosystem", "code"],
-      properties: {
-        kind: { const: "diagnostic" },
-        ecosystem: knowledgeShortText2,
-        code: { type: "string", minLength: 1, maxLength: 256 }
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["kind", "ecosystem", "conceptId"],
-      properties: {
-        kind: { const: "concept" },
-        ecosystem: knowledgeShortText2,
-        conceptId: knowledgeShortText2
-      }
-    }
-  ]
-};
-var knowledgeSourceSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["kind", "title", "reviewedAt"],
-  properties: {
-    kind: {
-      enum: [
-        "schema",
-        "official-documentation",
-        "source-code",
-        "community-wiki",
-        "observed-corpus",
-        "external-reference"
-      ]
-    },
-    title: knowledgeTitle2,
-    url: { type: "string", pattern: "^https://[^\\s]+$", maxLength: 2048 },
-    schema: knowledgeSchemaCoordinate2,
-    revision: { type: "string", minLength: 1, maxLength: 256 },
-    license: { type: "string", minLength: 1, maxLength: 256 },
-    reviewedAt: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
-  }
-};
-var knowledgeEntrySchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["id", "target", "locale", "title", "summary", "claimKind", "confidence", "sources"],
-  properties: {
-    id: boundedKnowledgeQualifiedId2,
-    target: knowledgeTargetSchema2,
-    locale: localeTag2,
-    title: knowledgeTitle2,
-    summary: { type: "string", minLength: 1, maxLength: 1024 },
-    claimKind: {
-      enum: [
-        "schema-derived-fact",
-        "documented-interpretation",
-        "community-note",
-        "external-reference"
-      ]
-    },
-    confidence: { enum: ["verified", "high", "medium", "low"] },
-    aliases: {
-      type: "array",
-      items: knowledgeShortText2,
-      maxItems: 32,
-      uniqueItems: true
-    },
-    keywords: {
-      type: "array",
-      items: knowledgeShortText2,
-      maxItems: 32,
-      uniqueItems: true
-    },
-    details: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        valueType: knowledgeShortText2,
-        units: knowledgeShortText2,
-        defaultValue: { title: "JsonValue" },
-        allowedValues: { type: "array", items: { title: "JsonValue" }, maxItems: 512 },
-        deprecated: { type: "boolean" },
-        formulaRole: { type: "string", minLength: 1, maxLength: 512 }
-      }
-    },
-    relations: {
-      type: "array",
-      maxItems: 64,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["role", "target"],
-        properties: { role: knowledgeShortText2, target: knowledgeTargetSchema2 }
-      }
-    },
-    examples: {
-      type: "array",
-      maxItems: 16,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["title", "text"],
-        properties: {
-          title: knowledgeTitle2,
-          text: { type: "string", minLength: 1, maxLength: 2048 }
-        }
-      }
-    },
-    sources: { type: "array", items: knowledgeSourceSchema2, minItems: 1, maxItems: 16 }
-  }
-};
-var knowledgePackSpecV1Schema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/knowledge-pack-spec.v1.schema.json",
-  type: "object",
-  additionalProperties: false,
-  required: ["schemaVersion", "sourceLocale", "priority", "entries"],
-  properties: {
-    schemaVersion: { const: 1 },
-    sourceLocale: localeTag2,
-    priority: { type: "number" },
-    gameIds: { type: "array", items: knowledgeShortText2, maxItems: 32, uniqueItems: true },
-    entries: { type: "array", items: knowledgeEntrySchema2, minItems: 1, maxItems: 1e4 }
-  }
-};
-var traitDefinitionSpecV1Schema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json",
-  type: "object",
-  additionalProperties: false,
-  required: ["schemaVersion", "id", "version", "scope", "parametersSchema", "transport"],
-  properties: {
-    schemaVersion: { const: 1 },
-    id: namespacedDottedId3,
-    version: { type: "string", pattern: SEMVER_PATTERN2 },
-    scope: {
-      anyOf: [
-        {
-          enum: [
-            "source",
-            "asset",
-            "subject",
-            "workspace",
-            "service",
-            "operation",
-            "view-session",
-            "representation"
-          ]
-        },
-        { type: "string", pattern: QUALIFIED_PATTERN2 }
-      ]
-    },
-    parametersSchema: jsonSchemaRefSchema3,
-    transport: { enum: ["json", "structured-clone"] },
-    documentation: nonEmptyString7,
-    imports: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["id", "range"],
-        properties: {
-          id: namespacedDottedId3,
-          range: { type: "string", pattern: VERSION_RANGE_PATTERN2 }
-        }
-      }
-    }
-  }
-};
-var methodName2 = { type: "string", pattern: METHOD_NAME_PATTERN2 };
-var dataSourceSurfaceRefSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["contract", "major"],
-  properties: {
-    contract: qualifiedId2,
-    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
-  }
-};
-var dataSourceMethodLimitsSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    maxPageItems: { type: "integer", minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
-    maxBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-    maxStringLength: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
-  }
-};
-var argKeyRefSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["arg", "key"],
-  properties: {
-    arg: { type: "integer", minimum: 0, maximum: 16 },
-    key: methodName2
-  }
-};
-var dataSourceMethodSurfaceCommon2 = {
-  /**
-   * Where the executing side places the `AbortSignal`: appended last, nowhere, or as a key of an
-   * object argument (the consumer strips that key before sending, the executor re-creates it).
-   */
-  signal: { anyOf: [{ enum: ["last", "none"] }, argKeyRefSchema2] },
-  /** Where a progress callback lives inside an object argument (`invoke(…, { onProgress })`). */
-  progress: argKeyRefSchema2,
-  /**
-   * Positional argument count before the signal. The executing side pads omitted trailing
-   * arguments with `undefined` up to `arity` before appending the signal, so
-   * `encoded(trackId?, signal?)` called as `encoded()` still receives its signal last.
-   */
-  arity: { type: "integer", minimum: 0, maximum: 16 },
-  /** The ABI declares the method with `?`; an implementation may lack it. */
-  optional: { type: "boolean" },
-  limits: dataSourceMethodLimitsSchema2
-};
-var dataSourceMethodSurfaceV1Schema2 = {
-  oneOf: [
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["kind", "result"],
-      properties: {
-        kind: { const: "lease" },
-        result: dataSourceSurfaceRefSchema2,
-        /** `'lease'` materializes `{ value, release }`; `'bare'` (default) the capability object itself. */
-        wrapper: { enum: ["lease", "bare"] },
-        ...dataSourceMethodSurfaceCommon2
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["kind"],
-      properties: {
-        kind: { enum: ["value", "leased-value", "iterable", "events"] },
-        ...dataSourceMethodSurfaceCommon2
-      }
-    }
-  ]
-};
-var dataSourceSurfaceV1Schema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["methods"],
-  properties: {
-    /** A `value` method whose completion also releases the capability (`dispose`-style ABIs). */
-    releaseVia: methodName2,
-    /**
-     * Data properties of the object copied to the consumer with its handle (`TextSyntaxProvider.contract`);
-     * exposed as read-only properties next to the proxied methods.
-     */
-    fields: { type: "array", items: methodName2, maxItems: 64, uniqueItems: true },
-    methods: {
-      type: "object",
-      minProperties: 1,
-      propertyNames: methodName2,
-      additionalProperties: dataSourceMethodSurfaceV1Schema2
-    }
-  }
-};
-var serviceContractDefinitionSpecV1Schema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "schemaVersion",
-    "kind",
-    "contract",
-    "major",
-    "offerFacet",
-    "requestFacet",
-    "matching",
-    "conformanceProfile"
-  ],
-  properties: {
-    schemaVersion: { const: 1 },
-    kind: { const: "service" },
-    contract: qualifiedId2,
-    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-    offerFacet: {
-      oneOf: [
-        {
-          type: "object",
-          additionalProperties: false,
-          required: ["presence"],
-          properties: { presence: { const: "forbidden" } }
-        },
-        {
-          type: "object",
-          additionalProperties: false,
-          required: ["presence", "schema"],
-          properties: {
-            presence: { enum: ["optional", "required"] },
-            schema: jsonSchemaRefSchema3
-          }
-        }
-      ]
-    },
-    requestFacet: {
-      oneOf: [
-        {
-          type: "object",
-          additionalProperties: false,
-          required: ["presence"],
-          properties: { presence: { const: "forbidden" } }
-        },
-        {
-          type: "object",
-          additionalProperties: false,
-          required: ["presence", "schema"],
-          properties: {
-            presence: { enum: ["optional", "required"] },
-            schema: jsonSchemaRefSchema3
-          }
-        }
-      ]
-    },
-    matching: {
-      type: "object",
-      additionalProperties: false,
-      required: ["profile", "major"],
-      properties: {
-        profile: qualifiedId2,
-        major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-        configuration: { title: "JsonValue" }
-      }
-    },
-    conformanceProfile: nonEmptyString7,
-    surface: dataSourceSurfaceV1Schema2
-  }
-};
-var dataSourceContractDefinitionSpecV1Schema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"],
-  properties: {
-    schemaVersion: { const: 1 },
-    kind: { const: "data-source" },
-    contract: qualifiedId2,
-    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
-    schema: jsonSchemaRefSchema3,
-    conformanceProfile: nonEmptyString7,
-    surface: dataSourceSurfaceV1Schema2
-  }
-};
-var contractDefinitionSpecV1Schema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/contract-definition-spec.v1.schema.json",
-  oneOf: [serviceContractDefinitionSpecV1Schema2, dataSourceContractDefinitionSpecV1Schema2]
-};
-deepFreeze(jsonSchemaRefSchema3);
-deepFreeze(resourceBudgetWireSchema2);
-deepFreeze(dataSourceRefWireSchema2);
-deepFreeze(codecContributionSpecV1Schema2);
-deepFreeze(serviceProviderContributionSpecV1Schema2);
-deepFreeze(viewerContributionSpecV1Schema2);
-deepFreeze(editorContributionSpecV1Schema2);
-deepFreeze(knowledgePackSpecV1Schema2);
-deepFreeze(traitDefinitionSpecV1Schema2);
-deepFreeze(serviceContractDefinitionSpecV1Schema2);
-deepFreeze(dataSourceMethodSurfaceV1Schema2);
-deepFreeze(dataSourceSurfaceV1Schema2);
-deepFreeze(dataSourceContractDefinitionSpecV1Schema2);
-deepFreeze(contractDefinitionSpecV1Schema2);
-var sourceSpanValueSchema2 = { oneOf: sourceSpanSchema.oneOf };
-var nonEmptyString23 = { type: "string", minLength: 1 };
-var nonWhitespaceString2 = { type: "string", pattern: "\\S" };
-var revisionString2 = { type: "string", pattern: REVISION_ID_PATTERN2 };
-var namespacedDottedId22 = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN2 };
-var operationId23 = { type: "string", pattern: OPERATION_PATTERN2 };
-var stringArray2 = { type: "array", items: { type: "string" } };
-var jsonValueRef2 = { $ref: "#/$defs/jsonValue" };
-var jsonValueSchema2 = {
-  title: "JsonValue",
-  oneOf: [
-    { type: "null" },
-    { type: "boolean" },
-    { type: "number" },
-    { type: "string" },
-    { type: "array", items: jsonValueRef2 },
-    { type: "object", additionalProperties: jsonValueRef2 }
-  ]
-};
-var assetSourceRefSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["id", "uri"],
-  properties: {
-    id: nonWhitespaceString2,
-    uri: nonWhitespaceString2,
-    parentIds: { type: "array", items: nonWhitespaceString2, minItems: 1 }
-  }
-};
-var sourceBindingDescriptorSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["id", "role", "source", "required", "ownership", "revision"],
-  properties: {
-    id: nonEmptyString23,
-    role: nonEmptyString23,
-    source: assetSourceRefSchema2,
-    required: { type: "boolean" },
-    ownership: { enum: ["owned", "companion", "external"] },
-    revision: revisionString2,
-    mediaType: nonEmptyString23
-  }
-};
-var subjectSnapshotRefSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"],
-  properties: {
-    bindingId: nonEmptyString23,
-    role: nonEmptyString23,
-    subjectUri: nonEmptyString23,
-    revision: revisionString2,
-    compositionFingerprint: nonEmptyString23
-  }
-};
-var derivationRecipeSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["extensionId", "extensionVersion", "contributionId", "operation"],
-  properties: {
-    extensionId: { type: "string", pattern: QUALIFIED_PATTERN2 },
-    extensionVersion: { type: "string", pattern: SEMVER_PATTERN2 },
-    contributionId: { type: "string", pattern: QUALIFIED_PATTERN2 },
-    operation: operationId23,
-    parameters: jsonValueRef2
-  }
-};
-var materializedAssetSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["source", "revision"],
-  properties: {
-    source: assetSourceRefSchema2,
-    revision: revisionString2,
-    mediaType: nonEmptyString23
-  }
-};
-var assetOriginDescriptorSchema2 = {
-  oneOf: [
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["kind", "binding"],
-      properties: {
-        kind: { const: "single" },
-        binding: sourceBindingDescriptorSchema2
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["kind", "bindings"],
-      properties: {
-        kind: { const: "bundle" },
-        bindings: { type: "array", items: sourceBindingDescriptorSchema2, minItems: 1 },
-        primary: nonEmptyString23
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["kind", "root", "revision"],
-      properties: {
-        kind: { const: "namespace" },
-        root: assetSourceRefSchema2,
-        revision: revisionString2
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["kind", "inputs"],
-      properties: {
-        kind: { const: "derived" },
-        inputs: { type: "array", items: subjectSnapshotRefSchema2, minItems: 1 },
-        recipe: derivationRecipeSchema2,
-        materialization: materializedAssetSchema2
-      }
-    }
-  ]
-};
-var diagnosticSourceSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    extensionId: { type: "string", pattern: QUALIFIED_PATTERN2 },
-    contributionId: { type: "string", pattern: QUALIFIED_PATTERN2 }
-  }
-};
-var assetDiagnosticSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["id", "code", "category", "severity", "message"],
-  properties: {
-    id: nonEmptyString23,
-    code: { type: "string", pattern: QUALIFIED_PATTERN2 },
-    category: {
-      enum: [
-        "syntax",
-        "structure",
-        "fidelity",
-        "dependency",
-        "security",
-        "performance",
-        "operation",
-        "io",
-        "unknown"
-      ]
-    },
-    severity: { enum: ["error", "warning", "information", "hint"] },
-    message: { type: "string" },
-    source: diagnosticSourceSchema2,
-    path: {
-      type: "array",
-      items: {
-        oneOf: [
-          { type: "string" },
-          { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
-        ]
-      }
-    },
-    range: sourceSpanValueSchema2,
-    data: jsonValueRef2,
-    relatedIds: stringArray2
-  }
-};
-var traitProperties2 = {
-  id: namespacedDottedId22,
-  descriptorVersion: { const: 1 },
-  definitionVersion: { type: "string", pattern: SEMVER_PATTERN2 },
-  parameters: jsonValueRef2
-};
-var traitInstanceSchema2 = {
-  oneOf: [
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["id", "descriptorVersion", "state"],
-      properties: { ...traitProperties2, state: { const: "available" } }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["id", "descriptorVersion", "state", "diagnosticIds"],
-      properties: {
-        ...traitProperties2,
-        state: { enum: ["partial", "disabled", "dependency-required"] },
-        diagnosticIds: { ...stringArray2, minItems: 1 }
-      }
-    }
-  ]
-};
-var jsonSchemaRefSchema22 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["$ref"],
-  properties: { $ref: nonEmptyString23 }
-};
-var operationProperties2 = {
-  id: operationId23,
-  handlerId: nonEmptyString23,
-  mutatesSource: { type: "boolean" },
-  inputSchema: jsonSchemaRefSchema22
-};
-var assetOperationDescriptorSchema2 = {
-  oneOf: [
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["id", "handlerId", "state", "mutatesSource"],
-      properties: { ...operationProperties2, state: { const: "available" } }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["id", "handlerId", "state", "mutatesSource", "reason"],
-      properties: {
-        ...operationProperties2,
-        state: { enum: ["disabled", "dependency-required"] },
-        reason: nonEmptyString23
-      }
-    }
-  ]
-};
-var assetConstraintsSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["readOnly", "seekable", "randomAccess", "trusted"],
-  properties: {
-    readOnly: { type: "boolean" },
-    seekable: { type: "boolean" },
-    randomAccess: { type: "boolean" },
-    trusted: { type: "boolean" },
-    maxDecodedBytes: { type: "string", pattern: UINT64_DECIMAL_PATTERN },
-    unsupportedFeatures: stringArray2
-  }
-};
-var metadataEntrySchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["key", "value"],
-  properties: {
-    key: nonEmptyString23,
-    value: jsonValueRef2
-  }
-};
-var metadataGroupSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["id", "label", "entries"],
-  properties: {
-    id: nonEmptyString23,
-    label: { type: "string" },
-    entries: { type: "array", items: metadataEntrySchema2 }
-  }
-};
-var companionBaseProperties2 = {
-  id: nonEmptyString23,
-  role: nonEmptyString23,
-  required: { type: "boolean" },
-  cardinality: { enum: ["one", "zero-or-one", "one-or-more", "many"] },
-  state: { enum: ["resolved", "missing", "ambiguous"] }
-};
-var requiredCompanionProperties2 = {
-  ...companionBaseProperties2,
-  required: { const: true },
-  cardinality: { enum: ["one", "one-or-more"] }
-};
-var optionalCompanionProperties2 = {
-  ...companionBaseProperties2,
-  required: { const: false },
-  cardinality: { enum: ["zero-or-one", "many"] }
-};
-var companionCandidateSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["source", "revision"],
-  properties: { source: assetSourceRefSchema2, revision: revisionString2 }
-};
-var companionBindingIdsSchema2 = {
-  type: "array",
-  items: nonEmptyString23,
-  minItems: 1,
-  uniqueItems: true
-};
-var singleCompanionBindingIdSchema2 = {
-  ...companionBindingIdsSchema2,
-  maxItems: 1
-};
-var companionDiagnosticIdsSchema2 = {
-  type: "array",
-  items: nonEmptyString23,
-  minItems: 1,
-  uniqueItems: true
-};
-var companionDescriptorSchema2 = {
-  oneOf: [
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
-      properties: {
-        ...requiredCompanionProperties2,
-        cardinality: { const: "one" },
-        state: { const: "resolved" },
-        bindingIds: singleCompanionBindingIdSchema2
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
-      properties: {
-        ...requiredCompanionProperties2,
-        cardinality: { const: "one-or-more" },
-        state: { const: "resolved" },
-        bindingIds: companionBindingIdsSchema2
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
-      properties: {
-        ...optionalCompanionProperties2,
-        cardinality: { const: "zero-or-one" },
-        state: { const: "resolved" },
-        bindingIds: singleCompanionBindingIdSchema2
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
-      properties: {
-        ...optionalCompanionProperties2,
-        cardinality: { const: "many" },
-        state: { const: "resolved" },
-        bindingIds: companionBindingIdsSchema2
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["id", "role", "required", "cardinality", "state", "diagnosticIds"],
-      properties: {
-        ...requiredCompanionProperties2,
-        state: { const: "missing" },
-        diagnosticIds: companionDiagnosticIdsSchema2
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["id", "role", "required", "cardinality", "state"],
-      properties: {
-        ...optionalCompanionProperties2,
-        state: { const: "missing" },
-        diagnosticIds: { type: "array", items: nonEmptyString23, uniqueItems: true }
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"],
-      properties: {
-        ...requiredCompanionProperties2,
-        cardinality: { const: "one" },
-        state: { const: "ambiguous" },
-        candidates: {
-          type: "array",
-          items: companionCandidateSchema2,
-          minItems: 2,
-          uniqueItems: true
-        },
-        diagnosticIds: companionDiagnosticIdsSchema2
-      }
-    },
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"],
-      properties: {
-        ...optionalCompanionProperties2,
-        cardinality: { const: "zero-or-one" },
-        state: { const: "ambiguous" },
-        candidates: {
-          type: "array",
-          items: companionCandidateSchema2,
-          minItems: 2,
-          uniqueItems: true
-        },
-        diagnosticIds: companionDiagnosticIdsSchema2
-      }
-    }
-  ]
-};
-var detectionEvidenceSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["kind", "weight"],
-  properties: {
-    kind: { enum: ["magic", "structure", "companion", "context", "extension", "user-override"] },
-    weight: { type: "number" },
-    note: { type: "string" }
-  }
-};
-var detectionResultSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["codecId", "confidence", "evidence", "requiredRanges"],
-  properties: {
-    codecId: { type: "string", pattern: QUALIFIED_PATTERN2 },
-    confidence: { type: "number", minimum: 0, maximum: 1 },
-    evidence: { type: "array", items: detectionEvidenceSchema2 },
-    requiredRanges: { type: "array", items: sourceSpanValueSchema2 },
-    diagnostics: { type: "array", items: assetDiagnosticSchema2 }
-  }
-};
-var resolvedIdentitySchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["codecId", "codecVersion", "formatId", "formatLabel", "confidence", "detection"],
-  properties: {
-    codecId: { type: "string", pattern: QUALIFIED_PATTERN2 },
-    codecVersion: { type: "string", pattern: SEMVER_PATTERN2 },
-    formatId: nonEmptyString23,
-    formatLabel: nonEmptyString23,
-    mediaType: nonEmptyString23,
-    confidence: { type: "number", minimum: 0, maximum: 1 },
-    detection: { type: "array", items: detectionEvidenceSchema2 }
-  }
-};
-var subjectRequired2 = [
-  "schemaVersion",
-  "subjectUri",
-  "origin",
-  "traits",
-  "operations",
-  "constraints",
-  "dataSources",
-  "diagnostics",
-  "revision"
-];
-var subjectProperties2 = {
-  schemaVersion: { const: 2 },
-  subjectUri: nonWhitespaceString2,
-  origin: assetOriginDescriptorSchema2,
-  traits: { type: "array", items: traitInstanceSchema2 },
-  operations: { type: "array", items: assetOperationDescriptorSchema2 },
-  constraints: assetConstraintsSchema2,
-  dataSources: { type: "array", items: dataSourceRefWireSchema2 },
-  diagnostics: { type: "array", items: assetDiagnosticSchema2 },
-  revision: revisionString2
-};
-var unresolvedSourceDescriptorSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: [...subjectRequired2, "interpretation", "candidates"],
-  properties: {
-    ...subjectProperties2,
-    interpretation: { const: "none" },
-    candidates: { type: "array", items: detectionResultSchema2 }
-  }
-};
-var resolvedAssetDescriptorSchema2 = {
-  type: "object",
-  additionalProperties: false,
-  required: [...subjectRequired2, "interpretation", "identity", "metadata"],
-  properties: {
-    ...subjectProperties2,
-    interpretation: { const: "codec" },
-    identity: resolvedIdentitySchema2,
-    metadata: { type: "array", items: metadataGroupSchema2 },
-    companions: { type: "array", items: companionDescriptorSchema2 }
-  }
-};
-var subjectDescriptorV2Schema2 = {
-  $schema: "https://json-schema.org/draft/2020-12/schema",
-  $id: "https://schemas.modkitx.org/x3/subject-descriptor.v2.schema.json",
-  $defs: { jsonValue: jsonValueSchema2 },
-  oneOf: [unresolvedSourceDescriptorSchema2, resolvedAssetDescriptorSchema2]
-};
-var subjectDescriptorV2InferenceSchema2 = {
-  ...subjectDescriptorV2Schema2,
-  $defs: {
-    ...subjectDescriptorV2Schema2.$defs,
-    jsonValue: { title: "JsonValue" }
-  }
-};
-deepFreeze(subjectDescriptorV2Schema2);
-deepFreeze(subjectDescriptorV2InferenceSchema2);
-var RESERVED_MODEL_FACET_SOURCES2 = Object.freeze([
-  Object.freeze({
-    contract: "common.view/model-lod-source",
-    major: 1,
-    minimalShape: Object.freeze([
-      "info(): { levels }",
-      "levels(page): { id, nodeIds, order, selection? }"
-    ]),
-    blockedBy: "no codec publishes discrete LOD levels today: MSFT_lod topology is readable in principle, and nothing reads it"
-  }),
-  Object.freeze({
-    contract: "common.view/model-variant-source",
-    major: 1,
-    minimalShape: Object.freeze([
-      "info(): { variants }",
-      "variants(page): { id, name, kind, targets }"
-    ]),
-    blockedBy: "no codec publishes named variants today: UV_game_variants exists in the schema and no reader surfaces it"
-  }),
-  Object.freeze({
-    contract: "common.view/model-effect-source",
-    major: 1,
-    minimalShape: Object.freeze([
-      "info(): { effects, byKind, profile? }",
-      "effects(page): { id, kind, nodeId?, materialId? }"
-    ]),
-    blockedBy: "the UVM reader publishes effect *counts* by kind, which fills info() and nothing else; per-emitter records have no publisher, and a page method no publisher can fill is not a contract"
-  })
-]);
-var TRAIT_IDS2 = Object.freeze([
-  "content.metadata",
-  "content.binary",
-  "content.text",
-  "content.images",
-  "content.fonts",
-  "content.styles",
-  "content.scripts",
-  "content.thumbnails",
-  "image.raster",
-  "image.channels",
-  "image.mipmaps",
-  "image.subresources",
-  "image.compressed-blocks",
-  "image.frames",
-  "image.palette",
-  "image.color-profile",
-  "vector.scene",
-  "vector.paths",
-  "vector.shapes",
-  "vector.text",
-  "vector.gradients",
-  "document.flow",
-  "document.pages",
-  "document.outline",
-  "document.annotations",
-  "table.sheets",
-  "table.cells",
-  "table.formulas",
-  "presentation.slides",
-  "presentation.masters",
-  "design.components",
-  "design.constraints",
-  "structure.hierarchy",
-  "structure.layers",
-  "structure.nodes",
-  "structure.timeline",
-  "project.editable",
-  "project.companions",
-  "model.geometry",
-  "model.materials",
-  "model.textures",
-  "model.skeleton",
-  "model.animations",
-  "model.lods",
-  "scene.objects",
-  "scene.cameras",
-  "scene.lights",
-  "scene.effects",
-  "audio.streams",
-  "audio.waveform",
-  "audio.loop-points",
-  "video.streams",
-  "video.tracks",
-  "media.duration",
-  "media.frames",
-  "media.seekable",
-  "media.interactive-runtime",
-  "container.entries",
-  "container.directories",
-  "container.nested",
-  "container.compression",
-  "container.encryption",
-  "container.overlay",
-  "source.dependencies",
-  "font.glyphs",
-  "font.metrics",
-  "font.character-map",
-  "code.source",
-  "code.shader",
-  "code.node-graph",
-  "game.map",
-  "game.replay",
-  "game.layout",
-  "game.localization",
-  "game.catalog"
-]);
-var STANDARD_TRAIT_SET2 = new Set(TRAIT_IDS2);
-
-// packages/extension-manager/src/subjects.js
-var EXTENSION_SUBJECT_KIND = "org.modkitx/extension";
-var CONTRIBUTION_SUBJECT_KIND = "org.modkitx/contribution";
-function fail4(message, context = {}) {
-  throw new ExtensionManagerError("extension-manager/subject-projection-invalid", message, context);
-}
-function requiredText(value2, label) {
-  if (typeof value2 !== "string" || value2.trim() === "") {
-    fail4(`${label} must be a non-empty string`);
-  }
-  return value2.trim();
-}
-function optionalText2(value2, label) {
-  return value2 === void 0 ? void 0 : requiredText(value2, label);
-}
-function snapshotJson(value2, label, seen = /* @__PURE__ */ new Set()) {
-  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean") return value2;
-  if (typeof value2 === "number") {
-    if (!Number.isFinite(value2)) fail4(`${label} must contain only finite JSON numbers`);
-    return value2;
-  }
-  if (typeof value2 !== "object") fail4(`${label} must contain only JSON values`);
-  if (seen.has(value2)) fail4(`${label} must not contain cycles`);
-  seen.add(value2);
-  try {
-    if (Array.isArray(value2)) {
-      return Object.freeze(
-        value2.map((item, index) => snapshotJson(item, `${label}[${index}]`, seen))
-      );
-    }
-    const prototype = Object.getPrototypeOf(value2);
-    if (prototype !== Object.prototype && prototype !== null) {
-      fail4(`${label} must contain only plain JSON objects`);
-    }
-    if (Object.getOwnPropertySymbols(value2).length !== 0) {
-      fail4(`${label} must not contain symbol properties`);
-    }
-    const result = {};
-    for (const [key3, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(value2))) {
-      if (!descriptor.enumerable || !("value" in descriptor)) {
-        fail4(`${label}.${key3} must be an enumerable data property`);
-      }
-      result[key3] = snapshotJson(descriptor.value, `${label}.${key3}`, seen);
-    }
-    return Object.freeze(result);
-  } finally {
-    seen.delete(value2);
-  }
-}
-function contractCoordinate(contract, label) {
-  if (contract === null || typeof contract !== "object" || Array.isArray(contract)) {
-    fail4(`${label}.contract must be an object`);
-  }
-  const id = requiredText(contract.id, `${label}.contract.id`);
-  if (!Number.isSafeInteger(contract.major) || contract.major < 0) {
-    fail4(`${label}.contract.major must be a non-negative safe integer`);
-  }
-  return Object.freeze({ id, major: contract.major });
-}
-function contractKey(contract) {
-  return `${contract.id}@${contract.major}`;
-}
-function compareText(left, right) {
-  return left < right ? -1 : left > right ? 1 : 0;
-}
-function compareContribution(left, right) {
-  return compareText(left.displayName, right.displayName) || compareText(left.id, right.id);
-}
-function throwIfAborted2(signal) {
-  signal?.throwIfAborted();
-}
-function page(items, request, signal) {
-  throwIfAborted2(signal);
-  if (!Number.isSafeInteger(request?.limit) || request.limit <= 0) {
-    fail4("page limit must be a positive safe integer");
-  }
-  let offset = 0;
-  if (request.cursor !== void 0) {
-    if (!/^(?:0|[1-9]\d*)$/u.test(request.cursor)) fail4("page cursor is invalid");
-    offset = Number(request.cursor);
-    if (!Number.isSafeInteger(offset)) fail4("page cursor is outside the safe integer range");
-  }
-  const selected = items.slice(offset, offset + request.limit);
-  const nextOffset = offset + selected.length;
-  return Object.freeze({
-    items: Object.freeze(selected),
-    ...nextOffset < items.length ? { nextCursor: String(nextOffset) } : {}
-  });
-}
-function fact2(id, label, value2, provenance) {
-  return Object.freeze({ id, label, value: value2, provenance });
-}
-function factsSource({
-  snapshotId,
-  subjectId,
-  label,
-  kind,
-  type,
-  groups,
-  facts,
-  relations,
-  origin
-}) {
-  const summary = Object.freeze({
-    snapshotId,
-    identity: Object.freeze({
-      subjectId,
-      label,
-      kind,
-      ...type === void 0 ? {} : { type },
-      origins: origin
-    }),
-    groupCount: groups.length,
-    relationCount: relations.length
-  });
-  const factsByGroup = new Map(facts.map((entry2) => [entry2.groupId, entry2.items]));
-  return Object.freeze({
-    async summary(signal) {
-      throwIfAborted2(signal);
-      return summary;
-    },
-    async groups(request, signal) {
-      return page(groups, request, signal);
-    },
-    async facts(groupId, request, signal) {
-      const items = factsByGroup.get(groupId);
-      if (items === void 0) fail4(`unknown subject fact group \xAB${groupId}\xBB`, { groupId });
-      return page(items, request, signal);
-    },
-    async relations(request, signal) {
-      return page(relations, request, signal);
-    }
-  });
-}
-function group(id, label, items) {
-  return Object.freeze({ id, label, factCount: items.length });
-}
-function relation(role, record3) {
-  return Object.freeze({
-    role,
-    subjectId: record3.subjectId,
-    label: record3.displayName,
-    kind: record3.kind
-  });
-}
-async function collectPages(openPage, signal) {
-  const items = [];
-  const cursors = /* @__PURE__ */ new Set();
-  let cursor3;
-  do {
-    throwIfAborted2(signal);
-    const result = await openPage(
-      { ...cursor3 === void 0 ? {} : { cursor: cursor3 }, limit: 256 },
-      signal
-    );
-    if (result === null || typeof result !== "object" || !Array.isArray(result.items)) {
-      fail4("subject facts source returned an invalid page");
-    }
-    items.push(...result.items);
-    if (items.length > 1e5) fail4("subject card exceeds the 100000 item wire limit");
-    cursor3 = result.nextCursor;
-    if (cursor3 !== void 0) {
-      if (typeof cursor3 !== "string" || cursors.has(cursor3)) {
-        fail4("subject facts source returned an invalid or repeated cursor");
-      }
-      cursors.add(cursor3);
-    }
-  } while (cursor3 !== void 0);
-  return items;
-}
-async function extensionSubjectRecordToWire(record3, signal) {
-  if (record3 === null || typeof record3 !== "object" || record3.facts === void 0) {
-    fail4("extension subject record must provide facts");
-  }
-  const summary = await record3.facts.summary(signal);
-  const groups = await collectPages(
-    (request, pageSignal) => record3.facts.groups(request, pageSignal),
-    signal
-  );
-  const wireGroups = [];
-  for (const groupDescriptor of groups) {
-    const groupFacts = await collectPages(
-      (request, pageSignal) => record3.facts.facts(groupDescriptor.id, request, pageSignal),
-      signal
-    );
-    wireGroups.push(Object.freeze({ ...groupDescriptor, facts: Object.freeze(groupFacts) }));
-  }
-  const relations = await collectPages(
-    (request, pageSignal) => record3.facts.relations(request, pageSignal),
-    signal
-  );
-  const subject = {
-    kind: record3.kind,
-    subjectId: record3.subjectId,
-    id: record3.id,
-    displayName: record3.displayName,
-    enabled: record3.enabled,
-    ..."version" in record3 ? { version: record3.version } : {},
-    ..."extensionId" in record3 ? { extensionId: record3.extensionId } : {},
-    ..."contract" in record3 ? { contract: record3.contract, contractKey: record3.contractKey } : {},
-    ..."effectiveEnabled" in record3 ? { effectiveEnabled: record3.effectiveEnabled } : {}
-  };
-  return snapshotJson(
-    {
-      schemaVersion: 1,
-      subject,
-      summary,
-      groups: wireGroups,
-      relations
-    },
-    "extension subject card wire document"
-  );
-}
-function subjectFactsSourceFromWire(value2) {
-  const document = snapshotJson(value2, "extension subject card wire document");
-  if (document === null || typeof document !== "object" || Array.isArray(document)) {
-    fail4("extension subject card wire document must be an object");
-  }
-  if (document.schemaVersion !== 1) {
-    fail4("extension subject card wire schemaVersion must be 1");
-  }
-  if (document.summary === null || typeof document.summary !== "object" || Array.isArray(document.summary)) {
-    fail4("extension subject card wire summary must be an object");
-  }
-  if (!Array.isArray(document.groups) || !Array.isArray(document.relations)) {
-    fail4("extension subject card wire groups and relations must be lists");
-  }
-  const ids = /* @__PURE__ */ new Set();
-  const groups = [];
-  const entries = [];
-  for (const [index, wireGroup] of document.groups.entries()) {
-    if (wireGroup === null || typeof wireGroup !== "object" || Array.isArray(wireGroup)) {
-      fail4(`extension subject card wire groups[${index}] must be an object`);
-    }
-    const id = requiredText(wireGroup.id, `groups[${index}].id`);
-    if (ids.has(id)) fail4(`subject fact group \xAB${id}\xBB is duplicated`, { groupId: id });
-    ids.add(id);
-    const label = requiredText(wireGroup.label, `groups[${index}].label`);
-    if (!Array.isArray(wireGroup.facts)) fail4(`groups[${index}].facts must be a list`);
-    if (wireGroup.factCount !== wireGroup.facts.length) {
-      fail4(`groups[${index}].factCount does not match its facts list`);
-    }
-    groups.push(Object.freeze({ id, label, factCount: wireGroup.factCount }));
-    entries.push(Object.freeze({ groupId: id, items: wireGroup.facts }));
-  }
-  if (document.summary.groupCount !== groups.length) {
-    fail4("extension subject card wire summary.groupCount does not match its groups");
-  }
-  if (document.summary.relationCount !== document.relations.length) {
-    fail4("extension subject card wire summary.relationCount does not match its relations");
-  }
-  return factsSource({
-    snapshotId: document.summary.snapshotId,
-    subjectId: document.summary.identity?.subjectId,
-    label: document.summary.identity?.label,
-    kind: document.summary.identity?.kind,
-    type: document.summary.identity?.type,
-    groups: Object.freeze(groups),
-    facts: Object.freeze(entries),
-    relations: document.relations,
-    origin: document.summary.identity?.origins ?? Object.freeze([])
-  });
-}
-function contributionFacts(manifest, ownerId, enabled, effectiveEnabled, provenance) {
-  const overview = [
-    fact2("id", "Contribution ID", manifest.id, provenance),
-    fact2("display-name", "Display name", manifest.displayName, provenance),
-    fact2("owner-extension", "Owner extension", ownerId, provenance),
-    fact2("contract-id", "Contract", manifest.contract.id, provenance),
-    fact2("contract-major", "Contract major", manifest.contract.major, provenance),
-    fact2("contract-coordinate", "Contract coordinate", contractKey(manifest.contract), provenance),
-    fact2("status", "Status", manifest.status ?? "supported", provenance)
-  ];
-  const state = [
-    fact2("enabled", "Contribution enabled", enabled, provenance),
-    fact2("effective-enabled", "Effectively enabled", effectiveEnabled, provenance)
-  ];
-  const declaration = [];
-  if (manifest.dependsOn !== void 0) {
-    declaration.push(fact2("depends-on", "Dependencies", manifest.dependsOn, provenance));
-  }
-  if (manifest.limitations !== void 0) {
-    declaration.push(fact2("limitations", "Limitations", manifest.limitations, provenance));
-  }
-  if (manifest.runtimeVariants !== void 0) {
-    declaration.push(
-      fact2("runtime-variants", "Runtime variants", manifest.runtimeVariants, provenance)
-    );
-  }
-  const specification = [];
-  if (manifest.spec !== null && typeof manifest.spec === "object" && !Array.isArray(manifest.spec)) {
-    for (const key3 of Object.keys(manifest.spec).sort(compareText)) {
-      specification.push(fact2(`spec.${key3}`, key3, manifest.spec[key3], provenance));
-    }
-  } else {
-    specification.push(fact2("spec", "Specification", manifest.spec, provenance));
-  }
-  return Object.freeze([
-    Object.freeze({ id: "overview", label: "Overview", items: Object.freeze(overview) }),
-    Object.freeze({ id: "state", label: "State", items: Object.freeze(state) }),
-    ...declaration.length === 0 ? [] : [
-      Object.freeze({
-        id: "declaration",
-        label: "Declaration",
-        items: Object.freeze(declaration)
-      })
-    ],
-    Object.freeze({
-      id: "specification",
-      label: "Specification",
-      items: Object.freeze(specification)
-    })
-  ]);
-}
-function projectExtensionSubjects(input) {
-  if (input === null || typeof input !== "object" || Array.isArray(input)) {
-    fail4("extension subject projection input must be an object");
-  }
-  const normalizedInput = snapshotJson(input, "input");
-  const extensionInput = normalizedInput.extension;
-  if (extensionInput === null || typeof extensionInput !== "object" || Array.isArray(extensionInput)) {
-    fail4("extension must be an object");
-  }
-  const publisher = requiredText(extensionInput.publisher, "extension.publisher");
-  const localId = requiredText(extensionInput.id, "extension.id");
-  const extensionId = `${publisher}/${localId}`;
-  const version = requiredText(extensionInput.version, "extension.version");
-  const license = requiredText(extensionInput.license, "extension.license");
-  const metadata = normalizedInput.metadata ?? {};
-  const displayName = optionalText2(metadata.displayName, "metadata.displayName") ?? extensionId;
-  const description = optionalText2(metadata.description, "metadata.description");
-  const homepage = optionalText2(metadata.homepage, "metadata.homepage");
-  const sourceLabel = optionalText2(metadata.source, "metadata.source");
-  const trusted = metadata.trusted;
-  if (trusted !== void 0 && typeof trusted !== "boolean") {
-    fail4("metadata.trusted must be a boolean");
-  }
-  const extensionEnabled = normalizedInput.enabled !== false;
-  const contributionEnablement = normalizedInput.contributionEnablement ?? {};
-  if (contributionEnablement === null || typeof contributionEnablement !== "object" || Array.isArray(contributionEnablement)) {
-    fail4("contributionEnablement must be an object");
-  }
-  const source2 = normalizedInput.source ?? Object.freeze({ id: `modkit-extension:${encodeURIComponent(extensionId)}` });
-  const owner = rootSubject2(source2, normalizedInput.workspace);
-  const extensionRef = nestedSubject2(owner, EXTENSION_SUBJECT_KIND, extensionId);
-  const extensionSubjectId = serializeSubjectRef2(extensionRef);
-  const extensionOrigin = Object.freeze([Object.freeze({ label: "extension manifest" })]);
-  const contributionOrigin = Object.freeze([Object.freeze({ label: "contribution manifest" })]);
-  if (!Array.isArray(normalizedInput.contributions)) fail4("contributions must be a list");
-  const seen = /* @__PURE__ */ new Set();
-  const contributions = normalizedInput.contributions.map((manifest, index) => {
-    const id = requiredText(manifest.id, `contributions[${index}].id`);
-    if (seen.has(id)) fail4(`contribution \xAB${id}\xBB is duplicated`, { contributionId: id });
-    seen.add(id);
-    const contract = contractCoordinate(manifest.contract, `contributions[${index}]`);
-    const normalized = Object.freeze({
-      ...manifest,
-      id,
-      displayName: requiredText(manifest.displayName, `contributions[${index}].displayName`),
-      contract
-    });
-    const configured = contributionEnablement[id];
-    if (configured !== void 0 && typeof configured !== "boolean") {
-      fail4(`contributionEnablement.${id} must be a boolean`);
-    }
-    const enabled = configured !== false;
-    const effectiveEnabled = extensionEnabled && enabled;
-    const ref2 = nestedSubject2(owner, CONTRIBUTION_SUBJECT_KIND, id);
-    const subjectId = serializeSubjectRef2(ref2);
-    return {
-      kind: CONTRIBUTION_SUBJECT_KIND,
-      ref: ref2,
-      subjectId,
-      id,
-      displayName: normalized.displayName,
-      extensionId,
-      contract,
-      contractKey: contractKey(contract),
-      enabled,
-      effectiveEnabled,
-      manifest: normalized
-    };
-  });
-  contributions.sort(compareContribution);
-  const extensionRecord = {
-    kind: EXTENSION_SUBJECT_KIND,
-    ref: extensionRef,
-    subjectId: extensionSubjectId,
-    id: extensionId,
-    displayName,
-    version,
-    enabled: extensionEnabled,
-    manifest: extensionInput
-  };
-  for (const contribution of contributions) {
-    const sections = contributionFacts(
-      contribution.manifest,
-      extensionId,
-      contribution.enabled,
-      contribution.effectiveEnabled,
-      contributionOrigin
-    );
-    contribution.facts = factsSource({
-      snapshotId: `${extensionId}@${version}#${contribution.id}`,
-      subjectId: contribution.subjectId,
-      label: contribution.displayName,
-      kind: CONTRIBUTION_SUBJECT_KIND,
-      type: contribution.contractKey,
-      groups: Object.freeze(
-        sections.map((section) => group(section.id, section.label, section.items))
-      ),
-      facts: sections.map((section) => Object.freeze({ groupId: section.id, items: section.items })),
-      relations: Object.freeze([relation("belongs-to", extensionRecord)]),
-      origin: contributionOrigin
-    });
-    Object.freeze(contribution);
-  }
-  const grouped = /* @__PURE__ */ new Map();
-  for (const contribution of contributions) {
-    const entries = grouped.get(contribution.contractKey) ?? [];
-    entries.push(contribution);
-    grouped.set(contribution.contractKey, entries);
-  }
-  const contractGroups = [...grouped.entries()].sort(([left], [right]) => compareText(left, right)).map(
-    ([key3, entries]) => Object.freeze({
-      key: key3,
-      contract: entries[0].contract,
-      contributions: Object.freeze([...entries])
-    })
-  );
-  const overview = [
-    fact2("id", "Extension ID", extensionId, extensionOrigin),
-    fact2("display-name", "Display name", displayName, extensionOrigin),
-    fact2("publisher", "Publisher", publisher, extensionOrigin),
-    fact2("version", "Version", version, extensionOrigin),
-    fact2("license", "License", license, extensionOrigin),
-    ...description === void 0 ? [] : [fact2("description", "Description", description, extensionOrigin)],
-    ...homepage === void 0 ? [] : [fact2("homepage", "Homepage", homepage, extensionOrigin)],
-    ...sourceLabel === void 0 ? [] : [fact2("source", "Source", sourceLabel, extensionOrigin)],
-    ...trusted === void 0 ? [] : [fact2("trusted", "Trusted", trusted, extensionOrigin)]
-  ];
-  const state = [
-    fact2("enabled", "Extension enabled", extensionEnabled, extensionOrigin),
-    fact2("contribution-count", "Contributions", contributions.length, extensionOrigin),
-    fact2("contract-count", "Contracts", contractGroups.length, extensionOrigin)
-  ];
-  const contracts = contractGroups.map(
-    (contractGroup) => fact2(
-      `contract.${contractGroup.key}`,
-      contractGroup.key,
-      Object.freeze({
-        contract: contractGroup.contract,
-        contributionIds: Object.freeze(contractGroup.contributions.map((item) => item.id)),
-        count: contractGroup.contributions.length
-      }),
-      extensionOrigin
-    )
-  );
-  const extensionSections = [
-    Object.freeze({ id: "overview", label: "Overview", items: Object.freeze(overview) }),
-    Object.freeze({ id: "state", label: "State", items: Object.freeze(state) }),
-    Object.freeze({ id: "contracts", label: "Contracts", items: Object.freeze(contracts) })
-  ];
-  extensionRecord.facts = factsSource({
-    snapshotId: `${extensionId}@${version}`,
-    subjectId: extensionSubjectId,
-    label: displayName,
-    kind: EXTENSION_SUBJECT_KIND,
-    groups: Object.freeze(
-      extensionSections.map((section) => group(section.id, section.label, section.items))
-    ),
-    facts: extensionSections.map(
-      (section) => Object.freeze({ groupId: section.id, items: section.items })
-    ),
-    relations: Object.freeze(contributions.map((item) => relation("owns", item))),
-    origin: extensionOrigin
-  });
-  Object.freeze(extensionRecord);
-  const records = Object.freeze([extensionRecord, ...contributions]);
-  const recordsBySubjectId = new Map(records.map((record3) => [record3.subjectId, record3]));
-  return Object.freeze({
-    extension: extensionRecord,
-    contributions: Object.freeze(contributions),
-    contractGroups: Object.freeze(contractGroups),
-    records,
-    subject(subjectId) {
-      return recordsBySubjectId.get(subjectId);
-    }
-  });
-}
-
 // apps/web/src/managed-extension-roots.ts
 var MANAGED_EXTENSION_BUNDLE_FAILURE_CODES = Object.freeze({
   unavailable: "x3.host/managed-extension-package-unavailable",
@@ -46318,20 +46843,20 @@ async function defaultSha256(bytes2) {
   const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes2);
   return [...new Uint8Array(digest)].map((value2) => value2.toString(16).padStart(2, "0")).join("");
 }
-async function responseMatches(response2, expected, sha2563) {
-  const actual = (await sha2563(await response2.clone().arrayBuffer())).toLowerCase();
+async function responseMatches(response2, expected, sha2564) {
+  const actual = (await sha2564(await response2.clone().arrayBuffer())).toLowerCase();
   return actual === expected;
 }
 function findById(records, id) {
   return records.find((record3) => record3.id === id);
 }
 function createBrowserExtensionStorage(options) {
-  const sha2563 = options.sha256 ?? defaultSha256;
+  const sha2564 = options.sha256 ?? defaultSha256;
   const now = options.now ?? Date.now;
   const verifiedCachedResponse = async (record3) => {
     const response2 = await options.responses.match(record3.cacheKey);
     if (response2 === void 0) return void 0;
-    if (await responseMatches(response2, record3.digest, sha2563)) return response2;
+    if (await responseMatches(response2, record3.digest, sha2564)) return response2;
     await options.responses.remove(record3.cacheKey);
     return void 0;
   };
@@ -46356,13 +46881,13 @@ function createBrowserExtensionStorage(options) {
       });
       let response2 = await options.responses.match(key3);
       let wroteResponse = false;
-      if (response2 === void 0 || !await responseMatches(response2, request.digest, sha2563)) {
+      if (response2 === void 0 || !await responseMatches(response2, request.digest, sha2564)) {
         if (response2 !== void 0) await options.responses.remove(key3);
         response2 = await options.artifacts.acquire(request);
         if (!response2.ok) {
           throw new Error(`extension package request failed with HTTP ${String(response2.status)}`);
         }
-        if (!await responseMatches(response2, request.digest, sha2563)) {
+        if (!await responseMatches(response2, request.digest, sha2564)) {
           throw new Error(`extension package digest does not match ${request.digest}`);
         }
         await options.responses.put(key3, response2);
@@ -46416,12 +46941,12 @@ function createBrowserExtensionStorage(options) {
         settings: previous?.settings ?? Object.freeze({})
       });
       const bytes2 = unchecked.bytes.slice();
-      if ((await sha2563(bytes2.buffer)).toLowerCase() !== request.digest) {
+      if ((await sha2564(bytes2.buffer)).toLowerCase() !== request.digest) {
         throw new Error(`extension package digest does not match ${request.digest}`);
       }
       const previousResponse = await options.responses.match(key3);
       let wroteResponse = false;
-      if (previousResponse === void 0 || !await responseMatches(previousResponse, request.digest, sha2563)) {
+      if (previousResponse === void 0 || !await responseMatches(previousResponse, request.digest, sha2564)) {
         if (previousResponse !== void 0) await options.responses.remove(key3);
         await options.responses.put(key3, new Response(bytes2));
         wroteResponse = true;
@@ -46578,7 +47103,7 @@ function parseJson3(bytes2, label) {
     );
   }
 }
-async function sha2562(subtle, bytes2) {
+async function sha2563(subtle, bytes2) {
   const copy = new Uint8Array(bytes2.byteLength);
   copy.set(bytes2);
   const digest = new Uint8Array(await subtle.digest("SHA-256", copy));
@@ -46644,7 +47169,7 @@ function createBrowserExtensionManager(options) {
     artifacts: {
       acquire: () => Promise.reject(new Error("common extension manager owns browser artifact acquisition"))
     },
-    sha256: async (bytes2) => (await sha2562(subtle, new Uint8Array(bytes2))).slice("sha256:".length)
+    sha256: async (bytes2) => (await sha2563(subtle, new Uint8Array(bytes2))).slice("sha256:".length)
   });
   const readUri = async (uri, limit) => {
     const mount = await created.vfs.openMount(uri, {
@@ -46707,7 +47232,7 @@ function createBrowserExtensionManager(options) {
         );
       }
       const bytes2 = await readUri(entry2.source.uri, maxArtifactBytes);
-      const integrity = await sha2562(subtle, bytes2);
+      const integrity = await sha2563(subtle, bytes2);
       const artifact = Object.freeze({ bytes: bytes2, integrity });
       return Object.freeze({ artifact, integrity });
     }
@@ -47094,7 +47619,7 @@ async function createWebSubjectServices(options) {
   }
   const claimed = /* @__PURE__ */ new Set();
   for (const input of catalogInputs) {
-    const coordinate3 = extensionCoordinate(input);
+    const coordinate3 = extensionCoordinate2(input);
     if (coordinate3 !== void 0) claimed.add(coordinate3);
   }
   const userInputs = [];
@@ -47102,7 +47627,7 @@ async function createWebSubjectServices(options) {
   for (const [index, input] of user.inputs.entries()) {
     const rootId = user.rootIds[index] ?? input.source;
     if (platformConflictedRoots.has(rootId)) continue;
-    const coordinate3 = user.coordinates[index] ?? extensionCoordinate(input);
+    const coordinate3 = user.coordinates[index] ?? extensionCoordinate2(input);
     if (coordinate3 !== void 0 && claimed.has(coordinate3)) {
       userExtensionConflicts.push({
         root: input.source,
@@ -63319,7 +63844,7 @@ export {
   WEB_EXTENSION_CATALOG,
   DEFAULT_UI_LOCALIZER,
   contributionContractLabel,
-  createWebLocalizer,
+  subjectFactsSourceFromWire,
   isWritableHandle,
   describeFileCapability,
   createDirectoryAccess,
@@ -63328,11 +63853,12 @@ export {
   containerCoordinate,
   requestUserExtensionPermission,
   loadUserExtensionRoots,
+  loadWebLocalizationCatalogs,
+  createWebLocalizer,
   catalogCoordinates,
   resolveModuleMap,
   createWebSubjectServices,
   createIndexedDbExtensionStore,
-  subjectFactsSourceFromWire,
   loadManagedExtensionRoots,
   combineLoadedExtensionRoots,
   createBrowserExtensionManager,

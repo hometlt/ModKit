@@ -1108,6 +1108,45 @@ var knowledgePackSpecV1Schema = {
     entries: { type: "array", items: knowledgeEntrySchema, minItems: 1, maxItems: 1e4 }
   }
 };
+var localizationCatalogResourceV1Schema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["locale", "path", "messagePrefixes"],
+  properties: {
+    locale: localeTag,
+    path: {
+      type: "string",
+      maxLength: 1024,
+      pattern: "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$"
+    },
+    messagePrefixes: {
+      type: "array",
+      minItems: 1,
+      maxItems: 64,
+      uniqueItems: true,
+      items: {
+        type: "string",
+        maxLength: 256,
+        pattern: "^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$"
+      }
+    }
+  }
+};
+var localizationContributionSpecV1Schema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/localization-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["catalogs"],
+  properties: {
+    catalogs: {
+      type: "array",
+      minItems: 1,
+      maxItems: 256,
+      items: localizationCatalogResourceV1Schema
+    }
+  }
+};
 var traitDefinitionSpecV1Schema = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json",
@@ -1341,6 +1380,7 @@ deepFreeze(serviceProviderContributionSpecV1Schema);
 deepFreeze(viewerContributionSpecV1Schema);
 deepFreeze(editorContributionSpecV1Schema);
 deepFreeze(knowledgePackSpecV1Schema);
+deepFreeze(localizationContributionSpecV1Schema);
 deepFreeze(traitDefinitionSpecV1Schema);
 deepFreeze(serviceContractDefinitionSpecV1Schema);
 deepFreeze(dataSourceMethodSurfaceV1Schema);
@@ -2032,7 +2072,7 @@ deepFreeze(subjectDescriptorV2Schema);
 deepFreeze(subjectDescriptorV2InferenceSchema);
 var platformValidatorsPromise;
 function platformValidators() {
-  platformValidatorsPromise ??= import("./validators.generated-TOE2RMVC.js").then(
+  platformValidatorsPromise ??= import("./validators.generated-O6QUFYCN.js").then(
     (module) => module.PRECOMPILED_SCHEMA_VALIDATORS
   );
   return platformValidatorsPromise;
@@ -3076,6 +3116,9 @@ var CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT = contractId(
 var KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT = contractId(
   "org.modkitx/knowledge-pack"
 );
+var LOCALIZATION_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/localization-contribution"
+);
 var TRAIT_DEFINITION_FACT = contractId(
   "org.modkitx.inventory/trait-definition"
 );
@@ -3086,6 +3129,9 @@ var EDITOR_CONTRIBUTION_FACT = contractId(
   "org.modkitx.inventory/editor-contribution"
 );
 var KNOWLEDGE_PACK_FACT = contractId("org.modkitx.inventory/knowledge-pack");
+var LOCALIZATION_CONTRIBUTION_FACT = contractId(
+  "org.modkitx.inventory/localization-contribution"
+);
 function duplicateFieldDiagnostics(values, path, label) {
   const first = /* @__PURE__ */ new Map();
   const diagnostics = [];
@@ -3766,6 +3812,29 @@ var validateKnowledgePackSemantics = (manifest) => {
   }
   return diagnostics;
 };
+var validateLocalizationContributionSemantics = (manifest) => {
+  const spec = manifest.spec;
+  const diagnostics = duplicateFieldDiagnostics(
+    spec.catalogs.map((catalog) => catalog.path.toLowerCase()),
+    ["spec", "catalogs"],
+    "localization catalog path"
+  );
+  spec.catalogs.forEach((catalog, index) => {
+    try {
+      Intl.getCanonicalLocales(catalog.locale);
+    } catch {
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-localization-locale",
+          `localization catalog locale ${catalog.locale} is not a valid BCP-47 language tag`,
+          ["spec", "catalogs", index, "locale"]
+        )
+      );
+    }
+  });
+  return diagnostics;
+};
 function key(contract, major) {
   return `${contract}@${major}`;
 }
@@ -4003,6 +4072,17 @@ var A1_SPEC_SCHEMA_ENTRIES = [
       mode: "data-only",
       project: dataOnlyProjector(KNOWLEDGE_PACK_FACT),
       conformanceProfile: "org.modkitx/knowledge-pack-v1"
+    }
+  },
+  {
+    contract: LOCALIZATION_CONTRIBUTION_CONTRACT,
+    major: 1,
+    schema: localizationContributionSpecV1Schema,
+    validateSemantics: validateLocalizationContributionSemantics,
+    registration: {
+      mode: "data-only",
+      project: dataOnlyProjector(LOCALIZATION_CONTRIBUTION_FACT),
+      conformanceProfile: "org.modkitx/localization-contribution-v1"
     }
   }
 ];
@@ -6331,6 +6411,7 @@ export {
   writerOfferV1Schema,
   editorContributionSpecV1Schema,
   knowledgePackSpecV1Schema,
+  localizationContributionSpecV1Schema,
   traitDefinitionSpecV1Schema,
   dataSourceMethodSurfaceV1Schema,
   dataSourceSurfaceV1Schema,
@@ -6379,12 +6460,15 @@ export {
   TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
   CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT,
   KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
+  LOCALIZATION_CONTRIBUTION_CONTRACT,
   TRAIT_DEFINITION_FACT,
   CONTRACT_DEFINITION_FACT,
   EDITOR_CONTRIBUTION_FACT,
   KNOWLEDGE_PACK_FACT,
+  LOCALIZATION_CONTRIBUTION_FACT,
   validateEditorContributionSemantics,
   validateKnowledgePackSemantics,
+  validateLocalizationContributionSemantics,
   createContributionContractRegistry,
   A1_SPEC_SCHEMA_ENTRIES,
   foreignServiceContractId,

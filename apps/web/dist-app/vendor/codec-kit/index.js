@@ -2,11 +2,11 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-25D4A4NO.js";
+} from "../../chunks/chunk-FLBNYQSC.js";
 import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../chunks/chunk-ODEN2UNX.js";
+} from "../../chunks/chunk-RSMXYLAO.js";
 import {
   canonicalJsonStringify
 } from "../../chunks/chunk-GZ3IOGQJ.js";

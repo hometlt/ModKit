@@ -16,14 +16,15 @@ import { createMemoryVfsProvider } from '@modkitx-x3/vfs/providers/memory'
 const encoder = new TextEncoder()
 
 async function digest(bytes: Uint8Array): Promise<string> {
-  const value = new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', bytes))
+  const copy = Uint8Array.from(bytes)
+  const value = new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', copy.buffer))
   return `sha256:${[...value].map(byte => byte.toString(16).padStart(2, '0')).join('')}`
 }
 
 function catalog(
   locale = 'de',
   namespace = 'org.example.pack',
-  messages = { 'pack.title': 'Titel' },
+  messages: Readonly<Record<string, string>> = { 'pack.title': 'Titel' },
 ) {
   return { schema: 'org.modkitx/ui-message-catalog@1', locale, namespace, messages }
 }

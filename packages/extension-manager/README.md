@@ -106,3 +106,16 @@ it never invents a separate codec entity. Hosts remain responsible for rendering
 enablement actions. `extensionSubjectRecordToWire(...)` materializes one card as function-free JSON
 for Webview, worker and RPC boundaries; `subjectFactsSourceFromWire(...)` restores the neutral facts
 ABI after transport.
+
+## Localization contributions
+
+`org.modkitx/localization-contribution@1` is a data-only contribution. Its manifest points to
+extension-relative JSON message catalogs and requests the message-key prefixes each catalog needs.
+The manager discovers and enables the owning extension exactly like any other package; it does not
+parse UI messages or execute a language module.
+
+Applications open catalog resources through the manager's Node or browser VFS, then the host checks
+artifact confinement, the recorded file SHA-256 and the raw byte limit before JSON decoding. The
+application remains the authority for message-prefix grants and passes only validated, function-free
+catalogs to a renderer or webview. English and Russian are embedded by the applications, so extension
+storage, registry or catalog failures cannot prevent the interface from starting.

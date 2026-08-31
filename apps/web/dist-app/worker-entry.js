@@ -2,7 +2,7 @@ import {
   AUXILIARY_DATA_SOURCE_SURFACES,
   STANDARD_DATA_SOURCE_SURFACES,
   STANDARD_EDITING_SURFACES
-} from "./chunks/chunk-ODEN2UNX.js";
+} from "./chunks/chunk-RSMXYLAO.js";
 import {
   ModkitError,
   OperationCancelledError,

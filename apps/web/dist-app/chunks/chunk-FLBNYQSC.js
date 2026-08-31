@@ -7,7 +7,7 @@ import {
   validateSubjectDescriptorV2,
   writerOfferSatisfies,
   writerSelectionKey
-} from "./chunk-ODEN2UNX.js";
+} from "./chunk-RSMXYLAO.js";
 import {
   ModkitError,
   canonicalJsonStringify,
@@ -1009,6 +1009,45 @@ var PROVIDER_OFFER_INVENTORY_FACT = contractId(
 var VIEWER_CONTRIBUTION_INVENTORY_FACT = contractId(
   "org.modkitx.inventory/viewer-contribution"
 );
+var SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
+var WINDOWS_DRIVE = /^[a-zA-Z]:/;
+function refuse(entrypoint, why) {
+  return new ModkitError({
+    code: "x3.host/entrypoint-not-contained",
+    message: `entry point \xAB${entrypoint}\xBB is not a relative path inside the artifact: ${why}`,
+    context: { entrypoint, why }
+  });
+}
+function assertRelativeEntrypoint(entrypoint) {
+  if (entrypoint.trim().length === 0) throw refuse(entrypoint, "empty");
+  if (/[\u0000-\u001f\u007f]/.test(entrypoint)) {
+    throw refuse(entrypoint, "contains control characters");
+  }
+  if (SCHEME.test(entrypoint) && !WINDOWS_DRIVE.test(entrypoint)) {
+    throw refuse(entrypoint, "URL schemes are not allowed");
+  }
+  if (WINDOWS_DRIVE.test(entrypoint)) throw refuse(entrypoint, "absolute Windows path");
+  if (entrypoint.startsWith("/") || entrypoint.startsWith("\\")) {
+    throw refuse(entrypoint, "absolute path");
+  }
+  if (entrypoint.includes("\\")) throw refuse(entrypoint, "use forward slashes");
+  if (entrypoint.split("/").includes("..")) throw refuse(entrypoint, "`..` traversal");
+}
+function resolveContainedEntrypoint(baseUrl, entrypoint) {
+  assertRelativeEntrypoint(entrypoint);
+  const root = baseUrl.href.endsWith("/") ? baseUrl : new URL(`${baseUrl.href}/`);
+  const resolved = new URL(entrypoint, root);
+  if (resolved.protocol !== root.protocol) {
+    throw refuse(entrypoint, `resolved to a different protocol (${resolved.protocol})`);
+  }
+  if (!resolved.href.startsWith(root.href)) {
+    throw refuse(entrypoint, `resolved outside the artifact root (${root.href})`);
+  }
+  return resolved;
+}
+var LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES = 8 * 1024 * 1024;
+var encoder = new TextEncoder();
+var decoder = new TextDecoder("utf-8", { fatal: true });
 var COMMAND_SUBJECT_UNRESOLVED = "x3.command/subject-unresolved";
 var COMMAND_UNAVAILABLE = "x3.command/unavailable";
 var commandDiagnostic = (item) => ({
@@ -1529,42 +1568,6 @@ var DETECTION_UNTIE_RULES = Object.freeze([
   })
 ]);
 var MAX_SIGNATURE_WINDOW_BYTES = 4096 + 64;
-var SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
-var WINDOWS_DRIVE = /^[a-zA-Z]:/;
-function refuse(entrypoint, why) {
-  return new ModkitError({
-    code: "x3.host/entrypoint-not-contained",
-    message: `entry point \xAB${entrypoint}\xBB is not a relative path inside the artifact: ${why}`,
-    context: { entrypoint, why }
-  });
-}
-function assertRelativeEntrypoint(entrypoint) {
-  if (entrypoint.trim().length === 0) throw refuse(entrypoint, "empty");
-  if (/[\u0000-\u001f\u007f]/.test(entrypoint)) {
-    throw refuse(entrypoint, "contains control characters");
-  }
-  if (SCHEME.test(entrypoint) && !WINDOWS_DRIVE.test(entrypoint)) {
-    throw refuse(entrypoint, "URL schemes are not allowed");
-  }
-  if (WINDOWS_DRIVE.test(entrypoint)) throw refuse(entrypoint, "absolute Windows path");
-  if (entrypoint.startsWith("/") || entrypoint.startsWith("\\")) {
-    throw refuse(entrypoint, "absolute path");
-  }
-  if (entrypoint.includes("\\")) throw refuse(entrypoint, "use forward slashes");
-  if (entrypoint.split("/").includes("..")) throw refuse(entrypoint, "`..` traversal");
-}
-function resolveContainedEntrypoint(baseUrl, entrypoint) {
-  assertRelativeEntrypoint(entrypoint);
-  const root = baseUrl.href.endsWith("/") ? baseUrl : new URL(`${baseUrl.href}/`);
-  const resolved = new URL(entrypoint, root);
-  if (resolved.protocol !== root.protocol) {
-    throw refuse(entrypoint, `resolved to a different protocol (${resolved.protocol})`);
-  }
-  if (!resolved.href.startsWith(root.href)) {
-    throw refuse(entrypoint, `resolved outside the artifact root (${root.href})`);
-  }
-  return resolved;
-}
 var PROFILE_VALUES = Object.freeze([
   "browser-sandbox",
   "worker-brokered",

@@ -413,11 +413,19 @@ describe('A-1 contribution spec schemas', () => {
     expect(traversal.specState).toBe('invalid')
     expect(traversal.diagnostics.map(item => item.code)).toContain('x3.sdk/invalid-spec')
 
+    const firstLocalizationCatalog = localizationSpec.catalogs[0]
+    if (firstLocalizationCatalog === undefined) {
+      throw new Error('localization fixture must contain its first catalog')
+    }
     const duplicatePath = await validateContributionManifest(
       manifest(LOCALIZATION_CONTRIBUTION_CONTRACT, 'org.example/localization-duplicate', {
         catalogs: [
-          localizationSpec.catalogs[0],
-          { ...localizationSpec.catalogs[0], locale: 'ru', path: 'LOCALIZATION/MESSAGES.EN.json' },
+          firstLocalizationCatalog,
+          {
+            ...firstLocalizationCatalog,
+            locale: 'ru',
+            path: 'LOCALIZATION/MESSAGES.EN.json',
+          },
         ],
       }),
       registry,

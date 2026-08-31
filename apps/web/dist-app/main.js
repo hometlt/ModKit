@@ -56,6 +56,7 @@ import {
   loadManagedExtensionRoots,
   loadSubjectCardSections,
   loadUserExtensionRoots,
+  loadWebLocalizationCatalogs,
   mountWebWorkbench,
   narrowGrant,
   nestedSubjectServices,
@@ -84,7 +85,7 @@ import {
   throwIfAborted,
   validateSubjectDescriptorV2,
   webExtensionSubjectCardBundle
-} from "./chunks/chunk-YBW7WWTE.js";
+} from "./chunks/chunk-IKNQI6PK.js";
 import "./chunks/chunk-HVXSZ42C.js";
 
 // packages/ui/dist/settings/index.js
@@ -6448,8 +6449,8 @@ function mountExtensionsUi(documentRef, options) {
   const root = documentRef.createElement("section");
   root.className = "web-extensions-view";
   const newId = options.newId ?? defaultId;
-  const localizer = options.localizer ?? createWebLocalizer(globalThis.navigator?.languages);
-  const copy = extensionCopy(localizer);
+  let localizer = options.localizer ?? createWebLocalizer(globalThis.navigator?.languages);
+  let copy = extensionCopy(localizer);
   let stored = [];
   let loaded = {
     inputs: [],
@@ -6894,6 +6895,11 @@ function mountExtensionsUi(documentRef, options) {
   render();
   return {
     root,
+    setLocalizer(nextLocalizer) {
+      localizer = nextLocalizer;
+      copy = extensionCopy(nextLocalizer);
+      render();
+    },
     reload,
     current: () => loaded
   };
@@ -9145,15 +9151,16 @@ async function boot() {
   let settingsDocument = (await settingsStore.read()).document;
   const baseUrl = new URL("./", document.baseURI);
   const pageUrl = new URL(window.location.href);
-  const localizer = createWebLocalizer(pageUrl.searchParams.get("lang") ?? navigator.languages);
-  const locale = localizer.locale;
-  const t2 = localizer.text;
+  const requestedLocale = pageUrl.searchParams.get("lang") ?? navigator.languages;
+  let localizer = createWebLocalizer(requestedLocale);
+  let locale = localizer.locale;
+  let t2 = localizer.text;
   document.documentElement.lang = locale;
   document.title = t2("app.title");
   const booting = document.querySelector(".booting");
   if (booting !== null) setViewerText(booting, t2("app.starting"));
   const capability = describeFileCapability(window);
-  const capabilityNotice = t2(
+  let capabilityNotice = t2(
     capability.directories ? "web.capability.folder" : capability.filePicker ? "web.capability.file" : "web.capability.input"
   );
   const bootDiagnostics = [];
@@ -9279,6 +9286,25 @@ async function boot() {
       console.info(`[worker] ${diagnostic2.severity} ${diagnostic2.code}: ${diagnostic2.message}`);
     }
   });
+  const loadedLocalization = await loadWebLocalizationCatalogs({
+    inventory: services.main.inventory,
+    baseUrl,
+    loadedExtensionRoots,
+    fetch: (url, init) => fetch(url, init)
+  });
+  for (const diagnostic2 of loadedLocalization.diagnostics) {
+    bootDiagnostics.push(`${diagnostic2.code}: ${diagnostic2.message}`);
+  }
+  localizer = createWebLocalizer(requestedLocale, loadedLocalization.catalogs);
+  locale = localizer.locale;
+  t2 = localizer.text;
+  capabilityNotice = t2(
+    capability.directories ? "web.capability.folder" : capability.filePicker ? "web.capability.file" : "web.capability.input"
+  );
+  document.documentElement.lang = locale;
+  document.title = t2("app.title");
+  if (booting !== null) setViewerText(booting, t2("app.starting"));
+  extensionsUi.setLocalizer(localizer);
   window.addEventListener(
     "pagehide",
     () => void Promise.all([services.dispose(), managedRuntime.dispose()]),
