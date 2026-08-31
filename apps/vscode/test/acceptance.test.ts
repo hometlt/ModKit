@@ -10,9 +10,11 @@ import {
   withSubjectAcceptance,
   type BundledAcceptanceRoot,
 } from '../src/acceptance.js'
+import type { BundledCatalogRoot } from '../src/extension-roots.js'
 import { createVsCodeSubjectHost } from '../src/host.js'
 
 const repositoryRoot = resolve(fileURLToPath(new URL('../../..', import.meta.url)))
+type GeneratedBundledRoot = BundledAcceptanceRoot & BundledCatalogRoot
 
 const catalog: readonly BundledAcceptanceRoot[] = Object.freeze([
   {
@@ -36,7 +38,7 @@ describe('VS Code installed-product acceptance receipt', () => {
         join(repositoryRoot, 'apps', 'vscode', 'generated', 'bundled-catalog.json'),
         'utf8',
       ),
-    ) as { readonly roots: readonly BundledAcceptanceRoot[] }
+    ) as { readonly roots: readonly GeneratedBundledRoot[] }
     const host = await createVsCodeSubjectHost({
       catalogCandidates: [join(repositoryRoot, 'extensions')],
       bundledCatalog: generated.roots,

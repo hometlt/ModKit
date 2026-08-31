@@ -104,9 +104,22 @@ const receipt = {
     localVscePresent: false,
     output: '',
   },
-  install: { attempted: false, exitCode: null, extension: null, output: '' },
+  install: {
+    attempted: false,
+    exitCode: null,
+    extension: null,
+    commandPaletteMatches: [],
+    reopenCommand: null,
+    output: '',
+  },
   runs: [],
   restart: { attempted: false, sameProfile: true, passed: false },
+  cleanup: {
+    attempted: !keepProfile,
+    profileRemoved: null,
+    applicationCloseErrors: [],
+    error: null,
+  },
   verdict: 'fail',
 }
 
@@ -220,6 +233,7 @@ const freePort = () =>
       server.close(() => resolvePromise(address.port))
     })
   })
+const activePorts = new Set()
 
 async function waitFor(check, { timeoutMs = 30_000, stepMs = 250 } = {}) {
   const deadline = Date.now() + timeoutMs
@@ -355,6 +369,57 @@ function evaluateTarget(webSocketDebuggerUrl, expression, timeoutMs = 10_000) {
   })
 }
 
+async function closeApplication(port) {
+  let webSocketDebuggerUrl
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/json/version`)
+    if (!response.ok) return true
+    const version = await response.json()
+    webSocketDebuggerUrl = version.webSocketDebuggerUrl
+  } catch {
+    return true
+  }
+  if (typeof webSocketDebuggerUrl === 'string') {
+    await new Promise(resolvePromise => {
+      const socket = new WebSocket(webSocketDebuggerUrl)
+      let finished = false
+      const finish = () => {
+        if (finished) return
+        finished = true
+        clearTimeout(timer)
+        try {
+          socket.close()
+        } catch {
+          // Browser.close normally tears the socket down before it can acknowledge the request.
+        }
+        resolvePromise()
+      }
+      const timer = setTimeout(finish, 5_000)
+      socket.addEventListener('open', () => {
+        socket.send(JSON.stringify({ id: 1, method: 'Browser.close' }))
+      })
+      socket.addEventListener('message', event => {
+        const message = JSON.parse(String(event.data))
+        if (message.id === 1) finish()
+      })
+      socket.addEventListener('close', finish)
+      socket.addEventListener('error', finish)
+    })
+  }
+  const stopped = await waitFor(
+    async () => {
+      try {
+        const response = await fetch(`http://127.0.0.1:${port}/json/version`)
+        return response.ok ? undefined : true
+      } catch {
+        return true
+      }
+    },
+    { timeoutMs: 15_000, stepMs: 250 },
+  )
+  return stopped === true
+}
+
 async function webviewValues(port, expression) {
   const response = await fetch(`http://127.0.0.1:${port}/json/list`)
   const targets = await response.json()
@@ -390,40 +455,127 @@ const webviewDocumentExpression = body => `(() => {
   return undefined;
 })()`
 
+async function fillQuickInput(page, query) {
+  let lastError
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    await page.keyboard.press('Escape').catch(() => undefined)
+    await page.waitForTimeout(100)
+    await page.keyboard.press('F1')
+    const widget = page.locator('.quick-input-widget:visible').last()
+    const input = widget.locator('input:visible').last()
+    try {
+      await input.waitFor({ state: 'visible', timeout: 5_000 })
+      // F1 starts in command mode with a `>` prefix. `fill` replaces the complete value, so keep
+      // that prefix explicitly instead of accidentally turning the request into file Quick Open.
+      await input.fill(`>${query}`, { timeout: 5_000 })
+      return widget
+    } catch (error) {
+      lastError = error
+      await page.waitForTimeout(250)
+    }
+  }
+  throw new Error(
+    `quick input did not stay open for ${JSON.stringify(query)}: ${String(lastError)}`,
+  )
+}
+
 async function chooseQuickInput(page, query, expectedText) {
-  await page.keyboard.press('F1')
-  const input = page.locator('.quick-input-widget input').first()
-  await input.waitFor({ state: 'visible', timeout: 20_000 })
-  await input.fill(query)
-  const row = page
-    .locator('.quick-input-list .monaco-list-row')
+  const widget = await fillQuickInput(page, query)
+  const row = widget
+    .locator('.quick-input-list .monaco-list-row:visible')
     .filter({ hasText: expectedText })
     .first()
   await row.waitFor({ state: 'visible', timeout: 20_000 })
+  const selectedText = await row.innerText()
   await row.click()
+  return selectedText
+}
+
+async function activateDdsEditor(page) {
+  const file = basename(ddsPath)
+  const tabs = page.locator('.tabs-container .tab:visible')
+  const tab = tabs.filter({ hasText: file }).last()
+  if ((await tab.count()) === 0) {
+    const visibleTabs = await tabs.allInnerTexts()
+    throw new Error(
+      `DDS editor tab ${JSON.stringify(file)} is not visible; visible tabs: ${JSON.stringify(visibleTabs)}`,
+    )
+  }
+  await tab.click()
+  await page.waitForTimeout(250)
+}
+
+async function inspectModkitCommands(page) {
+  const widget = await fillQuickInput(page, 'modkit')
+  const rows = widget.locator('.quick-input-list .monaco-list-row:visible')
+  const commandTexts = await waitFor(
+    async () => {
+      const texts = await rows.allInnerTexts()
+      return texts.length > 0 ? texts : undefined
+    },
+    { timeoutMs: 20_000 },
+  )
+  await page.keyboard.press('Escape')
+  if (commandTexts === undefined) {
+    throw new Error('installed extension exposed no Modkit commands in the command palette')
+  }
+  return commandTexts
 }
 
 async function exitApplication(page) {
-  await page.keyboard.press('F1')
-  const input = page.locator('.quick-input-widget input').first()
-  await input.waitFor({ state: 'visible', timeout: 20_000 })
-  await input.fill('file exit')
-  const row = page
-    .locator('.quick-input-list .monaco-list-row')
-    .filter({ hasText: 'File: Exit' })
-    .first()
-  await row.waitFor({ state: 'visible', timeout: 20_000 })
-  // The workbench is expected to disappear while the click is in flight.
-  await row.click({ noWaitAfter: true }).catch(() => undefined)
+  // Exercise the ordinary platform quit accelerator and prove the CDP endpoint disappears before
+  // the next generation starts. This avoids relying on a localized command-palette label.
+  const accelerator =
+    process.platform === 'win32' ? 'Alt+F4' : process.platform === 'darwin' ? 'Meta+Q' : 'Control+Q'
+  await page.keyboard.press(accelerator).catch(() => undefined)
 }
 
 async function reopenWithModkit(page) {
-  await chooseQuickInput(page, 'reopen editor with', 'Reopen Editor With')
-  const option = page
-    .locator('.quick-input-list .monaco-list-row')
-    .filter({ hasText: 'Modkit Asset Preview' })
-    .first()
-  await option.waitFor({ state: 'visible', timeout: 20_000 })
+  await activateDdsEditor(page)
+  receipt.install.reopenCommand = await chooseQuickInput(
+    page,
+    'reopen editor with',
+    /^View: Reopen Editor With(?:\.\.\.|…)?$/u,
+  )
+  const widget = page.locator('.quick-input-widget:visible').last()
+  const rows = widget.locator('.quick-input-list .monaco-list-row:visible')
+  const option = page.locator(':text-is("Modkit Asset Preview"):visible').last()
+  try {
+    await option.waitFor({ state: 'visible', timeout: 20_000 })
+  } catch (error) {
+    const visibleRows = await rows.allInnerTexts().catch(() => [])
+    const allVisibleRows = await page
+      .locator('.monaco-list-row:visible')
+      .allInnerTexts()
+      .catch(() => [])
+    const visibleContexts = await page
+      .locator('.context-view:visible')
+      .allInnerTexts()
+      .catch(() => [])
+    const widgetText = await widget.innerText().catch(() => '<no visible quick input>')
+    const activeTabs = await page
+      .locator('.tabs-container .tab.active:visible')
+      .allInnerTexts()
+      .catch(() => [])
+    const relevantBodyLines = (
+      await page
+        .locator('body')
+        .innerText()
+        .catch(() => '')
+    )
+      .split(/\r?\n/u)
+      .map(line => line.trim())
+      .filter(line => /modkit|editor|wave1a|dds|encoding/iu.test(line))
+      .slice(0, 80)
+    await page.screenshot({ path: screenshotPath, fullPage: false }).catch(() => undefined)
+    throw new Error(
+      `Reopen Editor With exposed no Modkit option; active tabs=${JSON.stringify(activeTabs)}; ` +
+        `picker rows=${JSON.stringify(visibleRows)}; all rows=${JSON.stringify(allVisibleRows)}; ` +
+        `contexts=${JSON.stringify(visibleContexts)}; picker=${JSON.stringify(widgetText)}; ` +
+        `relevant body=${JSON.stringify(relevantBodyLines)}; ` +
+        `cause=${String(error)}`,
+    )
+  }
   await option.click()
 }
 
@@ -490,6 +642,7 @@ function assertDds(probe) {
 
 async function launchGeneration(generation) {
   const port = await freePort()
+  activePorts.add(port)
   const launchArguments = [
     '--new-window',
     '--user-data-dir',
@@ -500,9 +653,10 @@ async function launchGeneration(generation) {
     '--disable-workspace-trust',
     '--skip-welcome',
     '--skip-release-notes',
+    '--locale=en',
     `--remote-debugging-port=${port}`,
     workspace,
-    ddsPath,
+    ...(generation === 1 ? [ddsPath] : []),
   ]
   // Intentionally no --extensionDevelopmentPath and no --disable-extensions.
   const launcher = spawn(codeCommand, launchArguments, {
@@ -541,22 +695,35 @@ async function launchGeneration(generation) {
   await page.waitForFunction(file => document.body?.innerText.includes(file), basename(ddsPath), {
     timeout: 30_000,
   })
-  await reopenWithModkit(page)
+  const installedCommands = await inspectModkitCommands(page)
+  receipt.install.commandPaletteMatches = installedCommands
+  const readAcceptance = () =>
+    waitFor(
+      async () => {
+        const values = await webviewValues(
+          port,
+          webviewDocumentExpression(
+            `(_doc, win) => win.__MODKIT_ACCEPTANCE__?.subject?.selected?.contributionId
+              ? JSON.parse(JSON.stringify(win.__MODKIT_ACCEPTANCE__))
+              : undefined`,
+          ),
+        )
+        return values.find(value => value?.subject?.selected?.contributionId === 'modkit/dds')
+      },
+      { timeoutMs: 60_000, stepMs: 500 },
+    )
 
-  const acceptance = await waitFor(
-    async () => {
-      const values = await webviewValues(
-        port,
-        webviewDocumentExpression(
-          `(_doc, win) => win.__MODKIT_ACCEPTANCE__?.subject?.selected?.contributionId
-            ? JSON.parse(JSON.stringify(win.__MODKIT_ACCEPTANCE__))
-            : undefined`,
-        ),
-      )
-      return values.find(value => value?.subject?.selected?.contributionId === 'modkit/dds')
-    },
-    { timeoutMs: 60_000, stepMs: 500 },
-  )
+  let route
+  let acceptance
+  if (generation === 1) {
+    await reopenWithModkit(page)
+    route = 'Reopen Editor With -> Modkit Asset Preview'
+    acceptance = await readAcceptance()
+  } else {
+    route = 'full application restart -> restored Modkit Asset Preview'
+    acceptance = await readAcceptance()
+  }
+
   if (acceptance === undefined)
     throw new Error('installed DDS webview published no machine-readable subject receipt')
   assertA7(acceptance.a7)
@@ -566,12 +733,12 @@ async function launchGeneration(generation) {
       const values = await webviewValues(
         port,
         webviewDocumentExpression(
-          `doc => {
+          `(doc, win) => {
             for (const select of doc.querySelectorAll('select')) {
               const option = Array.from(select.options).find(item => (item.textContent || '').trim() === 'Image');
               if (!option) continue;
               select.value = option.value;
-              select.dispatchEvent(new Event('change', { bubbles: true }));
+              select.dispatchEvent(new win.Event('change', { bubbles: true }));
               return true;
             }
             return undefined;
@@ -590,7 +757,7 @@ async function launchGeneration(generation) {
         webviewDocumentExpression(
           `(doc, win) => {
             const canvas = doc.querySelector('[data-mk-part="image.canvas"]');
-            if (!(canvas instanceof HTMLCanvasElement) || canvas.width <= 0 || canvas.height <= 0) return undefined;
+            if (!(canvas instanceof win.HTMLCanvasElement) || canvas.width <= 0 || canvas.height <= 0) return undefined;
             const pixels = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height).data;
             if (!pixels) return undefined;
             let opaquePixels = 0;
@@ -604,25 +771,32 @@ async function launchGeneration(generation) {
           }`,
         ),
       )
-      return values.find(value => value?.raster?.pixelBytes > 0)
+      return values.find(
+        value =>
+          value?.raster?.width === 4 &&
+          value.raster.height === 4 &&
+          value.raster.pixelBytes === 64 &&
+          value.raster.opaquePixels > 0,
+      )
     },
     { timeoutMs: 60_000, stepMs: 500 },
   )
   if (probe === undefined)
     throw new Error('installed DDS Image stage rendered no readable raster canvas')
   assertDds(probe)
+  if (generation === 1) await page.screenshot({ path: screenshotPath, fullPage: false })
 
   const metadataSelected = await waitFor(
     async () => {
       const values = await webviewValues(
         port,
         webviewDocumentExpression(
-          `doc => {
+          `(doc, win) => {
             for (const select of doc.querySelectorAll('select')) {
               const option = Array.from(select.options).find(item => (item.textContent || '').trim() === 'Metadata');
               if (!option) continue;
               select.value = option.value;
-              select.dispatchEvent(new Event('change', { bubbles: true }));
+              select.dispatchEvent(new win.Event('change', { bubbles: true }));
               return true;
             }
             return undefined;
@@ -657,14 +831,14 @@ async function launchGeneration(generation) {
   if (metadata === undefined)
     throw new Error('installed DDS Metadata stage exposed no non-empty format metadata')
 
-  if (generation === 1) await page.screenshot({ path: screenshotPath, fullPage: false })
   const runReceipt = {
     generation,
     artifactSha256: receipt.artifact.sha256,
     vscode: receipt.environment.vscode,
     os: receipt.environment.os,
     profileMode: receipt.profile.mode,
-    route: 'Reopen Editor With -> Modkit Asset Preview',
+    installedCommands,
+    route,
     a7: acceptance.a7,
     dds: {
       selected: probe.acceptance.subject.selected,
@@ -677,7 +851,7 @@ async function launchGeneration(generation) {
   }
   receipt.runs.push(runReceipt)
 
-  // A palette-level File: Exit is a full application stop, not a webview reload or an Extension
+  // The platform quit accelerator is a full application stop, not a webview reload or an Extension
   // Host restart. The second generation cannot start until the CDP endpoint is gone.
   await exitApplication(page)
   const stopped = await waitFor(
@@ -692,6 +866,7 @@ async function launchGeneration(generation) {
     { timeoutMs: 30_000, stepMs: 500 },
   )
   if (stopped !== true) throw new Error(`VS Code generation ${generation} did not fully exit`)
+  activePorts.delete(port)
   await browser.close().catch(() => undefined)
 }
 
@@ -712,10 +887,24 @@ try {
   failure = error
   receipt.error = error instanceof Error ? error.message : String(error)
 } finally {
+  for (const port of activePorts) {
+    if (!(await closeApplication(port))) {
+      receipt.cleanup.applicationCloseErrors.push(`CDP endpoint ${port} did not stop`)
+    }
+  }
+  activePorts.clear()
+  if (!keepProfile) {
+    try {
+      rmSync(scratch, { recursive: true, force: true, maxRetries: 10, retryDelay: 250 })
+      receipt.cleanup.profileRemoved = !existsSync(scratch)
+    } catch (error) {
+      receipt.cleanup.profileRemoved = false
+      receipt.cleanup.error = error instanceof Error ? error.message : String(error)
+    }
+  }
   receipt.finishedAt = new Date().toISOString()
   mkdirSync(dirname(receiptPath), { recursive: true })
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`)
-  if (!keepProfile) rmSync(scratch, { recursive: true, force: true })
 }
 
 if (failure !== undefined) {
