@@ -52,7 +52,7 @@ Ledger распределяет ровно **258 VS Code + 8 CLI = 266** legacy-
 
 | Поверхность    | Legacy | X3 сейчас |
 | -------------- | ------ | --------- |
-| commands       | 64     | 26        |
+| commands       | 64     | 28        |
 | custom editors | 11     | 1         |
 | languages      | 8      | 0         |
 | views          | 6      | 2         |
