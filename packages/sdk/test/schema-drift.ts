@@ -5,10 +5,15 @@
  */
 
 import type { FromSchema } from 'json-schema-to-ts'
-import type { SourceSpanWire, sourceSpanSchema } from '@modkitx-x3/core'
+import type { SourceSpanWire, sourceSpanSchema } from '@modkit/core'
 import type {
   extensionManifestSchema,
+  extensionAssetReferenceSchema,
+  extensionGameDescriptorSchema,
+  extensionPresentationSchema,
   extensionRequirementSchema,
+  extensionSourceDetailsSchema,
+  extensionVendorDescriptorSchema,
   modkitBlockSchema,
 } from '../src/schemas/extension-manifest.js'
 import type {
@@ -30,7 +35,16 @@ import type {
   viewerContributionSpecV1Schema,
 } from '../src/schemas/contribution-specs.js'
 import type { subjectDescriptorV2InferenceSchema } from '../src/schemas/subject-descriptor.js'
-import type { ExtensionManifest, ExtensionRequirement, ModkitBlock } from '../src/manifest/types.js'
+import type {
+  ExtensionAssetReference,
+  ExtensionGameDescriptor,
+  ExtensionManifest,
+  ExtensionPresentation,
+  ExtensionRequirement,
+  ExtensionSourceDetails,
+  ExtensionVendorDescriptor,
+  ModkitBlock,
+} from '../src/manifest/types.js'
 import type {
   ContributionManifestV1Wire,
   RuntimeVariantDeclaration,
@@ -89,6 +103,26 @@ export type ExtensionManifestDriftGate = Expect<
 >
 export type ExtensionRequirementDriftGate = Expect<
   Equal<DeepMutable<ExtensionRequirement>, FromSchema<typeof extensionRequirementSchema>>
+>
+export type ExtensionVendorDescriptorDriftGate = Expect<
+  Equal<DeepMutable<ExtensionVendorDescriptor>, FromSchema<typeof extensionVendorDescriptorSchema>>
+>
+export type ExtensionGameDescriptorDriftGate = Expect<
+  Equal<DeepMutable<ExtensionGameDescriptor>, FromSchema<typeof extensionGameDescriptorSchema>>
+>
+export type ExtensionAssetReferenceDriftGate = Expect<
+  Equal<DeepMutable<ExtensionAssetReference>, FromSchema<typeof extensionAssetReferenceSchema>>
+>
+type ExtensionSourceDetailsFromSchema = FromSchema<typeof extensionSourceDetailsSchema>
+export type ExtensionSourceDetailsDriftGate = Expect<
+  DeepMutable<ExtensionSourceDetails> extends ExtensionSourceDetailsFromSchema
+    ? ExtensionSourceDetailsFromSchema extends DeepMutable<ExtensionSourceDetails>
+      ? true
+      : false
+    : false
+>
+export type ExtensionPresentationDriftGate = Expect<
+  Equal<DeepMutable<ExtensionPresentation>, FromSchema<typeof extensionPresentationSchema>>
 >
 export type ModkitBlockDriftGate = Expect<
   Equal<DeepMutable<ModkitBlock>, FromSchema<typeof modkitBlockSchema>>

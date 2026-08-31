@@ -7,14 +7,14 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { uint64 } from '@modkitx-x3/core'
+import { uint64 } from '@modkit/core'
 import {
   createHostTopology,
   type AssetEditPlan,
   type ChangeSet,
   type PermissionGrant,
   type Writer,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   buildInventory,
   codecFidelityEvidenceRecords,
@@ -27,7 +27,7 @@ import {
   serviceProviderFidelityEvidenceRecord,
   type ExtensionInput,
   type Inventory,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import {
   createFileEditingBackend,
   createNodeSubjectServices,
@@ -38,7 +38,7 @@ import {
   openFileArtifactSource,
   workerBackendPolicy,
   type NodeSubjectServices,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const documentsDir = join(repoRoot, 'extensions', 'documents')
@@ -182,7 +182,7 @@ describe('F3 evidence registry', () => {
       policy: workerBackendPolicy({ loadDeadlineMs: 15_000, defaultCallDeadlineMs: 15_000 }),
     })
     const records = codecFidelityEvidenceRecords(proofHost.inventory, {
-      codecId: 'org.modkitx/archive-zip',
+      codecId: 'modkit/archive-zip',
       formatId: 'zip',
     })
     expect(records.map(record => record.evidenceId)).toEqual([
@@ -190,10 +190,10 @@ describe('F3 evidence registry', () => {
       'zip-verbatim-reassembly-non-canonical-v1',
     ])
     const zip = proofHost.inventory.extensions[0]?.contributions.find(
-      contribution => contribution.manifest?.id === 'org.modkitx/archive-zip',
+      contribution => contribution.manifest?.id === 'modkit/archive-zip',
     )
     expect(records[0]?.writer).toEqual({
-      providerId: 'org.modkitx/archive-zip',
+      providerId: 'modkit/archive-zip',
       providerVersion: proofHost.inventory.extensions[0]?.manifest.version,
       artifactDigest: zip?.record?.artifactDigest,
       formatId: 'zip',
@@ -209,13 +209,13 @@ describe('F3 evidence registry', () => {
     } satisfies Inventory
     expect(
       codecFidelityEvidenceRecords(installed, {
-        codecId: 'org.modkitx/archive-zip',
+        codecId: 'modkit/archive-zip',
         formatId: 'zip',
       }),
     ).toEqual([])
     expect(
       codecFidelityEvidenceRecords(installed, {
-        codecId: 'org.modkitx/archive-zip',
+        codecId: 'modkit/archive-zip',
         formatId: 'zip',
         acceptedOrigins: ['installed'],
       }),
@@ -239,7 +239,7 @@ describe('F3 evidence registry', () => {
     }
     const serviceManifest = (withDeclaration: boolean) => ({
       schemaVersion: 1,
-      contract: { id: 'org.modkitx/service-provider-contribution', major: 1 },
+      contract: { id: 'modkit/service-provider-contribution', major: 1 },
       id: providerId,
       displayName: 'Trusted writer',
       runtimeVariants: [
@@ -443,7 +443,7 @@ describe('F3 raw writer — a format-blind editor saves through the coordinator'
   it('commits a markdown range edit through the same seam and reopens it as markdown', async () => {
     const source = '# Port Plan\n\nSee [spec](https://example.invalid/spec).\n'
     const { path, result } = await openJson('notes.md', source)
-    expect(result.selected.contributionId).toBe('org.modkitx/document-markdown')
+    expect(result.selected.contributionId).toBe('modkit/document-markdown')
     const backend = createFileEditingBackend({ roots: [scratch] })
     const editing = createSubjectEditing({
       opened: result,
@@ -492,7 +492,7 @@ describe('F3 raw writer — a format-blind editor saves through the coordinator'
     })
     expect(reopened.state).toBe('opened')
     if (reopened.state !== 'opened') return
-    expect(reopened.selected.contributionId).toBe('org.modkitx/document-markdown')
+    expect(reopened.selected.contributionId).toBe('modkit/document-markdown')
     const inspected = await reopened.session.operations().invoke('inspect', null)
     expect(inspected.state).toBe('ok')
     if (inspected.state === 'ok' && inspected.output.kind === 'json') {

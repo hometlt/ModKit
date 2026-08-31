@@ -1,5 +1,5 @@
 {
-  "name": "@modkitx-x3/modkit-vscode",
+  "name": "@modkit/modkit-vscode",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -29,13 +29,13 @@
     "dist-app:check": "node scripts/build-extension.mjs --check"
   },
   "dependencies": {
-    "@modkitx/extension-manager": "workspace:*",
-    "@modkitx-x3/core": "workspace:*",
-    "@modkitx-x3/host": "workspace:*",
-    "@modkitx-x3/scene": "workspace:*",
-    "@modkitx-x3/sdk": "workspace:*",
-    "@modkitx-x3/ui": "workspace:*",
-    "@modkitx-x3/uv": "workspace:*"
+    "@modkit/extension-manager": "workspace:*",
+    "@modkit/core": "workspace:*",
+    "@modkit/host": "workspace:*",
+    "@modkit/scene": "workspace:*",
+    "@modkit/sdk": "workspace:*",
+    "@modkit/ui": "workspace:*",
+    "@modkit/uv": "workspace:*"
   },
   "devDependencies": {
     "@types/vscode": "^1.125.0",
@@ -43,7 +43,7 @@
   },
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
-  "publisher": "modkitx",
+  "publisher": "modkit",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -104,6 +104,11 @@
       {
         "command": "modkit.extensions.installAll",
         "title": "%command.installAllExtensions%",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "modkit.extensions.installGameSupport",
+        "title": "%command.installGameSupport%",
         "icon": "$(cloud-download)"
       },
       {
@@ -279,6 +284,11 @@
           "group": "inline@1"
         },
         {
+          "command": "modkit.extensions.installGameSupport",
+          "when": "view == modkit.extensions && viewItem == modkitExtensionComponent.game",
+          "group": "inline@1"
+        },
+        {
           "command": "modkit.extensions.remove",
           "when": "view == modkit.extensions && viewItem =~ /^modkitExtension\\.installed\\.mutable(?:\\.update)?(?:\\.codecs\\.(?:enabled|disabled))?$/",
           "group": "inline@2"
@@ -325,6 +335,7 @@
     "onCommand:modkit.extensions.enableContribution",
     "onCommand:modkit.extensions.install",
     "onCommand:modkit.extensions.installAll",
+    "onCommand:modkit.extensions.installGameSupport",
     "onCommand:modkit.extensions.openContribution",
     "onCommand:modkit.extensions.openExtension",
     "onCommand:modkit.extensions.refresh",

@@ -40,7 +40,7 @@ import {
   ModkitError,
   throwIfAborted,
   type Diagnostic,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import {
   CODEC_CONTRIBUTION_CONTRACT,
   type ArtifactByteSource,
@@ -58,7 +58,7 @@ import {
   type RevisionId,
   type SignatureRule,
   type TraitQuery,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { matchesSignatures, signatureNeeds, type SignatureWindows } from './detection-index.js'
 import type { Inventory } from './inventory.js'
 import {

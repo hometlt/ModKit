@@ -2,7 +2,7 @@
   "$comment": "Historical migration notes for common video formats. AVI, MPEG, OGV and WMV moved into the product video package; MP4 and WebM are superseded by richer native MK3 contributions. This file is inert and outside the loader manifest glob.",
   "schemaVersion": 1,
   "source": {
-    "repository": "modkitx",
+    "repository": "modkit",
     "manifests": [
       "extensions/video/codecs/avi/codec.manifest.json",
       "extensions/video/codecs/mp4/codec.manifest.json",
@@ -14,7 +14,7 @@
   },
   "verdict": "mechanical",
   "codecs": {
-    "org.modkitx/avi": {
+    "modkit/avi": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -29,7 +29,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/mp4": {
+    "modkit/mp4": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -46,7 +46,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/mpeg": {
+    "modkit/mpeg": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -63,7 +63,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/ogv": {
+    "modkit/ogv": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -80,7 +80,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/webm": {
+    "modkit/webm": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -97,7 +97,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/wmv": {
+    "modkit/wmv": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],

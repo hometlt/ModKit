@@ -1,13 +1,13 @@
 import { MessageChannel } from 'node:worker_threads'
 import { describe, expect, it } from 'vitest'
-import type { Frame } from '@modkitx-x3/host/execution'
+import type { Frame } from '@modkit/host/execution'
 import {
   framePortFromJsonPort,
   framePortFromMessagePort as productionAdapter,
   protocolLimits,
   type JsonPortLike,
-} from '@modkitx-x3/host/execution'
-import { DEFAULT_WORKER_BACKEND_POLICY, spawnWorkerRealm } from '@modkitx-x3/host/node'
+} from '@modkit/host/execution'
+import { DEFAULT_WORKER_BACKEND_POLICY, spawnWorkerRealm } from '@modkit/host/node'
 import {
   CONFORMANCE_CASE_IDS,
   HOSTILE_WORKER_FIXTURES,
@@ -18,7 +18,7 @@ import {
   runFramePortConformance,
   type ConformancePair,
   type ConformanceReport,
-} from '@modkitx-x3/testkit'
+} from '@modkit/testkit'
 
 function expectConformant(report: ConformanceReport): void {
   expect(report.failures, describeConformanceReport(report)).toEqual([])

@@ -71,8 +71,8 @@ describe('deterministic Electron app catalog emission', () => {
       join(root, 'packages', 'host', 'src', 'presentation-catalog.generated.ts'),
       'utf8',
     )
-    expect(presentation).toContain("contributionId: 'org.modkitx.ui/image-stage'")
-    expect(presentation).toContain("extensionId: 'org.modkitx/code'")
+    expect(presentation).toContain("contributionId: 'modkit.ui/image-stage'")
+    expect(presentation).toContain("extensionId: 'modkit/code'")
     expect(presentation).toContain('priority: 360')
 
     for (const name of ['bundled-catalog.cjs', 'viewer-catalog.d.ts', 'viewer-catalog.js']) {

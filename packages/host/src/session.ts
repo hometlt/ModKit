@@ -4,7 +4,7 @@ import {
   diagnostic,
   isCancellation,
   throwIfAborted,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import {
   grantValidity,
   validateSubjectDescriptorV2,
@@ -26,7 +26,7 @@ import {
   type Progress,
   type RevisionId,
   type SessionState,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 export interface HostOperationContext {
   readonly signal?: AbortSignal

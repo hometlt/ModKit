@@ -1,4 +1,4 @@
-// Hand-ported from the MK2 codec org.modkitx/mpeg (OPUS-MK2-02 task G, wave 1).
+// Hand-ported from the MK2 codec modkit/mpeg (OPUS-MK2-02 task G, wave 1).
 //
 // The v1 limitation is the specification of this port: "recognizes MPEG start codes or repeated
 // transport-stream sync bytes and reports a bounded packet inventory; it does not parse complete
@@ -13,9 +13,9 @@ import {
   createInspectionCodec,
   createTreeDataSource,
   createVideoMediaSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/mpeg'
+const ID = 'modkit/mpeg'
 
 /** ISO/IEC 11172-1 §2.4.3 and 11172-2 §2.4.2 start code values worth naming. */
 const START_CODES = Object.freeze({

@@ -1,3 +1,3 @@
-import type { BuiltinModule } from '@modkitx-x3/host'
+import type { BuiltinModule } from '@modkit/host'
 
 export declare const uvModule: BuiltinModule

@@ -1,6 +1,6 @@
-import type { PreviewStage } from '@modkitx-x3/ui'
-import type { UiLocalizer } from '@modkitx-x3/ui/localization'
-import type { ViewerModule } from '@modkitx-x3/sdk'
+import type { PreviewStage } from '@modkit/ui'
+import type { UiLocalizer } from '@modkit/ui/localization'
+import type { ViewerModule } from '@modkit/sdk'
 
 export declare const PREVIEW_STAGES: readonly PreviewStage[]
 export declare const PREVIEW_STAGES_READONLY: readonly PreviewStage[]

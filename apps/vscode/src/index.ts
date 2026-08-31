@@ -1,26 +1,26 @@
-import { uint64 } from '@modkitx-x3/core'
+import { uint64 } from '@modkit/core'
 import {
   createHostTopology,
   type Architecture,
   type HostTopology,
   type OperatingSystem,
-} from '@modkitx-x3/sdk'
-import { createHostComposition, type ExtensionInput, type HostComposition } from '@modkitx-x3/host'
+} from '@modkit/sdk'
+import { createHostComposition, type ExtensionInput, type HostComposition } from '@modkit/host'
 import {
   nodeRuntimeTargetBase,
   nodeWorkerLinks,
   nodeWorkerRealmProfile,
   workerBackendPolicy,
   type WorkerBackendPolicy,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host/node'
 
 export * from './workbench-workflows.js'
 export * from './game-launch-workflow.js'
 export * from './extension-manager.js'
 
-export const VSCODE_DESKTOP_EXTENSION_REALM = 'org.modkitx.app.vscode/desktop-extension'
-export const VSCODE_WEB_EXTENSION_REALM = 'org.modkitx.app.vscode/web-extension'
-export const VSCODE_WEBVIEW_REALM = 'org.modkitx.app.vscode/webview'
+export const VSCODE_DESKTOP_EXTENSION_REALM = 'modkit.app.vscode/desktop-extension'
+export const VSCODE_WEB_EXTENSION_REALM = 'modkit.app.vscode/web-extension'
+export const VSCODE_WEBVIEW_REALM = 'modkit.app.vscode/webview'
 /**
  * Where codecs run: worker threads of the VS Code extension host process.
  *
@@ -29,7 +29,7 @@ export const VSCODE_WEBVIEW_REALM = 'org.modkitx.app.vscode/webview'
  * language servers. Portable (`worker-brokered`) variants declare `node-worker`, which is exactly
  * what this realm's target is, so resolution picks them and the Node worker backend honours them.
  */
-export const VSCODE_DESKTOP_WORKER_REALM = 'org.modkitx.app.vscode/desktop-worker'
+export const VSCODE_DESKTOP_WORKER_REALM = 'modkit.app.vscode/desktop-worker'
 
 /**
  * Worker policy of the VS Code extension host (deliberately smaller than Electron's).
@@ -80,7 +80,7 @@ export function createVsCodeDesktopTopology(): HostTopology {
   const node = nodeRuntimeTargetBase()
   return createHostTopology({
     schemaVersion: 1,
-    topologyId: 'org.modkitx.app/vscode-desktop',
+    topologyId: 'modkit.app/vscode-desktop',
     realms: [
       {
         schemaVersion: 1,
@@ -101,7 +101,7 @@ export function createVsCodeDesktopTopology(): HostTopology {
           'worker.module',
         ],
         budgets: desktopBudgets(),
-        policy: { id: 'org.modkitx.policy/vscode-desktop', revision: '1' },
+        policy: { id: 'modkit.policy/vscode-desktop', revision: '1' },
       },
       {
         schemaVersion: 1,
@@ -114,7 +114,7 @@ export function createVsCodeDesktopTopology(): HostTopology {
         },
         facilities: ['gpu.webgl2', 'worker.module'],
         budgets: webviewBudgets(),
-        policy: { id: 'org.modkitx.policy/vscode-webview', revision: '1' },
+        policy: { id: 'modkit.policy/vscode-webview', revision: '1' },
       },
       nodeWorkerRealmProfile({
         realmId: VSCODE_DESKTOP_WORKER_REALM,
@@ -125,7 +125,7 @@ export function createVsCodeDesktopTopology(): HostTopology {
           maxTransferBytes: uint64('268435456'),
           defaultDeadlineMs: 120_000,
         },
-        policy: { id: 'org.modkitx.policy/vscode-desktop-worker', revision: '1' },
+        policy: { id: 'modkit.policy/vscode-desktop-worker', revision: '1' },
       }),
     ],
     links: [
@@ -143,7 +143,7 @@ export interface VsCodeWebIdentity {
 export function createVsCodeWebTopology(identity: VsCodeWebIdentity): HostTopology {
   return createHostTopology({
     schemaVersion: 1,
-    topologyId: 'org.modkitx.app/vscode-web',
+    topologyId: 'modkit.app/vscode-web',
     realms: [
       {
         schemaVersion: 1,
@@ -152,7 +152,7 @@ export function createVsCodeWebTopology(identity: VsCodeWebIdentity): HostTopolo
         target: { environment: 'browser-worker', ...identity },
         facilities: ['editor.host-native', 'extension.catalog.read', 'network.range-fetch'],
         budgets: desktopBudgets(),
-        policy: { id: 'org.modkitx.policy/vscode-web-extension', revision: '1' },
+        policy: { id: 'modkit.policy/vscode-web-extension', revision: '1' },
       },
       {
         schemaVersion: 1,
@@ -161,7 +161,7 @@ export function createVsCodeWebTopology(identity: VsCodeWebIdentity): HostTopolo
         target: { environment: 'browser-main', ...identity },
         facilities: ['gpu.webgl2', 'worker.module'],
         budgets: webviewBudgets(),
-        policy: { id: 'org.modkitx.policy/vscode-webview', revision: '1' },
+        policy: { id: 'modkit.policy/vscode-webview', revision: '1' },
       },
     ],
     links: bridgeLinks(VSCODE_WEB_EXTENSION_REALM),

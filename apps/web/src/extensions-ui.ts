@@ -20,16 +20,16 @@
  * reports through `onChanged` and lets the composition root decide when to rebuild.
  */
 
-import { subjectFactsSourceFromWire } from '@modkitx/extension-manager'
+import { subjectFactsSourceFromWire } from '@modkit/extension-manager'
 import {
   createSubjectCard,
   loadSubjectCardSections,
   type CardRef,
   type SubjectCard,
-} from '@modkitx-x3/ui/card'
-import { element, type PartName } from '@modkitx-x3/ui/viewer'
-import { contributionContractLabel, type UiLocalizer } from '@modkitx-x3/ui/localization'
-import type { BrowserSubtleCryptoLike } from '@modkitx-x3/host/browser'
+} from '@modkit/ui/card'
+import { element, type PartName } from '@modkit/ui/viewer'
+import { contributionContractLabel, type UiLocalizer } from '@modkit/ui/localization'
+import type { BrowserSubtleCryptoLike } from '@modkit/host/browser'
 import {
   containerCoordinate,
   EXTENSION_ROOT_FAILURE_CODES,
@@ -566,7 +566,7 @@ export function mountExtensionsUi(
         toolbar.dataset['mkPart'] = 'settings.adder'
         const subject = active.subject
         if (
-          subject.kind === 'org.modkitx/contribution' &&
+          subject.kind === 'modkit/contribution' &&
           options.setContributionEnabled !== undefined
         ) {
           button(
@@ -580,7 +580,7 @@ export function mountExtensionsUi(
               ),
           )
         } else if (
-          subject.kind === 'org.modkitx/extension' &&
+          subject.kind === 'modkit/extension' &&
           options.setExtensionEnabled !== undefined
         ) {
           button(

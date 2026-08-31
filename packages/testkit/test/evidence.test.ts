@@ -11,7 +11,7 @@
  * properties of the gate rather than of the helper.
  */
 import { describe, expect, it, beforeEach } from 'vitest'
-import { declaredEvidence, proves, resetDeclaredEvidence } from '@modkitx-x3/testkit'
+import { declaredEvidence, proves, resetDeclaredEvidence } from '@modkit/testkit'
 
 describe('12-5 evidence declarations', () => {
   beforeEach(() => {
@@ -32,15 +32,15 @@ describe('12-5 evidence declarations', () => {
 
   it('is idempotent, so a parameterised suite may declare once per case', () => {
     for (let index = 0; index < 50; index += 1) {
-      proves({ contributionId: 'org.modkitx/png', operation: 'inspect' })
+      proves({ contributionId: 'modkit/png', operation: 'inspect' })
     }
     expect(declaredEvidence()).toHaveLength(1)
   })
 
   it('separates operations and subjects rather than collapsing them', () => {
-    proves({ contributionId: 'org.modkitx/png', operation: 'inspect' })
-    proves({ contributionId: 'org.modkitx/png', operation: 'read' })
-    proves({ contributionId: 'org.modkitx/bmp', operation: 'inspect' })
+    proves({ contributionId: 'modkit/png', operation: 'inspect' })
+    proves({ contributionId: 'modkit/png', operation: 'read' })
+    proves({ contributionId: 'modkit/bmp', operation: 'inspect' })
     expect(declaredEvidence()).toHaveLength(3)
   })
 
@@ -56,15 +56,15 @@ describe('12-5 evidence declarations', () => {
     expect(() =>
       proves({
         capabilityId: 'format/png/open-inspect',
-        contributionId: 'org.modkitx/png',
+        contributionId: 'modkit/png',
         operation: 'inspect',
       }),
     ).toThrow(/one subject, one name/u)
   })
 
   it('refuses an operation outside the four the registry carries', () => {
-    expect(() =>
-      proves({ contributionId: 'org.modkitx/png', operation: 'render' as never }),
-    ).toThrow(/inspect \| validate \| read \| materialize/u)
+    expect(() => proves({ contributionId: 'modkit/png', operation: 'render' as never })).toThrow(
+      /inspect \| validate \| read \| materialize/u,
+    )
   })
 })

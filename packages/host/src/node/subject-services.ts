@@ -14,8 +14,8 @@
  * in-process; the gate refuses variants without an executable boundary for the worker target.
  */
 
-import type { Diagnostic } from '@modkitx-x3/core'
-import type { HostTopology, ServiceContractDefinitionRegistry } from '@modkitx-x3/sdk'
+import type { Diagnostic } from '@modkit/core'
+import type { HostTopology, ServiceContractDefinitionRegistry } from '@modkit/sdk'
 import { createHostComposition, type HostComposition } from '../composition.js'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { WorkerBackendPolicy } from '../execution/worker-policy.js'

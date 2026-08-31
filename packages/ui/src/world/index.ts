@@ -9,9 +9,9 @@ import type {
   WorldScenePage,
   WorldSceneSource,
   WorldSceneTerrainItem,
-} from '@modkitx-x3/sdk/maps'
-import { WORLD_SCENE_SOURCE_CONTRACT } from '@modkitx-x3/sdk/maps'
-import type { ViewerModule } from '@modkitx-x3/sdk'
+} from '@modkit/sdk/maps'
+import { WORLD_SCENE_SOURCE_CONTRACT } from '@modkit/sdk/maps'
+import type { ViewerModule } from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,

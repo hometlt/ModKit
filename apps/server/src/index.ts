@@ -1,7 +1,7 @@
-import { uint64 } from '@modkitx-x3/core'
-import { createHostTopology, type HostTopology } from '@modkitx-x3/sdk'
-import type { Diagnostic } from '@modkitx-x3/core'
-import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
+import { uint64 } from '@modkit/core'
+import { createHostTopology, type HostTopology } from '@modkit/sdk'
+import type { Diagnostic } from '@modkit/core'
+import type { PermissionGrant, ResourceBudget } from '@modkit/sdk'
 import {
   commandSubjectsFrom,
   createSubjectCommandRuntime,
@@ -18,8 +18,8 @@ import {
   type HostComposition,
   type SubjectRpcExposure,
   type SubjectServices,
-} from '@modkitx-x3/host'
-import type { MessagePortFrameOptions, MessagePortLike } from '@modkitx-x3/host/execution'
+} from '@modkit/host'
+import type { MessagePortFrameOptions, MessagePortLike } from '@modkit/host/execution'
 import {
   createNodeSubjectServices,
   createPathSubjectOpener,
@@ -31,11 +31,11 @@ import {
   type ExtensionRootFailure,
   type ExtensionRootRequest,
   type WorkerBackendPolicy,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host/node'
 
-export const SERVER_REALM = 'org.modkitx.app.server/main'
+export const SERVER_REALM = 'modkit.app.server/main'
 /** Worker threads of the server process: where portable (`worker-brokered`) variants run. */
-export const SERVER_WORKER_REALM = 'org.modkitx.app.server/worker'
+export const SERVER_WORKER_REALM = 'modkit.app.server/worker'
 
 /** Worker policy of a server deployment (larger heaps, longer deadlines, more restarts). */
 export const SERVER_WORKER_POLICY: WorkerBackendPolicy = workerBackendPolicy({
@@ -55,7 +55,7 @@ export const SERVER_WORKER_POLICY: WorkerBackendPolicy = workerBackendPolicy({
 export function createServerTopology(): HostTopology {
   return createHostTopology({
     schemaVersion: 1,
-    topologyId: 'org.modkitx.app/server',
+    topologyId: 'modkit.app/server',
     realms: [
       {
         schemaVersion: 1,
@@ -78,7 +78,7 @@ export function createServerTopology(): HostTopology {
           maxTransferBytes: uint64('1073741824'),
           defaultDeadlineMs: 300_000,
         },
-        policy: { id: 'org.modkitx.policy/server-deployment', revision: '1' },
+        policy: { id: 'modkit.policy/server-deployment', revision: '1' },
       },
       nodeWorkerRealmProfile({
         realmId: SERVER_WORKER_REALM,
@@ -89,7 +89,7 @@ export function createServerTopology(): HostTopology {
           maxTransferBytes: uint64('1073741824'),
           defaultDeadlineMs: 300_000,
         },
-        policy: { id: 'org.modkitx.policy/server-worker', revision: '1' },
+        policy: { id: 'modkit.policy/server-worker', revision: '1' },
       }),
     ],
     links: [...nodeWorkerLinks(SERVER_REALM, SERVER_WORKER_REALM)],

@@ -13,13 +13,13 @@ import { tmpdir } from 'node:os'
 import { join, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { Diagnostic } from '@modkitx-x3/core'
+import type { Diagnostic } from '@modkit/core'
 import type {
   ContributionContext,
   PermissionGrant,
   ResourceBudget,
   RuntimeVariantDeclaration,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   commandRequest,
   commandSubjectsFrom,
@@ -30,14 +30,14 @@ import {
   type CommandReceipt,
   type ExtensionInput,
   type SubjectServices,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import {
   createNodeSubjectServices,
   createPathSubjectOpener,
   loadExtensionDirectory,
   openFileArtifactSource,
   type NodeSubjectServices,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host/node'
 import {
   activateExecutionBackend,
   type ExecutionBackendActivation,
@@ -130,7 +130,7 @@ function writePermissionFixture(): void {
         type: 'module',
         modkit: {
           schemaVersion: 1,
-          publisher: 'org.modkitx.test',
+          publisher: 'modkit.test',
           id: 'block20-permission-fixture',
           contributionManifests: ['./contributions/*.json'],
         },
@@ -145,8 +145,8 @@ function writePermissionFixture(): void {
     `${JSON.stringify(
       {
         schemaVersion: 1,
-        contract: { id: 'org.modkitx/codec-contribution', major: 1 },
-        id: 'org.modkitx.test/block20-permission-codec',
+        contract: { id: 'modkit/codec-contribution', major: 1 },
+        id: 'modkit.test/block20-permission-codec',
         displayName: 'Block 20 permission fixture',
         runtimeVariants: [
           {
@@ -172,7 +172,7 @@ function writePermissionFixture(): void {
           representations: [
             {
               id: 'guarded',
-              contract: 'org.modkitx.test/block20-guarded',
+              contract: 'modkit.test/block20-guarded',
               major: 1,
               stage: 'authored',
               lossy: false,
@@ -344,7 +344,7 @@ function crashActivation(app: AppFixture): ExecutionBackendActivation {
   } as unknown as RuntimeVariantDeclaration
   return {
     ticket: {
-      contributionId: `org.modkitx.test/block20-${app.name}`,
+      contributionId: `modkit.test/block20-${app.name}`,
       artifactDigest: sha256(new Uint8Array(readFileSync(crashEntrypoint))),
     } as unknown as ActivationTicket,
     entrypoint: crashEntrypoint,
@@ -505,7 +505,7 @@ describe('Block 20 six-app permission, cancellation and recovery matrix', () => 
       expect(stopped.activeRuns, app.name).toBe(0)
       const restarted = pathEndpoint(app.services)
       const receipt = await restarted.execute(
-        commandRequest('org.modkitx.test/not-installed', { subject: guardedFile }),
+        commandRequest('modkit.test/not-installed', { subject: guardedFile }),
       )
       expect(receipt.result, app.name).toMatchObject({
         state: 'failed',

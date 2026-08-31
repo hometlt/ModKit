@@ -5,7 +5,7 @@ import {
   type ArtifactByteSource,
   type AssetInput,
   type ResourceBudget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 export const repoRoot = join(import.meta.dirname, '..', '..', '..', '..')
 

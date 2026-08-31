@@ -9,8 +9,8 @@
 
 import { open, stat, type FileHandle } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
-import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
-import { revisionId, type ArtifactByteSource } from '@modkitx-x3/sdk'
+import { ModkitError, throwIfAborted } from '@modkit/core'
+import { revisionId, type ArtifactByteSource } from '@modkit/sdk'
 
 const STREAM_CHUNK = 1024n * 1024n
 

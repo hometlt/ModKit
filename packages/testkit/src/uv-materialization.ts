@@ -12,7 +12,7 @@
  * **Where the truth comes from.** The scope, the canonical form and the artifact reader are the
  * pinned `multiverse/specs` snapshot under `vendor/multiverse-specs/` — never the sibling
  * repository, and never a second copy of the rules inside X3. The materializer under test is the
- * built-in `@modkitx-x3/uv` package. Two independent implementations meeting on committed data is what
+ * built-in `@modkit/uv` package. Two independent implementations meeting on committed data is what
  * makes the comparison worth anything.
  */
 
@@ -20,7 +20,7 @@ import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { throwIfAborted } from '@modkitx-x3/core'
+import { throwIfAborted } from '@modkit/core'
 
 import type {
   MaterializationReceipt,
@@ -38,7 +38,7 @@ import type {
   ResourceProvenanceRecord,
   ResourceSessionPort,
   SemanticScopeRef,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 /** The drained shape both the scope and the materializer consume. Paging never reaches a hash. */
 export interface DrainedModelProjection {

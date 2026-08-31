@@ -8,7 +8,7 @@ import {
   type ExtensionCatalogCandidate,
   type ExtensionRegistryCatalog,
   type InstalledExtensionRecord,
-} from '@modkitx/extension-manager'
+} from '@modkit/extension-manager'
 import {
   createVsCodeExtensionManagerClient,
   extensionManagerCommandCompletion,
@@ -21,7 +21,7 @@ import { extensionManagerSecurityOptions } from '../src/extension-manager-enviro
 
 const catalog = Object.freeze({
   schemaVersion: 1,
-  registryId: 'org.modkitx/official',
+  registryId: 'modkit/official',
   generatedAt: '2026-08-30T00:00:00Z',
   signature: { algorithm: 'Ed25519', keyId: 'test', value: 'AA==' },
   packages: Object.freeze([
@@ -66,6 +66,11 @@ const catalog = Object.freeze({
       displayName: 'New Format',
       publisher: 'Example',
       summary: 'Two extension roots in one package',
+      presentation: {
+        displayName: 'Example Game tools',
+        vendor: { id: 'example', displayName: 'Example' },
+        games: [{ id: 'example/game', displayName: 'Example Game' }],
+      },
       versions: Object.freeze([
         {
           version: '1.0.0',
@@ -198,7 +203,7 @@ function fixture() {
   const staticPackages: readonly StaticExtensionPackage[] = Object.freeze([
     {
       entry: {
-        id: 'org.modkitx.common/images',
+        id: 'modkit.common/images',
         displayName: 'Images',
         publisher: 'Modkit',
         availableVersion: 'bundled',
@@ -324,7 +329,7 @@ describe('VS Code extension manager state', () => {
           updateAvailable: true,
         }),
         expect.objectContaining({ id: 'example/new-pack' }),
-        expect.objectContaining({ id: 'org.modkitx.common/images', source: 'bundled' }),
+        expect.objectContaining({ id: 'modkit.common/images', source: 'bundled' }),
         expect.objectContaining({ id: 'example/workspace-codec', source: 'workspace' }),
       ]),
     )
@@ -351,6 +356,18 @@ describe('VS Code extension manager state', () => {
       installedVersion: '1.0.0',
       enabled: true,
     })
+    expect(state.controller.pendingReloadIds()).toEqual(['example/new-pack'])
+  })
+
+  it('marks install, update and removal state as pending until the host reloads', async () => {
+    const state = fixture()
+
+    await state.controller.execute({ kind: 'install', id: 'example/new-pack' })
+    await state.controller.execute({ kind: 'update', id: alphaV2.id })
+    await state.controller.execute({ kind: 'remove', id: beta.id })
+    await state.controller.execute({ kind: 'refresh' })
+
+    expect(state.controller.pendingReloadIds()).toEqual(['example/new-pack', alphaV2.id, beta.id])
   })
 
   it('installs an explicit batch sequentially and refreshes the tree once', async () => {
@@ -368,6 +385,23 @@ describe('VS Code extension manager state', () => {
       installedVersion: '1.0.0',
       enabled: true,
     })
+  })
+
+  it('previews and applies a metadata-driven game support batch', async () => {
+    const state = fixture()
+    const changed = vi.fn()
+    state.controller.onDidChange(changed)
+
+    const plan = await state.controller.planGameSupport('example/game')
+    expect(plan.actions).toEqual([
+      { kind: 'install', packageId: 'example/new-pack', version: '1.0.0', reversible: true },
+    ])
+
+    const result = await state.controller.applyGameSupport(plan)
+    expect(result.status).toBe('applied')
+    expect(state.packages().some(item => item.id === 'example/new-pack')).toBe(true)
+    expect(state.controller.pendingReloadIds()).toEqual(['example/new-pack'])
+    expect(changed).toHaveBeenCalledTimes(1)
   })
 
   it('updates manager state without writing configuration and preserves package enablement', async () => {
@@ -413,7 +447,7 @@ describe('VS Code extension manager state', () => {
 
   it('keeps bundled and workspace packages immutable', async () => {
     const state = fixture()
-    await expect(state.client.remove('org.modkitx.common/images')).rejects.toThrow(
+    await expect(state.client.remove('modkit.common/images')).rejects.toThrow(
       'cannot be changed here',
     )
     await expect(state.client.setEnabled('example/workspace-codec', false)).rejects.toThrow(

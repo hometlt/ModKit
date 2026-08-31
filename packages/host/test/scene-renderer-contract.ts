@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SceneRenderer } from '@modkitx-x3/sdk/renderer'
+import type { SceneRenderer } from '@modkit/sdk/renderer'
 
 const identity = (): Float32Array =>
   new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1])

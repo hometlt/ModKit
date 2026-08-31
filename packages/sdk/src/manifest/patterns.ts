@@ -3,7 +3,7 @@
  * Browser-safe: works over a caller-supplied file listing, never touches a filesystem.
  */
 
-import { compareUtf8, diagnostic, type Diagnostic } from '@modkitx-x3/core'
+import { compareUtf8, diagnostic, type Diagnostic } from '@modkit/core'
 
 function normalize(path: string): string {
   return path.startsWith('./') ? path.slice(2) : path

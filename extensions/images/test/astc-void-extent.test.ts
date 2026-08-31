@@ -9,8 +9,8 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { proves } from '@modkitx-x3/testkit'
-import { type RasterImageSource } from '@modkitx-x3/sdk'
+import { proves } from '@modkit/testkit'
+import { type RasterImageSource } from '@modkit/sdk'
 import { imageTestBudget, openImageCodec, repoRoot } from './codec-session.js'
 
 const fixturePath = join(
@@ -66,7 +66,7 @@ describe('IMAGE_GPU_DEPTH ASTC LDR void-extent decode', () => {
     expect([...region.pixels]).toEqual(Array.from({ length: 16 }, () => [0, 0, 255, 255]).flat())
 
     proves({
-      contributionId: 'org.modkitx/astc',
+      contributionId: 'modkit/astc',
       operation: 'read',
       note: 'pinned legal 2D LDR void-extent block decoded to exact rgba8',
     })

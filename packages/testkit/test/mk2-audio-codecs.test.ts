@@ -11,7 +11,7 @@ import {
   type ContributionContext,
   type ResourceBudget,
   type TreeDataSource,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const extensionRoot = join(repoRoot, 'extensions', 'audio')

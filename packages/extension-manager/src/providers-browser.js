@@ -1,6 +1,6 @@
-import { createBrowserFileVfsProvider } from '@modkitx-x3/vfs/providers/browser-file'
-import { createHttpVfsProvider } from '@modkitx-x3/vfs/providers/http'
-import { createMemoryVfsProvider } from '@modkitx-x3/vfs/providers/memory'
+import { createBrowserFileVfsProvider } from '@modkit/vfs/providers/browser-file'
+import { createHttpVfsProvider } from '@modkit/vfs/providers/http'
+import { createMemoryVfsProvider } from '@modkit/vfs/providers/memory'
 
 import { createExtensionVfs } from './vfs.js'
 

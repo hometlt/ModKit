@@ -2,8 +2,8 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createHash } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { uint64 } from '@modkitx-x3/core'
-import { createHostTopology } from '@modkitx-x3/sdk'
+import { uint64 } from '@modkit/core'
+import { createHostTopology } from '@modkit/sdk'
 import {
   createBundledServiceDefinitionRegistry,
   createExecutionBackendRegistry,
@@ -13,9 +13,9 @@ import {
   registerServiceDefinitionsOrThrow,
   type HostComposition,
   type LinkedExtension,
-} from '@modkitx-x3/host'
-import { resolveSceneRenderer } from '@modkitx-x3/host/renderer'
-import type { SceneRenderer } from '@modkitx-x3/sdk/renderer'
+} from '@modkit/host'
+import { resolveSceneRenderer } from '@modkit/host/renderer'
+import type { SceneRenderer } from '@modkit/sdk/renderer'
 import { sceneRendererContractSuite } from './scene-renderer-contract.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
@@ -61,10 +61,10 @@ function providerRenderer(module: RendererModule): SceneRenderer {
 sceneRendererContractSuite('reference software', () => providerRenderer(referenceModule))
 sceneRendererContractSuite('product headless', () => providerRenderer(headlessModule))
 
-const REALM = 'org.modkitx.test/renderer-host'
+const REALM = 'modkit.test/renderer-host'
 const topology = createHostTopology({
   schemaVersion: 1,
-  topologyId: 'org.modkitx.test/renderer',
+  topologyId: 'modkit.test/renderer',
   realms: [
     {
       schemaVersion: 1,
@@ -79,7 +79,7 @@ const topology = createHostTopology({
         maxTransferBytes: uint64('16777216'),
         defaultDeadlineMs: 10_000,
       },
-      policy: { id: 'org.modkitx.test/renderer-policy', revision: '1' },
+      policy: { id: 'modkit.test/renderer-policy', revision: '1' },
     },
   ],
   links: [],
@@ -170,7 +170,7 @@ describe('standard scene renderer contract and software provider', () => {
   it('routes the product headless provider and produces a deterministic PNG fixture', async () => {
     const resolution = await resolveSceneRenderer({
       services: { ...composition, serviceDefinitions: definitions },
-      rendererId: 'modkitx.headless',
+      rendererId: 'modkit.headless',
       outputKind: 'rgba8',
       grant: { id: 'renderer-test-headless', classes: [] },
       budgets: activationBudget,

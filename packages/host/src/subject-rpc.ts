@@ -14,7 +14,7 @@
  * a requested path to an opened subject (or refuses), and nothing here touches a file.
  */
 
-import type { Diagnostic } from '@modkitx-x3/core'
+import type { Diagnostic } from '@modkit/core'
 import type {
   AssetEditPlan,
   AssetRevision,
@@ -26,7 +26,7 @@ import type {
   SourceConflict,
   SubjectEditTarget,
   ValidationResult,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { SubjectEditing } from './subject-editing.js'
 import { ABI_ASSET_SESSION } from './execution/abi-surfaces.js'
 import { createEndpoint, type Endpoint, type FramePort } from './execution/endpoint.js'
@@ -563,7 +563,7 @@ export async function connectSubjectRpc(
   })
   const loaded = await endpoint.load({
     moduleUrl: options.moduleUrl ?? SUBJECT_SERVICES_URL,
-    contributionId: options.contributionId ?? 'org.modkitx.app/subject-services',
+    contributionId: options.contributionId ?? 'modkit.app/subject-services',
     variantId: 'main',
     artifactDigest: 'sha256:app-composition',
   })

@@ -7,8 +7,8 @@
  * cannot honour.
  */
 import { describe, expect, it } from 'vitest'
-import type { AnyDescriptor } from '@modkitx-x3/sdk'
-import { DEFAULT_SETTINGS, normalizeSettings, type SettingsDocument } from '@modkitx-x3/ui'
+import type { AnyDescriptor } from '@modkit/sdk'
+import { DEFAULT_SETTINGS, normalizeSettings, type SettingsDocument } from '@modkit/ui'
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import {
   applyAppearance,

@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "id": "org.modkitx/codec-contribution",
+    "id": "modkit/codec-contribution",
     "major": 1
   },
-  "id": "org.modkitx/odp",
+  "id": "modkit/odp",
   "displayName": "OpenDocument presentation",
   "status": "partial",
   "runtimeVariants": [

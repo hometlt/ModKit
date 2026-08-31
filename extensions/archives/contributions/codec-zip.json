@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "id": "org.modkitx/codec-contribution",
+    "id": "modkit/codec-contribution",
     "major": 1
   },
-  "id": "org.modkitx/archive-zip",
+  "id": "modkit/archive-zip",
   "displayName": "ZIP archive",
   "runtimeVariants": [
     {
@@ -162,9 +162,9 @@
           "preservesUnknownData": true
         },
         "evidenceId": "zip-verbatim-reassembly-v1",
-        "corpusId": "modkitX3/packages/host/test/archive-edits.test.ts",
+        "corpusId": "modkit/packages/host/test/archive-edits.test.ts",
         "corpusDigest": "none:proof-suite",
-        "conformanceProfile": "org.modkitx/codec-contribution-v1",
+        "conformanceProfile": "modkit/codec-contribution-v1",
         "optionsFingerprint": "options:stored-additions",
         "inputClass": "zip-classic",
         "provenAt": "2026-08-19T00:00:00Z"
@@ -177,9 +177,9 @@
           "preservesUnknownData": false
         },
         "evidenceId": "zip-verbatim-reassembly-non-canonical-v1",
-        "corpusId": "modkitX3/packages/host/test/archive-edits.test.ts",
+        "corpusId": "modkit/packages/host/test/archive-edits.test.ts",
         "corpusDigest": "none:proof-suite",
-        "conformanceProfile": "org.modkitx/codec-contribution-v1",
+        "conformanceProfile": "modkit/codec-contribution-v1",
         "optionsFingerprint": "options:stored-additions",
         "inputClass": "zip-non-canonical-layout",
         "provenAt": "2026-08-19T00:00:00Z"

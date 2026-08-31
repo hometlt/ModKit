@@ -17,8 +17,8 @@
  * writer without pretending the fallback is the same thing.
  */
 
-import type { Diagnostic } from '@modkitx-x3/core'
-import type { PermissionGrant, ResourceBudget, Writer } from '@modkitx-x3/sdk'
+import type { Diagnostic } from '@modkit/core'
+import type { PermissionGrant, ResourceBudget, Writer } from '@modkit/sdk'
 import { createHostServiceResolver } from './service-leases.js'
 import type { SubjectServices } from './subject-services.js'
 import type { OpenedSubject } from './subject-open.js'

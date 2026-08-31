@@ -15,7 +15,7 @@ const scratch = mkdtempSync(join(tmpdir(), 'x3-themes-gate-'))
 afterAll(() => rmSync(scratch, { recursive: true, force: true }))
 
 const contract = {
-  contract: { id: 'org.modkitx.ui/token-contract', major: 1 },
+  contract: { id: 'modkit.ui/token-contract', major: 1 },
   tokens: [
     {
       name: 'palette.neutral.500',

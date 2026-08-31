@@ -21,7 +21,7 @@ import {
   type ServiceProviderContributionSpecV1Wire,
   type SpecSchemaEntry,
   type ViewerContributionSpecV1Wire,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const codecSpec: CodecContributionSpecV1Wire = {
   formatRefs: [{ formatId: 'json', label: 'JSON', mediaType: 'application/json' }],
@@ -839,7 +839,7 @@ describe('A-1 contribution spec schemas', () => {
       project: () => [],
       validateSemantics: () => [],
       moduleAbi: { export: 'default', abiVersion: 1 },
-      conformanceProfile: 'org.modkitx/codec-contribution-v1',
+      conformanceProfile: 'modkit/codec-contribution-v1',
     }
     const open = createContributionContractRegistry([registration])
     expect(open.get(CODEC_CONTRIBUTION_CONTRACT, 1)).toEqual(registration)
@@ -870,7 +870,7 @@ describe('A-1 contribution spec schemas', () => {
         registration: {
           mode: 'data-only',
           project: () => [],
-          conformanceProfile: 'org.modkitx/hostile-semantic-hook',
+          conformanceProfile: 'modkit/hostile-semantic-hook',
         },
       },
     ])
@@ -892,7 +892,7 @@ describe('A-1 contribution spec schemas', () => {
       mode: 'data-only',
       project: () => [],
       validateSemantics: () => [],
-      conformanceProfile: 'org.modkitx/codec-contribution-v1',
+      conformanceProfile: 'modkit/codec-contribution-v1',
     }
     const invalidCoordinates: readonly [string, unknown, unknown][] = [
       ['unqualified contract', 'not-qualified', 1],
@@ -978,7 +978,7 @@ describe('A-1 contribution spec schemas', () => {
         registration: {
           mode: 'executable',
           project,
-          conformanceProfile: 'org.modkitx/codec-contribution-v1',
+          conformanceProfile: 'modkit/codec-contribution-v1',
           moduleAbi,
         },
       } as unknown as SpecSchemaEntry
@@ -987,7 +987,7 @@ describe('A-1 contribution spec schemas', () => {
       const contributionEntry = {
         ...contributionBase,
         mode: 'executable',
-        conformanceProfile: 'org.modkitx/codec-contribution-v1',
+        conformanceProfile: 'modkit/codec-contribution-v1',
         moduleAbi,
       } as unknown as ContributionContractRegistration
       expect(() => createContributionContractRegistry([contributionEntry])).toThrow(/module ABI/)
@@ -1000,7 +1000,7 @@ describe('A-1 contribution spec schemas', () => {
           registration: {
             mode: 'data-only',
             project: undefined,
-            conformanceProfile: 'org.modkitx/codec-contribution-v1',
+            conformanceProfile: 'modkit/codec-contribution-v1',
           },
         } as unknown as SpecSchemaEntry,
       ]),
@@ -1012,7 +1012,7 @@ describe('A-1 contribution spec schemas', () => {
           ...contributionBase,
           project: undefined,
           mode: 'data-only',
-          conformanceProfile: 'org.modkitx/codec-contribution-v1',
+          conformanceProfile: 'modkit/codec-contribution-v1',
         } as unknown as ContributionContractRegistration,
       ]),
     ).toThrow(/projector/)

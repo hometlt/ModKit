@@ -1,5 +1,5 @@
 {
-  "$id": "https://schemas.modkitx.org/x3/extension-manifest.v1.schema.json",
+  "$id": "https://schemas.modkit.org/x3/extension-manifest.v1.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
@@ -12,7 +12,7 @@
     },
     "dependsOn": {
       "items": {
-        "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json",
+        "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "properties": {
@@ -75,6 +75,142 @@
     "license": {
       "minLength": 1,
       "type": "string"
+    },
+    "presentation": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "displayName": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "games": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "displayName": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "id": {
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "displayName"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "icon": {
+          "additionalProperties": false,
+          "properties": {
+            "displayName": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "mediaType": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "path": {
+              "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "type": "object"
+        },
+        "licenseFiles": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "displayName": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "mediaType": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "path": {
+                "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "source": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "root"
+                },
+                "root": {
+                  "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "root"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "url"
+                },
+                "url": {
+                  "pattern": "^https?://[^\\s]+$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "url"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "vendor": {
+          "additionalProperties": false,
+          "properties": {
+            "displayName": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "id": {
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "displayName"
+          ],
+          "type": "object"
+        }
+      },
+      "type": "object"
     },
     "publisher": {
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",

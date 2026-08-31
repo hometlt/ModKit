@@ -13,7 +13,7 @@ const generated = join(appRoot, 'contributes.generated.json')
 const manifest = join(appRoot, 'package.json')
 
 function tempPath(name: string): string {
-  return join(mkdtempSync(join(tmpdir(), 'modkitx-vscode-contributes-')), name)
+  return join(mkdtempSync(join(tmpdir(), 'modkit-vscode-contributes-')), name)
 }
 
 function run(output = generated, packageManifest = manifest) {

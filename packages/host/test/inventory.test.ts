@@ -1,8 +1,8 @@
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { canonicalJsonStringify, contractId } from '@modkitx-x3/core'
-import { createContributionContractRegistry } from '@modkitx-x3/sdk'
+import { canonicalJsonStringify, contractId } from '@modkit/core'
+import { createContributionContractRegistry } from '@modkit/sdk'
 import {
   buildInventory,
   CONTRIBUTION_DISABLED_CODE,
@@ -12,9 +12,9 @@ import {
   inventoryHasErrors,
   offersFromInventory,
   type ExtensionInput,
-} from '@modkitx-x3/host'
-import { SERVICE_PROVIDER_CONTRIBUTION_CONTRACT } from '@modkitx-x3/sdk'
-import { loadExtensionDirectory } from '@modkitx-x3/host/node'
+} from '@modkit/host'
+import { SERVICE_PROVIDER_CONTRIBUTION_CONTRACT } from '@modkit/sdk'
+import { loadExtensionDirectory } from '@modkit/host/node'
 
 const registry = createContributionContractRegistry([
   {
@@ -218,6 +218,26 @@ describe('buildInventory (S1 acceptance)', () => {
         activationEligible: true,
         disabled: false,
         extensionDisabled: false,
+      }),
+    ])
+  })
+
+  it('matches legacy ModkitX disabled settings against canonical inventory identities', async () => {
+    const extension = input('dir-legacy-off', 'org.modkitx', 'images', {
+      'contributions/png.json': contribution('org.modkitx/image-png'),
+    })
+    const inventory = await buildInventory([extension], registry, {
+      disabledExtensions: ['org.modkitx/images'],
+      disabledContributions: ['org.modkitx/image-png'],
+    })
+
+    expect(inventory.extensions[0]?.manifest).toMatchObject({ publisher: 'modkit', id: 'images' })
+    expect(describeInventoryContributions(inventory)).toEqual([
+      expect.objectContaining({
+        id: 'modkit/image-png',
+        activationEligible: false,
+        disabled: true,
+        extensionDisabled: true,
       }),
     ])
   })

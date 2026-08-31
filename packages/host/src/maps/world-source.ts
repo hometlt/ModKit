@@ -15,7 +15,7 @@ import type {
   WorldScenePage,
   WorldScenePageRequest,
   WorldSceneRegionShape,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 function positiveLimit(value: number, maximum: number): number {
   if (!Number.isSafeInteger(value) || value <= 0 || value > maximum) {

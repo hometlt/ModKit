@@ -1,7 +1,7 @@
 {
-  "$schema": "https://schemas.modkitx.org/x3/ui-token-contract.v1.schema.json",
+  "$schema": "https://schemas.modkit.org/x3/ui-token-contract.v1.schema.json",
   "contract": {
-    "id": "org.modkitx.ui/token-contract",
+    "id": "modkit.ui/token-contract",
     "major": 1
   },
   "tokens": [

@@ -14,7 +14,7 @@ import type {
   OperationSession,
   PresentationPlan,
   ViewerModule,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 import type { ExplorerEntry, PreviewHandle, PreviewResolver } from './index.js'
 import { builtinByteRangeSource, builtinTextSource, looksTextual } from './builtin.js'
@@ -255,8 +255,8 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
           ({
             slotId: `explorer:${stageId(stage)}`,
             kind: 'primary',
-            contributionId: 'org.modkitx.ui/explorer',
-            extensionId: 'org.modkitx.ui',
+            contributionId: 'modkit.ui/explorer',
+            extensionId: 'modkit.ui',
             priority: 100,
             bindings: [
               ...(stage.contract === undefined

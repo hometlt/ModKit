@@ -8,7 +8,7 @@ import type {
   HostTransportLink,
   OperatingSystem,
   RuntimeTargetBase,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 function operatingSystem(): Exclude<OperatingSystem, 'any'> {
   if (process.platform === 'win32') return 'windows'

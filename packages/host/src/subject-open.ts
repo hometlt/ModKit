@@ -8,7 +8,7 @@ import {
   ModkitError,
   throwIfAborted,
   type Diagnostic,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import {
   CODEC_CONTRIBUTION_CONTRACT,
   grantValidity,
@@ -43,7 +43,7 @@ import {
   type RuntimeTarget,
   type ServiceContractDefinitionRegistry,
   type SelectedServiceOffer,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { inventoryRecordFor, type Inventory, type InventoryContribution } from './inventory.js'
 import { activateServiceProvider } from './service-leases.js'
 import { offersFromInventory } from './offers.js'

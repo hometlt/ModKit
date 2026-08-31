@@ -7,7 +7,7 @@ import {
   lease,
   scalar,
   span,
-} from '@modkitx-x3/codec-kit/text'
+} from '@modkit/codec-kit/text'
 import { definition } from './definition.js'
 
 function tomlValue(value, text) {
@@ -46,7 +46,7 @@ function parseTomlDocument(decoded) {
     }
   } catch (error) {
     return failure(
-      'org.modkitx/text-data-toml-parse',
+      'modkit/text-data-toml-parse',
       error instanceof Error ? error.message : String(error),
       decoded.text,
     )

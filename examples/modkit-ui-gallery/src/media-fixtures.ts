@@ -13,7 +13,7 @@ import type {
   RasterImageSource,
   VectorSceneSource,
   VideoMediaSource,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 function encodedFor(bytes: Uint8Array, mediaType: string): EncodedMediaSource {
   return {

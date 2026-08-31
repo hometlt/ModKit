@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "id": "org.modkitx/service-provider-contribution",
+    "id": "modkit/service-provider-contribution",
     "major": 1
   },
-  "id": "org.modkitx/text-delimited-writer",
+  "id": "modkit/text-delimited-writer",
   "displayName": "CSV and TSV text writer",
   "runtimeVariants": [
     {
@@ -26,7 +26,7 @@
         "major": 1,
         "version": "1.0.0",
         "facet": {
-          "providerId": "org.modkitx/text-delimited-writer",
+          "providerId": "modkit/text-delimited-writer",
           "fidelityEvidenceId": "text-delimited-text-writer-v1",
           "formatId": "csv",
           "representationId": "source",
@@ -40,7 +40,7 @@
         "major": 1,
         "version": "1.0.0",
         "facet": {
-          "providerId": "org.modkitx/text-delimited-writer",
+          "providerId": "modkit/text-delimited-writer",
           "fidelityEvidenceId": "text-delimited-text-writer-v1",
           "formatId": "tsv",
           "representationId": "source",

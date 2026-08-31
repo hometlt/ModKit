@@ -28,3 +28,43 @@ test('generic workspace example covers local env override, CDN and VFS sources w
   )
   assert.equal(lock.extensions.length, 1)
 })
+
+test('legacy ModkitX workspace and lock identities normalize to their canonical aliases', () => {
+  const workspace = normalizeWorkspaceConfiguration({
+    schemaVersion: 1,
+    sources: [{ id: 'org.modkitx.blizzard', uri: './blizzard' }],
+    profiles: {
+      legacy: {
+        sources: ['org.modkitx.blizzard'],
+        extensions: ['org.modkitx.blizzard/starcraft2'],
+        locked: true,
+      },
+    },
+    activeProfile: 'legacy',
+    legacyPaths: [{ prefix: ['Mods'], source: 'org.modkitx.blizzard' }],
+  })
+  assert.equal(workspace.sources[0].id, 'blizzard')
+  assert.deepEqual(workspace.profiles.legacy.sources, ['blizzard'])
+  assert.deepEqual(workspace.profiles.legacy.extensions, ['blizzard/starcraft2'])
+  assert.equal(workspace.legacyPaths[0].source, 'blizzard')
+
+  const lock = normalizeExtensionLock({
+    schemaVersion: 1,
+    extensions: [
+      {
+        id: 'org.modkitx.blizzard/starcraft2',
+        source: 'org.modkitx.blizzard',
+        version: '1.0.0',
+        digest: 'A'.repeat(64),
+      },
+    ],
+  })
+  assert.deepEqual(lock.extensions, [
+    {
+      id: 'blizzard/starcraft2',
+      source: 'blizzard',
+      version: '1.0.0',
+      digest: 'a'.repeat(64),
+    },
+  ])
+})

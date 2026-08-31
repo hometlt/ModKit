@@ -27,7 +27,7 @@ import {
   COMMAND_FIXTURE_EXTENSIONS,
   type CommandFixture,
   type CommandFixtureVerdict,
-} from '@modkitx-x3/testkit'
+} from '@modkit/testkit'
 import {
   commandRequest,
   createSubjectCommandEndpoint,
@@ -35,8 +35,8 @@ import {
   COMMAND_UNKNOWN,
   type CommandReceipt,
   type CommandResult,
-} from '@modkitx-x3/host'
-import { createPathSubjectOpener } from '@modkitx-x3/host/node'
+} from '@modkit/host'
+import { createPathSubjectOpener } from '@modkit/host/node'
 import { createAutomationHost } from '../../apps/automation-host/src/index.js'
 import { createElectronSubjectServices } from '../../apps/electron/src/index.js'
 

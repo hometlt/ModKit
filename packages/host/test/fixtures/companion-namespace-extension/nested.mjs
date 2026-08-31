@@ -14,7 +14,7 @@ import { createInspectionCodec } from '../../../../../packages/codec-kit/src/ind
 /**
  * @param {{
  *   id: string
- *   requirement: import('@modkitx-x3/sdk').AssetInputRequirement
+ *   requirement: import('@modkit/sdk').AssetInputRequirement
  * }} options
  */
 export const nestedCompanionCodec = options =>

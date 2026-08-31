@@ -9,9 +9,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { MessageChannel } from 'node:worker_threads'
 import { afterEach, describe, expect, it } from 'vitest'
-import { connectSubjectRpc, type SubjectRpcClient } from '@modkitx-x3/host'
-import type { MessagePortLike } from '@modkitx-x3/host/execution'
-import { loadExtensionDirectory } from '@modkitx-x3/host/node'
+import { connectSubjectRpc, type SubjectRpcClient } from '@modkit/host'
+import type { MessagePortLike } from '@modkit/host/execution'
+import { loadExtensionDirectory } from '@modkit/host/node'
 import { createServerApp } from '../src/index.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
@@ -62,7 +62,7 @@ describe('server subject RPC (S9)', () => {
     expect(opened.state).toBe('opened')
     if (opened.state !== 'opened') throw new Error('open failed')
     expect(opened.snapshot.selected).toMatchObject({
-      contributionId: 'org.modkitx/image-png',
+      contributionId: 'modkit/image-png',
       variantId: 'portable',
     })
     // the codec ran worker-brokered in the server's worker realm; the wire carried the notice

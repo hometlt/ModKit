@@ -3,110 +3,110 @@ MODKIT MK3 LOCAL RC LICENSE NOTICES
 Generated from the package metadata used by the focused local RC.
 UNLICENSED and NOASSERTION components are statuses, not license grants.
 
-@modkitx-x3/automation-host@0.1.0
+@modkit/automation-host@0.1.0
 Status: NOASSERTION
 Metadata: apps/automation-host/package.json
 
 ---
 
-@modkitx-x3/code@1.0.0
+@modkit/code@1.0.0
 License: MIT
 Metadata: packages/code/package.json
 License document: licenses/MIT.txt
 
 ---
 
-@modkitx-x3/codec-kit@1.0.0
+@modkit/codec-kit@1.0.0
 License: MIT
 Metadata: packages/codec-kit/package.json
 License document: licenses/MIT.txt
 
 ---
 
-@modkitx-x3/core@0.1.0
+@modkit/core@0.1.0
 Status: UNLICENSED
 Metadata: packages/core/package.json
 
 ---
 
-@modkitx-x3/electron-app@0.1.0
+@modkit/electron-app@0.1.0
 Status: NOASSERTION
 Metadata: apps/electron/package.json
 
 ---
 
-@modkitx-x3/host@0.1.0
+@modkit/extension-manager@0.1.0
+License: MIT
+Metadata: packages/extension-manager/package.json
+License document: licenses/MIT.txt
+
+---
+
+@modkit/host@0.1.0
 Status: UNLICENSED
 Metadata: packages/host/package.json
 
 ---
 
-@modkitx-x3/modkit-cli@0.1.0
+@modkit/modkit-cli@0.1.0
 Status: UNLICENSED
 Metadata: apps/cli/package.json
 
 ---
 
-@modkitx-x3/modkit-vscode@0.1.0
+@modkit/modkit-vscode@0.1.0
 Status: NOASSERTION
 Metadata: apps/vscode/package.json
 
 ---
 
-@modkitx-x3/scene@1.0.0
+@modkit/scene@1.0.0
 License: MIT
 Metadata: packages/scene/package.json
 License document: licenses/MIT.txt
 
 ---
 
-@modkitx-x3/sdk@0.1.0
+@modkit/sdk@0.1.0
 Status: UNLICENSED
 Metadata: packages/sdk/package.json
 
 ---
 
-@modkitx-x3/server@0.1.0
+@modkit/server@0.1.0
 Status: NOASSERTION
 Metadata: apps/server/package.json
 
 ---
 
-@modkitx-x3/ui@0.1.0
+@modkit/ui@0.1.0
 Status: UNLICENSED
 Metadata: packages/ui/package.json
 
 ---
 
-@modkitx-x3/uv@1.0.0
+@modkit/uv@1.0.0
 License: MIT
 Metadata: packages/uv/package.json
 License document: licenses/MIT.txt
 
 ---
 
-@modkitx-x3/vfs@0.1.0
+@modkit/vfs@0.1.0
 Status: UNLICENSED
 Metadata: packages/vfs/package.json
 
 ---
 
-@modkitx-x3/web-app@0.1.0
+@modkit/web-app@0.1.0
 Status: NOASSERTION
 Metadata: apps/web/package.json
 
 ---
 
-@modkitx-x3/workspace-root@0.0.0
+@modkit/workspace-root@0.0.0
 Status: NOASSERTION
 Metadata: package.json
-
----
-
-@modkitx/extension-manager@0.1.0
-License: MIT
-Metadata: packages/extension-manager/package.json
-License document: licenses/MIT.txt
 
 ---
 
@@ -441,7 +441,7 @@ SOFTWARE.
 
 ---
 
-fast-uri@3.1.5
+fast-uri@3.1.6
 License: BSD-3-Clause
 Metadata: npm:fast-uri
 
@@ -585,56 +585,56 @@ This software is provided by the copyright holders and contributors “as is” 
 
 ---
 
-modkit-extension-x3-archives@1.0.0
+modkit-extension-archives@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/archives/package.json
 License document: licenses/MIT.txt
 
 ---
 
-modkit-extension-x3-audio@1.0.0
+modkit-extension-audio@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/audio/package.json
 License document: licenses/MIT.txt
 
 ---
 
-modkit-extension-x3-data@1.0.0
+modkit-extension-data@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/data/package.json
 License document: licenses/MIT.txt
 
 ---
 
-modkit-extension-x3-documents@1.0.0
+modkit-extension-documents@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/documents/package.json
 License document: licenses/MIT.txt
 
 ---
 
-modkit-extension-x3-images@1.0.0
+modkit-extension-images@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/images/package.json
 License document: licenses/MIT.txt
 
 ---
 
-modkit-extension-x3-models@1.0.0
+modkit-extension-models@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/models/package.json
 License document: licenses/MIT.txt
 
 ---
 
-modkit-extension-x3-vector@1.0.0
+modkit-extension-vector@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/vector/package.json
 License document: licenses/MIT.txt
 
 ---
 
-modkit-extension-x3-video@1.0.0
+modkit-extension-video@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/video/package.json
 License document: licenses/MIT.txt

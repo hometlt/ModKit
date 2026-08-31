@@ -5,7 +5,7 @@
 // the harness spawns this script once per sample and aggregates.
 //
 // Targets:
-//   core     @modkitx-x3/core
+//   core     @modkit/core
 //   closure  core + sdk + vfs + host
 //
 // Usage: node import-workload.mjs <target>   → prints a single duration in ms
@@ -14,8 +14,8 @@ import process from 'node:process'
 
 const target = process.argv[2] ?? 'core'
 const targets = {
-  core: ['@modkitx-x3/core'],
-  closure: ['@modkitx-x3/core', '@modkitx-x3/sdk', '@modkitx-x3/vfs', '@modkitx-x3/host'],
+  core: ['@modkit/core'],
+  closure: ['@modkit/core', '@modkit/sdk', '@modkit/vfs', '@modkit/host'],
 }
 
 const specifiers = targets[target]

@@ -8,7 +8,7 @@
  * its parent; an unparseable or expired validity window is a denial, not a default-allow.
  */
 
-import { ModkitError, uniqueSortedUtf8 } from '@modkitx-x3/core'
+import { ModkitError, uniqueSortedUtf8 } from '@modkit/core'
 import type { PermissionClass } from '../manifest/contribution-types.js'
 
 export interface GrantedPathScope {

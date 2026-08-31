@@ -19,8 +19,8 @@ import {
   type AssetEditPlan,
   type ChangeSet,
   type AnyDescriptor,
-} from '@modkitx-x3/sdk'
-import type { OpenedSubject, SubjectEditorPorts } from '@modkitx-x3/host'
+} from '@modkit/sdk'
+import type { OpenedSubject, SubjectEditorPorts } from '@modkit/host'
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import { createWebSubjectServices, type WebSubjectServices } from '../src/subjects.js'
 import {
@@ -569,13 +569,13 @@ describe('what this app accepts as proof of a fidelity claim', () => {
     const host = await services()
     return webEditEvidence(host.main.inventory, {
       interpretation: 'codec',
-      identity: { codecId: 'org.modkitx/archive-zip', formatId: 'zip' },
+      identity: { codecId: 'modkit/archive-zip', formatId: 'zip' },
     } as unknown as AnyDescriptor)
   }
 
   it('proves the raw writer byte-identical claim by construction', async () => {
     const evidence = (await zipEvidence()).evidenceFor(claiming('byte-identical', true))
-    expect(evidence?.writer.providerId).toBe('org.modkitx.host/raw-writer')
+    expect(evidence?.writer.providerId).toBe('modkit.host/raw-writer')
     expect(evidence?.corpusDigest).toBe('none:by-construction')
   })
 
@@ -583,7 +583,7 @@ describe('what this app accepts as proof of a fidelity claim', () => {
     const registry = await zipEvidence()
     const canonical = registry.evidenceFor(claiming('semantic', true))
     const other = registry.evidenceFor(claiming('semantic', false))
-    expect(canonical?.writer.providerId).toBe('org.modkitx/archive-zip')
+    expect(canonical?.writer.providerId).toBe('modkit/archive-zip')
     expect(canonical?.evidenceId).toBe('zip-verbatim-reassembly-v1')
     expect(canonical?.writer.artifactDigest).not.toBe('none:extension-artifact-not-pinned')
     expect(other?.evidenceId).toBe('zip-verbatim-reassembly-non-canonical-v1')

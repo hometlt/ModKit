@@ -1,6 +1,6 @@
-import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/dmg'
+const ID = 'modkit/dmg'
 const TRAILER_BYTES = 512
 
 function readU32be(view, offset) {

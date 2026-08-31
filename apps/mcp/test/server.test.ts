@@ -1,13 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { delimiter, resolve } from 'node:path'
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
-import type { Inventory } from '@modkitx-x3/host'
-import type {
-  AnyDescriptor,
-  AssetSession,
-  KnowledgeCatalog,
-  KnowledgeTarget,
-} from '@modkitx-x3/sdk'
+import type { Inventory } from '@modkit/host'
+import type { AnyDescriptor, AssetSession, KnowledgeCatalog, KnowledgeTarget } from '@modkit/sdk'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   ConfigurationError,

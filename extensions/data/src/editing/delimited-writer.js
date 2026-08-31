@@ -13,12 +13,12 @@
  * under `write-source`. Both formats of this extension share this module; `createProvider`
  * dispatches on the resolved `offerId`.
  */
-import { defineWriter } from '@modkitx-x3/codec-kit'
+import { defineWriter } from '@modkit/codec-kit'
 
-const PROVIDER_ID = 'org.modkitx/text-delimited-writer'
+const PROVIDER_ID = 'modkit/text-delimited-writer'
 const EVIDENCE_ID = 'text-delimited-text-writer-v1'
 /** A module cannot see its own artifact digest; the host inventory carries the attested one. */
-const ARTIFACT_DIGEST = 'x3:org.modkitx/text-delimited-writer@1.0.0'
+const ARTIFACT_DIGEST = 'x3:modkit/text-delimited-writer@1.0.0'
 
 /** Range kinds a text source can splice. `utf16` is what a text editor authors. */
 const RANGE_KINDS = Object.freeze(['utf16', 'bytes'])
@@ -33,7 +33,7 @@ function validateTextChange(change) {
   if (change.targets.length === 0 || change.edits.length === 0) {
     diagnostics.push(
       error(
-        'org.modkitx/text-writer-change-empty',
+        'modkit/text-writer-change-empty',
         'a change set must carry at least one target and one edit',
       ),
     )
@@ -44,7 +44,7 @@ function validateTextChange(change) {
     if (edit.operation !== 'replace') {
       diagnostics.push(
         error(
-          'org.modkitx/text-writer-operation-unsupported',
+          'modkit/text-writer-operation-unsupported',
           `a text writer rewrites its own source: «${edit.operation}» is not a text edit`,
         ),
       )
@@ -53,7 +53,7 @@ function validateTextChange(change) {
     if (!targetIds.has(edit.targetId) || !sourceIds.has(edit.source.id)) {
       diagnostics.push(
         error(
-          'org.modkitx/text-writer-target-foreign',
+          'modkit/text-writer-target-foreign',
           `edit target «${edit.targetId}» is not a target of this change set`,
         ),
       )
@@ -62,7 +62,7 @@ function validateTextChange(change) {
     if (edit.range !== undefined && !RANGE_KINDS.includes(edit.range.kind)) {
       diagnostics.push(
         error(
-          'org.modkitx/text-writer-range-unsupported',
+          'modkit/text-writer-range-unsupported',
           `«${edit.range.kind}» is not a text range (utf16 or bytes)`,
         ),
       )
@@ -71,7 +71,7 @@ function validateTextChange(change) {
     if (!PAYLOAD_KINDS.includes(edit.payload.kind)) {
       diagnostics.push(
         error(
-          'org.modkitx/text-writer-payload-unsupported',
+          'modkit/text-writer-payload-unsupported',
           `«${edit.payload.kind}» payloads are not readable inline (text or inline)`,
         ),
       )

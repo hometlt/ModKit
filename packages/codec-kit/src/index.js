@@ -1,10 +1,10 @@
-import { canonicalJsonStringify } from '@modkitx-x3/core'
+import { canonicalJsonStringify } from '@modkit/core'
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource,
-} from '@modkitx-x3/host'
-import { revisionId, toPortableProjectionReceipt } from '@modkitx-x3/sdk'
+} from '@modkit/host'
+import { revisionId, toPortableProjectionReceipt } from '@modkit/sdk'
 
 export const INSPECTION_OPERATIONS = Object.freeze([
   Object.freeze({

@@ -88,7 +88,7 @@ export interface UserExtensionStore {
   remove(id: string): Promise<void>
 }
 
-export const USER_EXTENSION_DATABASE = 'org.modkitx.app.web/extensions'
+export const USER_EXTENSION_DATABASE = 'modkit.app.web/extensions'
 export const USER_EXTENSION_STORE = 'roots'
 
 // ---------------------------------------------------------------------------------------------

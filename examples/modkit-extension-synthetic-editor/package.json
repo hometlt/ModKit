@@ -1,0 +1,32 @@
+{
+  "name": "@example/modkit-x3-synthetic-editor",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "External BRIEF-13D editor and writer using only public packed package exports.",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.example",
+    "id": "x3-synthetic-editor",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "exports": {
+    ".": "./src/editor.js",
+    "./writer": "./src/writer.js",
+    "./contributions/*": "./contributions/*"
+  },
+  "files": [
+    "contributions",
+    "src",
+    "runner.mjs"
+  ],
+  "dependencies": {
+    "@modkit/core": "*",
+    "@modkit/host": "*",
+    "@modkit/sdk": "*",
+    "@modkit/ui": "*",
+    "@modkit/vfs": "*"
+  }
+}

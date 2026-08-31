@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { parseUiCatalogDocument } from '@modkitx-x3/ui/localization'
-import type { Inventory } from '@modkitx-x3/host'
+import { parseUiCatalogDocument } from '@modkit/ui/localization'
+import type { Inventory } from '@modkit/host'
 
 import {
   createElectronLocalizer,
@@ -107,7 +107,7 @@ describe('Electron UI localization', () => {
     if (english === undefined) throw new Error('missing English Electron catalog')
     const french = parseUiCatalogDocument(
       {
-        schema: 'org.modkitx/ui-message-catalog@1',
+        schema: 'modkit/ui-message-catalog@1',
         locale: 'fr',
         namespace: 'org.example/electron-language-pack',
         messages: {

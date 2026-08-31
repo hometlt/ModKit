@@ -12,23 +12,23 @@ import {
   satisfiesRange,
   versionRangeTargetsMajor,
   traitId,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 
 describe('id grammars (MK3/23 §3)', () => {
   it('constructs branded contract, trait, and owner-scoped operation IDs', () => {
-    expect(contractId('org.modkitx/codec')).toBe('org.modkitx/codec')
+    expect(contractId('modkit/codec')).toBe('modkit/codec')
     expect(traitId('content.binary')).toBe('content.binary')
-    expect(operationId('view.inspect', { contributionId: 'org.modkitx/plain-text' })).toBe(
+    expect(operationId('view.inspect', { contributionId: 'modkit/plain-text' })).toBe(
       'view.inspect',
     )
-    expect(operationId('document.parse', { contributionId: 'org.modkitx/plain-text' })).toBe(
+    expect(operationId('document.parse', { contributionId: 'modkit/plain-text' })).toBe(
       'document.parse',
     )
     expect(
-      operationId('org.modkitx/plain-text.decode', {
-        contributionId: 'org.modkitx/plain-text',
+      operationId('modkit/plain-text.decode', {
+        contributionId: 'modkit/plain-text',
       }),
-    ).toBe('org.modkitx/plain-text.decode')
+    ).toBe('modkit/plain-text.decode')
   })
 
   it('rejects malformed runtime values and operation namespace theft', () => {
@@ -36,10 +36,10 @@ describe('id grammars (MK3/23 §3)', () => {
     expect(() => traitId('Content' as never)).toThrow(TypeError)
     expect(() =>
       operationId('foreign-codec.decode' as never, {
-        contributionId: 'org.modkitx/plain-text',
+        contributionId: 'modkit/plain-text',
       }),
     ).toThrow(TypeError)
-    expect(operationId('image.decode', { contributionId: 'org.modkitx/plain-text' })).toBe(
+    expect(operationId('image.decode', { contributionId: 'modkit/plain-text' })).toBe(
       'image.decode',
     )
     expect(() => operationId('a/b.c.d' as never, { contributionId: 'a/b' })).toThrow(TypeError)
@@ -53,7 +53,7 @@ describe('id grammars (MK3/23 §3)', () => {
       'common.table/view',
       'multiverse.rts/shield-state',
       'publisher-alpha.alpha/shield-regeneration-system',
-      'org.modkitx/permission-denied',
+      'modkit/permission-denied',
       'x3.demo/greeter',
     ]) {
       expect(isQualifiedId(id), id).toBe(true)

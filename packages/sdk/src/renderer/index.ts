@@ -13,7 +13,7 @@ import type { ServiceProviderModule } from '../runtime-abi.js'
 export const SCENE_RENDERER_CONTRACT = 'common.render/scene-3d' as const
 
 /** Host-owned matcher profile for renderer id and output routing. */
-export const SCENE_RENDERER_MATCHER_PROFILE = 'org.modkitx/scene-renderer-matcher' as const
+export const SCENE_RENDERER_MATCHER_PROFILE = 'modkit/scene-renderer-matcher' as const
 
 export type SceneRendererOutputKind = 'rgba8'
 

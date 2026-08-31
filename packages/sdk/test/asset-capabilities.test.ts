@@ -24,7 +24,7 @@ const textSpec: DataSourceContributionSpecV1 = {
   kind: 'data-source',
   contract: 'common.view/text-data-source',
   major: 1,
-  schema: { $ref: 'https://schemas.modkitx.test/text-data-source.v1.json' },
+  schema: { $ref: 'https://schemas.modkit.test/text-data-source.v1.json' },
   conformanceProfile: 'common.view/text-data-source-v1',
 }
 
@@ -59,7 +59,7 @@ function inventoryEntry(
 function registryOptions() {
   return {
     isNamespaceOwner: (namespace: string, ownerExtensionId: string) =>
-      namespace !== 'common.view' || ownerExtensionId === 'org.modkitx/platform',
+      namespace !== 'common.view' || ownerExtensionId === 'modkit/platform',
     validateDefinition: () => ({ state: 'valid' as const }),
   } as const
 }
@@ -202,16 +202,16 @@ describe('data-source inventory registry', () => {
 
     expect(
       (
-        await registry.replaceOwnerInventory('org.modkitx/platform', [
-          inventoryEntry('org.modkitx/platform', textSpec),
+        await registry.replaceOwnerInventory('modkit/platform', [
+          inventoryEntry('modkit/platform', textSpec),
         ])
       ).state,
     ).toBe('committed')
     const before = registry.list()
 
-    const rejected = await registry.replaceOwnerInventory('org.modkitx/platform', [
-      inventoryEntry('org.modkitx/platform', treeSpec, 'tree-1'),
-      inventoryEntry('org.modkitx/platform', treeSpec, 'tree-2'),
+    const rejected = await registry.replaceOwnerInventory('modkit/platform', [
+      inventoryEntry('modkit/platform', treeSpec, 'tree-1'),
+      inventoryEntry('modkit/platform', treeSpec, 'tree-2'),
     ])
     expect(rejected.state).toBe('rejected')
     if (rejected.state === 'rejected') {
@@ -220,7 +220,7 @@ describe('data-source inventory registry', () => {
     }
     expect(registry.list()).toEqual(before)
     expect(registry.lookup(textSpec.contract, textSpec.major)?.ownerExtensionId).toBe(
-      'org.modkitx/platform',
+      'modkit/platform',
     )
     expect(registry.lookup(treeSpec.contract, treeSpec.major)).toBeUndefined()
   })
@@ -262,9 +262,9 @@ describe('data-source inventory registry', () => {
     const registry = createDataSourceRegistry(registryOptions())
     expect(
       (
-        await registry.replaceOwnerInventory('org.modkitx/platform', [
-          inventoryEntry('org.modkitx/platform', textSpec),
-          inventoryEntry('org.modkitx/platform', treeSpec),
+        await registry.replaceOwnerInventory('modkit/platform', [
+          inventoryEntry('modkit/platform', textSpec),
+          inventoryEntry('modkit/platform', treeSpec),
         ])
       ).state,
     ).toBe('committed')
@@ -536,6 +536,6 @@ describe('v1 projection contract', () => {
     }
 
     expect(result.state).toBe('unavailable')
-    expect(result.diagnostics[0].code).toBe('org.modkitx/compat-v1-projection-unavailable')
+    expect(result.diagnostics[0].code).toBe('modkit/compat-v1-projection-unavailable')
   })
 })

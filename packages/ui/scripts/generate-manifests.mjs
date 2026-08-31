@@ -244,8 +244,8 @@ const expected = new Map()
 for (const contribution of contributions) {
   const manifest = {
     schemaVersion: 1,
-    contract: { id: 'org.modkitx/viewer-contribution', major: 1 },
-    id: `org.modkitx.ui/${contribution.id}`,
+    contract: { id: 'modkit/viewer-contribution', major: 1 },
+    id: `modkit.ui/${contribution.id}`,
     displayName: contribution.id.replaceAll('-', ' '),
     runtimeVariants: [
       {
@@ -266,8 +266,8 @@ for (const contribution of contributions) {
 
 const editorManifest = {
   schemaVersion: 1,
-  contract: { id: 'org.modkitx/editor-contribution', major: 1 },
-  id: 'org.modkitx.ui/bounded-text-editor',
+  contract: { id: 'modkit/editor-contribution', major: 1 },
+  id: 'modkit.ui/bounded-text-editor',
   displayName: 'bounded text editor',
   runtimeVariants: [
     {

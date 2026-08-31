@@ -42,9 +42,10 @@ function signedCatalog(catalog, privateKey, keyId) {
 }
 
 function catalogPackage(source, extensions, options = {}) {
+  const { presentation, ...catalogOptions } = options
   return {
     schemaVersion: 1,
-    registryId: 'org.modkitx/test-registry',
+    registryId: 'modkit/test-registry',
     generatedAt: '2026-08-30T00:00:00.000Z',
     packages: [
       {
@@ -52,6 +53,7 @@ function catalogPackage(source, extensions, options = {}) {
         publisher: 'example.publisher',
         displayName: 'Example toolkit',
         summary: 'Node adapter test package.',
+        ...(presentation === undefined ? {} : { presentation }),
         versions: [
           {
             version: '1.0.0',
@@ -62,7 +64,7 @@ function catalogPackage(source, extensions, options = {}) {
         ],
       },
     ],
-    ...options,
+    ...catalogOptions,
   }
 }
 
@@ -127,7 +129,7 @@ test('catalog signing bytes match the registry compact canonical fixed vector', 
   )
   assert.equal(
     createHash('sha256').update(extensionCatalogSigningBytes(value)).digest('hex'),
-    'ea18b73c785f5401d62c71ccd742c0cbe65a94f277cfc4e09b61ffaab687023f',
+    'ffcaa963feeeb145ddbb1c05b30955acba7bb1d818dc14f8fa2ef3ea3aa84d09',
   )
 })
 
@@ -157,6 +159,13 @@ test('local file catalog installs a package with multiple linked development roo
       catalogPackage(
         { kind: 'repository', uri: '../repository', trust: { mode: 'local-user' } },
         expectedIds,
+        {
+          presentation: {
+            vendor: { id: 'example.publisher', displayName: 'Example Publisher' },
+            icon: { path: 'assets/toolkit.png', mediaType: 'image/png' },
+            licenseFiles: [{ path: './LICENSE.txt' }],
+          },
+        },
       ),
     ),
   )
@@ -169,6 +178,11 @@ test('local file catalog installs a package with multiple linked development roo
   await manager.refresh()
   assert.equal((await manager.snapshot()).entries[0].trusted, true)
   await manager.install('example.publisher/toolkit')
+  assert.equal(
+    (await manager.snapshot()).entries[0].presentation.vendor.displayName,
+    'Example Publisher',
+  )
+  assert.equal((await manager.artifactStore.list())[0].presentation.icon.path, 'assets/toolkit.png')
   assert.deepEqual(
     (await manager.installedRoots()).map(entry => entry.expectedId),
     expectedIds,
@@ -258,7 +272,7 @@ test('signed remote catalogs cannot reach ambient local or UNC VFS transports', 
     const catalog = catalogPackage(source, ['example.publisher/codec'], {
       signature: {
         algorithm: 'Ed25519',
-        keyId: 'org.modkitx.test-key',
+        keyId: 'modkit.test-key',
         value: 'AA==',
       },
     })
@@ -324,7 +338,7 @@ test('signed HTTP catalog and portable repository materialize without network on
   )
   const integrity = `sha256:${createHash('sha256').update(portable).digest('hex')}`
   const { privateKey, publicKey } = generateKeyPairSync('ed25519')
-  const keyId = 'org.modkitx.test-key'
+  const keyId = 'modkit.test-key'
   const routes = new Map([['/bundle.json', portable]])
   const server = await startFixtureServer(t, routes)
   const unsigned = catalogPackage(

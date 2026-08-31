@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Evidence merge (block 12 slice 12-5, exit-gate line 2a).
 //
-// Tests declare what they prove with `proves()` from @modkitx-x3/testkit, beside the assertion that
+// Tests declare what they prove with `proves()` from @modkit/testkit, beside the assertion that
 // proves it. Each worker appends its declarations to its own file under `reports/evidence/raw/` as
 // they are made; this merges them into one sorted document that can be committed and diffed like
 // every other generated artifact here.

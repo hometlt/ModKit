@@ -1,7 +1,7 @@
 /** Testkit-only admission probe for the candidate UVW base-heightfield path. */
 
 import { createHash } from 'node:crypto'
-import { canonicalJsonStringify } from '@modkitx-x3/core'
+import { canonicalJsonStringify } from '@modkit/core'
 import type {
   CandidateWorldSceneInfo,
   CandidateWorldSceneSource,
@@ -9,7 +9,7 @@ import type {
   WorldSceneFacetState,
   WorldScenePage,
   WorldSceneTerrainItem,
-} from '@modkitx-x3/sdk/maps'
+} from '@modkit/sdk/maps'
 
 export const CANDIDATE_WORLD_UVW_PROFILE = 'uvw.candidate.v1/base-heightfield-admission' as const
 

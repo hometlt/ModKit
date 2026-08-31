@@ -13,8 +13,8 @@
  * byte source; the host's worker backend remains the only component allowed to evaluate one.
  */
 
-import { normalizeRepositoryManifest } from '@modkitx/extension-manager/browser'
-import type { BrowserFetchLike, BrowserSubtleCryptoLike } from '@modkitx-x3/host/browser'
+import { normalizeRepositoryManifest } from '@modkit/extension-manager/browser'
+import type { BrowserFetchLike, BrowserSubtleCryptoLike } from '@modkit/host/browser'
 import {
   loadUserExtensionRoots,
   NO_USER_EXTENSION_ROOTS,

@@ -8,7 +8,7 @@
  */
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { AnyDescriptor } from '@modkitx-x3/sdk'
+import type { AnyDescriptor } from '@modkit/sdk'
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import { createWebSubjectServices, type WebSubjectServices } from '../src/subjects.js'
 import {

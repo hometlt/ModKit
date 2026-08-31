@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/viewer-contribution", "major": 1 },
-  "id": "org.modkitx.ui/relation-graph-stage",
+  "contract": { "id": "modkit/viewer-contribution", "major": 1 },
+  "id": "modkit.ui/relation-graph-stage",
   "displayName": "relation graph stage",
   "runtimeVariants": [
     {

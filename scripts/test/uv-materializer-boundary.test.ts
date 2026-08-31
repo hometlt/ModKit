@@ -16,9 +16,9 @@ import { join, resolve } from 'node:path'
 
 import { build } from 'esbuild'
 import { describe, expect, it } from 'vitest'
-import { buildInventory, createHostContributionContractRegistry } from '@modkitx-x3/host'
-import { loadExtensionDirectory } from '@modkitx-x3/host/node'
-import { uvModule } from '@modkitx-x3/uv/module'
+import { buildInventory, createHostContributionContractRegistry } from '@modkit/host'
+import { loadExtensionDirectory } from '@modkit/host/node'
+import { uvModule } from '@modkit/uv/module'
 
 const repoRoot = resolve(import.meta.dirname, '..', '..')
 
@@ -148,15 +148,15 @@ describe('the UVM materializer is the only writer, and no codec is a second one'
       ]),
     )
     // the reader stays where it was; the writer and the materializer service live elsewhere
-    expect(byExtension.get('models')).toContain('org.modkitx/model-uvm')
-    expect(byExtension.get('models')).not.toContain('org.modkitx/uvm-writer')
+    expect(byExtension.get('models')).toContain('modkit/model-uvm')
+    expect(byExtension.get('models')).not.toContain('modkit/uvm-writer')
     expect(byExtension.get('uv')).toEqual([
-      'org.modkitx/uv-model-materializer-contract',
-      'org.modkitx/uv-texture-materializer-contract',
-      'org.modkitx/uvm-materializer',
-      'org.modkitx/uvt-materializer',
-      'org.modkitx/uvm-writer',
-      'org.modkitx/uvt-writer',
+      'modkit/uv-model-materializer-contract',
+      'modkit/uv-texture-materializer-contract',
+      'modkit/uvm-materializer',
+      'modkit/uvt-materializer',
+      'modkit/uvm-writer',
+      'modkit/uvt-writer',
     ])
   })
 })

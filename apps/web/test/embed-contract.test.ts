@@ -13,7 +13,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { PreviewStage } from '@modkitx-x3/ui'
+import type { PreviewStage } from '@modkit/ui'
 
 import {
   crossOriginRefusal,

@@ -52,7 +52,7 @@
  *    engine that *does* inherit into workers would refuse them, and allowing a blob the page itself
  *    minted costs nothing.
  *
- * The shipped `VIEWER_CSP` from `@modkitx-x3/ui` also works verbatim for an embedding page: the
+ * The shipped `VIEWER_CSP` from `@modkit/ui` also works verbatim for an embedding page: the
  * test serves the same demo under it and asserts zero refusals, so a host that already applies the
  * viewer policy needs no relaxation to embed one of these.
  *
@@ -87,13 +87,13 @@ import {
   type OperationSession,
   type PermissionGrant,
   type ResourceBudget,
-} from '@modkitx-x3/sdk'
-import { resolveFormatWriter, type OpenedSubject, type SubjectEditorPorts } from '@modkitx-x3/host'
+} from '@modkit/sdk'
+import { resolveFormatWriter, type OpenedSubject, type SubjectEditorPorts } from '@modkit/host'
 import type {
   BrowserBlobConstructorLike,
   BrowserMessageChannelConstructorLike,
   BrowserObjectUrlLike,
-} from '@modkitx-x3/host/browser'
+} from '@modkit/host/browser'
 import {
   createCodecPreview,
   EXPLORER_MAXIMUM_BYTES,
@@ -101,9 +101,9 @@ import {
   type PreviewHandle,
   type PreviewSession,
   type PreviewStage,
-} from '@modkitx-x3/ui/explorer'
-import { element, setPart, setState, setViewerText } from '@modkitx-x3/ui/viewer'
-import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+} from '@modkit/ui/explorer'
+import { element, setPart, setState, setViewerText } from '@modkit/ui/viewer'
+import type { UiLocalizer } from '@modkit/ui/localization'
 
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import {

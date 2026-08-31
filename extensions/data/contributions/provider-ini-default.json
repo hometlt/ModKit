@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "id": "org.modkitx/service-provider-contribution",
+    "id": "modkit/service-provider-contribution",
     "major": 1
   },
-  "id": "org.modkitx/ini-syntax-default",
+  "id": "modkit/ini-syntax-default",
   "displayName": "ini syntax provider",
   "runtimeVariants": [
     {

@@ -8,12 +8,8 @@
  * openers stay the host-executed proxy methods. Runtime-agnostic on purpose: no `node:` imports.
  */
 
-import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
-import type {
-  ContributionContext,
-  ContributionProviderIdentity,
-  ResourceBudget,
-} from '@modkitx-x3/sdk'
+import { ModkitError, type Diagnostic } from '@modkit/core'
+import type { ContributionContext, ContributionProviderIdentity, ResourceBudget } from '@modkit/sdk'
 import { ABI_CODEC_MODULE, ABI_SERVICE_PROVIDER_MODULE } from './abi-surfaces.js'
 
 export interface WireContext {

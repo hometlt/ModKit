@@ -1,6 +1,6 @@
-import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/rar'
+const ID = 'modkit/rar'
 const SIGNATURE = Object.freeze([0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x00])
 const latin1 = new TextDecoder('latin1')
 

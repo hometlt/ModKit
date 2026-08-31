@@ -1,4 +1,4 @@
-import type { NamespaceEntry, NamespaceEntrySource, Page, ViewerModule } from '@modkitx-x3/sdk'
+import type { NamespaceEntry, NamespaceEntrySource, Page, ViewerModule } from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,

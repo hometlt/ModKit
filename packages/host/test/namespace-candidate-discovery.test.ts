@@ -1,10 +1,10 @@
-import { CANCELLED_CODE } from '@modkitx-x3/core'
+import { CANCELLED_CODE } from '@modkit/core'
 import {
   revisionId,
   type NamespaceEntry,
   type NamespaceEntrySource,
   type PageRequest,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { describe, expect, it } from 'vitest'
 import {
   createWorkspaceNamespaceCandidateDiscovery,

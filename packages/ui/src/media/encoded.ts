@@ -1,4 +1,4 @@
-import type { EncodedMediaSource } from '@modkitx-x3/sdk'
+import type { EncodedMediaSource } from '@modkit/sdk'
 
 export interface CollectedEncodedMedia {
   readonly mediaType: string

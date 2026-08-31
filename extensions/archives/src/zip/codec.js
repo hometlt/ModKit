@@ -3,7 +3,7 @@ import {
   createTreeDataSource,
   editPlanFromInput,
   simpleLease,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
 const ZIP_LOCAL = 0x04034b50
 const ZIP_CENTRAL = 0x02014b50
@@ -878,7 +878,7 @@ function namespaceSource(entries, source) {
 }
 
 const definition = Object.freeze({
-  id: 'org.modkitx/archive-zip',
+  id: 'modkit/archive-zip',
   format: Object.freeze({ id: 'zip', label: 'ZIP archive', mediaType: 'application/zip' }),
   operations: Object.freeze([
     Object.freeze({

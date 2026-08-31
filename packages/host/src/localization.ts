@@ -7,18 +7,18 @@
  * the decoded catalog shape to the UI-owned parser. No extension module is imported or executed.
  */
 
-import { diagnostic, type Diagnostic } from '@modkitx-x3/core'
+import { diagnostic, type Diagnostic } from '@modkit/core'
 import {
   LOCALIZATION_CONTRIBUTION_CONTRACT,
   type LocalizationCatalogResourceV1Wire,
   type LocalizationContributionSpecV1Wire,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   DEFAULT_VFS_LIMITS,
   normalizeVfsPath,
   type VfsMount,
   type VfsOpenOptions,
-} from '@modkitx-x3/vfs'
+} from '@modkit/vfs'
 
 import {
   CONTRIBUTION_DISABLED_CODE,

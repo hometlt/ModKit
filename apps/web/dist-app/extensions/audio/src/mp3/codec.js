@@ -7,7 +7,7 @@ import {
   editPlanFromInput,
   replaceBytes,
   TRANSPORT_OPERATIONS,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
 const latin1 = new TextDecoder('latin1')
 const utf8 = new TextEncoder()
@@ -368,7 +368,7 @@ function setTextFrameHandler(bytes, input) {
 }
 
 const definition = Object.freeze({
-  id: 'org.modkitx/audio-mp3',
+  id: 'modkit/audio-mp3',
   format: Object.freeze({ id: 'mp3', label: 'MP3 audio', mediaType: 'audio/mpeg' }),
   operations: MP3_OPERATIONS,
   async detect(bytes) {

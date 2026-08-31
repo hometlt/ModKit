@@ -18,7 +18,7 @@ import {
   throwIfAborted,
   traitId,
   type Diagnostic,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import {
   revisionId,
   type ArtifactByteSource,
@@ -31,9 +31,9 @@ import {
   type InputSearchScope,
   type Lease,
   type PhysicalAssetInputPlan,
-} from '@modkitx-x3/sdk'
-import { buildInventory, createHostContributionContractRegistry } from '@modkitx-x3/host'
-import { loadExtensionDirectory } from '@modkitx-x3/host/node'
+} from '@modkit/sdk'
+import { buildInventory, createHostContributionContractRegistry } from '@modkit/host'
+import { loadExtensionDirectory } from '@modkit/host/node'
 import { join } from 'node:path'
 import {
   COMPANION_AMBIGUOUS,

@@ -1,4 +1,4 @@
-// Hand-ported from the MK2 codec org.modkitx/ogv (OPUS-MK2-02 task G, wave 1).
+// Hand-ported from the MK2 codec modkit/ogv (OPUS-MK2-02 task G, wave 1).
 //
 // The v1 limitation is unusually precise and this port keeps to it word for word: "Detection
 // requires an Ogg stream with a Theora or Skeleton marker so generic Ogg audio is not claimed as
@@ -12,9 +12,9 @@ import {
   createInspectionCodec,
   createTreeDataSource,
   createVideoMediaSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/ogv'
+const ID = 'modkit/ogv'
 const latin1 = new TextDecoder('latin1')
 
 const OGG_HEADER_BYTES = 27

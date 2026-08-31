@@ -24,9 +24,9 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { isModkitError } from '@modkitx-x3/core'
-import { connectSubjectRpc } from '@modkitx-x3/host'
-import { proves } from '@modkitx-x3/testkit'
+import { isModkitError } from '@modkit/core'
+import { connectSubjectRpc } from '@modkit/host'
+import { proves } from '@modkit/testkit'
 import { createBridge, type WebviewChannel } from '../src/bridge.js'
 import {
   containerUriText,
@@ -232,7 +232,7 @@ describe('a member is a subject in its own right', () => {
         `the nested text did not open: ${JSON.stringify(answer.snapshot.diagnostics)}`,
       )
     }
-    expect(answer.snapshot.selected.contributionId).toBe('org.modkitx/txt')
+    expect(answer.snapshot.selected.contributionId).toBe('modkit/txt')
     const session = answer.session
     expect(session).toBeDefined()
 
@@ -280,9 +280,9 @@ describe('a member is a subject in its own right', () => {
         `the page did not receive the member: ${JSON.stringify(answer.snapshot.diagnostics)}`,
       )
     }
-    expect(answer.snapshot.selected.contributionId).toBe('org.modkitx/txt')
+    expect(answer.snapshot.selected.contributionId).toBe('modkit/txt')
     // the page is told what it opened by the same callback a file goes through
-    expect(opened).toEqual([{ path: uri, contributionId: 'org.modkitx/txt' }])
+    expect(opened).toEqual([{ path: uri, contributionId: 'modkit/txt' }])
     // and the status surface names it without the container's absolute path
     expect(subjectLabel(uri)).toBe('fixture.zip › hello.txt')
     expect(subjectLabel(uri)).not.toContain(workspace)

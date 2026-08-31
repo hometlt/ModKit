@@ -4,13 +4,13 @@ import {
   resolveUiLocale,
   type UiCatalogDocument,
   type UiLocalizer,
-} from '@modkitx-x3/ui/localization'
+} from '@modkit/ui/localization'
 
 const EN = parseUiCatalogDocument(
   {
-    schema: 'org.modkitx/ui-message-catalog@1',
+    schema: 'modkit/ui-message-catalog@1',
     locale: 'en',
-    namespace: 'org.modkitx/electron-app',
+    namespace: 'modkit/electron-app',
     messages: {
       'electron.window.minimize': 'Minimise',
       'electron.window.maximize': 'Maximise or restore',
@@ -204,9 +204,9 @@ const EN = parseUiCatalogDocument(
 
 const RU = parseUiCatalogDocument(
   {
-    schema: 'org.modkitx/ui-message-catalog@1',
+    schema: 'modkit/ui-message-catalog@1',
     locale: 'ru',
-    namespace: 'org.modkitx/electron-app',
+    namespace: 'modkit/electron-app',
     messages: {
       'electron.window.minimize': 'Свернуть',
       'electron.window.maximize': 'Развернуть или восстановить',

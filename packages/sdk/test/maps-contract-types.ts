@@ -1,4 +1,4 @@
-import type { ServiceProviderContributionSpecV1 } from '@modkitx-x3/sdk/formats'
+import type { ServiceProviderContributionSpecV1 } from '@modkit/sdk/formats'
 import type {
   MapPreviewPreparationPort,
   MapPreviewPreparationProviderModule,
@@ -6,9 +6,9 @@ import type {
   MapSemanticAnalysisRequest,
   MapSemanticProviderModule,
   WorldSceneSource,
-} from '@modkitx-x3/sdk/maps'
-import type { DataSourceOf } from '@modkitx-x3/sdk/data-sources'
-import type { TypedServiceContractRequest } from '@modkitx-x3/sdk/service-contracts'
+} from '@modkit/sdk/maps'
+import type { DataSourceOf } from '@modkit/sdk/data-sources'
+import type { TypedServiceContractRequest } from '@modkit/sdk/service-contracts'
 
 export const mapRoute = {
   contract: 'common.map/semantic-analysis',

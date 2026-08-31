@@ -18,7 +18,7 @@ activate, say plainly that it holds none of its 18 roots, and open everything as
 ## Why the obvious fix is not one
 
 Copying `extensions/*` into `dist-app/extensions/` was tried in 13C and reverted in the same
-slice. An extension root reaches the SDK through `node_modules/@modkitx-x3`, a pnpm workspace link;
+slice. An extension root reaches the SDK through `node_modules/@modkit`, a pnpm workspace link;
 a copy without it is a directory that satisfies `looksLikeExtensionDirectory` and cannot load. The
 build that did this turned every bundled codec off — PNG, ANI and ASTC all fell back to hex — while
 producing an artifact that looked complete. That is a worse failure than the one it was fixing, and
@@ -28,7 +28,7 @@ it is why the roots are named and not copied.
 
 ### A. Vendor the SDK per root
 
-Copy each root plus a real `node_modules/@modkitx-x3/{sdk,core}` into `dist-app/extensions/`.
+Copy each root plus a real `node_modules/@modkit/{sdk,core}` into `dist-app/extensions/`.
 
 - **Cost:** the SDK is duplicated 18 times unless the copy is deduplicated into one shared
   `node_modules` at the `extensions/` level and each root's link recreated as a junction — which is

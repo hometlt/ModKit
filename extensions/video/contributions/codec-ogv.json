@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
-  "id": "org.modkitx/ogv",
+  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "id": "modkit/ogv",
   "displayName": "Ogg Theora Video",
   "status": "partial",
   "runtimeVariants": [

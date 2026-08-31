@@ -16,7 +16,7 @@
  *
  * Descriptors arrive over the RPC as plain JSON, so every reader here takes
  * `Record<string, unknown>` rather than `AnyDescriptor`; that is also what keeps this module
- * runnable in Node with no `vscode`, no DOM and no `@modkitx-x3/ui`.
+ * runnable in Node with no `vscode`, no DOM and no `@modkit/ui`.
  */
 
 /** Slot ids in the order the picker offers them. Anything not listed here is not offered. */

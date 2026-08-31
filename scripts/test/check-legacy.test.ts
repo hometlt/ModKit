@@ -54,7 +54,7 @@ describe('legacy gate (BRIEF-12 §3.5)', () => {
     ).toBe(true)
   })
 
-  it('requires the @modkitx-x3 scope only for platform packages/apps (27 §0.2 names are free)', () => {
+  it('requires the @modkit scope only for platform packages/apps (27 §0.2 names are free)', () => {
     const { status, stderr, stdout } = runGate(join(fixturesRoot, 'clean'))
     expect(status).toBe(0)
     expect(stderr).toBe('')

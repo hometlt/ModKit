@@ -11,8 +11,8 @@
  * than a second simulation API.
  */
 
-import type { Diagnostic } from '@modkitx-x3/core'
-import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
+import type { Diagnostic } from '@modkit/core'
+import type { PermissionGrant, ResourceBudget } from '@modkit/sdk'
 import {
   RUNTIME_SESSION_V2_MEMBERS,
   type RuntimeBudget,
@@ -23,14 +23,14 @@ import {
   type RuntimeSessionV2,
   type RuntimeSnapshot,
   type RuntimeStateIdentity,
-} from '@modkitx-x3/sdk/runtime'
+} from '@modkit/sdk/runtime'
 import {
   openRuntimeSession,
   type OpenRuntimeSessionRequest,
   type RuntimeHostServices,
   type RuntimeProviderInvocationContext,
   type RuntimeSessionResolution,
-} from '@modkitx-x3/host/runtime'
+} from '@modkit/host/runtime'
 
 const ALL_OFFERS: readonly RuntimeSessionOffer[] = Object.freeze([
   'step',

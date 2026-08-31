@@ -130,7 +130,7 @@ function fakeIndexedDb(): {
   }
   return {
     factory: {
-      databases: async () => (opened ? [{ name: 'org.modkitx.app.web/managed-extensions' }] : []),
+      databases: async () => (opened ? [{ name: 'modkit.app.web/managed-extensions' }] : []),
       open: () => {
         const upgraded = !opened
         opened = true

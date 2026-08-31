@@ -1,4 +1,4 @@
-import { ModkitError, throwIfAborted, uint64, type SourceSpan } from '@modkitx-x3/core'
+import { ModkitError, throwIfAborted, uint64, type SourceSpan } from '@modkit/core'
 import type {
   ByteRangeSource,
   CellCoord,
@@ -12,7 +12,7 @@ import type {
   TextQuery,
   TextSlice,
   TextSliceRequest,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const DEFAULT_CHUNK_BYTES = 64 * 1024
 

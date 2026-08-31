@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * Thin `modkit` CLI — the application root of canon §11 (BRIEF-12 §3.1): argv, stdout
- * and exit codes. Loading is @modkitx-x3/host/node, inventory/validation is
- * @modkitx-x3/host + @modkitx-x3/sdk. No spec registry is built in: every contract is
+ * and exit codes. Loading is @modkit/host/node, inventory/validation is
+ * @modkit/host + @modkit/sdk. No spec registry is built in: every contract is
  * reported as inspectable-unknown here (hosts/testkit supply registries).
  *
  * `modkit open` (S7) is the product open path of the CLI: the given extension roots are loaded
@@ -18,8 +18,8 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { basename, resolve } from 'node:path'
 import process from 'node:process'
-import { isQualifiedId } from '@modkitx-x3/core'
-import { type OpenIntent, type ProviderOffer, type ProviderRequest } from '@modkitx-x3/sdk'
+import { isQualifiedId } from '@modkit/core'
+import { type OpenIntent, type ProviderOffer, type ProviderRequest } from '@modkit/sdk'
 import {
   createSubjectCommandRuntime,
   describeSubjectCommandContracts,
@@ -29,8 +29,8 @@ import {
   type ExtensionInput,
   type Inventory,
   type OpenSubjectResult,
-} from '@modkitx-x3/host'
-import { loadExtensionDirectory, openFileArtifactSource } from '@modkitx-x3/host/node'
+} from '@modkit/host'
+import { loadExtensionDirectory, openFileArtifactSource } from '@modkit/host/node'
 import {
   createModkitCliComposition,
   createModkitCliSubjectServices,
@@ -402,7 +402,7 @@ async function scaffoldCodec(root: string, contributionId: string): Promise<read
           test: 'vitest run',
           typecheck: 'tsc --noEmit',
         },
-        dependencies: { '@modkitx-x3/sdk': '^0.1.0' },
+        dependencies: { '@modkit/sdk': '^0.1.0' },
         devDependencies: { typescript: '^5.9.0', vitest: '^2.1.0' },
         modkit: {
           schemaVersion: 1,
@@ -417,7 +417,7 @@ async function scaffoldCodec(root: string, contributionId: string): Promise<read
     'contributions/codec.json': `${JSON.stringify(
       {
         schemaVersion: 1,
-        contract: { id: 'org.modkitx/codec-contribution', major: 1 },
+        contract: { id: 'modkit/codec-contribution', major: 1 },
         id: contributionId,
         displayName: basename(root),
         runtimeVariants: [
@@ -461,8 +461,8 @@ async function scaffoldCodec(root: string, contributionId: string): Promise<read
       null,
       2,
     )}\n`,
-    'src/index.ts': `import { defineCodec } from '@modkitx-x3/sdk/authoring'\n\n// Four concepts: Subject, Contribution, Contract, Operation. Add detail only when needed.\nexport const codec = defineCodec({\n  id: '${contributionId}',\n  displayName: '${basename(root).replace(/'/g, "\\'")}',\n  format: { formatId: '${name}', label: '${basename(root).replace(/'/g, "\\'")}' },\n  roles: ['semantic'], topology: 'single', stages: ['authored'], intents: ['probe', 'inspect'],\n  match: {},\n  probe: { kind: 'bytes', ranges: [], maxBytes: 0, run: async () => ({ codecId: '${contributionId}', confidence: 0, evidence: [], requiredRanges: [] }) },\n  open: async () => { throw new Error('implement open') },\n  operations: [], representations: [],\n  publishesDataSources: [{ contract: 'common.view/byte-range-source', major: 1 }],\n  budgets: { maxInputBytes: 1048576n, maxDepth: 4, maxNodes: 10000, maxScalarBytes: 1048576, maxDiagnostics: 100 },\n  implementationTier: { claimed: 1 },\n  profile: 'source-reader',\n  targets: [{ variantId: 'portable', environments: ['node-worker'], entrypoint: './dist/index.js' }],\n})\n`,
-    'test/smoke.test.ts': `import { describe, expect, it } from 'vitest'\nimport { assertAuthoringPackable } from '@modkitx-x3/sdk/authoring'\nimport { codec } from '../src/index.js'\n\ndescribe('authoring target smoke', () => {\n  it('covers every declared environment', () => {\n    expect(() => assertAuthoringPackable(codec, [{ variantId: 'portable', environment: 'node-worker', state: 'passed' }])).not.toThrow()\n  })\n})\n`,
+    'src/index.ts': `import { defineCodec } from '@modkit/sdk/authoring'\n\n// Four concepts: Subject, Contribution, Contract, Operation. Add detail only when needed.\nexport const codec = defineCodec({\n  id: '${contributionId}',\n  displayName: '${basename(root).replace(/'/g, "\\'")}',\n  format: { formatId: '${name}', label: '${basename(root).replace(/'/g, "\\'")}' },\n  roles: ['semantic'], topology: 'single', stages: ['authored'], intents: ['probe', 'inspect'],\n  match: {},\n  probe: { kind: 'bytes', ranges: [], maxBytes: 0, run: async () => ({ codecId: '${contributionId}', confidence: 0, evidence: [], requiredRanges: [] }) },\n  open: async () => { throw new Error('implement open') },\n  operations: [], representations: [],\n  publishesDataSources: [{ contract: 'common.view/byte-range-source', major: 1 }],\n  budgets: { maxInputBytes: 1048576n, maxDepth: 4, maxNodes: 10000, maxScalarBytes: 1048576, maxDiagnostics: 100 },\n  implementationTier: { claimed: 1 },\n  profile: 'source-reader',\n  targets: [{ variantId: 'portable', environments: ['node-worker'], entrypoint: './dist/index.js' }],\n})\n`,
+    'test/smoke.test.ts': `import { describe, expect, it } from 'vitest'\nimport { assertAuthoringPackable } from '@modkit/sdk/authoring'\nimport { codec } from '../src/index.js'\n\ndescribe('authoring target smoke', () => {\n  it('covers every declared environment', () => {\n    expect(() => assertAuthoringPackable(codec, [{ variantId: 'portable', environment: 'node-worker', state: 'passed' }])).not.toThrow()\n  })\n})\n`,
     'fixtures/sample.bin': '',
   }
   await Promise.all(

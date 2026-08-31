@@ -5,8 +5,8 @@
  * gallery mounts the shipped `ViewerModule`s against them, so what you see is the actual viewer
  * rendering actual leased data. If a viewer breaks, the gallery breaks.
  */
-import { traitId } from '@modkitx-x3/core'
-import { revisionId, bindingId, presentationSlotId } from '@modkitx-x3/sdk'
+import { traitId } from '@modkit/core'
+import { revisionId, bindingId, presentationSlotId } from '@modkit/sdk'
 import type {
   AnyDescriptor,
   ByteRangeSource,
@@ -34,7 +34,7 @@ import type {
   TreeNodeFacts,
   TreeNodeRef,
   ViewerSources,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const REVISION = revisionId('content-hash.sha256:gallery')
 
@@ -330,7 +330,7 @@ export const CASES: readonly GalleryCase[] = Object.freeze([
     id: 'bounded-text',
     title: 'Bounded text stage',
     summary: 'Whole-document text with hostile control characters escaped on the way in.',
-    contributionId: 'org.modkitx.ui/bounded-text-stage',
+    contributionId: 'modkit.ui/bounded-text-stage',
     kind: 'stage',
     contract: 'common.view/text-data-source',
     source: textSource(),
@@ -339,7 +339,7 @@ export const CASES: readonly GalleryCase[] = Object.freeze([
     id: 'virtual-text',
     title: 'Virtual text stage',
     summary: '250 000 logical lines, windowed. Nothing is materialised in full.',
-    contributionId: 'org.modkitx.ui/virtual-text-stage',
+    contributionId: 'modkit.ui/virtual-text-stage',
     kind: 'stage',
     contract: 'common.view/text-data-source',
     source: virtualTextSource(),
@@ -348,7 +348,7 @@ export const CASES: readonly GalleryCase[] = Object.freeze([
     id: 'hex',
     title: 'Hex stage',
     summary: 'A 1 TiB logical source addressed with 64-bit offsets; only the window is read.',
-    contributionId: 'org.modkitx.ui/hex-stage',
+    contributionId: 'modkit.ui/hex-stage',
     kind: 'stage',
     contract: 'common.view/byte-range-source',
     source: byteRangeSource(),
@@ -357,7 +357,7 @@ export const CASES: readonly GalleryCase[] = Object.freeze([
     id: 'tree',
     title: 'Tree stage',
     summary: 'Lazy children through paged requests, with node facts supplying labels.',
-    contributionId: 'org.modkitx.ui/tree-stage',
+    contributionId: 'modkit.ui/tree-stage',
     kind: 'stage',
     contract: 'common.view/tree-data-source',
     source: treeSource(),
@@ -366,7 +366,7 @@ export const CASES: readonly GalleryCase[] = Object.freeze([
     id: 'table',
     title: 'Table stage',
     summary: 'Paged rows. Two rows carry markup and bidi overrides that must render inert.',
-    contributionId: 'org.modkitx.ui/table-stage',
+    contributionId: 'modkit.ui/table-stage',
     kind: 'stage',
     contract: 'common.view/table-data-source',
     source: tableSource(),
@@ -375,7 +375,7 @@ export const CASES: readonly GalleryCase[] = Object.freeze([
     id: 'namespace',
     title: 'Namespace tree',
     summary: 'Container entries; opening one yields a leased source ref, never eager bytes.',
-    contributionId: 'org.modkitx.ui/namespace-tree',
+    contributionId: 'modkit.ui/namespace-tree',
     kind: 'tree',
     contract: 'common.view/namespace-entry-source',
     source: namespaceSource(),
@@ -384,7 +384,7 @@ export const CASES: readonly GalleryCase[] = Object.freeze([
     id: 'transport',
     title: 'Transport bar',
     summary: 'Playback snapshot with selectable video and audio tracks.',
-    contributionId: 'org.modkitx.ui/transport-bar',
+    contributionId: 'modkit.ui/transport-bar',
     kind: 'transport',
     contract: 'common.view/transport-source',
     source: transportSource(),
@@ -408,7 +408,7 @@ export function galleryDescriptor(diagnostics = true): AnyDescriptor {
     },
     interpretation: 'codec',
     identity: {
-      codecId: 'org.modkitx.gallery/fixture',
+      codecId: 'modkit.gallery/fixture',
       codecVersion: '1.0.0',
       formatId: 'gallery-fixture',
       formatLabel: 'Gallery fixture',
@@ -507,7 +507,7 @@ export function slotFor(item: GalleryCase, index: number): PresentationSlot {
     slotId: presentationSlotId(item.id),
     kind: item.kind,
     contributionId: item.contributionId,
-    extensionId: 'org.modkitx.ui',
+    extensionId: 'modkit.ui',
     priority: 100 + index,
     bindings: [{ bindingId: bindingId(item.id), contract: item.contract, major: 1 }],
   } as PresentationSlot
@@ -542,7 +542,7 @@ export function resolvedPlanFor(item: GalleryCase, index: number): ResolvedPrese
     bindings: slot.bindings.map(binding => ({
       ...binding,
       offerId: `${item.contributionId}#offer`,
-      providerId: 'org.modkitx.gallery/in-memory',
+      providerId: 'modkit.gallery/in-memory',
       variantId: 'browser',
       ticket: undefined,
     })),

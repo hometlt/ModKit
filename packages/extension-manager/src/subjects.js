@@ -1,9 +1,9 @@
-import { nestedSubject, rootSubject, serializeSubjectRef } from '@modkitx-x3/sdk/subjects'
+import { nestedSubject, rootSubject, serializeSubjectRef } from '@modkit/sdk/subjects'
 
 import { ExtensionManagerError } from './schema.js'
 
-export const EXTENSION_SUBJECT_KIND = 'org.modkitx/extension'
-export const CONTRIBUTION_SUBJECT_KIND = 'org.modkitx/contribution'
+export const EXTENSION_SUBJECT_KIND = 'modkit/extension'
+export const CONTRIBUTION_SUBJECT_KIND = 'modkit/contribution'
 
 function fail(message, context = {}) {
   throw new ExtensionManagerError('extension-manager/subject-projection-invalid', message, context)
@@ -161,6 +161,26 @@ function relation(role, record) {
   })
 }
 
+function extensionPresentationFacts(presentation, provenance) {
+  const vendor = presentation.vendor?.displayName
+  const games = presentation.games?.map(game => game.displayName).join(', ')
+  const source =
+    presentation.source?.kind === 'root'
+      ? presentation.source.root
+      : presentation.source?.kind === 'url'
+        ? presentation.source.url
+        : undefined
+  const licenses = presentation.licenseFiles?.map(item => item.displayName ?? item.path).join(', ')
+  return [
+    ...(vendor === undefined ? [] : [fact('vendor', 'Vendor', vendor, provenance)]),
+    ...(games === undefined || games === '' ? [] : [fact('games', 'Games', games, provenance)]),
+    ...(source === undefined ? [] : [fact('source-details', 'Source details', source, provenance)]),
+    ...(licenses === undefined || licenses === ''
+      ? []
+      : [fact('license-files', 'License files', licenses, provenance)]),
+  ]
+}
+
 async function collectPages(openPage, signal) {
   const items = []
   const cursors = new Set()
@@ -219,6 +239,10 @@ export async function extensionSubjectRecordToWire(record, signal) {
     ...('extensionId' in record ? { extensionId: record.extensionId } : {}),
     ...('contract' in record ? { contract: record.contract, contractKey: record.contractKey } : {}),
     ...('effectiveEnabled' in record ? { effectiveEnabled: record.effectiveEnabled } : {}),
+    ...('presentation' in record && record.presentation !== undefined
+      ? { presentation: record.presentation }
+      : {}),
+    ...('contributions' in record ? { contributions: record.contributions } : {}),
   }
   return snapshotJson(
     {
@@ -289,9 +313,21 @@ export function subjectFactsSourceFromWire(value) {
 }
 
 function contributionFacts(manifest, ownerId, enabled, effectiveEnabled, provenance) {
+  const formatLabels = Array.isArray(manifest.spec?.formatRefs)
+    ? manifest.spec.formatRefs
+        .map(item => (typeof item?.label === 'string' ? item.label.trim() : ''))
+        .filter(Boolean)
+    : []
+  const description =
+    typeof manifest.description === 'string' && manifest.description.trim() !== ''
+      ? manifest.description.trim()
+      : formatLabels.length === 0
+        ? `${manifest.displayName} contribution for Modkit.`
+        : `${manifest.displayName} support for ${formatLabels.join(', ')}.`
   const overview = [
     fact('id', 'Contribution ID', manifest.id, provenance),
     fact('display-name', 'Display name', manifest.displayName, provenance),
+    fact('description', 'Description', description, provenance),
     fact('owner-extension', 'Owner extension', ownerId, provenance),
     fact('contract-id', 'Contract', manifest.contract.id, provenance),
     fact('contract-major', 'Contract major', manifest.contract.major, provenance),
@@ -370,8 +406,26 @@ export function projectExtensionSubjects(input) {
   const version = requiredText(extensionInput.version, 'extension.version')
   const license = requiredText(extensionInput.license, 'extension.license')
   const metadata = normalizedInput.metadata ?? {}
-  const displayName = optionalText(metadata.displayName, 'metadata.displayName') ?? extensionId
-  const description = optionalText(metadata.description, 'metadata.description')
+  const manifestPresentation = extensionInput.presentation ?? {}
+  const metadataPresentation = metadata.presentation ?? {}
+  if (
+    manifestPresentation === null ||
+    typeof manifestPresentation !== 'object' ||
+    Array.isArray(manifestPresentation) ||
+    metadataPresentation === null ||
+    typeof metadataPresentation !== 'object' ||
+    Array.isArray(metadataPresentation)
+  ) {
+    fail('extension presentation must be an object')
+  }
+  const presentation = Object.freeze({ ...manifestPresentation, ...metadataPresentation })
+  const displayName =
+    optionalText(metadata.displayName, 'metadata.displayName') ??
+    optionalText(presentation.displayName, 'presentation.displayName') ??
+    extensionId
+  const description =
+    optionalText(metadata.description, 'metadata.description') ??
+    optionalText(presentation.description, 'presentation.description')
   const homepage = optionalText(metadata.homepage, 'metadata.homepage')
   const sourceLabel = optionalText(metadata.source, 'metadata.source')
   const trusted = metadata.trusted
@@ -442,6 +496,7 @@ export function projectExtensionSubjects(input) {
     version,
     enabled: extensionEnabled,
     manifest: extensionInput,
+    ...(Object.keys(presentation).length === 0 ? {} : { presentation }),
   }
 
   for (const contribution of contributions) {
@@ -484,6 +539,20 @@ export function projectExtensionSubjects(input) {
       }),
     )
 
+  const contributionLinks = Object.freeze(
+    contributions.map(contribution =>
+      Object.freeze({
+        ...relation('owns', contribution),
+        id: contribution.id,
+        contract: contribution.contract,
+        contractKey: contribution.contractKey,
+        enabled: contribution.enabled,
+        effectiveEnabled: contribution.effectiveEnabled,
+      }),
+    ),
+  )
+  extensionRecord.contributions = contributionLinks
+
   const overview = [
     fact('id', 'Extension ID', extensionId, extensionOrigin),
     fact('display-name', 'Display name', displayName, extensionOrigin),
@@ -496,28 +565,23 @@ export function projectExtensionSubjects(input) {
     ...(homepage === undefined ? [] : [fact('homepage', 'Homepage', homepage, extensionOrigin)]),
     ...(sourceLabel === undefined ? [] : [fact('source', 'Source', sourceLabel, extensionOrigin)]),
     ...(trusted === undefined ? [] : [fact('trusted', 'Trusted', trusted, extensionOrigin)]),
+    ...extensionPresentationFacts(presentation, extensionOrigin),
   ]
   const state = [
     fact('enabled', 'Extension enabled', extensionEnabled, extensionOrigin),
     fact('contribution-count', 'Contributions', contributions.length, extensionOrigin),
-    fact('contract-count', 'Contracts', contractGroups.length, extensionOrigin),
   ]
-  const contracts = contractGroups.map(contractGroup =>
-    fact(
-      `contract.${contractGroup.key}`,
-      contractGroup.key,
-      Object.freeze({
-        contract: contractGroup.contract,
-        contributionIds: Object.freeze(contractGroup.contributions.map(item => item.id)),
-        count: contractGroup.contributions.length,
-      }),
-      extensionOrigin,
-    ),
+  const contributionItems = contributionLinks.map(link =>
+    fact(`contribution.${link.id}`, link.label, link, extensionOrigin),
   )
   const extensionSections = [
     Object.freeze({ id: 'overview', label: 'Overview', items: Object.freeze(overview) }),
     Object.freeze({ id: 'state', label: 'State', items: Object.freeze(state) }),
-    Object.freeze({ id: 'contracts', label: 'Contracts', items: Object.freeze(contracts) }),
+    Object.freeze({
+      id: 'contributions',
+      label: 'Contributions',
+      items: Object.freeze(contributionItems),
+    }),
   ]
   extensionRecord.facts = factsSource({
     snapshotId: `${extensionId}@${version}`,
@@ -530,7 +594,7 @@ export function projectExtensionSubjects(input) {
     facts: extensionSections.map(section =>
       Object.freeze({ groupId: section.id, items: section.items }),
     ),
-    relations: Object.freeze(contributions.map(item => relation('owns', item))),
+    relations: contributionLinks,
     origin: extensionOrigin,
   })
   Object.freeze(extensionRecord)

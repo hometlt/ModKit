@@ -31,7 +31,7 @@
  *    discovered by running out of memory.
  */
 
-import { diagnostic, isModkitError, throwIfAborted, type Diagnostic } from '@modkitx-x3/core'
+import { diagnostic, isModkitError, throwIfAborted, type Diagnostic } from '@modkit/core'
 import type {
   ArtifactSource,
   InputSearchScope,
@@ -43,7 +43,7 @@ import type {
   ResourceSessionState,
   ResourceUnresolvedReason,
   RevisionId,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   COMPANION_PATH_REFUSED,
   normalizeCompanionLogicalId,

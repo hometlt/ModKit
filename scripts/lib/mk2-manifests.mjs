@@ -1,6 +1,6 @@
 // Shared MK2 manifest reader + allocation analyzer.
 //
-// One parser for the two tools that read the sibling `modkitx` (MK2) checkout read-only:
+// One parser for the two tools that read the sibling `modkit` (MK2) checkout read-only:
 // scripts/report-mk2-allocation.mjs (what would carry over) and scripts/convert-mk2.mjs
 // (actually carrying it over). Keeping both on one reader is what makes the converter's
 // "mechanical" set exactly the report's "mechanical" set — no second opinion about a verdict,
@@ -8,7 +8,7 @@
 //
 // Like the report it deliberately does NOT import X3 packages: it runs against a foreign
 // checkout with no build step. The grammar/vocabulary tables it needs live in
-// ./mk3-vocabulary.mjs and are cross-checked against @modkitx-x3/core + sdk by
+// ./mk3-vocabulary.mjs and are cross-checked against @modkit/core + sdk by
 // scripts/test/report-mk2-allocation.test.ts.
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'

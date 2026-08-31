@@ -7,8 +7,8 @@
  * host. An available handler absent from the table is reported with a reason instead of receiving
  * a control that cannot construct its input.
  */
-import type { AssetEditPlan, JsonValue, OperationResult } from '@modkitx-x3/sdk'
-import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+import type { AssetEditPlan, JsonValue, OperationResult } from '@modkit/sdk'
+import type { UiLocalizer } from '@modkit/ui/localization'
 
 import { descriptorOperations } from './view-policy.js'
 import { createVscodeLocalizer } from './localization.js'

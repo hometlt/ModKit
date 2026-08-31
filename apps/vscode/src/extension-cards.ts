@@ -3,15 +3,50 @@ import {
   projectExtensionSubjects,
   type ExtensionSubjectCardWireDocument,
   type ExtensionSubjectProjection,
-} from '@modkitx/extension-manager'
-import type { LocalExtensionCandidate } from '@modkitx/extension-manager/node'
-import type { Inventory } from '@modkitx-x3/host'
-import type { ContributionManifestV1Wire, ExtensionManifest } from '@modkitx-x3/sdk'
+} from '@modkit/extension-manager'
+import type { LocalExtensionCandidate } from '@modkit/extension-manager/node'
+import type { Inventory } from '@modkit/host'
+import type {
+  ContributionManifestV1Wire,
+  ExtensionManifest,
+  ExtensionPresentation,
+} from '@modkit/sdk'
+import { isAbsolute, relative, resolve, sep } from 'node:path'
+
+/**
+ * A resource a card is allowed to ask the VS Code adapter to open.
+ *
+ * This object is deliberately kept on the extension-host side. The webview only receives the
+ * matching view below (an opaque id, role and display text), never this target.
+ */
+export interface ExtensionCardResourceTarget {
+  readonly id: string
+  readonly role: 'source' | 'license' | 'icon'
+  readonly kind: 'folder' | 'file' | 'url'
+  readonly target: string
+}
+
+/** Function-free, non-authoritative description the webview may render. */
+export interface ExtensionCardResourceView {
+  readonly id: string
+  readonly role: Extract<ExtensionCardResourceTarget['role'], 'source' | 'license'>
+  readonly label: string
+  /** A real local path or a validated HTTP(S) URL. It is display-only, never an open target. */
+  readonly display: string
+}
+
+/** Server-side registry passed from the adapter to the host for one opened card. */
+export type ExtensionCardResourceTargets = ReadonlyMap<
+  string,
+  readonly ExtensionCardResourceTarget[]
+>
 
 export interface ExtensionCardCatalogEntry {
   readonly id: string
   readonly installed: boolean
   readonly root?: string
+  /** Local extension root used for read-only source and license actions, if host-discovered. */
+  readonly sourceRoot?: string
   readonly managedPackageId?: string
   readonly managedPackageEnabled?: boolean
   readonly projection: ExtensionSubjectProjection
@@ -25,6 +60,11 @@ export interface ExtensionCardBundle {
     readonly installed: boolean
     readonly enabled: boolean
     readonly linkable: boolean
+    /** The extension subject owns source/license resources even when a contribution is open. */
+    readonly subjectId: string
+    readonly resources: readonly ExtensionCardResourceView[]
+    /** VS Code adapter may replace this with a panel-scoped `vscode-resource:` URI. */
+    readonly iconUri?: string
     readonly managedPackageId?: string
     readonly managedPackageEnabled?: boolean
     readonly codecs: {
@@ -47,6 +87,111 @@ export interface CreateExtensionCardCatalogOptions {
 }
 
 const coordinate = (manifest: ExtensionManifest): string => `${manifest.publisher}/${manifest.id}`
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return (
+      (url.protocol === 'https:' || url.protocol === 'http:') &&
+      url.username === '' &&
+      url.password === ''
+    )
+  } catch {
+    return false
+  }
+}
+
+/** Resolve a manifest asset only when it stays beneath a host-discovered extension root. */
+function confinedPath(root: string, child: string): string | undefined {
+  const absoluteRoot = resolve(root)
+  const target = resolve(absoluteRoot, child)
+  const fromRoot = relative(absoluteRoot, target)
+  if (
+    fromRoot === '' ||
+    fromRoot === '..' ||
+    fromRoot.startsWith(`..${sep}`) ||
+    isAbsolute(fromRoot)
+  ) {
+    return fromRoot === '' ? target : undefined
+  }
+  return target
+}
+
+function resourceTargets(entry: ExtensionCardCatalogEntry): readonly ExtensionCardResourceTarget[] {
+  const presentation: ExtensionPresentation | undefined = entry.projection.extension.presentation
+  const targets: ExtensionCardResourceTarget[] = []
+  const source = presentation?.source
+  if (source?.kind === 'url') {
+    if (isHttpUrl(source.url)) {
+      targets.push({ id: 'source', role: 'source', kind: 'url', target: source.url })
+    }
+  } else if (entry.sourceRoot !== undefined) {
+    const target =
+      source?.kind === 'root'
+        ? confinedPath(entry.sourceRoot, source.root)
+        : resolve(entry.sourceRoot)
+    if (target !== undefined) targets.push({ id: 'source', role: 'source', kind: 'folder', target })
+  }
+  if (entry.sourceRoot !== undefined) {
+    const icon = presentation?.icon
+    if (
+      icon !== undefined &&
+      /\.(?:png|svg)$/iu.test(icon.path) &&
+      (icon.mediaType === undefined ||
+        icon.mediaType === 'image/png' ||
+        icon.mediaType === 'image/svg+xml')
+    ) {
+      const target = confinedPath(entry.sourceRoot, icon.path)
+      if (target !== undefined) targets.push({ id: 'icon', role: 'icon', kind: 'file', target })
+    }
+    for (const [index, asset] of (presentation?.licenseFiles ?? []).entries()) {
+      const target = confinedPath(entry.sourceRoot, asset.path)
+      if (target !== undefined) {
+        targets.push({ id: `license-${index}`, role: 'license', kind: 'file', target })
+      }
+    }
+  }
+  return Object.freeze(targets)
+}
+
+function resourceViews(entry: ExtensionCardCatalogEntry): readonly ExtensionCardResourceView[] {
+  const presentation: ExtensionPresentation | undefined = entry.projection.extension.presentation
+  const licenseFiles = presentation?.licenseFiles ?? []
+  return Object.freeze(
+    resourceTargets(entry)
+      .filter(
+        (target): target is ExtensionCardResourceTarget & { readonly role: 'source' | 'license' } =>
+          target.role !== 'icon',
+      )
+      .map(target =>
+        Object.freeze({
+          id: target.id,
+          role: target.role,
+          label:
+            target.role === 'source'
+              ? 'Source'
+              : (licenseFiles[Number(target.id.slice('license-'.length))]?.displayName ??
+                'License'),
+          display: target.target,
+        }),
+      ),
+  )
+}
+
+/** Safe local SVG/PNG path for a native tree icon or a panel-scoped webview URI. */
+export function extensionCardIconTarget(entry: ExtensionCardCatalogEntry): string | undefined {
+  const target = resourceTargets(entry).find(item => item.role === 'icon')
+  return target?.target
+}
+
+/**
+ * Builds the server-side resource authority for one card. Its values must never cross the bridge.
+ */
+export function extensionCardResourceTargets(
+  entry: ExtensionCardCatalogEntry,
+): ExtensionCardResourceTargets {
+  return new Map([[entry.projection.extension.subjectId, resourceTargets(entry)]])
+}
 
 function enablement(
   contributionIds: readonly string[],
@@ -88,6 +233,7 @@ export function createExtensionCardCatalog(
       version: candidate.version,
       license: candidate.license,
       contributionManifests: candidate.contributionManifests,
+      ...(candidate.presentation === undefined ? {} : { presentation: candidate.presentation }),
     })
     const contributions = candidate.contributions.map(
       item => item.manifest,
@@ -100,7 +246,8 @@ export function createExtensionCardCatalog(
           displayName: candidate.displayName,
           ...(candidate.summary === undefined ? {} : { description: candidate.summary }),
           ...(candidate.homepage === undefined ? {} : { homepage: candidate.homepage }),
-          source: `local:${candidate.sourceId}`,
+          source:
+            candidate.root === undefined ? `local:${candidate.sourceId}` : resolve(candidate.root),
           trusted: true,
         },
         enabled: false,
@@ -112,6 +259,7 @@ export function createExtensionCardCatalog(
       entries.set(candidate.id, {
         id: candidate.id,
         installed: false,
+        ...(candidate.root === undefined ? {} : { sourceRoot: resolve(candidate.root) }),
         ...(candidate.root === undefined || !linkableLocalExtensions.has(candidate.id)
           ? {}
           : { root: candidate.root }),
@@ -138,7 +286,7 @@ export function createExtensionCardCatalog(
         displayName: candidate?.displayName ?? id,
         ...(candidate?.summary === undefined ? {} : { description: candidate.summary }),
         ...(candidate?.homepage === undefined ? {} : { homepage: candidate.homepage }),
-        source: extension.origin,
+        source: candidate?.root === undefined ? extension.origin : resolve(candidate.root),
         trusted: extension.origin === 'bundled',
       },
       enabled: !disabledExtensions.has(id),
@@ -150,6 +298,7 @@ export function createExtensionCardCatalog(
     entries.set(id, {
       id,
       installed: true,
+      ...(candidate?.root === undefined ? {} : { sourceRoot: resolve(candidate.root) }),
       ...(managedPackageId === undefined
         ? {}
         : {
@@ -179,7 +328,7 @@ export async function extensionCardBundle(
     entry.projection.records.map(record => extensionSubjectRecordToWire(record)),
   )
   const codecs = entry.projection.contributions.filter(
-    contribution => contribution.contract.id === 'org.modkitx/codec-contribution',
+    contribution => contribution.contract.id === 'modkit/codec-contribution',
   )
   return Object.freeze({
     activeSubjectId: active.subjectId,
@@ -189,6 +338,8 @@ export async function extensionCardBundle(
       installed: entry.installed,
       enabled: entry.projection.extension.enabled,
       linkable: !entry.installed && entry.root !== undefined,
+      subjectId: entry.projection.extension.subjectId,
+      resources: resourceViews(entry),
       codecs: Object.freeze({
         ids: Object.freeze(codecs.map(codec => codec.id)),
         enabled: codecs.length > 0 && codecs.every(codec => codec.enabled),

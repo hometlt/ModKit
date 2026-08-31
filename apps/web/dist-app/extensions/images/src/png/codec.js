@@ -4,7 +4,7 @@ import {
   createTreeDataSource,
   editPlanFromInput,
   replaceBytes,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
 const SIGNATURE = Object.freeze([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 const ascii = new TextDecoder('latin1')
@@ -365,7 +365,7 @@ function setTextHandler(bytes, png, input) {
 }
 
 const definition = Object.freeze({
-  id: 'org.modkitx/image-png',
+  id: 'modkit/image-png',
   operations: Object.freeze([CONVERT_RGBA8_OPERATION, EDIT_FIELD_OPERATION]),
   format: Object.freeze({ id: 'png', label: 'PNG image', mediaType: 'image/png' }),
   async detect(bytes) {

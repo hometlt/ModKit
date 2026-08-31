@@ -1,6 +1,6 @@
-import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/gzip'
+const ID = 'modkit/gzip'
 const latin1 = new TextDecoder('latin1')
 
 function u16(bytes, offset) {

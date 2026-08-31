@@ -1,4 +1,4 @@
-import type { VectorSceneSource, ViewerModule } from '@modkitx-x3/sdk'
+import type { VectorSceneSource, ViewerModule } from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,

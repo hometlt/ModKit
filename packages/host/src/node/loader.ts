@@ -9,8 +9,8 @@ import { createHash } from 'node:crypto'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { throwIfAborted } from '@modkitx-x3/core'
-import { expandContributionManifests, normalizeExtensionManifest } from '@modkitx-x3/sdk'
+import { throwIfAborted } from '@modkit/core'
+import { expandContributionManifests, normalizeExtensionManifest } from '@modkit/sdk'
 import type { ExtensionInput } from '../inventory.js'
 
 export function listFilesRecursive(root: string): string[] {

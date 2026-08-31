@@ -8,18 +8,18 @@ import {
   type VisualAssetPolicy,
   type VisualCoordinateFrame,
   type VisualTransformReceipt,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type {
   WorldSceneInfo,
   WorldScenePage,
   WorldScenePageRequest,
   WorldSceneSource,
-} from '@modkitx-x3/sdk/maps'
+} from '@modkit/sdk/maps'
 import {
   drawMixedVisualWorkspace,
   loadMixedVisualStage,
   transformVisualPrimitive,
-} from '@modkitx-x3/ui/composition'
+} from '@modkit/ui/composition'
 
 const worldRevision = revisionId('content-hash.sha256:world')
 const modelRevision = revisionId('content-hash.sha256:model')

@@ -5,8 +5,8 @@
  */
 import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { type RasterImageSource } from '@modkitx-x3/sdk'
-import { proves } from '@modkitx-x3/testkit'
+import { type RasterImageSource } from '@modkit/sdk'
+import { proves } from '@modkit/testkit'
 import { imageTestBudget, openImageCodec } from './codec-session.js'
 
 function repeatSelector(selector: number): Uint8Array {
@@ -66,7 +66,7 @@ describe('GPU remainder unsigned EAC R11/RG11 decode', () => {
       Array.from({ length: 16 }, () => [83, 0, 0, 255]).flat(),
     )
     proves({
-      contributionId: 'org.modkitx/pkm',
+      contributionId: 'modkit/pkm',
       operation: 'read',
       note: 'Khronos unsigned EAC R11 formula publishes the exact sampled R projection',
     })
@@ -82,7 +82,7 @@ describe('GPU remainder unsigned EAC R11/RG11 decode', () => {
     expect(await raster.info()).toMatchObject({ channels: 2, bitDepth: 11, decodedAccess: true })
     expect([...(await region(raster, 1, 1)).pixels]).toEqual([102, 128, 0, 255])
     proves({
-      contributionId: 'org.modkitx/pkm',
+      contributionId: 'modkit/pkm',
       operation: 'read',
       note: 'Khronos unsigned EAC RG11 decodes two ordered blocks and multiplier zero as one eighth',
     })
@@ -110,7 +110,7 @@ describe('GPU remainder unsigned EAC R11/RG11 decode', () => {
       name: 'AbortError',
     })
     proves({
-      contributionId: 'org.modkitx/pkm',
+      contributionId: 'modkit/pkm',
       operation: 'validate',
       note: 'signed EAC remains named and unsigned EAC budgets and cancellation fail closed',
     })

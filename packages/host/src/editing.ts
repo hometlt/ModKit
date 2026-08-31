@@ -1,5 +1,5 @@
-import { compareUtf8, diagnostic, type Diagnostic } from '@modkitx-x3/core'
-import { PERMISSION_CLASSES } from '@modkitx-x3/sdk'
+import { compareUtf8, diagnostic, type Diagnostic } from '@modkit/core'
+import { PERMISSION_CLASSES } from '@modkit/sdk'
 import type {
   AssetEditPlan,
   AssetRevision,
@@ -26,7 +26,7 @@ import type {
   Writer,
   WriterIdentity,
   WriteSetEntry,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const GUARANTEE_STRENGTH: Readonly<Record<CommitGuarantee, number>> = Object.freeze({
   'best-effort': 0,

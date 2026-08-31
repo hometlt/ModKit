@@ -5,15 +5,15 @@
  *    `scripts/emit-app-catalogs.mjs` selected from a real viewer contribution manifest. That
  *    generator is the authority for anything a contribution can describe: which module backs the
  *    slot, which data source it consumes, whether it is an editor.
- *  - `APP_STAGE_POLICY` — the two surfaces `@modkitx-x3/ui` ships without a `stage` contribution
+ *  - `APP_STAGE_POLICY` — the two surfaces `@modkit/ui` ships without a `stage` contribution
  *    the generator could name: the image editing surface (a component, not a viewer module) and
  *    the namespace tree (a `tree` contribution). The application composes those itself.
  *
  * `orderStages` then puts the union in the app's fixed ranking. Nothing here discovers a viewer.
  */
-import type { PreviewStage } from '@modkitx-x3/ui'
-import type { UiLocalizer } from '@modkitx-x3/ui/localization'
-import type { OperationSession } from '@modkitx-x3/sdk'
+import type { PreviewStage } from '@modkit/ui'
+import type { UiLocalizer } from '@modkit/ui/localization'
+import type { OperationSession } from '@modkit/sdk'
 
 import {
   createPreviewStages,

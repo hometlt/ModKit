@@ -9,7 +9,7 @@
  * conformance run catches them.
  */
 
-import type { Frame, FramePort } from '@modkitx-x3/host/execution'
+import type { Frame, FramePort } from '@modkit/host/execution'
 import type { ConformancePair } from './conformance.js'
 
 export type LoopbackSide = 'host' | 'worker'

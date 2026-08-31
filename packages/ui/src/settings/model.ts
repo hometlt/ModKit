@@ -11,13 +11,14 @@
  * Normalisation never throws on bad input. A settings file is user-editable by design, so a typo
  * must degrade to "that entry was ignored, here is why" rather than refusing to start the app.
  */
-import { compareUtf8, isQualifiedId } from '@modkitx-x3/core'
+import { compareUtf8, isQualifiedId } from '@modkit/core'
+import { normalizeModkitIdentifier } from '@modkit/sdk'
 
 export type Density = 'compact' | 'comfortable'
 
 /** How a host locates and configures one extension. */
 export interface ExtensionSetting {
-  /** Qualified id, e.g. `org.modkitx/text-json`. Identity, not location. */
+  /** Qualified id, e.g. `modkit/text-json`. Identity, not location. */
   readonly id: string
   /** Where the host loads it from: a directory path, a package name or a URL. */
   readonly path: string
@@ -139,12 +140,13 @@ export function normalizeSettings(value: unknown): NormalizedSettings {
         problems.push(`extensions[${index}] is not an object; ignored`)
         continue
       }
-      const id = asText(item['id'])
+      const rawId = asText(item['id'])
       const path = asText(item['path'])
-      if (id === undefined || path === undefined) {
+      if (rawId === undefined || path === undefined) {
         problems.push(`extensions[${index}] needs both "id" and "path"; ignored`)
         continue
       }
+      const id = normalizeModkitIdentifier(rawId)
       const entry: ExtensionSetting = {
         id,
         path,
@@ -169,7 +171,7 @@ export function normalizeSettings(value: unknown): NormalizedSettings {
     problems.push('gameInstallations must be an object; it was ignored')
   } else {
     for (const [rawGameId, item] of Object.entries(gameInstallationsInput ?? {})) {
-      const gameId = rawGameId.trim().toLowerCase()
+      const gameId = normalizeModkitIdentifier(rawGameId.trim().toLowerCase())
       if (!/^[a-z0-9][a-z0-9.-]*\/[a-z0-9][a-z0-9._-]*$/u.test(gameId)) {
         problems.push(`gameInstallations key "${rawGameId}" is not a qualified game id; ignored`)
         continue
@@ -245,7 +247,8 @@ export function normalizeSettings(value: unknown): NormalizedSettings {
   } else {
     const seenIds = new Set<string>()
     for (const [index, item] of (disabledExtensionsInput ?? []).entries()) {
-      const id = asText(item)
+      const rawId = asText(item)
+      const id = rawId === undefined ? undefined : normalizeModkitIdentifier(rawId)
       if (id === undefined || !isQualifiedId(id)) {
         problems.push(`disabledExtensions[${index}] is not an extension coordinate; ignored`)
         continue
@@ -269,7 +272,8 @@ export function normalizeSettings(value: unknown): NormalizedSettings {
   } else {
     const seenIds = new Set<string>()
     for (const [index, item] of (disabledInput ?? []).entries()) {
-      const id = asText(item)
+      const rawId = asText(item)
+      const id = rawId === undefined ? undefined : normalizeModkitIdentifier(rawId)
       if (id === undefined) {
         problems.push(`disabledContributions[${index}] is not a contribution id; ignored`)
         continue

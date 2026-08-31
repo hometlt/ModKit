@@ -1,6 +1,6 @@
-import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/zstd'
+const ID = 'modkit/zstd'
 const MAGIC = Object.freeze([0x28, 0xb5, 0x2f, 0xfd])
 const MAX_BLOCK_BYTES = 128 * 1024
 

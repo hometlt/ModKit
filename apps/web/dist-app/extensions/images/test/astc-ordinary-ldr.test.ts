@@ -12,8 +12,8 @@
  */
 import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { type RasterImageSource } from '@modkitx-x3/sdk'
-import { proves } from '@modkitx-x3/testkit'
+import { type RasterImageSource } from '@modkit/sdk'
+import { proves } from '@modkit/testkit'
 import { imageTestBudget, openImageCodec } from './codec-session.js'
 
 const fromHex = (value: string) =>
@@ -127,7 +127,7 @@ describe('GPU remainder ASTC ordinary 2D LDR decode', () => {
     })
     expect(Buffer.from(decoded.pixels).toString('hex')).toBe(fixture.rgba)
     proves({
-      contributionId: 'org.modkitx/astc',
+      contributionId: 'modkit/astc',
       operation: 'read',
       note: 'five astcenc 5.6 blocks prove binary/trit/quint weights, trit/quint endpoints, infill and dual-plane exact RGBA8',
     })
@@ -164,7 +164,7 @@ describe('GPU remainder ASTC ordinary 2D LDR decode', () => {
     await hdrSession.dispose()
 
     proves({
-      contributionId: 'org.modkitx/astc',
+      contributionId: 'modkit/astc',
       operation: 'validate',
       note: 'multi-partition and HDR endpoint blocks remain named and never publish partial pixels',
     })

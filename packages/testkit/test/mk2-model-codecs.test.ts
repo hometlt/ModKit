@@ -11,7 +11,7 @@ import {
   type ModelSceneSource,
   type ResourceBudget,
   type TreeDataSource,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const modelRoot = join(repoRoot, 'extensions', 'models')

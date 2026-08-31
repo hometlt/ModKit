@@ -8,6 +8,7 @@ import {
   normalizeRepositoryManifest,
   normalizeWorkspaceConfiguration,
 } from './schema.js'
+import { snapshotExtensionPresentation } from './catalog.js'
 
 const CONFIG_NAME = 'modkit.workspace.json'
 const DEFAULT_DESCRIPTOR = 'modkit.repository.json'
@@ -451,7 +452,12 @@ function packageMetadata(packageJson, expectedId, label) {
     safeRelativePath(value, `contributionManifests[${index}]`),
   )
   const packageName = optionalText(packageJson.name)
-  const displayName = optionalText(packageJson.displayName) ?? packageName ?? id
+  const presentation =
+    manifest.presentation === undefined
+      ? undefined
+      : snapshotExtensionPresentation(manifest.presentation, `${label}#modkit.presentation`)
+  const displayName =
+    presentation?.displayName ?? optionalText(packageJson.displayName) ?? packageName ?? id
   return Object.freeze({
     id,
     publisher,
@@ -459,15 +465,17 @@ function packageMetadata(packageJson, expectedId, label) {
     version,
     ...(packageName === undefined ? {} : { packageName }),
     displayName,
-    ...(optionalText(packageJson.description) === undefined
+    ...(presentation?.description === undefined &&
+    optionalText(packageJson.description) === undefined
       ? {}
-      : { summary: optionalText(packageJson.description) }),
+      : { summary: presentation?.description ?? optionalText(packageJson.description) }),
     ...(optionalText(packageJson.license) === undefined
       ? {}
       : { license: optionalText(packageJson.license) }),
     ...(optionalText(packageJson.homepage) === undefined
       ? {}
       : { homepage: optionalText(packageJson.homepage) }),
+    ...(presentation === undefined ? {} : { presentation }),
     contributionManifests: Object.freeze(contributionManifests),
   })
 }

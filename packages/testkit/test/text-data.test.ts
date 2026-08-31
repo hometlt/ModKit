@@ -3,13 +3,13 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { build } from 'esbuild'
 import { describe, expect, it } from 'vitest'
-import { canonicalJsonStringify, contractId } from '@modkitx-x3/core'
+import { canonicalJsonStringify, contractId } from '@modkit/core'
 import {
   buildLockEntry,
   replayPolicyLock,
   resolveProvider,
   serializePolicyLock,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   createSpecSchemaRegistry,
@@ -26,13 +26,9 @@ import {
   type ResourceBudget,
   type TableDataSource,
   type TreeDataSource,
-} from '@modkitx-x3/sdk'
-import { runTextDataConformance } from '@modkitx-x3/testkit'
-import type {
-  ParseRequest,
-  TextDataContractId,
-  TextSyntaxProvider,
-} from '@modkitx-x3/sdk/text-data'
+} from '@modkit/sdk'
+import { runTextDataConformance } from '@modkit/testkit'
+import type { ParseRequest, TextDataContractId, TextSyntaxProvider } from '@modkit/sdk/text-data'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const repositoryRoot = join(here, '..', '..', '..')
@@ -54,14 +50,7 @@ const extensionRootFor = (format: string): string => {
   if (extension === undefined) throw new TypeError(`unknown text format ${format}`)
   return extension === 'core-native' ? nativeTextRoot : commonDataRoot
 }
-const alternateXmlRoot = join(
-  here,
-  '..',
-  '..',
-  '..',
-  'examples',
-  'modkit-extension-x3-alternate-xml',
-)
+const alternateXmlRoot = join(here, '..', '..', '..', 'examples', 'modkit-extension-alternate-xml')
 const providerFormatByContract = Object.freeze({
   'common.text-data/json-syntax': 'json',
   'common.text-data/jsonc-syntax': 'jsonc',
@@ -173,7 +162,7 @@ function providerOffer(
     kind: 'primary',
     extensionId: providerId.startsWith('org.example/')
       ? 'org.example/alternate-xml'
-      : 'org.modkitx/text-data',
+      : 'modkit/text-data',
     extensionVersion: '1.0.0',
     providerId,
     runtimeVariant: 'portable',
@@ -188,31 +177,31 @@ function providerOffer(
 }
 
 const defaultTextOffers: readonly ProviderOffer[] = [
-  providerOffer('org.modkitx/json-syntax-default', [
+  providerOffer('modkit/json-syntax-default', [
     {
       contract: 'common.text-data/json-syntax',
       offerId: 'json-syntax-default-v1',
     },
   ]),
-  providerOffer('org.modkitx/jsonc-syntax-default', [
+  providerOffer('modkit/jsonc-syntax-default', [
     { contract: 'common.text-data/jsonc-syntax', offerId: 'jsonc-syntax-default-v1' },
   ]),
-  providerOffer('org.modkitx/xml-syntax-default', [
+  providerOffer('modkit/xml-syntax-default', [
     { contract: 'common.text-data/xml-syntax', offerId: 'xml-syntax-default-v1' },
   ]),
-  providerOffer('org.modkitx/yaml-syntax-default', [
+  providerOffer('modkit/yaml-syntax-default', [
     { contract: 'common.text-data/yaml-syntax', offerId: 'yaml-syntax-default-v1' },
   ]),
-  providerOffer('org.modkitx/toml-syntax-default', [
+  providerOffer('modkit/toml-syntax-default', [
     { contract: 'common.text-data/toml-syntax', offerId: 'toml-syntax-default-v1' },
   ]),
-  providerOffer('org.modkitx/ini-syntax-default', [
+  providerOffer('modkit/ini-syntax-default', [
     { contract: 'common.text-data/ini-syntax', offerId: 'ini-syntax-default-v1' },
   ]),
-  providerOffer('org.modkitx/csv-syntax-default', [
+  providerOffer('modkit/csv-syntax-default', [
     { contract: 'common.text-data/csv-syntax', offerId: 'csv-syntax-default-v1' },
   ]),
-  providerOffer('org.modkitx/tsv-syntax-default', [
+  providerOffer('modkit/tsv-syntax-default', [
     { contract: 'common.text-data/tsv-syntax', offerId: 'tsv-syntax-default-v1' },
   ]),
 ]
@@ -476,10 +465,10 @@ describe('13B text-data providers and codecs', () => {
     expect(csv.state).toBe('resolved')
     expect(json.state).toBe('resolved')
     if (csv.state === 'resolved') {
-      expect(csv.selected.offer.providerId).toBe('org.modkitx/csv-syntax-default')
+      expect(csv.selected.offer.providerId).toBe('modkit/csv-syntax-default')
     }
     if (json.state === 'resolved') {
-      expect(json.selected.offer.providerId).toBe('org.modkitx/json-syntax-default')
+      expect(json.selected.offer.providerId).toBe('modkit/json-syntax-default')
     }
   })
 
@@ -597,7 +586,7 @@ describe('13B text-data providers and codecs', () => {
     expect(result.state).toBe('failed')
     if (result.state !== 'failed') throw new Error('malformed JSON unexpectedly parsed')
     const first = result.diagnostics[0]
-    expect(first?.code).toBe('org.modkitx/text-data-json-parse')
+    expect(first?.code).toBe('modkit/text-data-json-parse')
     expect(first?.severity).toBe('error')
     expect(first?.range).toMatchObject({ line: 1 })
     if (first?.range && 'byteOffset' in first.range && 'utf16Offset' in first.range) {
@@ -641,12 +630,12 @@ describe('13B text-data providers and codecs', () => {
         source,
         plan: { kind: 'bytes', ranges: [{ from: 'start', length: 8192 }], maxBytes: 8192 },
       })
-      expect(detection.codecId).toBe(`org.modkitx/text-${format}`)
+      expect(detection.codecId).toBe(`modkit/text-${format}`)
       const session = await codec.open(inputFor(source), 'inspect', budget)
       const descriptor = await session.descriptor()
       expect(descriptor).toMatchObject({
         interpretation: 'codec',
-        identity: { codecId: `org.modkitx/text-${format}` },
+        identity: { codecId: `modkit/text-${format}` },
       })
       expect(descriptor.traits.map(trait => trait.id)).toEqual(
         expect.arrayContaining(['content.text', 'content.binary']),
@@ -874,7 +863,7 @@ describe('13B text-data providers and codecs', () => {
       const result = await createTextSyntaxProvider(contract).parse(request)
       expect(result.state, contract).toBe('failed')
       if (result.state === 'failed') {
-        expect(result.diagnostics[0]?.code, contract).toMatch(/^org\.modkitx\//u)
+        expect(result.diagnostics[0]?.code, contract).toMatch(/^modkit\//u)
         expect(result.diagnostics[0]?.range, contract).toBeDefined()
       }
     }
@@ -885,7 +874,7 @@ describe('13B text-data providers and codecs', () => {
     )
     expect(budgetFailure.state).toBe('failed')
     if (budgetFailure.state === 'failed') {
-      expect(budgetFailure.diagnostics[0]?.code).toBe('org.modkitx/text-data-input-budget')
+      expect(budgetFailure.diagnostics[0]?.code).toBe('modkit/text-data-input-budget')
     }
     const controller = new AbortController()
     controller.abort()
@@ -919,7 +908,7 @@ describe('13B text-data providers and codecs', () => {
     if (result.state !== 'failed') throw new Error(`${contract} malformed fixture parsed`)
     expect(result.diagnostics).not.toHaveLength(0)
     expect(result.diagnostics[0]).toMatchObject({ severity: 'error' })
-    expect(result.diagnostics[0]?.code).toMatch(/^org\.modkitx\//u)
+    expect(result.diagnostics[0]?.code).toMatch(/^modkit\//u)
     expect(result.diagnostics[0]?.range).toBeDefined()
   })
 

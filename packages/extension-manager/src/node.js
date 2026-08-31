@@ -5,7 +5,7 @@ import { homedir } from 'node:os'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-import { normalizeVfsPath } from '@modkitx-x3/vfs'
+import { normalizeVfsPath } from '@modkit/vfs'
 
 import { createNodeExtensionVfs } from './providers-node.js'
 import {

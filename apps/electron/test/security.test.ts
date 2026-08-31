@@ -28,8 +28,8 @@ describe('Electron composition security', () => {
     expect(app.executionBackends.profiles).toEqual(['trusted-in-process', 'worker-brokered'])
     expect(app.topology.links.map(link => `${link.fromRealm}→${link.toRealm}`)).toEqual(
       expect.arrayContaining([
-        'org.modkitx.app.electron/main→org.modkitx.app.electron/worker',
-        'org.modkitx.app.electron/worker→org.modkitx.app.electron/main',
+        'modkit.app.electron/main→modkit.app.electron/worker',
+        'modkit.app.electron/worker→modkit.app.electron/main',
       ]),
     )
     // no link ever joins the renderer to the worker realm: two hops, renderer ↔ main ↔ worker

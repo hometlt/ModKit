@@ -8,14 +8,14 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
-import { canonicalJsonStringify } from '@modkitx-x3/core'
+import { canonicalJsonStringify } from '@modkit/core'
 import {
   revisionId,
   type AssetRevision,
   type PayloadStore,
   type SubjectEditTarget,
-} from '@modkitx-x3/sdk'
-import { createFileEditingBackend, openFileArtifactSource } from '@modkitx-x3/host/node'
+} from '@modkit/sdk'
+import { createFileEditingBackend, openFileArtifactSource } from '@modkit/host/node'
 
 const scratch = mkdtempSync(join(tmpdir(), 'x3-file-backend-'))
 const outside = mkdtempSync(join(tmpdir(), 'x3-file-backend-outside-'))

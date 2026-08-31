@@ -1,10 +1,7 @@
 import { createPublicKey, type KeyObject } from 'node:crypto'
 import { isAbsolute, resolve } from 'node:path'
 
-import type {
-  NodeExtensionVfsOptions,
-  NodeTrustedPublicKeys,
-} from '@modkitx/extension-manager/node'
+import type { NodeExtensionVfsOptions, NodeTrustedPublicKeys } from '@modkit/extension-manager/node'
 
 const MAX_TRUST_ENV_BYTES = 256 * 1024
 const MAX_TRUSTED_KEYS = 64

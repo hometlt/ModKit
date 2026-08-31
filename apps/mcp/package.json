@@ -1,5 +1,5 @@
 {
-  "name": "@modkitx-x3/modkit-mcp",
+  "name": "@modkit/modkit-mcp",
   "version": "0.1.0",
   "description": "Thin read-only MCP v2 stdio adapter for public Modkit host and SDK operations",
   "license": "UNLICENSED",
@@ -22,12 +22,12 @@
   ],
   "dependencies": {
     "@modelcontextprotocol/server": "2.0.0",
-    "@modkitx-x3/core": "workspace:*",
-    "@modkitx-x3/host": "workspace:*",
-    "@modkitx-x3/scene": "workspace:*",
-    "@modkitx-x3/sdk": "workspace:*",
-    "@modkitx-x3/vfs": "workspace:*",
-    "@modkitx-x3/uv": "workspace:*",
+    "@modkit/core": "workspace:*",
+    "@modkit/host": "workspace:*",
+    "@modkit/scene": "workspace:*",
+    "@modkit/sdk": "workspace:*",
+    "@modkit/vfs": "workspace:*",
+    "@modkit/uv": "workspace:*",
     "zod": "^4.4.3"
   },
   "devDependencies": {

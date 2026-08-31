@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
-  "id": "org.modkitx/image-jpeg",
+  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "id": "modkit/image-jpeg",
   "displayName": "JPEG image",
   "runtimeVariants": [
     {

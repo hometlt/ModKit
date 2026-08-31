@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "modkit/service-provider-contribution", "major": 1 },
+  "id": "org.example/synthetic-text-writer",
+  "displayName": "Packed synthetic text writer",
+  "runtimeVariants": [
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/writer.js",
+      "target": { "environments": ["browser-main", "node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "lifecycleScope": "session",
+    "provides": [
+      {
+        "offerId": "text-byte-identical",
+        "contract": "common.edit/writer",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "providerId": "org.example/synthetic-text-writer",
+          "fidelityEvidenceId": "synthetic-text-v1",
+          "formatId": "text",
+          "representationId": "source",
+          "mutationMode": "mutate",
+          "minimumRoundTrip": "byte-identical"
+        }
+      }
+    ]
+  }
+}

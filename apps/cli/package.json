@@ -1,5 +1,5 @@
 {
-  "name": "@modkitx-x3/modkit-cli",
+  "name": "@modkit/modkit-cli",
   "version": "0.1.0",
   "description": "MK3 clean-core lab: thin modkit CLI (argv/stdout/exit wiring only; BRIEF-12 §3.1)",
   "license": "UNLICENSED",
@@ -20,10 +20,10 @@
     "dist"
   ],
   "dependencies": {
-    "@modkitx-x3/core": "workspace:*",
-    "@modkitx-x3/scene": "workspace:*",
-    "@modkitx-x3/sdk": "workspace:*",
-    "@modkitx-x3/host": "workspace:*",
-    "@modkitx-x3/uv": "workspace:*"
+    "@modkit/core": "workspace:*",
+    "@modkit/scene": "workspace:*",
+    "@modkit/sdk": "workspace:*",
+    "@modkit/host": "workspace:*",
+    "@modkit/uv": "workspace:*"
   }
 }

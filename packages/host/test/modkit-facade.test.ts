@@ -9,8 +9,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import type { AssetEditPlan, EditSession, CommitCoordinator } from '@modkitx-x3/sdk'
-import { createModkit, type Modkit } from '@modkitx-x3/host/node'
+import type { AssetEditPlan, EditSession, CommitCoordinator } from '@modkit/sdk'
+import { createModkit, type Modkit } from '@modkit/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const imagesDir = join(repoRoot, 'extensions', 'images')
@@ -41,7 +41,7 @@ async function host(): Promise<Modkit> {
 describe('createModkit — the Node library facade', () => {
   it('composes from directories alone, and a broken one is a record, not an exception', async () => {
     const m = await host()
-    expect(m.extensionCoordinates).toContain('org.modkitx/images')
+    expect(m.extensionCoordinates).toContain('modkit/images')
     expect(m.extensionFailures.map(failure => failure.code)).toContain(
       'x3.host/extension-root-unreadable',
     )
@@ -156,7 +156,7 @@ describe('disabling a contribution (the settings-page seam)', () => {
     const disabled = await createModkit({
       extensions: [imagesDir],
       roots: [scratch],
-      disabledContributions: ['org.modkitx/image-png'],
+      disabledContributions: ['modkit/image-png'],
     })
     try {
       const path = join(scratch, 'disabled.png')
@@ -168,7 +168,7 @@ describe('disabling a contribution (the settings-page seam)', () => {
       // show the switch in its off position instead of the codec vanishing
       const contribution = disabled.services.inventory.extensions
         .flatMap(extension => extension.contributions)
-        .find(item => item.manifest?.id === 'org.modkitx/image-png')
+        .find(item => item.manifest?.id === 'modkit/image-png')
       if (contribution === undefined) throw new Error('disabled contribution vanished')
       expect(contribution.activationEligible).toBe(false)
       expect(contribution.diagnostics.map(item => item.code)).toContain(
@@ -186,7 +186,7 @@ describe('disabling an extension (the settings-page seam)', () => {
     const disabled = await createModkit({
       extensions: [imagesDir],
       roots: [scratch],
-      disabledExtensions: ['org.modkitx/images'],
+      disabledExtensions: ['modkit/images'],
     })
     try {
       const path = join(scratch, 'disabled-extension.png')
@@ -198,10 +198,10 @@ describe('disabling an extension (the settings-page seam)', () => {
         item => item.code === 'x3.host/candidate-suppressed',
       )
       if (suppressed === undefined) throw new Error('no suppression diagnostic')
-      expect(suppressed.message).toContain('org.modkitx/image-png')
+      expect(suppressed.message).toContain('modkit/image-png')
       expect(suppressed.message).toContain('x3.host/extension-disabled')
       const extension = disabled.services.inventory.extensions.find(
-        item => item.manifest.publisher === 'org.modkitx' && item.manifest.id === 'images',
+        item => item.manifest.publisher === 'modkit' && item.manifest.id === 'images',
       )
       if (extension === undefined) throw new Error('disabled extension vanished')
       expect(extension.contributions.length).toBeGreaterThan(0)
@@ -294,7 +294,7 @@ describe('the format writer is preferred over the raw byte splicer (Path B reach
           typeof identity === 'object' && identity !== null && 'codecId' in identity
             ? identity.codecId
             : undefined,
-        ).toBe('org.modkitx/text-json')
+        ).toBe('modkit/text-json')
         const tree = await reopened.session?.dataSource('common.view/tree-data-source', 1)
         expect(tree).toBeDefined()
         await tree?.release()
@@ -318,7 +318,7 @@ describe('the format writer is preferred over the raw byte splicer (Path B reach
         typeof identity === 'object' && identity !== null && 'codecId' in identity
           ? identity.codecId
           : undefined,
-      ).toBe('org.modkitx/txt')
+      ).toBe('modkit/txt')
       expect(await opened.session.operations().invoke('inspect', null)).toMatchObject({
         state: 'ok',
         output: { kind: 'json', value: { format: 'txt', paragraphs: 2 } },
@@ -360,7 +360,7 @@ describe('a switched-off codec is named, not merely absent (A14 request 5)', () 
     const disabled = await createModkit({
       extensions: [imagesDir],
       roots: [scratch],
-      disabledContributions: ['org.modkitx/image-png'],
+      disabledContributions: ['modkit/image-png'],
     })
     try {
       const path = join(scratch, 'explained.png')
@@ -377,7 +377,7 @@ describe('a switched-off codec is named, not merely absent (A14 request 5)', () 
         item => item.code === 'x3.host/candidate-suppressed',
       )
       if (suppressed === undefined) throw new Error('no suppression diagnostic')
-      expect(suppressed.message).toContain('org.modkitx/image-png')
+      expect(suppressed.message).toContain('modkit/image-png')
       expect(suppressed.message).toContain('x3.host/contribution-disabled')
       await opened.close()
     } finally {

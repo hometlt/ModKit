@@ -35,16 +35,11 @@ import {
   createHostContributionContractRegistry,
   createExecutionBackendRegistry,
   createSubjectEditing,
-} from '@modkitx-x3/host'
-import { createFileEditingBackend } from '@modkitx-x3/host/node'
-import { VirtualFileSystem } from '@modkitx-x3/vfs'
-import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
-import type {
-  AssetEditPlan,
-  FidelityEvidence,
-  PermissionGrant,
-  ResourceBudget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/host'
+import { createFileEditingBackend } from '@modkit/host/node'
+import { VirtualFileSystem } from '@modkit/vfs'
+import { createFileVfsProvider } from '@modkit/vfs/providers/file'
+import type { AssetEditPlan, FidelityEvidence, PermissionGrant, ResourceBudget } from '@modkit/sdk'
 
 const WRITE = Object.freeze({
   classes: Object.freeze(['read-source', 'write-source']),
@@ -98,7 +93,7 @@ afterEach(async () => {
 
 /** Open `directory` as a namespace subject: block 9's file provider, bridged to an SDK namespace. */
 async function openNamespaceSubject(directory: string) {
-  const { openSubject } = await import('@modkitx-x3/host')
+  const { openSubject } = await import('@modkit/host')
   const vfs = new VirtualFileSystem().registerProvider(createFileVfsProvider())
   const mount = await vfs.openMount(pathToFileURL(directory).href)
   const uri = pathToFileURL(directory).href

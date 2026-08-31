@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { gunzipSync } from 'node:zlib'
 
-import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
+import { ModkitError, throwIfAborted } from '@modkit/core'
 
 import { budgetRandomAccessSource, VfsReadBudget } from '../../read-budget.js'
 import { createMemorySource, type RandomAccessSource } from '../../source.js'
@@ -373,7 +373,7 @@ export class RapidVfsProvider implements VfsProvider {
   private readonly poolRoot: string | undefined
 
   constructor(options: RapidVfsProviderOptions = {}) {
-    this.id = options.id ?? 'org.modkitx-x3.vfs.rapid'
+    this.id = options.id ?? 'modkit-x3.vfs.rapid'
     this.limits = clampVfsLimits(options.limits)
     this.poolRoot = options.poolRoot
   }

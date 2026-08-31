@@ -6,80 +6,80 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:da6a60fb9daf01b570f35b3642f19476cfbc9a8731925e3fa3fae002a6abb46d',
+        artifactDigest: 'sha256:0cb356a96ed9a541422f37e686793925900400b0471e547941146d01e3883c93',
         fileDigests: {
           'MIGRATION-NOTES-common-archives.json':
-            'sha256:e137b6b6778c26eb84b2576c108ebe0d5f754775fe02332554c59841d923164a',
+            'sha256:4e1d77808583a26fb61d65d660ef09c3f4c222915c2e3581d793b202cbde4b44',
           'README.md': 'sha256:915e1860d19a23f3ae677cd1edea4d5bc27c81f2c901b365c56da2558220dd11',
           'contributions/codec-7z.json':
-            'sha256:ec55e454a3da40d5bf63ac1a5b797015f3ed48cb3f0e9e9f2e66803fa55780bc',
+            'sha256:80a3162f707f7829101bf641828ebccdb59c7b2fe009e9e873ff48980ac284f3',
           'contributions/codec-brotli.json':
-            'sha256:bd1136e2ec2fdcfab8dd07c81dd30238d332c57d1b642604cef07cd2c1288397',
+            'sha256:5306aacf196b35aa996d0d4aac42031a72041c1dc605e1adb0f76b1c54f7ef27',
           'contributions/codec-bzip2.json':
-            'sha256:d09a30e749d57712b0e0834d2595164266d11e123af3d5aaa43a31d114a58940',
+            'sha256:dafebddcd3fab1e3a475fe6406423b4ff02e7d364026a414a2b75816b1af1ec6',
           'contributions/codec-cab.json':
-            'sha256:13eedaaf274a5a97e7ddf3c69927ca1661fa5fa2dd247a3eb655bd41bd83bfc7',
+            'sha256:4c11a28b013cac6ec04518787e7bc15edf6b075223a7fee20aa128370f516282',
           'contributions/codec-dmg.json':
-            'sha256:7beb87e642aec12ca5500a876f311a9b3a1277a3109043e0979cf38329f1be97',
+            'sha256:8d5c112f154673fb258980528ce155e0569849ecd0075c7d0213a3d4d50fc3fe',
           'contributions/codec-gzip.json':
-            'sha256:78dc085432cce4fad050e49a7870c0c13bd2f69454870ecbda1ff729fdeeae38',
+            'sha256:ab9c93395a06e589e5adfbf3b561cfbed668ef5cd4309e27255dd2297bfad8a6',
           'contributions/codec-iso.json':
-            'sha256:dcbc2b02fc5cfd0ebed510918866821cc23ba297ec9e9245fb8454044bebe3ba',
+            'sha256:62a2888d2a193ad7da914262aeff4b96b6a07582812bf3734489153832529c84',
           'contributions/codec-lzma.json':
-            'sha256:ae4f9eb09391c9b55b89ef844328abd70e92ba23bafab3a4aaeec1336cc87aec',
+            'sha256:11a3b3ccbf80eb671d8a5691d00ecc17b7c9b05f20dfd1d8d616f47321bd0075',
           'contributions/codec-pe.json':
-            'sha256:22046a650a7a95ac2e25207402b673405694c18635cf787985546c3554da6d21',
+            'sha256:340196d4307068d14a0df3defe77af5dd1606ea458642c401fb85bb328d526ec',
           'contributions/codec-rar.json':
-            'sha256:e4b33a25acab1a2263ecc7dbdb774fcc5be491b9e6164dab66091fc75e1e7348',
+            'sha256:645a39c0f1e89a9e6ea6cae24325571f318fd61ff05255b064f996e2d5ca5bf2',
           'contributions/codec-tar.json':
-            'sha256:30863a966975697123abb454889d49360916d5c4137e9cb68e9ebc9328a2db50',
+            'sha256:1ff7a59af85ed33cb4d95f88c5b983af98774aa226f1c79fa9a3f921c1a16524',
           'contributions/codec-xz.json':
-            'sha256:a161ed890f3a5077da61dac2b444332fc4dd850f4f46fa64e74e96a2b4f514d7',
+            'sha256:effe08ca5ab5605658d355535cc91e496855e2f9c0bbdac63bbd8bd6044a753b',
           'contributions/codec-zip.json':
-            'sha256:ce1d5bdf7336f4e0ee697e24c4b038286a9ce60b1379746c149b674e6e3f5b62',
+            'sha256:3a639f3c70c44cd9068c7123c0ef91ff002e15fce5c80ca267e19d053b43cd28',
           'contributions/codec-zstd.json':
-            'sha256:6d09837d4cc72e7647442542d7cf991ef631ff7a5e84cb1ae05a0a01fbd52d12',
-          'package.json': 'sha256:39cf2fe8d860b5b0a606861263724ec8ef3f9392182665a63f7064b8a0d45d6e',
+            'sha256:04f0c3c2fbad4b0f3f31f14ef33da92e4e2fa8957be84ddc0aa16ca4b007765f',
+          'package.json': 'sha256:0f450dab994733b1f04493efbe9a07bb0f7f702969fbf9350675f2d425600c04',
           'src/7z/codec.js':
-            'sha256:6c26804182d9545a3bc10d7117f297de5aaaea390a59201d96aed7416e7438db',
+            'sha256:60d5070f1cf8d9edc3c3ab822fd73dc4c352a7c55c96e78b433b503f2cf08964',
           'src/brotli/codec.js':
-            'sha256:a43a86819ed21839826cf8fabd46eda96bbe30b1c95442e0867ce8ce042510e3',
+            'sha256:e93f4d0c46b1e65cbcfb6e45a261a9e9bb1f121d1bd29ed4af693597578855e4',
           'src/bzip2/codec.js':
-            'sha256:ae929898e833d3c52431328a855e9f550a27e6255b238146b0a803a26c4be81d',
+            'sha256:9262af21b093e1dda8d26179a1326e1c694e18a587b36b7ab5ab3e3efc9278e4',
           'src/cab/codec.js':
-            'sha256:4ae0f0054a3564dc59c937421897773f523105433ac381287a1a7796d09faca8',
+            'sha256:977c58382988dfde9cbbcca33f2161cd503cc9039e6b56bea70d5e80755f9a92',
           'src/dmg/codec.js':
-            'sha256:1e77c71bc072e5281516d53a8075906fea9c05ec4d8ba45eff336145a1a9ea4c',
+            'sha256:916492ed8efdbf47b264290ef78e8a8a4f5718d9d113b8866e3df10a1b397464',
           'src/gzip/codec.js':
-            'sha256:36b988f1268857e77b4eedcaa8c5301928df7c66623553a09092e9dbd69feb3a',
+            'sha256:576774148aa4062c44cb15daf1c429bfd32ecf584d4d327d264047a482e293a4',
           'src/index.js': 'sha256:121004c40bd5560b35a26034c291429f1d103e68698c7e1aaf5cf8456890dc95',
           'src/iso/codec.js':
-            'sha256:87a48d1edecde33b6783cffd8edf202fc0c46b5a37fa03a1fcee6f08eadb551b',
+            'sha256:3749e5ef15c83842bc9616acb7f3933d6819511375560cdfa2c4f24e37e67b22',
           'src/linked.js':
-            'sha256:9db5091823ce7f188b0d8299c0c819f9cd740fcb22a583cb64f76cdf9ccde467',
+            'sha256:f2b09e5c8a9b19da46459d041fcb39cf27c7c1868ea6f3348210992ebf637d1f',
           'src/lzma/codec.js':
-            'sha256:349f70697fe4292670ca1ff71eec5fc486d1e9caa9f24d6e89746a953c002ac9',
+            'sha256:7af2a688ee9fd450bb4f4e265fb987dbb53b25bfaaa6ec85363c00841dccb751',
           'src/pe/codec.js':
-            'sha256:fdd0a8dc9b9966cb1a36cb56f68fc62e6393ee5ced844f240062e2d51eaf2a95',
+            'sha256:1fbc818d299678e2ee42241b81f6235401f717bd123449d0eae6d429bb0aa056',
           'src/rar/codec.js':
-            'sha256:3e9331eea1f26300e450bab388c7cea4f9eff7f37050c6afcc6b40769445bf8c',
+            'sha256:e13d94fec648378ce3cc274259906be54ffd847023fc15a48a90f3296bdf154d',
           'src/tar/codec.js':
-            'sha256:3b14f7c18af2b60969221e1c442315f85330b90cc38cd9eb0bd0d533385bd9b9',
+            'sha256:1ee376c3a57b28fd539f4dcaf800844d327c4eb1e6852a18617d85199661b3ac',
           'src/xz/codec.js':
-            'sha256:78d718d59b25c1b1beb2953f0e6c5b6650b7ddab9bacdbce76cce1c3799255a4',
+            'sha256:44e9ac364de3143616a034e357e2af0150f579a73ba9778c51a04897bb554799',
           'src/zip/codec.js':
-            'sha256:c1420740a2d2c8bc5c8378b47e8c8811e2b78a3e382e61d49db97519982ccbb9',
+            'sha256:d1440a62734d6d4c2ae80c24158599cd9d0dee4c49a9fab4d71695b4e357d34d',
           'src/zstd/codec.js':
-            'sha256:c4077d90c36bfefb1f329f6fcf51c97825d464114dabe71a8a2e93bf19bb7f1f',
+            'sha256:6266e084d92f68329bb8ea89d24977a809e59d6db68fb03c4af97f43660231ca',
         },
         inventoryRecordId:
-          'artifact:sha256:da6a60fb9daf01b570f35b3642f19476cfbc9a8731925e3fa3fae002a6abb46d',
+          'artifact:sha256:0cb356a96ed9a541422f37e686793925900400b0471e547941146d01e3883c93',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
         packageJson: {
           dependencies: {
-            '@modkitx-x3/codec-kit': 'workspace:*',
+            '@modkit/codec-kit': 'workspace:*',
           },
           description: 'Isolated MK3 archive codecs.',
           exports: {
@@ -94,19 +94,27 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           modkit: {
             contributionManifests: ['./contributions/*.json'],
             id: 'archives',
-            publisher: 'org.modkitx',
+            presentation: {
+              description: 'Isolated MK3 archive codecs.',
+              displayName: 'Modkit Archives',
+              vendor: {
+                displayName: 'Modkit',
+                id: 'modkit',
+              },
+            },
+            publisher: 'modkit',
             schemaVersion: 1,
           },
-          name: 'modkit-extension-x3-archives',
+          name: 'modkit-extension-archives',
           peerDependencies: {
-            '@modkitx-x3/host': 'workspace:*',
-            '@modkitx-x3/sdk': 'workspace:*',
+            '@modkit/host': 'workspace:*',
+            '@modkit/sdk': 'workspace:*',
           },
           peerDependenciesMeta: {
-            '@modkitx-x3/host': {
+            '@modkit/host': {
               optional: true,
             },
-            '@modkitx-x3/sdk': {
+            '@modkit/sdk': {
               optional: true,
             },
           },
@@ -117,59 +125,59 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-7z.json',
-          'sha256:ec55e454a3da40d5bf63ac1a5b797015f3ed48cb3f0e9e9f2e66803fa55780bc',
+          'sha256:80a3162f707f7829101bf641828ebccdb59c7b2fe009e9e873ff48980ac284f3',
         ],
         [
           'contributions/codec-brotli.json',
-          'sha256:bd1136e2ec2fdcfab8dd07c81dd30238d332c57d1b642604cef07cd2c1288397',
+          'sha256:5306aacf196b35aa996d0d4aac42031a72041c1dc605e1adb0f76b1c54f7ef27',
         ],
         [
           'contributions/codec-bzip2.json',
-          'sha256:d09a30e749d57712b0e0834d2595164266d11e123af3d5aaa43a31d114a58940',
+          'sha256:dafebddcd3fab1e3a475fe6406423b4ff02e7d364026a414a2b75816b1af1ec6',
         ],
         [
           'contributions/codec-cab.json',
-          'sha256:13eedaaf274a5a97e7ddf3c69927ca1661fa5fa2dd247a3eb655bd41bd83bfc7',
+          'sha256:4c11a28b013cac6ec04518787e7bc15edf6b075223a7fee20aa128370f516282',
         ],
         [
           'contributions/codec-dmg.json',
-          'sha256:7beb87e642aec12ca5500a876f311a9b3a1277a3109043e0979cf38329f1be97',
+          'sha256:8d5c112f154673fb258980528ce155e0569849ecd0075c7d0213a3d4d50fc3fe',
         ],
         [
           'contributions/codec-gzip.json',
-          'sha256:78dc085432cce4fad050e49a7870c0c13bd2f69454870ecbda1ff729fdeeae38',
+          'sha256:ab9c93395a06e589e5adfbf3b561cfbed668ef5cd4309e27255dd2297bfad8a6',
         ],
         [
           'contributions/codec-iso.json',
-          'sha256:dcbc2b02fc5cfd0ebed510918866821cc23ba297ec9e9245fb8454044bebe3ba',
+          'sha256:62a2888d2a193ad7da914262aeff4b96b6a07582812bf3734489153832529c84',
         ],
         [
           'contributions/codec-lzma.json',
-          'sha256:ae4f9eb09391c9b55b89ef844328abd70e92ba23bafab3a4aaeec1336cc87aec',
+          'sha256:11a3b3ccbf80eb671d8a5691d00ecc17b7c9b05f20dfd1d8d616f47321bd0075',
         ],
         [
           'contributions/codec-pe.json',
-          'sha256:22046a650a7a95ac2e25207402b673405694c18635cf787985546c3554da6d21',
+          'sha256:340196d4307068d14a0df3defe77af5dd1606ea458642c401fb85bb328d526ec',
         ],
         [
           'contributions/codec-rar.json',
-          'sha256:e4b33a25acab1a2263ecc7dbdb774fcc5be491b9e6164dab66091fc75e1e7348',
+          'sha256:645a39c0f1e89a9e6ea6cae24325571f318fd61ff05255b064f996e2d5ca5bf2',
         ],
         [
           'contributions/codec-tar.json',
-          'sha256:30863a966975697123abb454889d49360916d5c4137e9cb68e9ebc9328a2db50',
+          'sha256:1ff7a59af85ed33cb4d95f88c5b983af98774aa226f1c79fa9a3f921c1a16524',
         ],
         [
           'contributions/codec-xz.json',
-          'sha256:a161ed890f3a5077da61dac2b444332fc4dd850f4f46fa64e74e96a2b4f514d7',
+          'sha256:effe08ca5ab5605658d355535cc91e496855e2f9c0bbdac63bbd8bd6044a753b',
         ],
         [
           'contributions/codec-zip.json',
-          'sha256:ce1d5bdf7336f4e0ee697e24c4b038286a9ce60b1379746c149b674e6e3f5b62',
+          'sha256:3a639f3c70c44cd9068c7123c0ef91ff002e15fce5c80ca267e19d053b43cd28',
         ],
         [
           'contributions/codec-zstd.json',
-          'sha256:6d09837d4cc72e7647442542d7cf991ef631ff7a5e84cb1ae05a0a01fbd52d12',
+          'sha256:04f0c3c2fbad4b0f3f31f14ef33da92e4e2fa8957be84ddc0aa16ca4b007765f',
         ],
       ],
       documents: [
@@ -177,11 +185,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-7z.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: '7-Zip archive',
-            id: 'org.modkitx/7z',
+            id: 'modkit/7z',
             limitations: [
               'Portable extraction is intentionally bounded to one regular file in one raw-header folder using the official Copy coder.',
               'Compressed or encrypted coders, encoded headers, solid and multi-volume archives, multiple files or folders, and writing are not implemented.',
@@ -309,11 +317,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-brotli.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Brotli compressed payload',
-            id: 'org.modkitx/brotli',
+            id: 'modkit/brotli',
             limitations: [
               'Portable extraction is intentionally bounded to the RFC 7932 trivial-compressor form with uncompressed meta-blocks and the default window encoding.',
               'Compressed and metadata meta-blocks, concatenated streams, and writing are not implemented.',
@@ -435,11 +443,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-bzip2.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'BZip2 compressed payload',
-            id: 'org.modkitx/bzip2',
+            id: 'modkit/bzip2',
             limitations: [
               'Portable extraction implements standard non-randomized BZip2 blocks and verifies every block CRC plus the combined stream CRC.',
               'Obsolete randomized blocks, concatenated streams, and writing are not implemented.',
@@ -568,11 +576,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-cab.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Microsoft Cabinet archive',
-            id: 'org.modkitx/cab',
+            id: 'modkit/cab',
             limitations: [
               'The compatibility port validates CAB 1.3 headers, folders, CFDATA checksums, safe paths, namespace listing, and extraction for uncompressed non-spanned cabinets.',
               'MSZIP, Quantum, and LZX compression, split/spanned cabinets, MSI compound documents, writing, and mutation remain unsupported.',
@@ -700,11 +708,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-dmg.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Apple DMG disk image',
-            id: 'org.modkitx/dmg',
+            id: 'modkit/dmg',
             limitations: [
               'Inspection validates the 512-byte UDIF v4 koly trailer and exposes its declared data, resource, and XML forks with bounded extraction.',
               'The current byte-probe helper reads from the start, so content confidence is available only when the end-relative trailer falls inside the probe window; extension routing still reaches full validation.',
@@ -826,11 +834,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-gzip.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'GZip single-payload stream',
-            id: 'org.modkitx/gzip',
+            id: 'modkit/gzip',
             limitations: [
               'The compatibility port validates one RFC 1952 member, exposes its optional filename and trailer metadata, and extracts one virtual payload through the runtime DecompressionStream.',
               'Concatenated members, GZip writing, and archive mutation remain unsupported.',
@@ -958,11 +966,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-iso.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'ISO 9660 disk image',
-            id: 'org.modkitx/iso',
+            id: 'modkit/iso',
             limitations: [
               'The compatibility port validates the ISO 9660 primary descriptor, endian-paired fields, directory records, safe paths, bounded traversal, namespace listing, and stored-file extraction.',
               'UDF, High Sierra, Joliet/Rock Ridge names, multi-extent files, writing, and mutation remain unsupported.',
@@ -1083,11 +1091,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-lzma.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'LZMA compressed payload',
-            id: 'org.modkitx/lzma',
+            id: 'modkit/lzma',
             limitations: [
               'Portable extraction supports LZMA-alone streams whose 13-byte header declares a finite output size.',
               'Unknown-size LZMA-alone streams, LZMA2/container wrappers, and writing are not implemented.',
@@ -1209,11 +1217,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-pe.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Windows PE executable',
-            id: 'org.modkitx/pe',
+            id: 'modkit/pe',
             limitations: [
               'The compatibility port validates DOS, PE/COFF, optional, data-directory, and section headers and projects headers, raw sections, and overlay bytes as extractable namespace entries.',
               'It never loads or executes the image; resource decoding, icon reconstruction, installer/self-extracting expansion, writing, and mutation remain unsupported.',
@@ -1356,11 +1364,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-rar.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'RAR archive',
-            id: 'org.modkitx/rar',
+            id: 'modkit/rar',
             limitations: [
               'Portable extraction is intentionally bounded to plain RAR4 archives containing stored regular files.',
               'RAR5, compression, encryption, solid and split archives, volumes, directories, extended headers, and writing are not implemented.',
@@ -1488,11 +1496,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-tar.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'POSIX ustar archive',
-            id: 'org.modkitx/tar',
+            id: 'modkit/tar',
             limitations: [
               'The compatibility port validates POSIX ustar checksums, bounded regular-file and directory entries, two-block termination, namespace listing, and stored payload extraction.',
               'PAX/GNU extensions, links, devices, special entries, TAR writing, and archive mutation remain unsupported.',
@@ -1620,11 +1628,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-xz.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'XZ compressed payload',
-            id: 'org.modkitx/xz',
+            id: 'modkit/xz',
             limitations: [
               'Portable extraction is intentionally bounded to one Check=None stream with one LZMA2 filter and uncompressed LZMA2 chunks.',
               'Compressed LZMA2 chunks, other checks and filters, concatenated streams, stream padding, and writing are not implemented.',
@@ -1752,11 +1760,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-zip.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'ZIP archive',
-            id: 'org.modkitx/archive-zip',
+            id: 'modkit/archive-zip',
             runtimeVariants: [
               {
                 entrypoint: './src/zip/codec.js',
@@ -1793,9 +1801,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                     preservesUnknownData: true,
                     roundTrip: 'semantic',
                   },
-                  conformanceProfile: 'org.modkitx/codec-contribution-v1',
+                  conformanceProfile: 'modkit/codec-contribution-v1',
                   corpusDigest: 'none:proof-suite',
-                  corpusId: 'modkitX3/packages/host/test/archive-edits.test.ts',
+                  corpusId: 'modkit/packages/host/test/archive-edits.test.ts',
                   evidenceId: 'zip-verbatim-reassembly-v1',
                   formatId: 'zip',
                   inputClass: 'zip-classic',
@@ -1808,9 +1816,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                     preservesUnknownData: false,
                     roundTrip: 'semantic',
                   },
-                  conformanceProfile: 'org.modkitx/codec-contribution-v1',
+                  conformanceProfile: 'modkit/codec-contribution-v1',
                   corpusDigest: 'none:proof-suite',
-                  corpusId: 'modkitX3/packages/host/test/archive-edits.test.ts',
+                  corpusId: 'modkit/packages/host/test/archive-edits.test.ts',
                   evidenceId: 'zip-verbatim-reassembly-non-canonical-v1',
                   formatId: 'zip',
                   inputClass: 'zip-non-canonical-layout',
@@ -1954,11 +1962,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-zstd.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Zstandard compressed payload',
-            id: 'org.modkitx/zstd',
+            id: 'modkit/zstd',
             limitations: [
               'Portable extraction is intentionally bounded to single-segment frames containing raw or RLE blocks.',
               'Compressed blocks, dictionaries, content checksums, concatenated frames, and writing are not implemented.',
@@ -2123,48 +2131,48 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:1abe77e5f842a25068f7be19b86522e15764e0d9bbac4cd24accdf5722ab9b85',
+        artifactDigest: 'sha256:859afeaeca94d2dfd67338c1a9c235861b86a76cfcc0d8defad8ba605211ebca',
         fileDigests: {
           'MIGRATION-NOTES-common-audio.json':
-            'sha256:a26be9909a85b9917903698cca2c570cba31accd8d209f8d70da4d97aa1ab1e7',
+            'sha256:9208bc42ef1da984ce9776d9bed7024eaf3f797a1cd56ca193919caf142ee636',
           'README.md': 'sha256:9f5415950310cb89d1ab9de0eb7818546ee38fedcb55632e1454f3319d4f91a3',
           'contributions/codec-aac.json':
-            'sha256:9058ab71cee348bd9ea7c9ef2d64804fa79b9d1dcfd61a7bffda4de8f202f24e',
+            'sha256:f373ebed7f3795f6c50040b55fb2bf21303b04ad954f06c969b66503e70e6541',
           'contributions/codec-flac.json':
-            'sha256:0798109c79419e682cc2d9b52c47ffa44b7da24d62ce08c1787151ce15570079',
+            'sha256:c9446e6eef1dedd21c9d724f0b70c583df011a2c61c877d189f8cc57dc3d160f',
           'contributions/codec-m4a.json':
-            'sha256:991f6d08992ca4e82053960f6af17c038bacc93e5b0df35801c653a6dc762aed',
+            'sha256:fa5b142c50b5a95dff81122bb06919d7e1410e6b9e42986ac8c93d9501408f2a',
           'contributions/codec-mp3.json':
-            'sha256:e5994d8e8052f573fda5b4cecd3ecf5e0030bad42e19b0dc8368f8c8955eb024',
+            'sha256:e61f2c053fdd4f3bdbf37b7b8a496f4ba8e85395806c41e065c6933528c2ad11',
           'contributions/codec-ogg.json':
-            'sha256:0d92d715ccdca01984a1b829a627e76010630cd1834962de458838280474a12f',
+            'sha256:eb7ddb19893b6958df00f28a4c9364205f9865e4318afe4fefca3efe9abd4fe5',
           'contributions/codec-wav.json':
-            'sha256:0d19221f02414555f4551a74b006582e92e53212fcd3d2918e776477be961d7a',
-          'package.json': 'sha256:a1912ed480a87c0eb23cc43e4042796601d8fd41915da8914e8135570309fd8e',
+            'sha256:87bf2b497c23eba9c61a27971a78836cddd90d1163fea99f133a6bc08a0845f9',
+          'package.json': 'sha256:44743bfcbcf9f51ab7fb7b62e0c00343ecc962384f784b16c72d8ffc62b06d7c',
           'src/aac/codec.js':
-            'sha256:17ca70f7bc74bf21610d2ca05f1e946057ec49af621afde10468d1a274f01d56',
+            'sha256:8fd45809559754220cde4b64a0a51d35a9e0ce60f83b1557b16041321ca4d704',
           'src/flac/codec.js':
-            'sha256:0d08931faa735d86990be3c16f3626cc8535c5d522fd3b42251f354007b7b7d4',
+            'sha256:8b0f891618179b92e734e1774a24c910018c000fc2c36a90f418d94de3fdb800',
           'src/index.js': 'sha256:e86ec9194630bc30037a46f042fb7839fa96dfa70ae81ef77142ae436c9bf2fb',
           'src/linked.js':
-            'sha256:5e419fa695cfacc47cad5a80d2f74c1e730dd32729576176a46a1a8b3198da03',
+            'sha256:922ff66619a03a24f1b419fa7520485d7dcd8a8b1efa9cdea02160300b45e76d',
           'src/m4a/codec.js':
-            'sha256:64db4286126d844c2844838cb217ad7071acfde54fe4af33d4ac544c9c972c8d',
+            'sha256:6a30b4aa492b27d5b4ae8d94529ddee3f3f695fa39c3eb2ee10ac5c379fce097',
           'src/mp3/codec.js':
-            'sha256:5ff766d783b99acdbf14868dd0e66323821ee6334dcdcf0742fba642f1be7e9d',
+            'sha256:791b750035bfac4bf61ba89fc3c234e24461d946fa0abcb91fa07a5fb61ddb3f',
           'src/ogg/codec.js':
-            'sha256:1906cd3670a45186374a40db75725187d7eb3ee3682b9b7805e85b798e403aaf',
+            'sha256:4615fe83734068e90591d68c46614b158c40cd1d10466e5f320170cea719e515',
           'src/wav/codec.js':
-            'sha256:65a88b4239eeb90b3cdc96e7c9d6cf41db5dbd1babfc2f5687011b7a9f95f719',
+            'sha256:8aac8c02b7ec948b4ff36dfa1a90e97c1de71e9127382a71e4f23fc59526ffe9',
         },
         inventoryRecordId:
-          'artifact:sha256:1abe77e5f842a25068f7be19b86522e15764e0d9bbac4cd24accdf5722ab9b85',
+          'artifact:sha256:859afeaeca94d2dfd67338c1a9c235861b86a76cfcc0d8defad8ba605211ebca',
       },
       artifactRoot: 'extensions/audio/',
       containers: {
         packageJson: {
           dependencies: {
-            '@modkitx-x3/codec-kit': 'workspace:*',
+            '@modkit/codec-kit': 'workspace:*',
           },
           description: 'Isolated MK3 audio codecs.',
           exports: {
@@ -2180,19 +2188,27 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           modkit: {
             contributionManifests: ['./contributions/*.json'],
             id: 'audio',
-            publisher: 'org.modkitx',
+            presentation: {
+              description: 'Isolated MK3 audio codecs.',
+              displayName: 'Modkit Audio',
+              vendor: {
+                displayName: 'Modkit',
+                id: 'modkit',
+              },
+            },
+            publisher: 'modkit',
             schemaVersion: 1,
           },
-          name: 'modkit-extension-x3-audio',
+          name: 'modkit-extension-audio',
           peerDependencies: {
-            '@modkitx-x3/host': 'workspace:*',
-            '@modkitx-x3/sdk': 'workspace:*',
+            '@modkit/host': 'workspace:*',
+            '@modkit/sdk': 'workspace:*',
           },
           peerDependenciesMeta: {
-            '@modkitx-x3/host': {
+            '@modkit/host': {
               optional: true,
             },
-            '@modkitx-x3/sdk': {
+            '@modkit/sdk': {
               optional: true,
             },
           },
@@ -2203,27 +2219,27 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-aac.json',
-          'sha256:9058ab71cee348bd9ea7c9ef2d64804fa79b9d1dcfd61a7bffda4de8f202f24e',
+          'sha256:f373ebed7f3795f6c50040b55fb2bf21303b04ad954f06c969b66503e70e6541',
         ],
         [
           'contributions/codec-flac.json',
-          'sha256:0798109c79419e682cc2d9b52c47ffa44b7da24d62ce08c1787151ce15570079',
+          'sha256:c9446e6eef1dedd21c9d724f0b70c583df011a2c61c877d189f8cc57dc3d160f',
         ],
         [
           'contributions/codec-m4a.json',
-          'sha256:991f6d08992ca4e82053960f6af17c038bacc93e5b0df35801c653a6dc762aed',
+          'sha256:fa5b142c50b5a95dff81122bb06919d7e1410e6b9e42986ac8c93d9501408f2a',
         ],
         [
           'contributions/codec-mp3.json',
-          'sha256:e5994d8e8052f573fda5b4cecd3ecf5e0030bad42e19b0dc8368f8c8955eb024',
+          'sha256:e61f2c053fdd4f3bdbf37b7b8a496f4ba8e85395806c41e065c6933528c2ad11',
         ],
         [
           'contributions/codec-ogg.json',
-          'sha256:0d92d715ccdca01984a1b829a627e76010630cd1834962de458838280474a12f',
+          'sha256:eb7ddb19893b6958df00f28a4c9364205f9865e4318afe4fefca3efe9abd4fe5',
         ],
         [
           'contributions/codec-wav.json',
-          'sha256:0d19221f02414555f4551a74b006582e92e53212fcd3d2918e776477be961d7a',
+          'sha256:87bf2b497c23eba9c61a27971a78836cddd90d1163fea99f133a6bc08a0845f9',
         ],
       ],
       documents: [
@@ -2231,11 +2247,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-aac.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'AAC (ADTS)',
-            id: 'org.modkitx/aac',
+            id: 'modkit/aac',
             limitations: [
               'Parses complete ADTS frame boundaries, MPEG version, profile, sample rate, channels, raw-data-block counts, duration, and structural consistency; raw AAC spectral data and PCM are not decoded.',
               'Seeking, ID3 metadata, CRC verification for protected ADTS frames, writing, and profile changes within one stream are not implemented.',
@@ -2350,11 +2366,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-flac.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'FLAC',
-            id: 'org.modkitx/flac',
+            id: 'modkit/flac',
             limitations: [
               'Parses bounded FLAC metadata-block framing and complete STREAMINFO fields, then requires a frame sync after the last metadata block; PCM and subframe residuals are not decoded.',
               'Frame-level CRC validation, seeking without a SEEKTABLE, Vorbis comments, pictures, cuesheets, applications, and writing are not implemented.',
@@ -2476,11 +2492,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-m4a.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'AAC (M4A/MP4)',
-            id: 'org.modkitx/m4a',
+            id: 'modkit/m4a',
             limitations: [
               'Walks bounded 32-bit and 64-bit ISO BMFF boxes and reads one version-0 mdhd/soun/mp4a track with channel, sample-size, sample-rate, duration, brands, and media-byte metadata.',
               'PCM decoding, multiple audio tracks, edit lists, sample indexing, tags, fragmented MP4, encrypted samples, and writing are not implemented.',
@@ -2602,11 +2618,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-mp3.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'MP3 audio',
-            id: 'org.modkitx/audio-mp3',
+            id: 'modkit/audio-mp3',
             runtimeVariants: [
               {
                 entrypoint: './src/mp3/codec.js',
@@ -2778,11 +2794,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ogg.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Ogg media',
-            id: 'org.modkitx/audio-ogg',
+            id: 'modkit/audio-ogg',
             runtimeVariants: [
               {
                 entrypoint: './src/ogg/codec.js',
@@ -2940,11 +2956,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-wav.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'WAV (RIFF)',
-            id: 'org.modkitx/wav',
+            id: 'modkit/wav',
             limitations: [
               'PCM integer and 32-bit float samples decode in-process; other RIFF/WAVE codecs require native host playback or an injected transcoder.',
               'Declarative routing is extension-first because manifest v1 cannot express the legacy extension-or-RIFF/WAVE-sniffer behavior without making the evidence conjunctive.',
@@ -3079,134 +3095,134 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:4b3562033f198fca289fe0f6dab6dbd38e47eb7ee368e2a3301bc1fa27766abf',
+        artifactDigest: 'sha256:20e1cf4f6a7f6b7b5716c05bfaf25aa5a0af650cf2b8e6f1c863260a93441b0b',
         fileDigests: {
           'README.md': 'sha256:96b749c43f62ad801f0aeb648aaa173263c721a114e99ad2bc1cbe4b7b3694d7',
           'contributions/codec-csv.json':
-            'sha256:e822428283b261aff304e476b7941ad4118565da7e78d4298ab24e8c5ba10fbc',
+            'sha256:0a7db78590cdb45ce63e95daa555db31dd61f51eb8f77e7dfbe58221545081d4',
           'contributions/codec-ini.json':
-            'sha256:2465934ced06e0f664774977a3fe02e63ff0e484f74362f4671b7d3492880a7e',
+            'sha256:aac632872ce58a2b4c00726e2bf764303d0713549d0609f8d80ed9536ffd931e',
           'contributions/codec-toml.json':
-            'sha256:09b3541b324bc414a4da560fd98b0062a5aa30dae6859c373e319f750f354fca',
+            'sha256:420c6ead4ca5ac4bf7a0b7177e1438e92addaf829d92b19d640002bab1a43d05',
           'contributions/codec-tsv.json':
-            'sha256:6a58d5a73fd73c61884ba4f01ca6391e37f069a27ed8cc1848d046f2a9ff61d0',
+            'sha256:e230ccca162cf8e476686b45ef12a097d95643a2fc9aa3e5f92b76d025eee3c8',
           'contributions/codec-xml.json':
-            'sha256:b159fd8077b7571e36c93c8fcf3f2f55335b87d265a444fdbbb38d9ccad6b585',
+            'sha256:32695988e270d6ce593a2ab4b2f3d8c2e0cca025a7f6eb462b8eae40bb188110',
           'contributions/codec-yaml.json':
-            'sha256:deea0b7f7ad8f3cfd5b3eb278f1efc66e86f28672a12593aa01dfd242d8c7154',
+            'sha256:55def29fef214573232ea2a3256d63518b8765b1b4789a90a466577f4450f8ea',
           'contributions/contract-csv-syntax.json':
-            'sha256:7073ab778c132e4a14e89c08bfe29289c81bac1c6d30f9e44ef0a70431e6beb8',
+            'sha256:05093156ccee597a43ed06c72a2591f9be95589fac3299e67eb7404b291a2089',
           'contributions/contract-ini-syntax.json':
-            'sha256:aafe6ff6e6465a0ac49865cd594ff360ed796e29dc803668bfd8f83cdd0f9973',
+            'sha256:dd6347882d3708873d696683bdbe50be7d839ae45530ee8e1006299283f5bdc4',
           'contributions/contract-toml-syntax.json':
-            'sha256:0b8247c1fe27c895109d656cd7183aaa0e96dfdc7b6d107be2a42ec8c51a01ac',
+            'sha256:32a54ff9bd40c3ff3a7d5bd92732a74104af753727e6d7eb1e77d7f1a349815f',
           'contributions/contract-tsv-syntax.json':
-            'sha256:2f4bd11489e72d4ba207b6a79dd7680651b2ff93f25b8acde057ce5ccbf0976c',
+            'sha256:8b0bb25bdd23e04cd689e61ddeb4f7f29bf4905bbac70e82c7a3fe82dd3b38e8',
           'contributions/contract-xml-syntax.json':
-            'sha256:906775c495e00939c5de181bec26c452cc594b993b33c8c96b6c54918b387ed8',
+            'sha256:5ef62a7f251effe79aa4390d63b98a5cffb2db55c9a90717394df2ae84faa1ca',
           'contributions/contract-yaml-syntax.json':
-            'sha256:406bc0bafccd7c4cd3cfc0640ab1c8f26b9b8b9b5be20f96ca568c64695a5ebe',
+            'sha256:efcb7af5f7e962ececd9e1617d9b17e92afb5f5469f522e8cdc36b9b1756b33f',
           'contributions/provider-csv-default.json':
-            'sha256:51dce1699a464ede2fe08da370490985c2c6f97d1162aee16c2767e875f87ede',
+            'sha256:87a416035905049f7fb873686255cea1a020f21bc3f64ea69eaf2536b04b77e3',
           'contributions/provider-ini-default.json':
-            'sha256:c22f937193bdc58dccd9c3b0d81f3889df396d0bd57e74b31a77223f4296bff7',
+            'sha256:dd1acdb1be69f65b2701cbe97b90ef26d494e0ebc63b7725290f54747f9cda9d',
           'contributions/provider-toml-default.json':
-            'sha256:0d8eb8a6bc43c4026e52a19b04f95bf3caa5afc74417c478a9a0a96c675110b6',
+            'sha256:916e8d874a3c0c5d2f9fc04b378376fbc8dc06aa640add847c68973add2fa044',
           'contributions/provider-tsv-default.json':
-            'sha256:5520bc14a0ff8d688706a5821cef953670e5936827138dc75d21829d28e81c8c',
+            'sha256:348383fc23494ab7c6f01f82356713be15f157cf8c468156cdb6f17c9bf78a7a',
           'contributions/provider-xml-default.json':
-            'sha256:e954c3e693eaa9d9ef11125c1985453ad2c6e978c85741bbf6001eb8170bf237',
+            'sha256:6b826ee172438fafaf366c729cf123230178f52d768f72954c52472be4114bfd',
           'contributions/provider-yaml-default.json':
-            'sha256:b8c00fdd7f27f0db8b9adefd4da85ff8f4fd904370588a150066b4c396d60fd7',
+            'sha256:06486e9fa701bc29a0519823ba94e8818a68c0c9e19a1d4b9727235160dd0d8c',
           'contributions/writer-delimited.json':
-            'sha256:c978d01538ec5023f817ef0519e7c05164ffb71012a5b31f563d625ef88cc496',
+            'sha256:39ce8414c484e5291175d24c53ec5d0b8546b427be89c286e54d215ab45b2e2a',
           'contributions/writer-ini.json':
-            'sha256:4191c66e32047263e953c3b064a1a509ccc59c57ddba27f64d31e7eed7150347',
+            'sha256:1450a2f90b03a7126e5e5e6b9d3451809c39428643339d1275386d3ebd2a7d15',
           'contributions/writer-toml.json':
-            'sha256:e1d552ab6ef123b64009922e3112210d341c0149c92845d58c34673794de1169',
+            'sha256:5ee4290389897f303f700501d4f69f2a155bdad32920e56b146110627bb701f2',
           'contributions/writer-xml.json':
-            'sha256:1bedf31ef237675eec0c448b2d0f045d3fca91324f2ddae674610d4c73e25c50',
+            'sha256:180381c6debe4601baab965509491ac096cd7956d752dcb1af16be8f0d38d6c1',
           'contributions/writer-yaml.json':
-            'sha256:3b5348d5fb3a346272cfa9c406a22b3db8de6c343f0c2979be2a9c4c7b2a2fcd',
-          'package.json': 'sha256:0acbc300da938e4d268959b61bb0c030bc989109e2c9a20e357b08e8e2c0c198',
+            'sha256:55fc8a10a9f61c905bb31d1e9288fc4ff80534af71fd264fc14fb4926fba814a',
+          'package.json': 'sha256:b095eab5e8c8ee54364f0cc994931dbeb902419174a178ef96b377365e61aa98',
           'src/csv/codec.js':
             'sha256:96a13181712645f9e74bb51dc549a3af2df36bd1e6218d3c1954e370d25abed5',
           'src/csv/provider.js':
             'sha256:c585721ed101f9e919c840e6434c439954d47da639397b132861ca4f6f9388d6',
           'src/editing/delimited-writer.js':
-            'sha256:dce962c640c433456183054d03940ab874d4970da6cf41a1fae289269873d561',
+            'sha256:556272e596627e44a18775b4a0a69dd86666ded1e0d83f6bb419861e5f7aa2fc',
           'src/editing/ini-writer.js':
-            'sha256:2c0fe6dd7b60302cc6ba2e91d995a257e875b81a6af1bda8d23869ead9d7a56c',
+            'sha256:92595872a986d8b61a6f0d57a5967a10582fef8a82e551e5aad38010376d8207',
           'src/editing/toml-writer.js':
-            'sha256:b255a85aab0d21b7c41448de3d8248e60247cd23beb8dcb986e5fa8012f15c19',
+            'sha256:22e0273281a1d76f4832d28e4e22ffeacb9eb9eddb28c5811380184078407578',
           'src/editing/xml-writer.js':
-            'sha256:1069d1fba36cd823c7345472491676e2a5e477f137614fb63686f74c844bbe87',
+            'sha256:81f3019a8bf5a7ddd80dd1c41baea425a456d3b147459ab0d845345c767031be',
           'src/editing/yaml-writer.js':
-            'sha256:571ec6b48c2e8228fe4ef12af7c1e39053ef61b565bbe3d36ddf9e931143ecc7',
+            'sha256:0567ca4c61ed21cfd3b566bbbbd4509012511d66963c1266b58b018711f1d53d',
           'src/families/delimited/codec.js':
-            'sha256:8ce0696b57a7094d17468051804a030296494d4d9af15380b8a6d706252a8e42',
+            'sha256:fa83c99831bb89ec526500b21dbefe275fc0e2dc7808fbf4f1f167356e15736d',
           'src/families/delimited/detect.js':
             'sha256:1ec144c35a3f4de38a845c3b76ec66f00d93eaf9e1447a8a8160413fe7a2e324',
           'src/families/delimited/entrypoints/csv-codec.js':
             'sha256:6243da640aa7c418bc29546d9eaca189633e2dbb8e90ef03e5fba2cc1f7db599',
           'src/families/delimited/entrypoints/csv-provider.js':
-            'sha256:2451a0448076baa0e4ec6b68096c93930da3e65fb491e8d1bd0dd1fa7c278e4c',
+            'sha256:3dc55db56e329487c08bdd23fad4904cad3dc6dc60b971a82c871a5df0d824a7',
           'src/families/delimited/entrypoints/tsv-codec.js':
             'sha256:67f2b243742588a0edf6308fee4e922dd46f29c863b245ace2c80bd896f91bb1',
           'src/families/delimited/entrypoints/tsv-provider.js':
-            'sha256:28c244d41cde12d2aa9978a4b49521f55bbd93464db5b2aa43c9802379f49445',
+            'sha256:65513ee84b8801a627520df905893691a315ed014f8188ed8e1960f11df3b096',
           'src/families/delimited/profiles/csv.js':
             'sha256:14053295163a70a5e08e42d66493a58d628a942caabbcde1937653783a96522a',
           'src/families/delimited/profiles/tsv.js':
             'sha256:ceab7ba8a62c4bbaee2bca71fe1650013ee1c7f0c97bae1b83ee1949aeb8ee6d',
           'src/families/delimited/provider.js':
-            'sha256:3aad857e5b32b3823fbbc674daf201c8628a5fdb33192853b742ad1478096287',
+            'sha256:15d73a508eb6d7ac83113c6e92f50258386226fddd01cc265f1637afef09d56b',
           'src/formats.js':
             'sha256:d6f7fb9793cd63475e20149a5e360a364a73cc8a1701a3faa7cedaaba61888d8',
           'src/index.js': 'sha256:4d3c1f65a922238a9b5cd20832700b890e95abd3e1485f07bd472d9a074227d2',
           'src/ini/codec.js':
-            'sha256:bc28ceb31c5dd6606d6fe302cf8ffa0b42bcd85ed4f9ca9c95d9a60120e5cef8',
+            'sha256:cc660481f5508b960a1ce2889ea819548d51246df54ad5720269f3ad25fa8cee',
           'src/ini/definition.js':
             'sha256:818494714eab867402779285234d227938d606a8737e50d4318ee6aa0cff6c45',
           'src/ini/provider.js':
-            'sha256:90b04036cffdcb990e1f90e09882377d206081ba02e45cea85e93545422599da',
+            'sha256:9198bfb668189dfc0e9449e17d65f778275c72ca0515b66734d5bd178098b8c4',
           'src/linked.js':
-            'sha256:6c7762d5b6a76fb4eba40574892b7e4ecbe9be6ad71207ca1cc2326cf031a9c8',
+            'sha256:c740633e0d59de1aef4d05018b633c55875566c16152fe27b56b186b77126ab0',
           'src/toml/codec.js':
-            'sha256:5fe38de0be1eb447d7c9c6c28bc6362a43043661423870160b2bd2d91e062eff',
+            'sha256:2e3d8cf1bc12d59783e94beb6f7a8f08d58cf1cc128886b477f3bed146a55b7f',
           'src/toml/definition.js':
             'sha256:020e2de4184b4c9c0fb6f062842b1b6457a02f1d878a0249b0ba24be9a19b1d5',
           'src/toml/provider.js':
-            'sha256:7d2578a2e6191ad6c2d75bcd093e5d21c6a6b185037e82121a15b48496653f38',
+            'sha256:c16d8ac00a00d395a4cadb1de27657b45d154a2d90f6c0a4a15e8b45526174d1',
           'src/tsv/codec.js':
             'sha256:b0af8e1d4a7981475ef0976233d8cc0dca51b6554fba7aead564f6c93dc55cc0',
           'src/tsv/provider.js':
             'sha256:aa4f33eb98f57ace139d6cddf04efefe42c51f6ab60f8f5c62016748c926313c',
           'src/xml/codec.js':
-            'sha256:3d76a2e4b33121ed7b99457706f1c7acbbd32787656258bbdd11615f59719093',
+            'sha256:7bdab4672409f7fb43867a34718a1e9bf818ccd1375f18c16fe31d4b0dad6fee',
           'src/xml/definition.js':
             'sha256:28d3024779cc2be0c1dbc0716eb075f4bb96bde31d4bc6b535d55ad2acfcfac0',
           'src/xml/provider.js':
-            'sha256:23e597e1eb6e0ebe8357e1b72d6cd90664fd4b762dadcd05a7056d08c2715bd4',
+            'sha256:6137d664b69a9ebb3f4d66f736e53f8d9097403ff1d06a93a7e3198eb712879a',
           'src/yaml/codec.js':
-            'sha256:582f4011f8bc63a77e06ec4d40eb5acac87f182274945d5d09f7cb5b2b0890fc',
+            'sha256:c775ee66aa4d7455df2d74761b70305852e07c9280446703c41bd95491a00522',
           'src/yaml/definition.js':
             'sha256:c5771cd7f73aff7de4cfae0ecb88a0a3276ed6ece5b55bba52089a31e5a06269',
           'src/yaml/provider.js':
-            'sha256:63fb2f8afafedc6dabd12221c4a0f3084a49d5c0250205f39108388433b4db69',
+            'sha256:7b0aaa64922525bc9ac23c2584db69e0039544831bc39a60104fd6fc1fa65c6a',
           'test/fixtures/csv-rfc4180-parity.json':
             'sha256:518c4096fdf96326de1c0a83acab3674a66a2ccfa7f9b7279760e97fbb712ef5',
           'test/fixtures/ini-structured-parity.json':
             'sha256:205a176ec39d8c1adeebd8f9419ff9c9b8e2e2d45f4387541adc7e96c2090df9',
         },
         inventoryRecordId:
-          'artifact:sha256:4b3562033f198fca289fe0f6dab6dbd38e47eb7ee368e2a3301bc1fa27766abf',
+          'artifact:sha256:20e1cf4f6a7f6b7b5716c05bfaf25aa5a0af650cf2b8e6f1c863260a93441b0b',
       },
       artifactRoot: 'extensions/data/',
       containers: {
         packageJson: {
           dependencies: {
-            '@modkitx-x3/codec-kit': 'workspace:*',
+            '@modkit/codec-kit': 'workspace:*',
             '@rgrove/parse-xml': '^4.2.3',
             'smol-toml': '^1.8.0',
             yaml: '^2.9.0',
@@ -3235,23 +3251,31 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           modkit: {
             contributionManifests: ['./contributions/*.json'],
             id: 'data',
-            publisher: 'org.modkitx',
+            presentation: {
+              description: 'Common MK3 structured-text codecs and syntax providers.',
+              displayName: 'Modkit Data',
+              vendor: {
+                displayName: 'Modkit',
+                id: 'modkit',
+              },
+            },
+            publisher: 'modkit',
             schemaVersion: 1,
           },
-          name: 'modkit-extension-x3-data',
+          name: 'modkit-extension-data',
           peerDependencies: {
-            '@modkitx-x3/core': 'workspace:*',
-            '@modkitx-x3/host': 'workspace:*',
-            '@modkitx-x3/sdk': 'workspace:*',
+            '@modkit/core': 'workspace:*',
+            '@modkit/host': 'workspace:*',
+            '@modkit/sdk': 'workspace:*',
           },
           peerDependenciesMeta: {
-            '@modkitx-x3/core': {
+            '@modkit/core': {
               optional: true,
             },
-            '@modkitx-x3/host': {
+            '@modkit/host': {
               optional: true,
             },
-            '@modkitx-x3/sdk': {
+            '@modkit/sdk': {
               optional: true,
             },
           },
@@ -3262,95 +3286,95 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-csv.json',
-          'sha256:e822428283b261aff304e476b7941ad4118565da7e78d4298ab24e8c5ba10fbc',
+          'sha256:0a7db78590cdb45ce63e95daa555db31dd61f51eb8f77e7dfbe58221545081d4',
         ],
         [
           'contributions/codec-ini.json',
-          'sha256:2465934ced06e0f664774977a3fe02e63ff0e484f74362f4671b7d3492880a7e',
+          'sha256:aac632872ce58a2b4c00726e2bf764303d0713549d0609f8d80ed9536ffd931e',
         ],
         [
           'contributions/codec-toml.json',
-          'sha256:09b3541b324bc414a4da560fd98b0062a5aa30dae6859c373e319f750f354fca',
+          'sha256:420c6ead4ca5ac4bf7a0b7177e1438e92addaf829d92b19d640002bab1a43d05',
         ],
         [
           'contributions/codec-tsv.json',
-          'sha256:6a58d5a73fd73c61884ba4f01ca6391e37f069a27ed8cc1848d046f2a9ff61d0',
+          'sha256:e230ccca162cf8e476686b45ef12a097d95643a2fc9aa3e5f92b76d025eee3c8',
         ],
         [
           'contributions/codec-xml.json',
-          'sha256:b159fd8077b7571e36c93c8fcf3f2f55335b87d265a444fdbbb38d9ccad6b585',
+          'sha256:32695988e270d6ce593a2ab4b2f3d8c2e0cca025a7f6eb462b8eae40bb188110',
         ],
         [
           'contributions/codec-yaml.json',
-          'sha256:deea0b7f7ad8f3cfd5b3eb278f1efc66e86f28672a12593aa01dfd242d8c7154',
+          'sha256:55def29fef214573232ea2a3256d63518b8765b1b4789a90a466577f4450f8ea',
         ],
         [
           'contributions/contract-csv-syntax.json',
-          'sha256:7073ab778c132e4a14e89c08bfe29289c81bac1c6d30f9e44ef0a70431e6beb8',
+          'sha256:05093156ccee597a43ed06c72a2591f9be95589fac3299e67eb7404b291a2089',
         ],
         [
           'contributions/contract-ini-syntax.json',
-          'sha256:aafe6ff6e6465a0ac49865cd594ff360ed796e29dc803668bfd8f83cdd0f9973',
+          'sha256:dd6347882d3708873d696683bdbe50be7d839ae45530ee8e1006299283f5bdc4',
         ],
         [
           'contributions/contract-toml-syntax.json',
-          'sha256:0b8247c1fe27c895109d656cd7183aaa0e96dfdc7b6d107be2a42ec8c51a01ac',
+          'sha256:32a54ff9bd40c3ff3a7d5bd92732a74104af753727e6d7eb1e77d7f1a349815f',
         ],
         [
           'contributions/contract-tsv-syntax.json',
-          'sha256:2f4bd11489e72d4ba207b6a79dd7680651b2ff93f25b8acde057ce5ccbf0976c',
+          'sha256:8b0bb25bdd23e04cd689e61ddeb4f7f29bf4905bbac70e82c7a3fe82dd3b38e8',
         ],
         [
           'contributions/contract-xml-syntax.json',
-          'sha256:906775c495e00939c5de181bec26c452cc594b993b33c8c96b6c54918b387ed8',
+          'sha256:5ef62a7f251effe79aa4390d63b98a5cffb2db55c9a90717394df2ae84faa1ca',
         ],
         [
           'contributions/contract-yaml-syntax.json',
-          'sha256:406bc0bafccd7c4cd3cfc0640ab1c8f26b9b8b9b5be20f96ca568c64695a5ebe',
+          'sha256:efcb7af5f7e962ececd9e1617d9b17e92afb5f5469f522e8cdc36b9b1756b33f',
         ],
         [
           'contributions/provider-csv-default.json',
-          'sha256:51dce1699a464ede2fe08da370490985c2c6f97d1162aee16c2767e875f87ede',
+          'sha256:87a416035905049f7fb873686255cea1a020f21bc3f64ea69eaf2536b04b77e3',
         ],
         [
           'contributions/provider-ini-default.json',
-          'sha256:c22f937193bdc58dccd9c3b0d81f3889df396d0bd57e74b31a77223f4296bff7',
+          'sha256:dd1acdb1be69f65b2701cbe97b90ef26d494e0ebc63b7725290f54747f9cda9d',
         ],
         [
           'contributions/provider-toml-default.json',
-          'sha256:0d8eb8a6bc43c4026e52a19b04f95bf3caa5afc74417c478a9a0a96c675110b6',
+          'sha256:916e8d874a3c0c5d2f9fc04b378376fbc8dc06aa640add847c68973add2fa044',
         ],
         [
           'contributions/provider-tsv-default.json',
-          'sha256:5520bc14a0ff8d688706a5821cef953670e5936827138dc75d21829d28e81c8c',
+          'sha256:348383fc23494ab7c6f01f82356713be15f157cf8c468156cdb6f17c9bf78a7a',
         ],
         [
           'contributions/provider-xml-default.json',
-          'sha256:e954c3e693eaa9d9ef11125c1985453ad2c6e978c85741bbf6001eb8170bf237',
+          'sha256:6b826ee172438fafaf366c729cf123230178f52d768f72954c52472be4114bfd',
         ],
         [
           'contributions/provider-yaml-default.json',
-          'sha256:b8c00fdd7f27f0db8b9adefd4da85ff8f4fd904370588a150066b4c396d60fd7',
+          'sha256:06486e9fa701bc29a0519823ba94e8818a68c0c9e19a1d4b9727235160dd0d8c',
         ],
         [
           'contributions/writer-delimited.json',
-          'sha256:c978d01538ec5023f817ef0519e7c05164ffb71012a5b31f563d625ef88cc496',
+          'sha256:39ce8414c484e5291175d24c53ec5d0b8546b427be89c286e54d215ab45b2e2a',
         ],
         [
           'contributions/writer-ini.json',
-          'sha256:4191c66e32047263e953c3b064a1a509ccc59c57ddba27f64d31e7eed7150347',
+          'sha256:1450a2f90b03a7126e5e5e6b9d3451809c39428643339d1275386d3ebd2a7d15',
         ],
         [
           'contributions/writer-toml.json',
-          'sha256:e1d552ab6ef123b64009922e3112210d341c0149c92845d58c34673794de1169',
+          'sha256:5ee4290389897f303f700501d4f69f2a155bdad32920e56b146110627bb701f2',
         ],
         [
           'contributions/writer-xml.json',
-          'sha256:1bedf31ef237675eec0c448b2d0f045d3fca91324f2ddae674610d4c73e25c50',
+          'sha256:180381c6debe4601baab965509491ac096cd7956d752dcb1af16be8f0d38d6c1',
         ],
         [
           'contributions/writer-yaml.json',
-          'sha256:3b5348d5fb3a346272cfa9c406a22b3db8de6c343f0c2979be2a9c4c7b2a2fcd',
+          'sha256:55fc8a10a9f61c905bb31d1e9288fc4ff80534af71fd264fc14fb4926fba814a',
         ],
       ],
       documents: [
@@ -3358,11 +3382,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-csv.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'CSV text data',
-            id: 'org.modkitx/text-csv',
+            id: 'modkit/text-csv',
             runtimeVariants: [
               {
                 entrypoint: './src/families/delimited/entrypoints/csv-codec.js',
@@ -3526,11 +3550,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ini.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'INI text data',
-            id: 'org.modkitx/text-ini',
+            id: 'modkit/text-ini',
             runtimeVariants: [
               {
                 entrypoint: './src/ini/codec.js',
@@ -3686,11 +3710,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-toml.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'TOML text data',
-            id: 'org.modkitx/text-toml',
+            id: 'modkit/text-toml',
             runtimeVariants: [
               {
                 entrypoint: './src/toml/codec.js',
@@ -3846,11 +3870,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-tsv.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'TSV text data',
-            id: 'org.modkitx/text-tsv',
+            id: 'modkit/text-tsv',
             runtimeVariants: [
               {
                 entrypoint: './src/families/delimited/entrypoints/tsv-codec.js',
@@ -4013,11 +4037,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-xml.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'XML text data',
-            id: 'org.modkitx/text-xml',
+            id: 'modkit/text-xml',
             runtimeVariants: [
               {
                 entrypoint: './src/xml/codec.js',
@@ -4173,11 +4197,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-yaml.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'YAML text data',
-            id: 'org.modkitx/text-yaml',
+            id: 'modkit/text-yaml',
             runtimeVariants: [
               {
                 entrypoint: './src/yaml/codec.js',
@@ -4333,11 +4357,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/contract-csv-syntax.json',
           {
             contract: {
-              id: 'org.modkitx/contract-definition',
+              id: 'modkit/contract-definition',
               major: 1,
             },
             displayName: 'CSV syntax service contract',
-            id: 'org.modkitx/csv-syntax-contract',
+            id: 'modkit/csv-syntax-contract',
             schemaVersion: 1,
             spec: {
               conformanceProfile: 'common.text-data/csv-syntax-v1',
@@ -4346,7 +4370,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               major: 1,
               matching: {
                 major: 1,
-                profile: 'org.modkitx/facetless-matcher',
+                profile: 'modkit/facetless-matcher',
               },
               offerFacet: {
                 presence: 'forbidden',
@@ -4393,11 +4417,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/contract-ini-syntax.json',
           {
             contract: {
-              id: 'org.modkitx/contract-definition',
+              id: 'modkit/contract-definition',
               major: 1,
             },
             displayName: 'INI syntax service contract',
-            id: 'org.modkitx/ini-syntax-contract',
+            id: 'modkit/ini-syntax-contract',
             schemaVersion: 1,
             spec: {
               conformanceProfile: 'common.text-data/ini-syntax-v1',
@@ -4406,7 +4430,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               major: 1,
               matching: {
                 major: 1,
-                profile: 'org.modkitx/facetless-matcher',
+                profile: 'modkit/facetless-matcher',
               },
               offerFacet: {
                 presence: 'forbidden',
@@ -4453,11 +4477,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/contract-toml-syntax.json',
           {
             contract: {
-              id: 'org.modkitx/contract-definition',
+              id: 'modkit/contract-definition',
               major: 1,
             },
             displayName: 'TOML syntax service contract',
-            id: 'org.modkitx/toml-syntax-contract',
+            id: 'modkit/toml-syntax-contract',
             schemaVersion: 1,
             spec: {
               conformanceProfile: 'common.text-data/toml-syntax-v1',
@@ -4466,7 +4490,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               major: 1,
               matching: {
                 major: 1,
-                profile: 'org.modkitx/facetless-matcher',
+                profile: 'modkit/facetless-matcher',
               },
               offerFacet: {
                 presence: 'forbidden',
@@ -4513,11 +4537,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/contract-tsv-syntax.json',
           {
             contract: {
-              id: 'org.modkitx/contract-definition',
+              id: 'modkit/contract-definition',
               major: 1,
             },
             displayName: 'TSV syntax service contract',
-            id: 'org.modkitx/tsv-syntax-contract',
+            id: 'modkit/tsv-syntax-contract',
             schemaVersion: 1,
             spec: {
               conformanceProfile: 'common.text-data/tsv-syntax-v1',
@@ -4526,7 +4550,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               major: 1,
               matching: {
                 major: 1,
-                profile: 'org.modkitx/facetless-matcher',
+                profile: 'modkit/facetless-matcher',
               },
               offerFacet: {
                 presence: 'forbidden',
@@ -4573,11 +4597,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/contract-xml-syntax.json',
           {
             contract: {
-              id: 'org.modkitx/contract-definition',
+              id: 'modkit/contract-definition',
               major: 1,
             },
             displayName: 'XML syntax service contract',
-            id: 'org.modkitx/xml-syntax-contract',
+            id: 'modkit/xml-syntax-contract',
             schemaVersion: 1,
             spec: {
               conformanceProfile: 'common.text-data/xml-syntax-v1',
@@ -4586,7 +4610,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               major: 1,
               matching: {
                 major: 1,
-                profile: 'org.modkitx/facetless-matcher',
+                profile: 'modkit/facetless-matcher',
               },
               offerFacet: {
                 presence: 'forbidden',
@@ -4633,11 +4657,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/contract-yaml-syntax.json',
           {
             contract: {
-              id: 'org.modkitx/contract-definition',
+              id: 'modkit/contract-definition',
               major: 1,
             },
             displayName: 'YAML syntax service contract',
-            id: 'org.modkitx/yaml-syntax-contract',
+            id: 'modkit/yaml-syntax-contract',
             schemaVersion: 1,
             spec: {
               conformanceProfile: 'common.text-data/yaml-syntax-v1',
@@ -4646,7 +4670,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               major: 1,
               matching: {
                 major: 1,
-                profile: 'org.modkitx/facetless-matcher',
+                profile: 'modkit/facetless-matcher',
               },
               offerFacet: {
                 presence: 'forbidden',
@@ -4693,11 +4717,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/provider-csv-default.json',
           {
             contract: {
-              id: 'org.modkitx/service-provider-contribution',
+              id: 'modkit/service-provider-contribution',
               major: 1,
             },
             displayName: 'csv syntax provider',
-            id: 'org.modkitx/csv-syntax-default',
+            id: 'modkit/csv-syntax-default',
             runtimeVariants: [
               {
                 entrypoint: './src/families/delimited/entrypoints/csv-provider.js',
@@ -4743,11 +4767,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/provider-ini-default.json',
           {
             contract: {
-              id: 'org.modkitx/service-provider-contribution',
+              id: 'modkit/service-provider-contribution',
               major: 1,
             },
             displayName: 'ini syntax provider',
-            id: 'org.modkitx/ini-syntax-default',
+            id: 'modkit/ini-syntax-default',
             runtimeVariants: [
               {
                 entrypoint: './src/ini/provider.js',
@@ -4793,11 +4817,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/provider-toml-default.json',
           {
             contract: {
-              id: 'org.modkitx/service-provider-contribution',
+              id: 'modkit/service-provider-contribution',
               major: 1,
             },
             displayName: 'toml syntax provider',
-            id: 'org.modkitx/toml-syntax-default',
+            id: 'modkit/toml-syntax-default',
             runtimeVariants: [
               {
                 entrypoint: './src/toml/provider.js',
@@ -4843,11 +4867,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/provider-tsv-default.json',
           {
             contract: {
-              id: 'org.modkitx/service-provider-contribution',
+              id: 'modkit/service-provider-contribution',
               major: 1,
             },
             displayName: 'tsv syntax provider',
-            id: 'org.modkitx/tsv-syntax-default',
+            id: 'modkit/tsv-syntax-default',
             runtimeVariants: [
               {
                 entrypoint: './src/families/delimited/entrypoints/tsv-provider.js',
@@ -4893,11 +4917,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/provider-xml-default.json',
           {
             contract: {
-              id: 'org.modkitx/service-provider-contribution',
+              id: 'modkit/service-provider-contribution',
               major: 1,
             },
             displayName: 'xml syntax provider',
-            id: 'org.modkitx/xml-syntax-default',
+            id: 'modkit/xml-syntax-default',
             runtimeVariants: [
               {
                 entrypoint: './src/xml/provider.js',
@@ -4943,11 +4967,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/provider-yaml-default.json',
           {
             contract: {
-              id: 'org.modkitx/service-provider-contribution',
+              id: 'modkit/service-provider-contribution',
               major: 1,
             },
             displayName: 'yaml syntax provider',
-            id: 'org.modkitx/yaml-syntax-default',
+            id: 'modkit/yaml-syntax-default',
             runtimeVariants: [
               {
                 entrypoint: './src/yaml/provider.js',
@@ -4993,11 +5017,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/writer-delimited.json',
           {
             contract: {
-              id: 'org.modkitx/service-provider-contribution',
+              id: 'modkit/service-provider-contribution',
               major: 1,
             },
             displayName: 'CSV and TSV text writer',
-            id: 'org.modkitx/text-delimited-writer',
+            id: 'modkit/text-delimited-writer',
             runtimeVariants: [
               {
                 entrypoint: './src/editing/delimited-writer.js',
@@ -5020,7 +5044,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                     formatId: 'csv',
                     minimumRoundTrip: 'byte-identical',
                     mutationMode: 'mutate',
-                    providerId: 'org.modkitx/text-delimited-writer',
+                    providerId: 'modkit/text-delimited-writer',
                     representationId: 'source',
                   },
                   major: 1,
@@ -5034,7 +5058,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                     formatId: 'tsv',
                     minimumRoundTrip: 'byte-identical',
                     mutationMode: 'mutate',
-                    providerId: 'org.modkitx/text-delimited-writer',
+                    providerId: 'modkit/text-delimited-writer',
                     representationId: 'source',
                   },
                   major: 1,
@@ -5049,11 +5073,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/writer-ini.json',
           {
             contract: {
-              id: 'org.modkitx/service-provider-contribution',
+              id: 'modkit/service-provider-contribution',
               major: 1,
             },
             displayName: 'INI text writer',
-            id: 'org.modkitx/text-ini-writer',
+            id: 'modkit/text-ini-writer',
             runtimeVariants: [
               {
                 entrypoint: './src/editing/ini-writer.js',
@@ -5076,7 +5100,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                     formatId: 'ini',
                     minimumRoundTrip: 'byte-identical',
                     mutationMode: 'mutate',
-                    providerId: 'org.modkitx/text-ini-writer',
+                    providerId: 'modkit/text-ini-writer',
                     representationId: 'source',
                   },
                   major: 1,
@@ -5091,11 +5115,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/writer-toml.json',
           {
             contract: {
-              id: 'org.modkitx/service-provider-contribution',
+              id: 'modkit/service-provider-contribution',
               major: 1,
             },
             displayName: 'TOML text writer',
-            id: 'org.modkitx/text-toml-writer',
+            id: 'modkit/text-toml-writer',
             runtimeVariants: [
               {
                 entrypoint: './src/editing/toml-writer.js',
@@ -5118,7 +5142,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                     formatId: 'toml',
                     minimumRoundTrip: 'byte-identical',
                     mutationMode: 'mutate',
-                    providerId: 'org.modkitx/text-toml-writer',
+                    providerId: 'modkit/text-toml-writer',
                     representationId: 'source',
                   },
                   major: 1,
@@ -5133,11 +5157,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/writer-xml.json',
           {
             contract: {
-              id: 'org.modkitx/service-provider-contribution',
+              id: 'modkit/service-provider-contribution',
               major: 1,
             },
             displayName: 'XML text writer',
-            id: 'org.modkitx/text-xml-writer',
+            id: 'modkit/text-xml-writer',
             runtimeVariants: [
               {
                 entrypoint: './src/editing/xml-writer.js',
@@ -5160,7 +5184,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                     formatId: 'xml',
                     minimumRoundTrip: 'byte-identical',
                     mutationMode: 'mutate',
-                    providerId: 'org.modkitx/text-xml-writer',
+                    providerId: 'modkit/text-xml-writer',
                     representationId: 'source',
                   },
                   major: 1,
@@ -5175,11 +5199,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/writer-yaml.json',
           {
             contract: {
-              id: 'org.modkitx/service-provider-contribution',
+              id: 'modkit/service-provider-contribution',
               major: 1,
             },
             displayName: 'YAML text writer',
-            id: 'org.modkitx/text-yaml-writer',
+            id: 'modkit/text-yaml-writer',
             runtimeVariants: [
               {
                 entrypoint: './src/editing/yaml-writer.js',
@@ -5202,7 +5226,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                     formatId: 'yaml',
                     minimumRoundTrip: 'byte-identical',
                     mutationMode: 'mutate',
-                    providerId: 'org.modkitx/text-yaml-writer',
+                    providerId: 'modkit/text-yaml-writer',
                     representationId: 'source',
                   },
                   major: 1,
@@ -5281,33 +5305,33 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:04d9f9729477fc6e14cc10c12c70ced7c79ddd39fcc1d25711412f05d6659a15',
+        artifactDigest: 'sha256:c5f1c036b70833f3f5425039db0101a41885a9d7c9b3c7f87fef677e5498028e',
         fileDigests: {
           'README.md': 'sha256:352cfa63649efc3de2228881a13fadd2b2de56758ea86175c2c6e0da62f19152',
           'contributions/codec-markdown.json':
-            'sha256:ae8cb76469c691bbb840c7c7ea61cdf376cac16283457b9c4e28d0f643324d7e',
+            'sha256:067e39cf883d77476b8bd244d0d053c4740adf309b57114ac16d020d3810e81e',
           'contributions/codec-odg.json':
-            'sha256:c28b9073ef4715e967dfbf883323eeeb573e79e0ea934fd08ed24a25f58f9145',
+            'sha256:c37381b402f85c51172473a4804cd68069a65670e9fafbc2a9ee40921d981549',
           'contributions/codec-odp.json':
-            'sha256:05fa1600b291ab9ec22246d943ae3ca5c76bf8d7bd0ad9faff99c02514ad4cbd',
+            'sha256:e24fe728c346c24adf40201e073599aff76fc491f06ae3c8f4127dca4ae44ad3',
           'contributions/codec-ods.json':
-            'sha256:86b7a3d92fa8c9c3750c21feb7b629c9a45dd453b005810030d9a203563e52fb',
+            'sha256:e10c366a622b400b62bb0a7479975295ca10bc16480609ac976e68fce0f1d58b',
           'contributions/codec-odt.json':
-            'sha256:3ef7eada29545f5fb6b2cb29c7d305b187aee98f9c89dbfba5e5af5e69eba9bb',
+            'sha256:a06b262e923340bcb3b7bd0ad033fd684932ab785ab43c1dd4a36be6fb9690b6',
           'contributions/codec-rtf.json':
-            'sha256:e9d7a6e13c69978412c223d31e6aa809266a158c52d43df3d519afa0eeec94dd',
-          'package.json': 'sha256:5da878841d0e800466b7c332a1fb09265b7a686c271b4b8ffdb0bbad582fb5e7',
+            'sha256:a10fee1ada70b227ab5f8b38d428936b0d6059a74ddf397bfc4f02e9e05449d1',
+          'package.json': 'sha256:b9a5ce1b956f663c3e5187242483a1d18b0fbb69bae94466f2be822c46e14b90',
           'src/index.js': 'sha256:f1a6b90c5ee40f19b02f9e9893ac6cb78d5ac4013f16ab91c58026d10bc9d638',
           'src/linked.js':
-            'sha256:1fddec49454e19c2567a430f78432930ad90a1b9591960e1e359a18cd0968b08',
+            'sha256:2f5862b1e4d5deb28a43ea6fad9e869c9e679f883abac8dacfadc3c0ae7a5af8',
           'src/markdown/codec.js':
-            'sha256:cfee908833a8401b0f93343a1e638d7234282bbe4435dae25f87dbe1c8460d7c',
+            'sha256:105e29d32a63e33b337f6d861e5e6e79a38c21f3872138ae0e904693a931e085',
           'src/odf/document.js':
             'sha256:37234992daf502132b28d7dd864e5a166ea7c405a4beff9f2e11762de72d39d2',
           'src/odf/inspection.js':
-            'sha256:43fc1cd3c108e26e99f853692100faf30ebb92a95a8403107c9123c81f78e905',
+            'sha256:f10f64f0fe7858f1175c8523733072116dcb070ef328ac60e906de98700d02d6',
           'src/odf/package.js':
-            'sha256:c51002b29ec98d4911630c068378aeff48e8b0762f31b8470fd70a1c02a96761',
+            'sha256:35b1af2fa4f7e9ae1246a700857de3ce227f075295772895ad88c62dc2b55fcf',
           'src/odg/codec.js':
             'sha256:fd2d2006b145618d4cdc347cc39966f691da16e2b1c3569fcd2b7479ad2fc0d8',
           'src/odp/codec.js':
@@ -5317,16 +5341,16 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/odt/codec.js':
             'sha256:5d84fd165b4e4252edeec9abc56e4759fea9bbfed658dc7a21ed667e6e9e1180',
           'src/rtf/codec.js':
-            'sha256:cc46769b5c4ca35c7ca520fbb5343bcd7c7338ebe1fba178aee3cf04dcb5b7bb',
+            'sha256:c047d1a7193eaef9307452f4cb3aa84bc9800e270993a5d02c53eca4582134f5',
         },
         inventoryRecordId:
-          'artifact:sha256:04d9f9729477fc6e14cc10c12c70ced7c79ddd39fcc1d25711412f05d6659a15',
+          'artifact:sha256:c5f1c036b70833f3f5425039db0101a41885a9d7c9b3c7f87fef677e5498028e',
       },
       artifactRoot: 'extensions/documents/',
       containers: {
         packageJson: {
           dependencies: {
-            '@modkitx-x3/codec-kit': 'workspace:*',
+            '@modkit/codec-kit': 'workspace:*',
           },
           description: 'Isolated MK3 document codecs.',
           exports: {
@@ -5346,19 +5370,27 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           modkit: {
             contributionManifests: ['./contributions/*.json'],
             id: 'documents',
-            publisher: 'org.modkitx',
+            presentation: {
+              description: 'Isolated MK3 document codecs.',
+              displayName: 'Modkit Documents',
+              vendor: {
+                displayName: 'Modkit',
+                id: 'modkit',
+              },
+            },
+            publisher: 'modkit',
             schemaVersion: 1,
           },
-          name: 'modkit-extension-x3-documents',
+          name: 'modkit-extension-documents',
           peerDependencies: {
-            '@modkitx-x3/host': 'workspace:*',
-            '@modkitx-x3/sdk': 'workspace:*',
+            '@modkit/host': 'workspace:*',
+            '@modkit/sdk': 'workspace:*',
           },
           peerDependenciesMeta: {
-            '@modkitx-x3/host': {
+            '@modkit/host': {
               optional: true,
             },
-            '@modkitx-x3/sdk': {
+            '@modkit/sdk': {
               optional: true,
             },
           },
@@ -5369,27 +5401,27 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-markdown.json',
-          'sha256:ae8cb76469c691bbb840c7c7ea61cdf376cac16283457b9c4e28d0f643324d7e',
+          'sha256:067e39cf883d77476b8bd244d0d053c4740adf309b57114ac16d020d3810e81e',
         ],
         [
           'contributions/codec-odg.json',
-          'sha256:c28b9073ef4715e967dfbf883323eeeb573e79e0ea934fd08ed24a25f58f9145',
+          'sha256:c37381b402f85c51172473a4804cd68069a65670e9fafbc2a9ee40921d981549',
         ],
         [
           'contributions/codec-odp.json',
-          'sha256:05fa1600b291ab9ec22246d943ae3ca5c76bf8d7bd0ad9faff99c02514ad4cbd',
+          'sha256:e24fe728c346c24adf40201e073599aff76fc491f06ae3c8f4127dca4ae44ad3',
         ],
         [
           'contributions/codec-ods.json',
-          'sha256:86b7a3d92fa8c9c3750c21feb7b629c9a45dd453b005810030d9a203563e52fb',
+          'sha256:e10c366a622b400b62bb0a7479975295ca10bc16480609ac976e68fce0f1d58b',
         ],
         [
           'contributions/codec-odt.json',
-          'sha256:3ef7eada29545f5fb6b2cb29c7d305b187aee98f9c89dbfba5e5af5e69eba9bb',
+          'sha256:a06b262e923340bcb3b7bd0ad033fd684932ab785ab43c1dd4a36be6fb9690b6',
         ],
         [
           'contributions/codec-rtf.json',
-          'sha256:e9d7a6e13c69978412c223d31e6aa809266a158c52d43df3d519afa0eeec94dd',
+          'sha256:a10fee1ada70b227ab5f8b38d428936b0d6059a74ddf397bfc4f02e9e05449d1',
         ],
       ],
       documents: [
@@ -5397,11 +5429,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-markdown.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Markdown document',
-            id: 'org.modkitx/document-markdown',
+            id: 'modkit/document-markdown',
             runtimeVariants: [
               {
                 entrypoint: './src/markdown/codec.js',
@@ -5535,11 +5567,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-odg.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'OpenDocument drawing',
-            id: 'org.modkitx/odg',
+            id: 'modkit/odg',
             limitations: [
               'The vector scene is the first draw:page drawn from the geometry that was parsed; every page is listed in the tree and counted in the summary.',
               "Rectangles, ellipses, lines, polylines, polygons and paths are drawn, and frame text is placed at its frame's origin. Custom shapes with enhanced geometry, connectors and embedded objects are counted as unparsed rather than approximated.",
@@ -5702,11 +5734,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-odp.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'OpenDocument presentation',
-            id: 'org.modkitx/odp',
+            id: 'modkit/odp',
             limitations: [
               'The deck is published through common.view/slide-deck-source@1, a publisher-candidate contract (ADR-DOC-001): ODP is its only publisher, so its shape may still move under the dual-publish rules until a second slides family confirms it.',
               'Masters, layouts, transitions and animation are not parsed and are therefore not published, rather than published empty.',
@@ -5863,11 +5895,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ods.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'OpenDocument spreadsheet',
-            id: 'org.modkitx/ods',
+            id: 'modkit/ods',
             limitations: [
               "Formulas are published as their stored text together with the cell they came from. Nothing evaluates them and no value is recomputed: a cell's value is the value the document stored.",
               'The table data source carries the first sheet; every sheet is listed in the tree and counted in the summary.',
@@ -6026,11 +6058,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-odt.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'OpenDocument text',
-            id: 'org.modkitx/odt',
+            id: 'modkit/odt',
             limitations: [
               'The recovered representation is the flow: headings, paragraphs and the outline they form. Fields, annotations, tracked changes, footnotes, headers and footers are not parsed and are not published.',
               "Detection reads the OpenDocument rule rather than the file name: the mimetype entry must be first, stored uncompressed, and hold this format's exact media type. A renamed file is still recognised; a file whose media type belongs to another format is refused.",
@@ -6177,11 +6209,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-rtf.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Rich Text Format',
-            id: 'org.modkitx/document-rtf',
+            id: 'modkit/document-rtf',
             limitations: [
               'The reader validates group/control framing and inventories document structure; rich formatting, fields, tables, and text layout are not rendered.',
               'Object and picture payloads are counted but never activated, decoded, or executed.',
@@ -6344,132 +6376,132 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:7fd990b5fb805eba8113a8ac460776d3af030d0516f0915389016f1ec2de1dc2',
+        artifactDigest: 'sha256:77485d8227d0e5bd39284cf673c48b34324fb56d5ab7935d3e944a48acc01a74',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
-            'sha256:eea62681a6ac2c0f866c99baf38e14ea2195b2b40861b8963be6da1bd3a26e03',
+            'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
           'README.md': 'sha256:4f8426d4cb4a5a43b6b37cfb8d3262b2ce94a8ec1436d6d339e7f64dc3adadeb',
           'contributions/codec-ani.json':
-            'sha256:70cf942994bd7ccd94aa8dc6eb89f7f7a0b48a949a5a1baee6ba61d261887e05',
+            'sha256:0bb20aa16de825b13064b8ded16695158b41b102c754a4c717d8e3bfdc61d9da',
           'contributions/codec-astc.json':
-            'sha256:d717582caf9e440fd5fd5de5bb58a0084e40f876df34f9e56b823e3df69e4503',
+            'sha256:2a53613d0c369e40b48c3b12e6e810506c8f396449ff8ff03d4a89b0b4d2c301',
           'contributions/codec-avif.json':
-            'sha256:55ccb4042b903954df9c13d1e507544259e46a8f7a86030d5bbcefa4ae9dc082',
+            'sha256:9c6a1af73a3759d1ac887cf10da56900bb896526c5a878825bd271ac92da0347',
           'contributions/codec-basis.json':
-            'sha256:c5745bb078e83a851c9078baa0217e3d290cb143ffb4af94862b9a0449ebf715',
+            'sha256:184ba7dd544a576e53ced752789b435a8d45dbf01b87c248a2e4cfbc3b03547c',
           'contributions/codec-bmp.json':
-            'sha256:cbf66e61b87ada3b944d0ee3e89db46709fa33d2a9139eeb00e1f234224fb023',
+            'sha256:51e2e65724d780a313dfeb1072929d9cb9fc3c5230b7597e0a3384dc77523326',
           'contributions/codec-cur.json':
-            'sha256:6a6eb413cece46d5890158b1865aece847d1eabd773bc5ec892e236b04ef52c6',
+            'sha256:ca83a2ee185f99c30030382692eb875a4a7301aeb0d072a4bbf109f787d17bdf',
           'contributions/codec-dds.json':
-            'sha256:cbf6beef83432d4f89ff4336d3351a3ec6ee64485a26c96d80d9997b5daa622f',
+            'sha256:c8a01abcac581562cf3d9f951ac1f10152fe8fd026b57d8ce809defdbff66c4b',
           'contributions/codec-exr.json':
-            'sha256:426fda4b1bbf56f477a1cf5223237d0b899bf0b1d7e9c3b877d35cb8ed308281',
+            'sha256:377eb43959c01dff23c3117a6a1263a9797e91503b79e65a718d049336e6cca7',
           'contributions/codec-gif.json':
-            'sha256:e6be1c2ee39ab76c5770e1799e609c208ad39834a581dce8fad739dd36d0666b',
+            'sha256:1e0055534bec3b25f02fb42204637d11c4d24447ff87474fbb8460c8703342f4',
           'contributions/codec-hdr.json':
-            'sha256:dc2717352377ac4ff5dac3a0aaac8ca65d8c704d35646cd3cedd507d54449a4e',
+            'sha256:f9a3809a8285db81095accabea92d22fec03a7aab43d17466f2ffd89a77581b8',
           'contributions/codec-ico.json':
-            'sha256:46ca9235bd7082b5a0f50c4b8697e0e2665aa620834a44b0877d0762b8726c0e',
+            'sha256:8d7b323ab46e27bffa3aa2b71d99ba7ee3a66e6486bae4eb8f9123cf86212c70',
           'contributions/codec-jpeg.json':
-            'sha256:ea59570db2a15190a3213fe3eb78e76f08197499b410358521d89f5fbdc6d364',
+            'sha256:fcb1026e71eb76e3f873367a6a1936e9f44a708bf5e446ff2682135b6cca0df3',
           'contributions/codec-ktx.json':
-            'sha256:30cfd31f4df4f993d61db7b9d86003e63d671482786b4e07820584d0a71acd21',
+            'sha256:4ee4d58d454dd57f3968ffcc394b48b08d4be9cdbc023a8467f8a1bc66bc4806',
           'contributions/codec-ktx2.json':
-            'sha256:8b7ba55aa59b8654b9d0dc3611519ef50953ba70202ffd188b5b8d487e7bb42b',
+            'sha256:b9fc5eba855941df66f0bc62d82c7bed8985b5e82a4b6a0925375486b0be178b',
           'contributions/codec-pal.json':
-            'sha256:4ab7518d9715a3f20ac9748b4d01beb6d03418e52433528b68ec1f3e0e70592c',
+            'sha256:ea2a3925124bc67b6b887b70a85f03722c49a18b7f44176dfdd6365d6920188a',
           'contributions/codec-pcx.json':
-            'sha256:12cb8eaebab4cc11443953ec50072b0e5b866cadb5b87d1a6b1ad977688beba2',
+            'sha256:5630f3d28021cd97416ff09684ca36e7168a6ee47f1d7f601d0e6a6e01e33bb8',
           'contributions/codec-pkm.json':
-            'sha256:7000d5bb4ccba64f5c9a81a2ac747bfb0214cb87c4de8a3a0277ed297a5d67f9',
+            'sha256:a59ca6a16fac9666bc9a22c5ec29584dce1fd6a58c1f76b66b069d77e8239929',
           'contributions/codec-png.json':
-            'sha256:622f11b11b8ffeba4f13d9b40a05e6ecdc85b6b6736c0753459395e7993d34f9',
+            'sha256:b9081fcc28060974eb31feb891a1083edd2464c01010491f7e7780ae8ec8f69f',
           'contributions/codec-pvr.json':
-            'sha256:304050d72c82999590a517cfbf6d757de7f44523c53cbd8f0d604b18add2aa78',
+            'sha256:e5eff0a04b8c20ee5806859a00d5e843a4c6a1cc089d768b0bed3c701fd1476b',
           'contributions/codec-tga.json':
-            'sha256:93181d0b7b214993bfcc4e306fe09ab68c8ae6a5044560bcdc7e9cb77368d09f',
+            'sha256:4995903bf43aa8de9f19c3a6be8716dd14e4bb746625010d5c2f01f740eded45',
           'contributions/codec-tiff.json':
-            'sha256:89cc8891bff6dd3521bca282119fa3a2fecd3a62af4e0590d25da327b17cba46',
+            'sha256:5ab60e9ca9f2b5adbafc4364d3d60f47be6966875a65f48e62a053f69c31c37f',
           'contributions/codec-webp.json':
-            'sha256:568e531eb2c0519b27f7c828f6166c163766887ea49d7add870be074584ebb1e',
+            'sha256:0bba481e6804a0854bcfa8b4d44d2211df0bbdde6f34c1c19a181b19148512c5',
           'contributions/writer-png.json':
-            'sha256:fa03ddbb7e468a6d9948ba9f89dee07ffc682e8404adb23f379da4cf231aed49',
-          'package.json': 'sha256:4b062fc2f40706d1bc73000aa2436d9a32a8ac59d4373c0c01fcf35c43ceefc4',
+            'sha256:49583a58d35f864423155eae81992ed56764d4efe6c82c6931491f1b3157ee13',
+          'package.json': 'sha256:38a43b9396aaa7d2b309af11909487f474ec75567aeb295e9b45988b7381e1ef',
           'src/ani/codec.js':
-            'sha256:bf98812d1607c130aeedf498975710cf1adc1d6e812666057ebe1426f7155145',
+            'sha256:18bf84dd6807f2caf4d7bf3d5bb497cfba746f92b0e6bb3e459a0b09563f3c00',
           'src/astc/codec.js':
-            'sha256:5359e6bec5bdad5ed690715a07de6ec3d8f58534ceadbe98e898b88b6bf8737e',
+            'sha256:e838232902d024f2e4c9d9538f6ee6e69259b23654b9bffb7e15110298af62b3',
           'src/astc/ldr.js':
             'sha256:c5bf2a524fb9ab25d51f8351192e30859463e6d14b0b0da94295aa4350d6f402',
           'src/avif/codec.js':
-            'sha256:4db49b42e97cc393415cd85c07279495ce7cb2dd3a78226308307808a25308c2',
+            'sha256:91fb899e6e8789e9e647d6510eabc5e8dc58a2b640632114daa8a5c5b037cbea',
           'src/basis/codec.js':
-            'sha256:03da733ad02015f59e267f547f8c0a4e5f68f7cc04856981ad6be263b36fbcb8',
+            'sha256:467f93b3b49ec4d0a3e7bdb23782949d6ec1126839cebdcde2cfbf25a11d7293',
           'src/bmp/codec.js':
-            'sha256:b62ae6392de98e5c1ff9a10920d11bc3fdd2517245497d13acf944533bc66914',
+            'sha256:5b53995e0429115ea6020430dc80c5bd70b208c6666392b7b0f57f9eef25917d',
           'src/cur/codec.js':
-            'sha256:31a5d751e5c928c51318cf8158930900afb5b4a51b0984019622373e7597ac8a',
+            'sha256:daf34dd18dd2ed3f13ea0d74668fc9c40bdda171899ee0667cd558c9f7fe24a9',
           'src/dds/codec.js':
-            'sha256:433837ee765868f1a79bda2bcc1338dacf787e4699f3fec574b623b5f105e6c9',
+            'sha256:768a15f8f107aaf8c66d94dc0f0d2a4edf74dcb50f90001f218879641d069ab1',
           'src/exr/codec.js':
-            'sha256:9fab7b7120da13e825e81d7f8d0fa2727934b9035f8a63b4f6777382b970f193',
+            'sha256:3c46fa55f1ca7aea4ff36011f91ff350832f174e6c82633c037d41cc09daf9a9',
           'src/gif/codec.js':
-            'sha256:3ce766b0f1c01d114928a33ba33536dc76429072de6aaefc4ba709321ae96eec',
+            'sha256:90b805088704746c1faf3e7e9166b9976bcf815944958dd8ebb3b51d9425250e',
           'src/hdr/codec.js':
-            'sha256:4170a0d8e785ea0e13a9b0d22ef61b4c72906e8f70a0ce5be9c157883b73fe71',
+            'sha256:ed851abdd3d36445a77e407e4b92c14bf7fa3490df00a65da3a69015c2292a94',
           'src/ico/codec.js':
-            'sha256:854e9798a852f7e77a03b65d1b682816436fadc79283cffe5b684ce083139321',
+            'sha256:0007c46e11724f2e2195b0260801d5c6290fd3c05ac6229d9790e0bd1e86dd97',
           'src/ico/container.js':
-            'sha256:c97e85143661377a04b7567a34f3763883d165009a3dcdaa6fddaacdb130ed08',
+            'sha256:407cdb7ed7d152a32f1d78da0c9cd445d9a642c42c72230621fb7fbeab65e67c',
           'src/index.js': 'sha256:bcbc40812fa5dcdb2937b0ff5b617c1483725570302b99f569249ac3c441ce41',
           'src/jpeg/codec.js':
-            'sha256:43739ed9200be7c7e11b326ac83206892cb3eb9633b3b76477099e6fed24bd06',
+            'sha256:5b60aea8f7fae6df27a558b959d29ae1e49e67a814c850ca6d923f42ebdc6b21',
           'src/ktx/codec.js':
-            'sha256:1eff44456f555e8e63f6229f1bfcfd27d5df29c124b07b0c6aefd47d20cf145f',
+            'sha256:9d24a991d8a64e241895849cc43305babfc20647d4226f5bea8fc6cb44e92903',
           'src/ktx2/codec.js':
-            'sha256:e871516f26b4dd22f158ddd09c8b91f3357705726aee8bfe1007d2d25e242969',
+            'sha256:4d6240d729468880b18a12e629d29972d0e70b25b6b909329786a24637c463f1',
           'src/linked.js':
-            'sha256:6c052f558462c5ba29e71e839979a86fe6ea18fb6b1c339c918a200f97a918e6',
+            'sha256:bbe85af6cdf6da5544829b2bd7ad09a733ca00edc56e2229659247eba5cf8975',
           'src/pal/codec.js':
-            'sha256:53b0485b8da984b28c06a5d360e9e777e47483d23871458e0b9178e977057998',
+            'sha256:68718910cbdbc34fdca7a99817fc26d4a54b8521da4d38d4d13cbf633acbfc0b',
           'src/pcx/codec.js':
-            'sha256:b8be43c5e89e51bf2155313ba31688849398ba7be06b2fa60e086382c38ca05a',
+            'sha256:72e48b7fce70032f4349e799ed887579698d0c790cc5ccff09420bcd1e2ec3e7',
           'src/pkm/codec.js':
-            'sha256:42e115384c6fbfababc0e3b8f47483e7f5f60c5783f3804f62b2c43006fbc85d',
+            'sha256:2e3a5a9c78b3aee0af85f195e3b8d362d7afa18175057cf38ac6381bca804549',
           'src/pkm/etc.js':
             'sha256:99c4f4ab06d944e71e0993f671e3af6904c37bb5eb2bc0a65fdf1e6de265db7f',
           'src/png/codec.js':
-            'sha256:325d56a7dde421db26926fd7fb44730fbf7d42e19442256e89f424981a23e530',
+            'sha256:1c659861f79e3aa36e8a7f2242d2cc2085fe848a3ac9776e8f48f4533a9d7eaa',
           'src/pvr/codec.js':
-            'sha256:ba2a719ca4ac8f4d7ae8fb132b2b3cfa72e97764c2237f5299ffa33825a63583',
+            'sha256:3c02b42c1d6963dcb8e38a8bbfcc49ccf9b115118180835d59eb4ada15de7fea',
           'src/tga/codec.js':
-            'sha256:5a3ed52488646ed9f18b368e04a46c741ff61065a889fffedbcf83488b176ef5',
+            'sha256:ffe8fe95b50e1c3339ffb699e478b43db9680d57b194d4cad5b0d994367b4232',
           'src/tiff/codec.js':
-            'sha256:47462a98d93f6f025e6e0418b15826729e1cdfb5519ff5f15bb580c650627540',
+            'sha256:2a875351ce1ac3fb1aa74354a9c09a46464662c8003aa95a7e5e86afc6026d4c',
           'src/webp/codec.js':
-            'sha256:0e659889a1ad44cf1826d4e02caf7fd311234685315543d96af366bc02bd5255',
+            'sha256:b131633cfb14f7fccbfe981c919a0c37a28dbcf4b6e1a6d41de0757085eb0389',
           'src/writers/png-encoder.js':
-            'sha256:411efbd8aadd7a2edfb335752f8e8bfad1a11452534bd039e227d52f49d6a65a',
+            'sha256:afe0012d7a40473d5e545ed61df93bf790a118402a56f447960cb933a063616f',
           'test/ani-raster-decode.test.ts':
-            'sha256:93bf100792fbc093f6ae022d8d18a62d67aa009537694768be9c3f2c159c45dd',
+            'sha256:7315f4f53f2c70259b308ba21190a890cf03b9fee61b2237ef981987b09dbc75',
           'test/astc-ordinary-ldr.test.ts':
-            'sha256:e7956bda99dfcfc18a145c20ceb0b786875ca3c5b29c284280b870f78f6fad04',
+            'sha256:d2fac9ba212cdebcb662337bad84d9ed32f5f94d578e7c727e11e0a17a593ae2',
           'test/astc-void-extent.test.ts':
-            'sha256:94e22eff3f07a88c74e42169e6bc59acb142311c8c26ae8de27decc4b2d61225',
+            'sha256:ed0f8d41d2c64a3276ae4f53276ed49846354bf28cc03fd77adecab1931a3bd1',
           'test/codec-session.ts':
-            'sha256:db345cfa7545ceac5946eff0c7e3be4b9994cb9c070c28c1838acaca5033f66c',
+            'sha256:13a3561328994172f6e5bffaa8dc2d57697dc5b8b61ffc0a6a50af123b2656a7',
           'test/eac-r11-decode.test.ts':
-            'sha256:22041288fa8ceff125f3eaeb8f835a9a501440f9edec516a3e3804976f3959f8',
+            'sha256:2a0d83d3152224ce7ea530605bb9441912aa9be68b3b4ec60d1e51cb0e5beed4',
         },
         inventoryRecordId:
-          'artifact:sha256:7fd990b5fb805eba8113a8ac460776d3af030d0516f0915389016f1ec2de1dc2',
+          'artifact:sha256:77485d8227d0e5bd39284cf673c48b34324fb56d5ab7935d3e944a48acc01a74',
       },
       artifactRoot: 'extensions/images/',
       containers: {
         packageJson: {
           dependencies: {
-            '@modkitx-x3/codec-kit': 'workspace:*',
+            '@modkit/codec-kit': 'workspace:*',
           },
           description: 'Isolated MK3 image codecs.',
           exports: {
@@ -6486,19 +6518,27 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           modkit: {
             contributionManifests: ['./contributions/*.json'],
             id: 'images',
-            publisher: 'org.modkitx',
+            presentation: {
+              description: 'Isolated MK3 image codecs.',
+              displayName: 'Modkit Images',
+              vendor: {
+                displayName: 'Modkit',
+                id: 'modkit',
+              },
+            },
+            publisher: 'modkit',
             schemaVersion: 1,
           },
-          name: 'modkit-extension-x3-images',
+          name: 'modkit-extension-images',
           peerDependencies: {
-            '@modkitx-x3/host': 'workspace:*',
-            '@modkitx-x3/sdk': 'workspace:*',
+            '@modkit/host': 'workspace:*',
+            '@modkit/sdk': 'workspace:*',
           },
           peerDependenciesMeta: {
-            '@modkitx-x3/host': {
+            '@modkit/host': {
               optional: true,
             },
-            '@modkitx-x3/sdk': {
+            '@modkit/sdk': {
               optional: true,
             },
           },
@@ -6509,95 +6549,95 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-ani.json',
-          'sha256:70cf942994bd7ccd94aa8dc6eb89f7f7a0b48a949a5a1baee6ba61d261887e05',
+          'sha256:0bb20aa16de825b13064b8ded16695158b41b102c754a4c717d8e3bfdc61d9da',
         ],
         [
           'contributions/codec-astc.json',
-          'sha256:d717582caf9e440fd5fd5de5bb58a0084e40f876df34f9e56b823e3df69e4503',
+          'sha256:2a53613d0c369e40b48c3b12e6e810506c8f396449ff8ff03d4a89b0b4d2c301',
         ],
         [
           'contributions/codec-avif.json',
-          'sha256:55ccb4042b903954df9c13d1e507544259e46a8f7a86030d5bbcefa4ae9dc082',
+          'sha256:9c6a1af73a3759d1ac887cf10da56900bb896526c5a878825bd271ac92da0347',
         ],
         [
           'contributions/codec-basis.json',
-          'sha256:c5745bb078e83a851c9078baa0217e3d290cb143ffb4af94862b9a0449ebf715',
+          'sha256:184ba7dd544a576e53ced752789b435a8d45dbf01b87c248a2e4cfbc3b03547c',
         ],
         [
           'contributions/codec-bmp.json',
-          'sha256:cbf66e61b87ada3b944d0ee3e89db46709fa33d2a9139eeb00e1f234224fb023',
+          'sha256:51e2e65724d780a313dfeb1072929d9cb9fc3c5230b7597e0a3384dc77523326',
         ],
         [
           'contributions/codec-cur.json',
-          'sha256:6a6eb413cece46d5890158b1865aece847d1eabd773bc5ec892e236b04ef52c6',
+          'sha256:ca83a2ee185f99c30030382692eb875a4a7301aeb0d072a4bbf109f787d17bdf',
         ],
         [
           'contributions/codec-dds.json',
-          'sha256:cbf6beef83432d4f89ff4336d3351a3ec6ee64485a26c96d80d9997b5daa622f',
+          'sha256:c8a01abcac581562cf3d9f951ac1f10152fe8fd026b57d8ce809defdbff66c4b',
         ],
         [
           'contributions/codec-exr.json',
-          'sha256:426fda4b1bbf56f477a1cf5223237d0b899bf0b1d7e9c3b877d35cb8ed308281',
+          'sha256:377eb43959c01dff23c3117a6a1263a9797e91503b79e65a718d049336e6cca7',
         ],
         [
           'contributions/codec-gif.json',
-          'sha256:e6be1c2ee39ab76c5770e1799e609c208ad39834a581dce8fad739dd36d0666b',
+          'sha256:1e0055534bec3b25f02fb42204637d11c4d24447ff87474fbb8460c8703342f4',
         ],
         [
           'contributions/codec-hdr.json',
-          'sha256:dc2717352377ac4ff5dac3a0aaac8ca65d8c704d35646cd3cedd507d54449a4e',
+          'sha256:f9a3809a8285db81095accabea92d22fec03a7aab43d17466f2ffd89a77581b8',
         ],
         [
           'contributions/codec-ico.json',
-          'sha256:46ca9235bd7082b5a0f50c4b8697e0e2665aa620834a44b0877d0762b8726c0e',
+          'sha256:8d7b323ab46e27bffa3aa2b71d99ba7ee3a66e6486bae4eb8f9123cf86212c70',
         ],
         [
           'contributions/codec-jpeg.json',
-          'sha256:ea59570db2a15190a3213fe3eb78e76f08197499b410358521d89f5fbdc6d364',
+          'sha256:fcb1026e71eb76e3f873367a6a1936e9f44a708bf5e446ff2682135b6cca0df3',
         ],
         [
           'contributions/codec-ktx.json',
-          'sha256:30cfd31f4df4f993d61db7b9d86003e63d671482786b4e07820584d0a71acd21',
+          'sha256:4ee4d58d454dd57f3968ffcc394b48b08d4be9cdbc023a8467f8a1bc66bc4806',
         ],
         [
           'contributions/codec-ktx2.json',
-          'sha256:8b7ba55aa59b8654b9d0dc3611519ef50953ba70202ffd188b5b8d487e7bb42b',
+          'sha256:b9fc5eba855941df66f0bc62d82c7bed8985b5e82a4b6a0925375486b0be178b',
         ],
         [
           'contributions/codec-pal.json',
-          'sha256:4ab7518d9715a3f20ac9748b4d01beb6d03418e52433528b68ec1f3e0e70592c',
+          'sha256:ea2a3925124bc67b6b887b70a85f03722c49a18b7f44176dfdd6365d6920188a',
         ],
         [
           'contributions/codec-pcx.json',
-          'sha256:12cb8eaebab4cc11443953ec50072b0e5b866cadb5b87d1a6b1ad977688beba2',
+          'sha256:5630f3d28021cd97416ff09684ca36e7168a6ee47f1d7f601d0e6a6e01e33bb8',
         ],
         [
           'contributions/codec-pkm.json',
-          'sha256:7000d5bb4ccba64f5c9a81a2ac747bfb0214cb87c4de8a3a0277ed297a5d67f9',
+          'sha256:a59ca6a16fac9666bc9a22c5ec29584dce1fd6a58c1f76b66b069d77e8239929',
         ],
         [
           'contributions/codec-png.json',
-          'sha256:622f11b11b8ffeba4f13d9b40a05e6ecdc85b6b6736c0753459395e7993d34f9',
+          'sha256:b9081fcc28060974eb31feb891a1083edd2464c01010491f7e7780ae8ec8f69f',
         ],
         [
           'contributions/codec-pvr.json',
-          'sha256:304050d72c82999590a517cfbf6d757de7f44523c53cbd8f0d604b18add2aa78',
+          'sha256:e5eff0a04b8c20ee5806859a00d5e843a4c6a1cc089d768b0bed3c701fd1476b',
         ],
         [
           'contributions/codec-tga.json',
-          'sha256:93181d0b7b214993bfcc4e306fe09ab68c8ae6a5044560bcdc7e9cb77368d09f',
+          'sha256:4995903bf43aa8de9f19c3a6be8716dd14e4bb746625010d5c2f01f740eded45',
         ],
         [
           'contributions/codec-tiff.json',
-          'sha256:89cc8891bff6dd3521bca282119fa3a2fecd3a62af4e0590d25da327b17cba46',
+          'sha256:5ab60e9ca9f2b5adbafc4364d3d60f47be6966875a65f48e62a053f69c31c37f',
         ],
         [
           'contributions/codec-webp.json',
-          'sha256:568e531eb2c0519b27f7c828f6166c163766887ea49d7add870be074584ebb1e',
+          'sha256:0bba481e6804a0854bcfa8b4d44d2211df0bbdde6f34c1c19a181b19148512c5',
         ],
         [
           'contributions/writer-png.json',
-          'sha256:fa03ddbb7e468a6d9948ba9f89dee07ffc682e8404adb23f379da4cf231aed49',
+          'sha256:49583a58d35f864423155eae81992ed56764d4efe6c82c6931491f1b3157ee13',
         ],
       ],
       documents: [
@@ -6605,11 +6645,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ani.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Windows Animated Cursor',
-            id: 'org.modkitx/ani',
+            id: 'modkit/ani',
             limitations: [
               'The MK3 port performs a bounded RIFF/ACON chunk walk, validates anih declarations and embedded ICO/CUR frame headers, and decodes the first supported CUR/DIB frame through the generic raster source with its AND mask.',
               'Remaining ANI frames, playback/timeline publication, PNG/indexed embedded frames, and writing remain unsupported.',
@@ -6735,11 +6775,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-astc.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'ASTC Texture',
-            id: 'org.modkitx/astc',
+            id: 'modkit/astc',
             limitations: [
               'The dependency-free MK3 decoder covers two-dimensional LDR void-extent and five fixture-pinned single-partition block modes (0x42, 0x163, 0x243, 0x452 and 0x7cd), including binary/trit/quint weights, infill and single/dual planes.',
               'The standalone container does not identify linear versus sRGB or LDR versus HDR profiles, so consumers must obtain that semantic from surrounding asset metadata.',
@@ -6868,11 +6908,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-avif.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'AV1 Image File Format',
-            id: 'org.modkitx/avif',
+            id: 'modkit/avif',
             limitations: [
               'The codec validates ISO BMFF boxes, AVIF brands and selected image properties but deliberately publishes no raster source because AV1 pixels are not decoded.',
               'Animated AVIF sequence timing, frame selection, item-property association, and write support are not implemented.',
@@ -6990,11 +7030,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-basis.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Basis Universal Texture',
-            id: 'org.modkitx/basis',
+            id: 'modkit/basis',
             limitations: [
               'The dependency-free MK3 port validates the Basis Universal header and slice table but deliberately publishes no raster source without a BasisU transcoder.',
               'ETC1S/UASTC transcode, GPU block selection, HDR output, write support, video, arrays, cubemaps and volumes remain follow-up work.',
@@ -7119,11 +7159,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-bmp.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Windows Bitmap',
-            id: 'org.modkitx/bmp',
+            id: 'modkit/bmp',
             limitations: [
               'The MK3 port decodes bounded uncompressed BI_RGB 24-bit and 32-bit rows to RGBA8 and publishes metadata for other structurally valid bitmap headers.',
               'Indexed pixels, bitfields, RLE/JPEG/PNG compression, color-profile interpretation, writing, and pixel editing remain unsupported.',
@@ -7244,11 +7284,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-cur.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Windows Cursor',
-            id: 'org.modkitx/cur',
+            id: 'modkit/cur',
             limitations: [
               'The MK3 port validates every directory range, reports cursor hotspots, inspects PNG-backed and DIB entries, and decodes the selected uncompressed 24-bit or 32-bit DIB plus its AND mask to RGBA8.',
               'PNG-backed pixel-region decoding, indexed/bitfield/compressed DIB decoding, animation, writing, and pixel editing remain unsupported.',
@@ -7369,11 +7409,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-dds.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'DirectDraw Surface',
-            id: 'org.modkitx/dds',
+            id: 'modkit/dds',
             limitations: [
               "BC6H and BC7 decoding uses the package's asynchronous WASM-backed path; uncommon DXGI formats remain diagnostic-only.",
               'Browser main-thread and module-worker software decode use an explicit URL-based ESM/WASM boundary; the host controls where those optional assets are deployed.',
@@ -7503,11 +7543,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-exr.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'OpenEXR',
-            id: 'org.modkitx/exr',
+            id: 'modkit/exr',
             limitations: [
               'Pixel decode is limited to uncompressed, scanline, single-part, non-deep images with non-subsampled uint32, half, or float channels.',
               'Decoded RGB or RGBA samples are normalized into an RGBA8 preview; compressed, tiled, multipart, deep, layered, and arbitrary channel views remain inspection-only.',
@@ -7630,11 +7670,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-gif.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Graphics Interchange Format',
-            id: 'org.modkitx/gif',
+            id: 'modkit/gif',
             limitations: [
               'The MK3 port performs a bounded GIF87a/GIF89a block walk and publishes frame, extension, palette, and timing metadata with the original encoded image bytes.',
               'Native LZW pixel-region decoding, animation playback, timeline transport, writing, and pixel editing remain unsupported.',
@@ -7755,11 +7795,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-hdr.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Radiance RGBE HDR',
-            id: 'org.modkitx/hdr',
+            id: 'modkit/hdr',
             limitations: [
               'The MK3 port decodes flat and modern RLE 32-bit_rle_rgbe scanlines, normalizes the declared X/Y orientation, and produces a clamped RGBA8 preview rather than preserving high-dynamic-range samples.',
               'Writing, exposure/gamma transforms, tone mapping, color-profile interpretation, and pixel editing remain unsupported.',
@@ -7885,11 +7925,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ico.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Windows Icon',
-            id: 'org.modkitx/ico',
+            id: 'modkit/ico',
             limitations: [
               'The MK3 port validates every directory range, inspects PNG-backed and DIB entries, and decodes the selected uncompressed 24-bit or 32-bit DIB plus its AND mask to RGBA8.',
               'PNG-backed pixel-region decoding, indexed/bitfield/compressed DIB decoding, writing, and pixel editing remain unsupported.',
@@ -8010,11 +8050,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-jpeg.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'JPEG image',
-            id: 'org.modkitx/image-jpeg',
+            id: 'modkit/image-jpeg',
             runtimeVariants: [
               {
                 entrypoint: './src/jpeg/codec.js',
@@ -8156,11 +8196,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ktx.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Khronos Texture v1',
-            id: 'org.modkitx/ktx',
+            id: 'modkit/ktx',
             limitations: [
               'The MK3 port validates KTX1 endianness, key/value records, mip/image ranges, arrays, cubemaps, and depth slices; bounded first-image RGBA8 access is limited to uncompressed unsigned-byte RGB/RGBA.',
               'Compressed block decoding, later mip/layer/face/slice decoding, writing, metadata mutation, and pixel editing remain unsupported.',
@@ -8288,11 +8328,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ktx2.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Khronos Texture v2',
-            id: 'org.modkitx/ktx2',
+            id: 'modkit/ktx2',
             limitations: [
               'The MK3 port validates the KTX2 header, complete level index, DFD/KVD/SGD ranges, dimensions, layers, faces, and supercompression declaration and publishes metadata plus encoded payload access.',
               'Vulkan-format pixel decoding, Basis transcoding, zlib/zstd supercompression decoding, writing, metadata mutation, and pixel editing remain unsupported.',
@@ -8420,11 +8460,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-pal.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Palette image',
-            id: 'org.modkitx/pal',
+            id: 'modkit/pal',
             limitations: [
               'The MK3 port validates and renders raw 256-color Westwood 6-bit/RGB8 palettes, JASC-PAL text, and Microsoft RIFF PAL as a 16 by 16 RGBA8 swatch.',
               'Palette remapping, writing, metadata mutation, and pixel editing remain unsupported.',
@@ -8550,11 +8590,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-pcx.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'ZSoft Paintbrush PCX',
-            id: 'org.modkitx/pcx',
+            id: 'modkit/pcx',
             limitations: [
               'The MK3 port validates PCX headers and bounded raw/RLE rows and decodes 1/2/4/8-bit indexed planes plus 24-bit RGB and 32-bit RGBA planes; indexed files without a usable palette fall back to bit-depth-scaled grayscale.',
               'Writing, palette mutation, color-management transforms, and pixel editing remain unsupported.',
@@ -8687,11 +8727,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-pkm.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'PKM ETC Texture',
-            id: 'org.modkitx/pkm',
+            id: 'modkit/pkm',
             limitations: [
               'The MK3 port validates PKM 1.0 ETC1 and PKM 2.0/ETCPACK identifiers 0, 1, and 3-11, padded dimensions, block geometry, and the exact compressed payload size; retired identifier 2 is rejected.',
               'ETC1/ETC2 and unsigned EAC R11/RG11 software decoding are available; signed EAC needs an explicit signed raster view. GPU upload, mip chains, encoding, and pixel editing remain unsupported; identifiers 9-11 are reported as ETCPACK sRGB extensions.',
@@ -8824,11 +8864,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-png.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'PNG image',
-            id: 'org.modkitx/image-png',
+            id: 'modkit/image-png',
             runtimeVariants: [
               {
                 entrypoint: './src/png/codec.js',
@@ -8987,11 +9027,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-pvr.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'PowerVR Texture Container',
-            id: 'org.modkitx/pvr',
+            id: 'modkit/pvr',
             limitations: [
               'The MK3 port validates PVR v3 headers and metadata records, walks exact uncompressed custom-format mip ranges, and decodes the first single-surface RGBA8/BGRA8 image when channel type is unsigned normalized.',
               'Compressed-format software decoding, later mip/surface/face/slice decoding, PVR v2, writing, metadata mutation, and pixel editing remain unsupported.',
@@ -9124,11 +9164,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-tga.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Truevision TGA',
-            id: 'org.modkitx/tga',
+            id: 'modkit/tga',
             limitations: [
               'The compatibility port performs a bounded TGA header walk and decodes raw or RLE non-colormapped truecolor and grayscale payloads while normalizing the declared image origin.',
               'Color-mapped pixel decoding, TGA writing, metadata editing, and pixel editing remain unsupported.',
@@ -9250,11 +9290,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-tiff.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Tagged Image File Format',
-            id: 'org.modkitx/tiff',
+            id: 'modkit/tiff',
             limitations: [
               'The compatibility port performs a bounded endian-aware IFD and strip walk and decodes only the first page of uncompressed chunky RGB8 or RGBA8 files with top-left orientation.',
               'Compressed, tiled, planar, palette, grayscale, uncommon sample layouts, additional-page pixel decoding, TIFF writing, metadata editing, and pixel editing remain unsupported.',
@@ -9381,11 +9421,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-webp.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'WebP',
-            id: 'org.modkitx/webp',
+            id: 'modkit/webp',
             limitations: [
               'The DOM-free codec detects and inspects WebP chunks and animation timing but does not decode pixels or encode WebP output.',
               'Browser-backed preview is a host integration and is not claimed as a portable codec read capability.',
@@ -9500,11 +9540,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/writer-png.json',
           {
             contract: {
-              id: 'org.modkitx/service-provider-contribution',
+              id: 'modkit/service-provider-contribution',
               major: 1,
             },
             displayName: 'PNG encoder (writer)',
-            id: 'org.modkitx/png-encoder-writer',
+            id: 'modkit/png-encoder-writer',
             runtimeVariants: [
               {
                 entrypoint: './src/writers/png-encoder.js',
@@ -9527,7 +9567,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                     formatId: 'png',
                     minimumRoundTrip: 'semantic',
                     mutationMode: 'mutate',
-                    providerId: 'org.modkitx/png-encoder-writer',
+                    providerId: 'modkit/png-encoder-writer',
                     representationId: 'rgba8',
                   },
                   major: 1,
@@ -9605,50 +9645,50 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:ca62968a0ea68b179bcc4d9f7e7f3e36cf2e082293ba9f38cd3b09e7f215cc1e',
+        artifactDigest: 'sha256:0fbf0fab122104ae4b475a517b6cb161ae350ebd13ce6194a4d795468c3e72de',
         fileDigests: {
           'MIGRATION-NOTES-common-models.json':
-            'sha256:228e4cba9ea09d6abfeee83da5e16d53839d524edc8189ef834e5004ecf41005',
+            'sha256:99f5fd00c6f523fa5591fe3d91906d7ba9f87b6ed7023f02ac6cc26bf1abd646',
           'README.md': 'sha256:374aacfaaaf4e281eebc68565ee39df3cb599444fce71074cc1b1a55d247f5b9',
           'contributions/codec-dae.json':
-            'sha256:aa113ff7fe501aa64dfe9705ef50effce9cab6bfa4e1ccd3d64cbb564ed63e60',
+            'sha256:e72029d8f187c7191e22d239420e1fcc3999c197b515c31ebd8d8c94336ab2f2',
           'contributions/codec-gltf.json':
-            'sha256:34f58815c876f2d8c637c0436583f744d17865f4c2a7f3b8f04895f3ef91be9a',
+            'sha256:8a6fa00ccb0ff57d9b24be2bcf44185c7f2a6d7789a48de402f09c031294ead5',
           'contributions/codec-obj.json':
-            'sha256:782713f1c8dc00515b21fd2e1ab4f8478895b04011d2f883900686d4fbab2b95',
+            'sha256:8c49a9686735ba3939e62f3cdbc5d5897dddba11145ed11bd9a34af4bc0204b7',
           'contributions/codec-ply.json':
-            'sha256:ecba12a9628ed206786e6d7223f7776571502820d4632246fbb53a2d0e608806',
+            'sha256:7ad7d300e4e99e1b13618a842e161c1d271acde917254512693d1e3c90fc2e19',
           'contributions/codec-stl.json':
-            'sha256:b704c4981ff7317294205d407dcbc0e4a1bea3c5b2f350142d511fa8e2de4a91',
+            'sha256:ee73ac012b1a4470e56369d978996f718a7cbdf06f269af7044fa28df5debd2f',
           'contributions/codec-uvm.json':
-            'sha256:a93ee69c36dbc565f271c98795f14644238a2c09432a7507f431556dd658468f',
-          'package.json': 'sha256:310808f05e8728007092a7e2a70f070dca908e218021e1a6ef55e42362dff90d',
+            'sha256:6125a14ba68ba33bc914ec23acb3ec34ba145dd7132c2f09e029161990555148',
+          'package.json': 'sha256:b142db0fff205e72e2c57443dedec176f95f658736964bbd2a43d69800746589',
           'src/dae/codec.js':
-            'sha256:c4803946e94575a6dabbcf450462deb1f09fb8aec105c4a8fa4164009eb49e74',
+            'sha256:6c04b5a15fc45122d40ce01b5d1653c713de747c5a07695c5bb710b77262343f',
           'src/gltf/codec.js':
-            'sha256:a1afb35e953fa4cc50b621fa2625c32e6c94f81073b32869efd75557c469972d',
+            'sha256:b1b7de01049dfbce3abc9075ed80e889d7d470dd3c376a23dde86f612a6f471b',
           'src/gltf/geometry.js':
-            'sha256:84740c188cdc88ccf099f4f4c953a083f83273e8d882673797b192e060fc0a37',
+            'sha256:23ce3e293fed2446a7ee67683469644f19e3f5f27ac73ac12c04b8ac8bb24347',
           'src/index.js': 'sha256:80f55312f768fe6d50596fe51a929c3334fd08828785b47774af6e6445e87dc8',
           'src/linked.js':
-            'sha256:feb5aae5217bc0f1616d39b091868ab6273e2732709d709945286407effdf37e',
+            'sha256:6dd5ff344e2931ba39707bbd67f18ad2401cfd9f09a25788f572bf38f129965c',
           'src/obj/codec.js':
-            'sha256:e29d3e52b1eb726dbcdc819208ae75cbecc61c9e747567114c7d809b82773d45',
+            'sha256:42c82a2f8f9b1fc6c58c63fe931e5d355436c85f608b45ed73a40837a13bcd4b',
           'src/ply/codec.js':
-            'sha256:634139c2e75f2bcad975fab07b010f0832dc4a5a0e5bb5ea66bdd7978ccd9e73',
+            'sha256:d6cf85f1a51b55d51bb3a45edf80a19fb59509f44d75627fedd79602c1689425',
           'src/stl/codec.js':
-            'sha256:817a71e7cfa1cae95730622521039a5c9ccc0a69a37ad3a428e45247abfa8f2c',
+            'sha256:5c74085a052421bf16206674a3d67a639904f03f4af924c6235e8e719b4f2691',
           'src/uvm/codec.js':
-            'sha256:fff5cfc61a0cd037f2913995c7e439ab96400e4777d908bb577ca03a98a2bc7f',
+            'sha256:2f780e18a76e6e76c93486292b640b96f09a42cacb222a32990b116a3a9dcc01',
         },
         inventoryRecordId:
-          'artifact:sha256:ca62968a0ea68b179bcc4d9f7e7f3e36cf2e082293ba9f38cd3b09e7f215cc1e',
+          'artifact:sha256:0fbf0fab122104ae4b475a517b6cb161ae350ebd13ce6194a4d795468c3e72de',
       },
       artifactRoot: 'extensions/models/',
       containers: {
         packageJson: {
           dependencies: {
-            '@modkitx-x3/codec-kit': 'workspace:*',
+            '@modkit/codec-kit': 'workspace:*',
           },
           description: 'Isolated MK3 model codecs.',
           exports: {
@@ -9664,19 +9704,27 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           modkit: {
             contributionManifests: ['./contributions/*.json'],
             id: 'models',
-            publisher: 'org.modkitx',
+            presentation: {
+              description: 'Isolated MK3 model codecs.',
+              displayName: 'Modkit Models',
+              vendor: {
+                displayName: 'Modkit',
+                id: 'modkit',
+              },
+            },
+            publisher: 'modkit',
             schemaVersion: 1,
           },
-          name: 'modkit-extension-x3-models',
+          name: 'modkit-extension-models',
           peerDependencies: {
-            '@modkitx-x3/host': 'workspace:*',
-            '@modkitx-x3/sdk': 'workspace:*',
+            '@modkit/host': 'workspace:*',
+            '@modkit/sdk': 'workspace:*',
           },
           peerDependenciesMeta: {
-            '@modkitx-x3/host': {
+            '@modkit/host': {
               optional: true,
             },
-            '@modkitx-x3/sdk': {
+            '@modkit/sdk': {
               optional: true,
             },
           },
@@ -9687,27 +9735,27 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-dae.json',
-          'sha256:aa113ff7fe501aa64dfe9705ef50effce9cab6bfa4e1ccd3d64cbb564ed63e60',
+          'sha256:e72029d8f187c7191e22d239420e1fcc3999c197b515c31ebd8d8c94336ab2f2',
         ],
         [
           'contributions/codec-gltf.json',
-          'sha256:34f58815c876f2d8c637c0436583f744d17865f4c2a7f3b8f04895f3ef91be9a',
+          'sha256:8a6fa00ccb0ff57d9b24be2bcf44185c7f2a6d7789a48de402f09c031294ead5',
         ],
         [
           'contributions/codec-obj.json',
-          'sha256:782713f1c8dc00515b21fd2e1ab4f8478895b04011d2f883900686d4fbab2b95',
+          'sha256:8c49a9686735ba3939e62f3cdbc5d5897dddba11145ed11bd9a34af4bc0204b7',
         ],
         [
           'contributions/codec-ply.json',
-          'sha256:ecba12a9628ed206786e6d7223f7776571502820d4632246fbb53a2d0e608806',
+          'sha256:7ad7d300e4e99e1b13618a842e161c1d271acde917254512693d1e3c90fc2e19',
         ],
         [
           'contributions/codec-stl.json',
-          'sha256:b704c4981ff7317294205d407dcbc0e4a1bea3c5b2f350142d511fa8e2de4a91',
+          'sha256:ee73ac012b1a4470e56369d978996f718a7cbdf06f269af7044fa28df5debd2f',
         ],
         [
           'contributions/codec-uvm.json',
-          'sha256:a93ee69c36dbc565f271c98795f14644238a2c09432a7507f431556dd658468f',
+          'sha256:6125a14ba68ba33bc914ec23acb3ec34ba145dd7132c2f09e029161990555148',
         ],
       ],
       documents: [
@@ -9715,11 +9763,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-dae.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'COLLADA DAE model',
-            id: 'org.modkitx/dae',
+            id: 'modkit/dae',
             limitations: [
               'Decoded geometry covers triangles, polylist, and polygons without holes; line topology, controllers, skins, look-at, and skew transforms remain unsupported.',
               'Materials, images, and animations are inventoried, but external texture resolution, programmable effects, and animation playback are not decoded.',
@@ -9833,11 +9881,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-gltf.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'glTF 2.x',
-            id: 'org.modkitx/model-gltf',
+            id: 'modkit/model-gltf',
             runtimeVariants: [
               {
                 entrypoint: './src/gltf/codec.js',
@@ -10014,11 +10062,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-obj.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Wavefront OBJ',
-            id: 'org.modkitx/model-obj',
+            id: 'modkit/model-obj',
             runtimeVariants: [
               {
                 entrypoint: './src/obj/codec.js',
@@ -10163,11 +10211,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ply.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'PLY polygon mesh',
-            id: 'org.modkitx/ply',
+            id: 'modkit/ply',
             limitations: [
               'PLY 1.0 ASCII, binary little-endian, and binary big-endian element/property records are validated; vertex positions, optional complete normals/UVs, polygon faces, and point clouds are decoded.',
               'Polygon faces are triangulated as deterministic fans; vertex colours and non-polygon element values are parsed for structural validation but not published in the model primitive.',
@@ -10288,11 +10336,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-stl.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'STL triangle mesh',
-            id: 'org.modkitx/stl',
+            id: 'modkit/stl',
             limitations: [
               'ASCII and little-endian binary STL triangle geometry is fully validated and decoded with declared or derived face normals.',
               'STL does not define units, hierarchy, or standard materials; non-standard binary colour conventions and writing are not implemented.',
@@ -10406,11 +10454,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-uvm.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Universal Verse Model 1.0',
-            id: 'org.modkitx/model-uvm',
+            id: 'modkit/model-uvm',
             runtimeVariants: [
               {
                 entrypoint: './src/uvm/codec.js',
@@ -10592,36 +10640,36 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:b0d3782a1b731e8aac86ac654d03cd410c4a058d26a3c86469e28af3b7302971',
+        artifactDigest: 'sha256:35c72e642e3137361d1156a55da46c707f6cf5a8cb496e3a6c0747af8bc695a7',
         fileDigests: {
           'MIGRATION-NOTES-common-vector.json':
-            'sha256:838322386107c3d24706f216d204d54fcdb5efbb8462dad67e342d07d4301bd8',
+            'sha256:76e47ea6385d042f14075f379848628612d27d2c63d0038ee67ca818210aaba8',
           'README.md': 'sha256:d77c6d61152adf760e489baade6b3421012ed8520e215797295eafbfe9db6979',
           'contributions/codec-emf.json':
-            'sha256:68f116fab52b53bd26cc484c130964161b3aef4b7f0bd9f67a77d6beb8b996b0',
+            'sha256:0d196b6736562daa810ae0bd54485bedffc517c7be39a48e6b2215d22c2996a3',
           'contributions/codec-svg.json':
-            'sha256:3de8db3b583d544b570f269c98cc894812866024edc82309ec1e8c4f94ead5a5',
+            'sha256:596c58a8118c261a02149081225e0551a5eb86f0903078ae1a1c2a618016c972',
           'contributions/codec-wmf.json':
-            'sha256:d7ec5d39e037a57e62046f711c513b162ebc1fb29db83112e9f8476e2323124c',
-          'package.json': 'sha256:454e9ab8636e9b09c54647c0df4a35dcd747a65610b485056a626b2fffcf2407',
+            'sha256:dd9fbf5c11b9b6c7fd3c8fcc22dc789e90ba77fbd7bf4e4d839a21d876682b10',
+          'package.json': 'sha256:15b510767b33a2cc3c2109f272937e8cc3ee4baa236e0bca78144e7fc1d368b0',
           'src/emf/codec.js':
-            'sha256:d0cd245c168715703b16058006e00a6fc7c9e7d5c6370f3e69451ae8cef39040',
+            'sha256:6d5cefb8afb9903a197aaec92997b263e1b7ce7c377954ee2c456b09d3d0186b',
           'src/index.js': 'sha256:904e9a577bfa759ce7ab355a01d2431961c7f7d3551a8b627a2eb56406948360',
           'src/linked.js':
-            'sha256:799f8239604a85eb9dc6dce73063a55ca53e7c867765c157780be90ba449d996',
+            'sha256:2beec9e4da6be3d658f913231ffa63287de94ea3af4988009ccaf5738b8523ea',
           'src/svg/codec.js':
-            'sha256:f105319cdc73c079ef7cb8c5f8a6fe572307bffe6be6134a8b5b884c2d4020df',
+            'sha256:71a8327060f905452ed0b4a53cab1f58d79b60c9bf6ba25d4676ecf39a26f740',
           'src/wmf/codec.js':
-            'sha256:c4ae02f016370193a5db9fc58895f45773e5c2f44e690bc55699440f6b23134a',
+            'sha256:8ee3ba99b0d0f8f0f00cd37e329008eb5247dbae684495f3b947c1bef6000aca',
         },
         inventoryRecordId:
-          'artifact:sha256:b0d3782a1b731e8aac86ac654d03cd410c4a058d26a3c86469e28af3b7302971',
+          'artifact:sha256:35c72e642e3137361d1156a55da46c707f6cf5a8cb496e3a6c0747af8bc695a7',
       },
       artifactRoot: 'extensions/vector/',
       containers: {
         packageJson: {
           dependencies: {
-            '@modkitx-x3/codec-kit': 'workspace:*',
+            '@modkit/codec-kit': 'workspace:*',
           },
           description: 'Isolated MK3 vector codecs.',
           exports: {
@@ -10636,19 +10684,27 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           modkit: {
             contributionManifests: ['./contributions/*.json'],
             id: 'vector',
-            publisher: 'org.modkitx',
+            presentation: {
+              description: 'Isolated MK3 vector codecs.',
+              displayName: 'Modkit Vector',
+              vendor: {
+                displayName: 'Modkit',
+                id: 'modkit',
+              },
+            },
+            publisher: 'modkit',
             schemaVersion: 1,
           },
-          name: 'modkit-extension-x3-vector',
+          name: 'modkit-extension-vector',
           peerDependencies: {
-            '@modkitx-x3/host': 'workspace:*',
-            '@modkitx-x3/sdk': 'workspace:*',
+            '@modkit/host': 'workspace:*',
+            '@modkit/sdk': 'workspace:*',
           },
           peerDependenciesMeta: {
-            '@modkitx-x3/host': {
+            '@modkit/host': {
               optional: true,
             },
-            '@modkitx-x3/sdk': {
+            '@modkit/sdk': {
               optional: true,
             },
           },
@@ -10659,15 +10715,15 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-emf.json',
-          'sha256:68f116fab52b53bd26cc484c130964161b3aef4b7f0bd9f67a77d6beb8b996b0',
+          'sha256:0d196b6736562daa810ae0bd54485bedffc517c7be39a48e6b2215d22c2996a3',
         ],
         [
           'contributions/codec-svg.json',
-          'sha256:3de8db3b583d544b570f269c98cc894812866024edc82309ec1e8c4f94ead5a5',
+          'sha256:596c58a8118c261a02149081225e0551a5eb86f0903078ae1a1c2a618016c972',
         ],
         [
           'contributions/codec-wmf.json',
-          'sha256:d7ec5d39e037a57e62046f711c513b162ebc1fb29db83112e9f8476e2323124c',
+          'sha256:dd9fbf5c11b9b6c7fd3c8fcc22dc789e90ba77fbd7bf4e4d839a21d876682b10',
         ],
       ],
       documents: [
@@ -10675,11 +10731,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-emf.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Windows Enhanced Metafile',
-            id: 'org.modkitx/emf',
+            id: 'modkit/emf',
             limitations: [
               'Parses bounded EMR_HEADER/EMR_RECTANGLE/EMR_EOF streams, validates declared sizes and record counts, and replays rectangles to a static script-free SVG vector scene.',
               'Other GDI records, fonts, paths, transforms, clipping, embedded bitmaps, rasterization, editing, and metafile writing are not implemented.',
@@ -10800,11 +10856,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-svg.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'SVG vector image',
-            id: 'org.modkitx/vector-svg',
+            id: 'modkit/vector-svg',
             runtimeVariants: [
               {
                 entrypoint: './src/svg/codec.js',
@@ -10956,11 +11012,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-wmf.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Windows Classic Metafile',
-            id: 'org.modkitx/wmf',
+            id: 'modkit/wmf',
             limitations: [
               'Parses Aldus placeable and standard WMF headers plus bounded META_RECTANGLE/META_EOF streams, verifies the placeable checksum, and replays rectangles to a static script-free SVG vector scene.',
               'Non-placeable WMF, other GDI records, fonts, paths, transforms, clipping, embedded bitmaps, rasterization, editing, and metafile writing are not implemented.',
@@ -11096,48 +11152,48 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:617d061b0d48a246e8fe0257aeaf4e71749c0c7d72a2a7d479b378751f198015',
+        artifactDigest: 'sha256:234da4501402ba810b30b90ca44f7d8098d45f790bd2b8ed926879f6e0e4c80c',
         fileDigests: {
           'MIGRATION-NOTES-common-video.json':
-            'sha256:c9ae0a0ad3aefba432a9343cb0067e50fb71c9a7ac57ed701d8e85d18e027864',
+            'sha256:17b84d2963ad154eb98c57537098aefe5c661e2f31c834768132c6a05a1e8cde',
           'README.md': 'sha256:0f64b53ec49f19297006cfdd6ef5d4489d58e2704d829c98a3cf3b9c245142b8',
           'contributions/codec-avi.json':
-            'sha256:be48bfa25e6a822da744085ba43c10b7b85b6fa160a1c9c5c8c5fd6588fa9bda',
+            'sha256:89eba63f7b5919ec817c3ab193aabf0ad730fa7a383842e4866e44973b937903',
           'contributions/codec-mp4.json':
-            'sha256:2327367481658bd6389678b5dc67dec98a7686529319860cab6e5c7722cb1f1d',
+            'sha256:e89a1659a0f4a6e28d0858df4b1dd2cca9896e0de1d7a4648d4a491eaacbe878',
           'contributions/codec-mpeg.json':
-            'sha256:b1c74747537236b1cd9d3cae7391746203f86aa92c41af53114dd134c67ab31b',
+            'sha256:d0e09d508325c86bf924da201d3b2d9e88dc69e14e09566d4b54ab5c0e03c96d',
           'contributions/codec-ogv.json':
-            'sha256:cd795947d854411b50d462a86b69bd9afd8da5320b6e3efd10c91b0df9417daa',
+            'sha256:b8576676616d965586ef1d1b6c7fc22ec04ddca60867c077de62bb356f3e750e',
           'contributions/codec-webm.json':
-            'sha256:2289763f83d31a9008edf00494c5ef94fb59e81b2d81b3c87de659d5fa9e4147',
+            'sha256:c8a9766c9e6d3b8bc770931637b53e0ad1cbcd6c8ec88e2a4fc6f4c9a73fb20a',
           'contributions/codec-wmv.json':
-            'sha256:d1602f73df331c8d3809f5806574d29e523a063d41b2bad5697e10762615b918',
-          'package.json': 'sha256:d1ecc31c226b7f14c522d3c92da1ebe6b1a7eeb968357d3421c489d94f28b794',
+            'sha256:ba9bf25103feb1d8082009c69e7051150695929132dfe8aa0047a74a80e1ec4e',
+          'package.json': 'sha256:53c008caf71696def5cd05ef278061995b52cc085a09bbc31f437d8b7a64dc3c',
           'src/avi/codec.js':
-            'sha256:6ff744aa6e4b73ca122c7f8c22c5649bc5f3fd2bcb80b747be09ae289b6fe945',
+            'sha256:db1094cd60857146bb2c5e0e98da582214af807367ea40ae0ab1a0378e0522da',
           'src/index.js': 'sha256:fc2cf3b104e31455bd7cf3a68c572cbffcedf72166be2e5362a5dfb4f0bb65b8',
           'src/linked.js':
-            'sha256:90637ccf2c49a776d12aeea8cdcad5afb6137a34d85522e2a9133bd62b545796',
+            'sha256:d818dd626a030f977e526842a8c3fc6eb104e66b6cb26239c799459a7054583a',
           'src/mp4/codec.js':
-            'sha256:e3793dc0c3e91d2580f23fe51fb1ecaa44e9622c806b4c68ce65e96aceeba3e1',
+            'sha256:a4b5f3758689825d30c0a2046ace42bef5718814c2702a6a81e3bdbc20a09d63',
           'src/mpeg/codec.js':
-            'sha256:4fa9d115085aa9b58422a49ecf4aaec520648c20342fb20ea0e50b6bf1f540b9',
+            'sha256:523a5b1479291f30aa45b5775eb7ff94022c52e398d88a00a2c4d0221632ff47',
           'src/ogv/codec.js':
-            'sha256:12a6db85f20403f93f6959d9dbf1cbf734fffbc8cd71ccdc023a25535201c055',
+            'sha256:455bb300bcd59fe8d850263bda52eae8bad985ab482e5c68de7715e7ec7956ab',
           'src/webm/codec.js':
-            'sha256:b8f80e46ea45dc927cadece35212e2336e591b66a03be4d55c2672ad4b86db70',
+            'sha256:b5b37521af4523f898a3841361854224ef4b19dcc7293c857fe1f88a0ed7ee2b',
           'src/wmv/codec.js':
-            'sha256:8111550b59480f6335f1f6bfb54dcc382d22aa32398e83133ef5c440d3327323',
+            'sha256:36170e65799ad3a45cc2c1c70f9a36ef10c104bc2cdfe910ad217a23c86ed39e',
         },
         inventoryRecordId:
-          'artifact:sha256:617d061b0d48a246e8fe0257aeaf4e71749c0c7d72a2a7d479b378751f198015',
+          'artifact:sha256:234da4501402ba810b30b90ca44f7d8098d45f790bd2b8ed926879f6e0e4c80c',
       },
       artifactRoot: 'extensions/video/',
       containers: {
         packageJson: {
           dependencies: {
-            '@modkitx-x3/codec-kit': 'workspace:*',
+            '@modkit/codec-kit': 'workspace:*',
           },
           description: 'Isolated MK3 MP4 and WebM inspection codecs.',
           exports: {
@@ -11153,19 +11209,27 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           modkit: {
             contributionManifests: ['./contributions/*.json'],
             id: 'video',
-            publisher: 'org.modkitx',
+            presentation: {
+              description: 'Isolated MK3 MP4 and WebM inspection codecs.',
+              displayName: 'Modkit Video',
+              vendor: {
+                displayName: 'Modkit',
+                id: 'modkit',
+              },
+            },
+            publisher: 'modkit',
             schemaVersion: 1,
           },
-          name: 'modkit-extension-x3-video',
+          name: 'modkit-extension-video',
           peerDependencies: {
-            '@modkitx-x3/host': 'workspace:*',
-            '@modkitx-x3/sdk': 'workspace:*',
+            '@modkit/host': 'workspace:*',
+            '@modkit/sdk': 'workspace:*',
           },
           peerDependenciesMeta: {
-            '@modkitx-x3/host': {
+            '@modkit/host': {
               optional: true,
             },
-            '@modkitx-x3/sdk': {
+            '@modkit/sdk': {
               optional: true,
             },
           },
@@ -11176,27 +11240,27 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-avi.json',
-          'sha256:be48bfa25e6a822da744085ba43c10b7b85b6fa160a1c9c5c8c5fd6588fa9bda',
+          'sha256:89eba63f7b5919ec817c3ab193aabf0ad730fa7a383842e4866e44973b937903',
         ],
         [
           'contributions/codec-mp4.json',
-          'sha256:2327367481658bd6389678b5dc67dec98a7686529319860cab6e5c7722cb1f1d',
+          'sha256:e89a1659a0f4a6e28d0858df4b1dd2cca9896e0de1d7a4648d4a491eaacbe878',
         ],
         [
           'contributions/codec-mpeg.json',
-          'sha256:b1c74747537236b1cd9d3cae7391746203f86aa92c41af53114dd134c67ab31b',
+          'sha256:d0e09d508325c86bf924da201d3b2d9e88dc69e14e09566d4b54ab5c0e03c96d',
         ],
         [
           'contributions/codec-ogv.json',
-          'sha256:cd795947d854411b50d462a86b69bd9afd8da5320b6e3efd10c91b0df9417daa',
+          'sha256:b8576676616d965586ef1d1b6c7fc22ec04ddca60867c077de62bb356f3e750e',
         ],
         [
           'contributions/codec-webm.json',
-          'sha256:2289763f83d31a9008edf00494c5ef94fb59e81b2d81b3c87de659d5fa9e4147',
+          'sha256:c8a9766c9e6d3b8bc770931637b53e0ad1cbcd6c8ec88e2a4fc6f4c9a73fb20a',
         ],
         [
           'contributions/codec-wmv.json',
-          'sha256:d1602f73df331c8d3809f5806574d29e523a063d41b2bad5697e10762615b918',
+          'sha256:ba9bf25103feb1d8082009c69e7051150695929132dfe8aa0047a74a80e1ec4e',
         ],
       ],
       documents: [
@@ -11204,11 +11268,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-avi.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Audio Video Interleave',
-            id: 'org.modkitx/avi',
+            id: 'modkit/avi',
             limitations: [
               'Portable inspection validates one classic AVI 1.0 RIFF form, its hdrl/strl/movi hierarchy, core stream headers, and optional idx1 framing; OpenDML multi-RIFF segments and extended indexes are not supported.',
               'The container reader does not decode inner audio/video frames or palette-change chunks.',
@@ -11324,11 +11388,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-mp4.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'MPEG-4 media',
-            id: 'org.modkitx/video-mp4',
+            id: 'modkit/video-mp4',
             runtimeVariants: [
               {
                 entrypoint: './src/mp4/codec.js',
@@ -11498,11 +11562,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-mpeg.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'MPEG-1/2 Video',
-            id: 'org.modkitx/mpeg',
+            id: 'modkit/mpeg',
             limitations: [
               'The portable implementation recognizes MPEG start codes or repeated transport-stream sync bytes and reports a bounded packet inventory; it does not parse complete program tables or decode elementary streams.',
               'Raw or MPEG export preserves source bytes; thumbnail extraction and WebM conversion require a separately injected video decoder.',
@@ -11629,11 +11693,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ogv.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Ogg Theora Video',
-            id: 'org.modkitx/ogv',
+            id: 'modkit/ogv',
             limitations: [
               'Detection requires an Ogg stream with a Theora or Skeleton marker so generic Ogg audio is not claimed as video.',
               'Container inspection recognizes Theora and Vorbis markers and limited dimensions rather than parsing the complete Ogg page and stream structure.',
@@ -11756,11 +11820,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-webm.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'WebM video',
-            id: 'org.modkitx/video-webm',
+            id: 'modkit/video-webm',
             runtimeVariants: [
               {
                 entrypoint: './src/webm/codec.js',
@@ -11930,11 +11994,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-wmv.json',
           {
             contract: {
-              id: 'org.modkitx/codec-contribution',
+              id: 'modkit/codec-contribution',
               major: 1,
             },
             displayName: 'Windows Media Video / ASF',
-            id: 'org.modkitx/wmv',
+            id: 'modkit/wmv',
             limitations: [
               'Portable inspection validates ASF Header, File Properties, Stream Properties, Header Extension, and following Data Object framing; packet payloads, indexes, and optional header objects are not interpreted.',
               'The container reader identifies standard video/audio format structures but does not decode elementary streams or decrypt DRM content.',

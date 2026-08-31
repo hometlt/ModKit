@@ -12,6 +12,6 @@
     ]
   },
   "peerDependencies": {
-    "@modkitx-x3/sdk": "workspace:*"
+    "@modkit/sdk": "workspace:*"
   }
 }

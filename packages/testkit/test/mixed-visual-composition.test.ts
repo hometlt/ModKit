@@ -14,8 +14,8 @@ import {
   type ViewerSources,
   type VisualAssetPolicy,
   type WorldSceneSource,
-} from '@modkitx-x3/sdk'
-import { loadMixedVisualStage } from '@modkitx-x3/ui/composition'
+} from '@modkit/sdk'
+import { loadMixedVisualStage } from '@modkit/ui/composition'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { createCodec: createGltfCodec } = (await import(

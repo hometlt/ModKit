@@ -2,7 +2,7 @@
   "$comment": "Historical migration notes for common vector formats. EMF and WMF moved into the product vector package; SVG is superseded by the richer native MK3 contribution. This file is inert and outside the loader manifest glob.",
   "schemaVersion": 1,
   "source": {
-    "repository": "modkitx",
+    "repository": "modkit",
     "manifests": [
       "extensions/vector/codecs/emf/codec.manifest.json",
       "extensions/vector/codecs/svg/codec.manifest.json",
@@ -11,7 +11,7 @@
   },
   "verdict": "mechanical",
   "codecs": {
-    "org.modkitx/emf": {
+    "modkit/emf": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -26,7 +26,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/svg": {
+    "modkit/svg": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -41,7 +41,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/wmf": {
+    "modkit/wmf": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],

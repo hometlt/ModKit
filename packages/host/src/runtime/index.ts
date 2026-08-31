@@ -1,6 +1,6 @@
 /** Host definitions, routing and leased-session adapter for executable runtimes. */
 
-import { contractId, diagnostic, type Diagnostic } from '@modkitx-x3/core'
+import { contractId, diagnostic, type Diagnostic } from '@modkit/core'
 import {
   RUNTIME_PROVIDER_CONTRACT,
   RUNTIME_PROVIDER_MATCHER_PROFILE,
@@ -10,7 +10,7 @@ import {
   type RuntimeProviderOfferFacet,
   type RuntimeProviderRequestFacet,
   type RuntimeSession,
-} from '@modkitx-x3/sdk/runtime'
+} from '@modkit/sdk/runtime'
 import type {
   DefinitionInventoryResult,
   InputSearchScope,
@@ -24,14 +24,14 @@ import type {
   ServiceFacetMatchContext,
   ServiceFacetMatchResult,
   ServiceFacetMatcherProfile,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { Inventory } from '../inventory.js'
 import { createHostServiceResolver, type HostServiceResolver } from '../service-leases.js'
 import { FACETLESS_SERVICE_MATCHER_PROFILE } from '../service-definitions.js'
 
 /** Owner id under which both standard runtime definitions are registered. */
-export const STANDARD_RUNTIME_OWNER = 'org.modkitx/runtime'
+export const STANDARD_RUNTIME_OWNER = 'modkit/runtime'
 
 const OFFER_KEYS = new Set(['runtimeIds'])
 const REQUEST_KEYS = new Set(['runtimeId'])
@@ -110,13 +110,13 @@ export const RUNTIME_PROVIDER_CONTRACT_DEFINITION: ServiceContractDefinitionSpec
     offerFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/runtime-provider-offer.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/runtime-provider-offer.v1.schema.json',
       }),
     }),
     requestFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/runtime-provider-request.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/runtime-provider-request.v1.schema.json',
       }),
     }),
     matching: Object.freeze({ profile: RUNTIME_PROVIDER_MATCHER_PROFILE, major: 1 }),

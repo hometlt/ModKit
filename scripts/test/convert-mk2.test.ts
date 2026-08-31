@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os'
 import { join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
-import { buildInventory, createHostContributionContractRegistry } from '@modkitx-x3/host'
-import { loadExtensionDirectory } from '@modkitx-x3/host/node'
+import { buildInventory, createHostContributionContractRegistry } from '@modkit/host'
+import { loadExtensionDirectory } from '@modkit/host/node'
 
 const scriptsDir = fileURLToPath(new URL('..', import.meta.url))
 const converter = join(scriptsDir, 'convert-mk2.mjs')
@@ -164,7 +164,7 @@ describe('MK2 → MK3 converter (OPUS-MK2-01 task A, OPUS-MK2-02 tasks D/D2/E)',
     ) as Record<string, never>
     expect(tile).toMatchObject({
       schemaVersion: 1,
-      contract: { id: 'org.modkitx/codec-contribution', major: 1 },
+      contract: { id: 'modkit/codec-contribution', major: 1 },
       id: 'org.acme/tile',
       displayName: 'Acme tile image',
       status: 'supported',
@@ -282,7 +282,7 @@ describe('MK2 → MK3 converter (OPUS-MK2-01 task A, OPUS-MK2-02 tasks D/D2/E)',
     const notes = notesOf(out)
     expect(notes.schemaVersion).toBe(1)
     expect(notes.source).toEqual({
-      repository: 'modkitx',
+      repository: 'modkit',
       manifests: [
         'extensions/acme/pack/codecs/atlas/codec.manifest.json',
         'extensions/acme/pack/codecs/exotic/codec.manifest.json',

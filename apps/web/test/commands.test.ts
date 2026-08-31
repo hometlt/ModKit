@@ -4,7 +4,7 @@ import {
   COMMAND_CANCELLED,
   type CommandRequest,
   type SubjectOpenRequest,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import { createWebCommandProtocol, type WebCommandSubjectAuthorization } from '../src/commands.js'
 import type { WebFileAccess } from '../src/files.js'
 

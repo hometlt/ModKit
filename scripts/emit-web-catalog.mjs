@@ -34,9 +34,9 @@ export declare const WEB_EXTENSION_CATALOG: WebExtensionCatalog
 `
 /** Bare specifiers the web worker vendor bundles cover (apps/web/scripts/build.mjs). */
 export const WEB_WORKER_VENDORED = Object.freeze([
-  '@modkitx-x3/codec-kit',
-  '@modkitx-x3/core',
-  '@modkitx-x3/sdk',
+  '@modkit/codec-kit',
+  '@modkit/core',
+  '@modkit/sdk',
   '@rgrove/parse-xml',
   'smol-toml',
   'yaml',
@@ -82,8 +82,7 @@ export function selectWebExtensions(root) {
         .some(file => {
           const manifest = json(join(contributionsDir, file))
           return (
-            manifest.contract?.id === 'org.modkitx/codec-contribution' &&
-            manifest.contract?.major === 1
+            manifest.contract?.id === 'modkit/codec-contribution' && manifest.contract?.major === 1
           )
         })
     if (!hasCodec) continue

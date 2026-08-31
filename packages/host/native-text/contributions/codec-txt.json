@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
-  "id": "org.modkitx/txt",
+  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "id": "modkit/txt",
   "displayName": "Plain Text Document",
   "status": "supported",
   "runtimeVariants": [
@@ -21,7 +21,7 @@
     }
   ],
   "limitations": [
-    "The codec is read-only: editing plain text is the separate org.modkitx/plain-text-writer contribution, and no operation here mutates a source.",
+    "The codec is read-only: editing plain text is the separate modkit/plain-text-writer contribution, and no operation here mutates a source.",
     "UTF-16 is accepted only with a byte-order mark, and a UTF-16 document publishes the paragraph outline and the raw bytes but not the lazy text source, whose line index is only true for UTF-8."
   ],
   "spec": {

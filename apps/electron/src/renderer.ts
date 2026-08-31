@@ -3,14 +3,14 @@
  *
  * It composes nothing and touches no filesystem API. Everything it can do arrives through the
  * preload bridge: the main process owns the dialogs, the granted roots, the reads and the settings
- * file. This file adapts those to the shared `@modkitx-x3/ui` components.
+ * file. This file adapts those to the shared `@modkit/ui` components.
  *
  * Chrome follows VS Code: a native File/View menu instead of a toolbar, a sidebar tree, an editor
  * area with tabs and split groups, and a footer reporting the active file. There is no app title
  * bar and no facilities panel — a user browsing files does not need the realm id, and it stays
  * available in the settings footer for anyone who does.
  *
- * This file must not import `./index.js` — the composition root pulls in `@modkitx-x3/host/node`,
+ * This file must not import `./index.js` — the composition root pulls in `@modkit/host/node`,
  * and a renderer able to run that would need the Node access `nodeIntegration: false` denies. The
  * bundle failing to resolve `node:fs` is the guard doing its job.
  */
@@ -32,10 +32,10 @@ import {
   type PreviewResolver,
   type SettingsDocument,
   type SettingsStore,
-} from '@modkitx-x3/ui'
-import { applyDensity, applyTheme } from '@modkitx-x3/ui/tokens'
-import type { UiCatalogDocument, UiLocalizer } from '@modkitx-x3/ui/localization'
-import type { OperationSession } from '@modkitx-x3/sdk'
+} from '@modkit/ui'
+import { applyDensity, applyTheme } from '@modkit/ui/tokens'
+import type { UiCatalogDocument, UiLocalizer } from '@modkit/ui/localization'
+import type { OperationSession } from '@modkit/sdk'
 
 import { createPreviewFallback } from '../generated/viewer-catalog.js'
 import { editOffer, editSelfTestLine } from './edit-operations.js'
@@ -1572,7 +1572,7 @@ async function extensionProbes(options: {
   unresolvedCodes(path: string): readonly string[]
 }): Promise<void> {
   const { editors, extensionsRoot } = options
-  const PNG_CODEC = 'org.modkitx/image-png'
+  const PNG_CODEC = 'modkit/image-png'
 
   /*
    * Start from an empty editor area.
@@ -1985,7 +1985,7 @@ async function editingProbes(options: {
   }
 
   /*
-   * The Monaco stage, which is an editor from an extension rather than from `@modkitx-x3/ui`.
+   * The Monaco stage, which is an editor from an extension rather than from `@modkit/ui`.
    * It gets the same ports as the other two, so this line says whether an independently authored
    * editor can save through this seam. Kept in the run because "the code tab cannot save" is a
    * regression the app would otherwise never notice.

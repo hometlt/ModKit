@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   extensionCatalogSigningBytes,
   type ExtensionRegistryCatalog,
-} from '@modkitx/extension-manager/browser'
+} from '@modkit/extension-manager/browser'
 
 import {
   BROWSER_EXTENSION_LOCK_UNAVAILABLE,
@@ -244,7 +244,7 @@ function fakeIndexedDb(failEnabledPut = false): ManagedExtensionIdbFactoryLike {
     close: () => undefined,
   }
   return {
-    databases: async () => (opened ? [{ name: 'org.modkitx.app.web/managed-extensions' }] : []),
+    databases: async () => (opened ? [{ name: 'modkit.app.web/managed-extensions' }] : []),
     open: () => {
       const upgrade = !opened
       opened = true
@@ -626,7 +626,7 @@ describe('common extension manager browser adapter', () => {
     expect(await runtime.storage.list()).toEqual([])
     expect(
       [...cacheStorage.caches.entries()]
-        .filter(([name]) => name !== 'org.modkitx.app.web/extension-catalog-v1')
+        .filter(([name]) => name !== 'modkit.app.web/extension-catalog-v1')
         .flatMap(([, rows]) => [...rows.keys()]),
     ).toEqual([])
     await runtime.dispose()

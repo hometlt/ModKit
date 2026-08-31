@@ -2,9 +2,9 @@ import {
   createInspectionCodec,
   createRasterImageSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/tiff'
+const ID = 'modkit/tiff'
 const TYPE_BYTES = Object.freeze({
   1: 1,
   2: 1,

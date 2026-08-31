@@ -4,13 +4,13 @@
  * A greeter provider module exports `createGreeter(spec)` → `{ greet(name): string }`.
  */
 
-import { contractId } from '@modkitx-x3/core'
+import { contractId } from '@modkit/core'
 import type {
   ContributionContractRegistration,
   JsonValue,
   PrecompiledSchemaValidator,
-} from '@modkitx-x3/sdk'
-import { PROVIDER_OFFER_INVENTORY_FACT } from '@modkitx-x3/host'
+} from '@modkit/sdk'
+import { PROVIDER_OFFER_INVENTORY_FACT } from '@modkit/host'
 
 /** Declaration-emission proof: inferred branded literals remain nameable to extension authors. */
 export const GREETER_CONTRACT = contractId('x3.demo/greeter')

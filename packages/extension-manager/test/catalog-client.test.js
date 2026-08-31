@@ -12,7 +12,7 @@ import {
 
 const signature = Object.freeze({
   algorithm: 'Ed25519',
-  keyId: 'org.modkitx.test-key',
+  keyId: 'modkit.test-key',
   value: 'AA==',
 })
 
@@ -43,7 +43,7 @@ function catalog(versions, options = {}) {
   return {
     $schema: '../schemas/modkit.registry.schema.json',
     schemaVersion: 1,
-    registryId: 'org.modkitx/development',
+    registryId: 'modkit/development',
     generatedAt: '2026-08-29T00:00:00.000Z',
     packages: [
       {
@@ -52,6 +52,15 @@ function catalog(versions, options = {}) {
         displayName: 'Example toolkit',
         summary: 'Fake-based extension manager fixture.',
         license: 'MIT',
+        presentation: {
+          displayName: 'Example toolkit presentation',
+          description: 'Human-facing toolkit metadata.',
+          vendor: { id: 'example.publisher', displayName: 'Example Publisher' },
+          games: [{ id: 'example.publisher/example-game', displayName: 'Example Game' }],
+          icon: { path: './assets/toolkit.png', mediaType: 'image/png' },
+          source: { kind: 'url', url: 'https://example.invalid/toolkit' },
+          licenseFiles: [{ path: 'LICENSE.txt', displayName: 'MIT License' }],
+        },
         versions,
       },
     ],
@@ -109,6 +118,9 @@ function fakeClient(options = {}) {
         publisher: request.entry.publisher,
         source: request.entry.source.uri,
         trusted: request.entry.trusted,
+        ...(request.entry.presentation === undefined
+          ? {}
+          : { presentation: request.entry.presentation }),
         roots: request.entry.extensions.map(expectedId => ({
           root: `/extensions/${expectedId.replaceAll('/', '-')}`,
           expectedId,
@@ -163,6 +175,7 @@ test('parses the registry schema shape and compares semantic versions determinis
   assert.deepEqual(validateExtensionCatalog(input), [])
   const parsed = parseExtensionCatalog(input)
   assert.equal(parsed.packages[0].versions[0].extensions[0], 'example.publisher/codec')
+  assert.equal(parsed.packages[0].presentation.vendor.displayName, 'Example Publisher')
   assert.equal(Object.isFrozen(parsed.packages[0].versions), true)
   assert.equal(compareCatalogVersions('0.1.0-development.1', '0.1.0'), -1)
   assert.equal(compareCatalogVersions('2.0.0', '1.99.99'), 1)
@@ -186,6 +199,22 @@ test('validator rejects unknown fields, duplicate ids and remote code without si
   assert.throws(() => parseExtensionCatalog(input), {
     code: 'extension-manager/catalog-invalid',
   })
+})
+
+test('presentation validation confines asset/root paths and HTTP(S) source URLs', () => {
+  const cases = [
+    { icon: { path: '../icon.png' } },
+    { icon: { path: 'C:/icon.png' } },
+    { icon: { path: 'assets\\icon.png' } },
+    { source: { kind: 'root', root: 'src/../../outside' } },
+    { source: { kind: 'url', url: 'file:///source' } },
+    { licenseFiles: [{ path: '/LICENSE' }] },
+  ]
+  for (const invalid of cases) {
+    const input = catalog([version('1.0.0', localSource())])
+    input.packages[0].presentation = invalid
+    assert.notDeepEqual(validateExtensionCatalog(input), [], JSON.stringify(invalid))
+  }
 })
 
 test('signing bytes admit only the missing root signature for an otherwise valid remote catalog', () => {
@@ -288,8 +317,12 @@ test('snapshot merges cached catalog, installed state and enablement without ref
     ],
     enablement: [{ id: 'example.publisher/toolkit', enabled: false }],
   })
-  assert.deepEqual(await state.client.snapshot(), {
-    entries: [
+  const snapshot = await state.client.snapshot()
+  assert.deepEqual(
+    snapshot.entries.map(entry =>
+      Object.fromEntries(Object.entries(entry).filter(([key]) => key !== 'presentation')),
+    ),
+    [
       {
         id: 'example.publisher/toolkit',
         displayName: 'Example toolkit',
@@ -302,7 +335,8 @@ test('snapshot merges cached catalog, installed state and enablement without ref
         trusted: true,
       },
     ],
-  })
+  )
+  assert.equal(snapshot.entries[0].presentation.vendor.id, 'example.publisher')
   assert.equal(state.calls.refresh, 0)
   assert.equal(state.calls.acquire, 0)
   assert.equal(state.calls.install, 0)
@@ -578,4 +612,147 @@ test('one installed catalog package preserves every contained extension root', a
   const snapshot = await state.client.snapshot()
   assert.equal(snapshot.entries.length, 1)
   assert.equal(snapshot.entries[0].id, 'example.publisher/toolkit')
+  assert.equal(snapshot.entries[0].presentation.vendor.id, 'example.publisher')
+})
+
+function gamePackage(id, gameId, displayName = id) {
+  return {
+    id,
+    publisher: id.split('/')[0],
+    displayName,
+    summary: `Support package for ${gameId}.`,
+    presentation: {
+      displayName,
+      vendor: { id: id.split('/')[0], displayName: 'Example Publisher' },
+      games: [{ id: gameId, displayName: 'Arbitrary Test Game' }],
+    },
+    versions: [version('2.0.0', localSource(), 'stable', [`${id}.extension`])],
+  }
+}
+
+function installedPackage(id, versionValue = '1.0.0') {
+  return {
+    id,
+    version: versionValue,
+    roots: [{ root: `/extensions/${id.replaceAll('/', '-')}`, expectedId: `${id}.extension` }],
+  }
+}
+
+test('game support planning is metadata-driven, deterministic and applies every package', async () => {
+  const gameId = 'another.vendor/arbitrary-game'
+  const document = catalog([version('2.0.0', localSource())])
+  document.packages = [
+    gamePackage('example.publisher/zeta-kit', gameId, 'Zeta Kit'),
+    gamePackage('example.publisher/alpha-kit', gameId, 'Alpha Kit'),
+  ]
+  const state = fakeClient({ cached: document })
+
+  const plan = await state.client.planGameSupport(gameId)
+  assert.deepEqual(
+    plan.targets.map(target => target.packageId),
+    ['example.publisher/alpha-kit', 'example.publisher/zeta-kit'],
+  )
+  assert.deepEqual(
+    plan.actions.map(action => `${action.kind}:${action.packageId}`),
+    ['install:example.publisher/alpha-kit', 'install:example.publisher/zeta-kit'],
+  )
+  assert.equal(plan.ready, true)
+  assert.equal(state.calls.install, 0)
+
+  const result = await state.client.applyGameSupport(plan)
+  assert.equal(result.status, 'applied')
+  assert.deepEqual(
+    state
+      .installed()
+      .map(entry => entry.id)
+      .sort(),
+    ['example.publisher/alpha-kit', 'example.publisher/zeta-kit'],
+  )
+  assert.deepEqual(
+    state.enablement().sort((left, right) => left.id.localeCompare(right.id)),
+    [
+      { id: 'example.publisher/alpha-kit', enabled: true },
+      { id: 'example.publisher/zeta-kit', enabled: true },
+    ],
+  )
+})
+
+test('game support apply rejects a stale preview before making another change', async () => {
+  const gameId = 'another.vendor/arbitrary-game'
+  const document = catalog([version('2.0.0', localSource())])
+  document.packages = [gamePackage('example.publisher/toolkit', gameId)]
+  const state = fakeClient({
+    cached: document,
+    installed: [installedPackage('example.publisher/toolkit', '2.0.0')],
+    enablement: [{ id: 'example.publisher/toolkit', enabled: false }],
+  })
+  const plan = await state.client.planGameSupport(gameId)
+  await state.client.setEnabled('example.publisher/toolkit', true)
+  const writesBeforeApply = state.calls.setEnabled
+  await assert.rejects(() => state.client.applyGameSupport(plan), {
+    code: 'extension-manager/game-support-plan-stale',
+  })
+  assert.equal(state.calls.setEnabled, writesBeforeApply)
+})
+
+test('game support batch rolls back fresh installs when a later install fails', async () => {
+  const gameId = 'another.vendor/arbitrary-game'
+  const document = catalog([version('2.0.0', localSource())])
+  document.packages = [
+    gamePackage('example.publisher/alpha-kit', gameId),
+    gamePackage('example.publisher/zeta-kit', gameId),
+  ]
+  const state = fakeClient({
+    cached: document,
+    acquire: async entry => {
+      if (entry.id.endsWith('/zeta-kit')) throw new Error('simulated second acquire failure')
+      return { artifact: { id: entry.id }, integrity: entry.source.integrity }
+    },
+  })
+  const result = await state.client.applyGameSupport(await state.client.planGameSupport(gameId))
+  assert.equal(result.status, 'rolled-back')
+  assert.deepEqual(state.installed(), [])
+  assert.deepEqual(state.enablement(), [])
+  assert.deepEqual(result.rollback, [
+    {
+      packageId: 'example.publisher/alpha-kit',
+      kind: 'install',
+      status: 'rolled-back',
+    },
+  ])
+})
+
+test('game support batch reports partial state when an update cannot be reversed', async () => {
+  const gameId = 'another.vendor/arbitrary-game'
+  const document = catalog([version('2.0.0', localSource())])
+  document.packages = [
+    gamePackage('example.publisher/alpha-kit', gameId),
+    gamePackage('example.publisher/zeta-kit', gameId),
+  ]
+  const state = fakeClient({
+    cached: document,
+    installed: [
+      installedPackage('example.publisher/alpha-kit'),
+      installedPackage('example.publisher/zeta-kit'),
+    ],
+    enablement: [
+      { id: 'example.publisher/alpha-kit', enabled: true },
+      { id: 'example.publisher/zeta-kit', enabled: true },
+    ],
+    acquire: async entry => {
+      if (entry.id.endsWith('/zeta-kit')) throw new Error('simulated update failure')
+      return { artifact: { id: entry.id }, integrity: entry.source.integrity }
+    },
+  })
+  const result = await state.client.applyGameSupport(await state.client.planGameSupport(gameId))
+  assert.equal(result.status, 'partial')
+  assert.equal(result.failed.kind, 'update')
+  assert.deepEqual(result.rollback, [
+    {
+      packageId: 'example.publisher/alpha-kit',
+      kind: 'update',
+      status: 'not-reversible',
+    },
+  ])
+  assert.equal(state.installed().find(entry => entry.id.endsWith('/alpha-kit')).version, '2.0.0')
 })

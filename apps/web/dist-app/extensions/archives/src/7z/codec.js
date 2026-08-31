@@ -1,6 +1,6 @@
-import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/7z'
+const ID = 'modkit/7z'
 const SIGNATURE = Object.freeze([0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c])
 const utf16 = new TextDecoder('utf-16le', { fatal: true })
 

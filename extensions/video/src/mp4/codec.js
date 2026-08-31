@@ -5,7 +5,7 @@ import {
   createTreeDataSource,
   createVideoMediaSource,
   TRANSPORT_OPERATIONS,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
 const latin1 = new TextDecoder('latin1')
 const CONTAINERS = new Set(['moov', 'trak', 'mdia', 'minf', 'stbl'])
@@ -149,7 +149,7 @@ function parseMp4(bytes, budget) {
 }
 
 const definition = Object.freeze({
-  id: 'org.modkitx/video-mp4',
+  id: 'modkit/video-mp4',
   format: Object.freeze({ id: 'mp4', label: 'MPEG-4 media', mediaType: 'video/mp4' }),
   operations: TRANSPORT_OPERATIONS,
   async detect(bytes) {

@@ -1,18 +1,18 @@
-import { compareUtf8, ModkitError, uint64, type Diagnostic } from '@modkitx-x3/core'
-import { codeModule } from '@modkitx-x3/code/module'
-import { sceneModule } from '@modkitx-x3/scene/module'
-import { uvModule } from '@modkitx-x3/uv/module'
+import { compareUtf8, ModkitError, uint64, type Diagnostic } from '@modkit/core'
+import { codeModule } from '@modkit/code/module'
+import { sceneModule } from '@modkit/scene/module'
+import { uvModule } from '@modkit/uv/module'
 import {
   extensionSubjectRecordToWire,
   projectExtensionSubjects,
   type ExtensionSubjectCardWireDocument,
-} from '@modkitx/extension-manager'
+} from '@modkit/extension-manager'
 import {
   createHostTopology,
   type AnyDescriptor,
   type HostTopology,
   type PresentationPlan,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   createBundledServiceDefinitionRegistry,
   createHostComposition,
@@ -29,7 +29,7 @@ import {
   type Inventory,
   type SubjectOpenRequest,
   type SubjectServices,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import { STAGE_ORDER } from './view-policy.js'
 import {
   createNodeExecutionBackends,
@@ -41,7 +41,7 @@ import {
   type ExtensionRootFailure,
   type ExtensionRootRequest,
   type WorkerBackendPolicy,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host/node'
 
 const ELECTRON_BUILTIN_MODULES = /* @__PURE__ */ linkedExtensionInputs([
   codeModule,
@@ -109,14 +109,14 @@ export {
   type ElectronMapPreviewSelectionRequest,
 } from './map-preview-selection.js'
 
-export const ELECTRON_MAIN_REALM = 'org.modkitx.app.electron/main'
-export const ELECTRON_RENDERER_REALM = 'org.modkitx.app.electron/renderer'
+export const ELECTRON_MAIN_REALM = 'modkit.app.electron/main'
+export const ELECTRON_RENDERER_REALM = 'modkit.app.electron/renderer'
 /**
  * Where codecs run: the worker threads of the main process (W4 in IMPLEMENTATION_NOTES). Portable
  * variants are resolved and activated for this realm; the renderer keeps receiving leases through
  * the preload broker (renderer ↔ main ↔ worker) and never hosts codec code.
  */
-export const ELECTRON_WORKER_REALM = 'org.modkitx.app.electron/worker'
+export const ELECTRON_WORKER_REALM = 'modkit.app.electron/worker'
 
 /** Worker policy of the Electron main process (within the host ceilings, refused above them). */
 export const ELECTRON_WORKER_POLICY: WorkerBackendPolicy = workerBackendPolicy({
@@ -273,7 +273,7 @@ export function createElectronTopology(): HostTopology {
   const node = nodeRuntimeTargetBase()
   return createHostTopology({
     schemaVersion: 1,
-    topologyId: 'org.modkitx.app/electron',
+    topologyId: 'modkit.app/electron',
     realms: [
       {
         schemaVersion: 1,
@@ -299,7 +299,7 @@ export function createElectronTopology(): HostTopology {
           maxTransferBytes: uint64('1073741824'),
           defaultDeadlineMs: 300_000,
         },
-        policy: { id: 'org.modkitx.policy/electron-main', revision: '1' },
+        policy: { id: 'modkit.policy/electron-main', revision: '1' },
       },
       {
         schemaVersion: 1,
@@ -318,7 +318,7 @@ export function createElectronTopology(): HostTopology {
           maxTransferBytes: uint64('268435456'),
           defaultDeadlineMs: 120_000,
         },
-        policy: { id: 'org.modkitx.policy/electron-renderer', revision: '1' },
+        policy: { id: 'modkit.policy/electron-renderer', revision: '1' },
       },
       nodeWorkerRealmProfile({
         realmId: ELECTRON_WORKER_REALM,
@@ -329,7 +329,7 @@ export function createElectronTopology(): HostTopology {
           maxTransferBytes: uint64('536870912'),
           defaultDeadlineMs: 120_000,
         },
-        policy: { id: 'org.modkitx.policy/electron-worker', revision: '1' },
+        policy: { id: 'modkit.policy/electron-worker', revision: '1' },
       }),
     ],
     links: [
@@ -507,7 +507,7 @@ export interface ElectronContributionRow {
   /** Qualified contribution id. Absent when the envelope did not parse — then there is no switch. */
   readonly id?: string
   readonly displayName: string
-  /** The contract it implements (`org.modkitx/codec-contribution`) and that contract's major. */
+  /** The contract it implements (`modkit/codec-contribution`) and that contract's major. */
   readonly contract?: string
   readonly contractMajor?: number
   /** `publisher/id` of the extension that ships it. */
@@ -638,7 +638,7 @@ export function disabledContributionNotices(
   const notices = inventory.extensions.flatMap(extension =>
     extension.contributions.flatMap(contribution => {
       const manifest = contribution.manifest
-      if (manifest?.contract.id !== 'org.modkitx/codec-contribution') return []
+      if (manifest?.contract.id !== 'modkit/codec-contribution') return []
       const spec = manifest.spec as { readonly match?: { readonly extensions?: unknown } }
       const hints = Array.isArray(spec.match?.extensions) ? spec.match.extensions : []
       if (!hints.some(hint => typeof hint === 'string' && hint.toLowerCase() === suffix)) return []
@@ -752,11 +752,11 @@ export {
   createRawWriter,
   createSubjectEditing,
   resolveFormatWriter,
-} from '@modkitx-x3/host'
-export { createFileEditingBackend } from '@modkitx-x3/host/node'
+} from '@modkit/host'
+export { createFileEditingBackend } from '@modkit/host/node'
 // Installed-game map resources are resolved in main, beside the ordinary subject services that
 // open their archives. The renderer receives only the resulting world session over capability RPC.
-export { createNodeMapPreviewResourcePlanResolver } from '@modkitx-x3/host/node'
+export { createNodeMapPreviewResourcePlanResolver } from '@modkit/host/node'
 // S14: the renderer's editor ports over the subject RPC (it holds no grant of its own)
 export {
   createRendererEditorPorts,
@@ -764,20 +764,20 @@ export {
   type RendererEditorPortsOptions,
 } from './editor-ports.js'
 // S7: main.cjs opens files through the host's revision-checked adapter (no private copy here)
-export { openFileArtifactSource } from '@modkitx-x3/host/node'
+export { openFileArtifactSource } from '@modkit/host/node'
 /*
  * Block 9 step 6: main opens the byte source itself, so it cannot use `createPathSubjectOpener`
  * wholesale — but a codec that declares companions returns a composite plan, and a composite
  * plan without a resolver fails closed on `x3.host/input-resolver-required`. This is the same
  * factory the path opener composes, reached from the one place Electron actually opens files.
  */
-export { createFilesystemInputResolver } from '@modkitx-x3/host/node'
+export { createFilesystemInputResolver } from '@modkit/host/node'
 /*
  * The archive route, reached from the composition rather than the UI. `archive-stage.ts` still
  * previews an entry by extracting its bytes; this is what a stage will call when block 13–14
  * gives it somewhere to put the opened subject.
  */
-export { openNestedSubject, type NestedSubjectResult } from '@modkitx-x3/host'
+export { openNestedSubject, type NestedSubjectResult } from '@modkit/host'
 /*
  * Block 13 works 4–6: the same command runtime the CLI and VS Code run. `main.cjs` supplies the
  * one thing it cannot have — `openSubjectForRpc`, which already confines a path to the granted
@@ -795,4 +795,4 @@ export {
   type CommandResult,
   type CommandRuntime,
   type SubjectCommandEndpoint,
-} from '@modkitx-x3/host'
+} from '@modkit/host'

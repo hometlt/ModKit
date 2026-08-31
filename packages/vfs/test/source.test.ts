@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { isCancellation, isModkitError } from '@modkitx-x3/core'
-import { collectStream, createMemorySource } from '@modkitx-x3/vfs'
+import { isCancellation, isModkitError } from '@modkit/core'
+import { collectStream, createMemorySource } from '@modkit/vfs'
 
 const bytes = new Uint8Array(200_000).map((_, i) => i % 251)
 

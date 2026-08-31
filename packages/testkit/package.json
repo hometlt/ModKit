@@ -1,5 +1,5 @@
 {
-  "name": "@modkitx-x3/testkit",
+  "name": "@modkit/testkit",
   "version": "0.1.0",
   "description": "MK3 clean-core lab: minimal host + conformance harness (dev-only closure; BRIEF-12; not a release)",
   "license": "UNLICENSED",
@@ -22,16 +22,16 @@
   ],
   "scripts": {},
   "dependencies": {
-    "@modkitx-x3/core": "workspace:*",
-    "@modkitx-x3/host": "workspace:*",
-    "@modkitx-x3/sdk": "workspace:*",
-    "@modkitx-x3/vfs": "workspace:*"
+    "@modkit/core": "workspace:*",
+    "@modkit/host": "workspace:*",
+    "@modkit/sdk": "workspace:*",
+    "@modkit/vfs": "workspace:*"
   },
   "peerDependencies": {
-    "@modkitx-x3/ui": "workspace:*"
+    "@modkit/ui": "workspace:*"
   },
   "peerDependenciesMeta": {
-    "@modkitx-x3/ui": {
+    "@modkit/ui": {
       "optional": true
     }
   }

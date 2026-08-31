@@ -11,7 +11,7 @@ import {
   type ContributionContext,
   type ModelSceneSource,
   type ResourceBudget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const fixtureRoot = join(import.meta.dirname, 'fixtures')

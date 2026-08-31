@@ -1,5 +1,5 @@
-import { diagnostic } from '@modkitx-x3/core'
-import type { OpenedSubject } from '@modkitx-x3/host'
+import { diagnostic } from '@modkit/core'
+import type { OpenedSubject } from '@modkit/host'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY, prepareWebMapPreview } from '../src/map-preview.js'

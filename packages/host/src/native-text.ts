@@ -57,12 +57,12 @@ const nativeExecutable = (manifest: unknown, entrypoint?: string): unknown => {
 const nativeText = defineLinkedExtension({
   source: 'native:core/text',
   packageJson: {
-    name: '@modkitx-x3/core-native-text',
+    name: '@modkit/core-native-text',
     version: '1.0.0',
     license: 'MIT',
     modkit: {
       schemaVersion: 1,
-      publisher: 'org.modkitx',
+      publisher: 'modkit',
       id: 'core-native-text',
       contributionManifests: ['./contributions/*.json'],
     },

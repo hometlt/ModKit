@@ -7,7 +7,7 @@
  * backend (`ConsumerWatch`); these adapters never spawn or terminate anything themselves.
  */
 
-import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
+import { ModkitError, type Diagnostic } from '@modkit/core'
 import type {
   AssetInput,
   AssetInputPlan,
@@ -20,7 +20,7 @@ import type {
   Lease,
   OpenIntent,
   ResourceBudget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   ABI_ARTIFACT_SOURCE,
   ABI_ASSET_INPUT,

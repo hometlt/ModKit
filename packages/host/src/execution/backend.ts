@@ -1,12 +1,12 @@
 /** Host-composed execution mechanisms. Security admission remains in security/gate.ts. */
 
-import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
+import { ModkitError, throwIfAborted } from '@modkit/core'
 import type {
   ExecutionProfile,
   PermissionGrant,
   RuntimeTarget,
   RuntimeVariantDeclaration,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { ActivationTicket } from '../security/gate.js'
 
 export interface ExecutionBackendActivation {
@@ -67,8 +67,8 @@ const PROFILE_VALUES: readonly ExecutionProfile[] = Object.freeze([
 /**
  * The private bindings travel on the registry object under a global symbol (not a module-local
  * WeakMap): the published entries of this package (`.`, `./node`) are bundled separately, so a
- * registry created by `@modkitx-x3/host/node` must be honoured by the gate inside
- * `@modkitx-x3/host`. Non-enumerable and symbol-keyed: a spread copy or a hand-built look-alike
+ * registry created by `@modkit/host/node` must be honoured by the gate inside
+ * `@modkit/host`. Non-enumerable and symbol-keyed: a spread copy or a hand-built look-alike
  * still carries no bindings and is refused.
  */
 const REGISTRY_BINDINGS = Symbol.for('x3.host/execution-backend-registry-bindings')

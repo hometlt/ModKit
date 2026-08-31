@@ -13,7 +13,7 @@
  * bundled definition registry below is only for inputs the host already vouches for.
  */
 
-import { compareUtf8, ModkitError, type Diagnostic } from '@modkitx-x3/core'
+import { compareUtf8, ModkitError, type Diagnostic } from '@modkit/core'
 import type {
   ArtifactByteSource,
   DefinitionInventoryResult,
@@ -24,7 +24,7 @@ import type {
   RuntimeTarget,
   ServiceContractDefinitionRegistry,
   ServiceFacetMatcherProfile,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { DataSourceSurfaceSource } from './execution/index.js'
 import type { ExecutionBackendRegistry } from './execution/backend.js'
 import {
@@ -175,7 +175,7 @@ export function supportedExtensionHints(inventory: Inventory): readonly string[]
         inventory.extensions.flatMap(extension =>
           extension.contributions.flatMap(contribution => {
             const manifest = contribution.manifest
-            if (manifest?.contract.id !== 'org.modkitx/codec-contribution') return []
+            if (manifest?.contract.id !== 'modkit/codec-contribution') return []
             const spec = manifest.spec as { readonly match?: { readonly extensions?: unknown } }
             return Array.isArray(spec.match?.extensions)
               ? spec.match.extensions.flatMap(value =>

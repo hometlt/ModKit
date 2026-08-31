@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "id": "org.modkitx/service-provider-contribution",
+    "id": "modkit/service-provider-contribution",
     "major": 1
   },
-  "id": "org.modkitx.reference/software-renderer",
+  "id": "modkit.reference/software-renderer",
   "displayName": "Reference software renderer",
   "runtimeVariants": [
     {

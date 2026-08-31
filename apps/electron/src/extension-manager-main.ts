@@ -7,7 +7,7 @@ import {
   type NodeExtensionManager,
   type NodeExtensionVfsOptions,
   type NodeTrustedPublicKeys,
-} from '@modkitx/extension-manager/node'
+} from '@modkit/extension-manager/node'
 
 export type ElectronExtensionManagerBackend = NodeExtensionManager
 

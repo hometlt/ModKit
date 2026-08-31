@@ -22,7 +22,7 @@ import {
   type ExtensionManagerClient,
   type ExtensionRegistryCatalog,
   type InstalledExtensionRecord,
-} from '@modkitx/extension-manager/browser'
+} from '@modkit/extension-manager/browser'
 import { inspectPortableExtensionBundle } from './managed-extension-roots.js'
 import {
   createBrowserExtensionStorage,
@@ -35,10 +35,10 @@ import {
   type ManagedExtensionIdbFactoryLike,
 } from './managed-extension-storage.js'
 
-export { extensionCatalogSigningBytes as browserCatalogSigningBytes } from '@modkitx/extension-manager/browser'
+export { extensionCatalogSigningBytes as browserCatalogSigningBytes } from '@modkit/extension-manager/browser'
 
-export const BROWSER_EXTENSION_CATALOG_CACHE = 'org.modkitx.app.web/extension-catalog-v1'
-export const BROWSER_EXTENSION_MUTATION_LOCK = 'org.modkitx.app.web/extension-manager-mutation-v1'
+export const BROWSER_EXTENSION_CATALOG_CACHE = 'modkit.app.web/extension-catalog-v1'
+export const BROWSER_EXTENSION_MUTATION_LOCK = 'modkit.app.web/extension-manager-mutation-v1'
 export const BROWSER_EXTENSION_LOCK_UNAVAILABLE =
   'extension-manager/browser-mutation-lock-unavailable'
 export const DEFAULT_BROWSER_CATALOG_MAX_BYTES = 2 * 1024 * 1024

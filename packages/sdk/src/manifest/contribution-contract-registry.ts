@@ -14,7 +14,7 @@ import {
   SHARED_OPERATION_IDS,
   type ContractId,
   type Diagnostic,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import {
   codecContributionSpecV1Schema,
   editorContributionSpecV1Schema,
@@ -57,41 +57,32 @@ import { knowledgeTargetKey, type KnowledgePackSpecV1Wire } from '../knowledge/i
 import type { ContractRequirementWire } from '../resolution/types.js'
 import { snapshotJsonWireObject } from './validate.js'
 
-export const CODEC_CONTRIBUTION_CONTRACT: ContractId = contractId('org.modkitx/codec-contribution')
+export const CODEC_CONTRIBUTION_CONTRACT: ContractId = contractId('modkit/codec-contribution')
 export const SERVICE_PROVIDER_CONTRIBUTION_CONTRACT: ContractId = contractId(
-  'org.modkitx/service-provider-contribution',
+  'modkit/service-provider-contribution',
 )
-export const VIEWER_CONTRIBUTION_CONTRACT: ContractId = contractId(
-  'org.modkitx/viewer-contribution',
-)
-export const EDITOR_CONTRIBUTION_CONTRACT: ContractId = contractId(
-  'org.modkitx/editor-contribution',
-)
-export const TRAIT_DEFINITION_CONTRIBUTION_CONTRACT: ContractId = contractId(
-  'org.modkitx/trait-definition',
-)
+export const VIEWER_CONTRIBUTION_CONTRACT: ContractId = contractId('modkit/viewer-contribution')
+export const EDITOR_CONTRIBUTION_CONTRACT: ContractId = contractId('modkit/editor-contribution')
+export const TRAIT_DEFINITION_CONTRIBUTION_CONTRACT: ContractId =
+  contractId('modkit/trait-definition')
 export const CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT: ContractId = contractId(
-  'org.modkitx/contract-definition',
+  'modkit/contract-definition',
 )
-export const KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT: ContractId = contractId(
-  'org.modkitx/knowledge-pack',
-)
+export const KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT: ContractId = contractId('modkit/knowledge-pack')
 export const LOCALIZATION_CONTRIBUTION_CONTRACT: ContractId = contractId(
-  'org.modkitx/localization-contribution',
+  'modkit/localization-contribution',
 )
 
-export const TRAIT_DEFINITION_FACT: ContractId = contractId(
-  'org.modkitx.inventory/trait-definition',
-)
+export const TRAIT_DEFINITION_FACT: ContractId = contractId('modkit.inventory/trait-definition')
 export const CONTRACT_DEFINITION_FACT: ContractId = contractId(
-  'org.modkitx.inventory/contract-definition',
+  'modkit.inventory/contract-definition',
 )
 export const EDITOR_CONTRIBUTION_FACT: ContractId = contractId(
-  'org.modkitx.inventory/editor-contribution',
+  'modkit.inventory/editor-contribution',
 )
-export const KNOWLEDGE_PACK_FACT: ContractId = contractId('org.modkitx.inventory/knowledge-pack')
+export const KNOWLEDGE_PACK_FACT: ContractId = contractId('modkit.inventory/knowledge-pack')
 export const LOCALIZATION_CONTRIBUTION_FACT: ContractId = contractId(
-  'org.modkitx.inventory/localization-contribution',
+  'modkit.inventory/localization-contribution',
 )
 
 export type ContributionModuleAbiDeclaration = SpecModuleAbiDeclaration
@@ -1151,7 +1142,7 @@ export const A1_SPEC_SCHEMA_ENTRIES: readonly SpecSchemaEntry[] = [
     registration: {
       mode: 'data-only',
       project: dataOnlyProjector(TRAIT_DEFINITION_FACT),
-      conformanceProfile: 'org.modkitx/trait-definition-v1',
+      conformanceProfile: 'modkit/trait-definition-v1',
     },
   },
   {
@@ -1162,7 +1153,7 @@ export const A1_SPEC_SCHEMA_ENTRIES: readonly SpecSchemaEntry[] = [
     registration: {
       mode: 'data-only',
       project: dataOnlyProjector(CONTRACT_DEFINITION_FACT),
-      conformanceProfile: 'org.modkitx/contract-definition-v1',
+      conformanceProfile: 'modkit/contract-definition-v1',
     },
   },
   {
@@ -1173,7 +1164,7 @@ export const A1_SPEC_SCHEMA_ENTRIES: readonly SpecSchemaEntry[] = [
     registration: {
       mode: 'data-only',
       project: dataOnlyProjector(KNOWLEDGE_PACK_FACT),
-      conformanceProfile: 'org.modkitx/knowledge-pack-v1',
+      conformanceProfile: 'modkit/knowledge-pack-v1',
     },
   },
   {
@@ -1184,7 +1175,7 @@ export const A1_SPEC_SCHEMA_ENTRIES: readonly SpecSchemaEntry[] = [
     registration: {
       mode: 'data-only',
       project: dataOnlyProjector(LOCALIZATION_CONTRIBUTION_FACT),
-      conformanceProfile: 'org.modkitx/localization-contribution-v1',
+      conformanceProfile: 'modkit/localization-contribution-v1',
     },
   },
 ] as const

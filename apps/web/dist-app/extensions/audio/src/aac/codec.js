@@ -2,9 +2,9 @@ import {
   createAudioMediaSource,
   createInspectionCodec,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/aac'
+const ID = 'modkit/aac'
 const SAMPLE_RATES = Object.freeze([
   96_000, 88_200, 64_000, 48_000, 44_100, 32_000, 24_000, 22_050, 16_000, 12_000, 11_025, 8_000,
   7_350,

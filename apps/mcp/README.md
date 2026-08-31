@@ -1,6 +1,6 @@
 # Modkit MCP
 
-`@modkitx-x3/modkit-mcp` is a thin MCP v2 stdio adapter over the public Modkit host and SDK. It
+`@modkit/modkit-mcp` is a thin MCP v2 stdio adapter over the public Modkit host and SDK. It
 opens only files under explicitly allowed roots and loads only explicitly allowed extension package
 directories. It can ask those loaded extensions for verified game-installation candidates, but it
 does not search arbitrary folders or extension repositories and discovery never expands the root

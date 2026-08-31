@@ -2,7 +2,7 @@
  * Three.js relation-graph renderer owned by the built-in scene package.
  *
  * A `GraphRenderer` implementation, not a second widget: the sidebar, controls and footer stay in
- * `@modkitx-x3/ui`'s relation graph, and this backend owns only pixels. That is the doc 06 §19
+ * `@modkit/ui`'s relation graph, and this backend owns only pixels. That is the doc 06 §19
  * rule — alternative Three/WebGL backends are provider offers of one render contract, never
  * hardcoded imports inside the shell.
  *

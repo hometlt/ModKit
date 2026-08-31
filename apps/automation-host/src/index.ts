@@ -1,6 +1,6 @@
-import { uint64 } from '@modkitx-x3/core'
-import { createHostTopology, type HostTopology } from '@modkitx-x3/sdk'
-import type { Diagnostic } from '@modkitx-x3/core'
+import { uint64 } from '@modkit/core'
+import { createHostTopology, type HostTopology } from '@modkit/sdk'
+import type { Diagnostic } from '@modkit/core'
 import type {
   CommandContractDocument,
   CommandOutputSink,
@@ -11,13 +11,13 @@ import type {
   ExtensionInput,
   HostComposition,
   SubjectServices,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import {
   commandSubjectsFrom,
   createSubjectCommandRuntime,
   describeSubjectCommandContracts,
   executeCommandRequest,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import {
   createNodeSubjectServices,
   createPathSubjectOpener,
@@ -29,11 +29,11 @@ import {
   type ExtensionRootFailure,
   type ExtensionRootRequest,
   type WorkerBackendPolicy,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host/node'
 
-export const AUTOMATION_REALM = 'org.modkitx.app.automation/main'
+export const AUTOMATION_REALM = 'modkit.app.automation/main'
 /** Worker threads of the automation process: where portable (`worker-brokered`) variants run. */
-export const AUTOMATION_WORKER_REALM = 'org.modkitx.app.automation/worker'
+export const AUTOMATION_WORKER_REALM = 'modkit.app.automation/worker'
 
 /** Worker policy of an automation run (batch work: roomy heaps, long deadlines). */
 export const AUTOMATION_WORKER_POLICY: WorkerBackendPolicy = workerBackendPolicy({
@@ -53,7 +53,7 @@ export const AUTOMATION_WORKER_POLICY: WorkerBackendPolicy = workerBackendPolicy
 export function createAutomationTopology(): HostTopology {
   return createHostTopology({
     schemaVersion: 1,
-    topologyId: 'org.modkitx.app/automation-host',
+    topologyId: 'modkit.app/automation-host',
     realms: [
       {
         schemaVersion: 1,
@@ -73,7 +73,7 @@ export function createAutomationTopology(): HostTopology {
           maxTransferBytes: uint64('536870912'),
           defaultDeadlineMs: 300_000,
         },
-        policy: { id: 'org.modkitx.policy/automation-default', revision: '1' },
+        policy: { id: 'modkit.policy/automation-default', revision: '1' },
       },
       nodeWorkerRealmProfile({
         realmId: AUTOMATION_WORKER_REALM,
@@ -84,7 +84,7 @@ export function createAutomationTopology(): HostTopology {
           maxTransferBytes: uint64('536870912'),
           defaultDeadlineMs: 300_000,
         },
-        policy: { id: 'org.modkitx.policy/automation-worker', revision: '1' },
+        policy: { id: 'modkit.policy/automation-worker', revision: '1' },
       }),
     ],
     links: [...nodeWorkerLinks(AUTOMATION_REALM, AUTOMATION_WORKER_REALM)],

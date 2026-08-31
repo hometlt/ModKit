@@ -9,8 +9,8 @@ import { createHash, webcrypto } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { MessageChannel } from 'node:worker_threads'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { Diagnostic } from '@modkitx-x3/core'
-import type { ContributionContext, ResourceBudget } from '@modkitx-x3/sdk'
+import type { Diagnostic } from '@modkit/core'
+import type { ContributionContext, ResourceBudget } from '@modkit/sdk'
 import type { MessagePortLike } from '../src/execution/index.js'
 import {
   activateExecutionBackend,

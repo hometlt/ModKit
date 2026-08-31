@@ -50,7 +50,7 @@ describe('UV digests are algorithm-qualified', () => {
 describe('a portable projection receipt cannot carry an ambient path', () => {
   const local: ProjectionReceipt = {
     form: 'local',
-    adapter: { id: 'org.modkitx/m3-projector', version: '1.0.0' },
+    adapter: { id: 'modkit/m3-projector', version: '1.0.0' },
     subjectRevision: revisionId('provider-token:test-subject'),
     sourceUri: 'file:///C:/Apps/ExampleGame%20II/artifact1.m3',
     companions: [],

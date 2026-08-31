@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { contractId, diagnostic } from '@modkitx-x3/core'
+import { contractId, diagnostic } from '@modkit/core'
 import type {
   DefinitionInventoryProvenance,
   ProviderOffer,
   RuntimeTarget,
   ServiceFacetMatcherProfile,
-} from '@modkitx-x3/sdk'
-import { createServiceContractDefinitionRegistry, resolveServiceProvider } from '@modkitx-x3/host'
+} from '@modkit/sdk'
+import { createServiceContractDefinitionRegistry, resolveServiceProvider } from '@modkit/host'
 
 const JSON_CONTRACT = contractId('org.example/json-syntax')
-const MATCHER = contractId('org.modkitx/exact-dialect-matcher')
+const MATCHER = contractId('modkit/exact-dialect-matcher')
 const target: RuntimeTarget = {
   environment: 'node',
   operatingSystem: 'linux',

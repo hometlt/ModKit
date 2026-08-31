@@ -5,7 +5,7 @@ import {
   configuredSourceDescriptorSync,
   resolveConfiguredRepositoryRootSync,
   resolveLegacyExtensionDirectorySync,
-} from '@modkitx/extension-manager/node'
+} from '@modkit/extension-manager/node'
 
 const readJson = path => JSON.parse(readFileSync(path, 'utf8'))
 

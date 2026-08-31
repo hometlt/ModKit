@@ -1,16 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import type { ExtensionManagerEntry } from '@modkitx/extension-manager'
-import { createUiLocalizer } from '@modkitx-x3/ui/localization'
+import type { ExtensionManagerEntry } from '@modkit/extension-manager'
+import { createUiLocalizer } from '@modkit/ui/localization'
 
 import type { ContributionRow } from '../src/contributions.js'
 import {
   createExtensionTree,
   extensionActionContextValue,
+  extensionEntryDisplayName,
   extensionGroupActionContextValue,
   extensionTreeChildren,
+  type ExtensionComponentNode,
   type ContributionContractNode,
   type ContributionNode,
   type ExtensionEntryNode,
+  type ExtensionVendorNode,
 } from '../src/extension-tree.js'
 
 const installed: ExtensionManagerEntry = Object.freeze({
@@ -65,12 +68,12 @@ function contribution(
 }
 
 const contributions: readonly ContributionRow[] = Object.freeze([
-  contribution('org.example/model-a', 'Model A', 'org.modkitx/codec-contribution'),
-  contribution('org.example/model-b', 'Model B', 'org.modkitx/codec-contribution'),
-  contribution('org.example/model-v2', 'Model v2', 'org.modkitx/codec-contribution', 2),
-  contribution('org.example/model-language', 'Model language', 'org.modkitx/language-provider'),
-  contribution('org.example/russian-ui', 'Russian UI', 'org.modkitx/localization-contribution', 1),
-  contribution('org.example/audio-codec', 'Audio codec', 'org.modkitx/codec-contribution', 1, {
+  contribution('org.example/model-a', 'Model A', 'modkit/codec-contribution'),
+  contribution('org.example/model-b', 'Model B', 'modkit/codec-contribution'),
+  contribution('org.example/model-v2', 'Model v2', 'modkit/codec-contribution', 2),
+  contribution('org.example/model-language', 'Model language', 'modkit/language-provider'),
+  contribution('org.example/russian-ui', 'Russian UI', 'modkit/localization-contribution', 1),
+  contribution('org.example/audio-codec', 'Audio codec', 'modkit/codec-contribution', 1, {
     extension: disabledExtension.id,
   }),
   Object.freeze({
@@ -98,6 +101,73 @@ function model() {
 }
 
 describe('VS Code extension contribution tree', () => {
+  it('groups package rows by vendor and game metadata while retaining shared components', () => {
+    const gamePackage = Object.freeze({
+      ...installed,
+      id: 'org.example/game-tools',
+      displayName: 'Technical package name',
+      presentation: {
+        displayName: 'Game Tools',
+        vendor: { id: 'example', displayName: 'Example Studios' },
+        games: [{ id: 'example-game', displayName: 'Example Game' }],
+      },
+    })
+    const sharedPackage = Object.freeze({
+      ...installed,
+      id: 'org.example/shared-tools',
+      displayName: 'Shared tools',
+      presentation: { vendor: { id: 'example', displayName: 'Example Studios' } },
+    })
+    const groups = createExtensionTree({
+      entries: [gamePackage, sharedPackage],
+      contributions: [],
+      configuredDisabledContributionIds: [],
+      pendingReloadEntryIds: [gamePackage.id],
+      problems: [],
+    })
+    const installedGroup = required(
+      groups.find(group => group.group === 'installed'),
+      'installed group is missing',
+    )
+    const [vendor] = extensionTreeChildren(installedGroup, []) as readonly ExtensionVendorNode[]
+    const components = extensionTreeChildren(
+      required(vendor, 'vendor is missing'),
+      [],
+    ) as readonly ExtensionComponentNode[]
+
+    expect(vendor).toMatchObject({ kind: 'vendor', id: 'example', label: 'Example Studios' })
+    expect(components.map(component => component.label)).toEqual([
+      'Example Game',
+      'Shared Components',
+    ])
+    const gameEntry = components[0]?.entries[0]
+    expect(extensionEntryDisplayName(required(gameEntry, 'game entry is missing').entry)).toBe(
+      'Game Tools',
+    )
+    expect(gameEntry?.pendingReload).toBe(true)
+    expect(components[1]?.entries[0]?.entry.id).toBe(sharedPackage.id)
+  })
+
+  it('falls back to publisher and Shared Components when presentation metadata is absent', () => {
+    const installedGroup = required(
+      model().find(group => group.group === 'installed'),
+      'installed group is missing',
+    )
+    const [maybeVendor] = extensionTreeChildren(
+      installedGroup,
+      [],
+    ) as readonly ExtensionVendorNode[]
+    const vendor = required(maybeVendor, 'vendor is missing')
+    const [component] = extensionTreeChildren(vendor, []) as readonly ExtensionComponentNode[]
+
+    expect(vendor.label).toBe('Example')
+    expect(component).toMatchObject({
+      kind: 'component',
+      component: 'shared',
+      label: 'Shared Components',
+    })
+  })
+
   it('exposes hover actions only for installed codecs and mutable packages', () => {
     const installedGroup = required(
       model().find(group => group.group === 'installed'),
@@ -116,7 +186,7 @@ describe('VS Code extension contribution tree', () => {
       extensionTreeChildren(installedEntry, [
         'org.example/model-b',
       ]) as readonly ContributionContractNode[]
-    ).find(node => node.contract === 'org.modkitx/codec-contribution' && node.contractMajor === 1)
+    ).find(node => node.contract === 'modkit/codec-contribution' && node.contractMajor === 1)
     const codecs = extensionTreeChildren(required(codecContract, 'codec contract is missing'), [
       'org.example/model-b',
     ]) as readonly ContributionNode[]
@@ -202,7 +272,7 @@ describe('VS Code extension contribution tree', () => {
       extensionTreeChildren(modelExtension, [
         'org.example/model-b',
       ]) as readonly ContributionContractNode[]
-    ).find(node => node.contract === 'org.modkitx/codec-contribution' && node.contractMajor === 1)
+    ).find(node => node.contract === 'modkit/codec-contribution' && node.contractMajor === 1)
     const requiredCodecContract = required(codecContract, 'codec contract group is missing')
     const leaves = extensionTreeChildren(requiredCodecContract, ['org.example/model-b'])
 
@@ -307,7 +377,7 @@ describe('VS Code extension contribution tree', () => {
       'Языки',
     ])
     expect(contracts[1]).toMatchObject({
-      contract: 'org.modkitx/codec-contribution',
+      contract: 'modkit/codec-contribution',
       contractMajor: 1,
     })
   })

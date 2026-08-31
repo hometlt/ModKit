@@ -19,7 +19,7 @@
  * with fakes exactly as the browser worker backend is tested.
  */
 
-import { canonicalJsonStringify, throwIfAborted } from '@modkitx-x3/core'
+import { canonicalJsonStringify, throwIfAborted } from '@modkit/core'
 import {
   revisionId,
   type AssetRevision,
@@ -27,7 +27,7 @@ import {
   type BackendCapability,
   type RevisionId,
   type SubjectEditTarget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { EditingBackend, EditingBackendApplyResult } from '../editing.js'
 import {
   applySequentialBatch,

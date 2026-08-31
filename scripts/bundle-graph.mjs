@@ -100,7 +100,7 @@ async function graphFor(entry) {
     (output.imports ?? [])
       .filter(item => item.external === true)
       .map(item => item.path)
-      .filter(item => item.startsWith('@modkitx-x3/')),
+      .filter(item => item.startsWith('@modkit/')),
   )
   return {
     modules: inputs.length,
@@ -148,7 +148,7 @@ const readable = [
   '| --- | ---: | ---: | --- |',
   ...rows.map(
     row =>
-      `| \`${row.surface}\` | ${row.modules} | ${row.bytes} | ${row.externalUnits.length === 0 ? '—' : row.externalUnits.map(unit => `\`${unit.replace('@modkitx-x3/', '')}\``).join(', ')} |`,
+      `| \`${row.surface}\` | ${row.modules} | ${row.bytes} | ${row.externalUnits.length === 0 ? '—' : row.externalUnits.map(unit => `\`${unit.replace('@modkit/', '')}\``).join(', ')} |`,
   ),
   '',
 ].join('\n')

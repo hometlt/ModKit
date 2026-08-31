@@ -6,7 +6,7 @@ import {
   failure,
   lease,
   plainNode,
-} from '@modkitx-x3/codec-kit/text'
+} from '@modkit/codec-kit/text'
 import { definition } from './definition.js'
 
 function parseYaml(decoded, budget) {
@@ -17,7 +17,7 @@ function parseYaml(decoded, budget) {
       uniqueKeys: true,
     })
     if (document.errors.length > 0) {
-      return failure('org.modkitx/text-data-yaml-parse', document.errors[0].message, decoded.text)
+      return failure('modkit/text-data-yaml-parse', document.errors[0].message, decoded.text)
     }
     const counters = { nodes: 0, depth: 0 }
     const model = {
@@ -36,7 +36,7 @@ function parseYaml(decoded, budget) {
     return { state: 'ok', document: model, diagnostics: [] }
   } catch (error) {
     return failure(
-      'org.modkitx/text-data-yaml-alias',
+      'modkit/text-data-yaml-alias',
       error instanceof Error ? error.message : String(error),
       decoded.text,
     )

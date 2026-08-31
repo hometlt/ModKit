@@ -15,9 +15,9 @@ import {
   setViewerText,
   ViewerMountScope,
   type ImageEditor,
-} from '@modkitx-x3/ui'
-import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
-import type { ChangeSet, EditorModule, RasterImageSource, SubjectEditTarget } from '@modkitx-x3/sdk'
+} from '@modkit/ui'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkit/ui/localization'
+import type { ChangeSet, EditorModule, RasterImageSource, SubjectEditTarget } from '@modkit/sdk'
 
 /** The same ceiling the read-only image stage applies before it materialises pixels. */
 const MAXIMUM_DECODED_BYTES = 64 * 1024 * 1024

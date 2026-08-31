@@ -1,7 +1,7 @@
 # Modkit UI gallery
 
 UK-1 conformance harness. Not a mock-up: every card mounts the shipped `ViewerModule` from
-`@modkitx-x3/ui` through the real `mount/update/unmount` ABI against an in-memory implementation of
+`@modkit/ui` through the real `mount/update/unmount` ABI against an in-memory implementation of
 the standard data-source contract it consumes. If a viewer regresses, the gallery shows it.
 
 ```bash
@@ -9,7 +9,7 @@ node scripts/build.mjs           # build into dist/
 node scripts/build.mjs --serve   # build and serve on http://localhost:8730
 ```
 
-Run `pnpm --filter @modkitx-x3/ui tokens:emit` first if `packages/ui/styles/modkit-ui.css` is stale.
+Run `pnpm --filter @modkit/ui tokens:emit` first if `packages/ui/styles/modkit-ui.css` is stale.
 
 ## What it proves
 

@@ -11,7 +11,7 @@ import {
   type ResourceBudget,
   type TreeDataSource,
   type VectorSceneSource,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const root = join(import.meta.dirname, '..', '..', '..')
 const extension = join(root, 'extensions', 'vector')

@@ -2,7 +2,7 @@
 // Extension scaffold (plan block 12 item 19; exit gate: «extension scaffold компилируется против
 // реального open(input, intent, budget) ABI»).
 //
-// The golden-path budget in @modkitx-x3/testkit has been asserted since block A-4 — five steps,
+// The golden-path budget in @modkit/testkit has been asserted since block A-4 — five steps,
 // five files, four concepts — but against hand-written numbers, because there was no scaffold to
 // measure. This is the scaffold, and `scripts/test/scaffold.test.ts` measures *its output* and then
 // opens a real subject with it. A budget checked against a constant is a budget checked against
@@ -56,7 +56,7 @@ const magic = 'X3DEMO'
 const files = {
   'package.json': `${JSON.stringify(
     {
-      name: `modkit-extension-x3-${id}`,
+      name: `modkit-extension-${id}`,
       version: '1.0.0',
       license: 'MIT',
       type: 'module',
@@ -74,10 +74,10 @@ const files = {
       // intentional here: a generated third-party package must never depend on the platform's
       // private `workspace:*` protocol.
       peerDependencies: {
-        '@modkitx-x3/codec-kit': '^1.0.0',
-        '@modkitx-x3/sdk': '^0.1.0',
+        '@modkit/codec-kit': '^1.0.0',
+        '@modkit/sdk': '^0.1.0',
       },
-      peerDependenciesMeta: { '@modkitx-x3/sdk': { optional: true } },
+      peerDependenciesMeta: { '@modkit/sdk': { optional: true } },
     },
     null,
     2,
@@ -86,7 +86,7 @@ const files = {
   [`contributions/codec-${id}.json`]: `${JSON.stringify(
     {
       schemaVersion: 1,
-      contract: { id: 'org.modkitx/codec-contribution', major: 1 },
+      contract: { id: 'modkit/codec-contribution', major: 1 },
       id: contributionId,
       displayName: `${id} document`,
       status: 'partial',
@@ -158,7 +158,7 @@ const files = {
  * text data source and answers \`view.inspect\`. The Contribution beside it in contributions/ is
  * what makes the host aware the codec exists, and the Subject is whatever bytes it is opened over.
  */
-import { createInspectionCodec } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec } from '@modkit/codec-kit'
 
 const MAGIC = '${magic}'
 const decoder = new TextDecoder()
@@ -234,7 +234,7 @@ The host opens a subject with \`open(input, intent, budget)\`. This example is c
 \`pnpm docs:conformance\`, so it cannot drift from the ABI:
 
 \`\`\`js
-import { createCodec } from 'modkit-extension-x3-${id}'
+import { createCodec } from 'modkit-extension-${id}'
 
 const codec = createCodec(context)
 const session = await codec.open(input, 'inspect', budget)
@@ -245,8 +245,8 @@ await session.dispose()
 
 ## Where to put it
 
-This is an independent package: install the declared \`@modkitx-x3/codec-kit\` and
-\`@modkitx-x3/sdk\` peer ranges from the Modkit distribution used by the target application. A
+This is an independent package: install the declared \`@modkit/codec-kit\` and
+\`@modkit/sdk\` peer ranges from the Modkit distribution used by the target application. A
 local Modkit checkout can provide packed tarballs of those same public packages for offline
 development; the extension never needs a source path or a \`workspace:*\` dependency.
 

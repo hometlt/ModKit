@@ -5,7 +5,7 @@
  * exact same harness, which is what "testkit proves one public route" means.
  */
 
-import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
+import { ModkitError, type Diagnostic } from '@modkit/core'
 import {
   type ContributionContractRegistration,
   type HostPolicy,
@@ -13,7 +13,7 @@ import {
   type ProviderOffer,
   type ProviderRequest,
   type ResolutionResult,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   activateContribution,
   buildInventory,
@@ -25,8 +25,8 @@ import {
   type Activation,
   type ExtensionExecutionPolicy,
   type Inventory,
-} from '@modkitx-x3/host'
-import { loadExtensionDirectory } from '@modkitx-x3/host/node'
+} from '@modkit/host'
+import { loadExtensionDirectory } from '@modkit/host/node'
 
 export interface MinimalHostOptions {
   readonly extensionDirs: readonly string[]

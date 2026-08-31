@@ -3,8 +3,8 @@ import {
   createByteRangeSource,
   createLazyTableDataSource,
   createUtf8TextDataSource,
-} from '@modkitx-x3/host'
-import type { ByteRangeSource, Row } from '@modkitx-x3/sdk'
+} from '@modkit/host'
+import type { ByteRangeSource, Row } from '@modkit/sdk'
 
 describe('A-6 lazy standard data sources', () => {
   it('pages and searches a large text source without requesting the full file', async () => {

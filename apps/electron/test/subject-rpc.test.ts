@@ -8,15 +8,15 @@
  */
 import { MessageChannel, type MessagePort as NodeMessagePort } from 'node:worker_threads'
 import { afterEach, describe, expect, it } from 'vitest'
-import { revisionId, type ArtifactByteSource } from '@modkitx-x3/sdk'
+import { revisionId, type ArtifactByteSource } from '@modkit/sdk'
 import {
   createEndpoint,
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits,
   type MessagePortLike,
-} from '@modkitx-x3/host/execution'
-import { ABI_ASSET_SESSION } from '@modkitx-x3/host/execution'
+} from '@modkit/host/execution'
+import { ABI_ASSET_SESSION } from '@modkit/host/execution'
 import { ELECTRON_SUBJECT_SERVICES, ELECTRON_SUBJECT_SERVICES_URL } from '../src/index.js'
 import {
   connectElectronSubjectRpc,
@@ -164,7 +164,7 @@ describe('Electron subject RPC — the production pair without the binary', () =
     if (opened.state !== 'opened') throw new Error('open failed')
     // the codec ran worker-brokered in main's worker realm; the wire carried the honest notice
     expect(opened.snapshot.selected).toMatchObject({
-      contributionId: 'org.modkitx/text-json',
+      contributionId: 'modkit/text-json',
       variantId: 'core-native',
     })
     expect(opened.snapshot.diagnostics.map(item => item.code)).toContain(
@@ -288,7 +288,7 @@ describe('Electron subject RPC — the production pair without the binary', () =
     )
     const loaded = await raw.load({
       moduleUrl: ELECTRON_SUBJECT_SERVICES_URL,
-      contributionId: 'org.modkitx.app.electron/subject-services',
+      contributionId: 'modkit.app.electron/subject-services',
       variantId: 'main',
       artifactDigest: 'sha256:app-composition',
     })

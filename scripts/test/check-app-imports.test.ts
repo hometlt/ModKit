@@ -36,7 +36,7 @@ describe('extension-implementation import gate (MK3/27 §7/§11/§12.5)', () => 
     ).toBe(true)
     expect(
       lines.some(
-        l => l.includes('packages/ui/src/index.ts:2') && l.includes('modkit-extension-x3-foo'),
+        l => l.includes('packages/ui/src/index.ts:2') && l.includes('modkit-extension-foo'),
       ),
     ).toBe(true)
     // a commented-out import is not an edge

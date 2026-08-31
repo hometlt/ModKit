@@ -17,6 +17,10 @@ const here = dirname(fileURLToPath(import.meta.url))
 const extensionRoot = resolve(here, '..')
 const repoRoot = resolve(extensionRoot, '..', '..')
 
+// MODKITX_* remains a deprecated read-only alias for existing local CI configuration.
+const readEnvironment = name =>
+  process.env[name] ?? process.env[name.replace(/^MODKIT_/, 'MODKITX_')]
+
 function run(command, args) {
   return new Promise(resolvePromise => {
     const child = spawn(command, args, {
@@ -44,14 +48,10 @@ const freePort = () =>
 
 async function main() {
   console.log('VS Code smoke: building the extension...')
-  const build = await run('pnpm', ['--filter', '@modkitx-x3/modkit-vscode', 'ext:build'])
+  const build = await run('pnpm', ['--filter', '@modkit/modkit-vscode', 'ext:build'])
   if (build.code !== 0) throw new Error(`ext:build failed (${build.code})\n${build.output}`)
 
-  const deterministic = await run('pnpm', [
-    '--filter',
-    '@modkitx-x3/modkit-vscode',
-    'dist-app:check',
-  ])
+  const deterministic = await run('pnpm', ['--filter', '@modkit/modkit-vscode', 'dist-app:check'])
   if (deterministic.code !== 0) {
     throw new Error(`dist-app:check failed (${deterministic.code})\n${deterministic.output}`)
   }
@@ -77,7 +77,8 @@ async function main() {
       copyFileSync(sourcePath, join(workspace, target))
     }
 
-    const cachePath = process.env.MODKITX_VSCODE_TEST_CACHE ?? join(tmpdir(), 'modkitx-vscode-test')
+    const cachePath =
+      readEnvironment('MODKIT_VSCODE_TEST_CACHE') ?? join(tmpdir(), 'modkit-vscode-test')
     console.log('VS Code smoke: resolving the isolated VS Code runtime...')
     const executable = await downloadAndUnzipVSCode({ version: 'stable', cachePath })
     const port = await freePort()
@@ -104,12 +105,12 @@ async function main() {
           `--remote-debugging-port=${port}`,
         ],
         extensionTestsEnv: {
-          MODKITX_SMOKE_EXT_PATH: extensionRoot,
-          MODKITX_SMOKE_RESULTS: resultsPath,
-          MODKITX_SMOKE_CDP_PORT: String(port),
-          MODKITX_SMOKE_FIXTURE_DIR: workspace,
-          MODKITX_SMOKE_REPO_ROOT: repoRoot,
-          MODKITX_SMOKE_PROFILE: 'focused-ga',
+          MODKIT_SMOKE_EXT_PATH: extensionRoot,
+          MODKIT_SMOKE_RESULTS: resultsPath,
+          MODKIT_SMOKE_CDP_PORT: String(port),
+          MODKIT_SMOKE_FIXTURE_DIR: workspace,
+          MODKIT_SMOKE_REPO_ROOT: repoRoot,
+          MODKIT_SMOKE_PROFILE: 'focused-ga',
         },
       })
     } catch (error) {

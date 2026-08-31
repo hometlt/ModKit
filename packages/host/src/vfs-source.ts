@@ -1,6 +1,6 @@
 /** Portable bridge from an explicitly opened VFS mount to the SDK namespace-source contract. */
 
-import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
+import { ModkitError, throwIfAborted } from '@modkit/core'
 import {
   revisionId,
   type ArtifactNamespaceSource,
@@ -9,8 +9,8 @@ import {
   type AssetSourceRef,
   type InputSearchScope,
   type Lease,
-} from '@modkitx-x3/sdk'
-import { normalizeVfsPath, type VfsMount } from '@modkitx-x3/vfs'
+} from '@modkit/sdk'
+import { normalizeVfsPath, type VfsMount } from '@modkit/vfs'
 
 import {
   createCompanionInputResolver,

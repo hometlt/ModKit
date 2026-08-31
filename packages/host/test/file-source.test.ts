@@ -2,9 +2,9 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { isCancellation } from '@modkitx-x3/core'
-import { collectStream } from '@modkitx-x3/vfs'
-import { openFileSource } from '@modkitx-x3/host/node'
+import { isCancellation } from '@modkit/core'
+import { collectStream } from '@modkit/vfs'
+import { openFileSource } from '@modkit/host/node'
 
 const dir = mkdtempSync(join(tmpdir(), 'x3-file-source-'))
 const path = join(dir, 'sample.bin')

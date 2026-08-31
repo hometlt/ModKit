@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // MK2 → MK3 mechanical converter (OPUS-MK2-01 task A/A2; MK3/27 §0.2/§6, 23 §3.1, 24 §3 G4).
 //
-// Reads the sibling `modkitx` (MK2) checkout read-only through the same parser the allocation
+// Reads the sibling `modkit` (MK2) checkout read-only through the same parser the allocation
 // report uses (scripts/lib/mk2-manifests.mjs) and emits, for every codec the report calls
 // `mechanical` or `convertible with rework` (the latter only under the default mode; pass
 // --mechanical-only to reproduce the OPUS-MK2-01 tree), an MK3 extension directory:
@@ -10,7 +10,7 @@
 //   ├── package.json                     "modkit" block = authored extension manifest (27 §0.2)
 //   ├── MK2-CONVERSION.json              inert conversion notes: the debt, as data (task D)
 //   ├── contributions/codec-<id>.json    ContributionManifestV1 + CodecContributionSpecV1
-//   ├── src/<id>/codec.js                probe-only skeleton over @modkitx-x3/codec-kit
+//   ├── src/<id>/codec.js                probe-only skeleton over @modkit/codec-kit
 //   └── README.md
 //
 // What it will NOT do: invent contracts, operations, method surfaces (32 §3), traits or
@@ -270,7 +270,7 @@ const DEFAULT_NAMESPACE_PROBE = {
 }
 
 const NAMESPACE_PROBES = {
-  'org.modkitx/casc': {
+  'modkit/casc': {
     kind: 'namespace',
     markers: ['.build.info', 'Data/config', 'Data/data'],
     maxEntries: 3,
@@ -285,7 +285,7 @@ const OPERATION_RENAMES = { 'image.compressed.read': 'image.compressed-read' }
 
 /** Hand ports can expose a shared operation that the v1 manifest did not declare explicitly. */
 const PORT_OPERATIONS = {
-  'org.modkitx/age-bar': [
+  'modkit/age-bar': [
     {
       id: 'container.extract',
       handlerId: 'extract-entry',
@@ -294,7 +294,7 @@ const PORT_OPERATIONS = {
       outputKinds: ['bytes'],
     },
   ],
-  'org.modkitx/age-drs': [
+  'modkit/age-drs': [
     {
       id: 'container.extract',
       handlerId: 'extract-entry',
@@ -303,7 +303,7 @@ const PORT_OPERATIONS = {
       outputKinds: ['bytes'],
     },
   ],
-  'org.modkitx/big': [
+  'modkit/big': [
     {
       id: 'container.extract',
       handlerId: 'extract-entry',
@@ -312,7 +312,7 @@ const PORT_OPERATIONS = {
       outputKinds: ['bytes'],
     },
   ],
-  'org.modkitx/mpq': [
+  'modkit/mpq': [
     {
       id: 'container.extract',
       handlerId: 'extract-entry',
@@ -342,7 +342,7 @@ const WILDCARD_GLOB = '**/*'
  * a rule that cannot be pointed at a paragraph does not belong here.
  */
 const PORT_SIGNATURES = {
-  'org.modkitx/ani': {
+  'modkit/ani': {
     source:
       'Microsoft RIFF animated cursor form type ACON at byte 8; Warzone 2100 text animation header ANIM3DFRAMES at byte 0',
     signatures: [
@@ -350,16 +350,16 @@ const PORT_SIGNATURES = {
       { from: 'start', offset: 0, bytesHex: '414e494d33444652414d4553' },
     ],
   },
-  'org.modkitx/avif': {
+  'modkit/avif': {
     source:
       'ISO/IEC 14496-12 §4.3 (FileTypeBox: the "ftyp" box type at byte 4); the codec probe then requires an AVIF brand',
     signatures: [{ from: 'start', offset: 4, bytesHex: '66747970' }],
   },
-  'org.modkitx/basis': {
+  'modkit/basis': {
     source: 'Basis Universal container specification (file signature "sB" at byte zero)',
     signatures: [{ from: 'start', offset: 0, bytesHex: '7342' }],
   },
-  'org.modkitx/pal': {
+  'modkit/pal': {
     source:
       'JASC-PAL text identifier at byte 0; Microsoft RIFF palette form type PAL followed by space at byte 8',
     signatures: [
@@ -367,17 +367,17 @@ const PORT_SIGNATURES = {
       { from: 'start', offset: 8, bytesHex: '50414c20' },
     ],
   },
-  'org.modkitx/pcx': {
+  'modkit/pcx': {
     source:
       'ZSoft PCX file header manufacturer byte 0A at byte 0; the codec probe validates version, encoding, dimensions, planes, and stride',
     signatures: [{ from: 'start', offset: 0, bytesHex: '0a' }],
   },
-  'org.modkitx/tga': {
+  'modkit/tga': {
     source:
       'Truevision TGA 2.0 footer signature TRUEVISION-XFILE followed by dot and NUL, starting 18 bytes before end of file',
     signatures: [{ from: 'end', offset: 18, bytesHex: '54525545564953494f4e2d5846494c452e00' }],
   },
-  'org.modkitx/tiff': {
+  'modkit/tiff': {
     source:
       'TIFF 6.0 §2 byte-order marker plus version 42: little-endian II 2A 00 or big-endian MM 00 2A',
     signatures: [
@@ -385,7 +385,7 @@ const PORT_SIGNATURES = {
       { from: 'start', offset: 0, bytesHex: '4d4d002a' },
     ],
   },
-  'org.modkitx/m3': {
+  'modkit/m3': {
     source:
       'Blizzard M3 container header: reversed little-endian MD33 / MD34 tags at byte zero (M3_FILE_FORMAT_SPECIFICATION, header and index table)',
     signatures: [
@@ -393,11 +393,11 @@ const PORT_SIGNATURES = {
       { from: 'start', offset: 0, bytesHex: '3433444d' },
     ],
   },
-  'org.modkitx/flv': {
+  'modkit/flv': {
     source: 'Adobe Video File Format Specification v10.1 §E.2 (FLV header: "FLV" + version)',
     signatures: [{ from: 'start', offset: 0, bytesHex: '464c5601' }],
   },
-  'org.modkitx/swf': {
+  'modkit/swf': {
     source: 'SWF File Format Specification v19 §"The SWF header" (FWS / CWS / ZWS)',
     signatures: [
       { from: 'start', offset: 0, bytesHex: '465753' },
@@ -405,26 +405,26 @@ const PORT_SIGNATURES = {
       { from: 'start', offset: 0, bytesHex: '5a5753' },
     ],
   },
-  'org.modkitx/ogg': {
+  'modkit/ogg': {
     source:
       'RFC 3533 §6 (Ogg "OggS" capture pattern) + RFC 5334 §4 / Vorbis I §4.2.1 (packet type 1 + "vorbis" identification header in the first page payload, which starts at byte 28 of a one-segment page)',
     signatures: [{ from: 'start', offset: 28, bytesHex: '01766f72626973' }],
   },
-  'org.modkitx/opus': {
+  'modkit/opus': {
     source:
       'RFC 3533 §6 (Ogg capture pattern) + RFC 7845 §5.1 ("OpusHead" identification header, first page payload at byte 28)',
     signatures: [{ from: 'start', offset: 28, bytesHex: '4f70757348656164' }],
   },
-  'org.modkitx/ogv': {
+  'modkit/ogv': {
     source:
       'RFC 3533 §6 (Ogg capture pattern) + Theora I §6.1 (theora identification header, first page payload at byte 28)',
     signatures: [{ from: 'start', offset: 28, bytesHex: '807468656f7261' }],
   },
-  'org.modkitx/mp4': {
+  'modkit/mp4': {
     source: 'ISO/IEC 14496-12 §4.3 (FileTypeBox: the "ftyp" box type at byte 4)',
     signatures: [{ from: 'start', offset: 4, bytesHex: '66747970' }],
   },
-  'org.modkitx/mpeg': {
+  'modkit/mpeg': {
     source:
       'ISO/IEC 11172-1 §2.4.3.2 (pack start code 00 00 01 BA) and ISO/IEC 11172-2 §2.4.2.3 (sequence header code 00 00 01 B3)',
     signatures: [
@@ -432,26 +432,26 @@ const PORT_SIGNATURES = {
       { from: 'start', offset: 0, bytesHex: '000001b3' },
     ],
   },
-  'org.modkitx/webm': {
+  'modkit/webm': {
     source: 'RFC 8794 §4.1 (EBML header element id 1A 45 DF A3) — Matroska/WebM container',
     signatures: [{ from: 'start', offset: 0, bytesHex: '1a45dfa3' }],
   },
 }
 
 const PORT_LIMITATIONS = {
-  'org.modkitx/big': [
+  'modkit/big': [
     'The MK3 port reads BIG4/BIGF tables and stored or RefPack entries; deterministic repacking and all mutation paths remain pending.',
   ],
-  'org.modkitx/mpq': [
+  'modkit/mpq': [
     'The MK3 port reads classic MPQ v0-v3 hash/block tables and stored or zlib payloads; encrypted, implode, bzip2, patch, high-offset, and writing paths remain pending.',
   ],
-  'org.modkitx/m3': [
+  'modkit/m3': [
     'The MK3 port indexes MD33/MD34 sections and publishes a metadata-only scene; decoded geometry, materials, skeletons, animations, external M3A sidecars, and writing remain pending.',
   ],
 }
 
 const PORT_MAY_EXPOSE_TRAITS = {
-  'org.modkitx/m3': new Set([
+  'modkit/m3': new Set([
     'model.animations',
     'model.geometry',
     'model.materials',
@@ -488,7 +488,7 @@ const VERDICT_WIRE = {
 }
 
 const GENERATED_MARKER = '@generated by scripts/convert-mk2.mjs'
-const CODEC_KIT = '@modkitx-x3/codec-kit'
+const CODEC_KIT = '@modkit/codec-kit'
 
 // ---------------------------------------------------------------- helpers
 
@@ -756,7 +756,7 @@ function convertCodec(analysis, codec) {
 
   const contribution = {
     schemaVersion: 1,
-    contract: { id: 'org.modkitx/codec-contribution', major: 1 },
+    contract: { id: 'modkit/codec-contribution', major: 1 },
     id: contributionId,
     displayName,
     ...(manifest.status === undefined ? {} : { status: manifest.status }),
@@ -931,7 +931,7 @@ function codecModuleSource(converted, sourceRel) {
 
 function packageJsonSource(group) {
   return {
-    name: `modkit-extension-mk2-${group.directory}`,
+    name: `modkit-extension-${group.directory}`,
     version: group.version,
     license: group.license,
     private: true,
@@ -1030,7 +1030,7 @@ function conversionNotesSource(group) {
     $comment: NOTES_COMMENT,
     schemaVersion: 1,
     source: {
-      repository: 'modkitx',
+      repository: 'modkit',
       manifests: group.codecs.map(codec => codec.sourceRel).sort(),
     },
     verdict: group.codecs.some(codec => codec.verdict === 'needs new contract')
@@ -1051,16 +1051,16 @@ const converted = []
 const collisions = []
 
 function splitOwner(publisher, id, contributionId) {
-  if (publisher === 'org.modkitx.ea' && id === 'sage' && contributionId === 'org.modkitx/big') {
+  if (publisher === 'modkit.ea' && id === 'sage' && contributionId === 'modkit/big') {
     return { directory: 'ea-big', publisher, id: 'big' }
   }
-  if (publisher === 'org.modkitx.blizzard' && id === 'archives') {
-    return contributionId === 'org.modkitx/casc'
+  if (publisher === 'modkit.blizzard' && id === 'archives') {
+    return contributionId === 'modkit/casc'
       ? { directory: 'blizzard-casc', publisher, id: 'casc' }
       : { directory: 'blizzard-mpq', publisher, id: 'mpq' }
   }
-  if (publisher === 'org.modkitx.blizzard' && id === 'starcraft-2') {
-    return contributionId === 'org.modkitx/m3'
+  if (publisher === 'modkit.blizzard' && id === 'starcraft-2') {
+    return contributionId === 'modkit/m3'
       ? { directory: 'blizzard-models', publisher, id: 'models' }
       : { directory: 'blizzard-starcraft2', publisher, id: 'starcraft2' }
   }

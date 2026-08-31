@@ -1,10 +1,10 @@
-import type { ServiceProviderContributionSpecV1 } from '@modkitx-x3/sdk/formats'
+import type { ServiceProviderContributionSpecV1 } from '@modkit/sdk/formats'
 import type {
   LanguageProvider,
   LanguageProviderModule,
   LanguageProviderRequestFacet,
-} from '@modkitx-x3/sdk/language'
-import type { TypedServiceContractRequest } from '@modkitx-x3/sdk/service-contracts'
+} from '@modkit/sdk/language'
+import type { TypedServiceContractRequest } from '@modkit/sdk/service-contracts'
 
 export const galaxyRoute = {
   contract: 'common.language/document-analysis',

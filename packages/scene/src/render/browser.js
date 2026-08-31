@@ -1,6 +1,6 @@
-import { SCENE_RENDERER_CONTRACT } from '@modkitx-x3/sdk/renderer'
+import { SCENE_RENDERER_CONTRACT } from '@modkit/sdk/renderer'
 
-const RENDERER_ID = 'modkitx.browser-webgl'
+const RENDERER_ID = 'modkit.browser-webgl'
 const MAX_DIMENSION = 4_096
 
 function compile(gl, type, source) {
@@ -129,7 +129,7 @@ export async function renderBrowser(request) {
     if (mode === undefined) {
       diagnostics.push({
         severity: 'warning',
-        code: 'modkitx.browser-webgl/unsupported-topology',
+        code: 'modkit.browser-webgl/unsupported-topology',
         message: `browser renderer skipped ${primitive.topology}`,
         primitiveId: primitive.id,
       })

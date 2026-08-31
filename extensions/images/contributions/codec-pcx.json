@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
-  "id": "org.modkitx/pcx",
+  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "id": "modkit/pcx",
   "displayName": "ZSoft Paintbrush PCX",
   "status": "partial",
   "runtimeVariants": [

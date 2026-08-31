@@ -68,19 +68,19 @@
     "profiles": [
       {
         "id": "image-viewer-only",
-        "entry": "@modkitx-x3/ui/image",
+        "entry": "@modkit/ui/image",
         "budgetBytes": 200000,
         "forbids": "every heavy UI marker except its own"
       },
       {
         "id": "hex-only",
-        "entry": "@modkitx-x3/ui/hex",
+        "entry": "@modkit/ui/hex",
         "budgetBytes": null,
         "forbids": "every heavy UI marker except Byte offset"
       },
       {
         "id": "headless-host",
-        "entry": "@modkitx-x3/host/node",
+        "entry": "@modkit/host/node",
         "budgetBytes": null,
         "forbids": "data-mk-part, monaco-editor"
       },
@@ -92,55 +92,55 @@
       },
       {
         "id": "vfs-provider-file",
-        "entry": "@modkitx-x3/vfs/providers/file",
+        "entry": "@modkit/vfs/providers/file",
         "budgetBytes": null,
         "forbids": "unrelated provider implementations"
       },
       {
         "id": "vfs-portable-root",
-        "entry": "@modkitx-x3/vfs",
+        "entry": "@modkit/vfs",
         "budgetBytes": null,
         "forbids": "any provider implementation"
       },
       {
         "id": "sdk-language",
-        "entry": "@modkitx-x3/sdk/language",
+        "entry": "@modkit/sdk/language",
         "budgetBytes": null,
         "forbids": "host, runtime ABI, presentation contracts"
       },
       {
         "id": "sdk-runtime",
-        "entry": "@modkitx-x3/sdk/runtime",
+        "entry": "@modkit/sdk/runtime",
         "budgetBytes": null,
         "forbids": "language, renderer, host implementation"
       },
       {
         "id": "sdk-renderer",
-        "entry": "@modkitx-x3/sdk/renderer",
+        "entry": "@modkit/sdk/renderer",
         "budgetBytes": null,
         "forbids": "language, runtime, host implementation"
       },
       {
         "id": "sdk-games",
-        "entry": "@modkitx-x3/sdk/games",
+        "entry": "@modkit/sdk/games",
         "budgetBytes": null,
         "forbids": "language, runtime, renderer, host implementation"
       },
       {
         "id": "sdk-mods",
-        "entry": "@modkitx-x3/sdk/mods",
+        "entry": "@modkit/sdk/mods",
         "budgetBytes": null,
         "forbids": "language, runtime, renderer, host implementation"
       },
       {
         "id": "sdk-data",
-        "entry": "@modkitx-x3/sdk/data",
+        "entry": "@modkit/sdk/data",
         "budgetBytes": null,
         "forbids": "game parser, renderer, host implementation"
       },
       {
         "id": "sdk-maps",
-        "entry": "@modkitx-x3/sdk/maps",
+        "entry": "@modkit/sdk/maps",
         "budgetBytes": null,
         "forbids": "game parser, renderer, host implementation"
       }
@@ -236,7 +236,7 @@
         "capability": "lsp",
         "status": "available",
         "units": ["sdk", "host"],
-        "subpaths": ["@modkitx-x3/sdk/language", "@modkitx-x3/host/language"],
+        "subpaths": ["@modkit/sdk/language", "@modkit/host/language"],
         "extensionFamilies": [],
         "note": "language contracts plus the host router; the editor surface itself is ui and is a separate choice"
       },
@@ -244,7 +244,7 @@
         "capability": "renderer",
         "status": "available",
         "units": ["sdk", "scene"],
-        "subpaths": ["@modkitx-x3/sdk/renderer", "@modkitx-x3/scene"],
+        "subpaths": ["@modkit/sdk/renderer", "@modkit/scene"],
         "extensionFamilies": [],
         "note": "contracts remain in sdk while the default browser and headless providers are statically composed from the built-in scene package"
       },
@@ -252,7 +252,7 @@
         "capability": "runtime",
         "status": "available",
         "units": ["sdk", "host"],
-        "subpaths": ["@modkitx-x3/sdk/runtime", "@modkitx-x3/host/runtime"],
+        "subpaths": ["@modkit/sdk/runtime", "@modkit/host/runtime"],
         "extensionFamilies": [],
         "note": "session v2 was frozen in slice 12-4; no runtime provider ships yet, so a product taking this closure gets the contract and the routing, not an engine"
       },
@@ -262,7 +262,7 @@
         "units": [],
         "subpaths": [],
         "extensionFamilies": [],
-        "note": "legacy @modkitx/agent-tools has an owner row (sdk) and no ported surface; a closure with no published subpath cannot be declared available"
+        "note": "legacy @modkit/agent-tools has an owner row (sdk) and no ported surface; a closure with no published subpath cannot be declared available"
       },
       {
         "capability": "external-tools",

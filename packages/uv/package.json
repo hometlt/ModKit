@@ -1,5 +1,5 @@
 {
-  "name": "@modkitx-x3/uv",
+  "name": "@modkit/uv",
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
@@ -25,6 +25,6 @@
     "README.md"
   ],
   "dependencies": {
-    "@modkitx-x3/host": "workspace:*"
+    "@modkit/host": "workspace:*"
   }
 }

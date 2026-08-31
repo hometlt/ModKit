@@ -2,8 +2,8 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource,
-} from '@modkitx-x3/host'
-import { revisionId } from '@modkitx-x3/sdk'
+} from '@modkit/host'
+import { revisionId } from '@modkit/sdk'
 
 const BASE_OPERATIONS = Object.freeze([
   {
@@ -92,7 +92,7 @@ export function createTextCodec(definition, context) {
         text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
       } catch {
         return {
-          codecId: `org.modkitx/text-${definition.format}`,
+          codecId: `modkit/text-${definition.format}`,
           confidence: 0.01,
           evidence: [{ kind: 'structure', weight: -1, note: 'invalid-utf8' }],
           requiredRanges: [{ byteOffset: '0', byteLength: String(bytes.byteLength) }],
@@ -100,7 +100,7 @@ export function createTextCodec(definition, context) {
       }
       const result = definition.detect(text, request.source.ref.uri)
       return {
-        codecId: `org.modkitx/text-${definition.format}`,
+        codecId: `modkit/text-${definition.format}`,
         confidence: result.confidence,
         evidence: [{ kind: 'structure', weight: result.confidence, note: result.note }],
         requiredRanges: [{ byteOffset: '0', byteLength: String(bytes.byteLength) }],
@@ -177,7 +177,7 @@ export function createTextCodec(definition, context) {
         },
         interpretation: 'codec',
         identity: {
-          codecId: `org.modkitx/text-${definition.format}`,
+          codecId: `modkit/text-${definition.format}`,
           codecVersion: '1.0.0',
           formatId: definition.format,
           formatLabel: definition.format.toUpperCase(),

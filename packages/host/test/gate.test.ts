@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canonicalJsonStringify, contractId, isModkitError } from '@modkitx-x3/core'
+import { canonicalJsonStringify, contractId, isModkitError } from '@modkit/core'
 import {
   assertNotWider,
   createContributionContractRegistry,
@@ -10,7 +10,7 @@ import {
   type ProviderOffer,
   type ProviderRequest,
   type RuntimeTarget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   activateContribution,
   buildInventory,
@@ -22,7 +22,7 @@ import {
   resolveProvider,
   type ActivationTicket,
   type ExtensionExecutionPolicy,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 // White-box import: the free issuer is deliberately NOT part of the package surface, so
 // the provenance test reaches it through the module it lives in.
 import { issueActivationTicket, PROBE_OPERATION } from '../src/security/gate.js'

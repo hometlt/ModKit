@@ -1,4 +1,4 @@
-import { defineLinkedExtension } from '@modkitx-x3/host'
+import { defineLinkedExtension } from '@modkit/host'
 
 import aniManifest from '../contributions/codec-ani.json' with { type: 'json' }
 import astcManifest from '../contributions/codec-astc.json' with { type: 'json' }

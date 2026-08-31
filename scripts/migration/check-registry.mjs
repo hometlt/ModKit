@@ -356,7 +356,7 @@ function deriveX3Facts() {
   const byId = new Map()
   for (const file of files) {
     const json = readJson(file.absolute)
-    if (json.contract?.id !== 'org.modkitx/codec-contribution') continue
+    if (json.contract?.id !== 'modkit/codec-contribution') continue
     byId.set(json.id, { file: file.file, json })
   }
   return byId
@@ -371,7 +371,7 @@ function deriveParityFacts() {
   )
   const byShortId = new Map()
   for (const row of readJson(parityReportPath).results) {
-    const short = `org.modkitx/${row.contributionId.slice(row.contributionId.lastIndexOf('/') + 1)}`
+    const short = `modkit/${row.contributionId.slice(row.contributionId.lastIndexOf('/') + 1)}`
     if (!byShortId.has(short)) byShortId.set(short, [])
     byShortId.get(short).push(row)
   }

@@ -9,7 +9,7 @@ import type {
   MetadataGroup,
   ResolvedAssetDescriptor,
   ViewerModule,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,

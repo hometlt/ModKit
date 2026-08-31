@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { LOCALIZATION_CONTRIBUTION_CONTRACT, LOCALIZATION_CONTRIBUTION_FACT } from '@modkitx-x3/sdk'
-import { createHostContributionContractRegistry } from '@modkitx-x3/host'
+import { LOCALIZATION_CONTRIBUTION_CONTRACT, LOCALIZATION_CONTRIBUTION_FACT } from '@modkit/sdk'
+import { createHostContributionContractRegistry } from '@modkit/host'
 
 describe('host contribution registry', () => {
   it('ships the localization contribution as an inert data-only contract', () => {
@@ -9,7 +9,7 @@ describe('host contribution registry', () => {
       1,
     )
     expect(registration?.mode).toBe('data-only')
-    expect(registration?.conformanceProfile).toBe('org.modkitx/localization-contribution-v1')
+    expect(registration?.conformanceProfile).toBe('modkit/localization-contribution-v1')
     if (registration === undefined) throw new Error('localization registration is missing')
     const projected = registration.project(
       {

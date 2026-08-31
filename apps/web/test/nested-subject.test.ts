@@ -16,9 +16,9 @@
  */
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { nestedSubjectServices, openNestedSubject } from '@modkitx-x3/host'
-import { proves } from '@modkitx-x3/testkit'
-import type { NamespaceEntrySource } from '@modkitx-x3/sdk'
+import { nestedSubjectServices, openNestedSubject } from '@modkit/host'
+import { proves } from '@modkit/testkit'
+import type { NamespaceEntrySource } from '@modkit/sdk'
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import { createWebSubjectServices } from '../src/subjects.js'
 import {

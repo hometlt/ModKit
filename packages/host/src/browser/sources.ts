@@ -9,11 +9,11 @@ export {
   type BrowserDirectoryHandle,
   type BrowserFileHandle,
   type BrowserFileSnapshot,
-} from '@modkitx-x3/vfs/providers/browser-file'
+} from '@modkit/vfs/providers/browser-file'
 export {
   createHttpRangeSource,
   type HttpFetch as BrowserFetch,
   type HttpFetchHeaders as BrowserFetchHeaders,
   type HttpFetchResponse as BrowserFetchResponse,
   type HttpRangeSourceOptions,
-} from '@modkitx-x3/vfs/providers/http'
+} from '@modkit/vfs/providers/http'

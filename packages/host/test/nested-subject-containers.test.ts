@@ -2,15 +2,15 @@
 import { join } from 'node:path'
 import { crc32, deflateRawSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
-import { isModkitError } from '@modkitx-x3/core'
+import { isModkitError } from '@modkit/core'
 import {
   buildInventory,
   createExecutionBackendRegistry,
   createHostContributionContractRegistry,
   openSubject,
   type Inventory,
-} from '@modkitx-x3/host'
-import { loadExtensionDirectory } from '@modkitx-x3/host/node'
+} from '@modkit/host'
+import { loadExtensionDirectory } from '@modkit/host/node'
 import {
   revisionId,
   type ArtifactByteSource,
@@ -18,7 +18,7 @@ import {
   type NamespaceEntrySource,
   type PageRequest,
   type ResourceBudget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { openNestedSubject } from '../src/nested-subject.js'
 import { createNamespaceCompanionOrigin } from '../src/namespace-origin.js'
 import { COMPANION_BUDGET_EXCEEDED, createCompanionInputResolver } from '../src/input-resolution.js'
@@ -141,7 +141,7 @@ async function openZip(entries: readonly ZipEntryInput[], name: string): Promise
     executionBackends,
   })
   if (result.state !== 'opened') throw new Error(JSON.stringify(result.diagnostics))
-  expect(result.selected.contributionId).toBe('org.modkitx/archive-zip')
+  expect(result.selected.contributionId).toBe('modkit/archive-zip')
   return result.session
 }
 
@@ -242,7 +242,7 @@ describe('a container inside another container uses the same nested route twice'
       if (nestedArchive.result.state !== 'opened') {
         throw new Error(JSON.stringify(nestedArchive.result.diagnostics))
       }
-      expect(nestedArchive.result.selected.contributionId).toBe('org.modkitx/archive-zip')
+      expect(nestedArchive.result.selected.contributionId).toBe('modkit/archive-zip')
       try {
         const mesh = await openNestedSubject({
           parent: nestedArchive.result.session,

@@ -1,4 +1,4 @@
-import { defineLinkedExtension } from '@modkitx-x3/host'
+import { defineLinkedExtension } from '@modkit/host'
 
 import aviManifest from '../contributions/codec-avi.json' with { type: 'json' }
 import mp4Manifest from '../contributions/codec-mp4.json' with { type: 'json' }

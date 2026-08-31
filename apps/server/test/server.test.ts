@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { commandRequest, COMMAND_PROTOCOL_SCHEMA_VERSION } from '@modkitx-x3/host'
-import { openFileArtifactSource } from '@modkitx-x3/host/node'
+import { commandRequest, COMMAND_PROTOCOL_SCHEMA_VERSION } from '@modkit/host'
+import { openFileArtifactSource } from '@modkit/host/node'
 
 import {
   createServerApp,
@@ -20,10 +20,10 @@ describe('server composition root', () => {
     expect(health.extensionCount).toBe(1)
     expect(app.composition.inventory.extensions[0]).toMatchObject({
       source: 'native:core/text',
-      manifest: { publisher: 'org.modkitx', id: 'core-native-text' },
+      manifest: { publisher: 'modkit', id: 'core-native-text' },
     })
     expect(health.realmId).toBe(SERVER_REALM)
-    expect(health.topologyId).toBe('org.modkitx.app/server')
+    expect(health.topologyId).toBe('modkit.app/server')
     expect(app.commandContracts.schemaVersion).toBe(COMMAND_PROTOCOL_SCHEMA_VERSION)
     expect(app.commandContracts.commands).toHaveLength(6)
     expect(typeof app.runCommand).toBe('function')
@@ -130,7 +130,7 @@ describe('server open path (S7)', () => {
     expect(result.state).toBe('opened')
     if (result.state !== 'opened') throw new Error(result.reason)
     expect(result.selected).toMatchObject({
-      contributionId: 'org.modkitx/image-png',
+      contributionId: 'modkit/image-png',
       variantId: 'portable',
     })
     expect(result.diagnostics.map(item => item.code)).toContain('x3.host/worker-shared-process')
@@ -141,7 +141,7 @@ describe('server open path (S7)', () => {
     const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
     const app = await createServerApp([], {
       extensionRoots: [join(repositoryRoot, 'extensions', 'images')],
-      disabledContributions: ['org.modkitx/image-png'],
+      disabledContributions: ['modkit/image-png'],
     })
     expect(app.composition.inventory.extensions).toHaveLength(2)
     expect(app.subjects.supportedExtensions).toContain('png')
@@ -150,7 +150,7 @@ describe('server open path (S7)', () => {
         .flatMap(extension => extension.contributions)
         .some(
           contribution =>
-            contribution.manifest?.id === 'org.modkitx/image-png' &&
+            contribution.manifest?.id === 'modkit/image-png' &&
             contribution.activationEligible === false,
         ),
     ).toBe(true)

@@ -1,6 +1,6 @@
 /** Presentation contracts only. Resolution and validation implementations land in A-6. */
 
-import { isSegment } from '@modkitx-x3/core'
+import { isSegment } from '@modkit/core'
 import type {
   DataSourceMajor,
   DataSourceOf,

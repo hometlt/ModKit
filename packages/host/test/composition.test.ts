@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { uint64 } from '@modkitx-x3/core'
-import { createHostComposition, EXTENSION_DISABLED_CODE } from '@modkitx-x3/host'
+import { uint64 } from '@modkit/core'
+import { createHostComposition, EXTENSION_DISABLED_CODE } from '@modkit/host'
 
 describe('host composition root', () => {
   it('starts with only the native text inventory and keeps realm facilities isolated', async () => {
     const composition = await createHostComposition({
-      realmId: 'org.modkitx.test/renderer',
+      realmId: 'modkit.test/renderer',
       topology: {
         schemaVersion: 1,
-        topologyId: 'org.modkitx.test/electron',
+        topologyId: 'modkit.test/electron',
         realms: [
           {
             schemaVersion: 1,
-            realmId: 'org.modkitx.test/main',
+            realmId: 'modkit.test/main',
             revision: '1',
             target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
             facilities: ['process.launch'],
@@ -23,11 +23,11 @@ describe('host composition root', () => {
               maxTransferBytes: uint64('100000'),
               defaultDeadlineMs: 1000,
             },
-            policy: { id: 'org.modkitx.test/default', revision: '1' },
+            policy: { id: 'modkit.test/default', revision: '1' },
           },
           {
             schemaVersion: 1,
-            realmId: 'org.modkitx.test/renderer',
+            realmId: 'modkit.test/renderer',
             revision: '1',
             target: {
               environment: 'browser-main',
@@ -42,13 +42,13 @@ describe('host composition root', () => {
               maxTransferBytes: uint64('100000'),
               defaultDeadlineMs: 1000,
             },
-            policy: { id: 'org.modkitx.test/renderer', revision: '1' },
+            policy: { id: 'modkit.test/renderer', revision: '1' },
           },
         ],
         links: [
           {
-            fromRealm: 'org.modkitx.test/renderer',
-            toRealm: 'org.modkitx.test/main',
+            fromRealm: 'modkit.test/renderer',
+            toRealm: 'modkit.test/main',
             transports: ['rpc-handle'],
           },
         ],
@@ -58,7 +58,7 @@ describe('host composition root', () => {
     expect(composition.inventory.extensions[0]).toMatchObject({
       source: 'native:core/text',
       origin: 'bundled',
-      manifest: { publisher: 'org.modkitx', id: 'core-native-text' },
+      manifest: { publisher: 'modkit', id: 'core-native-text' },
     })
     expect(composition.target.hostCapabilities).toEqual(['gpu.webgl2'])
     expect(composition.target.hostCapabilities).not.toContain('process.launch')
@@ -67,15 +67,15 @@ describe('host composition root', () => {
 
   it('threads disabled extension coordinates into the composed inventory', async () => {
     const composition = await createHostComposition({
-      realmId: 'org.modkitx.test/renderer',
-      disabledExtensions: ['org.modkitx/core-native-text'],
+      realmId: 'modkit.test/renderer',
+      disabledExtensions: ['modkit/core-native-text'],
       topology: {
         schemaVersion: 1,
-        topologyId: 'org.modkitx.test/disabled-extension',
+        topologyId: 'modkit.test/disabled-extension',
         realms: [
           {
             schemaVersion: 1,
-            realmId: 'org.modkitx.test/renderer',
+            realmId: 'modkit.test/renderer',
             revision: '1',
             target: {
               environment: 'browser-main',
@@ -90,7 +90,7 @@ describe('host composition root', () => {
               maxTransferBytes: uint64('100000'),
               defaultDeadlineMs: 1000,
             },
-            policy: { id: 'org.modkitx.test/default', revision: '1' },
+            policy: { id: 'modkit.test/default', revision: '1' },
           },
         ],
         links: [],

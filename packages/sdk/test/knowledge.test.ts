@@ -5,7 +5,7 @@ import {
   isKnowledgeTarget,
   isKnowledgeLocaleTag,
   type KnowledgeTarget,
-} from '@modkitx-x3/sdk/knowledge'
+} from '@modkit/sdk/knowledge'
 
 describe('knowledge contracts', () => {
   it('builds deterministic locale fallbacks from the most specific tag', () => {

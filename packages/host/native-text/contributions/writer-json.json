@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "id": "org.modkitx/service-provider-contribution",
+    "id": "modkit/service-provider-contribution",
     "major": 1
   },
-  "id": "org.modkitx/text-json-writer",
+  "id": "modkit/text-json-writer",
   "displayName": "JSON and JSONC text writer",
   "runtimeVariants": [
     {
@@ -26,7 +26,7 @@
         "major": 1,
         "version": "1.0.0",
         "facet": {
-          "providerId": "org.modkitx/text-json-writer",
+          "providerId": "modkit/text-json-writer",
           "fidelityEvidenceId": "text-json-text-writer-v1",
           "formatId": "json",
           "representationId": "source",
@@ -40,7 +40,7 @@
         "major": 1,
         "version": "1.0.0",
         "facet": {
-          "providerId": "org.modkitx/text-json-writer",
+          "providerId": "modkit/text-json-writer",
           "fidelityEvidenceId": "text-json-text-writer-v1",
           "formatId": "jsonc",
           "representationId": "source",

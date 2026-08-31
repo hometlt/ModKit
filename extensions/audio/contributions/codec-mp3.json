@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
-  "id": "org.modkitx/audio-mp3",
+  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "id": "modkit/audio-mp3",
   "displayName": "MP3 audio",
   "runtimeVariants": [
     {

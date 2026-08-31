@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canonicalJsonStringify } from '@modkitx-x3/core'
+import { canonicalJsonStringify } from '@modkit/core'
 import {
   EDITOR_CONTRIBUTION_CONTRACT,
   revisionId,
@@ -17,14 +17,14 @@ import {
   type SubjectEditTarget,
   type Writer,
   type WriterIdentity,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   createCommitCoordinator,
   createEditSession,
   createGrantSnapshot,
   createHostContributionContractRegistry,
   type EditingBackend,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 
 const source = (id: string) => ({ id, uri: `memory://${id}` })
 

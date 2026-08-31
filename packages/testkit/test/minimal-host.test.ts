@@ -1,11 +1,11 @@
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { contractId, isModkitError, traitId } from '@modkitx-x3/core'
-import type { ProviderRequest } from '@modkitx-x3/sdk'
-import { asGreeterModule, greeterSpecEntry, runMinimalHost } from '@modkitx-x3/testkit'
+import { contractId, isModkitError, traitId } from '@modkit/core'
+import type { ProviderRequest } from '@modkit/sdk'
+import { asGreeterModule, greeterSpecEntry, runMinimalHost } from '@modkit/testkit'
 
 const exampleDir = fileURLToPath(
-  new URL('../../../examples/modkit-extension-x3-greeter', import.meta.url),
+  new URL('../../../examples/modkit-extension-greeter', import.meta.url),
 )
 
 const request: ProviderRequest = {

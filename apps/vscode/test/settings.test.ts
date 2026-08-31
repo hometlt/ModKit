@@ -36,16 +36,17 @@ import {
   withExtensionRoot,
   withoutExtension,
 } from '../src/extension-roots.js'
-import { openFileArtifactSource } from '@modkitx-x3/host/node'
+import { openFileArtifactSource } from '@modkit/host/node'
 
 import { createVsCodeSubjectHost, type VsCodeConfigurationPort } from '../src/host.js'
 import type { WebviewChannel } from '../src/bridge.js'
 import { createBridge } from '../src/bridge.js'
+import type { ExtensionCardResourceTarget } from '../src/extension-cards.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
 /** The directory the first-party catalog lives in; discovery scans its children, not itself. */
 const commonExtensions = join(repositoryRoot, 'extensions')
-const PNG_CODEC = 'org.modkitx/image-png'
+const PNG_CODEC = 'modkit/image-png'
 
 const extensionFolders = ((): { readonly ok: string; readonly junk: string } => {
   const target = join(mkdtempSync(join(tmpdir(), 'modkit-vscode-extfix-')), 'folders')
@@ -112,14 +113,26 @@ describe('rewriting modkit.extensions', () => {
 
 describe('rewriting modkit.disabledContributions', () => {
   it('normalizes a hand-edited list into a sorted set and says what it dropped', () => {
-    const { ids, problems } = configuredDisabledContributions(['b', 'a', 'a', 3, ' '])
-    expect(ids).toEqual(['a', 'b'])
+    const { ids, problems } = configuredDisabledContributions([
+      'b',
+      'a',
+      'a',
+      'org.modkitx/image-png',
+      'modkit/image-png',
+      3,
+      ' ',
+    ])
+    expect(ids).toEqual(['a', 'b', 'modkit/image-png'])
     expect(problems).toHaveLength(2)
   })
 
   it('adds and removes one id, and reports when nothing changed', () => {
     expect(withContributionDisabled(['a'], 'b', true).next).toEqual(['a', 'b'])
     expect(withContributionDisabled(['a', 'b'], 'a', false).next).toEqual(['b'])
+    expect(withContributionDisabled(['org.modkitx/image-png'], 'modkit/image-png', true)).toEqual({
+      next: ['modkit/image-png'],
+      changed: false,
+    })
     expect(withContributionDisabled(['a'], 'a', true).changed).toBe(false)
     expect(withContributionDisabled(undefined, 'a', false).changed).toBe(false)
   })
@@ -138,10 +151,9 @@ describe('rewriting modkit.disabledContributions', () => {
 
 describe('rewriting modkit.disabledExtensions', () => {
   it('uses extension coordinates as an independent sorted set', () => {
-    expect(configuredDisabledExtensions(['org.example/z', 'org.example/a']).ids).toEqual([
-      'org.example/a',
-      'org.example/z',
-    ])
+    expect(
+      configuredDisabledExtensions(['org.example/z', 'org.example/a', 'org.modkitx/images']).ids,
+    ).toEqual(['modkit/images', 'org.example/a', 'org.example/z'])
     expect(withExtensionDisabled([], 'org.example/demo', true).next).toEqual(['org.example/demo'])
   })
 })
@@ -211,6 +223,8 @@ async function servedHost(options: {
   readonly linkableExtensionRoots?: ReadonlyMap<string, string>
   readonly managedPackageIds?: ReadonlySet<string>
   readonly setManagedPackageEnabled?: (id: string, enabled: boolean) => Promise<void>
+  readonly extensionCardResources?: ReadonlyMap<string, readonly ExtensionCardResourceTarget[]>
+  readonly openExtensionCardResource?: (resource: ExtensionCardResourceTarget) => Promise<void>
 }): Promise<{
   ask(request: ShellRequest): Promise<unknown>
   readonly host: Awaited<ReturnType<typeof createVsCodeSubjectHost>>
@@ -239,6 +253,12 @@ async function servedHost(options: {
     ...(options.setManagedPackageEnabled === undefined
       ? {}
       : { setManagedPackageEnabled: options.setManagedPackageEnabled }),
+    ...(options.extensionCardResources === undefined
+      ? {}
+      : { extensionCardResources: options.extensionCardResources }),
+    ...(options.openExtensionCardResource === undefined
+      ? {}
+      : { openExtensionCardResource: options.openExtensionCardResource }),
     ...(options.configuration === undefined ? {} : { configuration: options.configuration }),
   })
   const page = createBridge({ channel: channels.page, idPrefix: 'page' })
@@ -411,6 +431,64 @@ describe('the webview asks, the extension side writes', () => {
       })) as { changed: boolean }
       expect(enabled.changed).toBe(true)
       expect(calls).toEqual([{ id: 'org.example/package', enabled: true }])
+    } finally {
+      await served.close()
+    }
+  }, 60_000)
+
+  it('opens only an exact source or license resource registered for this extension-card subject', async () => {
+    const opened: ExtensionCardResourceTarget[] = []
+    const subjectId = 'subject:org.example/demo'
+    const source: ExtensionCardResourceTarget = {
+      id: 'source',
+      role: 'source',
+      kind: 'folder',
+      target: extensionFolders.ok,
+    }
+    const license: ExtensionCardResourceTarget = {
+      id: 'license-0',
+      role: 'license',
+      kind: 'file',
+      target: join(extensionFolders.ok, 'LICENSE'),
+    }
+    const served = await servedHost({
+      extensionCardResources: new Map([[subjectId, [source, license]]]),
+      openExtensionCardResource: async resource => {
+        opened.push(resource)
+      },
+    })
+    try {
+      const refused = (await served.ask({
+        op: 'open-extension-resource',
+        subjectId,
+        resourceId: 'C:/not-a-resource',
+        role: 'source',
+      })) as { opened: boolean }
+      expect(refused.opened).toBe(false)
+      const wrongRole = (await served.ask({
+        op: 'open-extension-resource',
+        subjectId,
+        resourceId: source.id,
+        role: 'license',
+      })) as { opened: boolean }
+      expect(wrongRole.opened).toBe(false)
+      expect(opened).toEqual([])
+
+      const sourceOpened = (await served.ask({
+        op: 'open-extension-resource',
+        subjectId,
+        resourceId: source.id,
+        role: 'source',
+      })) as { opened: boolean }
+      const licenseOpened = (await served.ask({
+        op: 'open-extension-resource',
+        subjectId,
+        resourceId: license.id,
+        role: 'license',
+      })) as { opened: boolean }
+      expect(sourceOpened.opened).toBe(true)
+      expect(licenseOpened.opened).toBe(true)
+      expect(opened).toEqual([source, license])
     } finally {
       await served.close()
     }

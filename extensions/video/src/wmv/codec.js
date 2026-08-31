@@ -1,13 +1,13 @@
-// Hand-ported from org.modkitx/wmv. The reader validates ASF object framing, the mandatory
+// Hand-ported from modkit/wmv. The reader validates ASF object framing, the mandatory
 // header objects, stream type-specific data, file properties, and the following Data Object.
 
 import {
   createInspectionCodec,
   createTreeDataSource,
   createVideoMediaSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/wmv'
+const ID = 'modkit/wmv'
 const latin1 = new TextDecoder('latin1')
 
 const GUIDS = Object.freeze({

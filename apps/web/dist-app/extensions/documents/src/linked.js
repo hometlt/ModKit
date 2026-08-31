@@ -1,4 +1,4 @@
-import { defineLinkedExtension } from '@modkitx-x3/host'
+import { defineLinkedExtension } from '@modkit/host'
 
 import markdownManifest from '../contributions/codec-markdown.json' with { type: 'json' }
 import odgManifest from '../contributions/codec-odg.json' with { type: 'json' }

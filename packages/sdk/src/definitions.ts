@@ -3,7 +3,7 @@
  * Runtime registries are host-owned; A-2 supplies their implementations and atomic persistence.
  */
 
-import type { ContractId, Diagnostic, TraitId } from '@modkitx-x3/core'
+import type { ContractId, Diagnostic, TraitId } from '@modkit/core'
 import type { JsonSchemaRef, JsonValue } from './asset-capabilities/types.js'
 
 export type StandardTraitScope =

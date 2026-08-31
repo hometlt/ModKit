@@ -5,7 +5,7 @@
  * its platform decoder; a separately selected provider may expose PCM without coupling this viewer
  * to MP3, Vorbis, Opus, or any native library.
  */
-import type { AudioMediaSource, ViewerModule } from '@modkitx-x3/sdk'
+import type { AudioMediaSource, ViewerModule } from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,

@@ -13,7 +13,7 @@ async function writeExtension(root, publisher, id, overrides = {}) {
     join(root, 'contributions', 'codec.json'),
     JSON.stringify({
       schemaVersion: 1,
-      contract: { id: 'org.modkitx/codec-contribution', major: 1 },
+      contract: { id: 'modkit/codec-contribution', major: 1 },
       id: `${publisher}/${id}-codec`,
       displayName: `${id} codec`,
       spec: { operations: [] },
@@ -24,7 +24,7 @@ async function writeExtension(root, publisher, id, overrides = {}) {
     join(root, 'contributions', 'nested', 'ignored.json'),
     JSON.stringify({
       schemaVersion: 1,
-      contract: { id: 'org.modkitx/codec-contribution', major: 1 },
+      contract: { id: 'modkit/codec-contribution', major: 1 },
       id: `${publisher}/${id}-nested`,
       displayName: 'Must not be discovered recursively',
     }),
@@ -42,6 +42,15 @@ async function writeExtension(root, publisher, id, overrides = {}) {
         publisher,
         id,
         contributionManifests: ['./contributions/*.json'],
+        presentation: {
+          displayName: `${id} tools`,
+          description: `${id} extension`,
+          vendor: { id: 'example.local', displayName: 'Example Local' },
+          games: [{ id: 'example.local/example-game', displayName: 'Example Game' }],
+          icon: { path: './assets/icon.png', mediaType: 'image/png' },
+          source: { kind: 'root', root: 'src' },
+          licenseFiles: [{ path: 'LICENSE.txt', displayName: 'MIT License' }],
+        },
       },
       ...overrides,
     }),
@@ -121,13 +130,15 @@ test('discovers bounded local candidates from the nearest parent workspace and e
     ],
   )
   assert.equal(result.extensions[0].summary, 'alpha extension')
+  assert.equal(result.extensions[0].presentation.vendor.displayName, 'Example Local')
+  assert.equal(result.extensions[0].presentation.icon.path, './assets/icon.png')
   assert.deepEqual(result.extensions[0].contributionManifests, ['contributions/*.json'])
   assert.deepEqual(
     result.extensions[0].contributions.map(contribution => [
       contribution.id,
       contribution.contract.id,
     ]),
-    [['example.local/alpha-codec', 'org.modkitx/codec-contribution']],
+    [['example.local/alpha-codec', 'modkit/codec-contribution']],
   )
   assert.equal(result.extensions[0].diagnostics.length, 0)
   assert.deepEqual(

@@ -9,7 +9,7 @@ import { chromium, type Browser, type Page } from 'playwright-core'
 import { afterAll, describe, expect, it } from 'vitest'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
-const extensionRoot = join(repoRoot, 'examples', 'modkit-extension-x3-synthetic-viewer')
+const extensionRoot = join(repoRoot, 'examples', 'modkit-extension-synthetic-viewer')
 const temporary = mkdtempSync(join(tmpdir(), 'x3-packed-viewer-'))
 const chromeCandidates = [
   process.env['CHROME_PATH'],
@@ -80,8 +80,8 @@ describe('13C packed external viewer in the real browser host (C-18a)', () => {
           '--input-type=module',
           '--eval',
           `import { readFile } from 'node:fs/promises';
-           import { validateContributionManifest } from '@modkitx-x3/sdk';
-           import { createHostContributionContractRegistry } from '@modkitx-x3/host';
+           import { validateContributionManifest } from '@modkit/sdk';
+           import { createHostContributionContractRegistry } from '@modkit/host';
            const manifest = JSON.parse(await readFile('./contribution.manifest.json', 'utf8'));
            const result = await validateContributionManifest(
              manifest,
@@ -112,8 +112,8 @@ describe('13C packed external viewer in the real browser host (C-18a)', () => {
             import {
               evaluateViewerContribution,
               resolvePresentationPlan,
-            } from '@modkitx-x3/host';
-            import { createBrowserViewerHost } from '@modkitx-x3/testkit/browser';
+            } from '@modkit/host';
+            import { createBrowserViewerHost } from '@modkit/testkit/browser';
 
             const descriptor = {
               descriptorVersion: 2,

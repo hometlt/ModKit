@@ -14,10 +14,10 @@
  * Both are *selection* policy: which independently authored viewer backs which slot. Nothing here
  * discovers a viewer, and adding a contribution manifest never adds a slot by itself.
  *
- * Kept free of `@modkitx-x3/ui` and of the DOM so the rules are unit-testable in Node; the module
+ * Kept free of `@modkit/ui` and of the DOM so the rules are unit-testable in Node; the module
  * bindings live in `./stages.ts` and `./inspector.ts`.
  */
-import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkitx-x3/core'
+import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkit/core'
 
 /** Slot ids in the order the picker offers them. Anything not listed here is not offered. */
 export const STAGE_ORDER: readonly string[] = Object.freeze([
@@ -42,9 +42,9 @@ export const STAGE_ORDER: readonly string[] = Object.freeze([
 ])
 
 /**
- * Stages the application composes itself, because `@modkitx-x3/ui` ships the component but no
+ * Stages the application composes itself, because `@modkit/ui` ships the component but no
  * viewer contribution the generated catalog could name (`createImageEditor`), or ships a
- * contribution whose kind is not `stage` (`org.modkitx.ui/namespace-tree` is a `tree`).
+ * contribution whose kind is not `stage` (`modkit.ui/namespace-tree` is a `tree`).
  */
 export interface AppStagePolicy {
   readonly id: string

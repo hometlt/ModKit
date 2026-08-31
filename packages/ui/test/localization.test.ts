@@ -185,16 +185,10 @@ describe('UI localization', () => {
   it('uses readable contract labels while preserving unknown kinds', () => {
     const en = createUiLocalizer('en')
     const ru = createUiLocalizer('ru')
-    expect(contributionContractLabel(en, 'org.modkitx/codec-contribution@2')).toBe(
-      'Codec Contributions',
-    )
-    expect(contributionContractLabel(ru, 'org.modkitx/editor-contribution@1')).toBe('Редакторы')
-    expect(contributionContractLabel(ru, 'org.modkitx/service-provider-contribution@1')).toBe(
-      'Сервисы',
-    )
-    expect(contributionContractLabel(ru, 'org.modkitx/viewer-contribution@1')).toBe(
-      'Средства просмотра',
-    )
+    expect(contributionContractLabel(en, 'modkit/codec-contribution@2')).toBe('Codec Contributions')
+    expect(contributionContractLabel(ru, 'modkit/editor-contribution@1')).toBe('Редакторы')
+    expect(contributionContractLabel(ru, 'modkit/service-provider-contribution@1')).toBe('Сервисы')
+    expect(contributionContractLabel(ru, 'modkit/viewer-contribution@1')).toBe('Средства просмотра')
     expect(contributionContractLabel(en, 'org.example/terrain-tool-contribution@1')).toBe(
       'Terrain Tool Contributions',
     )

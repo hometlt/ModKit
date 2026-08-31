@@ -6,8 +6,8 @@ import { mkdtempSync, rmSync, writeFileSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { uint64 } from '@modkitx-x3/core'
-import { createHostTopology } from '@modkitx-x3/sdk'
+import { uint64 } from '@modkit/core'
+import { createHostTopology } from '@modkit/sdk'
 import {
   createBundledServiceDefinitionRegistry,
   createHostComposition,
@@ -17,7 +17,7 @@ import {
   serviceDefinitionSurfaces,
   supportedExtensionHints,
   type ExtensionInput,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import {
   createNodeSubjectServices,
   loadExtensionDirectory,
@@ -26,7 +26,7 @@ import {
   nodeWorkerRealmProfile,
   openFileArtifactSource,
   workerBackendPolicy,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const imagesDir = join(repoRoot, 'extensions', 'images')
@@ -144,7 +144,7 @@ describe('createNodeSubjectServices (host realm inventory, worker realm target)'
     expect(result.state).toBe('opened')
     if (result.state !== 'opened') throw new Error(result.reason)
     expect(result.selected).toMatchObject({
-      contributionId: 'org.modkitx/image-png',
+      contributionId: 'modkit/image-png',
       variantId: 'portable',
     })
     expect(result.diagnostics.map(item => item.code)).toContain('x3.host/worker-shared-process')

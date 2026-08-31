@@ -85,7 +85,7 @@ describe('minimal builds stay minimal', () => {
       for (const file of productionSources(resolve(repoRoot, appRoot))) {
         const lines = readFileSync(file, 'utf8').split('\n')
         lines.forEach((line, index) => {
-          if (/from ['"]@modkitx-x3\/ui['"]/u.test(line)) {
+          if (/from ['"]@modkit\/ui['"]/u.test(line)) {
             rootImports.push(`${relative(repoRoot, file)}:${index + 1}`)
           }
         })
@@ -112,8 +112,8 @@ describe('minimal builds stay minimal', () => {
 
   it('an image-viewer consumer gets the image viewer and none of the rest', async () => {
     const text = await bundled(
-      `export { imageViewer } from '@modkitx-x3/ui/image'\n` +
-        `export { metadataPanel } from '@modkitx-x3/ui/metadata'\n`,
+      `export { imageViewer } from '@modkit/ui/image'\n` +
+        `export { metadataPanel } from '@modkit/ui/metadata'\n`,
     )
     expect(text).toContain('pixelFormat')
     expect(text).toContain('No metadata reported by the codec.')
@@ -121,20 +121,20 @@ describe('minimal builds stay minimal', () => {
   }, 60_000)
 
   it('a hex-only consumer gets hex and nothing visual beyond it', async () => {
-    const text = await bundled(`export { hexViewer } from '@modkitx-x3/ui/hex'\n`)
+    const text = await bundled(`export { hexViewer } from '@modkit/ui/hex'\n`)
     expect(text).toContain('Byte offset')
     expectNone(text, ['Byte offset'])
   }, 60_000)
 
   it('a representative media viewer carries only its own fallback vocabulary', async () => {
-    const text = await bundled(`export { audioViewer } from '@modkitx-x3/ui/audio'\n`)
+    const text = await bundled(`export { audioViewer } from '@modkit/ui/audio'\n`)
     expect(text).toContain('Audio viewer')
     expectNone(text)
   }, 60_000)
 
   it('a subpath import costs a fraction of the barrel, and the barrel is measured, not banned', async () => {
-    const subpath = await bundled(`export { imageViewer } from '@modkitx-x3/ui/image'\n`)
-    const barrel = await bundled(`export { imageViewer } from '@modkitx-x3/ui'\n`)
+    const subpath = await bundled(`export { imageViewer } from '@modkit/ui/image'\n`)
+    const barrel = await bundled(`export { imageViewer } from '@modkit/ui'\n`)
     /*
      * With `sideEffects: false` a good bundler can shake the barrel too — if this ratio collapses
      * toward 1, that is a win, not a failure. What must never happen is the reverse: the subpath
@@ -145,7 +145,7 @@ describe('minimal builds stay minimal', () => {
   }, 60_000)
 
   it('a headless host carries no UI vocabulary at all', async () => {
-    const text = await bundled(`export { createModkit } from '@modkitx-x3/host/node'\n`, {
+    const text = await bundled(`export { createModkit } from '@modkit/host/node'\n`, {
       platform: 'node',
     })
     expect(text.includes('data-mk-part'), 'UI leaked into the headless host').toBe(false)
@@ -162,7 +162,7 @@ describe('minimal builds stay minimal', () => {
 
   it('the file VFS provider does not carry unrelated provider implementations', async () => {
     const text = await bundled(
-      `export { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'\n`,
+      `export { createFileVfsProvider } from '@modkit/vfs/providers/file'\n`,
       { platform: 'node' },
     )
     expect(text).toContain('file provider refused to escape its confined root boundary')
@@ -178,14 +178,14 @@ describe('minimal builds stay minimal', () => {
   }, 60_000)
 
   it('the portable VFS root carries no provider implementation', async () => {
-    const text = await bundled(`export { VirtualFileSystem } from '@modkitx-x3/vfs'\n`)
+    const text = await bundled(`export { VirtualFileSystem } from '@modkit/vfs'\n`)
     expect(text).not.toContain('file provider refused to escape its confined root boundary')
     expect(text).not.toContain('memory provider exceeded its configured entry boundary')
   }, 60_000)
 
   it('the language contract subpath carries no host, runtime ABI or presentation contracts', async () => {
     const text = await bundled(
-      `export { LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT } from '@modkitx-x3/sdk/language'\n`,
+      `export { LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT } from '@modkit/sdk/language'\n`,
     )
     expect(text).toContain('common.language/document-analysis')
     expect(text).not.toContain('service activation cycle detected')
@@ -196,9 +196,7 @@ describe('minimal builds stay minimal', () => {
   }, 60_000)
 
   it('the runtime contract subpath carries neither language, renderer nor host implementation', async () => {
-    const text = await bundled(
-      `export { RUNTIME_PROVIDER_CONTRACT } from '@modkitx-x3/sdk/runtime'\n`,
-    )
+    const text = await bundled(`export { RUNTIME_PROVIDER_CONTRACT } from '@modkit/sdk/runtime'\n`)
     expect(text).toContain('common.runtime/provider')
     expect(text).not.toContain('common.language/document-analysis')
     expect(text).not.toContain('common.render/scene-3d')
@@ -209,9 +207,7 @@ describe('minimal builds stay minimal', () => {
   }, 60_000)
 
   it('the renderer contract subpath carries neither language, runtime nor host implementation', async () => {
-    const text = await bundled(
-      `export { SCENE_RENDERER_CONTRACT } from '@modkitx-x3/sdk/renderer'\n`,
-    )
+    const text = await bundled(`export { SCENE_RENDERER_CONTRACT } from '@modkit/sdk/renderer'\n`)
     expect(text).toContain('common.render/scene-3d')
     expect(text).not.toContain('common.language/document-analysis')
     expect(text).not.toContain('common.runtime/provider')
@@ -223,7 +219,7 @@ describe('minimal builds stay minimal', () => {
 
   it('the games contract subpath carries no language, runtime, renderer or host implementation', async () => {
     const text = await bundled(
-      `export { GAME_INSTALLATION_DISCOVERY_CONTRACT } from '@modkitx-x3/sdk/games'\n`,
+      `export { GAME_INSTALLATION_DISCOVERY_CONTRACT } from '@modkit/sdk/games'\n`,
     )
     expect(text).toContain('common.game/installation-discovery')
     expect(text).not.toContain('common.language/document-analysis')
@@ -236,7 +232,7 @@ describe('minimal builds stay minimal', () => {
 
   it('the mods contract subpath carries no language, runtime, renderer or host implementation', async () => {
     const text = await bundled(
-      `export { MOD_WORKSPACE_COMPOSITION_CONTRACT } from '@modkitx-x3/sdk/mods'\n`,
+      `export { MOD_WORKSPACE_COMPOSITION_CONTRACT } from '@modkit/sdk/mods'\n`,
     )
     expect(text).toContain('common.mod/workspace-composition')
     expect(text).not.toContain('common.language/document-analysis')
@@ -249,7 +245,7 @@ describe('minimal builds stay minimal', () => {
 
   it('the data contract subpath carries no game parser, renderer or host implementation', async () => {
     const text = await bundled(
-      `export { DATA_CATALOG_ANALYSIS_CONTRACT } from '@modkitx-x3/sdk/data'\n`,
+      `export { DATA_CATALOG_ANALYSIS_CONTRACT } from '@modkit/sdk/data'\n`,
     )
     expect(text).toContain('common.data/catalog-analysis')
     expect(text).not.toContain('parseXml')
@@ -261,7 +257,7 @@ describe('minimal builds stay minimal', () => {
 
   it('the maps contract subpath carries no game parser, renderer or host implementation', async () => {
     const text = await bundled(
-      `export { MAP_SEMANTIC_ANALYSIS_CONTRACT } from '@modkitx-x3/sdk/maps'\n`,
+      `export { MAP_SEMANTIC_ANALYSIS_CONTRACT } from '@modkit/sdk/maps'\n`,
     )
     expect(text).toContain('common.map/semantic-analysis')
     expect(text).not.toContain('parseXml')

@@ -6,7 +6,7 @@
  * native-export compatibility are deliberately outside this contract.
  */
 
-import { isSegment } from '@modkitx-x3/core'
+import { isSegment } from '@modkit/core'
 import type { ProjectionBasis } from './uv-projection.js'
 import {
   bindingId,
@@ -471,8 +471,8 @@ export function defineMixedVisualWorkspace(
   const slot = {
     slotId: MIXED_VISUAL_STAGE_ID,
     kind: 'stage',
-    contributionId: 'org.modkitx.ui/mixed-visual-stage',
-    extensionId: 'org.modkitx/ui',
+    contributionId: 'modkit.ui/mixed-visual-stage',
+    extensionId: 'modkit/ui',
     priority: 390,
     singletonGroup: 'center-stage',
     bindings: [world.binding, model.binding],

@@ -1,11 +1,11 @@
-import { compareUtf8 } from '@modkitx-x3/core'
+import { compareUtf8 } from '@modkit/core'
 import type {
   ContractOffer,
   ProviderOffer,
   ProviderRequest,
   RejectedCandidate,
   ResolutionResult,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { resolveProvider } from './resolver.js'
 
 export interface ExplainedCandidate {

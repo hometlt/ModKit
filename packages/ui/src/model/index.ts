@@ -10,7 +10,7 @@ import type {
   ModelSceneSource,
   ModelSocketRef,
   ViewerModule,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,

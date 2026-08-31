@@ -2,27 +2,27 @@ import { createHash, randomUUID } from 'node:crypto'
 import { stat, realpath } from 'node:fs/promises'
 import { basename, isAbsolute, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import type { Diagnostic } from '@modkitx-x3/core'
+import type { Diagnostic } from '@modkit/core'
 import {
   artifactNamespaceSourceFromVfsMount,
   createKnowledgeCatalog,
   openSubject,
   subjectOpenSnapshot,
   type Inventory,
-} from '@modkitx-x3/host'
-import { discoverGameInstallations } from '@modkitx-x3/host/games'
+} from '@modkit/host'
+import { discoverGameInstallations } from '@modkit/host/games'
 import {
   createModkit,
   createNodeMapPreviewResourcePlanResolver,
   type ModkitOpened,
   workerBackendPolicy,
-} from '@modkitx-x3/host/node'
-import { sceneModule } from '@modkitx-x3/scene/module'
-import { uvModule } from '@modkitx-x3/uv/module'
-import { coordinateMapPreviewAssetSession } from '@modkitx-x3/host/maps'
-import type { AssetSession, KnowledgeCatalog } from '@modkitx-x3/sdk'
-import { VirtualFileSystem } from '@modkitx-x3/vfs'
-import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
+} from '@modkit/host/node'
+import { sceneModule } from '@modkit/scene/module'
+import { uvModule } from '@modkit/uv/module'
+import { coordinateMapPreviewAssetSession } from '@modkit/host/maps'
+import type { AssetSession, KnowledgeCatalog } from '@modkit/sdk'
+import { VirtualFileSystem } from '@modkit/vfs'
+import { createFileVfsProvider } from '@modkit/vfs/providers/file'
 import type { ModkitMcpConfiguration } from './config.js'
 
 export interface McpOpenedSubject {

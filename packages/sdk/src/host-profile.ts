@@ -8,7 +8,7 @@ import {
   uniqueSortedUtf8,
   type Diagnostic,
   type UInt64String,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import {
   LEGACY_HOST_FACILITY_ALIASES,
   STANDARD_HOST_FACILITY_IDS,

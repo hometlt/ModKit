@@ -31,7 +31,7 @@ import type {
   WorldSceneItem,
   WorldScenePage,
   WorldScenePageRequest,
-} from '@modkitx-x3/sdk/maps'
+} from '@modkit/sdk/maps'
 
 import { assessCandidateWorldUvwAdmission } from '../src/uvw-materialization.js'
 

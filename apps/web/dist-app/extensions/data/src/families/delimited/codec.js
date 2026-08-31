@@ -1,4 +1,4 @@
-import { createTextCodec } from '@modkitx-x3/codec-kit/text'
+import { createTextCodec } from '@modkit/codec-kit/text'
 import { detectDelimited } from './detect.js'
 
 export function createDelimitedCodec(profile, context) {

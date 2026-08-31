@@ -3,7 +3,7 @@ import {
   ENCODED_MEDIA_SURFACE_ID,
   STANDARD_DATA_SOURCE_CONTRACTS,
   type DataSourceSurfaceV1Wire,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   ABI_ASSET_SESSION,
   ABI_CODEC,

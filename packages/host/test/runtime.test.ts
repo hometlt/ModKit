@@ -1,9 +1,9 @@
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { uint64 } from '@modkitx-x3/core'
-import { createHostTopology } from '@modkitx-x3/sdk'
-import type { RuntimeBudget } from '@modkitx-x3/sdk/runtime'
+import { uint64 } from '@modkit/core'
+import { createHostTopology } from '@modkit/sdk'
+import type { RuntimeBudget } from '@modkit/sdk/runtime'
 import {
   buildInventory,
   createBundledServiceDefinitionRegistry,
@@ -16,10 +16,10 @@ import {
   registerServiceDefinitionsOrThrow,
   type HostComposition,
   type LinkedExtension,
-} from '@modkitx-x3/host'
-import { openRuntimeSession } from '@modkitx-x3/host/runtime'
-import { loadExtensionDirectory } from '@modkitx-x3/host/node'
-import type { ExecutionProfile, RuntimeEnvironment } from '@modkitx-x3/sdk'
+} from '@modkit/host'
+import { openRuntimeSession } from '@modkit/host/runtime'
+import { loadExtensionDirectory } from '@modkit/host/node'
+import type { ExecutionProfile, RuntimeEnvironment } from '@modkit/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { counterRuntime } = (await import(
@@ -27,10 +27,10 @@ const { counterRuntime } = (await import(
     .href
 )) as { readonly counterRuntime: LinkedExtension }
 
-const REALM = 'org.modkitx.test/runtime-host'
+const REALM = 'modkit.test/runtime-host'
 const topology = createHostTopology({
   schemaVersion: 1,
-  topologyId: 'org.modkitx.test/runtime',
+  topologyId: 'modkit.test/runtime',
   realms: [
     {
       schemaVersion: 1,
@@ -45,7 +45,7 @@ const topology = createHostTopology({
         maxTransferBytes: uint64('16777216'),
         defaultDeadlineMs: 10_000,
       },
-      policy: { id: 'org.modkitx.test/runtime-policy', revision: '1' },
+      policy: { id: 'modkit.test/runtime-policy', revision: '1' },
     },
   ],
   links: [],

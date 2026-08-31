@@ -1,6 +1,6 @@
 /** Facet-aware service resolution and the runtime ContractResolverPort adapter (A-2). */
 
-import { ModkitError, contractId } from '@modkitx-x3/core'
+import { ModkitError, contractId } from '@modkit/core'
 import type {
   ContractMajor,
   ContractMap,
@@ -16,7 +16,7 @@ import type {
   RuntimeTarget,
   SelectedServiceOffer,
   ServiceContractDefinitionRegistry,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { resolveProvider } from './resolver.js'
 
 export interface FacetAwareProviderRequest extends ProviderRequest {
@@ -129,7 +129,7 @@ export function createContractResolverPort(
 
   return {
     async resolve<Contract extends KnownContractId, Major extends ContractMajor<Contract>>(
-      request: import('@modkitx-x3/sdk').TypedResolveRequest<Contract, Major>,
+      request: import('@modkit/sdk').TypedResolveRequest<Contract, Major>,
     ): Promise<Lease<ContractOf<Contract, Major>>> {
       return (await resolve(request as Parameters<typeof resolve>[0])) as Lease<
         ContractOf<Contract, Major>

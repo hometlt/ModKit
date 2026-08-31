@@ -17,8 +17,8 @@ import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { assertGoldenPathMetrics, GOLDEN_PATH_CONCEPTS } from '@modkitx-x3/testkit'
-import type { ResourceBudget } from '@modkitx-x3/sdk'
+import { assertGoldenPathMetrics, GOLDEN_PATH_CONCEPTS } from '@modkit/testkit'
+import type { ResourceBudget } from '@modkit/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..')
 const scaffold = join(repoRoot, 'scripts', 'scaffold-extension.mjs')
@@ -40,7 +40,7 @@ afterEach(async () => {
 async function runScaffold(id: string): Promise<string> {
   /*
    * Inside the repository, not the system temp directory. The scaffolded codec imports
-   * `@modkitx-x3/codec-kit`, so it can only load where that specifier resolves — which is exactly
+   * `@modkit/codec-kit`, so it can only load where that specifier resolves — which is exactly
    * what a real user does, and exactly what the README now says.
    */
   scratch = await mkdtemp(join(repoRoot, 'extensions', '.x3-scaffold-'))
@@ -49,12 +49,12 @@ async function runScaffold(id: string): Promise<string> {
    * The one thing `pnpm install` would do, done here instead.
    *
    * pnpm does not hoist, so every extension gets its own `node_modules` link at install time — a
-   * freshly written directory has none, and the codec's `@modkitx-x3/codec-kit` import cannot
+   * freshly written directory has none, and the codec's `@modkit/codec-kit` import cannot
    * resolve. Linking it is not a workaround for the scaffold being wrong; it is the install step
    * the scaffold's own README tells the user to run, performed by the test so the ABI below is
    * exercised rather than skipped.
    */
-  const linkDir = join(scratch, 'node_modules', '@modkitx-x3')
+  const linkDir = join(scratch, 'node_modules', '@modkit')
   await mkdir(linkDir, { recursive: true })
   await symlink(join(repoRoot, 'packages', 'codec-kit'), join(linkDir, 'codec-kit'), 'junction')
   return scratch
@@ -110,9 +110,9 @@ describe('12-4 the extension scaffold', () => {
       buildInventory,
       createHostContributionContractRegistry,
       createExecutionBackendRegistry,
-    } = await import('@modkitx-x3/host')
-    const { loadExtensionDirectory, openFileArtifactSource } = await import('@modkitx-x3/host/node')
-    const { openSubject } = await import('@modkitx-x3/host')
+    } = await import('@modkit/host')
+    const { loadExtensionDirectory, openFileArtifactSource } = await import('@modkit/host/node')
+    const { openSubject } = await import('@modkit/host')
 
     const inventory = await buildInventory(
       [
@@ -176,13 +176,13 @@ describe('12-4 the extension scaffold', () => {
     // a renamed foreign file must not be claimed on its name alone
     const foreign = join(directory, 'fixtures', 'renamed.demofmt')
     await writeFile(foreign, 'this is not the scaffolded format\n')
-    const { loadExtensionDirectory, openFileArtifactSource } = await import('@modkitx-x3/host/node')
+    const { loadExtensionDirectory, openFileArtifactSource } = await import('@modkit/host/node')
     const {
       buildInventory,
       createHostContributionContractRegistry,
       createExecutionBackendRegistry,
       openSubject,
-    } = await import('@modkitx-x3/host')
+    } = await import('@modkit/host')
     const inventory = await buildInventory(
       [
         {

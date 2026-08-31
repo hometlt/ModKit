@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "id": "org.modkitx/codec-contribution",
+    "id": "modkit/codec-contribution",
     "major": 1
   },
-  "id": "org.modkitx/text-csv",
+  "id": "modkit/text-csv",
   "displayName": "CSV text data",
   "status": "partial",
   "runtimeVariants": [

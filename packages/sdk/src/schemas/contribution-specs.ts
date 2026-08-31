@@ -1,6 +1,6 @@
 /** Strict A-1 schemas selected by the contribution envelope contract. */
 
-import { deepFreeze, UINT64_DECIMAL_PATTERN } from '@modkitx-x3/core'
+import { deepFreeze, UINT64_DECIMAL_PATTERN } from '@modkit/core'
 import { STANDARD_DATA_SOURCE_CONTRACTS } from '../asset-capabilities/data-source-ids.js'
 import { KNOWLEDGE_LOCALE_PATTERN } from '../knowledge/index.js'
 import {
@@ -429,7 +429,7 @@ const codecContributionProperties = {
 
 export const codecContributionSpecV1Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://schemas.modkitx.org/x3/codec-contribution-spec.v1.schema.json',
+  $id: 'https://schemas.modkit.org/x3/codec-contribution-spec.v1.schema.json',
   oneOf: [
     {
       type: 'object',
@@ -479,7 +479,7 @@ const serviceContractOfferDeclarationSchema = {
 
 export const serviceProviderContributionSpecV1Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://schemas.modkitx.org/x3/service-provider-contribution-spec.v1.schema.json',
+  $id: 'https://schemas.modkit.org/x3/service-provider-contribution-spec.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: ['provides', 'lifecycleScope'],
@@ -527,7 +527,7 @@ const viewerApplicabilitySchema = {
 
 export const viewerContributionSpecV1Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://schemas.modkitx.org/x3/viewer-contribution-spec.v1.schema.json',
+  $id: 'https://schemas.modkit.org/x3/viewer-contribution-spec.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: ['kind', 'consumesDataSources', 'priority'],
@@ -572,13 +572,13 @@ const writerRequirementSchema = {
  */
 export const writerRequirementV1Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://schemas.modkitx.org/x3/writer-requirement.v1.schema.json',
+  $id: 'https://schemas.modkit.org/x3/writer-requirement.v1.schema.json',
   ...writerRequirementSchema,
 } as const
 
 export const writerOfferV1Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://schemas.modkitx.org/x3/writer-offer.v1.schema.json',
+  $id: 'https://schemas.modkit.org/x3/writer-offer.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: [...writerRequirementSchema.required, 'providerId', 'fidelityEvidenceId'],
@@ -591,7 +591,7 @@ export const writerOfferV1Schema = {
 
 export const editorContributionSpecV1Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://schemas.modkitx.org/x3/editor-contribution-spec.v1.schema.json',
+  $id: 'https://schemas.modkit.org/x3/editor-contribution-spec.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: [
@@ -811,7 +811,7 @@ const knowledgeEntrySchema = {
 /** Data-only knowledge pack: summaries and provenance, never executable authority. */
 export const knowledgePackSpecV1Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://schemas.modkitx.org/x3/knowledge-pack-spec.v1.schema.json',
+  $id: 'https://schemas.modkit.org/x3/knowledge-pack-spec.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: ['schemaVersion', 'sourceLocale', 'priority', 'entries'],
@@ -852,7 +852,7 @@ const localizationCatalogResourceV1Schema = {
 /** Data-only references to extension-owned UI catalogs; catalog bytes are loaded by the host. */
 export const localizationContributionSpecV1Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://schemas.modkitx.org/x3/localization-contribution-spec.v1.schema.json',
+  $id: 'https://schemas.modkit.org/x3/localization-contribution-spec.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: ['catalogs'],
@@ -868,7 +868,7 @@ export const localizationContributionSpecV1Schema = {
 
 export const traitDefinitionSpecV1Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json',
+  $id: 'https://schemas.modkit.org/x3/trait-definition-spec.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: ['schemaVersion', 'id', 'version', 'scope', 'parametersSchema', 'transport'],
@@ -1107,7 +1107,7 @@ export const dataSourceContractDefinitionSpecV1Schema = {
 
 export const contractDefinitionSpecV1Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://schemas.modkitx.org/x3/contract-definition-spec.v1.schema.json',
+  $id: 'https://schemas.modkit.org/x3/contract-definition-spec.v1.schema.json',
   oneOf: [serviceContractDefinitionSpecV1Schema, dataSourceContractDefinitionSpecV1Schema],
 } as const
 

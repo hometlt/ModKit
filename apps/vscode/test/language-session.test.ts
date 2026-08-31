@@ -1,10 +1,10 @@
-import { ModkitError, OperationCancelledError, diagnostic, type Diagnostic } from '@modkitx-x3/core'
-import type { LanguageAnalysis, LanguageDocument } from '@modkitx-x3/sdk/language'
+import { ModkitError, OperationCancelledError, diagnostic, type Diagnostic } from '@modkit/core'
+import type { LanguageAnalysis, LanguageDocument } from '@modkit/sdk/language'
 import type {
   LanguageWorkspace,
   LanguageWorkspaceAnalysisResult,
   LanguageWorkspaceDocumentRequest,
-} from '@modkitx-x3/host/language'
+} from '@modkit/host/language'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {

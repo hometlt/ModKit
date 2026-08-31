@@ -66,8 +66,11 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 const samePath = (left, right) =>
   path.resolve(String(left)).toLowerCase() === path.resolve(String(right)).toLowerCase()
 
+// MODKITX_* remains a deprecated read-only alias so older local smoke launchers still work.
+const readEnv = name => process.env[name] ?? process.env[name.replace(/^MODKIT_/, 'MODKITX_')]
+
 function requireEnv(name) {
-  const value = process.env[name]
+  const value = readEnv(name)
   if (value === undefined || value === '') throw new Error(`${name} is not set`)
   return value
 }
@@ -150,7 +153,7 @@ const containerUri = (containerPath, entryPath = '') => {
 
 const cdp = {
   available: typeof WebSocket === 'function' && typeof fetch === 'function',
-  port: Number(process.env.MODKITX_SMOKE_CDP_PORT ?? 0),
+  port: Number(readEnv('MODKIT_SMOKE_CDP_PORT') ?? 0),
   note: '',
 }
 
@@ -519,7 +522,7 @@ const FOCUSED_PREVIEWS = Object.freeze([
 ])
 
 async function runFocusedGaScenarios() {
-  const staged = requireEnv('MODKITX_SMOKE_FIXTURE_DIR')
+  const staged = requireEnv('MODKIT_SMOKE_FIXTURE_DIR')
   for (const row of FOCUSED_PREVIEWS) {
     await scenario(row.id, row.title, async record => {
       const target = path.join(staged, row.file)
@@ -669,7 +672,7 @@ async function runScenarios(env) {
       'modkit.openResource',
       'modkit.explainResolution',
       'modkit.addExtensionFolder',
-      ...(process.env.MODKITX_SMOKE_PROFILE === 'focused-ga'
+      ...(readEnv('MODKIT_SMOKE_PROFILE') === 'focused-ga'
         ? ['modkit.runCommand', 'modkit.game.launchActiveMap']
         : []),
     ]
@@ -714,7 +717,7 @@ async function runScenarios(env) {
 
   if (extension === undefined || !extension.isActive) {
     const unreachable =
-      process.env.MODKITX_SMOKE_PROFILE === 'focused-ga'
+      readEnv('MODKIT_SMOKE_PROFILE') === 'focused-ga'
         ? [
             ...FOCUSED_PREVIEWS.map(row => row.id),
             'focused-world-presentation',
@@ -734,14 +737,14 @@ async function runScenarios(env) {
     return
   }
 
-  if (process.env.MODKITX_SMOKE_PROFILE === 'focused-ga') {
+  if (readEnv('MODKIT_SMOKE_PROFILE') === 'focused-ga') {
     await runFocusedGaScenarios()
     return
   }
 
   // ---------------------------------------------------------------- 2. single W3D
   await scenario('w3d-single', 'A single W3D opens with its descriptor', async record => {
-    const target = requireEnv('MODKITX_W3D_PATH')
+    const target = requireEnv('MODKIT_W3D_PATH')
     const diagnostics = sampleDiagnostics()
     const openStarted = Date.now()
     const tab = await openThroughCustomEditor(target)
@@ -842,7 +845,7 @@ async function runScenarios(env) {
 
   // ---------------------------------------------------------------- 3. VXL with companion
   await scenario('vxl-companion', 'A VXL resolves its .hva companion', async record => {
-    const target = requireEnv('MODKITX_VXL_PATH')
+    const target = requireEnv('MODKIT_VXL_PATH')
     const companion = `${target.slice(0, -path.extname(target).length)}.hva`
     record.details.companionOnDisk = fs.existsSync(companion)
     const diagnostics = sampleDiagnostics()
@@ -914,7 +917,7 @@ async function runScenarios(env) {
 
   // ---------------------------------------------------------------- 4. BIG → nested W3D
   await scenario('big-nested', 'A W3D nested in a BIG archive opens as a subject', async record => {
-    const archive = path.join(requireEnv('MODKITX_CNC3_ROOT'), 'Core', '1.0', 'Misc.big')
+    const archive = path.join(requireEnv('MODKIT_CNC3_ROOT'), 'Core', '1.0', 'Misc.big')
     const entry = 'data/editor/molds/bowl.w3d'
     record.details.archiveOnDisk = fs.existsSync(archive)
     record.details.entry = entry
@@ -1050,7 +1053,7 @@ async function runScenarios(env) {
     'diagnostics-no-companion',
     'A VXL without its sidecar reports a leak-free diagnostic',
     async record => {
-      const lonely = requireEnv('MODKITX_SMOKE_LONELY_VXL')
+      const lonely = requireEnv('MODKIT_SMOKE_LONELY_VXL')
       record.details.copyOnDisk = fs.existsSync(lonely)
       record.details.companionAbsent = !fs.existsSync(
         `${lonely.slice(0, -path.extname(lonely).length)}.hva`,
@@ -1178,14 +1181,14 @@ async function runScenarios(env) {
     'command-fixtures',
     'The shared command fixtures run in the editor',
     async record => {
-      const staged = requireEnv('MODKITX_SMOKE_FIXTURE_DIR')
+      const staged = requireEnv('MODKIT_SMOKE_FIXTURE_DIR')
       /*
        * `import()` rather than `require()`: the testkit is an ES module and this suite is CommonJS
        * (the editor's `extensionTestsPath` requires it). Node can require an ESM graph these days,
        * but a dynamic import is the form that is true on every version this smoke might run under.
        */
       const testkitUrl = url.pathToFileURL(
-        path.join(requireEnv('MODKITX_SMOKE_REPO_ROOT'), 'packages', 'testkit', 'dist', 'index.js'),
+        path.join(requireEnv('MODKIT_SMOKE_REPO_ROOT'), 'packages', 'testkit', 'dist', 'index.js'),
       ).href
       const { COMMAND_FIXTURES, COMMAND_FIXTURE_FILES, checkCommandFixture } = await import(
         testkitUrl
@@ -1260,7 +1263,7 @@ async function runScenarios(env) {
 // entry point
 
 exports.run = async function run() {
-  const env = { extensionPath: requireEnv('MODKITX_SMOKE_EXT_PATH') }
+  const env = { extensionPath: requireEnv('MODKIT_SMOKE_EXT_PATH') }
   const started = new Date().toISOString()
   let harnessError
   try {
@@ -1285,7 +1288,7 @@ exports.run = async function run() {
     scenarios: results,
     ...(harnessError === undefined ? {} : { harnessError }),
   }
-  const out = process.env.MODKITX_SMOKE_RESULTS
+  const out = readEnv('MODKIT_SMOKE_RESULTS')
   if (out !== undefined && out !== '') {
     fs.mkdirSync(path.dirname(out), { recursive: true })
     fs.writeFileSync(out, `${JSON.stringify(payload, null, 2)}\n`)

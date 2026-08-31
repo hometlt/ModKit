@@ -72,9 +72,9 @@ function textFiles(directory: string): string[] {
 }
 
 const dataExtension = {
-  packageName: 'modkit-extension-x3-data',
+  packageName: 'modkit-extension-data',
   formats: ['csv', 'tsv', 'ini', 'toml', 'xml', 'yaml'],
-  dependencies: ['@modkitx-x3/codec-kit', '@rgrove/parse-xml', 'smol-toml', 'yaml'],
+  dependencies: ['@modkit/codec-kit', '@rgrove/parse-xml', 'smol-toml', 'yaml'],
   samples: [
     ['csv', 'common.text-data/csv-syntax', 'csv-rfc4180', 'x,y\n1,2\n'],
     ['tsv', 'common.text-data/tsv-syntax', 'tsv-iana', 'x\ty\n1\t2\n'],
@@ -110,17 +110,15 @@ describe('packed common data extension boundary', () => {
       const platformInstall = sh('npm', ['install', ...npmFlags, ...platform], platformOnly)
       expect(platformInstall.status, platformInstall.stderr).toBe(0)
       const platformRequire = createRequire(join(platformOnly, 'package.json'))
-      const host = (await import(
-        pathToFileURL(platformRequire.resolve('@modkitx-x3/host')).href
-      )) as {
+      const host = (await import(pathToFileURL(platformRequire.resolve('@modkit/host')).href)) as {
         resolveProvider(
           request: unknown,
           offers: readonly unknown[],
         ): { state: string; reason?: string }
       }
-      const core = (await import(
-        pathToFileURL(platformRequire.resolve('@modkitx-x3/core')).href
-      )) as { contractId(value: string): string }
+      const core = (await import(pathToFileURL(platformRequire.resolve('@modkit/core')).href)) as {
+        contractId(value: string): string
+      }
       expect(
         host.resolveProvider(
           {
@@ -133,7 +131,7 @@ describe('packed common data extension boundary', () => {
 
       const forbidden = ["'smol-toml'", "'@rgrove/parse-xml'", "from 'yaml'"]
       for (const name of ['core', 'sdk', 'vfs', 'host']) {
-        const packageRoot = join(platformOnly, 'node_modules', '@modkitx-x3', name)
+        const packageRoot = join(platformOnly, 'node_modules', '@modkit', name)
         const combined = textFiles(packageRoot)
           .map(file => readFileSync(file, 'utf8'))
           .join('\n')

@@ -1,15 +1,15 @@
 /** Browser policy around the common host-owned map preview coordinator. */
 
-import { diagnostic, type Diagnostic } from '@modkitx-x3/core'
-import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
-import type { MapPreviewSelectionCandidate } from '@modkitx-x3/sdk/maps'
-import type { OpenedSubject } from '@modkitx-x3/host'
+import { diagnostic, type Diagnostic } from '@modkit/core'
+import type { PermissionGrant, ResourceBudget } from '@modkit/sdk'
+import type { MapPreviewSelectionCandidate } from '@modkit/sdk/maps'
+import type { OpenedSubject } from '@modkit/host'
 import {
   coordinateMapPreviewAssetSession,
   type CoordinateMapPreviewAssetSessionRequest,
   type CoordinatedMapPreviewAssetSessionResult,
-} from '@modkitx-x3/host/maps'
-import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+} from '@modkit/host/maps'
+import type { UiLocalizer } from '@modkit/ui/localization'
 
 import { createWebLocalizer } from './localization.js'
 

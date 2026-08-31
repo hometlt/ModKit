@@ -1,5 +1,5 @@
 {
-  "name": "modkit-extension-x3-software-renderer",
+  "name": "modkit-extension-software-renderer",
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
@@ -16,21 +16,21 @@
   ],
   "modkit": {
     "schemaVersion": 1,
-    "publisher": "org.modkitx.reference",
+    "publisher": "modkit.reference",
     "id": "software-renderer",
     "contributionManifests": [
       "./contributions/*.json"
     ]
   },
   "peerDependencies": {
-    "@modkitx-x3/host": "workspace:*",
-    "@modkitx-x3/sdk": "workspace:*"
+    "@modkit/host": "workspace:*",
+    "@modkit/sdk": "workspace:*"
   },
   "peerDependenciesMeta": {
-    "@modkitx-x3/host": {
+    "@modkit/host": {
       "optional": true
     },
-    "@modkitx-x3/sdk": {
+    "@modkit/sdk": {
       "optional": true
     }
   }

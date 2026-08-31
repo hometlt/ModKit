@@ -1,4 +1,4 @@
-import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec, createTreeDataSource } from '@modkit/codec-kit'
 
 const latin1 = new TextDecoder('latin1')
 
@@ -100,7 +100,7 @@ function parseRtf(text, budget) {
 }
 
 const definition = Object.freeze({
-  id: 'org.modkitx/document-rtf',
+  id: 'modkit/document-rtf',
   format: Object.freeze({ id: 'rtf', label: 'Rich Text Format', mediaType: 'application/rtf' }),
   async detect(bytes, uri) {
     const version = rtfVersion(bytes)

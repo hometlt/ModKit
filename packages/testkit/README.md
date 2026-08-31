@@ -1,6 +1,6 @@
-# `@modkitx-x3/testkit` — capability-RPC conformance kit and hostile-worker harness
+# `@modkit/testkit` — capability-RPC conformance kit and hostile-worker harness
 
-Test infrastructure for the capability-RPC core (`@modkitx-x3/host/execution`). Dev-only closure:
+Test infrastructure for the capability-RPC core (`@modkit/host/execution`). Dev-only closure:
 nothing here is a production backend and nothing here is published.
 
 ## Conformance kit — is this transport allowed to carry the protocol?

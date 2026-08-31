@@ -3,9 +3,9 @@ import {
   buildInventory,
   createHostContributionContractRegistry,
   type ExtensionInput,
-} from '@modkitx-x3/host'
-import { createKnowledgeCatalog } from '@modkitx-x3/host/knowledge'
-import type { KnowledgePackSpecV1 } from '@modkitx-x3/sdk/knowledge'
+} from '@modkit/host'
+import { createKnowledgeCatalog } from '@modkit/host/knowledge'
+import type { KnowledgePackSpecV1 } from '@modkit/sdk/knowledge'
 
 const fieldTarget = {
   kind: 'field',
@@ -105,7 +105,7 @@ const extensionInput = (): ExtensionInput => {
         path,
         {
           schemaVersion: 1,
-          contract: { id: 'org.modkitx/knowledge-pack', major: 1 },
+          contract: { id: 'modkit/knowledge-pack', major: 1 },
           id: 'org.example.alpha/alpha-data-knowledge',
           displayName: 'ALPHA data knowledge',
           spec: pack,
@@ -150,7 +150,7 @@ const rankedExtensionInput = (
         path,
         {
           schemaVersion: 1,
-          contract: { id: 'org.modkitx/knowledge-pack', major: 1 },
+          contract: { id: 'modkit/knowledge-pack', major: 1 },
           id: `org.example.alpha/${extensionId}-knowledge`,
           displayName: `${title} knowledge`,
           spec: {

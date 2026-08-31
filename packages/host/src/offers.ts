@@ -8,7 +8,7 @@ import {
   isTraitId,
   parseSemver,
   type OperationId,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import type {
   ContractOffer,
   ContractRequirement,
@@ -16,7 +16,7 @@ import type {
   ProviderOffer,
   RuntimeTargetConstraint,
   TraitDefinitionOffer,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { PROVIDER_OFFER_INVENTORY_FACT } from './contribution-registry.js'
 import {
   inventoryRecordFor,

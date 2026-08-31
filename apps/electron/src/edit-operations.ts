@@ -16,8 +16,8 @@
  * Everything in this file is data and pure functions: no DOM, no ports, no session. `./edit-panel.ts`
  * draws it and `./editor-ports.ts` commits what it produces, so the rules stay testable in Node.
  */
-import type { AssetEditPlan, JsonValue, OperationResult } from '@modkitx-x3/sdk'
-import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
+import type { AssetEditPlan, JsonValue, OperationResult } from '@modkit/sdk'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkit/ui/localization'
 
 import { descriptorOperations } from './view-policy.js'
 

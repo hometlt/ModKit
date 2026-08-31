@@ -1,4 +1,4 @@
-# `@modkitx-x3/codec-kit`
+# `@modkit/codec-kit`
 
 Optional runtime helper for small, portable inspection codecs. It owns only format-neutral
 probe/open/session plumbing and generic tree/transport adapters. Format parsing stays inside the
@@ -11,7 +11,7 @@ format-specific library.
 ## Minimal codec
 
 ```js
-import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec, createTreeDataSource } from '@modkit/codec-kit'
 
 const definition = {
   id: 'org.example/codec-foo',

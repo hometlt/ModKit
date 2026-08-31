@@ -5,7 +5,7 @@
  * only browser-safe types and the open service-contract augmentation.
  */
 
-import type { Diagnostic, SourceSpan } from '@modkitx-x3/core'
+import type { Diagnostic, SourceSpan } from '@modkit/core'
 import type { Lease, TableDataSource, TreeDataSource } from '../asset-capabilities/data-sources.js'
 import type { ResourceBudget, ServiceProviderModule } from '../runtime-abi.js'
 

@@ -10,7 +10,7 @@ The manager reads three small, versioned documents:
 - `modkit.repository.json` describes the extension roots owned by one repository;
 - `modkit.extensions.lock.json` pins exact versions and byte digests for repeatable loading.
 
-The source URI is opened through `@modkitx-x3/vfs`. The Node entry registers `file:`, `memory:`,
+The source URI is opened through `@modkit/vfs`. The Node entry registers `file:`, `memory:`,
 `http:`, `https:`, `browser-file:` and `rapid+file:`. Local `file:` extensions stay in place. Trees from
 other providers and embedded bundles are copied into an immutable digest-named cache before the
 host sees them. The browser entry registers the protocols a browser can actually open without a
@@ -83,7 +83,7 @@ Cache Storage implementations remain adapters; none is imported by the browser-s
 
 ## Node application adapter
 
-`@modkitx/extension-manager/node` exports `createNodeExtensionManager({ root, catalog, ... })` for
+`@modkit/extension-manager/node` exports `createNodeExtensionManager({ root, catalog, ... })` for
 VS Code and Electron. `root` is an app-owned absolute private directory; `catalog` is a local file,
 `file:` URL, or HTTP(S) URL. Apps inject trusted Ed25519 public keys by catalog `keyId`.
 
@@ -96,6 +96,26 @@ as `{ root, expectedId }` for app-level Host composition; the manager itself has
 Applications compose those roots directly on startup and reload. They keep manual folders in their
 own settings, but never mirror manager-owned roots or enablement into a second durable store.
 
+## Game support plans
+
+The client discovers a game profile from package `presentation.games` metadata; the core contains no
+SC2, Warzone or other game id list. `planGameSupport(gameId)` is a read-only preview containing the
+matching packages, their desired enabled state, blockers and an ordered action list. The order is
+stable: new installs first, reversible enablement changes second and non-reversible package updates
+last. The portable document is described by `modkit.game-support-plan.schema.json`.
+
+After a user confirms that preview, pass the exact document to `applyGameSupport(plan)`. The client
+rebuilds the plan under its mutation lock and refuses stale or edited input before writing anything.
+Successful fresh installs are enabled automatically. If a later action fails, the manager removes
+new packages and restores prior enablement on a best-effort basis. The result says `rolled-back` when
+that compensation is complete, or `partial` when an update already replaced bytes or any rollback
+step failed. Updates are deliberately reported as non-reversible because the generic artifact-store
+port does not promise old-version retention.
+
+For a game node, an application should therefore show `plan.targets`, `plan.actions` and
+`plan.blocked`, ask for confirmation, then call `applyGameSupport(plan)`. A successful result still
+requires the host's normal reload/composition step before newly installed extension roots execute.
+
 ## Extension and contribution subjects
 
 `projectExtensionSubjects(...)` turns one validated extension root and its validated contribution
@@ -107,9 +127,40 @@ enablement actions. `extensionSubjectRecordToWire(...)` materializes one card as
 for Webview, worker and RPC boundaries; `subjectFactsSourceFromWire(...)` restores the neutral facts
 ABI after transport.
 
+The extension card exposes an explicit `Contributions` list. Every item carries the serialized
+subject id used for navigation, its `owns` relation, enablement and exact declared contract
+coordinate. Contract groups remain available on the in-process projection and contract metadata is
+retained on each contribution card, but the extension card does not render a separate technical
+`Contracts` section by default.
+
+## Presentation metadata
+
+Both `modkit.extension.json` and `package.json#modkit` may carry the same optional, data-only
+`presentation` block. Local discovery, registry catalogs, installed state, manager snapshots and
+extension subject cards preserve this shape:
+
+```json
+{
+  "presentation": {
+    "displayName": "Example tools",
+    "description": "Tools for Example Game modding.",
+    "vendor": { "id": "example.vendor", "displayName": "Example Vendor" },
+    "games": [{ "id": "example.vendor/example-game", "displayName": "Example Game" }],
+    "icon": { "path": "assets/icon.png", "mediaType": "image/png" },
+    "source": { "kind": "url", "url": "https://example.invalid/tools" },
+    "licenseFiles": [{ "path": "LICENSE.txt", "displayName": "MIT License" }]
+  }
+}
+```
+
+Asset paths and a `{ "kind": "root" }` source root are portable paths relative to the extension's
+VFS mount. Absolute, drive, UNC, backslash, NUL and traversal paths are refused. The URL form accepts
+only absolute HTTP(S) URLs. No filesystem handle, function or live capability crosses a manager,
+Webview, worker or RPC boundary.
+
 ## Localization contributions
 
-`org.modkitx/localization-contribution@1` is a data-only contribution. Its manifest points to
+`modkit/localization-contribution@1` is a data-only contribution. Its manifest points to
 extension-relative JSON message catalogs and requests the message-key prefixes each catalog needs.
 The manager discovers and enables the owning extension exactly like any other package; it does not
 parse UI messages or execute a language module.

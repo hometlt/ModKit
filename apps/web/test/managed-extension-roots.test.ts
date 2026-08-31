@@ -1,5 +1,5 @@
 import { webcrypto } from 'node:crypto'
-import { createHostComposition, EXTENSION_DISABLED_CODE } from '@modkitx-x3/host'
+import { createHostComposition, EXTENSION_DISABLED_CODE } from '@modkit/host'
 import { describe, expect, it } from 'vitest'
 
 import { createWebExtensionSubjectCatalog } from '../src/extension-subjects.js'

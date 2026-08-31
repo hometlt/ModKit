@@ -62,73 +62,73 @@ function textFiles(directory: string): string[] {
 
 const formats = Object.freeze([
   {
-    packageName: 'modkit-extension-x3-archives',
+    packageName: 'modkit-extension-archives',
     subpath: 'formats/zip/codec',
     format: 'zip',
     bytes: [0x50, 0x4b, 0x03, 0x04],
   },
   {
-    packageName: 'modkit-extension-x3-audio',
+    packageName: 'modkit-extension-audio',
     subpath: 'formats/mp3/codec',
     format: 'mp3',
     bytes: [0xff, 0xfb, 0x90, 0x64],
   },
   {
-    packageName: 'modkit-extension-x3-audio',
+    packageName: 'modkit-extension-audio',
     subpath: 'formats/ogg/codec',
     format: 'ogg',
     text: 'OggS',
   },
   {
-    packageName: 'modkit-extension-x3-images',
+    packageName: 'modkit-extension-images',
     subpath: 'formats/png/codec',
     format: 'png',
     bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
   },
   {
-    packageName: 'modkit-extension-x3-images',
+    packageName: 'modkit-extension-images',
     subpath: 'formats/jpeg/codec',
     format: 'jpeg',
     bytes: [0xff, 0xd8, 0xff],
   },
   {
-    packageName: 'modkit-extension-x3-vector',
+    packageName: 'modkit-extension-vector',
     subpath: 'formats/svg/codec',
     format: 'svg',
     text: '<svg/>',
   },
   {
-    packageName: 'modkit-extension-x3-models',
+    packageName: 'modkit-extension-models',
     subpath: 'formats/obj/codec',
     format: 'obj',
     text: 'v 0 0 0\nf 1 1 1\n',
   },
   {
-    packageName: 'modkit-extension-x3-models',
+    packageName: 'modkit-extension-models',
     subpath: 'formats/gltf/codec',
     format: 'gltf',
     text: '{"asset":{"version":"2.0"}}',
   },
   {
-    packageName: 'modkit-extension-x3-video',
+    packageName: 'modkit-extension-video',
     subpath: 'formats/mp4/codec',
     format: 'mp4',
     bytes: [0, 0, 0, 16, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d],
   },
   {
-    packageName: 'modkit-extension-x3-video',
+    packageName: 'modkit-extension-video',
     subpath: 'formats/webm/codec',
     format: 'webm',
     bytes: [0x1a, 0x45, 0xdf, 0xa3, 0x77, 0x65, 0x62, 0x6d],
   },
   {
-    packageName: 'modkit-extension-x3-documents',
+    packageName: 'modkit-extension-documents',
     subpath: 'formats/markdown/codec',
     format: 'markdown',
     text: '# Packed\n',
   },
   {
-    packageName: 'modkit-extension-x3-documents',
+    packageName: 'modkit-extension-documents',
     // relocated to the counted port path in slice 12-2, when the staging route was retired
     subpath: 'rtf/codec',
     format: 'rtf',
@@ -176,9 +176,9 @@ describe('packed reference codec boundaries', () => {
       )
       expect(install.status, install.stderr).toBe(0)
       const externalRequire = createRequire(join(consumer, 'package.json'))
-      const sdk = (await import(
-        pathToFileURL(externalRequire.resolve('@modkitx-x3/sdk')).href
-      )) as { revisionId(value: string): string }
+      const sdk = (await import(pathToFileURL(externalRequire.resolve('@modkit/sdk')).href)) as {
+        revisionId(value: string): string
+      }
       const encoder = new TextEncoder()
       for (const definition of formats) {
         const packageEntry = (await import(
@@ -238,7 +238,7 @@ describe('packed reference codec boundaries', () => {
         'document-rtf',
       ]
       for (const name of ['core', 'sdk', 'vfs', 'host']) {
-        const combined = textFiles(join(consumer, 'node_modules', '@modkitx-x3', name))
+        const combined = textFiles(join(consumer, 'node_modules', '@modkit', name))
           .map(file => readFileSync(file, 'utf8'))
           .join('\n')
         for (const needle of forbidden) expect(combined, `${name}: ${needle}`).not.toContain(needle)

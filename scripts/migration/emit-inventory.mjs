@@ -769,12 +769,12 @@ function collectCliCommands() {
 // --- 6. apps -----------------------------------------------------------------------------------
 
 const APP_HOSTS = {
-  '@modkitx/model-viewer': 'browser-app',
-  '@modkitx/cli': 'node-cli',
+  '@modkit/model-viewer': 'browser-app',
+  '@modkit/cli': 'node-cli',
   'vscode-modkit': 'vscode-extension',
-  '@modkitx/rts-client': 'browser-app',
-  '@modkitx/rts-server': 'node-server',
-  '@modkitx/rts-shared': 'shared-library',
+  '@modkit/rts-client': 'browser-app',
+  '@modkit/rts-server': 'node-server',
+  '@modkit/rts-shared': 'shared-library',
 }
 
 function collectApps(files) {
@@ -891,17 +891,17 @@ function collectWorkspaceScripts() {
 // --- 8. runtime / RTS capabilities --------------------------------------------------------------
 
 const RUNTIME_SURFACES = [
-  { domain: 'session', packageName: '@modkitx/rts-shared', subpath: '.' },
-  { domain: 'session', packageName: '@modkitx/rts-shared', subpath: './session' },
-  { domain: 'network', packageName: '@modkitx/rts-shared', subpath: './net' },
-  { domain: 'network', packageName: '@modkitx/rts-shared', subpath: './protocol' },
-  { domain: 'server', packageName: '@modkitx/rts-server', subpath: '.' },
-  { domain: 'server', packageName: '@modkitx/rts-server', subpath: './internet' },
-  { domain: 'simulation', packageName: '@modkitx/world', subpath: '.' },
-  { domain: 'runtime-registry', packageName: '@modkitx/runtime', subpath: '.' },
-  { domain: 'replay', packageName: '@modkitx/replays-processing', subpath: '.' },
-  { domain: 'replay', packageName: '@modkitx/replays-processing', subpath: './operations' },
-  { domain: 'save', packageName: '@modkitx/saves-processing', subpath: '.' },
+  { domain: 'session', packageName: '@modkit/rts-shared', subpath: '.' },
+  { domain: 'session', packageName: '@modkit/rts-shared', subpath: './session' },
+  { domain: 'network', packageName: '@modkit/rts-shared', subpath: './net' },
+  { domain: 'network', packageName: '@modkit/rts-shared', subpath: './protocol' },
+  { domain: 'server', packageName: '@modkit/rts-server', subpath: '.' },
+  { domain: 'server', packageName: '@modkit/rts-server', subpath: './internet' },
+  { domain: 'simulation', packageName: '@modkit/world', subpath: '.' },
+  { domain: 'runtime-registry', packageName: '@modkit/runtime', subpath: '.' },
+  { domain: 'replay', packageName: '@modkit/replays-processing', subpath: '.' },
+  { domain: 'replay', packageName: '@modkit/replays-processing', subpath: './operations' },
+  { domain: 'save', packageName: '@modkit/saves-processing', subpath: '.' },
 ]
 
 const SC2_RUNTIME_CODEC = 'extensions/blizzard/starcraft-2/codecs/sc2-runtime/codec.manifest.json'
@@ -935,18 +935,18 @@ function collectRuntimeCapabilities() {
       },
     })
   }
-  const runtimeCodec = byId.get('legacy/codec-manifest/org.modkitx/sc2-runtime')
+  const runtimeCodec = byId.get('legacy/codec-manifest/modkit/sc2-runtime')
   if (runtimeCodec !== undefined) {
     collected += 1
     addUnit({
-      sourceUnitId: 'legacy/runtime/simulation/org.modkitx/sc2-runtime',
+      sourceUnitId: 'legacy/runtime/simulation/modkit/sc2-runtime',
       kind: 'runtime-capability',
       sourceRoot: 'legacy',
       path: SC2_RUNTIME_CODEC,
       depth: 'shallow',
       extracted: {
         domain: 'simulation',
-        packageName: 'org.modkitx/sc2-runtime',
+        packageName: 'modkit/sc2-runtime',
         subpath: '.',
         exportUnitId: runtimeCodec.sourceUnitId,
         symbolCount: 0,

@@ -1,6 +1,6 @@
 /** Host definition, exact game-id matcher and activation adapter for installation discovery. */
 
-import { contractId, diagnostic, type Diagnostic } from '@modkitx-x3/core'
+import { contractId, diagnostic, type Diagnostic } from '@modkit/core'
 import {
   GAME_INSTALLATION_DISCOVERY_CONTRACT,
   GAME_INSTALLATION_MATCHER_PROFILE,
@@ -14,7 +14,7 @@ import {
   type GameLaunchPlan,
   type GameLaunchPlanner,
   type GameLaunchResource,
-} from '@modkitx-x3/sdk/games'
+} from '@modkit/sdk/games'
 import type {
   DefinitionInventoryResult,
   PermissionGrant,
@@ -25,13 +25,13 @@ import type {
   ServiceFacetMatchContext,
   ServiceFacetMatchResult,
   ServiceFacetMatcherProfile,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { Inventory } from '../inventory.js'
 import { createHostServiceResolver } from '../service-leases.js'
 
 /** Owner id under which the standard installation-discovery definition is registered. */
-export const STANDARD_GAMES_OWNER = 'org.modkitx/games'
+export const STANDARD_GAMES_OWNER = 'modkit/games'
 
 const OFFER_KEYS = new Set(['gameIds'])
 const REQUEST_KEYS = new Set(['gameId'])
@@ -124,13 +124,13 @@ export const GAME_INSTALLATION_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
     offerFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/game-installation-offer.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/game-installation-offer.v1.schema.json',
       }),
     }),
     requestFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/game-installation-request.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/game-installation-request.v1.schema.json',
       }),
     }),
     matching: Object.freeze({ profile: GAME_INSTALLATION_MATCHER_PROFILE, major: 1 }),
@@ -156,13 +156,13 @@ export const GAME_LAUNCH_PLAN_CONTRACT_DEFINITION: ServiceContractDefinitionSpec
     offerFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/game-launch-offer.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/game-launch-offer.v1.schema.json',
       }),
     }),
     requestFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/game-launch-request.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/game-launch-request.v1.schema.json',
       }),
     }),
     matching: Object.freeze({ profile: GAME_INSTALLATION_MATCHER_PROFILE, major: 1 }),

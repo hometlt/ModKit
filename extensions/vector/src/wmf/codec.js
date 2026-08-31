@@ -2,9 +2,9 @@ import {
   createInspectionCodec,
   createTreeDataSource,
   createVectorSceneSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/wmf'
+const ID = 'modkit/wmf'
 const PLACEABLE_KEY = 0x9ac6cdd7
 const NAMES = Object.freeze({ 0x0000: 'META_EOF', 0x041b: 'META_RECTANGLE' })
 

@@ -1,5 +1,5 @@
 {
-  "name": "@modkitx/extension-manager",
+  "name": "@modkit/extension-manager",
   "version": "0.1.0",
   "description": "Protocol-neutral extension discovery, profiles, locks and VFS materialization for Modkit.",
   "license": "MIT",
@@ -29,7 +29,8 @@
     "./schemas/repository": "./schemas/modkit.repository.schema.json",
     "./schemas/lock": "./schemas/modkit.extensions.lock.schema.json",
     "./schemas/composition": "./schemas/modkit.composition.schema.json",
-    "./schemas/registry": "./schemas/modkit.registry.schema.json"
+    "./schemas/registry": "./schemas/modkit.registry.schema.json",
+    "./schemas/game-support-plan": "./schemas/modkit.game-support-plan.schema.json"
   },
   "files": [
     "README.md",
@@ -39,10 +40,10 @@
   "scripts": {
     "pack:standalone": "node ../../scripts/pack-first-party.mjs --package .",
     "test": "node --test",
-    "check": "node --check src/index.js && node --check src/catalog.js && node --check src/client.js && node --check src/subjects.js && node --check src/node.js && node --check src/local-candidates.js && node --check src/node-adapters.js && node --check src/browser.js && node --check src/cli.js && pnpm test"
+    "check": "node --check src/index.js && node --check src/catalog.js && node --check src/client.js && node --check src/game-support.js && node --check src/subjects.js && node --check src/node.js && node --check src/local-candidates.js && node --check src/node-adapters.js && node --check src/browser.js && node --check src/cli.js && pnpm test"
   },
   "dependencies": {
-    "@modkitx-x3/sdk": "workspace:*",
-    "@modkitx-x3/vfs": "workspace:*"
+    "@modkit/sdk": "workspace:*",
+    "@modkit/vfs": "workspace:*"
   }
 }

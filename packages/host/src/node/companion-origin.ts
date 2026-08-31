@@ -13,8 +13,8 @@
 
 import { opendir } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
-import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
-import type { ArtifactSource, InputSearchScope, Lease } from '@modkitx-x3/sdk'
+import { ModkitError, throwIfAborted } from '@modkit/core'
+import type { ArtifactSource, InputSearchScope, Lease } from '@modkit/sdk'
 import {
   normalizeCompanionLogicalId,
   COMPANION_PATH_REFUSED,

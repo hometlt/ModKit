@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { canonicalJsonStringify } from '@modkitx-x3/core'
+import { canonicalJsonStringify } from '@modkit/core'
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   bindingId,
@@ -15,19 +15,19 @@ import {
   type Codec,
   type ContributionManifestV1Wire,
   type ResolvedBinding,
-} from '@modkitx-x3/sdk'
-import { resolvePresentationPlan } from '@modkitx-x3/host'
-import { assertAuthoringPackable } from '@modkitx-x3/sdk/authoring'
+} from '@modkit/sdk'
+import { resolvePresentationPlan } from '@modkit/host'
+import { assertAuthoringPackable } from '@modkit/sdk/authoring'
 import {
   addInterpretation,
   createRootSubjectState,
   removeInterpretation,
   rootSubject,
   selectInterpretation,
-} from '@modkitx-x3/sdk/subjects'
+} from '@modkit/sdk/subjects'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const extensionRoot = join(here, '..', '..', '..', 'examples', 'modkit-extension-x3-plain-text')
+const extensionRoot = join(here, '..', '..', '..', 'examples', 'modkit-extension-plain-text')
 const manifestPath = join(extensionRoot, 'contributions', 'codec-plain-text.json')
 
 interface PlainTextModule {
@@ -174,13 +174,13 @@ describe('A-7 external common/plain-text vertical slice', () => {
     const ref = rootSubject({ id: 'memory://fixtures/hello.txt' })
     const unknown = createRootSubjectState(ref)
     const installed = addInterpretation(unknown, {
-      id: 'org.modkitx/plain-text',
+      id: 'modkit/plain-text',
       displayName: 'Plain text',
     })
-    const selected = selectInterpretation(installed, 'org.modkitx/plain-text')
-    const degraded = removeInterpretation(selected, 'org.modkitx/plain-text')
+    const selected = selectInterpretation(installed, 'modkit/plain-text')
+    const degraded = removeInterpretation(selected, 'modkit/plain-text')
     expect(unknown.interpretations).toEqual([])
-    expect(selected.selected).toBe('org.modkitx/plain-text')
+    expect(selected.selected).toBe('modkit/plain-text')
     expect(degraded).toMatchObject({ ref, interpretations: [] })
     expect(degraded.selected).toBeUndefined()
     expect(installed.ref).toBe(ref)
@@ -190,7 +190,7 @@ describe('A-7 external common/plain-text vertical slice', () => {
   it('opens a stable subject, publishes lazy text/bytes, invokes operations, and disposes once', async () => {
     const { createCodec } = await extensionModule()
     const codec = createCodec()
-    const bytes = new TextEncoder().encode('Hello ModkitX\nSecond line\n')
+    const bytes = new TextEncoder().encode('Hello Modkit\nSecond line\n')
     const observed = byteSource(bytes, 'memory://fixtures/hello.txt')
     let releases = 0
     const input = inputFor(observed.source, () => {
@@ -207,7 +207,7 @@ describe('A-7 external common/plain-text vertical slice', () => {
     expect(descriptor).toMatchObject({
       subjectUri: 'memory://fixtures/hello.txt',
       interpretation: 'codec',
-      identity: { codecId: 'org.modkitx/plain-text' },
+      identity: { codecId: 'modkit/plain-text' },
       traits: [{ id: 'content.text' }, { id: 'content.binary' }, { id: 'content.metadata' }],
       dataSources: [
         { contract: 'common.view/text-data-source', major: 1 },
@@ -221,11 +221,11 @@ describe('A-7 external common/plain-text vertical slice', () => {
       lineCount: 1,
       maxBytes: 100,
     })
-    expect(page.text).toBe('Hello ModkitX\n')
+    expect(page.text).toBe('Hello Modkit\n')
     await textLease.release()
     expect(await session.operations().invoke('search', { pattern: 'Second' })).toMatchObject({
       state: 'ok',
-      output: { kind: 'json', value: [{ byteOffset: '14', byteLength: '6' }] },
+      output: { kind: 'json', value: [{ byteOffset: '13', byteLength: '6' }] },
     })
     const exported = await session.operations().invoke('export-raw', null)
     expect(exported).toMatchObject({ state: 'ok', output: { kind: 'bytes' } })
@@ -266,8 +266,8 @@ describe('A-7 external common/plain-text vertical slice', () => {
       {
         slotId: presentationSlotId('text-stage'),
         kind: 'stage' as const,
-        contributionId: 'org.modkitx/text-stage',
-        extensionId: 'org.modkitx/platform-viewers',
+        contributionId: 'modkit/text-stage',
+        extensionId: 'modkit/platform-viewers',
         priority: 100,
         singletonGroup: 'primary',
         bindings: [textBinding],
@@ -284,7 +284,7 @@ describe('A-7 external common/plain-text vertical slice', () => {
           return {
             ...binding,
             offerId: 'text',
-            providerId: 'org.modkitx/text-source',
+            providerId: 'modkit/text-source',
             variantId: 'portable',
             ticket: { bindingId: binding.bindingId },
           } as ResolvedBinding<{ bindingId: string }>

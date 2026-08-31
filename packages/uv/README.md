@@ -1,4 +1,4 @@
-# `@modkitx-x3/uv`
+# `@modkit/uv`
 
 The built-in universal-visual package owns Modkit's game-neutral materialization boundary. Game
 and file-format extensions publish typed model and raster projections; this package turns the
@@ -9,7 +9,7 @@ commit those artifacts through the common writer seam.
 
 - `src/model/` contains the deterministic UVM/core materializer, its service provider and writer.
 - `src/texture/` contains the deterministic UVT/core materializer, its service provider and writer.
-- `src/module.js` links both services and both writers as the built-in `org.modkitx/uv` module.
+- `src/module.js` links both services and both writers as the built-in `modkit/uv` module.
 
 The contribution and service identifiers intentionally remain unchanged so callers select the
 same contracts as before the implementation moved out of `extensions/common/uv-materializer`.

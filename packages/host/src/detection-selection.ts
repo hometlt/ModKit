@@ -1,6 +1,6 @@
 /** Canonical codec-detection provenance, deliberately separate from provider policy locks. */
 
-import { canonicalJsonStringify, isQualifiedId, ModkitError } from '@modkitx-x3/core'
+import { canonicalJsonStringify, isQualifiedId, ModkitError } from '@modkit/core'
 import {
   contributionId,
   revisionId,
@@ -10,7 +10,7 @@ import {
   type DetectionEvidenceKind,
   type DetectionResult,
   type RevisionId,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { inventoryBindingForOffer, offersFromInventory } from './offers.js'
 import type { Inventory } from './inventory.js'
 

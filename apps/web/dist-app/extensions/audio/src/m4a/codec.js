@@ -2,9 +2,9 @@ import {
   createAudioMediaSource,
   createInspectionCodec,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/m4a'
+const ID = 'modkit/m4a'
 const CONTAINERS = new Set(['moov', 'trak', 'mdia', 'minf', 'stbl', 'edts', 'udta'])
 
 function ascii(bytes, offset, length) {

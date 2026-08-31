@@ -2,10 +2,10 @@ import {
   createInspectionCodec,
   createRasterImageSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 import { decodeEmbeddedIconFrame } from '../ico/container.js'
 
-const ID = 'org.modkitx/ani'
+const ID = 'modkit/ani'
 const latin1 = new TextDecoder('latin1')
 
 function tag(bytes, offset) {

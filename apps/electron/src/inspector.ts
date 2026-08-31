@@ -22,9 +22,9 @@ import {
   setState,
   setViewerText,
   transportViewer,
-} from '@modkitx-x3/ui'
-import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
-import type { OperationSession, ViewerModule } from '@modkitx-x3/sdk'
+} from '@modkit/ui'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkit/ui/localization'
+import type { OperationSession, ViewerModule } from '@modkit/sdk'
 
 import { offersEditOperations } from './edit-operations.js'
 import { nonMutatingOperationToolbar } from './edit-panel.js'

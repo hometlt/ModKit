@@ -1,18 +1,18 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
-import { contractId, operationId } from '@modkitx-x3/core'
+import { contractId, operationId } from '@modkit/core'
 import type {
   CodecAuthoringSpec,
   CodecGroupMember,
   TargetSmokeEvidence,
-} from '@modkitx-x3/sdk/authoring'
+} from '@modkit/sdk/authoring'
 import {
   assertAuthoringPackable,
   defineCodec,
   defineCodecGroup,
   defineViewer,
   verifyAuthoringTargets,
-} from '@modkitx-x3/sdk/authoring'
+} from '@modkit/sdk/authoring'
 
 const CONTRIBUTION_ID = 'org.example/plain-text'
 

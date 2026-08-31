@@ -1,4 +1,4 @@
-import type { ByteRangeSource, ViewerModule } from '@modkitx-x3/sdk'
+import type { ByteRangeSource, ViewerModule } from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,

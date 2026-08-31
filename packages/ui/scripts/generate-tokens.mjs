@@ -262,8 +262,8 @@ export const TOKEN_CONTRACT_MAJOR = ${TOKEN_CONTRACT_MAJOR}
 
 // ---------------------------------------------------------------- JSON contract
 const contract = {
-  $schema: 'https://schemas.modkitx.org/x3/ui-token-contract.v1.schema.json',
-  contract: { id: 'org.modkitx.ui/token-contract', major: TOKEN_CONTRACT_MAJOR },
+  $schema: 'https://schemas.modkit.org/x3/ui-token-contract.v1.schema.json',
+  contract: { id: 'modkit.ui/token-contract', major: TOKEN_CONTRACT_MAJOR },
   tokens: TOKENS.map(token => ({
     name: token.name,
     tier: token.tier,

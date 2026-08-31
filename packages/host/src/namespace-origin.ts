@@ -14,7 +14,7 @@
  * unrepresentable here.
  */
 
-import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
+import { ModkitError, throwIfAborted } from '@modkit/core'
 import {
   revisionIdFromRef,
   type ArtifactByteSource,
@@ -25,7 +25,7 @@ import {
   type NamespaceEntry,
   type NamespaceEntrySource,
   type RevisionId,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   normalizeCompanionLogicalId,
   type CompanionCaseSensitivity,

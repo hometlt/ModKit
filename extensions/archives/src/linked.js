@@ -1,4 +1,4 @@
-import { defineLinkedExtension } from '@modkitx-x3/host'
+import { defineLinkedExtension } from '@modkit/host'
 
 import sevenZipManifest from '../contributions/codec-7z.json' with { type: 'json' }
 import brotliManifest from '../contributions/codec-brotli.json' with { type: 'json' }

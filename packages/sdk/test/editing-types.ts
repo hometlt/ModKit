@@ -1,5 +1,5 @@
 /** Compile-only proof for the BRIEF-13D editing ABI and its negative boundaries. */
-import { revisionId, type AssetSourceRef } from '@modkitx-x3/sdk'
+import { revisionId, type AssetSourceRef } from '@modkit/sdk'
 import type {
   AssetEditPlan,
   ChangeSet,
@@ -13,7 +13,7 @@ import type {
   StagedPayloadRef,
   SubjectEditTarget,
   WriterProviderContributionSpec,
-} from '@modkitx-x3/sdk/editing'
+} from '@modkit/sdk/editing'
 
 declare const source: AssetSourceRef
 declare const coordinator: CommitCoordinator

@@ -4,7 +4,7 @@ import {
   type KnowledgeResolveQuery,
   type KnowledgeSearchQuery,
   type KnowledgeTarget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { z } from 'zod'
 import type { ModkitMcpHostPort } from './host-port.js'
 import {

@@ -16,7 +16,7 @@ import {
   type ModelSceneSource,
   type Page,
   type PageRequest,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const vendorRoot = join(repoRoot, 'vendor', 'multiverse-specs')

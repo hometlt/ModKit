@@ -6,7 +6,7 @@ import {
   uint64,
   UINT64_DECIMAL_PATTERN,
   type SourceSpan,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 
 describe('wire-safe SourceSpan', () => {
   it('accepts exactly canonical decimal u64 values', () => {

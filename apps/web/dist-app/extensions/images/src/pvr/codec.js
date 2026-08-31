@@ -2,9 +2,9 @@ import {
   createInspectionCodec,
   createRasterImageSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/pvr'
+const ID = 'modkit/pvr'
 
 function endianOf(bytes) {
   if (bytes[0] === 0x50 && bytes[1] === 0x56 && bytes[2] === 0x52 && bytes[3] === 0x03) {

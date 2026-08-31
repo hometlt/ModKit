@@ -5,7 +5,7 @@
  * NEVER enters root identity (MK3/25 §20).
  */
 
-import { isQualifiedId } from '@modkitx-x3/core'
+import { isQualifiedId } from '@modkit/core'
 
 export interface SourceRef {
   readonly id: string

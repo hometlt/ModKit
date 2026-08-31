@@ -11,7 +11,7 @@
  * - optional rich facets do not become mandatory for a simple static model.
  *
  * Two oracles are used on purpose. The pinned `multiverse/specs` snapshot decides what the scope
- * and the canonical form are; the sealed legacy `@modkitx/world` implementation independently
+ * and the canonical form are; the sealed legacy `@modkit/world` implementation independently
  * recomputes the canonical digests. A single implementation agreeing with itself would prove only
  * that it is deterministic.
  */
@@ -22,7 +22,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
-import { CANCELLED_CODE } from '@modkitx-x3/core'
+import { CANCELLED_CODE } from '@modkit/core'
 import {
   drainModelProjection,
   drainModelResourceClosure,
@@ -30,7 +30,7 @@ import {
   materializeAndCompare,
   unexplainedDifferences,
   type DrainedModelProjection,
-} from '@modkitx-x3/testkit'
+} from '@modkit/testkit'
 import {
   revisionId,
   type ArtifactByteSource,
@@ -39,7 +39,7 @@ import {
   type ModelSceneSource,
   type ResourceProvenanceRecord,
   type ResourceSessionPort,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const fixtureDir = join(repoRoot, 'vendor', 'multiverse-specs', 'specs', 'model', 'fixtures')
@@ -284,7 +284,7 @@ describe('canonical case — exact semantic equality', () => {
           UV_game_socket?: {
             role: string
             sourceName?: string
-            extras?: { modkitx?: { id: string; nodeId: string } }
+            extras?: { modkit?: { id: string; nodeId: string } }
           }
         }
       }[]
@@ -294,7 +294,7 @@ describe('canonical case — exact semantic equality', () => {
       expect.objectContaining({
         role: 'attach',
         sourceName: 'Ref_Hardpoint',
-        extras: { modkitx: { id: 'socket-hardpoint', nodeId } },
+        extras: { modkit: { id: 'socket-hardpoint', nodeId } },
       }),
     )
     expect(() =>
@@ -591,8 +591,8 @@ describe('two oracles', () => {
         }
       }
       for (const [extension, schema] of [
-        ['UV_asset', 'https://modkitx.org/uvm/1.0/uvm.asset.schema.json'],
-        ['UV_provenance', 'https://modkitx.org/uvm/1.0/uvm.provenance.schema.json'],
+        ['UV_asset', 'https://modkit.org/uvm/1.0/uvm.asset.schema.json'],
+        ['UV_provenance', 'https://modkit.org/uvm/1.0/uvm.provenance.schema.json'],
       ] as const) {
         const validate = ajv.getSchema(schema)
         expect(validate, schema).toBeDefined()

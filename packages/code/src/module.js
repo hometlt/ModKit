@@ -1,4 +1,4 @@
-import { defineBuiltinModule } from '@modkitx-x3/host'
+import { defineBuiltinModule } from '@modkit/host'
 
 import editorManifest from '../contributions/editor-monaco-code.json' with { type: 'json' }
 import packageJson from '../package.json' with { type: 'json' }
@@ -7,7 +7,7 @@ import packageJson from '../package.json' with { type: 'json' }
  * Keep the composition descriptor safe to import from Electron main, Node tests and catalog
  * tooling. Monaco imports browser CSS and DOM-facing code, so the actual editor is loaded only
  * when a visual host mounts this contribution. Browser application catalogs may still import
- * `@modkitx-x3/code` directly when they want the eager editor objects.
+ * `@modkit/code` directly when they want the eager editor objects.
  */
 const lazyEditor = Object.freeze({
   abiVersion: 1,
@@ -21,7 +21,7 @@ const lazyEditor = Object.freeze({
 
 /** Built-in code workspace implementation composed explicitly by visual applications. */
 export const codeModule = defineBuiltinModule({
-  coordinate: 'org.modkitx/code',
+  coordinate: 'modkit/code',
   packageJson,
   contributions: [{ path: 'contributions/editor-monaco-code.json', manifest: editorManifest }],
   modules: { './src/index.js': lazyEditor },

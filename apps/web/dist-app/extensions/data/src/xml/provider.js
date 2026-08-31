@@ -6,7 +6,7 @@ import {
   failure,
   lease,
   span,
-} from '@modkitx-x3/codec-kit/text'
+} from '@modkit/codec-kit/text'
 import { definition } from './definition.js'
 
 function xmlNode(node, text) {
@@ -45,7 +45,7 @@ function xmlNode(node, text) {
 function parseXmlDocument(decoded) {
   if (/<!DOCTYPE|<!ENTITY/iu.test(decoded.text)) {
     return failure(
-      'org.modkitx/text-data-xml-doctype',
+      'modkit/text-data-xml-doctype',
       'DTD and custom entities are forbidden',
       decoded.text,
     )
@@ -54,7 +54,7 @@ function parseXmlDocument(decoded) {
     const parsed = parseXml(decoded.text)
     const element = parsed.children?.find(child => child.type === 'element' || child.name)
     if (!element) {
-      return failure('org.modkitx/text-data-xml-root', 'XML root element is missing', decoded.text)
+      return failure('modkit/text-data-xml-root', 'XML root element is missing', decoded.text)
     }
     return {
       state: 'ok',
@@ -63,7 +63,7 @@ function parseXmlDocument(decoded) {
     }
   } catch (error) {
     return failure(
-      'org.modkitx/text-data-xml-parse',
+      'modkit/text-data-xml-parse',
       error instanceof Error ? error.message : String(error),
       decoded.text,
     )

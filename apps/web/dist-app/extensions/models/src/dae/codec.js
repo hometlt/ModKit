@@ -1,13 +1,13 @@
-// Hand-ported from org.modkitx/dae. A bounded, entity-safe XML reader decodes COLLADA 1.4/1.5
+// Hand-ported from modkit/dae. A bounded, entity-safe XML reader decodes COLLADA 1.4/1.5
 // sources, vertices, triangles/polylist/polygons, and the selected visual-scene hierarchy.
 
 import {
   createInspectionCodec,
   createModelSceneSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/dae'
+const ID = 'modkit/dae'
 const decoder = new TextDecoder('utf-8', { fatal: true })
 const probeDecoder = new TextDecoder('utf-8', { fatal: false })
 const IDENTITY = Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])

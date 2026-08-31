@@ -5,7 +5,7 @@ import {
   failure,
   lease,
   span,
-} from '@modkitx-x3/codec-kit/text'
+} from '@modkit/codec-kit/text'
 import { definition } from './definition.js'
 
 function parseIni(decoded, dialect) {
@@ -28,7 +28,7 @@ function parseIni(decoded, dialect) {
       const equals = line.indexOf('=')
       if (equals <= 0) {
         return failure(
-          'org.modkitx/text-data-ini-parse',
+          'modkit/text-data-ini-parse',
           'INI entry requires a non-empty key',
           decoded.text,
           offset,
@@ -39,7 +39,7 @@ function parseIni(decoded, dialect) {
       const identity = `${current.name}\0${key}`
       if (dialect === 'ini-basic' && seen.has(identity)) {
         return failure(
-          'org.modkitx/text-data-ini-duplicate',
+          'modkit/text-data-ini-duplicate',
           `duplicate key ${key}`,
           decoded.text,
           offset,

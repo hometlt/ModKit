@@ -1,5 +1,5 @@
 /*
- * BZip2 decoder adapted for ModkitX3 from seek-bzip 2.0.0.
+ * BZip2 decoder adapted for Modkit from seek-bzip 2.0.0.
  *
  * Copyright (C) 2013-2015 C. Scott Ananian
  * Copyright (C) 2012-2015 Eli Skeggs
@@ -24,9 +24,9 @@
  * Node streams and Buffers with bounded Uint8Array storage and rejects obsolete randomized blocks.
  */
 
-import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/bzip2'
+const ID = 'modkit/bzip2'
 const BLOCK_MAGIC = '314159265359'
 const END_MAGIC = '177245385090'
 const MAX_HUFFMAN_BITS = 20

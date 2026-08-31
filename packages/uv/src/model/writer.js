@@ -18,10 +18,10 @@
  */
 import { defineWriter } from '../support.js'
 
-const PROVIDER_ID = 'org.modkitx/uvm-writer'
+const PROVIDER_ID = 'modkit/uvm-writer'
 const EVIDENCE_ID = 'uv-materializer-uvm-writer-v1'
 /** A module cannot see its own artifact digest; the host inventory carries the attested one. */
-const ARTIFACT_DIGEST = 'x3:org.modkitx/uvm-writer@1.0.0'
+const ARTIFACT_DIGEST = 'x3:modkit/uvm-writer@1.0.0'
 
 const PAYLOAD_KINDS = Object.freeze(['inline', 'staged'])
 
@@ -32,7 +32,7 @@ function validateExport(change) {
   if (change.targets.length === 0 || change.edits.length === 0) {
     diagnostics.push(
       error(
-        'org.modkitx/uvm-writer-change-empty',
+        'modkit/uvm-writer-change-empty',
         'a change set must carry at least one target and one edit',
       ),
     )
@@ -42,7 +42,7 @@ function validateExport(change) {
     if (edit.operation !== 'create') {
       diagnostics.push(
         error(
-          'org.modkitx/uvm-writer-operation-unsupported',
+          'modkit/uvm-writer-operation-unsupported',
           `a UVM export creates a new artifact: «${edit.operation}» is not an export-only edit`,
         ),
       )
@@ -51,7 +51,7 @@ function validateExport(change) {
     if (!targetIds.has(edit.targetId)) {
       diagnostics.push(
         error(
-          'org.modkitx/uvm-writer-target-foreign',
+          'modkit/uvm-writer-target-foreign',
           `edit target «${edit.targetId}» is not a target of this change set`,
         ),
       )
@@ -59,13 +59,13 @@ function validateExport(change) {
     }
     if (typeof edit.newPath !== 'string' || edit.newPath.trim() === '') {
       diagnostics.push(
-        error('org.modkitx/uvm-writer-path-missing', 'a create edit must name the path it writes'),
+        error('modkit/uvm-writer-path-missing', 'a create edit must name the path it writes'),
       )
     }
     if (!PAYLOAD_KINDS.includes(edit.payload?.kind)) {
       diagnostics.push(
         error(
-          'org.modkitx/uvm-writer-payload-unsupported',
+          'modkit/uvm-writer-payload-unsupported',
           `UVM bytes arrive inline or staged, not as «${String(edit.payload?.kind)}»`,
         ),
       )

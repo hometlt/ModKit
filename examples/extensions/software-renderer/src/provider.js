@@ -1,4 +1,4 @@
-import { SCENE_RENDERER_CONTRACT } from '@modkitx-x3/sdk/renderer'
+import { SCENE_RENDERER_CONTRACT } from '@modkit/sdk/renderer'
 
 const RENDERER_ID = 'reference.software'
 const DEFAULT_COLOR = Object.freeze([0.8, 0.8, 0.8, 1])

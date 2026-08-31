@@ -1,9 +1,9 @@
 // Hand-ported from the MK2 AVIF codec. The MK3 port intentionally exposes BMFF structure and
 // image properties only: AV1 pixel decoding belongs to a decoder provider and is not fabricated.
 
-import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec, createTreeDataSource } from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/avif'
+const ID = 'modkit/avif'
 const AVIF_BRANDS = new Set(['avif', 'avis'])
 const CONTAINER_BOXES = new Set(['meta', 'iprp', 'ipco', 'trak', 'mdia', 'minf', 'stbl', 'moov'])
 const latin1 = new TextDecoder('latin1')

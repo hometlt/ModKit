@@ -9,7 +9,7 @@
  *
  * Pure and DOM-free so the bounds are testable in Node.
  */
-import type { NamespaceEntrySource } from '@modkitx-x3/sdk'
+import type { NamespaceEntrySource } from '@modkit/sdk'
 
 export const NAMESPACE_MAXIMUM_ENTRIES = 5000
 export const NAMESPACE_MAXIMUM_DEPTH = 12

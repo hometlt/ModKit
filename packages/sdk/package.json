@@ -1,5 +1,5 @@
 {
-  "name": "@modkitx-x3/sdk",
+  "name": "@modkit/sdk",
   "version": "0.1.0",
   "description": "MK3 clean-core lab: extension/contribution envelope, schemas, subjects (BRIEF-12; not a release)",
   "license": "UNLICENSED",
@@ -92,7 +92,7 @@
     "schemas"
   ],
   "dependencies": {
-    "@modkitx-x3/core": "workspace:*",
+    "@modkit/core": "workspace:*",
     "ajv": "^8.17.1"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-import { diagnostic, throwIfAborted, uint64 } from '@modkitx-x3/core'
+import { diagnostic, throwIfAborted, uint64 } from '@modkit/core'
 
 export function decodeInput(input) {
   if (typeof input.text === 'string') {
@@ -81,14 +81,10 @@ export function failure(code, message, text = '', offset = 0, length = 0) {
 export function preflight(decoded, budget, signal) {
   throwIfAborted(signal)
   if (BigInt(decoded.bytes.byteLength) > budget.maxInputBytes) {
-    return failure(
-      'org.modkitx/text-data-input-budget',
-      'input exceeds maxInputBytes',
-      decoded.text,
-    )
+    return failure('modkit/text-data-input-budget', 'input exceeds maxInputBytes', decoded.text)
   }
   if (decoded.text.includes('\0')) {
-    return failure('org.modkitx/text-data-nul', 'NUL is forbidden in text input', decoded.text)
+    return failure('modkit/text-data-nul', 'NUL is forbidden in text input', decoded.text)
   }
   return undefined
 }

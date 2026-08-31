@@ -6,7 +6,7 @@
  * must remain JSON-safe inventory data.
  */
 
-import { isQualifiedId, type OperationId } from '@modkitx-x3/core'
+import { isQualifiedId, type OperationId } from '@modkit/core'
 import type { JsonValue, TraitDefinitionRequirement } from './asset-capabilities/types.js'
 import type { Lease } from './asset-capabilities/data-sources.js'
 

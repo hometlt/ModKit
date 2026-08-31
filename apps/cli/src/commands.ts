@@ -4,7 +4,7 @@
  * There is deliberately no behaviour here. Everything this file does is turn argv into a
  * `CommandInput`, hand it to the runtime that Electron and VS Code call with the same arguments,
  * and turn the one structured answer into text or JSON. If a verb ever needs a decision made, that
- * decision belongs in `@modkitx-x3/host`'s command runtime where all three hosts inherit it —
+ * decision belongs in `@modkit/host`'s command runtime where all three hosts inherit it —
  * exit-gate line 1 of block 13 is precisely the rule that this file must stay boring.
  *
  * The existing verbs (`validate` a directory, `explain`, `host-profile`, `create codec`) are
@@ -26,8 +26,8 @@ import {
   type CommandReceipt,
   type CommandResult,
   type ExtensionInput,
-} from '@modkitx-x3/host'
-import { createPathSubjectOpener, loadExtensionDirectory } from '@modkitx-x3/host/node'
+} from '@modkit/host'
+import { createPathSubjectOpener, loadExtensionDirectory } from '@modkit/host/node'
 import { createModkitCliSubjectServices } from './profile.js'
 
 export const RUN_USAGE =

@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { VIEWER_CSP, VIEWER_CSP_TRUSTED_EDITOR } from '@modkitx-x3/ui/viewer'
+import { VIEWER_CSP, VIEWER_CSP_TRUSTED_EDITOR } from '@modkit/ui/viewer'
 
 // S2 acceptance (BRIEF-12 §5): the browser import test for core / sdk / portable vfs
 // must not see `node:*`. host is exempt only in its /node modules; its portable root

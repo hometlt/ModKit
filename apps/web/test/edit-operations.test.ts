@@ -10,7 +10,7 @@
  * Nothing here mounts anything. `../src/edit-operations.ts` is data and pure functions on purpose.
  */
 import { describe, expect, it } from 'vitest'
-import type { AnyDescriptor, AssetEditPlan, MetadataGroup } from '@modkitx-x3/sdk'
+import type { AnyDescriptor, AssetEditPlan, MetadataGroup } from '@modkit/sdk'
 
 import {
   base64OfUtf8,

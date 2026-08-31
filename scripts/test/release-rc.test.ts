@@ -6,6 +6,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -15,6 +16,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { READY_APP_EXTENSIONS } from '../app-extension-sets.mjs'
 import {
   buildRc,
+  buildLicenseDocuments,
   canonicalExtensionDigest,
   checkRc,
   emitRcMetadata,
@@ -62,7 +64,7 @@ function extension(
   json(join(root, path, 'contributions', 'codec.json'), {
     schemaVersion: 1,
     id: `${publisher}/${id}-codec`,
-    contract: { id: 'org.modkitx/codec-contribution', major: 1 },
+    contract: { id: 'modkit/codec-contribution', major: 1 },
     spec: {},
   })
   text(join(root, path, 'LICENSE.md'), `${license}\nhttps://example.invalid/license \n`)
@@ -105,7 +107,7 @@ function fixture() {
         name: 'images',
         directory: 'images',
         declared: true,
-        coordinate: 'org.modkitx/images',
+        coordinate: 'modkit/images',
         contributions: [...images.contributions].sort(),
         digest: 'pending',
       },
@@ -120,19 +122,19 @@ function fixture() {
     'MIT License\n\nPermission is hereby granted for this fixture.\n',
   )
 
-  extension(root, 'extensions/images', 'modkit-extension-x3-images', 'org.modkitx', 'images', 'MIT')
+  extension(root, 'extensions/images', 'modkit-extension-images', 'modkit', 'images', 'MIT')
   extension(root, 'external/alpha', 'fixture-alpha', 'example.test', 'alpha', 'MIT')
   const catalogPath = join(root, 'apps', 'vscode', 'generated', 'bundled-catalog.json')
   const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'))
   catalog.roots[0].digest = canonicalExtensionDigest(root, 'extensions/images')
   json(catalogPath, catalog)
   for (const app of [
-    ['automation-host', '@modkitx-x3/automation-host'],
-    ['electron', '@modkitx-x3/electron-app'],
-    ['cli', '@modkitx-x3/modkit-cli'],
-    ['vscode', 'modkitx.modkit'],
-    ['server', '@modkitx-x3/server'],
-    ['web', '@modkitx-x3/web-app'],
+    ['automation-host', '@modkit/automation-host'],
+    ['electron', '@modkit/electron-app'],
+    ['cli', '@modkit/modkit-cli'],
+    ['vscode', 'modkit.modkit'],
+    ['server', '@modkit/server'],
+    ['web', '@modkit/web-app'],
   ] as const) {
     json(join(root, 'apps', app[0], 'package.json'), packageMetadata(app[1], undefined, true))
   }
@@ -147,7 +149,7 @@ function fixture() {
   json(join(root, 'scripts', 'bundle-hashes.json'), {
     'apps/cli/dist/main.js': createHash('sha256').update(cliBytes).digest('hex'),
   })
-  json(join(root, 'package.json'), packageMetadata('@modkitx-x3/workspace-root', undefined, true))
+  json(join(root, 'package.json'), packageMetadata('@modkit/workspace-root', undefined, true))
   text(join(root, 'pnpm-lock.yaml'), "lockfileVersion: '9.0'\n")
   text(join(root, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n")
   return { parent, root }
@@ -188,13 +190,13 @@ describe('focused local RC artifacts', () => {
     const sbom = JSON.parse(readFileSync(join(first, 'sbom.cdx.json'), 'utf8'))
     expect(
       sbom.components
-        .filter((component: { name: string }) => component.name === '@modkitx-x3/workspace-root')
+        .filter((component: { name: string }) => component.name === '@modkit/workspace-root')
         .every((component: { licenses?: unknown }) => component.licenses === undefined),
     ).toBe(true)
-    expect(readFileSync(join(first, 'artifacts', 'modkitx-common.tar'), 'utf8')).toContain(
+    expect(readFileSync(join(first, 'artifacts', 'modkit-common.tar'), 'utf8')).toContain(
       'licenses/MIT.txt',
     )
-    const platformArtifact = readFileSync(join(first, 'artifacts', 'modkitx-platform.tar'), 'utf8')
+    const platformArtifact = readFileSync(join(first, 'artifacts', 'modkit-platform.tar'), 'utf8')
     expect(platformArtifact).toContain('licenses/MIT.txt')
     expect(platformArtifact).toContain('apps/vscode/package.nls.json')
     expect(platformArtifact).toContain('apps/vscode/package.nls.ru.json')
@@ -215,7 +217,7 @@ describe('focused local RC artifacts', () => {
       privateKey.export({ type: 'pkcs8', format: 'pem' }).toString(),
     )
 
-    const artifact = join(signed, 'artifacts', 'modkitx-common.tar')
+    const artifact = join(signed, 'artifacts', 'modkit-common.tar')
     const originalArtifact = readFileSync(artifact)
     writeFileSync(artifact, Buffer.concat([originalArtifact, Buffer.from('tamper')]))
     expect(() => verifyRc({ outDir: signed, publicKeyPath: publicPath })).toThrow(
@@ -294,6 +296,57 @@ describe('focused local RC artifacts', () => {
     json(catalogPath, catalog)
     const second = buildRc({ repoRoot: root, outDir: join(parent, 'unselected') })
     expect(JSON.stringify(second.manifest)).not.toContain('external/alpha')
+  })
+
+  it('resolves nested npm dependencies from the logical pnpm package link', () => {
+    const { parent, root } = fixture()
+    const appRoot = join(root, 'apps', 'cli')
+    const pnpmNodeModules = join(
+      parent,
+      'external-pnpm-store',
+      'node_modules',
+      '.pnpm',
+      'ajv@8.17.1',
+      'node_modules',
+    )
+    const ajvStoreRoot = join(pnpmNodeModules, 'ajv')
+    const ajvLogicalRoot = join(appRoot, 'node_modules', 'ajv')
+    const fastRoot = join(pnpmNodeModules, 'fast-deep-equal')
+    json(join(appRoot, 'package.json'), {
+      ...packageMetadata('@modkit/modkit-cli', undefined, true),
+      dependencies: { ajv: '8.17.1' },
+    })
+    json(join(ajvStoreRoot, 'package.json'), {
+      ...packageMetadata('ajv', 'MIT'),
+      version: '8.17.1',
+      dependencies: { 'fast-deep-equal': '3.1.3' },
+    })
+    json(join(fastRoot, 'package.json'), {
+      ...packageMetadata('fast-deep-equal', 'MIT'),
+      version: '3.1.3',
+    })
+    mkdirSync(dirname(ajvLogicalRoot), { recursive: true })
+    symlinkSync(ajvStoreRoot, ajvLogicalRoot, 'junction')
+
+    const { sbomBytes } = buildLicenseDocuments({
+      repoRoot: root,
+      releaseVersion: '1.0.0',
+      artifacts: [
+        {
+          id: 'platform',
+          entries: new Map([
+            ['apps/cli/package.json', readFileSync(join(appRoot, 'package.json'))],
+          ]),
+        },
+      ],
+    })
+
+    const sbom = JSON.parse(sbomBytes.toString('utf8'))
+    const refs = new Set(
+      sbom.components.map((component: { 'bom-ref': string }) => component['bom-ref']),
+    )
+    expect(refs.has('pkg:npm/ajv@8.17.1')).toBe(true)
+    expect(refs.has('pkg:npm/fast-deep-equal@3.1.3')).toBe(true)
   })
 
   it('ratchets manifest, SBOM and notices against two clean unsigned builds', () => {

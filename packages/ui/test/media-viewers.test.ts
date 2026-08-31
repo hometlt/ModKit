@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { computePeaks, loadModelStage } from '@modkitx-x3/ui'
+import { computePeaks, loadModelStage } from '@modkit/ui'
 import { collectEncodedMedia } from '../src/media/encoded.js'
-import type { EncodedMediaSource, ModelSceneSource } from '@modkitx-x3/sdk'
+import type { EncodedMediaSource, ModelSceneSource } from '@modkit/sdk'
 
 describe('format-neutral media viewer models', () => {
   it('collects chunked encoded media under a hard byte budget', async () => {

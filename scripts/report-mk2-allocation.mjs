@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // MK2 → MK3 allocation report (MK3/27 §8/§12.6/§12.19; MK3/23 §3.1; MK3/24 §3 G4; decision 54).
 //
-// Read-only over the sibling `modkitx` checkout: for every v1 `codec.manifest.json`,
+// Read-only over the sibling `modkit` checkout: for every v1 `codec.manifest.json`,
 // `game.manifest.json` and `extension.json` it computes what a mechanical converter into the
 // MK3 contribution envelope (`ContributionManifestV1` + `CodecContributionSpecV1`) could carry
 // over unchanged, what needs a rename/split, and what has NO home in the current X3 contracts.
@@ -10,7 +10,7 @@
 //
 // It deliberately does not import X3 packages (so it runs against any MK2 snapshot); the small
 // grammar/vocabulary tables it needs live in scripts/lib/mk3-vocabulary.mjs and are
-// cross-checked by scripts/test/report-mk2-allocation.test.ts against @modkitx-x3/core + sdk.
+// cross-checked by scripts/test/report-mk2-allocation.test.ts against @modkit/core + sdk.
 //
 // Usage: node scripts/report-mk2-allocation.mjs [--mk2-root <dir>] [--out <file.md>]
 //        [--json <file.json>] [--quiet]
@@ -177,7 +177,7 @@ for (const row of [
   ],
   [
     'contractVersion',
-    'envelope `contract: {id: org.modkitx/codec-contribution, major: 1}` (different meaning: envelope contract, not codec API)',
+    'envelope `contract: {id: modkit/codec-contribution, major: 1}` (different meaning: envelope contract, not codec API)',
     'mechanical',
   ],
   [

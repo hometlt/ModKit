@@ -1,13 +1,13 @@
 /** Host definition, exact game-id matcher and activation adapter for mod workspaces. */
 
-import { contractId, diagnostic, type Diagnostic } from '@modkitx-x3/core'
+import { contractId, diagnostic, type Diagnostic } from '@modkit/core'
 import {
   MOD_WORKSPACE_COMPOSITION_CONTRACT,
   MOD_WORKSPACE_MATCHER_PROFILE,
   type ModWorkspaceComposition,
   type ModWorkspaceOfferFacet,
   type ModWorkspaceRequestFacet,
-} from '@modkitx-x3/sdk/mods'
+} from '@modkit/sdk/mods'
 import type {
   DefinitionInventoryResult,
   PermissionGrant,
@@ -18,13 +18,13 @@ import type {
   ServiceFacetMatchContext,
   ServiceFacetMatchResult,
   ServiceFacetMatcherProfile,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { Inventory } from '../inventory.js'
 import { createHostServiceResolver } from '../service-leases.js'
 
 /** Owner id under which the standard mod-workspace definition is registered. */
-export const STANDARD_MODS_OWNER = 'org.modkitx/mods'
+export const STANDARD_MODS_OWNER = 'modkit/mods'
 
 const OFFER_KEYS = new Set(['gameIds'])
 const REQUEST_KEYS = new Set(['gameId'])
@@ -99,13 +99,13 @@ export const MOD_WORKSPACE_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1W
     offerFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/mod-workspace-offer.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/mod-workspace-offer.v1.schema.json',
       }),
     }),
     requestFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/mod-workspace-request.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/mod-workspace-request.v1.schema.json',
       }),
     }),
     matching: Object.freeze({ profile: MOD_WORKSPACE_MATCHER_PROFILE, major: 1 }),

@@ -10,7 +10,7 @@ import {
   serializeSettings,
   withRecent,
   type SettingsDocument,
-} from '@modkitx-x3/ui/settings'
+} from '@modkit/ui/settings'
 
 describe('portable settings', () => {
   it('normalizes malformed input without refusing startup', () => {
@@ -62,33 +62,41 @@ describe('portable settings', () => {
       extensions: [
         { id: 'org.example/pack', path: './pack', enabled: true },
         { id: 'org.example/off-at-source', path: './off', enabled: false },
+        { id: 'org.modkitx/images', path: './legacy-images', enabled: true },
       ],
       disabledExtensions: [
         ' org.example/zeta ',
         'org.example/alpha',
         'org.example/zeta',
+        'org.modkitx/images',
+        'modkit/images',
         'NOT.QUALIFIED/value',
         'missing-slash',
         17,
       ],
-      disabledContributions: ['org.example/one-codec'],
+      disabledContributions: ['org.example/one-codec', 'org.modkitx/image-png'],
     })
 
     expect(normalized.document.disabledExtensions).toEqual([
+      'modkit/images',
       'org.example/alpha',
       'org.example/zeta',
     ])
-    expect(normalized.document.disabledContributions).toEqual(['org.example/one-codec'])
+    expect(normalized.document.disabledContributions).toEqual([
+      'modkit/image-png',
+      'org.example/one-codec',
+    ])
     expect(normalized.problems).toEqual([
-      'disabledExtensions[3] is not an extension coordinate; ignored',
-      'disabledExtensions[4] is not an extension coordinate; ignored',
       'disabledExtensions[5] is not an extension coordinate; ignored',
+      'disabledExtensions[6] is not an extension coordinate; ignored',
+      'disabledExtensions[7] is not an extension coordinate; ignored',
     ])
 
     // Disablement is passed to host composition. It must not remove the extension before inventory
     // is built; the source-level `enabled` switch remains the only load filter here.
     expect(enabledExtensions(normalized.document).map(extension => extension.id)).toEqual([
       'org.example/pack',
+      'modkit/images',
     ])
   })
 
@@ -132,6 +140,12 @@ describe('portable settings', () => {
         'org.example/game-beta': {
           configuredPaths: ['/opt/gamebeta', 'bad\0path'],
         },
+        'org.modkitx.opensource/warzone-2100': {
+          configuredPaths: ['C:\\Games\\Warzone 2100'],
+        },
+        'org.modkitx/starcraft-2': {
+          configuredPaths: ['C:\\Games\\StarCraft II'],
+        },
       },
     })
 
@@ -144,6 +158,12 @@ describe('portable settings', () => {
     expect(normalized.document.gameInstallations['org.example/game-beta']?.configuredPaths).toEqual(
       ['/opt/gamebeta'],
     )
+    expect(
+      normalized.document.gameInstallations['wz2100project/warzone-2100']?.configuredPaths,
+    ).toEqual(['C:\\Games\\Warzone 2100'])
+    expect(normalized.document.gameInstallations['blizzard/starcraft-2']?.configuredPaths).toEqual([
+      'C:\\Games\\StarCraft II',
+    ])
     expect(normalized.document.gameInstallations['not-qualified']).toBeUndefined()
     expect(normalized.problems).toEqual(
       expect.arrayContaining([

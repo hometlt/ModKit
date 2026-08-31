@@ -19,12 +19,7 @@
  * FramePort conformance.
  */
 
-import {
-  ModkitError,
-  OperationCancelledError,
-  isCancellation,
-  isModkitError,
-} from '@modkitx-x3/core'
+import { ModkitError, OperationCancelledError, isCancellation, isModkitError } from '@modkit/core'
 import {
   CAPABILITY_OF,
   CAPABILITY_RPC_DOMAIN,
@@ -37,7 +32,7 @@ import {
   type ProtocolLimits,
   type ProtocolViolation,
   type RemoteCapability,
-} from '@modkitx-x3/host/execution'
+} from '@modkit/host/execution'
 import {
   DEMO_LOAD_REQUEST,
   DEMO_SOURCE,

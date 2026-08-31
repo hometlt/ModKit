@@ -7,7 +7,7 @@ import {
   RESOLVED_MAP_WORKSPACE_CONTRACT,
   WORLD_SCENE_SOURCE_CONTRACT,
   type MapSemanticSnapshot,
-} from '@modkitx-x3/sdk/maps'
+} from '@modkit/sdk/maps'
 
 describe('game-neutral semantic map contract', () => {
   it('publishes stable service and matcher coordinates without game-specific ids', () => {
@@ -15,10 +15,8 @@ describe('game-neutral semantic map contract', () => {
     expect(MAP_PREVIEW_PREPARATION_CONTRACT).toBe('common.map/preview-preparation')
     expect(RESOLVED_MAP_WORKSPACE_CONTRACT).toBe('common.map/resolved-workspace')
     expect(WORLD_SCENE_SOURCE_CONTRACT).toBe('common.view/world-scene-source')
-    expect(MAP_SEMANTIC_MATCHER_PROFILE).toBe('org.modkitx/map-semantic-matcher')
-    expect(MAP_PREVIEW_PREPARATION_MATCHER_PROFILE).toBe(
-      'org.modkitx/map-preview-preparation-matcher',
-    )
+    expect(MAP_SEMANTIC_MATCHER_PROFILE).toBe('modkit/map-semantic-matcher')
+    expect(MAP_PREVIEW_PREPARATION_MATCHER_PROFILE).toBe('modkit/map-preview-preparation-matcher')
   })
 
   it('keeps catalog discovery explicit before a map can claim complete schema bindings', () => {

@@ -1,4 +1,4 @@
-import { defineBuiltinModule } from '@modkitx-x3/host'
+import { defineBuiltinModule } from '@modkit/host'
 
 import browserManifest from '../contributions/provider-browser.json' with { type: 'json' }
 import headlessManifest from '../contributions/provider-headless.json' with { type: 'json' }
@@ -13,7 +13,7 @@ import * as headless from './render/headless.js'
  * deployment, not a second provider protocol.
  */
 export const sceneModule = defineBuiltinModule({
-  coordinate: 'org.modkitx/scene',
+  coordinate: 'modkit/scene',
   packageJson,
   contributions: [
     { path: 'contributions/provider-browser.json', manifest: browserManifest },

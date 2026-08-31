@@ -26,7 +26,7 @@ import {
   type RuntimeSessionOffer,
   type RuntimeSessionV2,
   type RuntimeSnapshot,
-} from '@modkitx-x3/sdk/runtime'
+} from '@modkit/sdk/runtime'
 
 export interface RuntimeConformanceFailure {
   readonly check: string

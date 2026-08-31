@@ -1,0 +1,37 @@
+{
+  "name": "modkit-extension-plain-text",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "External common/plain-text A-7 vertical slice.",
+  "exports": {
+    ".": "./src/index.js",
+    "./direct": "./src/direct.js",
+    "./runtime": "./src/entrypoint.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "contributions",
+    "src"
+  ],
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "modkit",
+    "id": "plain-text",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "dependencies": {
+    "@modkit/core": "*",
+    "@modkit/sdk": "*"
+  },
+  "peerDependencies": {
+    "@modkit/host": "*"
+  },
+  "peerDependenciesMeta": {
+    "@modkit/host": {
+      "optional": true
+    }
+  }
+}

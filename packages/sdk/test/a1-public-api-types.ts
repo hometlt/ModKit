@@ -4,7 +4,7 @@ import type {
   CodecContributionSpecV1,
   DataSourceContributionSpecV1,
   ViewerContributionSpecV1,
-} from '@modkitx-x3/sdk/formats'
+} from '@modkit/sdk/formats'
 import {
   bindingId,
   definePresentationPlan,
@@ -13,7 +13,7 @@ import {
   type BindingRef,
   type ViewerModule,
   type UnresolvedSourceDescriptor,
-} from '@modkitx-x3/sdk/ui-contracts'
+} from '@modkit/sdk/ui-contracts'
 import type {
   ArtifactNamespaceSource,
   ArtifactByteSource,
@@ -35,21 +35,21 @@ import type {
   SingleOrBundleAssetInput,
   NamespaceAssetInput,
   StandardTraitInstance,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type {
   DataSourceOf,
   DataSourceRef,
   DataSourceRefWire,
   ModelSceneSource,
   RasterImageSource,
-} from '@modkitx-x3/sdk/data-sources'
-import { foreignDataSource } from '@modkitx-x3/sdk/data-sources'
+} from '@modkit/sdk/data-sources'
+import { foreignDataSource } from '@modkit/sdk/data-sources'
 
 interface RasterSource {
   tile(x: number, y: number, signal?: AbortSignal): Promise<Uint8Array>
 }
 
-declare module '@modkitx-x3/sdk/data-sources' {
+declare module '@modkit/sdk/data-sources' {
   interface DataSourceContractMap {
     'org.example/raster-source': { 2: RasterSource }
   }

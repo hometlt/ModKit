@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/service-provider-contribution", "major": 1 },
-  "id": "org.modkitx/png-encoder-writer",
+  "contract": { "id": "modkit/service-provider-contribution", "major": 1 },
+  "id": "modkit/png-encoder-writer",
   "displayName": "PNG encoder (writer)",
   "runtimeVariants": [
     {
@@ -21,7 +21,7 @@
         "major": 1,
         "version": "1.0.0",
         "facet": {
-          "providerId": "org.modkitx/png-encoder-writer",
+          "providerId": "modkit/png-encoder-writer",
           "fidelityEvidenceId": "png-encoder-v1",
           "formatId": "png",
           "representationId": "rgba8",

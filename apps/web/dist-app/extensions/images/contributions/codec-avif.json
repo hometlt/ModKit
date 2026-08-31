@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
-  "id": "org.modkitx/avif",
+  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "id": "modkit/avif",
   "displayName": "AV1 Image File Format",
   "status": "partial",
   "runtimeVariants": [

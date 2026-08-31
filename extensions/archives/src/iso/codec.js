@@ -1,6 +1,6 @@
-import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/iso'
+const ID = 'modkit/iso'
 const DESCRIPTOR_SIZE = 2048
 const DESCRIPTOR_START = 16 * DESCRIPTOR_SIZE
 const ascii = new TextDecoder('latin1')

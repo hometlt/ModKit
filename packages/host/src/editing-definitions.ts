@@ -7,7 +7,7 @@
  * facet (`resolveServiceProvider`) and cross execution boundaries like any provider.
  */
 
-import { contractId, diagnostic } from '@modkitx-x3/core'
+import { contractId, diagnostic } from '@modkit/core'
 import {
   WRITER_CONTRACT_ID,
   WRITER_FACET_MATCHER_PROFILE,
@@ -22,10 +22,10 @@ import {
   type ServiceFacetMatcherProfile,
   type WriterOffer,
   type WriterRequirement,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 /** Owner id the standard editing definitions are registered under. */
-export const STANDARD_EDITING_OWNER = 'org.modkitx/editing'
+export const STANDARD_EDITING_OWNER = 'modkit/editing'
 
 const REQUIREMENT_KEYS = ['formatId', 'representationId', 'mutationMode', 'minimumRoundTrip']
 const OFFER_KEYS = [...REQUIREMENT_KEYS, 'providerId', 'fidelityEvidenceId']
@@ -86,12 +86,12 @@ export const WRITER_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wire = O
   major: 1,
   offerFacet: Object.freeze({
     presence: 'required',
-    schema: Object.freeze({ $ref: 'https://schemas.modkitx.org/x3/writer-offer.v1.schema.json' }),
+    schema: Object.freeze({ $ref: 'https://schemas.modkit.org/x3/writer-offer.v1.schema.json' }),
   }),
   requestFacet: Object.freeze({
     presence: 'required',
     schema: Object.freeze({
-      $ref: 'https://schemas.modkitx.org/x3/writer-requirement.v1.schema.json',
+      $ref: 'https://schemas.modkit.org/x3/writer-requirement.v1.schema.json',
     }),
   }),
   matching: Object.freeze({ profile: WRITER_FACET_MATCHER_PROFILE, major: 1 }),

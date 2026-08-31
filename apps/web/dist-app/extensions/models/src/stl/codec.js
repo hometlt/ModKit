@@ -1,13 +1,13 @@
-// Hand-ported from org.modkitx/stl. This reader validates and decodes both STL encodings into
+// Hand-ported from modkit/stl. This reader validates and decodes both STL encodings into
 // an owned triangle primitive. STL has no unit, material, hierarchy, or colour contract.
 
 import {
   createInspectionCodec,
   createModelSceneSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/stl'
+const ID = 'modkit/stl'
 const decoder = new TextDecoder('ascii', { fatal: false })
 const IDENTITY = Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 const NUMBER = '[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:e[+-]?\\d+)?'

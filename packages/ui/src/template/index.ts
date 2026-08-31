@@ -2,8 +2,8 @@ import {
   GAME_TEMPLATE_PREVIEW_OPERATION_ID,
   isGameTemplatePreviewResult,
   type GameTemplatePreviewResult,
-} from '@modkitx-x3/sdk/templates'
-import type { JsonValue, ViewerModule } from '@modkitx-x3/sdk'
+} from '@modkit/sdk/templates'
+import type { JsonValue, ViewerModule } from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,

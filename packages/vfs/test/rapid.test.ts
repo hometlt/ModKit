@@ -6,9 +6,9 @@ import { pathToFileURL } from 'node:url'
 import { gzipSync } from 'node:zlib'
 
 import { afterEach, describe, expect, it } from 'vitest'
-import { isCancellation, isModkitError } from '@modkitx-x3/core'
-import { DEFAULT_VFS_LIMITS, VirtualFileSystem, type VfsNode } from '@modkitx-x3/vfs'
-import { createRapidVfsProvider } from '@modkitx-x3/vfs/providers/rapid'
+import { isCancellation, isModkitError } from '@modkit/core'
+import { DEFAULT_VFS_LIMITS, VirtualFileSystem, type VfsNode } from '@modkit/vfs'
+import { createRapidVfsProvider } from '@modkit/vfs/providers/rapid'
 
 const temporaryRoots: string[] = []
 

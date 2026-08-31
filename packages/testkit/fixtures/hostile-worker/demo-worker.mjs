@@ -4,7 +4,7 @@
 // 0) next to the hostile fixtures. Imports the built testkit/host dist on purpose: fixtures run in
 // a bare worker (`execArgv: []`), so there is no TypeScript there.
 import { workerData } from 'node:worker_threads'
-import { createEndpoint, protocolLimits } from '@modkitx-x3/host/execution'
+import { createEndpoint, protocolLimits } from '@modkit/host/execution'
 import { DEMO_SURFACES, createDemoWorld } from '../../dist/capability-rpc/demo-world.js'
 import { framePortFromMessagePort } from '../../dist/capability-rpc/message-port.js'
 

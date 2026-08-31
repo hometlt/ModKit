@@ -1,4 +1,4 @@
-import { createUiLocalizer } from '@modkitx-x3/ui/localization'
+import { createUiLocalizer } from '@modkit/ui/localization'
 import { describe, expect, it, vi } from 'vitest'
 
 const catalog = vi.hoisted(() => {

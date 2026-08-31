@@ -16,13 +16,13 @@
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
-import type { CatalogSource, ExtensionManagerEntry } from '@modkitx/extension-manager'
+import type { CatalogSource, ExtensionManagerEntry } from '@modkit/extension-manager'
 import {
   createNodeExtensionVfs,
   createNodeExtensionManager,
   discoverLocalExtensionCandidates,
   type LocalExtensionCandidate,
-} from '@modkitx/extension-manager/node'
+} from '@modkit/extension-manager/node'
 import {
   parseUiCatalogDocument,
   UI_MESSAGES,
@@ -30,7 +30,7 @@ import {
   type UiLocale,
   type UiLocalizer,
   type UiMessageKey,
-} from '@modkitx-x3/ui/localization'
+} from '@modkit/ui/localization'
 
 import type { CloseAnswer, WebviewChannel } from './bridge.js'
 import {
@@ -45,16 +45,19 @@ import {
   createSubjectCommandRuntime,
   loadLocalizationCatalogs,
   type CommandResult,
-} from '@modkitx-x3/host'
-import { createLanguageWorkspace, languageProviderRoutes } from '@modkitx-x3/host/language'
-import { discoverGameInstallations } from '@modkitx-x3/host/games'
-import {
-  createNodeMapPreviewResourcePlanResolver,
-  launchNodeGameResource,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host'
+import { createLanguageWorkspace, languageProviderRoutes } from '@modkit/host/language'
+import { discoverGameInstallations } from '@modkit/host/games'
+import { createNodeMapPreviewResourcePlanResolver, launchNodeGameResource } from '@modkit/host/node'
 import type { ContainerRegistry } from './containers.js'
 import { CustomDocumentState } from './custom-document.js'
-import { createExtensionCardCatalog, extensionCardBundle } from './extension-cards.js'
+import {
+  createExtensionCardCatalog,
+  extensionCardBundle,
+  extensionCardIconTarget,
+  extensionCardResourceTargets,
+} from './extension-cards.js'
+import { openVsCodeExtensionCardResource } from './extension-card-resource-actions.js'
 import {
   configuredDisabledContributions,
   configuredDisabledExtensions,
@@ -66,10 +69,12 @@ import {
 import {
   createExtensionTree,
   extensionActionContextValue,
+  extensionEntryDisplayName,
   extensionGroupActionContextValue,
   extensionTreeChildren,
   OPEN_CONTRIBUTION_COMMAND,
   OPEN_EXTENSION_COMMAND,
+  type ExtensionComponentNode,
   type ExtensionNode,
 } from './extension-tree.js'
 import {
@@ -280,6 +285,7 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
     private readonly disabledContributionIds: () => readonly string[],
     private readonly availableContributions: readonly import('./contributions.js').ContributionRow[],
     private readonly localizer: UiLocalizer,
+    private readonly iconPathForEntry?: (entry: ExtensionManagerEntry) => string | undefined,
   ) {
     this.subscription = manager.onDidChange(() => this.changed.fire(undefined))
   }
@@ -300,6 +306,38 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
       )
       item.iconPath = new vscode.ThemeIcon(node.group === 'problems' ? 'warning' : 'extensions')
       item.contextValue = extensionGroupActionContextValue(node)
+      return item
+    }
+    if (node.kind === 'vendor') {
+      const count = node.components.reduce(
+        (total, component) => total + component.entries.length,
+        0,
+      )
+      const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Collapsed)
+      item.description = `${count}`
+      item.tooltip = node.label
+      item.iconPath = new vscode.ThemeIcon('organization')
+      return item
+    }
+    if (node.kind === 'component') {
+      const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Collapsed)
+      item.description = `${node.entries.length}`
+      item.tooltip =
+        node.component === 'shared'
+          ? this.localizer.text('vscode.extensions.sharedComponents')
+          : (node.id ?? node.label)
+      const gameIcon =
+        node.component === 'game'
+          ? node.entries.map(entry => this.iconPathForEntry?.(entry.entry)).find(Boolean)
+          : undefined
+      item.iconPath =
+        gameIcon === undefined
+          ? new vscode.ThemeIcon(node.component === 'shared' ? 'references' : 'symbol-event')
+          : vscode.Uri.file(gameIcon)
+      item.contextValue =
+        node.component === 'game'
+          ? 'modkitExtensionComponent.game'
+          : 'modkitExtensionComponent.shared'
       return item
     }
     if (node.kind === 'problem') {
@@ -334,9 +372,9 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
       )
       const identity = contribution.id ?? contribution.path
       const state = this.localizer.text(node.enabled ? 'common.enabled' : 'common.disabled')
-      item.description = `${state}${
-        node.pendingReload ? ` · ${this.localizer.text('extensions.state.reloadPending')}` : ''
-      }`
+      // State is communicated by the icon, tooltip and assistive label; do not repeat it as text.
+      if (node.pendingReload)
+        item.description = this.localizer.text('extensions.state.reloadPending')
       const exactContract = `${contribution.contract ?? this.localizer.text('extensions.tooltip.invalidContract')}${
         contribution.contractMajor === undefined ? '' : `@${contribution.contractMajor}`
       }`
@@ -347,6 +385,11 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
         `${node.pendingReload ? ` · ${this.localizer.text('extensions.state.afterReload')}` : ''}\n` +
         this.localizer.text('extensions.tooltip.origin', { origin: contribution.origin })
       item.iconPath = new vscode.ThemeIcon(node.enabled ? 'pass-filled' : 'circle-slash')
+      item.accessibilityInformation = {
+        label: `${contribution.displayName}: ${state}${
+          node.pendingReload ? `; ${this.localizer.text('extensions.state.afterReload')}` : ''
+        }`,
+      }
       item.contextValue = extensionActionContextValue(node)
       if (contribution.id !== undefined) {
         item.command = {
@@ -361,8 +404,9 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
     }
 
     const { entry } = node
+    const displayName = extensionEntryDisplayName(entry)
     const item = new vscode.TreeItem(
-      entry.displayName,
+      displayName,
       node.contributions.length > 0
         ? vscode.TreeItemCollapsibleState.Collapsed
         : vscode.TreeItemCollapsibleState.None,
@@ -373,19 +417,30 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
         : entry.updateAvailable
           ? `${entry.installedVersion} → ${entry.availableVersion}`
           : entry.installedVersion
-    item.description = `${version} · ${entry.publisher}`
+    item.description = `${version}${
+      node.pendingReload ? ` · ${this.localizer.text('extensions.state.reloadPending')}` : ''
+    }`
     item.tooltip =
-      `${entry.id}\n${version}\n${this.localizer.text('extensions.tooltip.source', {
+      `${displayName}\n${entry.id}\n${version}\n${this.localizer.text('extensions.tooltip.source', {
         source: entry.source,
       })}\n` +
       this.localizer.text(
         entry.trusted
           ? 'extensions.tooltip.trustedPublisher'
           : 'extensions.tooltip.unverifiedPublisher',
-      )
-    item.iconPath = new vscode.ThemeIcon(
-      node.group === 'available' ? 'cloud-download' : entry.enabled ? 'extensions' : 'circle-slash',
-    )
+      ) +
+      (node.pendingReload ? `\n${this.localizer.text('extensions.state.afterReload')}` : '')
+    const iconPath = this.iconPathForEntry?.(entry)
+    item.iconPath =
+      iconPath === undefined
+        ? new vscode.ThemeIcon(
+            node.group === 'available'
+              ? 'cloud-download'
+              : entry.enabled
+                ? 'extensions'
+                : 'circle-slash',
+          )
+        : vscode.Uri.file(iconPath)
     item.contextValue = extensionActionContextValue(node)
     item.command = {
       command: OPEN_EXTENSION_COMMAND,
@@ -417,6 +472,7 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
         entries,
         contributions: [...this.host.contributions, ...this.availableContributions],
         configuredDisabledContributionIds: this.disabledContributionIds(),
+        pendingReloadEntryIds: this.manager.pendingReloadIds(),
         problems,
         localizer: this.localizer,
       }),
@@ -1022,6 +1078,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           updateAvailable: false,
           source: `local:${candidate.sourceId}`,
           trusted: true,
+          ...(candidate.presentation === undefined ? {} : { presentation: candidate.presentation }),
         }),
       }),
     )
@@ -1050,6 +1107,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             updateAvailable: false,
             source,
             trusted: bundled,
+            ...(local?.presentation === undefined ? {} : { presentation: local.presentation }),
           }),
         })
       }),
@@ -1087,6 +1145,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         : ([[candidate.id, candidate.root]] as const),
     ),
   )
+  const extensionIconPaths = new Map(
+    [...extensionCards().entries()].flatMap(([id, entry]) => {
+      const icon = extensionCardIconTarget(entry)
+      return icon === undefined ? [] : ([[id, icon]] as const)
+    }),
+  )
   const managedPackageIds = new Set(managedExtensionState.packageByExtension.values())
   const loadedExtensionIds = new Set([...host.extensions.bundled, ...host.extensions.installed])
   const availableContributions = Object.freeze(
@@ -1112,6 +1176,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     () => configuredDisabledContributions(configuration.readDisabledContributions()).ids,
     availableContributions,
     localizer,
+    entry => extensionIconPaths.get(entry.id),
   )
   context.subscriptions.push(extensionsView)
   context.subscriptions.push(
@@ -1206,7 +1271,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
   const languageWorkspace = createLanguageWorkspace({
     services: host.services,
-    grant: { id: 'org.modkitx.app.vscode/language', classes: [] },
+    grant: { id: 'modkit.app.vscode/language', classes: [] },
     budgets: LANGUAGE_ACTIVATION_BUDGET,
   })
 
@@ -1729,6 +1794,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       readonly onSaveRequested: (path: string) => void
     },
     extensionCard?: import('./extension-cards.js').ExtensionCardBundle,
+    extensionCardResources?: import('./extension-cards.js').ExtensionCardResourceTargets,
+    extensionCardIconPath?: string,
   ): VsCodeServed => {
     const channel: WebviewChannel = {
       post: message => {
@@ -1745,6 +1812,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       session,
       roots,
       linkableExtensionRoots,
+      ...(extensionCardResources === undefined
+        ? {}
+        : {
+            extensionCardResources,
+            openExtensionCardResource: resource =>
+              openVsCodeExtensionCardResource(vscode, resource),
+          }),
       managedPackageIds,
       setManagedPackageEnabled: async (id, enabled) => {
         await extensionManager.execute({ kind: 'set-enabled', id, enabled })
@@ -1777,6 +1851,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     live.add(served)
     liveSubjects.set(served, openPath === undefined ? undefined : subjectKey(openPath))
     // The listener is attached first: the page opens the endpoint the moment its bundle runs.
+    const displayedExtensionCard =
+      extensionCard === undefined || extensionCardIconPath === undefined
+        ? extensionCard
+        : {
+            ...extensionCard,
+            extension: {
+              ...extensionCard.extension,
+              iconUri: webview.asWebviewUri(vscode.Uri.file(extensionCardIconPath)).toString(),
+            },
+          }
     webview.html = panelHtml({
       webview,
       extensionUri: context.extensionUri,
@@ -1785,15 +1869,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       locale: localizer.locale,
       localizationCatalogs,
       ...(openPath === undefined ? {} : { openPath }),
-      ...(extensionCard === undefined ? {} : { extensionCard }),
+      ...(displayedExtensionCard === undefined ? {} : { extensionCard: displayedExtensionCard }),
     })
     return served
   }
 
-  const webviewOptions = (): vscode.WebviewOptions => ({
+  const webviewOptions = (resources: readonly vscode.Uri[] = []): vscode.WebviewOptions => ({
     enableScripts: true,
     // Without this the webview may only load from the extension root; the bundle lives deeper.
-    localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'dist-app')],
+    localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'dist-app'), ...resources],
   })
 
   /**
@@ -1836,7 +1920,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
    * The same six commands the CLI runs and Electron dispatches (block 13, works 4–6).
    *
    * Nothing about them is written here: the descriptors, what each one does, and how a missing
-   * operation is reported all live in `@modkitx-x3/host`. This is the editor-shaped half — a
+   * operation is reported all live in `@modkit/host`. This is the editor-shaped half — a
    * palette entry, a progress notification, a cancellation token — and it is the only half that
    * should ever differ between the three applications.
    */
@@ -2149,7 +2233,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       .flatMap(contribution => {
         const id = contribution.id
         return id === undefined ||
-          contribution.contract !== 'org.modkitx/codec-contribution' ||
+          contribution.contract !== 'modkit/codec-contribution' ||
           disabled.has(id) !== enabled
           ? []
           : [{ label: contribution.displayName, description: id, id }]
@@ -2191,7 +2275,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     if (extensionId === undefined) return
     const ids = host.contributions.flatMap(contribution =>
       contribution.extension === extensionId &&
-      contribution.contract === 'org.modkitx/codec-contribution' &&
+      contribution.contract === 'modkit/codec-contribution' &&
       contribution.id !== undefined
         ? [contribution.id]
         : [],
@@ -2240,6 +2324,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     const contributionId =
       value.kind === 'contribution' && typeof value.id === 'string' ? value.id : undefined
     const bundle = await extensionCardBundle(entry, contributionId)
+    const iconPath = extensionCardIconTarget(entry)
     const active = bundle.documents.find(
       document => document.subject.subjectId === bundle.activeSubjectId,
     )
@@ -2247,9 +2332,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       'modkit.extensionSubjectCard',
       active?.subject.displayName ?? extensionId,
       vscode.ViewColumn.Active,
-      { ...webviewOptions(), retainContextWhenHidden: true },
+      {
+        ...webviewOptions(iconPath === undefined ? [] : [vscode.Uri.file(dirname(iconPath))]),
+        retainContextWhenHidden: true,
+      },
     )
-    const served = attach(panel.webview, undefined, undefined, bundle)
+    const served = attach(
+      panel.webview,
+      undefined,
+      undefined,
+      bundle,
+      extensionCardResourceTargets(entry),
+      iconPath,
+    )
     panel.onDidDispose(() => {
       live.delete(served)
       liveSubjects.delete(served)
@@ -2379,6 +2474,80 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     }
   }
 
+  const installGameSupport = async (argument: unknown): Promise<void> => {
+    const component = argument as Partial<ExtensionComponentNode> | undefined
+    if (component?.kind !== 'component' || component.component !== 'game' || !component.id) return
+    const componentLabel = component.label ?? component.id
+    try {
+      const plan = await extensionManager.planGameSupport(component.id)
+      if (plan.targets.length === 0) {
+        void vscode.window.showInformationMessage(
+          `Modkit: ${localizer.text('vscode.extensions.gameSupportUnavailable', {
+            game: componentLabel,
+          })}`,
+        )
+        return
+      }
+      if (!plan.ready) {
+        const reasons = plan.blocked.map(item => item.message).join('\n')
+        void vscode.window.showErrorMessage(
+          `Modkit: ${localizer.text('vscode.extensions.gameSupportBlocked', {
+            game: componentLabel,
+            reasons,
+          })}`,
+        )
+        return
+      }
+      if (plan.actions.length === 0) {
+        void vscode.window.showInformationMessage(
+          `Modkit: ${localizer.text('vscode.extensions.gameSupportReady', {
+            game: componentLabel,
+          })}`,
+        )
+        return
+      }
+      const details = plan.actions
+        .map(action => {
+          const target = plan.targets.find(item => item.packageId === action.packageId)
+          return `${action.kind === 'install' ? '+' : action.kind === 'enable' ? '✓' : '↻'} ${
+            target?.displayName ?? action.packageId
+          }`
+        })
+        .join('\n')
+      const install = localizer.text('common.install')
+      const confirmed = await vscode.window.showWarningMessage(
+        `${localizer.text('vscode.extensions.gameSupportConfirm', {
+          game: plan.game.displayName,
+          count: plan.actions.length,
+        })}\n\n${details}`,
+        { modal: true },
+        install,
+      )
+      if (confirmed !== install) return
+      const result = await extensionManager.applyGameSupport(plan)
+      if (result.status === 'applied') {
+        const message = localizer.text('vscode.extensions.gameSupportInstalled', {
+          game: plan.game.displayName,
+        })
+        log(`[extensions] ${message}`)
+        askToReload(message)
+        return
+      }
+      const message = localizer.text(
+        result.status === 'rolled-back'
+          ? 'vscode.extensions.gameSupportRolledBack'
+          : 'vscode.extensions.gameSupportPartial',
+        { game: plan.game.displayName },
+      )
+      log(`[extensions] ${message}`)
+      void vscode.window.showWarningMessage(`Modkit: ${message}`)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      log(`[extensions] game-support failed: ${message}`)
+      void vscode.window.showErrorMessage(`Modkit: ${message}`)
+    }
+  }
+
   context.subscriptions.push(
     /*
      * Focuses the native view container rather than opening a panel of its own. What this command
@@ -2426,6 +2595,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     }),
 
     vscode.commands.registerCommand('modkit.extensions.installAll', () => installAllAvailable()),
+
+    vscode.commands.registerCommand('modkit.extensions.installGameSupport', installGameSupport),
 
     vscode.commands.registerCommand('modkit.extensions.update', async (argument: unknown) => {
       const id =

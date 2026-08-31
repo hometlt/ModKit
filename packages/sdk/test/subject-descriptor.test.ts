@@ -195,14 +195,14 @@ describe('SubjectDescriptor v2 schema', () => {
       diagnostics: [
         {
           id: 'same-diagnostic',
-          code: 'org.modkitx/duplicate-descriptor-fact',
+          code: 'modkit/duplicate-descriptor-fact',
           category: 'structure',
           severity: 'warning',
           message: 'first',
         },
         {
           id: 'same-diagnostic',
-          code: 'org.modkitx/duplicate-descriptor-fact',
+          code: 'modkit/duplicate-descriptor-fact',
           category: 'structure',
           severity: 'warning',
           message: 'second',
@@ -338,7 +338,7 @@ describe('SubjectDescriptor v2 schema', () => {
       diagnostics: [
         {
           id: 'missing-palette',
-          code: 'org.modkitx/missing-companion',
+          code: 'modkit/missing-companion',
           category: 'dependency',
           severity: 'error',
           message: 'Required palette was not found',
@@ -368,7 +368,7 @@ describe('SubjectDescriptor v2 schema', () => {
       diagnostics: [
         {
           id: 'ambiguous-palette',
-          code: 'org.modkitx/ambiguous-companion',
+          code: 'modkit/ambiguous-companion',
           category: 'dependency',
           severity: 'error',
           message: 'Two palettes match the singular requirement',

@@ -21,8 +21,8 @@ import {
   type NormalizedSettings,
   type SettingsDocument,
   type SettingsStore,
-} from '@modkitx-x3/ui/settings'
-import { applyDensity, applyTheme } from '@modkitx-x3/ui/tokens'
+} from '@modkit/ui/settings'
+import { applyDensity, applyTheme } from '@modkit/ui/tokens'
 
 /** The `localStorage` surface this module uses. */
 export interface WebStorageLike {
@@ -30,7 +30,7 @@ export interface WebStorageLike {
   setItem(key: string, value: string): void
 }
 
-export const SETTINGS_STORAGE_KEY = 'org.modkitx.app.web/settings'
+export const SETTINGS_STORAGE_KEY = 'modkit.app.web/settings'
 
 export const EXTENSIONS_READ_ONLY_REASON =
   'browser extension locations are managed through granted folders and downloaded packages, so ' +

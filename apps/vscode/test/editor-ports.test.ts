@@ -1,7 +1,7 @@
 /** S14 Path A stays prepare/commit-only and does not become a writer proposal. */
 import { describe, expect, it } from 'vitest'
-import type { SubjectEditingArm } from '@modkitx-x3/host'
-import type { AssetEditPlan } from '@modkitx-x3/sdk'
+import type { SubjectEditingArm } from '@modkit/host'
+import type { AssetEditPlan } from '@modkit/sdk'
 
 import { createWebviewEditorPorts } from '../src/editor-ports.js'
 

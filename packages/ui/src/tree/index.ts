@@ -1,4 +1,4 @@
-import type { TreeDataSource, TreeNodeRef, ViewerModule } from '@modkitx-x3/sdk'
+import type { TreeDataSource, TreeNodeRef, ViewerModule } from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,

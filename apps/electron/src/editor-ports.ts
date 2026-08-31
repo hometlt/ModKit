@@ -1,7 +1,7 @@
 /**
  * The renderer's editor ports over the subject RPC (S14).
  *
- * A `ViewerModule`-hosted editor from `@modkitx-x3/ui` expects four ports — `edit`, `commit`,
+ * A `ViewerModule`-hosted editor from `@modkit/ui` expects four ports — `edit`, `commit`,
  * `payloads`, `authorization` — and calls them as if it held the host's editing objects. In
  * Electron it holds none of them: the grant snapshot, the commit coordinator, the file backend and
  * every prepared commit live in main. This module is the adapter, and it is deliberately thin:
@@ -17,7 +17,7 @@
  * proposed so "save before closing" can commit it — an `EditorMount` has no host-callable save.
  */
 
-import type { SubjectEditingArm, SubjectEditingPrepareResult } from '@modkitx-x3/host'
+import type { SubjectEditingArm, SubjectEditingPrepareResult } from '@modkit/host'
 import type {
   AssetEditPlan,
   ChangeSet,
@@ -28,8 +28,8 @@ import type {
   SourceEdit,
   SubjectEditTarget,
   ValidationResult,
-} from '@modkitx-x3/sdk'
-import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
+} from '@modkit/sdk'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkit/ui/localization'
 
 /** The four ports `createCodecPreview` hands an editable stage, plus this host's lease hygiene. */
 export interface RendererEditorPorts {

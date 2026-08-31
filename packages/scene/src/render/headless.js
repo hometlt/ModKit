@@ -1,6 +1,6 @@
-import { SCENE_RENDERER_CONTRACT } from '@modkitx-x3/sdk/renderer'
+import { SCENE_RENDERER_CONTRACT } from '@modkit/sdk/renderer'
 
-const RENDERER_ID = 'modkitx.headless'
+const RENDERER_ID = 'modkit.headless'
 const DEFAULT_COLOR = Object.freeze([0.78, 0.8, 0.84, 1])
 const DEFAULT_CLEAR_COLOR = Object.freeze([0, 0, 0, 0])
 const MAX_DIMENSION = 4_096
@@ -180,7 +180,7 @@ function renderPrimitive(context, primitive) {
     context.diagnostics.push(
       Object.freeze({
         severity: 'warning',
-        code: 'modkitx.headless/unsupported-topology',
+        code: 'modkit.headless/unsupported-topology',
         message: `headless renderer skipped ${primitive.topology}`,
         primitiveId: primitive.id,
       }),

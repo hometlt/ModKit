@@ -1,5 +1,5 @@
 /**
- * R6 → S9: the Electron subject bridge is the host's subject RPC (`@modkitx-x3/host`
+ * R6 → S9: the Electron subject bridge is the host's subject RPC (`@modkit/host`
  * `exposeSubjectRpc`/`connectSubjectRpc`) over an Electron `MessageChannelMain` port pair —
  * main serves `x3.app/subject-services@1` (`open` → snapshot with the presentation plan,
  * `attach` → the live `x3.abi/asset-session@1`), the renderer consumes materialized proxies. This
@@ -16,8 +16,8 @@ import {
   type SubjectOpener,
   type SubjectRpcClient,
   type SubjectRpcExposure,
-} from '@modkitx-x3/host'
-import type { MessagePortLike } from '@modkitx-x3/host/execution'
+} from '@modkit/host'
+import type { MessagePortLike } from '@modkit/host/execution'
 
 export type {
   SubjectClientOpenResult,
@@ -27,7 +27,7 @@ export type {
   SubjectRpcClient,
   SubjectRpcExposure,
   SubjectUnresolvedSnapshot,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 
 /** The one app-level surface (shared with every host). */
 export const ELECTRON_SUBJECT_SERVICES = SUBJECT_SERVICES
@@ -74,6 +74,6 @@ export async function connectElectronSubjectRpc(
     ...options,
     port: options.port as MessagePortLike,
     moduleUrl: ELECTRON_SUBJECT_SERVICES_URL,
-    contributionId: 'org.modkitx.app.electron/subject-services',
+    contributionId: 'modkit.app.electron/subject-services',
   })
 }

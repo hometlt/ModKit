@@ -14,7 +14,7 @@ import type {
   SubjectDescriptor,
   UnresolvedSourceDescriptor,
 } from '../src/asset-capabilities/types.js'
-import type { OperationId, SourceSpan, UInt64String } from '@modkitx-x3/core'
+import type { OperationId, SourceSpan, UInt64String } from '@modkit/core'
 import type { V1DescriptorProjectionResult } from '../src/asset-capabilities/v1-projection.js'
 
 export const knownTextRef = {
@@ -188,7 +188,7 @@ export const unavailableProjection = {
   diagnostics: [
     {
       id: 'missing-catalog',
-      code: 'org.modkitx/compat-v1-projection-unavailable',
+      code: 'modkit/compat-v1-projection-unavailable',
       category: 'dependency',
       severity: 'warning',
       message: 'catalog unavailable',

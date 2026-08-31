@@ -11,7 +11,7 @@
  * extension code on the main thread.
  */
 
-import type { Diagnostic } from '@modkitx-x3/core'
+import type { Diagnostic } from '@modkit/core'
 import {
   createExecutionBackendRegistry,
   type ExecutionBackendRegistry,
@@ -141,7 +141,7 @@ export interface BrowserWorkerInitMessage {
 }
 
 export interface DomWorkerRealmOptions {
-  /** URL of the built worker entry (`@modkitx-x3/host/browser/worker-entry`), same origin. */
+  /** URL of the built worker entry (`@modkit/host/browser/worker-entry`), same origin. */
   readonly workerUrl: string
   readonly Worker: BrowserWorkerConstructorLike
   readonly MessageChannel: BrowserMessageChannelConstructorLike

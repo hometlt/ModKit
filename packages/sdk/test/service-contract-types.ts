@@ -4,18 +4,18 @@ import type {
   ForeignServiceContractId,
   OpaqueServiceContractRequest,
   TypedServiceContractRequest,
-} from '@modkitx-x3/sdk/service-contracts'
-import { foreignServiceContractId } from '@modkitx-x3/sdk/service-contracts'
-import type { ServiceProviderContributionSpecV1 } from '@modkitx-x3/sdk/formats'
+} from '@modkit/sdk/service-contracts'
+import { foreignServiceContractId } from '@modkit/sdk/service-contracts'
+import type { ServiceProviderContributionSpecV1 } from '@modkit/sdk/formats'
 import type {
   ContributionContext,
   JsonValue,
   SelectedServiceOffer,
   ServiceProviderModule,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { ContributionManifestV1Wire } from '../src/manifest/contribution-types.js'
 import type { ContractOfferWire } from '../src/resolution/types.js'
-import { defineServiceProvider } from '@modkitx-x3/sdk/authoring'
+import { defineServiceProvider } from '@modkit/sdk/authoring'
 
 export const nonJsonContributionManifest = {
   schemaVersion: 1,
@@ -110,7 +110,7 @@ export const executableResolutionOffer = {
   facet: { select: () => 'json' },
 } as const satisfies ContractOfferWire
 
-declare module '@modkitx-x3/sdk/service-contracts' {
+declare module '@modkit/sdk/service-contracts' {
   interface ContractMap {
     'org.example/json-syntax': { 1: JsonSyntaxProvider }
     'org.example/xml-syntax': { 1: XmlSyntaxProvider }

@@ -1,4 +1,4 @@
-// Hand-ported from the MK2 codec org.modkitx/webp (OPUS-MK2-01 task C pilot).
+// Hand-ported from the MK2 codec modkit/webp (OPUS-MK2-01 task C pilot).
 //
 // Container walk only, exactly the fidelity the v1 manifest claimed: RIFF/WEBP chunk headers,
 // the canvas size out of VP8/VP8L/VP8X and the animation frame count. No pixels are decoded,
@@ -8,9 +8,9 @@ import {
   createInspectionCodec,
   createRasterImageSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/webp'
+const ID = 'modkit/webp'
 const ascii = new TextDecoder('latin1')
 
 const RIFF = 'RIFF'

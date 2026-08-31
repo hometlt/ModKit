@@ -1,6 +1,6 @@
 /** Host-owned A-2 contribution registrations and inert inventory projectors. */
 
-import { contractId, type ContractId } from '@modkitx-x3/core'
+import { contractId, type ContractId } from '@modkit/core'
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   CODEC_CONTRIBUTION_CONTRACT,
@@ -22,14 +22,14 @@ import {
   type JsonSchema,
   type JsonValue,
   type ServiceProviderContributionSpecV1Wire,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 /** Generic fact understood by the production offer catalog, not by individual contribution kinds. */
 export const PROVIDER_OFFER_INVENTORY_FACT: ContractId = contractId(
-  'org.modkitx.inventory/provider-offer',
+  'modkit.inventory/provider-offer',
 )
 export const VIEWER_CONTRIBUTION_INVENTORY_FACT: ContractId = contractId(
-  'org.modkitx.inventory/viewer-contribution',
+  'modkit.inventory/viewer-contribution',
 )
 
 function fact(contract: ContractId, value: JsonValue, context: ContributionProjectionContext) {
@@ -175,7 +175,7 @@ function builtins(): readonly ContributionContractRegistration[] {
       project: codecProjector,
       validateSemantics: codec.validateSemantics,
       moduleAbi: { export: 'createCodec', abiVersion: 1 },
-      conformanceProfile: 'org.modkitx/codec-contribution-v1',
+      conformanceProfile: 'modkit/codec-contribution-v1',
     },
     {
       contract: { id: service.contract, major: service.major },
@@ -184,7 +184,7 @@ function builtins(): readonly ContributionContractRegistration[] {
       project: serviceProjector,
       validateSemantics: service.validateSemantics,
       moduleAbi: { export: 'createProvider', abiVersion: 1 },
-      conformanceProfile: 'org.modkitx/service-provider-contribution-v1',
+      conformanceProfile: 'modkit/service-provider-contribution-v1',
     },
     {
       contract: { id: viewer.contract, major: viewer.major },
@@ -195,7 +195,7 @@ function builtins(): readonly ContributionContractRegistration[] {
       ],
       validateSemantics: viewer.validateSemantics,
       moduleAbi: { export: 'default', abiVersion: 1 },
-      conformanceProfile: 'org.modkitx/viewer-contribution-v1',
+      conformanceProfile: 'modkit/viewer-contribution-v1',
     },
     {
       contract: { id: editor.contract, major: editor.major },
@@ -206,7 +206,7 @@ function builtins(): readonly ContributionContractRegistration[] {
       ],
       validateSemantics: editor.validateSemantics,
       moduleAbi: { export: 'default', abiVersion: 1 },
-      conformanceProfile: 'org.modkitx/editor-contribution-v1',
+      conformanceProfile: 'modkit/editor-contribution-v1',
     },
     {
       contract: { id: trait.contract, major: trait.major },

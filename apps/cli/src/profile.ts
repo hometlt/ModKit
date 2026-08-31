@@ -1,15 +1,15 @@
-import { uint64 } from '@modkitx-x3/core'
-import { sceneModule } from '@modkitx-x3/scene/module'
-import { createHostTopology, type HostTopology } from '@modkitx-x3/sdk'
-import { uvModule } from '@modkitx-x3/uv/module'
+import { uint64 } from '@modkit/core'
+import { sceneModule } from '@modkit/scene/module'
+import { createHostTopology, type HostTopology } from '@modkit/sdk'
+import { uvModule } from '@modkit/uv/module'
 import {
   createHostComposition,
   linkedExtensionInputs,
   type ExecutionBackendRegistry,
   type ExtensionInput,
   type HostComposition,
-} from '@modkitx-x3/host'
-import type { Diagnostic } from '@modkitx-x3/core'
+} from '@modkit/host'
+import type { Diagnostic } from '@modkit/core'
 import {
   createNodeExecutionBackends,
   createNodeSubjectServices,
@@ -19,13 +19,13 @@ import {
   workerBackendPolicy,
   type NodeSubjectServices,
   type WorkerBackendPolicy,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host/node'
 
 const CLI_BUILTIN_MODULES = /* @__PURE__ */ linkedExtensionInputs([sceneModule, uvModule])
 
-export const MODKIT_CLI_REALM = 'org.modkitx.app.cli/main'
+export const MODKIT_CLI_REALM = 'modkit.app.cli/main'
 /** Worker threads of the CLI process: where portable (`worker-brokered`) variants run. */
-export const MODKIT_CLI_WORKER_REALM = 'org.modkitx.app.cli/worker'
+export const MODKIT_CLI_WORKER_REALM = 'modkit.app.cli/worker'
 
 /** Worker policy of the CLI (a short-lived tool: small heaps, short deadlines). */
 export const MODKIT_CLI_WORKER_POLICY: WorkerBackendPolicy = workerBackendPolicy({
@@ -45,7 +45,7 @@ export const MODKIT_CLI_WORKER_POLICY: WorkerBackendPolicy = workerBackendPolicy
 export function createModkitCliTopology(): HostTopology {
   return createHostTopology({
     schemaVersion: 1,
-    topologyId: 'org.modkitx.app/cli',
+    topologyId: 'modkit.app/cli',
     realms: [
       {
         schemaVersion: 1,
@@ -67,7 +67,7 @@ export function createModkitCliTopology(): HostTopology {
           maxTransferBytes: uint64('536870912'),
           defaultDeadlineMs: 120_000,
         },
-        policy: { id: 'org.modkitx.policy/cli-default', revision: '1' },
+        policy: { id: 'modkit.policy/cli-default', revision: '1' },
       },
       nodeWorkerRealmProfile({
         realmId: MODKIT_CLI_WORKER_REALM,
@@ -78,7 +78,7 @@ export function createModkitCliTopology(): HostTopology {
           maxTransferBytes: uint64('268435456'),
           defaultDeadlineMs: 60_000,
         },
-        policy: { id: 'org.modkitx.policy/cli-worker', revision: '1' },
+        policy: { id: 'modkit.policy/cli-worker', revision: '1' },
       }),
     ],
     links: [...nodeWorkerLinks(MODKIT_CLI_REALM, MODKIT_CLI_WORKER_REALM)],

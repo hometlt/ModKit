@@ -30,8 +30,8 @@ import {
   type ContributionContext,
   type RasterImageSource,
   type ResourceBudget,
-} from '@modkitx-x3/sdk'
-import { materializeTextureAndCompare, readKtx2Container } from '@modkitx-x3/testkit'
+} from '@modkit/sdk'
+import { materializeTextureAndCompare, readKtx2Container } from '@modkit/testkit'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const syntheticDir = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')

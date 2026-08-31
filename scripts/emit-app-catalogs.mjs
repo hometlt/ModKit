@@ -29,7 +29,7 @@ const previewPolicy = Object.freeze([
   {
     slotId: 'code',
     label: 'Code',
-    contributionId: 'org.modkitx.ui-monaco/code-stage',
+    contributionId: 'modkit.ui-monaco/code-stage',
     module: 'monacoEditor',
     // the same Monaco, constructed `readOnly`; without it a subject this host cannot write showed
     // an editor with a Save that could not work, or lost the Code tab altogether
@@ -39,79 +39,79 @@ const previewPolicy = Object.freeze([
   {
     slotId: 'video',
     label: 'Video',
-    contributionId: 'org.modkitx.ui/video-stage',
+    contributionId: 'modkit.ui/video-stage',
     module: 'videoViewer',
   },
   {
     slotId: 'image',
     label: 'Image',
-    contributionId: 'org.modkitx.ui/image-stage',
+    contributionId: 'modkit.ui/image-stage',
     module: 'imageViewer',
   },
   {
     slotId: 'audio',
     label: 'Audio',
-    contributionId: 'org.modkitx.ui/audio-stage',
+    contributionId: 'modkit.ui/audio-stage',
     module: 'audioViewer',
   },
   {
     slotId: 'world',
     label: 'World',
-    contributionId: 'org.modkitx.ui/world-stage',
+    contributionId: 'modkit.ui/world-stage',
     module: 'worldViewer',
   },
   {
     slotId: 'model',
     label: 'Model',
-    contributionId: 'org.modkitx.ui/model-stage',
+    contributionId: 'modkit.ui/model-stage',
     module: 'modelViewer',
   },
   {
     slotId: 'vector',
     label: 'Vector',
-    contributionId: 'org.modkitx.ui/vector-stage',
+    contributionId: 'modkit.ui/vector-stage',
     module: 'vectorViewer',
   },
   {
     slotId: 'table',
     label: 'Table',
-    contributionId: 'org.modkitx.ui/table-stage',
+    contributionId: 'modkit.ui/table-stage',
     module: 'tableViewer',
   },
   {
     slotId: 'card',
     label: 'Card',
-    contributionId: 'org.modkitx.ui/subject-card-stage',
+    contributionId: 'modkit.ui/subject-card-stage',
     module: 'subjectCardViewer',
   },
   {
     slotId: 'calculations',
     label: 'Calculations',
-    contributionId: 'org.modkitx.ui/subject-calculations-stage',
+    contributionId: 'modkit.ui/subject-calculations-stage',
     module: 'subjectCalculationsViewer',
   },
   {
     slotId: 'relations',
     label: 'Relations',
-    contributionId: 'org.modkitx.ui/relation-graph-stage',
+    contributionId: 'modkit.ui/relation-graph-stage',
     module: 'relationGraphViewer',
   },
   {
     slotId: 'template',
     label: 'Template',
-    contributionId: 'org.modkitx.ui/game-template-stage',
+    contributionId: 'modkit.ui/game-template-stage',
     module: 'gameTemplateViewer',
   },
   {
     slotId: 'tree',
     label: 'Tree',
-    contributionId: 'org.modkitx.ui/tree-stage',
+    contributionId: 'modkit.ui/tree-stage',
     module: 'treeViewer',
   },
   {
     slotId: 'text',
     label: 'Text',
-    contributionId: 'org.modkitx.ui/bounded-text-stage',
+    contributionId: 'modkit.ui/bounded-text-stage',
     module: 'textEditor',
     readOnlyModule: 'boundedTextViewer',
     editable: true,
@@ -119,13 +119,13 @@ const previewPolicy = Object.freeze([
   {
     slotId: 'virtual-text',
     label: 'Large text',
-    contributionId: 'org.modkitx.ui/virtual-text-stage',
+    contributionId: 'modkit.ui/virtual-text-stage',
     module: 'virtualTextViewer',
   },
   {
     slotId: 'hex',
     label: 'Hex',
-    contributionId: 'org.modkitx.ui/hex-stage',
+    contributionId: 'modkit.ui/hex-stage',
     module: 'hexEditor',
     readOnlyModule: 'hexViewer',
     editable: true,
@@ -145,7 +145,7 @@ const presentationPolicy = Object.freeze([
   {
     slotId: 'archive',
     label: 'Archive',
-    contributionId: 'org.modkitx.ui/archive-stage',
+    contributionId: 'modkit.ui/archive-stage',
   },
 ])
 
@@ -192,8 +192,7 @@ function bundledExtensionDirectories(root) {
       return contributionPaths(extensionRoot, patterns).some(path => {
         const manifest = json(path)
         return (
-          manifest.contract?.id === 'org.modkitx/codec-contribution' &&
-          manifest.contract?.major === 1
+          manifest.contract?.id === 'modkit/codec-contribution' && manifest.contract?.major === 1
         )
       })
     })
@@ -204,11 +203,11 @@ function bundledExtensionDirectories(root) {
 function viewerContributions(root) {
   const sources = [
     {
-      extensionId: 'org.modkitx/ui',
+      extensionId: 'modkit/ui',
       directory: join(root, 'packages', 'ui', 'contributions'),
     },
     {
-      extensionId: 'org.modkitx/code',
+      extensionId: 'modkit/code',
       directory: join(root, 'packages', 'code', 'contributions'),
     },
   ]
@@ -218,10 +217,7 @@ function viewerContributions(root) {
       .filter(name => name.endsWith('.json'))
       .sort()) {
       const manifest = json(join(source.directory, name))
-      if (
-        manifest.contract?.id !== 'org.modkitx/viewer-contribution' ||
-        manifest.contract?.major !== 1
-      )
+      if (manifest.contract?.id !== 'modkit/viewer-contribution' || manifest.contract?.major !== 1)
         continue
       if (contributions.has(manifest.id)) {
         throw new Error(`duplicate viewer contribution id: ${manifest.id}`)
@@ -366,17 +362,17 @@ ${entries}
 }
 
 /**
- * Stage modules that do not come from `@modkitx-x3/ui`, and where each does come from.
+ * Stage modules that do not come from `@modkit/ui`, and where each does come from.
  *
  * Monaco belongs to the statically composed code package, not the format-neutral ui package, so
  * its modules need their own import line.
  * This is a map rather than a hard-coded name because it was a hard-coded name: adding the
- * read-only Monaco to the policy emitted a catalog that imported it from `@modkitx-x3/ui`, and the
+ * read-only Monaco to the policy emitted a catalog that imported it from `@modkit/ui`, and the
  * app failed to build with "No matching export". A second forgotten name would do the same.
  */
 const EXTERNAL_STAGE_MODULES = Object.freeze({
-  monacoEditor: '@modkitx-x3/code',
-  monacoViewer: '@modkitx-x3/code',
+  monacoEditor: '@modkit/code',
+  monacoViewer: '@modkit/code',
 })
 
 const LOCALIZED_STAGE_FACTORIES = Object.freeze({
@@ -417,7 +413,7 @@ function renderViewerCatalog(root) {
   const externalImports = [...external]
     .map(([source, modules]) => `import { ${modules.join(', ')} } from '${source}'`)
     .join('\n')
-  const imports = `import {\n${[...uiFactories, ...uiModules].map(module => `  ${module},`).join('\n')}\n} from '@modkitx-x3/ui'`
+  const imports = `import {\n${[...uiFactories, ...uiModules].map(module => `  ${module},`).join('\n')}\n} from '@modkit/ui'`
   const moduleOf = (module, localized) =>
     localized && LOCALIZED_STAGE_FACTORIES[module] !== undefined
       ? `${LOCALIZED_STAGE_FACTORIES[module]}({ localizer })`
@@ -470,9 +466,9 @@ export function createPreviewFallback(localizer) {
 }
 
 function renderViewerTypes() {
-  return `import type { PreviewStage } from '@modkitx-x3/ui'
-import type { UiLocalizer } from '@modkitx-x3/ui/localization'
-import type { ViewerModule } from '@modkitx-x3/sdk'
+  return `import type { PreviewStage } from '@modkit/ui'
+import type { UiLocalizer } from '@modkit/ui/localization'
+import type { ViewerModule } from '@modkit/sdk'
 
 export declare const PREVIEW_STAGES: readonly PreviewStage[]
 export declare const PREVIEW_STAGES_READONLY: readonly PreviewStage[]

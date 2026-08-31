@@ -30,7 +30,7 @@
  * bytes is optional evidence supplied by the caller.
  */
 
-const MATERIALIZER_ID = 'org.modkitx/uvt-materializer'
+const MATERIALIZER_ID = 'modkit/uvt-materializer'
 const MATERIALIZER_VERSION = '1.0.0'
 const PROFILE = 'UVT/core@1.0'
 

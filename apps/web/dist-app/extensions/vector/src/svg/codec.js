@@ -2,7 +2,7 @@ import {
   createInspectionCodec,
   createTreeDataSource,
   createVectorSceneSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
 const decoder = new TextDecoder('utf-8', { fatal: true })
 
@@ -116,7 +116,7 @@ function viewBox(value) {
 }
 
 const definition = Object.freeze({
-  id: 'org.modkitx/vector-svg',
+  id: 'modkit/vector-svg',
   format: Object.freeze({ id: 'svg', label: 'SVG vector image', mediaType: 'image/svg+xml' }),
   async detect(bytes) {
     const match = looksLikeSvg(bytes)

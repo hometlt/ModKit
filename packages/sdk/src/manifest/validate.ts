@@ -6,7 +6,7 @@
  * source. Runtime code never imports AJV's compiler and never relies on `eval`/`new Function`.
  */
 
-import { canonicalJsonStringify, diagnostic, ModkitError, type Diagnostic } from '@modkitx-x3/core'
+import { canonicalJsonStringify, diagnostic, ModkitError, type Diagnostic } from '@modkit/core'
 
 export interface JsonSchemaEvaluationError {
   readonly instancePath: string
@@ -36,7 +36,7 @@ export type PrecompiledSchemaValidator = ((value: unknown) => boolean | Promise<
 let platformValidatorsPromise: Promise<ReadonlyMap<string, PrecompiledSchemaValidator>> | undefined
 
 function platformValidators(): Promise<ReadonlyMap<string, PrecompiledSchemaValidator>> {
-  platformValidatorsPromise ??= import('@modkitx-x3/sdk/manifest/validators.generated').then(
+  platformValidatorsPromise ??= import('@modkit/sdk/manifest/validators.generated').then(
     module =>
       module.PRECOMPILED_SCHEMA_VALIDATORS as ReadonlyMap<string, PrecompiledSchemaValidator>,
   )

@@ -36,8 +36,8 @@ import {
 import { tmpdir } from 'node:os'
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { canonicalJsonStringify, throwIfAborted } from '@modkitx-x3/core'
-import { fileSystemRevisionToken } from '@modkitx-x3/vfs/providers/file'
+import { canonicalJsonStringify, throwIfAborted } from '@modkit/core'
+import { fileSystemRevisionToken } from '@modkit/vfs/providers/file'
 import {
   revisionId,
   type AssetRevision,
@@ -46,7 +46,7 @@ import {
   type RevisionId,
   type SourceEdit,
   type SubjectEditTarget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { EditingBackend, EditingBackendApplyResult } from '../editing.js'
 import {
   applySequentialBatch,

@@ -19,7 +19,7 @@
  *    sees a silent success and an application that gained nothing.
  */
 
-import { ModkitError } from '@modkitx-x3/core'
+import { ModkitError } from '@modkit/core'
 import type { ExtensionInput, ExtensionOrigin } from '../inventory.js'
 import { loadExtensionDirectory } from './loader.js'
 

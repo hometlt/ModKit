@@ -1,10 +1,10 @@
-import type { ServiceProviderContributionSpecV1 } from '@modkitx-x3/sdk/formats'
+import type { ServiceProviderContributionSpecV1 } from '@modkit/sdk/formats'
 import type {
   ModWorkspaceComposition,
   ModWorkspaceCompositionRequest,
   ModWorkspaceProviderModule,
-} from '@modkitx-x3/sdk/mods'
-import type { TypedServiceContractRequest } from '@modkitx-x3/sdk/service-contracts'
+} from '@modkit/sdk/mods'
+import type { TypedServiceContractRequest } from '@modkit/sdk/service-contracts'
 
 export const gamealphaWorkspaceRoute = {
   contract: 'common.mod/workspace-composition',

@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import type { LocalExtensionCandidate } from '@modkitx/extension-manager/node'
+import type { LocalExtensionCandidate } from '@modkit/extension-manager/node'
 
-import { createExtensionCardCatalog, extensionCardBundle } from '../src/extension-cards.js'
+import {
+  createExtensionCardCatalog,
+  extensionCardBundle,
+  extensionCardIconTarget,
+  extensionCardResourceTargets,
+} from '../src/extension-cards.js'
 
 const contribution = {
   schemaVersion: 1,
-  contract: { id: 'org.modkitx/codec-contribution', major: 1 },
+  contract: { id: 'modkit/codec-contribution', major: 1 },
   id: 'org.example/demo-codec',
   displayName: 'Demo codec',
   runtimeVariants: [],
@@ -55,6 +60,11 @@ const candidate: LocalExtensionCandidate = {
   selected: true,
   embedded: false,
   root: 'C:/workspace/demo',
+  presentation: {
+    source: { kind: 'root', root: 'src' },
+    icon: { path: 'assets/icon.svg', mediaType: 'image/svg+xml' },
+    licenseFiles: [{ path: 'licenses/MIT.txt', displayName: 'MIT License' }],
+  },
 }
 
 describe('extension subject card catalog', () => {
@@ -72,12 +82,33 @@ describe('extension subject card catalog', () => {
     expect(entry?.installed).toBe(false)
     if (entry === undefined) throw new Error('candidate card is missing')
     expect(entry?.projection.contractGroups.map(group => group.key)).toEqual([
-      'org.modkitx/codec-contribution@1',
+      'modkit/codec-contribution@1',
     ])
     const bundle = await extensionCardBundle(entry, contribution.id)
     expect(bundle.extension.linkable).toBe(true)
     expect(bundle.extension.codecs).toEqual({ ids: [contribution.id], enabled: true })
     expect(bundle.extension).not.toHaveProperty('root')
+    expect(bundle.extension.resources).toEqual([
+      {
+        id: 'source',
+        role: 'source',
+        label: 'Source',
+        display: expect.stringMatching(/[\\/]workspace[\\/]demo[\\/]src$/u),
+      },
+      {
+        id: 'license-0',
+        role: 'license',
+        label: 'MIT License',
+        display: expect.stringMatching(/[\\/]workspace[\\/]demo[\\/]licenses[\\/]MIT\.txt$/u),
+      },
+    ])
+    // The actual target is kept in the extension host registry, not the Webview bundle.
+    expect(bundle.extension.resources[0]).not.toHaveProperty('target')
+    const targets = extensionCardResourceTargets(entry).get(bundle.extension.subjectId)
+    expect(targets?.map(resource => resource.role)).toEqual(['source', 'icon', 'license'])
+    expect(extensionCardIconTarget(entry)).toMatch(
+      /[\\/]workspace[\\/]demo[\\/]assets[\\/]icon\.svg$/u,
+    )
     expect(bundle.documents).toHaveLength(2)
     const active = bundle.documents.find(
       document => document.subject.subjectId === bundle.activeSubjectId,
@@ -101,5 +132,37 @@ describe('extension subject card catalog', () => {
     const entry = catalog.get(candidate.id)
     if (entry === undefined) throw new Error('candidate card is missing')
     expect((await extensionCardBundle(entry)).extension.linkable).toBe(false)
+  })
+
+  it('opens an explicitly declared HTTP(S) source only through a host-owned URL target', async () => {
+    const { root: _root, ...remoteCandidate } = candidate
+    const catalog = createExtensionCardCatalog({
+      inventory: { extensions: [], diagnostics: [] },
+      localCandidates: [
+        {
+          ...remoteCandidate,
+          presentation: { source: { kind: 'url', url: 'https://example.test/modkit' } },
+        },
+      ],
+      linkableLocalExtensionIds: [],
+      managedPackageByExtension: new Map(),
+      disabledManagedExtensions: [],
+      disabledExtensions: [],
+      disabledContributions: [],
+    })
+    const entry = catalog.get(candidate.id)
+    if (entry === undefined) throw new Error('candidate card is missing')
+    const bundle = await extensionCardBundle(entry)
+    expect(bundle.extension.resources).toEqual([
+      {
+        id: 'source',
+        role: 'source',
+        label: 'Source',
+        display: 'https://example.test/modkit',
+      },
+    ])
+    expect(extensionCardResourceTargets(entry).get(bundle.extension.subjectId)).toEqual([
+      { id: 'source', role: 'source', kind: 'url', target: 'https://example.test/modkit' },
+    ])
   })
 })

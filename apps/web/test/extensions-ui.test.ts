@@ -146,7 +146,7 @@ describe('the installed-extensions panel', () => {
     expect(rows).toHaveLength(WEB_EXTENSION_CATALOG.extensions.length)
     expect(rows.every(row => row.kind === 'bundled' && row.state === 'loaded')).toBe(true)
     expect(rows[0]?.provenance).toContain('Bundled with this build')
-    expect(rows.some(row => row.coordinate === 'org.modkitx/images')).toBe(true)
+    expect(rows.some(row => row.coordinate === 'modkit/images')).toBe(true)
   })
 
   it('localizes provenance rows for a Russian host without changing their technical identity', () => {
@@ -171,14 +171,14 @@ describe('the installed-extensions panel', () => {
       createWebLocalizer('ru'),
     )
     expect(rows[0]?.provenance).toContain('Встроено в эту сборку')
-    expect(rows.some(row => row.coordinate === 'org.modkitx/images')).toBe(true)
+    expect(rows.some(row => row.coordinate === 'modkit/images')).toBe(true)
   })
 
   it('shows a granted folder with its coordinate, the folder name, and a provenance that is not an attestation', async () => {
     const handle = directoryHandle('my-codecs', treeFromDisk(imagesRoot))
     const loaded = await loadUserExtensionRoots([{ id: 'root-1', handle }], { subtle })
     const stored: StoredUserExtension[] = [
-      { id: 'root-1', label: 'my-codecs', addedAt: 1, coordinate: 'org.modkitx/images', handle },
+      { id: 'root-1', label: 'my-codecs', addedAt: 1, coordinate: 'modkit/images', handle },
     ]
     const rows = describeExtensionList({ catalog: WEB_EXTENSION_CATALOG, loaded, stored })
 
@@ -188,7 +188,7 @@ describe('the installed-extensions panel', () => {
       state: 'loaded',
       rootId: 'root-1',
       label: 'my-codecs',
-      coordinate: 'org.modkitx/images',
+      coordinate: 'modkit/images',
     })
     expect(user[0]?.provenance).toContain('Folder you granted')
     expect(user[0]?.provenance).toContain('computed by this page')
@@ -224,7 +224,7 @@ describe('the installed-extensions panel', () => {
           root: 'user-folder/other',
           rootId: 'root-y',
           code: 'x3.host/extension-coordinate-conflict',
-          message: '«org.modkitx/images» is already loaded from another root; this one is ignored',
+          message: '«modkit/images» is already loaded from another root; this one is ignored',
         },
       ],
     })

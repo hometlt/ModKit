@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type {
   ExtensionManagerClient,
   ExtensionManagerEntry,
-} from '@modkitx/extension-manager/browser'
+} from '@modkit/extension-manager/browser'
 
 import { createManagedExtensionsController } from '../src/managed-extensions-controller.js'
 

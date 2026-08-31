@@ -19,8 +19,8 @@ import {
   executeCommandRequest,
   type CommandReceipt,
   type ExtensionInput,
-} from '@modkitx-x3/host'
-import { createPathSubjectOpener, loadExtensionDirectory } from '@modkitx-x3/host/node'
+} from '@modkit/host'
+import { createPathSubjectOpener, loadExtensionDirectory } from '@modkit/host/node'
 import { createModkitCliSubjectServices } from './profile.js'
 import type { RunOutputFormat } from './commands.js'
 

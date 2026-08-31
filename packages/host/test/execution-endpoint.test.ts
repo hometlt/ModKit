@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ModkitError, OperationCancelledError, isCancellation } from '@modkitx-x3/core'
+import { ModkitError, OperationCancelledError, isCancellation } from '@modkit/core'
 import {
   CAPABILITY_OF,
   CAPABILITY_RPC_DOMAIN,

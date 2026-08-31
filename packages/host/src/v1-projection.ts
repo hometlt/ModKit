@@ -1,4 +1,4 @@
-import { throwIfAborted } from '@modkitx-x3/core'
+import { throwIfAborted } from '@modkit/core'
 import {
   V1_PROJECTION_UNAVAILABLE_CODE,
   type AnyDescriptor,
@@ -7,7 +7,7 @@ import {
   type V1ProjectionUnavailableDiagnostic,
   type V1ProjectionCatalogContext,
   type V1ViewerContributionDescriptor,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 function unavailable(message: string): V1DescriptorProjectionResult {
   const item = Object.freeze({

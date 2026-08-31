@@ -27,11 +27,11 @@ export const MAP_PREVIEW_PREPARATION_CONTRACT = 'common.map/preview-preparation'
 export const WORLD_SCENE_SOURCE_CONTRACT = 'common.view/world-scene-source' as const
 
 /** Host-owned matcher profile for exact game-id routing. */
-export const MAP_SEMANTIC_MATCHER_PROFILE = 'org.modkitx/map-semantic-matcher' as const
+export const MAP_SEMANTIC_MATCHER_PROFILE = 'modkit/map-semantic-matcher' as const
 
 /** Host-owned exact matcher for preparation providers advertising subject format ids. */
 export const MAP_PREVIEW_PREPARATION_MATCHER_PROFILE =
-  'org.modkitx/map-preview-preparation-matcher' as const
+  'modkit/map-preview-preparation-matcher' as const
 
 /** One bounded namespace fact; entry ids and open/extract capabilities intentionally stay hidden. */
 export interface MapPreviewPreparationNamespaceEntry {

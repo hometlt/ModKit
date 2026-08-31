@@ -27,7 +27,7 @@
  * source. `createRawWriter` says so in one place instead of every product rediscovering it.
  */
 
-import { diagnostic } from '@modkitx-x3/core'
+import { diagnostic } from '@modkit/core'
 import {
   CODEC_CONTRIBUTION_CONTRACT,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
@@ -42,12 +42,12 @@ import {
   type Writer,
   type WriterIdentity,
   type WriterOffer,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { inventoryRecordFor, type ExtensionOrigin, type Inventory } from './inventory.js'
 
 /** Identity of the host's own raw writer (plans an editor's byte/text edits with no format code). */
 export const HOST_RAW_WRITER_IDENTITY: WriterIdentity = Object.freeze({
-  providerId: 'org.modkitx.host/raw-writer',
+  providerId: 'modkit.host/raw-writer',
   providerVersion: '1.0.0',
   artifactDigest: 'host:raw-writer',
   formatId: '*',
@@ -406,7 +406,7 @@ export const HOST_RAW_WRITER_EVIDENCE_RECORD: FidelityEvidenceRecord = Object.fr
   evidenceId: HOST_RAW_WRITER_EVIDENCE_ID,
   corpusId: 'by-construction: literal replacement, no re-encoding',
   corpusDigest: 'none:by-construction',
-  conformanceProfile: 'org.modkitx/raw-writer-v1',
+  conformanceProfile: 'modkit/raw-writer-v1',
   optionsFingerprint: 'options:none',
   inputClass: 'any',
   provenAt: '2026-08-19T00:00:00Z',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assertGoldenPathMetrics, GOLDEN_PATH_CONCEPTS } from '@modkitx-x3/testkit'
+import { assertGoldenPathMetrics, GOLDEN_PATH_CONCEPTS } from '@modkit/testkit'
 
 describe('A-4 golden-path metric gate', () => {
   it('accepts the scaffold baseline and rejects any measured regression', () => {

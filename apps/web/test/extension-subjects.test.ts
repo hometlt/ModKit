@@ -1,6 +1,6 @@
-import { subjectFactsSourceFromWire } from '@modkitx/extension-manager'
-import type { Inventory } from '@modkitx-x3/host'
-import { loadSubjectCardSections } from '@modkitx-x3/ui/card'
+import { subjectFactsSourceFromWire } from '@modkit/extension-manager'
+import type { Inventory } from '@modkit/host'
+import { loadSubjectCardSections } from '@modkit/ui/card'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'

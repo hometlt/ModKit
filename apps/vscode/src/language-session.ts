@@ -12,7 +12,7 @@ import {
   isCancellation,
   throwIfAborted,
   type Diagnostic,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import type {
   LanguageDiagnostic,
   LanguageDiagnosticList,
@@ -31,13 +31,13 @@ import type {
   LanguageTextEditList,
   LanguageWorkspaceEdit,
   LanguageWorkspaceSymbolList,
-} from '@modkitx-x3/sdk/language'
+} from '@modkit/sdk/language'
 import type {
   LanguageProviderRoute,
   LanguageWorkspace,
   LanguageWorkspaceAnalysisResult,
   LanguageWorkspaceDocumentRequest,
-} from '@modkitx-x3/host/language'
+} from '@modkit/host/language'
 
 export const LANGUAGE_TOKEN_TYPES: readonly LanguageTokenKind[] = Object.freeze([
   'comment',

@@ -2,7 +2,7 @@
  * Node `worker_threads` harness for the capability-RPC hostile-worker fixtures
  * (THREAT_MODEL_WORKER_BOUNDARY §2/§4/§5). Test infrastructure only: it spawns a fixture in a real
  * thread through the host's **production spawn path** (`spawnWorkerRealm` from
- * `@modkitx-x3/host/node`: `env: {}`, `argv: []`, `execArgv: []`, `resourceLimits`, captured and
+ * `@modkit/host/node`: `env: {}`, `argv: []`, `execArgv: []`, `resourceLimits`, captured and
  * capped stdio, a dedicated `MessagePort` behind the production `framePortFromMessagePort`), and
  * offers a **reference supervisor** — the observable outcomes any production supervisor
  * (NXT‑114, Root) must reproduce: fail-closed → terminate, exit → peer exit, deadline → cancel →
@@ -13,7 +13,7 @@
  */
 
 import type { ResourceLimits } from 'node:worker_threads'
-import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
+import { ModkitError, type Diagnostic } from '@modkit/core'
 import {
   createEndpoint,
   protocolLimits,
@@ -22,8 +22,8 @@ import {
   type ProtocolLimits,
   type ProtocolViolation,
   type SurfaceRegistry,
-} from '@modkitx-x3/host/execution'
-import { spawnWorkerRealm } from '@modkitx-x3/host/node'
+} from '@modkit/host/execution'
+import { spawnWorkerRealm } from '@modkit/host/node'
 import type { ConformancePair } from '../conformance.js'
 
 // ---------------------------------------------------------------------------------------------

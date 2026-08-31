@@ -1,5 +1,5 @@
 {
-  "name": "modkit-extension-x3-data",
+  "name": "modkit-extension-data",
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
@@ -29,31 +29,39 @@
   ],
   "modkit": {
     "schemaVersion": 1,
-    "publisher": "org.modkitx",
+    "publisher": "modkit",
     "id": "data",
+    "presentation": {
+      "displayName": "Modkit Data",
+      "description": "Common MK3 structured-text codecs and syntax providers.",
+      "vendor": {
+        "id": "modkit",
+        "displayName": "Modkit"
+      }
+    },
     "contributionManifests": [
       "./contributions/*.json"
     ]
   },
   "dependencies": {
-    "@modkitx-x3/codec-kit": "workspace:*",
+    "@modkit/codec-kit": "workspace:*",
     "@rgrove/parse-xml": "^4.2.3",
     "smol-toml": "^1.8.0",
     "yaml": "^2.9.0"
   },
   "peerDependencies": {
-    "@modkitx-x3/core": "workspace:*",
-    "@modkitx-x3/host": "workspace:*",
-    "@modkitx-x3/sdk": "workspace:*"
+    "@modkit/core": "workspace:*",
+    "@modkit/host": "workspace:*",
+    "@modkit/sdk": "workspace:*"
   },
   "peerDependenciesMeta": {
-    "@modkitx-x3/core": {
+    "@modkit/core": {
       "optional": true
     },
-    "@modkitx-x3/host": {
+    "@modkit/host": {
       "optional": true
     },
-    "@modkitx-x3/sdk": {
+    "@modkit/sdk": {
       "optional": true
     }
   }

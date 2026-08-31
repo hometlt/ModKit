@@ -2,7 +2,7 @@
  * The MK2 viewer window, assembled from primitives.
  *
  * Header breadcrumb, view picker, filtered file tree, collapsible property sections and a status
- * footer — the same composition the VS Code plugin shows, built only from `@modkitx-x3/ui`
+ * footer — the same composition the VS Code plugin shows, built only from `@modkit/ui`
  * primitives with no format knowledge anywhere in this file.
  */
 import {
@@ -15,7 +15,7 @@ import {
   createViewPicker,
   matchRanges,
   type FileTreeNode,
-} from '@modkitx-x3/ui'
+} from '@modkit/ui'
 
 interface ArchiveEntry {
   readonly id: string

@@ -6,7 +6,7 @@
  * refs never change, and reclassification is a selection change, not an identity change.
  */
 
-import { ModkitError } from '@modkitx-x3/core'
+import { ModkitError } from '@modkit/core'
 import type { SubjectRef } from './refs.js'
 
 export interface InterpretationRef {

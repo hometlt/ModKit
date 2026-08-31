@@ -12,7 +12,7 @@ import type {
   EditAuthorizationPort,
   EditSession,
   PayloadStore,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 export type EditorPortLog = (line: string) => void
 

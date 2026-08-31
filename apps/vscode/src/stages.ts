@@ -1,5 +1,5 @@
 /**
- * The stage catalog: which shipped `@modkitx-x3/ui` module backs which slot id.
+ * The stage catalog: which shipped `@modkit/ui` module backs which slot id.
  *
  * The *rules* — order, applicability, which ids are editable — are in `./view-policy.js`, which is
  * DOM-free and therefore testable in Node. This file is only the binding, exactly as the Electron
@@ -10,30 +10,30 @@
  * editor, and a VS Code webview gets neither. The bounded and virtual text viewers cover reading;
  * the text editor stage covers writing.
  */
-import { createAudioViewer } from '@modkitx-x3/ui/audio'
-import { createBoundedTextViewer } from '@modkitx-x3/ui/code'
-import { createSubjectCardViewer } from '@modkitx-x3/ui/card'
-import { createSubjectCalculationsViewer } from '@modkitx-x3/ui/calculations'
-import { createTextEditorModule } from '@modkitx-x3/ui/editor'
-import type { PreviewStage } from '@modkitx-x3/ui/explorer'
-import { createRelationGraphViewer } from '@modkitx-x3/ui/graph'
-import { createGameTemplateViewer } from '@modkitx-x3/ui/template'
-import { createHexViewer } from '@modkitx-x3/ui/hex'
-import { createHexEditor } from '@modkitx-x3/ui/hex-editor'
-import { createImageViewer } from '@modkitx-x3/ui/image'
-import { createMetadataPanel } from '@modkitx-x3/ui/metadata'
-import { createModelViewer } from '@modkitx-x3/ui/model'
-import { createTableViewer } from '@modkitx-x3/ui/table'
-import { createVirtualTextViewer } from '@modkitx-x3/ui/text-virtual'
-import { createTreeViewer } from '@modkitx-x3/ui/tree'
-import { createVectorViewer } from '@modkitx-x3/ui/vector'
-import { createVideoViewer } from '@modkitx-x3/ui/video'
-import { createWorldViewer } from '@modkitx-x3/ui/world'
+import { createAudioViewer } from '@modkit/ui/audio'
+import { createBoundedTextViewer } from '@modkit/ui/code'
+import { createSubjectCardViewer } from '@modkit/ui/card'
+import { createSubjectCalculationsViewer } from '@modkit/ui/calculations'
+import { createTextEditorModule } from '@modkit/ui/editor'
+import type { PreviewStage } from '@modkit/ui/explorer'
+import { createRelationGraphViewer } from '@modkit/ui/graph'
+import { createGameTemplateViewer } from '@modkit/ui/template'
+import { createHexViewer } from '@modkit/ui/hex'
+import { createHexEditor } from '@modkit/ui/hex-editor'
+import { createImageViewer } from '@modkit/ui/image'
+import { createMetadataPanel } from '@modkit/ui/metadata'
+import { createModelViewer } from '@modkit/ui/model'
+import { createTableViewer } from '@modkit/ui/table'
+import { createVirtualTextViewer } from '@modkit/ui/text-virtual'
+import { createTreeViewer } from '@modkit/ui/tree'
+import { createVectorViewer } from '@modkit/ui/vector'
+import { createVideoViewer } from '@modkit/ui/video'
+import { createWorldViewer } from '@modkit/ui/world'
 
 import { orderStages } from './view-policy.js'
 import { createVsCodeArchiveStage } from './archive-stage.js'
 import { createVsCodeEditPanel, type EditPanelOptions } from './edit-panel.js'
-import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+import type { UiLocalizer } from '@modkit/ui/localization'
 
 /**
  * Every first-party stage this host offers, in policy order.

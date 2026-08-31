@@ -16,7 +16,7 @@ import {
   type ExtensionId,
   type ContractId,
   type Diagnostic,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import { contributionManifestSchema } from '../schemas/contribution-manifest.js'
 import {
   snapshotJsonWireData,
@@ -24,6 +24,7 @@ import {
   validateWithSchema,
   type PrecompiledSchemaValidator,
 } from './validate.js'
+import { normalizeModkitIdentifier } from '../identity.js'
 import type { ContributionManifestV1 } from './contribution-types.js'
 import type { ContributionManifestV1Wire } from './contribution-types.js'
 import { contributionId, type JsonValue } from '../asset-capabilities/types.js'
@@ -382,10 +383,10 @@ function normalizeContributionManifest(wire: ContributionManifestV1Wire): Contri
   const { contract, dependsOn, id, ...rest } = wire
   return Object.freeze({
     ...rest,
-    id: contributionId(id),
+    id: contributionId(normalizeModkitIdentifier(id)),
     contract: Object.freeze({
       ...contract,
-      id: contractId(contract.id),
+      id: contractId(normalizeModkitIdentifier(contract.id)),
     }),
     ...(dependsOn === undefined
       ? {}
@@ -394,7 +395,7 @@ function normalizeContributionManifest(wire: ContributionManifestV1Wire): Contri
             dependsOn.map(requirement =>
               Object.freeze({
                 ...requirement,
-                contract: contractId(requirement.contract),
+                contract: contractId(normalizeModkitIdentifier(requirement.contract)),
               }),
             ),
           ),

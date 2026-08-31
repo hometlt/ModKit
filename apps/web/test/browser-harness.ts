@@ -13,12 +13,12 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { MessageChannel } from 'node:worker_threads'
-import { revisionId, type ArtifactByteSource } from '@modkitx-x3/sdk'
+import { revisionId, type ArtifactByteSource } from '@modkit/sdk'
 import {
   installBrowserWorkerEntry,
   type BrowserObjectUrlLike,
   type BrowserWorkerLike,
-} from '@modkitx-x3/host/browser'
+} from '@modkit/host/browser'
 import type { WebDomGlobals } from '../src/subjects.js'
 
 export const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
@@ -118,16 +118,14 @@ export class FakeWorker implements BrowserWorkerLike {
 
 /** Node module map: bare specifiers → file: URLs of the real sources / built packages. */
 export const nodeModuleMap: Readonly<Record<string, string>> = Object.freeze({
-  '@modkitx-x3/codec-kit': pathToFileURL(
+  '@modkit/codec-kit': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'src', 'index.js'),
   ).href,
-  '@modkitx-x3/codec-kit/text': pathToFileURL(
+  '@modkit/codec-kit/text': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'src', 'text', 'index.js'),
   ).href,
-  '@modkitx-x3/core': pathToFileURL(join(repositoryRoot, 'packages', 'core', 'dist', 'index.js'))
-    .href,
-  '@modkitx-x3/sdk': pathToFileURL(join(repositoryRoot, 'packages', 'sdk', 'dist', 'index.js'))
-    .href,
+  '@modkit/core': pathToFileURL(join(repositoryRoot, 'packages', 'core', 'dist', 'index.js')).href,
+  '@modkit/sdk': pathToFileURL(join(repositoryRoot, 'packages', 'sdk', 'dist', 'index.js')).href,
 })
 
 export function domGlobals(fetch: ReturnType<typeof diskOrigin>['fetch']): WebDomGlobals {

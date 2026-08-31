@@ -5,7 +5,7 @@ import {
   parseSemver,
   parseVersionRange,
   satisfiesRange,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import {
   definePresentationPlan,
   type AnyDescriptor,
@@ -24,7 +24,7 @@ import {
   type ViewerContributionSpecV1,
   type ViewerApplicability,
   isStandardTraitId,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { COMMON_PRESENTATION_CATALOG } from './presentation-catalog.generated.js'
 
 export interface ViewerApplicabilityFacts {

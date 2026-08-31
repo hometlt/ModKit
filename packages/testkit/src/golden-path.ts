@@ -1,4 +1,4 @@
-import { ModkitError } from '@modkitx-x3/core'
+import { ModkitError } from '@modkit/core'
 
 export const GOLDEN_PATH_CONCEPTS = Object.freeze([
   'Subject',

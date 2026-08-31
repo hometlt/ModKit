@@ -1,6 +1,6 @@
 /** Interface-only runtime ABI. Host behavior lands in A-2/A-3; no extension code runs here. */
 
-import type { Diagnostic, OperationId } from '@modkitx-x3/core'
+import type { Diagnostic, OperationId } from '@modkit/core'
 import type {
   AnyDescriptor,
   AssetDiagnostic,

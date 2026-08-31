@@ -1,4 +1,4 @@
-import { diagnostic, throwIfAborted } from '@modkitx-x3/core'
+import { diagnostic, throwIfAborted } from '@modkit/core'
 import { decodeInput, failure, lease, preflight } from './text.js'
 import { treeDataSource } from './tree-data-source.js'
 
@@ -8,7 +8,7 @@ function decode(request) {
   } catch (error) {
     return {
       failed: failure(
-        'org.modkitx/text-data-decode',
+        'modkit/text-data-decode',
         error instanceof Error ? error.message : String(error),
       ),
     }
@@ -36,7 +36,7 @@ export function createTextSyntaxProvider(definition) {
         diagnostics: [
           diagnostic(
             'error',
-            'org.modkitx/text-data-output-budget',
+            'modkit/text-data-output-budget',
             'serialized output exceeds maxInputBytes',
           ),
         ],

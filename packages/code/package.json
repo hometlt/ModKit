@@ -1,5 +1,5 @@
 {
-  "name": "@modkitx-x3/code",
+  "name": "@modkit/code",
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
@@ -22,7 +22,7 @@
     "src"
   ],
   "dependencies": {
-    "@modkitx-x3/host": "workspace:*",
+    "@modkit/host": "workspace:*",
     "monaco-editor": "^0.56.0"
   }
 }

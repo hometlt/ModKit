@@ -15,7 +15,7 @@ import {
   createInspectionCodec,
   createTreeDataSource,
   createVectorSceneSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
 import {
   ODF_FORMATS,

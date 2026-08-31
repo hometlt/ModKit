@@ -1,18 +1,19 @@
-import type { VfsMount, VfsProvider, VirtualFileSystem } from '@modkitx-x3/vfs'
+import type { VfsMount, VfsProvider, VirtualFileSystem } from '@modkit/vfs'
 import type {
   ContractRefWire,
   ContributionManifestV1Wire,
+  ExtensionPresentation,
   ExtensionManifest,
   RelatedSubjectFact,
   SubjectFact,
   SubjectFactGroup,
   SubjectFactsSource,
   SubjectFactsSummary,
-} from '@modkitx-x3/sdk'
-import type { SourceRef, SubjectRef } from '@modkitx-x3/sdk/subjects'
+} from '@modkit/sdk'
+import type { SourceRef, SubjectRef } from '@modkit/sdk/subjects'
 
-export const EXTENSION_SUBJECT_KIND: 'org.modkitx/extension'
-export const CONTRIBUTION_SUBJECT_KIND: 'org.modkitx/contribution'
+export const EXTENSION_SUBJECT_KIND: 'modkit/extension'
+export const CONTRIBUTION_SUBJECT_KIND: 'modkit/contribution'
 
 export interface ExtensionSubjectProjectionMetadata {
   readonly displayName?: string
@@ -20,6 +21,17 @@ export interface ExtensionSubjectProjectionMetadata {
   readonly homepage?: string
   readonly source?: string
   readonly trusted?: boolean
+  /** Structured presentation overrides; direct legacy fields above remain supported. */
+  readonly presentation?: ExtensionPresentation
+}
+
+export interface ExtensionContributionCardLink extends RelatedSubjectFact {
+  readonly role: 'owns'
+  readonly id: string
+  readonly contract: ContractRefWire
+  readonly contractKey: string
+  readonly enabled: boolean
+  readonly effectiveEnabled: boolean
 }
 
 export interface ExtensionSubjectProjectionInput {
@@ -43,6 +55,9 @@ export interface ExtensionSubjectRecord {
   readonly version: string
   readonly enabled: boolean
   readonly manifest: ExtensionManifest
+  readonly presentation?: ExtensionPresentation
+  /** Function-free navigation records for the extension card's explicit contribution list. */
+  readonly contributions: readonly ExtensionContributionCardLink[]
   /** Direct input for the host-owned generic subject card. */
   readonly facts: SubjectFactsSource
 }
@@ -95,6 +110,8 @@ export interface ExtensionSubjectCardWireDocument {
     readonly contract?: ContractRefWire
     readonly contractKey?: string
     readonly effectiveEnabled?: boolean
+    readonly presentation?: ExtensionPresentation
+    readonly contributions?: readonly ExtensionContributionCardLink[]
   }
   readonly summary: SubjectFactsSummary
   readonly groups: readonly ExtensionSubjectCardWireGroup[]
@@ -192,6 +209,7 @@ export interface ExtensionCatalogPackage {
   readonly summary: string
   readonly license?: string
   readonly homepage?: string
+  readonly presentation?: ExtensionPresentation
   readonly versions: readonly ExtensionCatalogVersion[]
 }
 
@@ -217,6 +235,7 @@ export interface ExtensionCatalogCandidate {
   readonly version: string
   readonly channel: ExtensionCatalogVersion['channel']
   readonly summary: string
+  readonly presentation?: ExtensionPresentation
   readonly extensions: readonly string[]
   readonly source: ExtensionCatalogArtifactSource
   readonly catalogId: string
@@ -258,6 +277,7 @@ export interface InstalledExtensionRecord {
   readonly source?: string
   readonly trusted?: boolean
   readonly enabled?: boolean
+  readonly presentation?: ExtensionPresentation
   /** Every extension root contained in this installed distribution package. */
   readonly roots: readonly InstalledExtensionRoot[]
 }
@@ -301,11 +321,96 @@ export interface ExtensionManagerEntry {
   readonly updateAvailable: boolean
   readonly source: string
   readonly trusted: boolean
+  readonly presentation?: ExtensionPresentation
 }
 
 export interface ExtensionManagerSnapshot {
   readonly entries: readonly ExtensionManagerEntry[]
 }
+
+export interface GameSupportTarget {
+  readonly packageId: string
+  readonly displayName: string
+  readonly availableVersion: string
+  readonly installedVersion?: string
+  readonly enabled: boolean
+  readonly updateAvailable: boolean
+  readonly trusted: boolean
+  readonly desiredEnabled: true
+}
+
+export interface GameSupportInstallAction {
+  readonly kind: 'install'
+  readonly packageId: string
+  readonly version: string
+  readonly reversible: true
+}
+
+export interface GameSupportEnableAction {
+  readonly kind: 'enable'
+  readonly packageId: string
+  readonly reversible: true
+}
+
+export interface GameSupportUpdateAction {
+  readonly kind: 'update'
+  readonly packageId: string
+  readonly fromVersion: string
+  readonly toVersion: string
+  readonly reversible: false
+}
+
+export type GameSupportAction =
+  GameSupportInstallAction | GameSupportEnableAction | GameSupportUpdateAction
+
+export interface GameSupportBlocker {
+  readonly packageId: string
+  readonly code: string
+  readonly message: string
+}
+
+export interface GameSupportPlan {
+  readonly schemaVersion: 1
+  readonly game: { readonly id: string; readonly displayName: string }
+  readonly targets: readonly GameSupportTarget[]
+  readonly actions: readonly GameSupportAction[]
+  readonly blocked: readonly GameSupportBlocker[]
+  readonly ready: boolean
+}
+
+export interface GameSupportErrorRecord {
+  readonly name: string
+  readonly message: string
+  readonly code?: string
+}
+
+export interface GameSupportRollbackRecord {
+  readonly packageId: string
+  readonly kind: GameSupportAction['kind']
+  readonly status: 'rolled-back' | 'not-reversible' | 'rollback-failed'
+  readonly error?: GameSupportErrorRecord
+}
+
+export interface GameSupportApplyResult {
+  readonly schemaVersion: 1
+  readonly game: GameSupportPlan['game']
+  readonly status: 'applied' | 'rolled-back' | 'partial'
+  readonly applied: readonly GameSupportAction[]
+  readonly failed?:
+    | (GameSupportAction & { readonly error: GameSupportErrorRecord })
+    | {
+        readonly error: GameSupportErrorRecord
+      }
+  readonly rollback: readonly GameSupportRollbackRecord[]
+}
+
+/** Pure, deterministic projection over a snapshot; it never mutates or refreshes the catalog. */
+export function createGameSupportPlan(
+  snapshot: ExtensionManagerSnapshot,
+  gameId: string,
+): GameSupportPlan
+
+export function gameSupportPlansEqual(left: unknown, right: unknown): boolean
 
 export interface ExtensionManagerClient {
   snapshot(): Promise<ExtensionManagerSnapshot>
@@ -314,6 +419,12 @@ export interface ExtensionManagerClient {
   update(id: string): Promise<void>
   remove(id: string): Promise<void>
   setEnabled(id: string, enabled: boolean): Promise<void>
+}
+
+/** Optional manager capability implemented by the shared client and usable by any application. */
+export interface GameSupportExtensionManagerClient extends ExtensionManagerClient {
+  planGameSupport(gameId: string): Promise<GameSupportPlan>
+  applyGameSupport(plan: GameSupportPlan): Promise<GameSupportApplyResult>
 }
 
 export interface CreateExtensionManagerClientOptions {
@@ -326,7 +437,7 @@ export interface CreateExtensionManagerClientOptions {
 
 export function createExtensionManagerClient(
   options: CreateExtensionManagerClientOptions,
-): ExtensionManagerClient
+): GameSupportExtensionManagerClient
 
 export function normalizeWorkspaceConfiguration(value: unknown): ExtensionWorkspaceConfiguration
 export function normalizeRepositoryManifest(value: unknown): unknown

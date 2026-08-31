@@ -11,7 +11,7 @@ import {
   type ViewerModule,
   type ViewerSources,
   type VisualTransformReceipt,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type {
   MapPosition,
   MapWorldCanonicalTransform,
@@ -19,7 +19,7 @@ import type {
   WorldSceneObjectItem,
   WorldSceneSource,
   WorldSceneTerrainItem,
-} from '@modkitx-x3/sdk/maps'
+} from '@modkit/sdk/maps'
 import {
   createSurface,
   createViewerMount,

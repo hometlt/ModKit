@@ -2,14 +2,14 @@ import { readFile, readdir } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { canonicalJsonStringify, traitId } from '@modkitx-x3/core'
+import { canonicalJsonStringify, traitId } from '@modkit/core'
 import {
   evaluateViewerApplicability,
   evaluateViewerContribution,
   createHostContributionContractRegistry,
   resolvePresentationPlan,
   type CatalogPresentationCandidate,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import {
   bindingId,
   presentationSlotId,
@@ -18,7 +18,7 @@ import {
   type AnyDescriptor,
   type ContributionManifestV1Wire,
   type ViewerContributionSpecV1,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   BoundedTextModel,
   HexWindowModel,
@@ -29,7 +29,7 @@ import {
   loadSubjectCalculations,
   normalizeNamespacePath,
   safeViewerText,
-} from '@modkitx-x3/ui'
+} from '@modkit/ui'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const packageRoot = join(here, '..')
@@ -136,7 +136,7 @@ describe('13C universal viewer contracts and models', () => {
         slotId: presentationSlotId(`slot-${index}`),
         kind: spec.kind,
         contributionId: manifest.id,
-        extensionId: 'org.modkitx/ui',
+        extensionId: 'modkit/ui',
         priority: spec.priority,
         ...(spec.singletonGroup === undefined ? {} : { singletonGroup: spec.singletonGroup }),
         bindings: spec.consumesDataSources.map((source, bindingIndex) => ({
@@ -156,7 +156,7 @@ describe('13C universal viewer contracts and models', () => {
           return {
             ...binding,
             offerId: `offer-${binding.bindingId}`,
-            providerId: 'org.modkitx/viewer-data',
+            providerId: 'modkit/viewer-data',
             variantId: 'portable',
             ticket: { bindingId: binding.bindingId },
           }
@@ -169,7 +169,7 @@ describe('13C universal viewer contracts and models', () => {
     expect(canonicalJsonStringify(reverse)).toBe(canonicalJsonStringify(forward))
     expect(
       forward.plan.slots.find(slot => slot.slotId === forward.plan.activeStage)?.contributionId,
-    ).toBe('org.modkitx.ui/table-stage')
+    ).toBe('modkit.ui/table-stage')
   })
 
   it('loads auditable subject calculations with a visible consumer cap', async () => {

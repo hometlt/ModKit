@@ -34,8 +34,8 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
-import type { RuntimeTarget, RuntimeVariantDeclaration } from '@modkitx-x3/sdk'
+import { ModkitError, type Diagnostic } from '@modkit/core'
+import type { RuntimeTarget, RuntimeVariantDeclaration } from '@modkit/sdk'
 import {
   createEndpoint,
   createStandardSurfaceRegistry,

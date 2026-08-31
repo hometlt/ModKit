@@ -1,5 +1,5 @@
 {
-  "name": "@modkitx-x3/vfs",
+  "name": "@modkit/vfs",
   "version": "0.1.0",
   "description": "MK3 clean-core lab: portable VFS contracts with explicitly loaded providers (not a release)",
   "license": "UNLICENSED",
@@ -38,6 +38,6 @@
     "dist"
   ],
   "dependencies": {
-    "@modkitx-x3/core": "workspace:*"
+    "@modkit/core": "workspace:*"
   }
 }

@@ -30,7 +30,7 @@
       "title": "JsonValue"
     }
   },
-  "$id": "https://schemas.modkitx.org/x3/subject-descriptor.v2.schema.json",
+  "$id": "https://schemas.modkit.org/x3/subject-descriptor.v2.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "oneOf": [
     {

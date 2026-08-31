@@ -1,6 +1,6 @@
 /** The VS Code-local Path A offer rule and every form it can honestly drive. */
 import { describe, expect, it } from 'vitest'
-import type { AssetEditPlan } from '@modkitx-x3/sdk'
+import type { AssetEditPlan } from '@modkit/sdk'
 
 import {
   EDIT_FORM_IDS,

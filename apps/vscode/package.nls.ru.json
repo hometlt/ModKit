@@ -14,6 +14,7 @@
   "command.exportDiagnostics": "Modkit: Экспортировать диагностику…",
   "command.installExtension": "Modkit: Установить расширение…",
   "command.installAllExtensions": "Установить все доступные расширения",
+  "command.installGameSupport": "Установить всю поддержку этой игры",
   "command.openContributionCard": "Modkit: Открыть карточку возможности",
   "command.openExtensionCard": "Modkit: Открыть карточку расширения",
   "command.launchActiveMap": "Modkit: Запустить активную карту в игре…",

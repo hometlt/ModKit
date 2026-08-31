@@ -2,7 +2,7 @@
   "$comment": "Historical migration notes for common archive formats. Fourteen codecs moved into the product archives package; ZIP is superseded by the richer native MK3 contribution. This file is inert and outside the loader manifest glob.",
   "schemaVersion": 1,
   "source": {
-    "repository": "modkitx",
+    "repository": "modkit",
     "manifests": [
       "extensions/archives/codecs/7z/codec.manifest.json",
       "extensions/archives/codecs/brotli/codec.manifest.json",
@@ -23,7 +23,7 @@
   },
   "verdict": "needs-new-contract",
   "codecs": {
-    "org.modkitx/7z": {
+    "modkit/7z": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -40,7 +40,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/brotli": {
+    "modkit/brotli": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -57,7 +57,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/bzip2": {
+    "modkit/bzip2": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -74,7 +74,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/cab": {
+    "modkit/cab": {
       "verdict": "convertible-with-rework",
       "lostPlanes": [],
       "contractGaps": [],
@@ -89,7 +89,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/dmg": {
+    "modkit/dmg": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -104,7 +104,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/gzip": {
+    "modkit/gzip": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -121,7 +121,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/iso": {
+    "modkit/iso": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -136,7 +136,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/lzma": {
+    "modkit/lzma": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -151,7 +151,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/pe": {
+    "modkit/pe": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -168,7 +168,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/ps1-xa": {
+    "modkit/ps1-xa": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -184,7 +184,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/rar": {
+    "modkit/rar": {
       "verdict": "convertible-with-rework",
       "lostPlanes": [],
       "contractGaps": [],
@@ -199,7 +199,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/tar": {
+    "modkit/tar": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -216,7 +216,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/xz": {
+    "modkit/xz": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -233,7 +233,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/zip": {
+    "modkit/zip": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -250,7 +250,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/zstd": {
+    "modkit/zstd": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],

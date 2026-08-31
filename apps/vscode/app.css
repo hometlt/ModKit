@@ -46,6 +46,16 @@ body {
   background: var(--mk-color-bg);
 }
 
+/* VS Code already supplies title and status chrome around an editor webview. */
+[data-mk-part='workbench'].modkit-workbench--embedded {
+  display: block;
+}
+
+[data-mk-part='workbench'].modkit-workbench--embedded > [data-mk-part='workbench.main'] {
+  width: 100%;
+  height: 100%;
+}
+
 [data-mk-part='workbench.titlebar'] {
   display: flex;
   grid-area: title;
@@ -158,6 +168,44 @@ body {
 
 .vscode-host-panel li:nth-child(odd) {
   background: var(--mk-color-raised);
+}
+
+/* Extension cards keep source and license locations visible without recreating VS Code chrome. */
+.modkit-extension-subject__resources {
+  display: grid;
+  gap: var(--mk-space-1);
+  padding: var(--mk-space-2) var(--mk-space-3);
+  border-bottom: 1px solid var(--mk-color-border);
+  background: var(--mk-color-surface);
+}
+
+.modkit-extension-subject__resources:empty {
+  display: none;
+}
+
+.modkit-extension-subject__icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: contain;
+}
+
+.modkit-extension-subject__resource {
+  display: grid;
+  grid-template-columns: minmax(5rem, auto) minmax(0, 1fr) auto;
+  gap: var(--mk-space-2);
+  align-items: center;
+}
+
+.modkit-extension-subject__resource-label {
+  color: var(--mk-color-fg-muted);
+  font-size: var(--mk-font-size-xs);
+}
+
+.modkit-extension-subject__resource-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* The composite archive stage gives the tree the flexible pane and bounds the selected bytes. */

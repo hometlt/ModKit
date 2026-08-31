@@ -1,6 +1,6 @@
 /** Host definition, exact game-id matcher and activation adapter for semantic catalogs. */
 
-import { contractId, diagnostic, type Diagnostic } from '@modkitx-x3/core'
+import { contractId, diagnostic, type Diagnostic } from '@modkit/core'
 import {
   DATA_CATALOG_ANALYSIS_CONTRACT,
   DATA_CATALOG_MATCHER_PROFILE,
@@ -18,7 +18,7 @@ import {
   type DataWorkspacePlan,
   type ResolvedDataWorkspace,
   type ResolvedDataWorkspaceSnapshot,
-} from '@modkitx-x3/sdk/data'
+} from '@modkit/sdk/data'
 import type {
   DefinitionInventoryResult,
   Lease,
@@ -42,13 +42,13 @@ import type {
   SubjectSelectorSource,
   TableDataSource,
   TreeDataSource,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { Inventory } from '../inventory.js'
 import { createHostServiceResolver } from '../service-leases.js'
 
 /** Owner id under which the standard catalog-analysis definition is registered. */
-export const STANDARD_DATA_OWNER = 'org.modkitx/data'
+export const STANDARD_DATA_OWNER = 'modkit/data'
 
 const OFFER_KEYS = new Set(['gameIds'])
 const REQUEST_KEYS = new Set(['gameId'])
@@ -129,13 +129,13 @@ export const DATA_CATALOG_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wi
   offerFacet: Object.freeze({
     presence: 'required',
     schema: Object.freeze({
-      $ref: 'https://schemas.modkitx.org/x3/data-catalog-offer.v1.schema.json',
+      $ref: 'https://schemas.modkit.org/x3/data-catalog-offer.v1.schema.json',
     }),
   }),
   requestFacet: Object.freeze({
     presence: 'required',
     schema: Object.freeze({
-      $ref: 'https://schemas.modkitx.org/x3/data-catalog-request.v1.schema.json',
+      $ref: 'https://schemas.modkit.org/x3/data-catalog-request.v1.schema.json',
     }),
   }),
   matching: Object.freeze({ profile: DATA_CATALOG_MATCHER_PROFILE, major: 1 }),
@@ -162,13 +162,13 @@ export const RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION: ServiceContractDefinit
     offerFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/data-catalog-offer.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/data-catalog-offer.v1.schema.json',
       }),
     }),
     requestFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/data-catalog-request.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/data-catalog-request.v1.schema.json',
       }),
     }),
     matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),

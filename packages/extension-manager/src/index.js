@@ -12,6 +12,7 @@ export {
   validateExtensionCatalog,
 } from './catalog.js'
 export { createExtensionManagerClient } from './client.js'
+export { createGameSupportPlan, gameSupportPlansEqual } from './game-support.js'
 export {
   CONTRIBUTION_SUBJECT_KIND,
   EXTENSION_SUBJECT_KIND,

@@ -16,8 +16,8 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import type { ResourceBudget } from '@modkitx-x3/sdk'
-import { COMMON_PRESENTATION_CATALOG } from '@modkitx-x3/host'
+import type { ResourceBudget } from '@modkit/sdk'
+import { COMMON_PRESENTATION_CATALOG } from '@modkit/host'
 import {
   createElectronSubjectServices,
   openFileArtifactSource,
@@ -159,7 +159,7 @@ describe('block 11 exit gate: the ODF quartet reaches its viewer by contract, no
       { sourceBytes: BigInt(bytes.byteLength) },
     )
 
-    expect(opened.selected.contributionId).toBe('org.modkitx/odt')
+    expect(opened.selected.contributionId).toBe('modkit/odt')
     expect(plan).toMatchObject({ activeStage: 'code', alternateStages: ['tree'] })
     expect(plan.slots.map(slot => slot.slotId)).toEqual(['code', 'tree'])
     await opened.session.dispose()
@@ -168,8 +168,8 @@ describe('block 11 exit gate: the ODF quartet reaches its viewer by contract, no
   it('gives ODS every stage CSV gets, led by the same one', async () => {
     const ods = await synthetic('minimal.ods')
     const csv = await synthetic('minimal.csv')
-    expect(ods.contributionId).toBe('org.modkitx/ods')
-    expect(csv.contributionId).toBe('org.modkitx/text-csv')
+    expect(ods.contributionId).toBe('modkit/ods')
+    expect(csv.contributionId).toBe('modkit/text-csv')
     // a spreadsheet is not a special case of anything: it offers what the delimited table offers
     expect(ods.stages).toEqual(expect.arrayContaining([...csv.stages]))
     expect(ods.first).toBe(csv.first)
@@ -182,8 +182,8 @@ describe('block 11 exit gate: the ODF quartet reaches its viewer by contract, no
   it('gives ODG exactly the stages SVG gets, vector first', async () => {
     const odg = await synthetic('minimal.odg')
     const svg = await offeredFor(await svgFile())
-    expect(odg.contributionId).toBe('org.modkitx/odg')
-    expect(svg.contributionId).toBe('org.modkitx/vector-svg')
+    expect(odg.contributionId).toBe('modkit/odg')
+    expect(svg.contributionId).toBe('modkit/vector-svg')
     expect(odg.stages).toEqual(svg.stages)
     expect(odg.stages).toContain('vector')
     expect(odg.first).toBe(svg.first)
@@ -191,7 +191,7 @@ describe('block 11 exit gate: the ODF quartet reaches its viewer by contract, no
 
   it('previews ODP down the same vector path, and needs no slides stage to do it', async () => {
     const odp = await synthetic('minimal.odp')
-    expect(odp.contributionId).toBe('org.modkitx/odp')
+    expect(odp.contributionId).toBe('modkit/odp')
     expect(odp.stages).toContain('vector')
     // ADR-DOC-001: the deck is published for generic inspection and deliberately has no viewer in
     // this slice. A stage bound to it would have to be ranked in STAGE_ORDER; none is.
@@ -202,8 +202,8 @@ describe('block 11 exit gate: the ODF quartet reaches its viewer by contract, no
   it('gives ODT the flow stages Markdown gets: no table, no scene', async () => {
     const odt = await synthetic('minimal.odt')
     const markdown = await synthetic('minimal.md')
-    expect(odt.contributionId).toBe('org.modkitx/odt')
-    expect(markdown.contributionId).toBe('org.modkitx/document-markdown')
+    expect(odt.contributionId).toBe('modkit/odt')
+    expect(markdown.contributionId).toBe('modkit/document-markdown')
     expect(odt.stages).toEqual(markdown.stages)
     expect(odt.stages).not.toContain('table')
     expect(odt.stages).not.toContain('vector')

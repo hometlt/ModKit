@@ -2,7 +2,7 @@ import {
   createInspectionCodec,
   createModelSceneSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 import { decodeEmbeddedGltfBuffers, decodeGltfGeometry } from './geometry.js'
 
 const decoder = new TextDecoder('utf-8', { fatal: true })
@@ -559,7 +559,7 @@ function createSubjectFactsSource(document, context) {
 }
 
 const definition = Object.freeze({
-  id: 'org.modkitx/model-gltf',
+  id: 'modkit/model-gltf',
   format: Object.freeze({ id: 'gltf', label: 'glTF 2.x', mediaType: 'model/gltf+json' }),
   async detect(bytes) {
     const match = looksLikeGltf(bytes)

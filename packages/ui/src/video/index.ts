@@ -1,4 +1,4 @@
-import type { VideoMediaSource, ViewerModule } from '@modkitx-x3/sdk'
+import type { VideoMediaSource, ViewerModule } from '@modkit/sdk'
 import { collectEncodedMedia } from '../media/encoded.js'
 import { type UiLocalizer } from '../localization/index.js'
 import { VIDEO_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'

@@ -1,5 +1,5 @@
 {
-  "name": "@modkitx-x3/host",
+  "name": "@modkit/host",
   "version": "0.1.0",
   "description": "MK3 clean-core lab: inventory, resolver, activation gate (BRIEF-12; not a release)",
   "license": "UNLICENSED",
@@ -70,9 +70,9 @@
     "native-text"
   ],
   "dependencies": {
-    "@modkitx-x3/core": "workspace:*",
-    "@modkitx-x3/sdk": "workspace:*",
-    "@modkitx-x3/vfs": "workspace:*",
+    "@modkit/core": "workspace:*",
+    "@modkit/sdk": "workspace:*",
+    "@modkit/vfs": "workspace:*",
     "es-module-lexer": "^1.7.0",
     "jsonc-parser": "^3.3.1"
   }

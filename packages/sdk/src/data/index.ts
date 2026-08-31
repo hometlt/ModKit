@@ -17,12 +17,12 @@ import type { ServiceProviderModule } from '../runtime-abi.js'
 export const DATA_CATALOG_ANALYSIS_CONTRACT = 'common.data/catalog-analysis' as const
 
 /** Host-owned matcher profile for exact game-id routing. */
-export const DATA_CATALOG_MATCHER_PROFILE = 'org.modkitx/data-catalog-matcher' as const
+export const DATA_CATALOG_MATCHER_PROFILE = 'modkit/data-catalog-matcher' as const
 
 /** Additive workspace/VFS/live-facet contract. catalog-analysis@1 stays byte-compatible. */
 export const RESOLVED_DATA_WORKSPACE_CONTRACT = 'common.data/resolved-workspace' as const
 export const RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE =
-  'org.modkitx/resolved-data-workspace-matcher' as const
+  'modkit/resolved-data-workspace-matcher' as const
 
 export type DataFieldCardinality = 'scalar' | 'append' | 'indexed'
 

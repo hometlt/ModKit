@@ -28,7 +28,7 @@ import {
   framePortFromJsonPort,
   type FramePort,
   type JsonPortLike,
-} from '@modkitx-x3/host/execution'
+} from '@modkit/host/execution'
 
 // ---------------------------------------------------------------------------------------------
 // shell messages
@@ -40,7 +40,7 @@ export interface ShellRoot {
   readonly label: string
 }
 
-/** One directory entry, in the shape `@modkitx-x3/ui`'s explorer consumes. */
+/** One directory entry, in the shape `@modkit/ui`'s explorer consumes. */
 export interface ShellEntry {
   readonly id: string
   readonly name: string
@@ -129,6 +129,18 @@ export type ShellRequest =
   | { readonly op: 'set-extension-coordinate'; readonly id: string; readonly enabled: boolean }
   | { readonly op: 'set-managed-package'; readonly id: string; readonly enabled: boolean }
   | { readonly op: 'link-extension'; readonly id: string }
+  /**
+   * Opens a resource registered for an extension card by the extension host.
+   *
+   * The page supplies only opaque identifiers. In particular, it cannot turn a visible source
+   * path into filesystem authority: the host resolves this triple against its own card registry.
+   */
+  | {
+      readonly op: 'open-extension-resource'
+      readonly subjectId: string
+      readonly resourceId: string
+      readonly role: 'source' | 'license'
+    }
   | { readonly op: 'set-extension'; readonly index: number; readonly enabled: boolean }
   | { readonly op: 'remove-extension'; readonly index: number }
   | { readonly op: 'add-extension-folder' }

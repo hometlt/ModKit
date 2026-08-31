@@ -2,24 +2,24 @@
   "bomFormat": "CycloneDX",
   "components": [
     {
-      "bom-ref": "pkg:npm/%40modkitx-x3/automation-host@0.1.0",
-      "name": "@modkitx-x3/automation-host",
+      "bom-ref": "pkg:npm/%40modkit/automation-host@0.1.0",
+      "name": "@modkit/automation-host",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "apps/automation-host/package.json"
         }
       ],
-      "purl": "pkg:npm/%40modkitx-x3/automation-host@0.1.0",
+      "purl": "pkg:npm/%40modkit/automation-host@0.1.0",
       "type": "application",
       "version": "0.1.0"
     },
     {
-      "bom-ref": "pkg:npm/%40modkitx-x3/code@1.0.0",
+      "bom-ref": "pkg:npm/%40modkit/code@1.0.0",
       "licenses": [
         {
           "license": {
@@ -27,23 +27,23 @@
           }
         }
       ],
-      "name": "@modkitx-x3/code",
+      "name": "@modkit/code",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "packages/code/package.json"
         }
       ],
-      "purl": "pkg:npm/%40modkitx-x3/code@1.0.0",
+      "purl": "pkg:npm/%40modkit/code@1.0.0",
       "type": "library",
       "version": "1.0.0"
     },
     {
-      "bom-ref": "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+      "bom-ref": "pkg:npm/%40modkit/codec-kit@1.0.0",
       "licenses": [
         {
           "license": {
@@ -51,108 +51,57 @@
           }
         }
       ],
-      "name": "@modkitx-x3/codec-kit",
+      "name": "@modkit/codec-kit",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "common,platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "packages/codec-kit/package.json"
         }
       ],
-      "purl": "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
+      "purl": "pkg:npm/%40modkit/codec-kit@1.0.0",
       "type": "library",
       "version": "1.0.0"
     },
     {
-      "bom-ref": "pkg:npm/%40modkitx-x3/core@0.1.0",
-      "name": "@modkitx-x3/core",
+      "bom-ref": "pkg:npm/%40modkit/core@0.1.0",
+      "name": "@modkit/core",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "common,platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "packages/core/package.json"
         }
       ],
-      "purl": "pkg:npm/%40modkitx-x3/core@0.1.0",
+      "purl": "pkg:npm/%40modkit/core@0.1.0",
       "type": "library",
       "version": "0.1.0"
     },
     {
-      "bom-ref": "pkg:npm/%40modkitx-x3/electron-app@0.1.0",
-      "name": "@modkitx-x3/electron-app",
+      "bom-ref": "pkg:npm/%40modkit/electron-app@0.1.0",
+      "name": "@modkit/electron-app",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "apps/electron/package.json"
         }
       ],
-      "purl": "pkg:npm/%40modkitx-x3/electron-app@0.1.0",
+      "purl": "pkg:npm/%40modkit/electron-app@0.1.0",
       "type": "application",
       "version": "0.1.0"
     },
     {
-      "bom-ref": "pkg:npm/%40modkitx-x3/host@0.1.0",
-      "name": "@modkitx-x3/host",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "common,platform"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "packages/host/package.json"
-        }
-      ],
-      "purl": "pkg:npm/%40modkitx-x3/host@0.1.0",
-      "type": "library",
-      "version": "0.1.0"
-    },
-    {
-      "bom-ref": "pkg:npm/%40modkitx-x3/modkit-cli@0.1.0",
-      "name": "@modkitx-x3/modkit-cli",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "platform"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "apps/cli/package.json"
-        }
-      ],
-      "purl": "pkg:npm/%40modkitx-x3/modkit-cli@0.1.0",
-      "type": "library",
-      "version": "0.1.0"
-    },
-    {
-      "bom-ref": "pkg:npm/%40modkitx-x3/modkit-vscode@0.1.0",
-      "name": "@modkitx-x3/modkit-vscode",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "platform"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "apps/vscode/package.json"
-        }
-      ],
-      "purl": "pkg:npm/%40modkitx-x3/modkit-vscode@0.1.0",
-      "type": "application",
-      "version": "0.1.0"
-    },
-    {
-      "bom-ref": "pkg:npm/%40modkitx-x3/scene@1.0.0",
+      "bom-ref": "pkg:npm/%40modkit/extension-manager@0.1.0",
       "licenses": [
         {
           "license": {
@@ -160,170 +109,221 @@
           }
         }
       ],
-      "name": "@modkitx-x3/scene",
+      "name": "@modkit/extension-manager",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
-          "value": "packages/scene/package.json"
-        }
-      ],
-      "purl": "pkg:npm/%40modkitx-x3/scene@1.0.0",
-      "type": "library",
-      "version": "1.0.0"
-    },
-    {
-      "bom-ref": "pkg:npm/%40modkitx-x3/sdk@0.1.0",
-      "name": "@modkitx-x3/sdk",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "common,platform"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "packages/sdk/package.json"
-        }
-      ],
-      "purl": "pkg:npm/%40modkitx-x3/sdk@0.1.0",
-      "type": "library",
-      "version": "0.1.0"
-    },
-    {
-      "bom-ref": "pkg:npm/%40modkitx-x3/server@0.1.0",
-      "name": "@modkitx-x3/server",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "platform"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "apps/server/package.json"
-        }
-      ],
-      "purl": "pkg:npm/%40modkitx-x3/server@0.1.0",
-      "type": "application",
-      "version": "0.1.0"
-    },
-    {
-      "bom-ref": "pkg:npm/%40modkitx-x3/ui@0.1.0",
-      "name": "@modkitx-x3/ui",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "platform"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "packages/ui/package.json"
-        }
-      ],
-      "purl": "pkg:npm/%40modkitx-x3/ui@0.1.0",
-      "type": "library",
-      "version": "0.1.0"
-    },
-    {
-      "bom-ref": "pkg:npm/%40modkitx-x3/uv@1.0.0",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "name": "@modkitx-x3/uv",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "platform"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "packages/uv/package.json"
-        }
-      ],
-      "purl": "pkg:npm/%40modkitx-x3/uv@1.0.0",
-      "type": "library",
-      "version": "1.0.0"
-    },
-    {
-      "bom-ref": "pkg:npm/%40modkitx-x3/vfs@0.1.0",
-      "name": "@modkitx-x3/vfs",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "platform"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "packages/vfs/package.json"
-        }
-      ],
-      "purl": "pkg:npm/%40modkitx-x3/vfs@0.1.0",
-      "type": "library",
-      "version": "0.1.0"
-    },
-    {
-      "bom-ref": "pkg:npm/%40modkitx-x3/web-app@0.1.0",
-      "name": "@modkitx-x3/web-app",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "platform"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "apps/web/package.json"
-        }
-      ],
-      "purl": "pkg:npm/%40modkitx-x3/web-app@0.1.0",
-      "type": "application",
-      "version": "0.1.0"
-    },
-    {
-      "bom-ref": "pkg:npm/%40modkitx-x3/workspace-root@0.0.0",
-      "name": "@modkitx-x3/workspace-root",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "platform"
-        },
-        {
-          "name": "modkitx:metadata-source",
-          "value": "package.json"
-        }
-      ],
-      "purl": "pkg:npm/%40modkitx-x3/workspace-root@0.0.0",
-      "type": "application",
-      "version": "0.0.0"
-    },
-    {
-      "bom-ref": "pkg:npm/%40modkitx/extension-manager@0.1.0",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "name": "@modkitx/extension-manager",
-      "properties": [
-        {
-          "name": "modkitx:artifacts",
-          "value": "platform"
-        },
-        {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "packages/extension-manager/package.json"
         }
       ],
-      "purl": "pkg:npm/%40modkitx/extension-manager@0.1.0",
+      "purl": "pkg:npm/%40modkit/extension-manager@0.1.0",
       "type": "library",
       "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkit/host@0.1.0",
+      "name": "@modkit/host",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "common,platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "packages/host/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkit/host@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkit/modkit-cli@0.1.0",
+      "name": "@modkit/modkit-cli",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "apps/cli/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkit/modkit-cli@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkit/modkit-vscode@0.1.0",
+      "name": "@modkit/modkit-vscode",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "apps/vscode/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkit/modkit-vscode@0.1.0",
+      "type": "application",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkit/scene@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "@modkit/scene",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "packages/scene/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkit/scene@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkit/sdk@0.1.0",
+      "name": "@modkit/sdk",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "common,platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "packages/sdk/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkit/sdk@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkit/server@0.1.0",
+      "name": "@modkit/server",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "apps/server/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkit/server@0.1.0",
+      "type": "application",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkit/ui@0.1.0",
+      "name": "@modkit/ui",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "packages/ui/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkit/ui@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkit/uv@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "@modkit/uv",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "packages/uv/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkit/uv@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkit/vfs@0.1.0",
+      "name": "@modkit/vfs",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "packages/vfs/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkit/vfs@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkit/web-app@0.1.0",
+      "name": "@modkit/web-app",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "apps/web/package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkit/web-app@0.1.0",
+      "type": "application",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/%40modkit/workspace-root@0.0.0",
+      "name": "@modkit/workspace-root",
+      "properties": [
+        {
+          "name": "modkit:artifacts",
+          "value": "platform"
+        },
+        {
+          "name": "modkit:metadata-source",
+          "value": "package.json"
+        }
+      ],
+      "purl": "pkg:npm/%40modkit/workspace-root@0.0.0",
+      "type": "application",
+      "version": "0.0.0"
     },
     {
       "bom-ref": "pkg:npm/%40rgrove/parse-xml@4.2.3",
@@ -337,11 +337,11 @@
       "name": "@rgrove/parse-xml",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "common,platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "npm:@rgrove/parse-xml"
         }
       ],
@@ -361,11 +361,11 @@
       "name": "@types/trusted-types",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "npm:@types/trusted-types"
         }
       ],
@@ -385,11 +385,11 @@
       "name": "ajv",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "npm:ajv"
         }
       ],
@@ -409,11 +409,11 @@
       "name": "dompurify",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "npm:dompurify"
         }
       ],
@@ -433,11 +433,11 @@
       "name": "es-module-lexer",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "npm:es-module-lexer"
         }
       ],
@@ -457,11 +457,11 @@
       "name": "fast-deep-equal",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "npm:fast-deep-equal"
         }
       ],
@@ -470,7 +470,7 @@
       "version": "3.1.3"
     },
     {
-      "bom-ref": "pkg:npm/fast-uri@3.1.5",
+      "bom-ref": "pkg:npm/fast-uri@3.1.6",
       "licenses": [
         {
           "license": {
@@ -481,17 +481,17 @@
       "name": "fast-uri",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "npm:fast-uri"
         }
       ],
-      "purl": "pkg:npm/fast-uri@3.1.5",
+      "purl": "pkg:npm/fast-uri@3.1.6",
       "type": "library",
-      "version": "3.1.5"
+      "version": "3.1.6"
     },
     {
       "bom-ref": "pkg:npm/json-schema-traverse@1.0.0",
@@ -505,11 +505,11 @@
       "name": "json-schema-traverse",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "npm:json-schema-traverse"
         }
       ],
@@ -529,11 +529,11 @@
       "name": "jsonc-parser",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "npm:jsonc-parser"
         }
       ],
@@ -553,11 +553,11 @@
       "name": "marked",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "npm:marked"
         }
       ],
@@ -566,7 +566,7 @@
       "version": "14.0.0"
     },
     {
-      "bom-ref": "pkg:npm/modkit-extension-x3-archives@1.0.0",
+      "bom-ref": "pkg:npm/modkit-extension-archives@1.0.0",
       "licenses": [
         {
           "license": {
@@ -574,23 +574,23 @@
           }
         }
       ],
-      "name": "modkit-extension-x3-archives",
+      "name": "modkit-extension-archives",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "common,platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "apps/web/dist-app/extensions/archives/package.json"
         }
       ],
-      "purl": "pkg:npm/modkit-extension-x3-archives@1.0.0",
+      "purl": "pkg:npm/modkit-extension-archives@1.0.0",
       "type": "library",
       "version": "1.0.0"
     },
     {
-      "bom-ref": "pkg:npm/modkit-extension-x3-audio@1.0.0",
+      "bom-ref": "pkg:npm/modkit-extension-audio@1.0.0",
       "licenses": [
         {
           "license": {
@@ -598,23 +598,23 @@
           }
         }
       ],
-      "name": "modkit-extension-x3-audio",
+      "name": "modkit-extension-audio",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "common,platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "apps/web/dist-app/extensions/audio/package.json"
         }
       ],
-      "purl": "pkg:npm/modkit-extension-x3-audio@1.0.0",
+      "purl": "pkg:npm/modkit-extension-audio@1.0.0",
       "type": "library",
       "version": "1.0.0"
     },
     {
-      "bom-ref": "pkg:npm/modkit-extension-x3-data@1.0.0",
+      "bom-ref": "pkg:npm/modkit-extension-data@1.0.0",
       "licenses": [
         {
           "license": {
@@ -622,23 +622,23 @@
           }
         }
       ],
-      "name": "modkit-extension-x3-data",
+      "name": "modkit-extension-data",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "common,platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "apps/web/dist-app/extensions/data/package.json"
         }
       ],
-      "purl": "pkg:npm/modkit-extension-x3-data@1.0.0",
+      "purl": "pkg:npm/modkit-extension-data@1.0.0",
       "type": "library",
       "version": "1.0.0"
     },
     {
-      "bom-ref": "pkg:npm/modkit-extension-x3-documents@1.0.0",
+      "bom-ref": "pkg:npm/modkit-extension-documents@1.0.0",
       "licenses": [
         {
           "license": {
@@ -646,23 +646,23 @@
           }
         }
       ],
-      "name": "modkit-extension-x3-documents",
+      "name": "modkit-extension-documents",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "common,platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "apps/web/dist-app/extensions/documents/package.json"
         }
       ],
-      "purl": "pkg:npm/modkit-extension-x3-documents@1.0.0",
+      "purl": "pkg:npm/modkit-extension-documents@1.0.0",
       "type": "library",
       "version": "1.0.0"
     },
     {
-      "bom-ref": "pkg:npm/modkit-extension-x3-images@1.0.0",
+      "bom-ref": "pkg:npm/modkit-extension-images@1.0.0",
       "licenses": [
         {
           "license": {
@@ -670,23 +670,23 @@
           }
         }
       ],
-      "name": "modkit-extension-x3-images",
+      "name": "modkit-extension-images",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "common,platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "apps/web/dist-app/extensions/images/package.json"
         }
       ],
-      "purl": "pkg:npm/modkit-extension-x3-images@1.0.0",
+      "purl": "pkg:npm/modkit-extension-images@1.0.0",
       "type": "library",
       "version": "1.0.0"
     },
     {
-      "bom-ref": "pkg:npm/modkit-extension-x3-models@1.0.0",
+      "bom-ref": "pkg:npm/modkit-extension-models@1.0.0",
       "licenses": [
         {
           "license": {
@@ -694,23 +694,23 @@
           }
         }
       ],
-      "name": "modkit-extension-x3-models",
+      "name": "modkit-extension-models",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "common,platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "apps/web/dist-app/extensions/models/package.json"
         }
       ],
-      "purl": "pkg:npm/modkit-extension-x3-models@1.0.0",
+      "purl": "pkg:npm/modkit-extension-models@1.0.0",
       "type": "library",
       "version": "1.0.0"
     },
     {
-      "bom-ref": "pkg:npm/modkit-extension-x3-vector@1.0.0",
+      "bom-ref": "pkg:npm/modkit-extension-vector@1.0.0",
       "licenses": [
         {
           "license": {
@@ -718,23 +718,23 @@
           }
         }
       ],
-      "name": "modkit-extension-x3-vector",
+      "name": "modkit-extension-vector",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "common,platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "apps/web/dist-app/extensions/vector/package.json"
         }
       ],
-      "purl": "pkg:npm/modkit-extension-x3-vector@1.0.0",
+      "purl": "pkg:npm/modkit-extension-vector@1.0.0",
       "type": "library",
       "version": "1.0.0"
     },
     {
-      "bom-ref": "pkg:npm/modkit-extension-x3-video@1.0.0",
+      "bom-ref": "pkg:npm/modkit-extension-video@1.0.0",
       "licenses": [
         {
           "license": {
@@ -742,18 +742,18 @@
           }
         }
       ],
-      "name": "modkit-extension-x3-video",
+      "name": "modkit-extension-video",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "common,platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "apps/web/dist-app/extensions/video/package.json"
         }
       ],
-      "purl": "pkg:npm/modkit-extension-x3-video@1.0.0",
+      "purl": "pkg:npm/modkit-extension-video@1.0.0",
       "type": "library",
       "version": "1.0.0"
     },
@@ -769,11 +769,11 @@
       "name": "monaco-editor",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "npm:monaco-editor"
         }
       ],
@@ -793,11 +793,11 @@
       "name": "require-from-string",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "npm:require-from-string"
         }
       ],
@@ -817,11 +817,11 @@
       "name": "smol-toml",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "common,platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "npm:smol-toml"
         }
       ],
@@ -841,11 +841,11 @@
       "name": "three",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "npm:three"
         }
       ],
@@ -865,11 +865,11 @@
       "name": "yaml",
       "properties": [
         {
-          "name": "modkitx:artifacts",
+          "name": "modkit:artifacts",
           "value": "common,platform"
         },
         {
-          "name": "modkitx:metadata-source",
+          "name": "modkit:metadata-source",
           "value": "npm:yaml"
         }
       ],
@@ -881,141 +881,141 @@
   "dependencies": [
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/core@0.1.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+        "pkg:npm/%40modkit/core@0.1.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0"
       ],
-      "ref": "pkg:npm/%40modkitx-x3/automation-host@0.1.0"
+      "ref": "pkg:npm/%40modkit/automation-host@0.1.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
+        "pkg:npm/%40modkit/host@0.1.0",
         "pkg:npm/monaco-editor@0.56.0"
       ],
-      "ref": "pkg:npm/%40modkitx-x3/code@1.0.0"
+      "ref": "pkg:npm/%40modkit/code@1.0.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/core@0.1.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+        "pkg:npm/%40modkit/core@0.1.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0"
       ],
-      "ref": "pkg:npm/%40modkitx-x3/codec-kit@1.0.0"
+      "ref": "pkg:npm/%40modkit/codec-kit@1.0.0"
     },
     {
       "dependsOn": [],
-      "ref": "pkg:npm/%40modkitx-x3/core@0.1.0"
+      "ref": "pkg:npm/%40modkit/core@0.1.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/code@1.0.0",
-        "pkg:npm/%40modkitx-x3/core@0.1.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/scene@1.0.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
-        "pkg:npm/%40modkitx-x3/ui@0.1.0",
-        "pkg:npm/%40modkitx-x3/uv@1.0.0",
-        "pkg:npm/%40modkitx/extension-manager@0.1.0"
+        "pkg:npm/%40modkit/code@1.0.0",
+        "pkg:npm/%40modkit/core@0.1.0",
+        "pkg:npm/%40modkit/extension-manager@0.1.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/scene@1.0.0",
+        "pkg:npm/%40modkit/sdk@0.1.0",
+        "pkg:npm/%40modkit/ui@0.1.0",
+        "pkg:npm/%40modkit/uv@1.0.0"
       ],
-      "ref": "pkg:npm/%40modkitx-x3/electron-app@0.1.0"
+      "ref": "pkg:npm/%40modkit/electron-app@0.1.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/core@0.1.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
-        "pkg:npm/%40modkitx-x3/vfs@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0",
+        "pkg:npm/%40modkit/vfs@0.1.0"
+      ],
+      "ref": "pkg:npm/%40modkit/extension-manager@0.1.0"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/%40modkit/core@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0",
+        "pkg:npm/%40modkit/vfs@0.1.0",
         "pkg:npm/es-module-lexer@1.7.0",
         "pkg:npm/jsonc-parser@3.3.1"
       ],
-      "ref": "pkg:npm/%40modkitx-x3/host@0.1.0"
+      "ref": "pkg:npm/%40modkit/host@0.1.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/core@0.1.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/scene@1.0.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
-        "pkg:npm/%40modkitx-x3/uv@1.0.0"
+        "pkg:npm/%40modkit/core@0.1.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/scene@1.0.0",
+        "pkg:npm/%40modkit/sdk@0.1.0",
+        "pkg:npm/%40modkit/uv@1.0.0"
       ],
-      "ref": "pkg:npm/%40modkitx-x3/modkit-cli@0.1.0"
+      "ref": "pkg:npm/%40modkit/modkit-cli@0.1.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/core@0.1.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/scene@1.0.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
-        "pkg:npm/%40modkitx-x3/ui@0.1.0",
-        "pkg:npm/%40modkitx-x3/uv@1.0.0",
-        "pkg:npm/%40modkitx/extension-manager@0.1.0"
+        "pkg:npm/%40modkit/core@0.1.0",
+        "pkg:npm/%40modkit/extension-manager@0.1.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/scene@1.0.0",
+        "pkg:npm/%40modkit/sdk@0.1.0",
+        "pkg:npm/%40modkit/ui@0.1.0",
+        "pkg:npm/%40modkit/uv@1.0.0"
       ],
-      "ref": "pkg:npm/%40modkitx-x3/modkit-vscode@0.1.0"
+      "ref": "pkg:npm/%40modkit/modkit-vscode@0.1.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0",
         "pkg:npm/three@0.180.0"
       ],
-      "ref": "pkg:npm/%40modkitx-x3/scene@1.0.0"
+      "ref": "pkg:npm/%40modkit/scene@1.0.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/core@0.1.0",
+        "pkg:npm/%40modkit/core@0.1.0",
         "pkg:npm/ajv@8.20.0"
       ],
-      "ref": "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+      "ref": "pkg:npm/%40modkit/sdk@0.1.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/core@0.1.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+        "pkg:npm/%40modkit/core@0.1.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0"
       ],
-      "ref": "pkg:npm/%40modkitx-x3/server@0.1.0"
+      "ref": "pkg:npm/%40modkit/server@0.1.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/core@0.1.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+        "pkg:npm/%40modkit/core@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0"
       ],
-      "ref": "pkg:npm/%40modkitx-x3/ui@0.1.0"
+      "ref": "pkg:npm/%40modkit/ui@0.1.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/host@0.1.0"
+        "pkg:npm/%40modkit/host@0.1.0"
       ],
-      "ref": "pkg:npm/%40modkitx-x3/uv@1.0.0"
+      "ref": "pkg:npm/%40modkit/uv@1.0.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/core@0.1.0"
+        "pkg:npm/%40modkit/core@0.1.0"
       ],
-      "ref": "pkg:npm/%40modkitx-x3/vfs@0.1.0"
+      "ref": "pkg:npm/%40modkit/vfs@0.1.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/code@1.0.0",
-        "pkg:npm/%40modkitx-x3/core@0.1.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/scene@1.0.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
-        "pkg:npm/%40modkitx-x3/ui@0.1.0",
-        "pkg:npm/%40modkitx-x3/uv@1.0.0",
-        "pkg:npm/%40modkitx/extension-manager@0.1.0"
+        "pkg:npm/%40modkit/code@1.0.0",
+        "pkg:npm/%40modkit/core@0.1.0",
+        "pkg:npm/%40modkit/extension-manager@0.1.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/scene@1.0.0",
+        "pkg:npm/%40modkit/sdk@0.1.0",
+        "pkg:npm/%40modkit/ui@0.1.0",
+        "pkg:npm/%40modkit/uv@1.0.0"
       ],
-      "ref": "pkg:npm/%40modkitx-x3/web-app@0.1.0"
+      "ref": "pkg:npm/%40modkit/web-app@0.1.0"
     },
     {
       "dependsOn": [],
-      "ref": "pkg:npm/%40modkitx-x3/workspace-root@0.0.0"
-    },
-    {
-      "dependsOn": [
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
-        "pkg:npm/%40modkitx-x3/vfs@0.1.0"
-      ],
-      "ref": "pkg:npm/%40modkitx/extension-manager@0.1.0"
+      "ref": "pkg:npm/%40modkit/workspace-root@0.0.0"
     },
     {
       "dependsOn": [],
@@ -1028,7 +1028,7 @@
     {
       "dependsOn": [
         "pkg:npm/fast-deep-equal@3.1.3",
-        "pkg:npm/fast-uri@3.1.5",
+        "pkg:npm/fast-uri@3.1.6",
         "pkg:npm/json-schema-traverse@1.0.0",
         "pkg:npm/require-from-string@2.0.2"
       ],
@@ -1050,7 +1050,7 @@
     },
     {
       "dependsOn": [],
-      "ref": "pkg:npm/fast-uri@3.1.5"
+      "ref": "pkg:npm/fast-uri@3.1.6"
     },
     {
       "dependsOn": [],
@@ -1066,71 +1066,71 @@
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+        "pkg:npm/%40modkit/codec-kit@1.0.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0"
       ],
-      "ref": "pkg:npm/modkit-extension-x3-archives@1.0.0"
+      "ref": "pkg:npm/modkit-extension-archives@1.0.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+        "pkg:npm/%40modkit/codec-kit@1.0.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0"
       ],
-      "ref": "pkg:npm/modkit-extension-x3-audio@1.0.0"
+      "ref": "pkg:npm/modkit-extension-audio@1.0.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
-        "pkg:npm/%40modkitx-x3/core@0.1.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0",
+        "pkg:npm/%40modkit/codec-kit@1.0.0",
+        "pkg:npm/%40modkit/core@0.1.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0",
         "pkg:npm/%40rgrove/parse-xml@4.2.3",
         "pkg:npm/smol-toml@1.8.0",
         "pkg:npm/yaml@2.9.0"
       ],
-      "ref": "pkg:npm/modkit-extension-x3-data@1.0.0"
+      "ref": "pkg:npm/modkit-extension-data@1.0.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+        "pkg:npm/%40modkit/codec-kit@1.0.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0"
       ],
-      "ref": "pkg:npm/modkit-extension-x3-documents@1.0.0"
+      "ref": "pkg:npm/modkit-extension-documents@1.0.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+        "pkg:npm/%40modkit/codec-kit@1.0.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0"
       ],
-      "ref": "pkg:npm/modkit-extension-x3-images@1.0.0"
+      "ref": "pkg:npm/modkit-extension-images@1.0.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+        "pkg:npm/%40modkit/codec-kit@1.0.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0"
       ],
-      "ref": "pkg:npm/modkit-extension-x3-models@1.0.0"
+      "ref": "pkg:npm/modkit-extension-models@1.0.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+        "pkg:npm/%40modkit/codec-kit@1.0.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0"
       ],
-      "ref": "pkg:npm/modkit-extension-x3-vector@1.0.0"
+      "ref": "pkg:npm/modkit-extension-vector@1.0.0"
     },
     {
       "dependsOn": [
-        "pkg:npm/%40modkitx-x3/codec-kit@1.0.0",
-        "pkg:npm/%40modkitx-x3/host@0.1.0",
-        "pkg:npm/%40modkitx-x3/sdk@0.1.0"
+        "pkg:npm/%40modkit/codec-kit@1.0.0",
+        "pkg:npm/%40modkit/host@0.1.0",
+        "pkg:npm/%40modkit/sdk@0.1.0"
       ],
-      "ref": "pkg:npm/modkit-extension-x3-video@1.0.0"
+      "ref": "pkg:npm/modkit-extension-video@1.0.0"
     },
     {
       "dependsOn": [
@@ -1158,15 +1158,15 @@
   ],
   "metadata": {
     "component": {
-      "bom-ref": "urn:modkitx:modkitx-mk3-focused-local-rc:0.1.0",
-      "name": "modkitx-mk3-focused-local-rc",
+      "bom-ref": "urn:modkit:modkit-mk3-focused-local-rc:0.1.0",
+      "name": "modkit-mk3-focused-local-rc",
       "type": "application",
       "version": "0.1.0"
     },
     "tools": [
       {
         "name": "scripts/release/rc.mjs",
-        "vendor": "ModkitX"
+        "vendor": "Modkit"
       }
     ]
   },

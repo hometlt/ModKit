@@ -2,16 +2,16 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../chunks/chunk-RULZCSH7.js";
+} from "../../../chunks/chunk-ROM7AYU6.js";
 import {
   revisionId
-} from "../../../chunks/chunk-R2Q24OJL.js";
+} from "../../../chunks/chunk-ZIDZRETG.js";
 import {
   diagnostic,
   throwIfAborted,
   uint64
-} from "../../../chunks/chunk-GZ3IOGQJ.js";
-import "../../../chunks/chunk-XNBPKNUQ.js";
+} from "../../../chunks/chunk-X2ENULEB.js";
+import "../../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/src/text/codec-runtime.js
 var BASE_OPERATIONS = Object.freeze([
@@ -95,7 +95,7 @@ function createTextCodec(definition, context) {
         text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
       } catch {
         return {
-          codecId: `org.modkitx/text-${definition.format}`,
+          codecId: `modkit/text-${definition.format}`,
           confidence: 0.01,
           evidence: [{ kind: "structure", weight: -1, note: "invalid-utf8" }],
           requiredRanges: [{ byteOffset: "0", byteLength: String(bytes.byteLength) }]
@@ -103,7 +103,7 @@ function createTextCodec(definition, context) {
       }
       const result = definition.detect(text, request.source.ref.uri);
       return {
-        codecId: `org.modkitx/text-${definition.format}`,
+        codecId: `modkit/text-${definition.format}`,
         confidence: result.confidence,
         evidence: [{ kind: "structure", weight: result.confidence, note: result.note }],
         requiredRanges: [{ byteOffset: "0", byteLength: String(bytes.byteLength) }]
@@ -173,7 +173,7 @@ function createTextCodec(definition, context) {
         },
         interpretation: "codec",
         identity: {
-          codecId: `org.modkitx/text-${definition.format}`,
+          codecId: `modkit/text-${definition.format}`,
           codecVersion: "1.0.0",
           formatId: definition.format,
           formatLabel: definition.format.toUpperCase(),
@@ -366,14 +366,10 @@ function failure(code, message, text = "", offset = 0, length = 0) {
 function preflight(decoded, budget, signal) {
   throwIfAborted(signal);
   if (BigInt(decoded.bytes.byteLength) > budget.maxInputBytes) {
-    return failure(
-      "org.modkitx/text-data-input-budget",
-      "input exceeds maxInputBytes",
-      decoded.text
-    );
+    return failure("modkit/text-data-input-budget", "input exceeds maxInputBytes", decoded.text);
   }
   if (decoded.text.includes("\0")) {
-    return failure("org.modkitx/text-data-nul", "NUL is forbidden in text input", decoded.text);
+    return failure("modkit/text-data-nul", "NUL is forbidden in text input", decoded.text);
   }
   return void 0;
 }
@@ -467,7 +463,7 @@ function decode(request) {
   } catch (error) {
     return {
       failed: failure(
-        "org.modkitx/text-data-decode",
+        "modkit/text-data-decode",
         error instanceof Error ? error.message : String(error)
       )
     };
@@ -494,7 +490,7 @@ function createTextSyntaxProvider(definition) {
         diagnostics: [
           diagnostic(
             "error",
-            "org.modkitx/text-data-output-budget",
+            "modkit/text-data-output-budget",
             "serialized output exceeds maxInputBytes"
           )
         ]

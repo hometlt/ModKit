@@ -1,6 +1,6 @@
-import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/brotli'
+const ID = 'modkit/brotli'
 const EMPTY_STREAM = 0x06
 const UNCOMPRESSED_STREAM = 0x0c
 const LAST_EMPTY_META_BLOCK = 0x03

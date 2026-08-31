@@ -3,7 +3,7 @@
  * Implementations belong to later host/extension slices; this module owns contracts only.
  */
 
-import { compareUtf8, isQualifiedId, type SourceSpan } from '@modkitx-x3/core'
+import { compareUtf8, isQualifiedId, type SourceSpan } from '@modkit/core'
 import type { KnowledgeTarget } from '../knowledge/index.js'
 import { snapshotJsonWireData } from '../manifest/validate.js'
 import { validateWithSchema } from '../manifest/validate.js'
@@ -754,7 +754,7 @@ export type ConformanceProfileId = string
 
 /**
  * Compatibility name for the single authored wire authority. Data-source definitions are the
- * `kind: 'data-source'` arm of `org.modkitx/contract-definition`; there is no second envelope.
+ * `kind: 'data-source'` arm of `modkit/contract-definition`; there is no second envelope.
  */
 export type DataSourceContributionSpecV1 = DataSourceContractDefinitionSpecV1Wire
 

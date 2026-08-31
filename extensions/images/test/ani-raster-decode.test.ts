@@ -8,8 +8,8 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { proves } from '@modkitx-x3/testkit'
-import { type RasterImageSource, type ResourceBudget } from '@modkitx-x3/sdk'
+import { proves } from '@modkit/testkit'
+import { type RasterImageSource, type ResourceBudget } from '@modkit/sdk'
 import { imageTestBudget as budget, openImageCodec, repoRoot } from './codec-session.js'
 
 const fixturePath = join(
@@ -87,7 +87,7 @@ describe('IMAGE_GPU_DEPTH Windows ANI raster decode', () => {
     expect([...region.pixels]).toEqual([128, 64, 32, 255])
 
     proves({
-      contributionId: 'org.modkitx/ani',
+      contributionId: 'modkit/ani',
       operation: 'read',
       note: 'first embedded CUR/DIB frame decoded to exact rgba8 through raster-image-source',
     })

@@ -28,7 +28,7 @@ import { readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import { chromium, type Browser, type Page } from 'playwright-core'
-import { VIEWER_CSP_TEXT } from '@modkitx-x3/ui'
+import { VIEWER_CSP_TEXT } from '@modkit/ui'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const chromeCandidates = [

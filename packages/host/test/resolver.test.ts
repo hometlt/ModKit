@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { canonicalJsonStringify, contractId, operationId, traitId } from '@modkitx-x3/core'
-import type { ProviderOffer, ProviderRequest } from '@modkitx-x3/sdk'
+import { canonicalJsonStringify, contractId, operationId, traitId } from '@modkit/core'
+import type { ProviderOffer, ProviderRequest } from '@modkit/sdk'
 import {
   buildLockEntry,
   parsePolicyLock,
   replayPolicyLock,
   resolveProvider,
   serializePolicyLock,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 
 const GREETER_CONTRACT = contractId('x3.demo/greeter')
 const PLAIN_TRAIT = traitId('demo.plain')

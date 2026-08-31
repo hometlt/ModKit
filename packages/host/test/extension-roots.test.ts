@@ -7,7 +7,7 @@ import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { loadExtensionRoots } from '@modkitx-x3/host/node'
+import { loadExtensionRoots } from '@modkit/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const dataDir = join(repoRoot, 'extensions', 'data')
@@ -26,7 +26,7 @@ describe('loadExtensionRoots', () => {
     const result = await loadExtensionRoots([dataDir, missing, notAnExtension, imagesDir], {
       origin: 'installed',
     })
-    expect(result.coordinates).toEqual(['org.modkitx/data', 'org.modkitx/images'])
+    expect(result.coordinates).toEqual(['modkit/data', 'modkit/images'])
     expect(result.inputs).toHaveLength(2)
     // a directory that is not there, and one that is not an extension, are failure records
     // rather than exceptions — and neither stops the roots after them from loading
@@ -67,7 +67,7 @@ describe('loadExtensionRoots', () => {
     // a coordinate the bundled catalog already claimed is refused the same way
     const alreadyClaimed = await loadExtensionRoots([dataDir], {
       origin: 'installed',
-      claimed: ['org.modkitx/data'],
+      claimed: ['modkit/data'],
     })
     expect(alreadyClaimed.inputs).toEqual([])
     expect(alreadyClaimed.failures[0]?.code).toBe('x3.host/extension-coordinate-conflict')

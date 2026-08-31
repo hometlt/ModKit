@@ -1,4 +1,4 @@
-import type { TextDataSource, ViewerModule } from '@modkitx-x3/sdk'
+import type { TextDataSource, ViewerModule } from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,

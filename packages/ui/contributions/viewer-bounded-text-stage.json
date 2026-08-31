@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/viewer-contribution", "major": 1 },
-  "id": "org.modkitx.ui/bounded-text-stage",
+  "contract": { "id": "modkit/viewer-contribution", "major": 1 },
+  "id": "modkit.ui/bounded-text-stage",
   "displayName": "bounded text stage",
   "runtimeVariants": [
     {

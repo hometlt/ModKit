@@ -6,7 +6,7 @@ import {
   UI_CATALOG_SCHEMA,
   type UiCatalogDocument,
   type UiLocalizer,
-} from '@modkitx-x3/ui/localization'
+} from '@modkit/ui/localization'
 
 const EN_MESSAGES = Object.freeze({
   'vscode.host.topology': 'Topology',
@@ -54,10 +54,25 @@ const EN_MESSAGES = Object.freeze({
   'vscode.extensions.installed': '{id} installed',
   'vscode.extensions.installAllConfirm': 'Install all {count} available Modkit extensions?',
   'vscode.extensions.installedAll': 'Installed {count} available Modkit extensions.',
+  'vscode.extensions.gameSupportUnavailable': 'No installable package is published for {game}.',
+  'vscode.extensions.gameSupportBlocked': 'Support for {game} cannot be installed: {reasons}',
+  'vscode.extensions.gameSupportReady': 'All published support for {game} is already enabled.',
+  'vscode.extensions.gameSupportConfirm':
+    'Install or enable {count} package(s) required for {game}?',
+  'vscode.extensions.gameSupportInstalled': 'Support for {game} is installed and enabled.',
+  'vscode.extensions.gameSupportRolledBack':
+    'Support for {game} was not installed; completed changes were rolled back.',
+  'vscode.extensions.gameSupportPartial':
+    'Support for {game} was only partly changed. Review the Extensions problems and reload state.',
   'vscode.extensions.installAllPartial':
     'Some extensions were installed, but the operation did not finish: {message}',
   'vscode.extensions.updated': '{id} updated',
   'vscode.extensions.removed': '{id} removed',
+  'vscode.extensions.sharedComponents': 'Shared Components',
+  'vscode.extensions.resourceNotGranted':
+    'This extension card does not grant that source or license resource.',
+  'vscode.extensions.sourceOpened': 'Extension source opened.',
+  'vscode.extensions.licenseOpened': 'License file opened.',
 
   'vscode.resolution.topology': 'Topology: {id}',
   'vscode.resolution.extensionHost': 'Extension host: {realm} — {count} facilities',
@@ -336,10 +351,27 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.extensions.installed': 'Расширение {id} установлено',
   'vscode.extensions.installAllConfirm': 'Установить все доступные расширения Modkit ({count})?',
   'vscode.extensions.installedAll': 'Установлены все доступные расширения Modkit ({count}).',
+  'vscode.extensions.gameSupportUnavailable':
+    'Для игры {game} нет опубликованного пакета установки.',
+  'vscode.extensions.gameSupportBlocked': 'Поддержку игры {game} нельзя установить: {reasons}',
+  'vscode.extensions.gameSupportReady':
+    'Все опубликованные средства поддержки игры {game} уже включены.',
+  'vscode.extensions.gameSupportConfirm':
+    'Установить или включить пакеты для игры {game} ({count})?',
+  'vscode.extensions.gameSupportInstalled': 'Поддержка игры {game} установлена и включена.',
+  'vscode.extensions.gameSupportRolledBack':
+    'Поддержка игры {game} не установлена; выполненные изменения отменены.',
+  'vscode.extensions.gameSupportPartial':
+    'Поддержка игры {game} изменена не полностью. Проверьте проблемы расширений и состояние после перезагрузки.',
   'vscode.extensions.installAllPartial':
     'Часть расширений установлена, но операция не завершилась: {message}',
   'vscode.extensions.updated': 'Расширение {id} обновлено',
   'vscode.extensions.removed': 'Расширение {id} удалено',
+  'vscode.extensions.sharedComponents': 'Общие компоненты',
+  'vscode.extensions.resourceNotGranted':
+    'Эта карточка расширения не даёт доступа к такому источнику или файлу лицензии.',
+  'vscode.extensions.sourceOpened': 'Источник расширения открыт.',
+  'vscode.extensions.licenseOpened': 'Файл лицензии открыт.',
 
   'vscode.resolution.topology': 'Топология: {id}',
   'vscode.resolution.extensionHost': 'Хост расширений: {realm} — возможностей: {count}',
@@ -572,7 +604,7 @@ const catalog = (locale: 'en' | 'ru', messages: Readonly<Record<string, string>>
     {
       schema: UI_CATALOG_SCHEMA,
       locale,
-      namespace: 'org.modkitx.app.vscode',
+      namespace: 'modkit.app.vscode',
       messages,
     },
     {

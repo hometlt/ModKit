@@ -59,7 +59,7 @@ function buildSnapshot() {
       rows.push({ id: row[1], name: row[2], kind, status: row[3] })
     }
   }
-  return { source: 'modkitx/docs/MK3/uk-a/component-catalog.md', rows }
+  return { source: 'modkit/docs/MK3/uk-a/component-catalog.md', rows }
 }
 
 const snapshot = buildSnapshot()
@@ -169,7 +169,7 @@ console.log('monaco workers: editor, json')
 const stylesheet = join(repoRoot, 'packages', 'ui', 'styles', 'modkit-ui.css')
 if (!existsSync(stylesheet)) {
   console.error(
-    'missing packages/ui/styles/modkit-ui.css — run pnpm --filter @modkitx-x3/ui tokens:emit',
+    'missing packages/ui/styles/modkit-ui.css — run pnpm --filter @modkit/ui tokens:emit',
   )
   process.exit(1)
 }
@@ -214,7 +214,7 @@ cpSync(join(repoRoot, 'apps', 'web', 'public', 'favicon-32.png'), join(dist, 'fa
 
 // The served policy arrives as a header, which page script cannot read. Stamp the exact text the
 // server will send so the CSP probe asserts against the policy actually in force, not a guess.
-const { VIEWER_CSP_TRUSTED_EDITOR_TEXT } = await import('@modkitx-x3/ui/viewer')
+const { VIEWER_CSP_TRUSTED_EDITOR_TEXT } = await import('@modkit/ui/viewer')
 writeFileSync(
   join(dist, 'index.html'),
   readFileSync(join(galleryRoot, 'index.html'), 'utf8').replace(
@@ -239,7 +239,7 @@ if (process.argv.includes('--serve')) {
   // The gallery embeds the trusted Monaco backend, so it serves VIEWER_CSP_TRUSTED_EDITOR —
   // strict everywhere except `style-src 'unsafe-inline'`, which Monaco's injected theme needs.
   // Untrusted viewers keep the strict VIEWER_CSP; this relaxation does not reach them.
-  const { VIEWER_CSP_TRUSTED_EDITOR: VIEWER_CSP } = await import('@modkitx-x3/ui/viewer')
+  const { VIEWER_CSP_TRUSTED_EDITOR: VIEWER_CSP } = await import('@modkit/ui/viewer')
   const policy = () => {
     const directives = Object.entries(VIEWER_CSP).map(([name, value]) => {
       const kebab = name.replace(/[A-Z]/gu, match => `-${match.toLowerCase()}`)

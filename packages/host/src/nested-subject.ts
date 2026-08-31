@@ -23,7 +23,7 @@
  * surfaces routes through this function unchanged.
  */
 
-import { ModkitError, throwIfAborted, type Diagnostic } from '@modkitx-x3/core'
+import { ModkitError, throwIfAborted, type Diagnostic } from '@modkit/core'
 import {
   type AnyDescriptor,
   type AssetSession,
@@ -35,7 +35,7 @@ import {
   type ResourceBudget,
   type RuntimeTarget,
   type ServiceContractDefinitionRegistry,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { ExecutionBackendRegistry } from './execution/backend.js'
 import type { Inventory } from './inventory.js'
 import {

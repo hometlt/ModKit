@@ -2,9 +2,9 @@ import {
   createInspectionCodec,
   createRasterImageSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/tga'
+const ID = 'modkit/tga'
 const FOOTER = Object.freeze([
   0x54, 0x52, 0x55, 0x45, 0x56, 0x49, 0x53, 0x49, 0x4f, 0x4e, 0x2d, 0x58, 0x46, 0x49, 0x4c, 0x45,
   0x2e, 0x00,

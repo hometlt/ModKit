@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "id": "org.modkitx/service-provider-contribution",
+    "id": "modkit/service-provider-contribution",
     "major": 1
   },
-  "id": "org.modkitx/json-syntax-default",
+  "id": "modkit/json-syntax-default",
   "displayName": "json syntax provider",
   "runtimeVariants": [
     {

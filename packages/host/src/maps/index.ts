@@ -7,7 +7,7 @@ import {
   diagnostic,
   errorCode,
   type Diagnostic,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import {
   MAP_PREVIEW_PREPARATION_CONTRACT,
   MAP_PREVIEW_PREPARATION_MATCHER_PROFILE,
@@ -41,8 +41,8 @@ import {
   type ResolvedMapWorkspaceSnapshot,
   type WorldScenePageRequest,
   type WorldSceneSource,
-} from '@modkitx-x3/sdk/maps'
-import { resolveModWorkspaceGraph } from '@modkitx-x3/sdk'
+} from '@modkit/sdk/maps'
+import { resolveModWorkspaceGraph } from '@modkit/sdk'
 import type {
   AnyDescriptor,
   AssetDiagnosticWire,
@@ -68,7 +68,7 @@ import type {
   ServiceFacetMatchResult,
   ServiceFacetMatcherProfile,
   SubjectSelectorSource,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { CompanionOrigin } from '../input-resolution.js'
 import type { Inventory } from '../inventory.js'
@@ -86,7 +86,7 @@ import { createCandidateWorldSceneLease } from './world-source.js'
 export { createCandidateWorldSceneLease } from './world-source.js'
 
 /** Owner id under which the standard semantic-map definition is registered. */
-export const STANDARD_MAPS_OWNER = 'org.modkitx/maps'
+export const STANDARD_MAPS_OWNER = 'modkit/maps'
 
 const OFFER_KEYS = new Set(['gameIds'])
 const REQUEST_KEYS = new Set(['gameId'])
@@ -210,13 +210,13 @@ export const MAP_SEMANTIC_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wi
   offerFacet: Object.freeze({
     presence: 'required',
     schema: Object.freeze({
-      $ref: 'https://schemas.modkitx.org/x3/map-semantic-offer.v1.schema.json',
+      $ref: 'https://schemas.modkit.org/x3/map-semantic-offer.v1.schema.json',
     }),
   }),
   requestFacet: Object.freeze({
     presence: 'required',
     schema: Object.freeze({
-      $ref: 'https://schemas.modkitx.org/x3/map-semantic-request.v1.schema.json',
+      $ref: 'https://schemas.modkit.org/x3/map-semantic-request.v1.schema.json',
     }),
   }),
   matching: Object.freeze({ profile: MAP_SEMANTIC_MATCHER_PROFILE, major: 1 }),
@@ -243,13 +243,13 @@ export const RESOLVED_MAP_WORKSPACE_CONTRACT_DEFINITION: ServiceContractDefiniti
     offerFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/map-semantic-offer.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/map-semantic-offer.v1.schema.json',
       }),
     }),
     requestFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/map-semantic-request.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/map-semantic-request.v1.schema.json',
       }),
     }),
     matching: Object.freeze({ profile: MAP_SEMANTIC_MATCHER_PROFILE, major: 1 }),
@@ -281,13 +281,13 @@ export const MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION: ServiceContractDefinit
     offerFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/map-preview-preparation-offer.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/map-preview-preparation-offer.v1.schema.json',
       }),
     }),
     requestFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/map-preview-preparation-request.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/map-preview-preparation-request.v1.schema.json',
       }),
     }),
     matching: Object.freeze({

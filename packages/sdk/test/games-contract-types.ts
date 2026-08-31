@@ -1,12 +1,12 @@
-import type { ServiceProviderContributionSpecV1 } from '@modkitx-x3/sdk/formats'
+import type { ServiceProviderContributionSpecV1 } from '@modkit/sdk/formats'
 import type {
   GameInstallationDiscovery,
   GameInstallationDiscoveryRequest,
   GameInstallationProviderModule,
   GameLaunchPlanner,
   GameLaunchProviderModule,
-} from '@modkitx-x3/sdk/games'
-import type { TypedServiceContractRequest } from '@modkitx-x3/sdk/service-contracts'
+} from '@modkit/sdk/games'
+import type { TypedServiceContractRequest } from '@modkit/sdk/service-contracts'
 
 export const gamealphaRoute = {
   contract: 'common.game/installation-discovery',

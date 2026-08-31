@@ -30,7 +30,7 @@ import type {
   JsonValue,
   MetadataEntry,
   OperationResult,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 // ---------------------------------------------------------------------------------------------
 // reading the descriptor

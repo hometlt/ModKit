@@ -25,7 +25,7 @@
  * injected, so the pipeline is unit-tested in Node with `data:` URLs and really evaluated there.
  */
 
-import { ModkitError } from '@modkitx-x3/core'
+import { ModkitError } from '@modkit/core'
 import { parse } from 'es-module-lexer/js'
 
 export interface VerifiedLoaderOptions {

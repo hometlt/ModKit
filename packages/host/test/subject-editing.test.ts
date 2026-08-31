@@ -16,21 +16,21 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
-import { uint64 } from '@modkitx-x3/core'
+import { uint64 } from '@modkit/core'
 import {
   createHostTopology,
   type ChangeSet,
   type FidelityEvidence,
   type PermissionGrant,
   type Writer,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   createHostServiceResolver,
   createSubjectEditing,
   createGrantSnapshot,
   type ExtensionInput,
   type OpenedSubject,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import {
   createFileEditingBackend,
   createNodeSubjectServices,
@@ -41,7 +41,7 @@ import {
   openFileArtifactSource,
   workerBackendPolicy,
   type NodeSubjectServices,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const imagesDir = join(repoRoot, 'extensions', 'images')
@@ -134,9 +134,9 @@ function pngEvidence(opened: OpenedSubject, artifactDigest: string): FidelityEvi
     roundTrip: 'byte-identical',
     preservesUnknownData: true,
     evidenceId: 'png-set-text-v1',
-    corpusId: 'modkitX3/apps/web/public/favicon-32.png',
+    corpusId: 'modkit/apps/web/public/favicon-32.png',
     corpusDigest: `sha256:${createHash('sha256').update(readFileSync(favicon)).digest('hex')}`,
-    conformanceProfile: 'org.modkitx/codec-contribution-v1' as never,
+    conformanceProfile: 'modkit/codec-contribution-v1' as never,
     writer: {
       providerId: opened.selected.contributionId,
       providerVersion: '1.0.0',
@@ -187,8 +187,8 @@ describe('ADR-HOST-002 Path A — codec operation → edit plan → host commit'
     expect(invoked.output.kind).toBe('edit-plan')
 
     const artifactDigest = (await services()).inventory.extensions
-      .find(item => item.contributions.some(c => c.manifest?.id === 'org.modkitx/image-png'))
-      ?.contributions.find(c => c.manifest?.id === 'org.modkitx/image-png')?.record?.artifactDigest
+      .find(item => item.contributions.some(c => c.manifest?.id === 'modkit/image-png'))
+      ?.contributions.find(c => c.manifest?.id === 'modkit/image-png')?.record?.artifactDigest
     if (artifactDigest === undefined) throw new Error('no images artifact digest')
     const backend = createFileEditingBackend({ roots: [scratch] })
     const editing = createSubjectEditing({

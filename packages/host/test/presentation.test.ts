@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canonicalJsonStringify } from '@modkitx-x3/core'
+import { canonicalJsonStringify } from '@modkit/core'
 import {
   bindingId,
   presentationSlotId,
@@ -7,13 +7,13 @@ import {
   type PresentationPlan,
   type PresentationSlot,
   type ResolvedBinding,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   assembleSubjectDescriptor,
   createPresentationPlanValidator,
   resolvePresentationPlan,
   switchPresentationStage,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import { resolvedDescriptorWire } from './fixtures/descriptor.js'
 
 interface Ticket {
@@ -160,7 +160,7 @@ describe('A-6 global presentation catalog resolution', () => {
         return {
           ...value,
           offerId: 'hex',
-          providerId: 'org.modkitx/hex',
+          providerId: 'modkit/hex',
           variantId: 'host',
           ticket: { bindingId: value.bindingId, offerId: 'hex', digest: 'host' },
         } as ResolvedBinding<Ticket>

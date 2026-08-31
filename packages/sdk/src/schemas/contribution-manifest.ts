@@ -4,7 +4,7 @@
  * authored only here in runtime variants). `RuntimeVariantDeclaration` shape belongs to
  * MK3/24 §3; `ScopedContractRequirement` to MK3/23 §8; `executionProfile` enum is the
  * Q77 owner decision (2026-08-13). Runtime-target dictionaries are the live v1 wire
- * facts ported from modkitx packages/assets/src/codec-manifest.ts@f10666be (PORTED.md).
+ * facts ported from modkit packages/assets/src/codec-manifest.ts@f10666be (PORTED.md).
  */
 
 import {
@@ -13,7 +13,7 @@ import {
   SEGMENT_PATTERN,
   VERSION_RANGE_PATTERN,
 } from './patterns.js'
-import { deepFreeze } from '@modkitx-x3/core'
+import { deepFreeze } from '@modkit/core'
 import { requirementScopeSchema } from './extension-manifest.js'
 
 export const EXECUTION_PROFILES = Object.freeze([
@@ -83,7 +83,7 @@ export const runtimeTargetConstraintSchema = {
 /** MK3/24 §3 — the one authored source of requested permissions/targets/profiles. */
 export const runtimeVariantDeclarationSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json',
+  $id: 'https://schemas.modkit.org/x3/runtime-variant-declaration.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: ['variantId', 'entrypoint', 'target', 'executionProfile', 'requestedPermissionClasses'],
@@ -101,7 +101,7 @@ export const runtimeVariantDeclarationSchema = {
 /** MK3/23 §8 — contract-based requirement with explicit mode/scope. */
 export const scopedContractRequirementSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json',
+  $id: 'https://schemas.modkit.org/x3/scoped-contract-requirement.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: ['contract', 'major', 'mode', 'scope'],
@@ -116,7 +116,7 @@ export const scopedContractRequirementSchema = {
 
 export const contributionManifestSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://schemas.modkitx.org/x3/contribution-manifest.v1.schema.json',
+  $id: 'https://schemas.modkit.org/x3/contribution-manifest.v1.schema.json',
   type: 'object',
   additionalProperties: false,
   required: ['schemaVersion', 'contract', 'id', 'displayName', 'spec'],

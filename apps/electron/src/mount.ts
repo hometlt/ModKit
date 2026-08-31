@@ -11,7 +11,7 @@
  * wire-shaped values the subject RPC returned. The values are the ones the viewer reads; only the
  * nominal types differ.
  */
-import type { ViewerModule } from '@modkitx-x3/sdk'
+import type { ViewerModule } from '@modkit/sdk'
 
 export interface MountedViewer {
   unmount(): Promise<void> | void
@@ -38,8 +38,8 @@ export async function mountViewer(request: MountRequest): Promise<MountedViewer>
   const slot = {
     slotId: request.slotId,
     kind: 'primary',
-    contributionId: 'org.modkitx.app.electron/inspector',
-    extensionId: 'org.modkitx.app.electron',
+    contributionId: 'modkit.app.electron/inspector',
+    extensionId: 'modkit.app.electron',
     priority: 100,
     bindings:
       request.contract === undefined

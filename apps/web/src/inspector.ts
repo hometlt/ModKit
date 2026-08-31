@@ -27,11 +27,11 @@ import type {
   ViewerMount,
   ViewerModule,
   ViewerSources,
-} from '@modkitx-x3/sdk'
-import { presentationSlotId } from '@modkitx-x3/sdk'
-import { diagnosticsPanel, operationToolbar } from '@modkitx-x3/ui/panels'
-import { element, setViewerText } from '@modkitx-x3/ui/viewer'
-import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
+} from '@modkit/sdk'
+import { presentationSlotId } from '@modkit/sdk'
+import { diagnosticsPanel, operationToolbar } from '@modkit/ui/panels'
+import { element, setViewerText } from '@modkit/ui/viewer'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkit/ui/localization'
 
 import { declaredMutatingOperations, editOffer } from './edit-operations.js'
 
@@ -87,8 +87,8 @@ function panelSlot(slotId: string, kind: PresentationSlot['kind']): Presentation
   return {
     slotId: presentationSlotId(slotId),
     kind,
-    contributionId: 'org.modkitx.app.web/inspector',
-    extensionId: 'org.modkitx.app.web',
+    contributionId: 'modkit.app.web/inspector',
+    extensionId: 'modkit.app.web',
     priority: 100,
     bindings: [],
   }

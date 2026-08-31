@@ -6,8 +6,8 @@ import type {
   EditorMount,
   Lease,
   TextDataSource,
-} from '@modkitx-x3/sdk'
-import { bindingId } from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
+import { bindingId } from '@modkit/sdk'
 import {
   createSurface,
   element,

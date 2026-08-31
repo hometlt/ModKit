@@ -1,4 +1,4 @@
-import { defineLinkedExtension } from '@modkitx-x3/host'
+import { defineLinkedExtension } from '@modkit/host'
 
 import providerManifest from '../contributions/provider-software.json' with { type: 'json' }
 import packageJson from '../package.json' with { type: 'json' }

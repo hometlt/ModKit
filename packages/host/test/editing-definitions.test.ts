@@ -4,7 +4,7 @@
  * resolver-facing offer projection, the gate and dispatch.
  */
 import { describe, expect, it } from 'vitest'
-import { contractId } from '@modkitx-x3/core'
+import { contractId } from '@modkit/core'
 import {
   STANDARD_EDITING_SURFACES,
   WRITER_CONTRACT_ID,
@@ -14,14 +14,14 @@ import {
   type OperationPermissionDeclaration,
   writerOfferSatisfies,
   writerSelectionKey,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   createBundledServiceDefinitionRegistry,
   registerStandardEditingDefinitions,
   STANDARD_EDITING_OWNER,
   WRITER_FACET_MATCHER,
-} from '@modkitx-x3/host'
-import { createStandardSurfaceRegistry } from '@modkitx-x3/host/execution'
+} from '@modkit/host'
+import { createStandardSurfaceRegistry } from '@modkit/host/execution'
 
 const request = {
   formatId: 'png',

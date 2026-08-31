@@ -4,11 +4,11 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { afterEach, describe, expect, it } from 'vitest'
-import { isCancellation } from '@modkitx-x3/core'
-import { artifactNamespaceSourceFromVfsMount, createVfsCompanionOrigin } from '@modkitx-x3/host'
-import { VirtualFileSystem } from '@modkitx-x3/vfs'
-import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
-import { createMemoryVfsProvider } from '@modkitx-x3/vfs/providers/memory'
+import { isCancellation } from '@modkit/core'
+import { artifactNamespaceSourceFromVfsMount, createVfsCompanionOrigin } from '@modkit/host'
+import { VirtualFileSystem } from '@modkit/vfs'
+import { createFileVfsProvider } from '@modkit/vfs/providers/file'
+import { createMemoryVfsProvider } from '@modkit/vfs/providers/memory'
 
 const temporaryRoots: string[] = []
 

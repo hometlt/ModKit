@@ -1,13 +1,13 @@
 // MK3 vocabulary restated for tooling that must not import X3 packages (the MK2 allocation
-// report runs against a foreign checkout). Cross-checked against @modkitx-x3/core + sdk by
+// report runs against a foreign checkout). Cross-checked against @modkit/core + sdk by
 // scripts/test/report-mk2-allocation.test.ts so it cannot drift silently.
 
-/** MK3/23 §3 grammars, identical to @modkitx-x3/core ids.ts. */
+/** MK3/23 §3 grammars, identical to @modkit/core ids.ts. */
 export const SEGMENT = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 export const QUALIFIED =
   /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*$/
 
-/** @modkitx-x3/core OPERATION_DOMAINS + SHARED_OPERATION_IDS (AC §5). */
+/** @modkit/core OPERATION_DOMAINS + SHARED_OPERATION_IDS (AC §5). */
 export const OPERATION_DOMAINS = [
   'archive',
   'model',
@@ -55,7 +55,7 @@ export const SHARED_OPERATION_IDS = [
   'content.mount',
 ]
 
-/** @modkitx-x3/sdk PERMISSION_CLASSES (MK3/24 §3 canonical taxonomy). */
+/** @modkit/sdk PERMISSION_CLASSES (MK3/24 §3 canonical taxonomy). */
 export const PERMISSION_CLASSES = [
   'read-source',
   'write-source',

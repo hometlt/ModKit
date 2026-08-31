@@ -2,15 +2,15 @@ import {
   AUXILIARY_DATA_SOURCE_SURFACES,
   STANDARD_DATA_SOURCE_SURFACES,
   STANDARD_EDITING_SURFACES
-} from "./chunks/chunk-R2Q24OJL.js";
+} from "./chunks/chunk-ZIDZRETG.js";
 import {
   ModkitError,
   OperationCancelledError,
   isModkitError,
   isQualifiedId,
   isSegment
-} from "./chunks/chunk-GZ3IOGQJ.js";
-import "./chunks/chunk-XNBPKNUQ.js";
+} from "./chunks/chunk-X2ENULEB.js";
+import "./chunks/chunk-CQ52GEHY.js";
 
 // packages/host/dist/browser/worker-entry.js
 var CAPABILITY_RPC_DOMAIN = "x3.host/rpc";

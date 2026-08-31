@@ -1,4 +1,4 @@
-import { RUNTIME_PROVIDER_CONTRACT, RUNTIME_SESSION_CONTRACT } from '@modkitx-x3/sdk/runtime'
+import { RUNTIME_PROVIDER_CONTRACT, RUNTIME_SESSION_CONTRACT } from '@modkit/sdk/runtime'
 
 let createSessionCalls = 0
 

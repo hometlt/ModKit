@@ -9,7 +9,7 @@
  * list the value; proposed to the owner rather than silently merged into 'no-offer'.
  */
 
-import type { ContractId, ExtensionId, OperationId, ProviderId } from '@modkitx-x3/core'
+import type { ContractId, ExtensionId, OperationId, ProviderId } from '@modkit/core'
 import type {
   Architecture,
   OperatingSystem,

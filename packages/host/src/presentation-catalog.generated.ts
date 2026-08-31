@@ -4,8 +4,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'code',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui-monaco/code-stage',
-      extensionId: 'org.modkitx/code',
+      contributionId: 'modkit.ui-monaco/code-stage',
+      extensionId: 'modkit/code',
       priority: 400,
       singletonGroup: 'stage.code',
       bindings: Object.freeze([
@@ -29,8 +29,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'video',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/video-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/video-stage',
+      extensionId: 'modkit/ui',
       priority: 370,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([
@@ -53,8 +53,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'image',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/image-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/image-stage',
+      extensionId: 'modkit/ui',
       priority: 360,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([
@@ -77,8 +77,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'audio',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/audio-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/audio-stage',
+      extensionId: 'modkit/ui',
       priority: 360,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([
@@ -101,8 +101,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'world',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/world-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/world-stage',
+      extensionId: 'modkit/ui',
       priority: 380,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([
@@ -124,8 +124,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'model',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/model-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/model-stage',
+      extensionId: 'modkit/ui',
       priority: 350,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([
@@ -182,8 +182,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'vector',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/vector-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/vector-stage',
+      extensionId: 'modkit/ui',
       priority: 350,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([
@@ -206,8 +206,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'table',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/table-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/table-stage',
+      extensionId: 'modkit/ui',
       priority: 320,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([
@@ -230,8 +230,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'card',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/subject-card-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/subject-card-stage',
+      extensionId: 'modkit/ui',
       priority: 390,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([
@@ -253,8 +253,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'calculations',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/subject-calculations-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/subject-calculations-stage',
+      extensionId: 'modkit/ui',
       priority: 380,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([
@@ -276,8 +276,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'relations',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/relation-graph-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/relation-graph-stage',
+      extensionId: 'modkit/ui',
       priority: 370,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([
@@ -299,8 +299,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'template',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/game-template-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/game-template-stage',
+      extensionId: 'modkit/ui',
       priority: 365,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([]),
@@ -317,8 +317,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'tree',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/tree-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/tree-stage',
+      extensionId: 'modkit/ui',
       priority: 300,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([
@@ -341,8 +341,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'text',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/bounded-text-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/bounded-text-stage',
+      extensionId: 'modkit/ui',
       priority: 220,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([
@@ -370,8 +370,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'virtual-text',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/virtual-text-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/virtual-text-stage',
+      extensionId: 'modkit/ui',
       priority: 120,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([
@@ -395,8 +395,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'hex',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/hex-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/hex-stage',
+      extensionId: 'modkit/ui',
       priority: 40,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([
@@ -418,8 +418,8 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
     slot: Object.freeze({
       slotId: 'archive',
       kind: 'stage',
-      contributionId: 'org.modkitx.ui/archive-stage',
-      extensionId: 'org.modkitx/ui',
+      contributionId: 'modkit.ui/archive-stage',
+      extensionId: 'modkit/ui',
       priority: 340,
       singletonGroup: 'center-stage',
       bindings: Object.freeze([

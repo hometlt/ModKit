@@ -2,7 +2,7 @@
  * Browser-side application smoke.
  *
  * The Node roots (server, automation host, Electron main, VS Code extension host, CLI) are booted
- * by `scripts/verify-apps.mjs`; they import `@modkitx-x3/host/node` and have no meaning here.
+ * by `scripts/verify-apps.mjs`; they import `@modkit/host/node` and have no meaning here.
  * This page covers the one application type whose facilities are decided by the browser itself:
  * `apps/web`. It boots the real root, so the numbers shown are this browser's actual capabilities.
  *
@@ -10,7 +10,7 @@
  * so only the packages linked at the repo root resolve by name. Same pattern the gallery uses.
  */
 import { createWebApp, mountWebWorkbench, probeWebFacilities } from '../../../apps/web/src/index.js'
-import { applyTheme } from '@modkitx-x3/ui/tokens'
+import { applyTheme } from '@modkit/ui/tokens'
 
 const $ = <T extends HTMLElement>(selector: string): T => {
   const node = document.querySelector<T>(selector)

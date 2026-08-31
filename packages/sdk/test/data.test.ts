@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveDataCatalog, type DataEntityPatch, type DataTypeSchema } from '@modkitx-x3/sdk/data'
+import { resolveDataCatalog, type DataEntityPatch, type DataTypeSchema } from '@modkit/sdk/data'
 
 const schemas: readonly DataTypeSchema[] = [
   { typeId: 'Base', fields: [] },

@@ -29,22 +29,22 @@
 
 import { randomUUID } from 'node:crypto'
 import { resolve } from 'node:path'
-import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
+import { ModkitError, type Diagnostic } from '@modkit/core'
 import type {
   AssetSession,
   NamespaceEntry,
   NamespaceEntrySource,
   PermissionGrant,
   ResourceBudget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   nestedSubjectServices,
   openNestedSubject,
   subjectOpenSnapshot,
   type SubjectOpener,
   type SubjectServices,
-} from '@modkitx-x3/host'
-import { createPathSubjectOpener } from '@modkitx-x3/host/node'
+} from '@modkit/host'
+import { createPathSubjectOpener } from '@modkit/host/node'
 
 import { findArchiveExtractOperation } from './archive-entry.js'
 import {

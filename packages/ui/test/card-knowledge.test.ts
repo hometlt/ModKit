@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import type { KnowledgeTarget, SubjectFactsSource } from '@modkitx-x3/sdk'
-import { loadSubjectCardSections } from '../src/card/index.js'
+import type { KnowledgeTarget, SubjectFactsSource } from '@modkit/sdk'
+import { loadSubjectCardSections, type CardSection } from '../src/card/index.js'
 import { createUiLocalizer } from '../src/localization/index.js'
+
+const linkSection = (
+  section: CardSection,
+): section is Extract<CardSection, { readonly kind: 'links' }> => section.kind === 'links'
 
 describe('subject-card knowledge projection', () => {
   it('preserves the exact codec-owned knowledge target on the projected field', async () => {
@@ -57,7 +61,7 @@ describe('subject-card knowledge projection', () => {
           snapshotId: 'extension-fixture',
           identity: {
             subjectId: 'contribution-fixture',
-            kind: 'org.modkitx/contribution',
+            kind: 'modkit/contribution',
             label: 'Fixture contribution',
             origins: [],
           },
@@ -90,6 +94,102 @@ describe('subject-card knowledge projection', () => {
     expect(russian.find(section => section.kind === 'fields')).toMatchObject({
       title: 'Обзор',
       fields: [{ name: 'Идентификатор возможности' }, { name: 'Codec-owned field' }],
+    })
+  })
+
+  it('renders extension contributions as navigable links instead of JSON fields', async () => {
+    const source: SubjectFactsSource = {
+      async summary() {
+        return {
+          snapshotId: 'extension-fixture',
+          identity: {
+            subjectId: 'extension-fixture',
+            kind: 'modkit/extension',
+            label: 'Fixture extension',
+            origins: [],
+          },
+          groupCount: 1,
+          relationCount: 1,
+        }
+      },
+      async groups() {
+        return { items: [{ id: 'contributions', label: 'Contributions', factCount: 1 }] }
+      },
+      async facts() {
+        return {
+          items: [
+            {
+              id: 'contribution.fixture',
+              label: 'Fixture codec',
+              value: { subjectId: 'fixture-codec' },
+              provenance: [],
+            },
+          ],
+        }
+      },
+      async relations() {
+        return {
+          items: [
+            {
+              role: 'owns',
+              subjectId: 'fixture-codec',
+              label: 'Fixture codec',
+              kind: 'modkit/contribution',
+            },
+          ],
+        }
+      },
+    }
+
+    const english = await loadSubjectCardSections(source, { localizer: createUiLocalizer('en') })
+    const russian = await loadSubjectCardSections(source, { localizer: createUiLocalizer('ru') })
+    expect(
+      english.filter(section => linkSection(section) && section.id === 'contributions'),
+    ).toEqual([
+      expect.objectContaining({
+        kind: 'links',
+        title: 'Contributions',
+        links: [expect.objectContaining({ label: 'Fixture codec', href: 'fixture-codec' })],
+      }),
+    ])
+    expect(
+      russian.find(section => linkSection(section) && section.id === 'contributions'),
+    ).toMatchObject({
+      kind: 'links',
+      title: 'Возможности',
+    })
+  })
+
+  it('promotes a projected description into the card header', async () => {
+    const source: SubjectFactsSource = {
+      async summary() {
+        return {
+          snapshotId: 'described',
+          identity: { subjectId: 'described', kind: 'entity', label: 'Described', origins: [] },
+          groupCount: 1,
+          relationCount: 0,
+        }
+      },
+      async groups() {
+        return { items: [{ id: 'overview', label: 'Overview', factCount: 1 }] }
+      },
+      async facts() {
+        return {
+          items: [
+            { id: 'description', label: 'Description', value: 'Readable summary.', provenance: [] },
+          ],
+        }
+      },
+      async relations() {
+        return { items: [] }
+      },
+    }
+
+    const sections = await loadSubjectCardSections(source)
+    expect(sections[0]).toMatchObject({
+      kind: 'header',
+      title: 'Described',
+      description: 'Readable summary.',
     })
   })
 })

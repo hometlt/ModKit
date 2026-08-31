@@ -49,10 +49,10 @@ beforeAll(async () => {
   const built = await build({
     stdin: {
       contents: `
-        import * as ui from '@modkitx-x3/ui';
-        import * as browserHost from '@modkitx-x3/testkit/browser';
-        import * as host from '@modkitx-x3/host';
-        import { plainTextCodec } from './examples/modkit-extension-x3-plain-text/src/codec.js';
+        import * as ui from '@modkit/ui';
+        import * as browserHost from '@modkit/testkit/browser';
+        import * as host from '@modkit/host';
+        import { plainTextCodec } from './examples/modkit-extension-plain-text/src/codec.js';
         ${imports}
         const codecFactories = {
           ${codecFactories}
@@ -230,8 +230,8 @@ describe('13C real-browser viewer host', () => {
       const slot = {
         slotId: 'bounded',
         kind: 'stage',
-        contributionId: 'org.modkitx.ui/bounded-text-stage',
-        extensionId: 'org.modkitx/ui',
+        contributionId: 'modkit.ui/bounded-text-stage',
+        extensionId: 'modkit/ui',
         priority: 220,
         bindings: [{ bindingId: 'text', contract: 'common.view/text-data-source', major: 1 }],
       }
@@ -310,8 +310,8 @@ describe('13C real-browser viewer host', () => {
       const slot = {
         slotId: 'virtual',
         kind: 'stage',
-        contributionId: 'org.modkitx.ui/virtual-text-stage',
-        extensionId: 'org.modkitx/ui',
+        contributionId: 'modkit.ui/virtual-text-stage',
+        extensionId: 'modkit/ui',
         priority: 120,
         bindings: [{ bindingId: 'text', contract: 'common.view/text-data-source', major: 1 }],
       }
@@ -362,8 +362,8 @@ describe('13C real-browser viewer host', () => {
         slot: {
           slotId: 'hex',
           kind: 'stage',
-          contributionId: 'org.modkitx.ui/hex-stage',
-          extensionId: 'org.modkitx/ui',
+          contributionId: 'modkit.ui/hex-stage',
+          extensionId: 'modkit/ui',
           priority: 40,
           bindings: [{ bindingId: 'bytes', contract: 'common.view/byte-range-source', major: 1 }],
         },
@@ -409,8 +409,8 @@ describe('13C real-browser viewer host', () => {
         slot: {
           slotId: 'tree',
           kind: 'stage',
-          contributionId: 'org.modkitx.ui/tree-stage',
-          extensionId: 'org.modkitx/ui',
+          contributionId: 'modkit.ui/tree-stage',
+          extensionId: 'modkit/ui',
           priority: 300,
           bindings: [{ bindingId: 'tree', contract: 'common.view/tree-data-source', major: 1 }],
         },
@@ -457,8 +457,8 @@ describe('13C real-browser viewer host', () => {
         slot: {
           slotId: 'table',
           kind: 'stage',
-          contributionId: 'org.modkitx.ui/table-stage',
-          extensionId: 'org.modkitx/ui',
+          contributionId: 'modkit.ui/table-stage',
+          extensionId: 'modkit/ui',
           priority: 320,
           bindings: [{ bindingId: 'table', contract: 'common.view/table-data-source', major: 1 }],
         },
@@ -576,8 +576,8 @@ describe('13C real-browser viewer host', () => {
       const slot = {
         slotId: 'table',
         kind: 'stage',
-        contributionId: 'org.modkitx.ui/table-stage',
-        extensionId: 'org.modkitx/ui',
+        contributionId: 'modkit.ui/table-stage',
+        extensionId: 'modkit/ui',
         priority: 320,
         bindings: [{ bindingId: 'table', contract: 'common.view/table-data-source', major: 1 }],
       }
@@ -607,7 +607,7 @@ describe('13C real-browser viewer host', () => {
         },
         operations: { async invoke() {}, async dispose() {} },
         knowledge,
-        modules: { 'org.modkitx.ui/table-stage': modkit.ui['tableViewer'] },
+        modules: { 'modkit.ui/table-stage': modkit.ui['tableViewer'] },
       })
       const cells = [...root.querySelectorAll('td')]
       cells[0]?.dispatchEvent(new MouseEvent('mouseenter'))
@@ -652,8 +652,8 @@ describe('13C real-browser viewer host', () => {
       const slot = {
         slotId: 'table',
         kind: 'stage',
-        contributionId: 'org.modkitx.ui/table-stage',
-        extensionId: 'org.modkitx/ui',
+        contributionId: 'modkit.ui/table-stage',
+        extensionId: 'modkit/ui',
         priority: 320,
         bindings: [{ bindingId: 'table', contract: 'common.view/table-data-source', major: 1 }],
       }
@@ -928,8 +928,8 @@ describe('13C real-browser viewer host', () => {
         slot: {
           slotId: 'relations',
           kind: 'stage',
-          contributionId: 'org.modkitx.ui/relation-graph-stage',
-          extensionId: 'org.modkitx/ui',
+          contributionId: 'modkit.ui/relation-graph-stage',
+          extensionId: 'modkit/ui',
           priority: 300,
           bindings: [
             {
@@ -1092,8 +1092,8 @@ describe('13C real-browser viewer host', () => {
         slot: {
           slotId: 'card',
           kind: 'stage',
-          contributionId: 'org.modkitx.ui/subject-card-stage',
-          extensionId: 'org.modkitx/ui',
+          contributionId: 'modkit.ui/subject-card-stage',
+          extensionId: 'modkit/ui',
           priority: 390,
           bindings: [
             { bindingId: 'facts', contract: 'common.view/subject-facts-source', major: 1 },
@@ -1114,8 +1114,8 @@ describe('13C real-browser viewer host', () => {
         slot: {
           slotId: 'calculations',
           kind: 'stage',
-          contributionId: 'org.modkitx.ui/subject-calculations-stage',
-          extensionId: 'org.modkitx/ui',
+          contributionId: 'modkit.ui/subject-calculations-stage',
+          extensionId: 'modkit/ui',
           priority: 380,
           bindings: [
             {
@@ -1172,8 +1172,8 @@ describe('13C real-browser viewer host', () => {
         slot: {
           slotId: 'template',
           kind: 'stage',
-          contributionId: 'org.modkitx.ui/game-template-stage',
-          extensionId: 'org.modkitx/ui',
+          contributionId: 'modkit.ui/game-template-stage',
+          extensionId: 'modkit/ui',
           priority: 365,
           bindings: [],
         },
@@ -1269,8 +1269,8 @@ describe('13C real-browser viewer host', () => {
       const textSlot = {
         slotId: 'text',
         kind: 'stage',
-        contributionId: 'org.modkitx.ui/bounded-text-stage',
-        extensionId: 'org.modkitx/ui',
+        contributionId: 'modkit.ui/bounded-text-stage',
+        extensionId: 'modkit/ui',
         priority: 220,
         singletonGroup: 'center-stage',
         bindings: [
@@ -1280,8 +1280,8 @@ describe('13C real-browser viewer host', () => {
       const hexSlot = {
         slotId: 'hex',
         kind: 'stage',
-        contributionId: 'org.modkitx.ui/hex-stage',
-        extensionId: 'org.modkitx/ui',
+        contributionId: 'modkit.ui/hex-stage',
+        extensionId: 'modkit/ui',
         priority: 40,
         singletonGroup: 'center-stage',
         bindings: [
@@ -1324,8 +1324,8 @@ describe('13C real-browser viewer host', () => {
         sources,
         operations: { async invoke() {}, async dispose() {} },
         modules: {
-          'org.modkitx.ui/bounded-text-stage': ui['boundedTextViewer'],
-          'org.modkitx.ui/hex-stage': ui['hexViewer'],
+          'modkit.ui/bounded-text-stage': ui['boundedTextViewer'],
+          'modkit.ui/hex-stage': ui['hexViewer'],
         },
       })
       const assetOpenCount = 1
@@ -1556,7 +1556,7 @@ describe('13C real-browser viewer host', () => {
               slotId: `slot-${contributionId}`,
               kind: 'stage',
               contributionId,
-              extensionId: 'org.modkitx/ui',
+              extensionId: 'modkit/ui',
               priority: 300,
               singletonGroup: 'center-stage',
               bindings: [binding],
@@ -1610,7 +1610,7 @@ describe('13C real-browser viewer host', () => {
       const plain = await renderSession(
         plainSession as never,
         'common.view/text-data-source',
-        'org.modkitx.ui/bounded-text-stage',
+        'modkit.ui/bounded-text-stage',
         modkit.ui['boundedTextViewer'],
       )
 
@@ -1658,7 +1658,7 @@ describe('13C real-browser viewer host', () => {
         const rendered = await renderSession(
           session,
           table ? 'common.view/table-data-source' : 'common.view/tree-data-source',
-          table ? 'org.modkitx.ui/table-stage' : 'org.modkitx.ui/tree-stage',
+          table ? 'modkit.ui/table-stage' : 'modkit.ui/tree-stage',
           table ? modkit.ui['tableViewer'] : modkit.ui['treeViewer'],
         )
         renderedFormats.push({
@@ -1691,8 +1691,8 @@ describe('13C real-browser viewer host', () => {
           {
             slotId: 'unknown-hex',
             kind: 'fallback',
-            contributionId: 'org.modkitx.ui/unknown-binary-fallback',
-            extensionId: 'org.modkitx/ui',
+            contributionId: 'modkit.ui/unknown-binary-fallback',
+            extensionId: 'modkit/ui',
             priority: -100,
             bindings: [fallbackBinding],
             eligible: true,
@@ -1735,7 +1735,7 @@ describe('13C real-browser viewer host', () => {
           },
         },
         operations: { async invoke() {}, async dispose() {} },
-        modules: { 'org.modkitx.ui/unknown-binary-fallback': modkit.ui['hexViewer'] },
+        modules: { 'modkit.ui/unknown-binary-fallback': modkit.ui['hexViewer'] },
       })
       const unknown = {
         rendered: root.textContent ?? '',
@@ -1766,7 +1766,7 @@ describe('13C real-browser viewer host', () => {
     }
     expect(result.unknown).toMatchObject({
       subjectUri: 'memory://unknown.bin',
-      fallback: 'org.modkitx.ui/unknown-binary-fallback',
+      fallback: 'modkit.ui/unknown-binary-fallback',
     })
     expect(result.unknown.rendered).toContain('00 ff 10 20')
     const cspViolations = await page.evaluate(
@@ -1829,7 +1829,7 @@ describe('13C real-browser viewer host', () => {
       const panelRoot = document.createElement('div')
       const toolbarRoot = document.createElement('div')
       root.append(panelRoot, toolbarRoot)
-      const base = { extensionId: 'org.modkitx/ui', priority: 100, bindings: [] }
+      const base = { extensionId: 'modkit/ui', priority: 100, bindings: [] }
       await (ui['diagnosticsPanel'] as { mount(args: unknown): Promise<unknown> }).mount({
         container: panelRoot,
         descriptor,
@@ -1837,7 +1837,7 @@ describe('13C real-browser viewer host', () => {
           ...base,
           slotId: 'd',
           kind: 'panel',
-          contributionId: 'org.modkitx.ui/diagnostics-panel',
+          contributionId: 'modkit.ui/diagnostics-panel',
         },
         sources: {},
         operations,
@@ -1849,7 +1849,7 @@ describe('13C real-browser viewer host', () => {
           ...base,
           slotId: 'o',
           kind: 'toolbar',
-          contributionId: 'org.modkitx.ui/operation-toolbar',
+          contributionId: 'modkit.ui/operation-toolbar',
         },
         sources: {},
         operations,
@@ -1983,8 +1983,8 @@ describe('13C real-browser viewer host', () => {
         slot: {
           slotId: 'transport',
           kind: 'transport',
-          contributionId: 'org.modkitx.ui/transport-bar',
-          extensionId: 'org.modkitx/ui',
+          contributionId: 'modkit.ui/transport-bar',
+          extensionId: 'modkit/ui',
           priority: 100,
           bindings: [
             { bindingId: 'transport', contract: 'common.view/transport-source', major: 1 },
@@ -1999,8 +1999,8 @@ describe('13C real-browser viewer host', () => {
         slot: {
           slotId: 'namespace',
           kind: 'tree',
-          contributionId: 'org.modkitx.ui/namespace-tree',
-          extensionId: 'org.modkitx/ui',
+          contributionId: 'modkit.ui/namespace-tree',
+          extensionId: 'modkit/ui',
           priority: 200,
           bindings: [
             {
@@ -2123,11 +2123,11 @@ describe('13C real-browser viewer host', () => {
         roundTrip: 'byte-identical',
         preservesUnknownData: true,
         evidenceId: 'browser-editor-v1',
-        corpusId: 'org.modkitx/browser-editor',
+        corpusId: 'modkit/browser-editor',
         corpusDigest: 'sha256:corpus',
-        conformanceProfile: 'org.modkitx/browser-editor-v1',
+        conformanceProfile: 'modkit/browser-editor-v1',
         writer: {
-          providerId: 'org.modkitx/browser-writer',
+          providerId: 'modkit/browser-writer',
           providerVersion: '1.0.0',
           artifactDigest: 'sha256:writer',
           formatId: 'text',
@@ -2287,7 +2287,7 @@ describe('13C real-browser viewer host', () => {
     expect(
       await page.evaluate(async () => {
         const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
-        const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+        const typed = ui as unknown as typeof import('@modkit/ui')
         return typed.requestEditorSave(document.querySelector('#app') as HTMLElement)
       }),
     ).toBe(true)
@@ -2344,7 +2344,7 @@ describe('13C real-browser viewer host', () => {
     await reset()
     const result = await page.evaluate(async () => {
       const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
-      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const typed = ui as unknown as typeof import('@modkit/ui')
       const root = document.querySelector('#app') as HTMLElement
       const state = {
         opens: 0,
@@ -2453,7 +2453,7 @@ describe('13C real-browser viewer host', () => {
     await reset()
     const result = await page.evaluate(async () => {
       const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
-      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const typed = ui as unknown as typeof import('@modkit/ui')
       const root = document.querySelector('#app') as HTMLElement
       const opened: { id: string; size?: number }[] = []
       const bytes = new TextEncoder().encode('hello')
@@ -2520,7 +2520,7 @@ describe('13C real-browser viewer host', () => {
     await reset()
     await page.evaluate(async () => {
       const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
-      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const typed = ui as unknown as typeof import('@modkit/ui')
       const root = document.querySelector('#app') as HTMLElement
       const text = new TextEncoder().encode('fallback text')
       const preview = typed.createCodecPreview({
@@ -2571,11 +2571,11 @@ describe('13C real-browser viewer host', () => {
     await page.setViewportSize({ width: 1000, height: 700 })
     await page.evaluate(async () => {
       const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
-      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const typed = ui as unknown as typeof import('@modkit/ui')
       const root = document.querySelector('#app') as HTMLElement
       root.style.setProperty('height', '600px')
       let mounts = 0
-      const preview: import('@modkitx-x3/ui').PreviewResolver = {
+      const preview: import('@modkit/ui').PreviewResolver = {
         supported: [],
         async open(container, entry) {
           mounts += 1
@@ -2636,7 +2636,7 @@ describe('13C real-browser viewer host', () => {
     await page.evaluate(async () => {
       const fixture = (
         globalThis as unknown as {
-          tabsFixture: { area: import('@modkitx-x3/ui').EditorArea; mounts: () => number }
+          tabsFixture: { area: import('@modkit/ui').EditorArea; mounts: () => number }
         }
       ).tabsFixture
       await fixture.area.open({ id: '/first.txt', name: 'first.txt', directory: false })
@@ -2660,11 +2660,11 @@ describe('13C real-browser viewer host', () => {
     await page.setViewportSize({ width: 1000, height: 700 })
     await page.evaluate(async () => {
       const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
-      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const typed = ui as unknown as typeof import('@modkit/ui')
       const root = document.querySelector('#app') as HTMLElement
       root.style.setProperty('height', '600px')
 
-      const preview: import('@modkitx-x3/ui').PreviewResolver = {
+      const preview: import('@modkit/ui').PreviewResolver = {
         supported: [],
         async open(container, entry) {
           container.textContent = entry.name
@@ -2729,11 +2729,11 @@ describe('13C real-browser viewer host', () => {
     await reset()
     await page.evaluate(async () => {
       const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
-      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const typed = ui as unknown as typeof import('@modkit/ui')
       const root = document.querySelector('#app') as HTMLElement
       let unmounts = 0
       let saves = 0
-      const preview: import('@modkitx-x3/ui').PreviewResolver = {
+      const preview: import('@modkit/ui').PreviewResolver = {
         supported: [],
         async open(container, entry) {
           let active = 'text'
@@ -2814,7 +2814,7 @@ describe('13C real-browser viewer host', () => {
     await page.evaluate(async () => {
       const fixture = (
         globalThis as unknown as {
-          editorAreaFixture: { area: import('@modkitx-x3/ui').EditorArea }
+          editorAreaFixture: { area: import('@modkit/ui').EditorArea }
         }
       ).editorAreaFixture
       fixture.area.split()
@@ -2841,7 +2841,7 @@ describe('13C real-browser viewer host', () => {
     await reset()
     const result = await page.evaluate(async () => {
       const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
-      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const typed = ui as unknown as typeof import('@modkit/ui')
       const root = document.querySelector('#app') as HTMLElement
       const store = typed.createMemorySettingsStore({
         ...typed.DEFAULT_SETTINGS,
@@ -2915,7 +2915,7 @@ describe('13C real-browser viewer host', () => {
     await reset()
     await page.evaluate(async () => {
       const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
-      const typed = ui as unknown as typeof import('@modkitx-x3/ui')
+      const typed = ui as unknown as typeof import('@modkit/ui')
       const root = document.querySelector('#app') as HTMLElement
       const primitiveCalls: string[] = []
       let releases = 0
@@ -3006,8 +3006,8 @@ describe('13C real-browser viewer host', () => {
       const slot = {
         slotId: 'model',
         kind: 'stage',
-        contributionId: 'org.modkitx.ui/model-stage',
-        extensionId: 'org.modkitx/ui',
+        contributionId: 'modkit.ui/model-stage',
+        extensionId: 'modkit/ui',
         priority: 100,
         bindings: Object.keys(values).map(contract => ({
           bindingId: contract,

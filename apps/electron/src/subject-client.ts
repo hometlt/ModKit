@@ -16,8 +16,8 @@ import {
   type SubjectClientOpenResult,
   type SubjectPreviewSession,
   type SubjectRpcClient,
-} from '@modkitx-x3/host'
-import type { MessagePortLike } from '@modkitx-x3/host/execution'
+} from '@modkit/host'
+import type { MessagePortLike } from '@modkit/host/execution'
 
 import { ELECTRON_SUBJECT_SERVICES_URL } from './subject-rpc.js'
 
@@ -40,7 +40,7 @@ export async function connectElectronSubjectClient(
     port: options.port as MessagePortLike,
     session: options.session,
     moduleUrl: ELECTRON_SUBJECT_SERVICES_URL,
-    contributionId: 'org.modkitx.app.electron/subject-services',
+    contributionId: 'modkit.app.electron/subject-services',
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
 }

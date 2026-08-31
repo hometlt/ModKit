@@ -1,11 +1,11 @@
-import type { ServiceProviderContributionSpecV1 } from '@modkitx-x3/sdk/formats'
+import type { ServiceProviderContributionSpecV1 } from '@modkit/sdk/formats'
 import type {
   RuntimeBudget,
   RuntimeExecutionResult,
   RuntimeProvider,
   RuntimeProviderModule,
-} from '@modkitx-x3/sdk/runtime'
-import type { TypedServiceContractRequest } from '@modkitx-x3/sdk/service-contracts'
+} from '@modkit/sdk/runtime'
+import type { TypedServiceContractRequest } from '@modkit/sdk/service-contracts'
 
 export const counterRoute = {
   contract: 'common.runtime/provider',

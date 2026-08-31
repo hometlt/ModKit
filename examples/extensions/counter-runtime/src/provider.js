@@ -1,6 +1,6 @@
-import { RUNTIME_PROVIDER_CONTRACT, RUNTIME_SESSION_CONTRACT } from '@modkitx-x3/sdk/runtime'
+import { RUNTIME_PROVIDER_CONTRACT, RUNTIME_SESSION_CONTRACT } from '@modkit/sdk/runtime'
 
-const PROVIDER_ID = 'org.modkitx.reference/counter-runtime'
+const PROVIDER_ID = 'modkit.reference/counter-runtime'
 const RUNTIME_ID = 'reference.counter'
 const RESOURCE_KEYS = new Set(['wallTimeMs', 'ticks', 'memoryBytes'])
 const BUDGET_KEYS = new Set(['maxWallTimeMs', 'maxTicks', 'maxMemoryBytes'])

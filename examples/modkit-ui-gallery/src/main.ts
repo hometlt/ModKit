@@ -1,7 +1,7 @@
 /**
  * Modkit UI gallery — a conformance harness, not a mock-up.
  *
- * Every viewer card mounts the shipped `ViewerModule` from `@modkitx-x3/ui` against a real
+ * Every viewer card mounts the shipped `ViewerModule` from `@modkit/ui` against a real
  * in-memory data source through the same `mount/update/unmount` ABI the host uses. Nothing here
  * re-implements a viewer, and nothing pretends a planned component exists.
  */
@@ -25,7 +25,7 @@ import {
   transportViewer,
   diagnosticsPanel,
   operationToolbar,
-} from '@modkitx-x3/ui'
+} from '@modkit/ui'
 import {
   TOKENS,
   cssVariableName,
@@ -35,9 +35,9 @@ import {
   readToken,
   PALETTES,
   type TokenName,
-} from '@modkitx-x3/ui/tokens'
-import { PARTS, STATES, auditParts } from '@modkitx-x3/ui/viewer'
-import type { ViewerModule, ViewerMount } from '@modkitx-x3/sdk'
+} from '@modkit/ui/tokens'
+import { PARTS, STATES, auditParts } from '@modkit/ui/viewer'
+import type { ViewerModule, ViewerMount } from '@modkit/sdk'
 import {
   CASES,
   namespaceSource,
@@ -102,15 +102,15 @@ import {
 } from './media-fixtures.js'
 
 const MODULES: Readonly<Record<string, ViewerModule>> = {
-  'org.modkitx.ui/bounded-text-stage': boundedTextViewer,
-  'org.modkitx.ui/virtual-text-stage': virtualTextViewer,
-  'org.modkitx.ui/hex-stage': hexViewer,
-  'org.modkitx.ui/tree-stage': treeViewer,
-  'org.modkitx.ui/table-stage': tableViewer,
-  'org.modkitx.ui/namespace-tree': namespaceViewer,
-  'org.modkitx.ui/transport-bar': transportViewer,
-  'org.modkitx.ui/diagnostics-panel': diagnosticsPanel,
-  'org.modkitx.ui/operation-toolbar': operationToolbar,
+  'modkit.ui/bounded-text-stage': boundedTextViewer,
+  'modkit.ui/virtual-text-stage': virtualTextViewer,
+  'modkit.ui/hex-stage': hexViewer,
+  'modkit.ui/tree-stage': treeViewer,
+  'modkit.ui/table-stage': tableViewer,
+  'modkit.ui/namespace-tree': namespaceViewer,
+  'modkit.ui/transport-bar': transportViewer,
+  'modkit.ui/diagnostics-panel': diagnosticsPanel,
+  'modkit.ui/operation-toolbar': operationToolbar,
 }
 
 /**
@@ -381,8 +381,8 @@ async function mountCase(item: GalleryCase, index: number): Promise<void> {
 
 async function mountPanels(): Promise<void> {
   for (const [id, module, title] of [
-    ['org.modkitx.ui/diagnostics-panel', diagnosticsPanel, 'Diagnostics panel'],
-    ['org.modkitx.ui/operation-toolbar', operationToolbar, 'Operation toolbar'],
+    ['modkit.ui/diagnostics-panel', diagnosticsPanel, 'Diagnostics panel'],
+    ['modkit.ui/operation-toolbar', operationToolbar, 'Operation toolbar'],
   ] as const) {
     const card = el('article', 'card')
     const head = el('header', 'card-head')
@@ -399,7 +399,7 @@ async function mountPanels(): Promise<void> {
         slotId: id.split('/')[1],
         kind: id.includes('toolbar') ? 'toolbar' : 'panel',
         contributionId: id,
-        extensionId: 'org.modkitx.ui',
+        extensionId: 'modkit.ui',
         priority: 10,
         bindings: [],
       } as never,
@@ -449,7 +449,7 @@ async function mountAssetCard(
         slotId: contributionId.split('/')[1],
         kind: 'stage',
         contributionId,
-        extensionId: 'org.modkitx.ui',
+        extensionId: 'modkit.ui',
         priority: 100,
         bindings: contract === undefined ? [] : [{ bindingId: 'data', contract, major: 1 }],
       } as never,
@@ -492,7 +492,7 @@ async function mountAssetCard(
 async function mountAssetViewers(): Promise<void> {
   await mountAssetCard(
     'Metadata panel',
-    'org.modkitx.ui/metadata-panel',
+    'modkit.ui/metadata-panel',
     metadataPanel,
     'Metadata groups straight off the descriptor — the MK2 asset metadata pane.',
     undefined,
@@ -500,7 +500,7 @@ async function mountAssetViewers(): Promise<void> {
   )
   await mountAssetCard(
     'Properties table',
-    'org.modkitx.ui/properties-table',
+    'modkit.ui/properties-table',
     propertiesTable,
     'Identity, observed traits with their parameters, and declared operations.',
     undefined,
@@ -508,7 +508,7 @@ async function mountAssetViewers(): Promise<void> {
   )
   await mountAssetCard(
     'Archive explorer',
-    'org.modkitx.ui/namespace-tree',
+    'modkit.ui/namespace-tree',
     namespaceViewer,
     'Container entries over the namespace contract — the zip/mpq/casc surface.',
     namespaceSource(),
@@ -518,7 +518,7 @@ async function mountAssetViewers(): Promise<void> {
     const png = await makePngBytes()
     await mountAssetCard(
       'Image stage (PNG)',
-      'org.modkitx.ui/image-stage',
+      'modkit.ui/image-stage',
       imageViewer,
       'Real PNG bytes decoded by the platform. Fit/zoom, backdrop cycle, channel isolation.',
       rasterImageSourceFor(png, 256, 160),
@@ -529,7 +529,7 @@ async function mountAssetViewers(): Promise<void> {
   }
   await mountAssetCard(
     'Vector stage (SVG)',
-    'org.modkitx.ui/vector-stage',
+    'modkit.ui/vector-stage',
     vectorViewer,
     'Secure-static profile only: rendered as an isolated image, never injected into the DOM.',
     vectorSceneSourceFor(),
@@ -537,7 +537,7 @@ async function mountAssetViewers(): Promise<void> {
   )
   await mountAssetCard(
     'Model stage (cube)',
-    'org.modkitx.ui/model-stage',
+    'modkit.ui/model-stage',
     modelViewer,
     'Real positions and indices through the model-scene contract; no GPU renderer required.',
     modelSceneSourceFor(),
@@ -553,7 +553,7 @@ async function mountAssetViewers(): Promise<void> {
     ])
     await mountAssetCard(
       'Video stage (WebM)',
-      'org.modkitx.ui/video-stage',
+      'modkit.ui/video-stage',
       videoViewer,
       'A WebM recorded in-page by the platform encoder, played back through the media contract.',
       videoMediaSourceFor(webm.bytes, webm.mediaType, 1200),
@@ -564,7 +564,7 @@ async function mountAssetViewers(): Promise<void> {
   }
   await mountAssetCard(
     'Audio stage (WAV)',
-    'org.modkitx.ui/audio-stage',
+    'modkit.ui/audio-stage',
     audioViewer,
     'Real PCM bytes decoded by WebAudio; only bucket peaks are kept, never the sample buffer.',
     audioMediaSourceFor(makeWavBytes(), 3000),
@@ -662,8 +662,8 @@ async function mountFormat(spec: FormatSpec): Promise<void> {
         slot: {
           slotId: `${spec.id}-${label.toLowerCase()}`,
           kind: 'stage',
-          contributionId: `org.modkitx.ui/${label.toLowerCase()}`,
-          extensionId: 'org.modkitx.ui',
+          contributionId: `modkit.ui/${label.toLowerCase()}`,
+          extensionId: 'modkit.ui',
           priority: 100,
           bindings: [{ bindingId: 'data', contract, major: 1 }],
         } as never,

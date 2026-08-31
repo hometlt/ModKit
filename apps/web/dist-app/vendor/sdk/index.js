@@ -15,6 +15,7 @@ import {
   ENCODED_MEDIA_SURFACE_CONTRACT,
   ENCODED_MEDIA_SURFACE_ID,
   EXECUTION_PROFILES,
+  EXTENSION_VFS_PATH_PATTERN,
   GAME_INSTALLATION_DISCOVERY_CONTRACT,
   GAME_INSTALLATION_MATCHER_PROFILE,
   GAME_LAUNCH_PLAN_CONTRACT,
@@ -96,8 +97,13 @@ import {
   definePresentationPlan,
   editorContributionSpecV1Schema,
   expandContributionManifests,
+  extensionAssetReferenceSchema,
+  extensionGameDescriptorSchema,
   extensionManifestSchema,
+  extensionPresentationSchema,
   extensionRequirementSchema,
+  extensionSourceDetailsSchema,
+  extensionVendorDescriptorSchema,
   foreignDataSource,
   foreignServiceContractId,
   grantValidity,
@@ -122,6 +128,9 @@ import {
   modkitBlockSchema,
   narrowGrant,
   normalizeExtensionManifest,
+  normalizeModkitIdentifier,
+  normalizeModkitPackageSpecifier,
+  normalizeModkitSourceIdentifier,
   operationScopedPermissionClasses,
   presentationSlotId,
   requirementScopeSchema,
@@ -154,9 +163,9 @@ import {
   writerOfferV1Schema,
   writerRequirementV1Schema,
   writerSelectionKey
-} from "../../chunks/chunk-R2Q24OJL.js";
-import "../../chunks/chunk-GZ3IOGQJ.js";
-import "../../chunks/chunk-XNBPKNUQ.js";
+} from "../../chunks/chunk-ZIDZRETG.js";
+import "../../chunks/chunk-X2ENULEB.js";
+import "../../chunks/chunk-CQ52GEHY.js";
 export {
   A1_SPEC_SCHEMA_ENTRIES,
   ADMITTED_DATA_SOURCE_CONTRACTS,
@@ -174,6 +183,7 @@ export {
   ENCODED_MEDIA_SURFACE_CONTRACT,
   ENCODED_MEDIA_SURFACE_ID,
   EXECUTION_PROFILES,
+  EXTENSION_VFS_PATH_PATTERN,
   GAME_INSTALLATION_DISCOVERY_CONTRACT,
   GAME_INSTALLATION_MATCHER_PROFILE,
   GAME_LAUNCH_PLAN_CONTRACT,
@@ -255,8 +265,13 @@ export {
   definePresentationPlan,
   editorContributionSpecV1Schema,
   expandContributionManifests,
+  extensionAssetReferenceSchema,
+  extensionGameDescriptorSchema,
   extensionManifestSchema,
+  extensionPresentationSchema,
   extensionRequirementSchema,
+  extensionSourceDetailsSchema,
+  extensionVendorDescriptorSchema,
   foreignDataSource,
   foreignServiceContractId,
   grantValidity,
@@ -281,6 +296,9 @@ export {
   modkitBlockSchema,
   narrowGrant,
   normalizeExtensionManifest,
+  normalizeModkitIdentifier,
+  normalizeModkitPackageSpecifier,
+  normalizeModkitSourceIdentifier,
   operationScopedPermissionClasses,
   presentationSlotId,
   requirementScopeSchema,

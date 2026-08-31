@@ -1,4 +1,4 @@
-import { VirtualFileSystem, collectStream, normalizeVfsPath } from '@modkitx-x3/vfs'
+import { VirtualFileSystem, collectStream, normalizeVfsPath } from '@modkit/vfs'
 
 import { ExtensionManagerError, normalizeRepositoryManifest } from './schema.js'
 

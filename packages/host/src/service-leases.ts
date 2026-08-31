@@ -10,7 +10,7 @@
  * shared implementation plus `createHostServiceResolver`, the product-facing resolver port.
  */
 
-import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
+import { ModkitError, type Diagnostic } from '@modkit/core'
 import type {
   ContributionContext,
   ContractResolverPort,
@@ -25,7 +25,7 @@ import type {
   RuntimeTarget,
   SelectedServiceOffer,
   ServiceContractDefinitionRegistry,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { ExecutionBackendRegistry } from './execution/backend.js'
 import type { Inventory } from './inventory.js'
 import { offersFromInventory } from './offers.js'

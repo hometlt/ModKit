@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { afterEach, describe, expect, it } from 'vitest'
-import { isCancellation, isModkitError } from '@modkitx-x3/core'
+import { isCancellation, isModkitError } from '@modkit/core'
 import {
   collectStream,
   DEFAULT_VFS_LIMITS,
@@ -13,11 +13,11 @@ import {
   type VfsMount,
   type VfsNode,
   type VfsProvider,
-} from '@modkitx-x3/vfs'
-import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
-import { createBrowserFileVfsProvider } from '@modkitx-x3/vfs/providers/browser-file'
-import { createHttpVfsProvider, type HttpFetch } from '@modkitx-x3/vfs/providers/http'
-import { createMemoryVfsProvider } from '@modkitx-x3/vfs/providers/memory'
+} from '@modkit/vfs'
+import { createFileVfsProvider } from '@modkit/vfs/providers/file'
+import { createBrowserFileVfsProvider } from '@modkit/vfs/providers/browser-file'
+import { createHttpVfsProvider, type HttpFetch } from '@modkit/vfs/providers/http'
+import { createMemoryVfsProvider } from '@modkit/vfs/providers/memory'
 
 const temporaryRoots: string[] = []
 

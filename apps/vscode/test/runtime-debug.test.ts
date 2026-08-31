@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { RuntimeSessionV2, RuntimeSnapshot } from '@modkitx-x3/sdk/runtime'
+import type { RuntimeSessionV2, RuntimeSnapshot } from '@modkit/sdk/runtime'
 import {
   createRuntimeDebugController,
   type RuntimeDebugControllerOptions,
@@ -450,7 +450,7 @@ describe('generic VS Code runtime controller', () => {
     const root = join(import.meta.dirname, '..')
     const adapter = readFileSync(join(root, 'src', 'runtime-debug.ts'), 'utf8')
     const extension = readFileSync(join(root, 'src', 'extension.ts'), 'utf8')
-    expect(adapter).toContain("from '@modkitx-x3/host/runtime'")
+    expect(adapter).toContain("from '@modkit/host/runtime'")
     expect(adapter).not.toMatch(/extensions[\\/]|publisher-specific/iu)
     expect(extension).toContain("registerCommand('modkit.runtime.control'")
     const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {

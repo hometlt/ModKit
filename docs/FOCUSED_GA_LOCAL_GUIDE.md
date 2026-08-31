@@ -48,8 +48,8 @@ pnpm profiles:check
 Для локального просмотра можно запустить одно приложение из исходников:
 
 ```powershell
-pnpm --filter @modkitx-x3/web-app app:serve
-pnpm --filter @modkitx-x3/electron-app start
+pnpm --filter @modkit/web-app app:serve
+pnpm --filter @modkit/electron-app start
 ```
 
 PWA печатает локальный адрес. Electron здесь запускается из checkout; готового системного
@@ -59,7 +59,7 @@ PWA печатает локальный адрес. Electron здесь запу
 игру:
 
 ```powershell
-pnpm --filter @modkitx-x3/modkit-vscode smoke:vscode -- --focused-ga
+pnpm --filter @modkit/modkit-vscode smoke:vscode -- --focused-ga
 ```
 
 ## 3. Выберите профиль
@@ -92,10 +92,13 @@ pnpm --filter @modkitx-x3/modkit-vscode smoke:vscode -- --focused-ga
 процессах:
 
 ```powershell
-$env:MODKITX_SC2_ROOT = 'C:\Games\StarCraft II'
-$env:MODKITX_WARZONE_ROOT = 'C:\Games\Warzone 2100'
-pnpm --filter @modkitx-x3/electron-app start
+$env:MODKIT_SC2_ROOT = 'C:\Games\StarCraft II'
+$env:MODKIT_WARZONE_ROOT = 'C:\Games\Warzone 2100'
+pnpm --filter @modkit/electron-app start
 ```
+
+Старые имена `MODKITX_SC2_ROOT` и `MODKITX_WARZONE_ROOT` пока работают как устаревшие варианты
+для совместимости, но новые настройки и сценарии должны использовать имена без `X`.
 
 Указывайте корень игры, а не отдельный архив или исполняемый файл. Плохой путь не становится
 доверенной установкой: проверка просто отвергнет его и продолжит со следующими кандидатами.
@@ -109,10 +112,10 @@ pnpm --filter @modkitx-x3/electron-app start
   "appearance": { "theme": "modkit-dark", "density": "compact" },
   "extensions": [],
   "gameInstallations": {
-    "org.modkitx/starcraft-2": {
+    "modkit/starcraft-2": {
       "configuredPaths": ["C:\\Games\\StarCraft II"]
     },
-    "org.modkitx/warzone-2100": {
+    "modkit/warzone-2100": {
       "configuredPaths": ["C:\\Games\\Warzone 2100"]
     }
   },

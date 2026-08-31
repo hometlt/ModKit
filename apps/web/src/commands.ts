@@ -12,9 +12,9 @@ import {
   type SubjectCommandEndpoint,
   type SubjectOpenRequest,
   type SubjectServices,
-} from '@modkitx-x3/host'
-import { revisionIdFromRef, type ArtifactByteSource } from '@modkitx-x3/sdk'
-import type { ExplorerEntry } from '@modkitx-x3/ui/explorer'
+} from '@modkit/host'
+import { revisionIdFromRef, type ArtifactByteSource } from '@modkit/sdk'
+import type { ExplorerEntry } from '@modkit/ui/explorer'
 import type { WebFileAccess, WebFileHandleLike, WebPermissionHandleLike } from './files.js'
 
 export const DEFAULT_WEB_COMMAND_MAX_AUTHORIZATIONS = 64
@@ -217,4 +217,4 @@ export function createWebCommandProtocol(
   })
 }
 
-export type { CommandProtocolRunOptions } from '@modkitx-x3/host'
+export type { CommandProtocolRunOptions } from '@modkit/host'

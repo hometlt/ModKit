@@ -12,8 +12,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
-import { defineBuiltinModule, defineLinkedExtension, type LinkedExtension } from '@modkitx-x3/host'
-import { createModkit, type Modkit } from '@modkitx-x3/host/node'
+import { defineBuiltinModule, defineLinkedExtension, type LinkedExtension } from '@modkit/host'
+import { createModkit, type Modkit } from '@modkit/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { images } = (await import(
@@ -46,7 +46,7 @@ async function host(): Promise<Modkit> {
 describe('statically linked extensions (import lane)', () => {
   it('a linked extension opens a subject in-process, and the audit notice says so', async () => {
     const m = await host()
-    expect(m.extensionCoordinates).toContain('org.modkitx/images')
+    expect(m.extensionCoordinates).toContain('modkit/images')
     const path = join(scratch, 'linked.png')
     writeFileSync(path, readFileSync(pngFixture))
     const opened = await m.open(path)
@@ -81,7 +81,7 @@ describe('statically linked extensions (import lane)', () => {
     const m = await host()
     // linked images beside the directory-loaded audio extension, one inventory
     expect(m.extensionCoordinates).toEqual(
-      expect.arrayContaining(['org.modkitx/images', 'org.modkitx/audio']),
+      expect.arrayContaining(['modkit/images', 'modkit/audio']),
     )
   })
 
@@ -115,15 +115,15 @@ describe('statically linked extensions (import lane)', () => {
 
   it('built-in modules use the linked protocol lane but carry an explicit product kind', () => {
     const module = defineBuiltinModule({
-      coordinate: 'org.modkitx/code',
-      packageJson: { name: '@modkitx-x3/code', version: '1.0.0' },
+      coordinate: 'modkit/code',
+      packageJson: { name: '@modkit/code', version: '1.0.0' },
       contributions: [],
       modules: {},
     })
 
     expect(module.kind).toBe('builtin')
-    expect(module.coordinate).toBe('org.modkitx/code')
-    expect(module.input.source).toBe('builtin:org.modkitx/code')
+    expect(module.coordinate).toBe('modkit/code')
+    expect(module.input.source).toBe('builtin:modkit/code')
     expect(module.input.execution).toEqual({ origin: 'bundled', allowTrustedInProcess: true })
   })
 

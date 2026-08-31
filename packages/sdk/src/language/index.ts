@@ -12,7 +12,7 @@ import type { ServiceProviderModule } from '../runtime-abi.js'
 export const LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT = 'common.language/document-analysis' as const
 
 /** Host-owned matcher profile used by the standard language contract definition. */
-export const LANGUAGE_DOCUMENT_MATCHER_PROFILE = 'org.modkitx/language-document-matcher' as const
+export const LANGUAGE_DOCUMENT_MATCHER_PROFILE = 'modkit/language-document-matcher' as const
 
 export interface LanguagePosition {
   /** Zero-based line. */

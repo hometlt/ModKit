@@ -110,7 +110,7 @@ async function buildInto(output, syncManifest) {
      */
     absWorkingDir: repoRoot,
     logLevel: 'warning',
-    // `@modkitx-x3/host` keeps an ESM default that resolves its worker bootstrap through
+    // `@modkit/host` keeps an ESM default that resolves its worker bootstrap through
     // `import.meta.url`. This CommonJS host always supplies the shipped bootstrap explicitly (see
     // `apps/vscode/src/extension.ts`), and the host has a named refusal if another CommonJS
     // consumer omits it. esbuild still warns while lowering that guarded fallback, so silence only
@@ -153,7 +153,7 @@ async function buildInto(output, syncManifest) {
   const stylesheet = join(repoRoot, 'packages', 'ui', 'styles', 'modkit-ui.css')
   if (!existsSync(stylesheet)) {
     console.error(
-      'missing packages/ui/styles/modkit-ui.css — run pnpm --filter @modkitx-x3/ui tokens:emit',
+      'missing packages/ui/styles/modkit-ui.css — run pnpm --filter @modkit/ui tokens:emit',
     )
     process.exit(1)
   }
@@ -168,7 +168,7 @@ async function buildInto(output, syncManifest) {
    * distinction is deliberate.
    *
    * Copying the roots in looked right and was not: an extension root under `extensions`
-   * reaches its SDK through `node_modules/@modkitx-x3`, a workspace link, and a copy without it is
+   * reaches its SDK through `node_modules/@modkit`, a workspace link, and a copy without it is
    * a directory that looks like an extension and cannot run. The first build that did this turned
    * every bundled codec off — PNG, ANI and ASTC all fell back to hex in the smoke — which is a
    * worse failure than the one it was meant to fix, because the artifact looks complete.
@@ -176,7 +176,7 @@ async function buildInto(output, syncManifest) {
    * So what this slice fixes is the *silence*, not the packaging: the host now resolves the named
    * catalog and reports any root it cannot find, and activation fails loudly instead of composing
    * an empty inventory (block-9 receipt, defect 6). Making a packaged build carry runnable roots
-   * needs a dependency decision — vendored `@modkitx-x3` per root, or codecs bundled the way the
+   * needs a dependency decision — vendored `@modkit` per root, or codecs bundled the way the
    * PWA bundles its worker — and that belongs to whoever takes VS Code packaging (13D/14).
    */
 
@@ -260,7 +260,7 @@ if (!check) {
       console.error(
         `dist-app --check: generated output is stale in ${stale.length} file(s): ${stale.join(', ')}`,
       )
-      console.error('Run `pnpm --filter @modkitx-x3/modkit-vscode ext:build`.')
+      console.error('Run `pnpm --filter @modkit/modkit-vscode ext:build`.')
       process.exitCode = 1
     }
     if (process.exitCode !== 1) {

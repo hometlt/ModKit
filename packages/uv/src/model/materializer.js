@@ -29,7 +29,7 @@
  * bytes is optional evidence supplied by the caller, exactly as `ProjectionReceipt` treats digests.
  */
 
-const MATERIALIZER_ID = 'org.modkitx/uvm-materializer'
+const MATERIALIZER_ID = 'modkit/uvm-materializer'
 const MATERIALIZER_VERSION = '1.0.0'
 const PROFILE = 'UVM/core@1.0'
 
@@ -609,7 +609,7 @@ export function materializeUvmCore(projection, request, { digest } = {}) {
       // UV_game_socket's open `extras` is the standards-defined place for publisher identity.
       // The node supplies transform semantics; these two strings make the independent facet's
       // stable id and target join round-trip without a source-format branch in the reader.
-      extras: { modkitx: { id: socket.id, nodeId: socket.nodeId } },
+      extras: { modkit: { id: socket.id, nodeId: socket.nodeId } },
     })
   }
 

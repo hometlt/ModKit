@@ -2,8 +2,7 @@
 
 import type { AnyDescriptor, AssetDiagnostic, AssetOperationId, TraitInstance } from './types.js'
 
-export const V1_PROJECTION_UNAVAILABLE_CODE =
-  'org.modkitx/compat-v1-projection-unavailable' as const
+export const V1_PROJECTION_UNAVAILABLE_CODE = 'modkit/compat-v1-projection-unavailable' as const
 
 export type V1ContributionKind =
   'stage' | 'tree' | 'panel' | 'toolbar' | 'transport' | 'status' | 'fallback'

@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { webcrypto } from 'node:crypto'
-import { LOCALIZATION_CONTRIBUTION_CONTRACT } from '@modkitx-x3/sdk'
+import { LOCALIZATION_CONTRIBUTION_CONTRACT } from '@modkit/sdk'
 import {
   buildInventory,
   createHostContributionContractRegistry,
   type ExtensionInput,
   type Inventory,
-} from '@modkitx-x3/host'
-import { parseUiCatalogDocument } from '@modkitx-x3/ui/localization'
+} from '@modkit/host'
+import { parseUiCatalogDocument } from '@modkit/ui/localization'
 
 import {
   createWebLocalizer,
@@ -87,7 +87,7 @@ async function localizationInventory(
 function languageCatalog(): Uint8Array {
   return encoder.encode(
     JSON.stringify({
-      schema: 'org.modkitx/ui-message-catalog@1',
+      schema: 'modkit/ui-message-catalog@1',
       locale: 'de',
       namespace: 'org.example.pack',
       messages: {
@@ -182,7 +182,7 @@ describe('Web UI localization', () => {
     if (english === undefined) throw new Error('missing English Web catalog')
     const french = parseUiCatalogDocument(
       {
-        schema: 'org.modkitx/ui-message-catalog@1',
+        schema: 'modkit/ui-message-catalog@1',
         locale: 'fr',
         namespace: 'org.example/web-language-pack',
         messages: {

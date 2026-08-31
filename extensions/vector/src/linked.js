@@ -1,4 +1,4 @@
-import { defineLinkedExtension } from '@modkitx-x3/host'
+import { defineLinkedExtension } from '@modkit/host'
 
 import emfManifest from '../contributions/codec-emf.json' with { type: 'json' }
 import svgManifest from '../contributions/codec-svg.json' with { type: 'json' }

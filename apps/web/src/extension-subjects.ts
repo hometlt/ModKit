@@ -10,9 +10,9 @@ import {
   projectExtensionSubjects,
   type ExtensionSubjectCardWireDocument,
   type ExtensionSubjectProjection,
-} from '@modkitx/extension-manager'
-import type { Inventory, InventoryExtension } from '@modkitx-x3/host'
-import type { ContributionManifestV1Wire } from '@modkitx-x3/sdk'
+} from '@modkit/extension-manager'
+import type { Inventory, InventoryExtension } from '@modkit/host'
+import type { ContributionManifestV1Wire } from '@modkit/sdk'
 
 export interface WebExtensionSubjectEntry {
   readonly id: string

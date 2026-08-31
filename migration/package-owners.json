@@ -39,8 +39,8 @@
         "realisedAs": "subpaths",
         "directory": null,
         "bootstrap": false,
-        "contracts": "@modkitx-x3/sdk/runtime",
-        "hostSide": "@modkitx-x3/host/runtime"
+        "contracts": "@modkit/sdk/runtime",
+        "hostSide": "@modkit/host/runtime"
       },
       {
         "unit": "testkit",
@@ -53,8 +53,8 @@
         "realisedAs": "subpaths",
         "directory": null,
         "bootstrap": false,
-        "contracts": "@modkitx-x3/sdk/language",
-        "hostSide": "@modkitx-x3/host/language"
+        "contracts": "@modkit/sdk/language",
+        "hostSide": "@modkit/host/language"
       }
     ]
   },
@@ -106,214 +106,214 @@
   ],
   "legacyPackages": [
     {
-      "package": "@modkitx/agent-tools",
+      "package": "@modkit/agent-tools",
       "owner": "sdk",
       "state": "planned",
       "note": "protocol-neutral operation catalog and agent evaluation contracts; contracts belong to sdk (decision 71). Optional agent closure is block 18."
     },
     {
-      "package": "@modkitx/archives-processing",
+      "package": "@modkit/archives-processing",
       "owner": "extensions/archives",
       "state": "ported",
       "note": "archive codecs are contributions, never platform code (2.3 rule 3)"
     },
     {
-      "package": "@modkitx/assets",
+      "package": "@modkit/assets",
       "owner": "sdk",
       "state": "ported",
       "note": "presentation-neutral asset contracts: sources, descriptors, detection, operation surfaces"
     },
     {
-      "package": "@modkitx/audio-processing",
+      "package": "@modkit/audio-processing",
       "owner": "extensions/audio",
       "state": "ported"
     },
     {
-      "package": "@modkitx/code-viewer",
+      "package": "@modkit/code-viewer",
       "owner": "ui",
       "state": "ported",
       "note": "generic code surface; the language service behind it is sdk/language + host/language"
     },
     {
-      "package": "@modkitx/core",
+      "package": "@modkit/core",
       "owner": "core",
       "state": "ported"
     },
     {
-      "package": "@modkitx/data-processing",
+      "package": "@modkit/data-processing",
       "owner": "extensions/data",
       "state": "ported",
       "note": "plus native Core JSON and the text-ini/text-toml/text-yaml families; one legacy package fanned out to the delimited and structured-text implementations"
     },
     {
-      "package": "@modkitx/documents-processing",
+      "package": "@modkit/documents-processing",
       "owner": "extensions/documents",
       "state": "ported"
     },
     {
-      "package": "@modkitx/embed",
+      "package": "@modkit/embed",
       "owner": "ui",
       "state": "ported",
       "note": "custom elements and headless embedding are generic shell, not an app"
     },
     {
-      "package": "@modkitx/entity-cards",
+      "package": "@modkit/entity-cards",
       "owner": "ui",
       "state": "ported",
       "note": "game-neutral card model"
     },
     {
-      "package": "@modkitx/games",
+      "package": "@modkit/games",
       "owner": "sdk",
       "state": "ported",
       "note": "contracts in sdk/games, discovery/resolution in host/games"
     },
     {
-      "package": "@modkitx/hex-viewer",
+      "package": "@modkit/hex-viewer",
       "owner": "ui",
       "state": "ported"
     },
     {
-      "package": "@modkitx/image-processing",
+      "package": "@modkit/image-processing",
       "owner": "extensions/images",
       "state": "ported"
     },
     {
-      "package": "@modkitx/knowledge",
+      "package": "@modkit/knowledge",
       "owner": "sdk",
       "state": "planned",
       "note": "data-only knowledge/localization packs; contracts only, no runtime"
     },
     {
-      "package": "@modkitx/language-contracts",
+      "package": "@modkit/language-contracts",
       "owner": "sdk",
       "state": "ported",
       "note": "realised as the sdk/language subpath"
     },
     {
-      "package": "@modkitx/layouts-processing",
+      "package": "@modkit/layouts-processing",
       "owner": "extensions/blizzard/starcraft2",
       "state": "ported",
       "note": "SC2 layout formats are one game's formats"
     },
     {
-      "package": "@modkitx/localization-processing",
+      "package": "@modkit/localization-processing",
       "owner": "extensions/blizzard/starcraft2",
       "state": "ported",
       "note": "localized string tables travel with the game that defines them"
     },
     {
-      "package": "@modkitx/lsp",
+      "package": "@modkit/lsp",
       "owner": "lsp",
       "state": "ported",
       "note": "contracts in sdk/language, router and headless connection in host/language; see the zero-move decision"
     },
     {
-      "package": "@modkitx/maps-processing",
+      "package": "@modkit/maps-processing",
       "owner": "extensions/opensource/warzone-2100",
       "state": "ported",
       "note": "plus the SAGE and SC2 map codecs; map readers are per-game contributions"
     },
     {
-      "package": "@modkitx/models-processing",
+      "package": "@modkit/models-processing",
       "owner": "extensions/models",
       "state": "ported",
       "note": "plus blizzard/models and ea/models; the neutral part is the model facet contracts in sdk"
     },
     {
-      "package": "@modkitx/mods-processing",
+      "package": "@modkit/mods-processing",
       "owner": "sdk",
       "state": "ported",
       "note": "contracts in sdk/mods, resolution in host/mods"
     },
     {
-      "package": "@modkitx/rendering-3d",
+      "package": "@modkit/rendering-3d",
       "owner": "scene",
       "state": "ported",
       "note": "the default renderer providers are built into packages/scene; sdk/renderer holds their open contracts"
     },
     {
-      "package": "@modkitx/replays-processing",
+      "package": "@modkit/replays-processing",
       "owner": "extensions",
       "state": "planned",
       "note": "replay codecs; no family yet, arrives with its game vertical"
     },
     {
-      "package": "@modkitx/rts-server",
+      "package": "@modkit/rts-server",
       "owner": "multiverse",
       "state": "planned",
       "note": "lives under apps/rts in legacy; server/session code is Multiverse, and MK3 platform packages must not import it"
     },
     {
-      "package": "@modkitx/rts-shared",
+      "package": "@modkit/rts-shared",
       "owner": "multiverse",
       "state": "planned",
       "note": "net/protocol/session for an RTS: Multiverse, not MK3"
     },
     {
-      "package": "@modkitx/runtime",
+      "package": "@modkit/runtime",
       "owner": "runtime",
       "state": "ported",
       "note": "game-neutral execution contracts in sdk/runtime, routing and leased sessions in host/runtime; see the zero-move decision"
     },
     {
-      "package": "@modkitx/saves-processing",
+      "package": "@modkit/saves-processing",
       "owner": "extensions",
       "state": "planned",
       "note": "save codecs; arrives with its game vertical"
     },
     {
-      "package": "@modkitx/scripts-processing",
+      "package": "@modkit/scripts-processing",
       "owner": "extensions/blizzard/starcraft2",
       "state": "ported",
       "note": "Galaxy and trigger scripts belong to the game that defines them"
     },
     {
-      "package": "@modkitx/semantic",
+      "package": "@modkit/semantic",
       "owner": "sdk",
       "state": "ported",
       "note": "fanned out to the sdk/data, sdk/maps, sdk/mods and sibling contract subpaths"
     },
     {
-      "package": "@modkitx/tsconfig",
+      "package": "@modkit/tsconfig",
       "owner": "tooling",
       "state": "dropped",
       "note": "build configuration is not a publication unit; it has no runtime surface to own"
     },
     {
-      "package": "@modkitx/vector-processing",
+      "package": "@modkit/vector-processing",
       "owner": "extensions/vector",
       "state": "ported"
     },
     {
-      "package": "@modkitx/vfs",
+      "package": "@modkit/vfs",
       "owner": "vfs",
       "state": "ported"
     },
     {
-      "package": "@modkitx/video-processing",
+      "package": "@modkit/video-processing",
       "owner": "extensions/video",
       "state": "ported"
     },
     {
-      "package": "@modkitx/viewer-shell",
+      "package": "@modkit/viewer-shell",
       "owner": "ui",
       "state": "ported"
     },
     {
-      "package": "@modkitx/workbench",
+      "package": "@modkit/workbench",
       "owner": "ui",
       "state": "ported",
       "note": "shared command runtime; the CLI/Electron/VS Code command convergence itself is block 13 work"
     },
     {
-      "package": "@modkitx/world",
+      "package": "@modkit/world",
       "owner": "multiverse",
       "state": "planned",
       "note": "world scheduler and canonical roots are Multiverse runtime (2.5)"
     },
     {
-      "package": "@modkitx/xml",
+      "package": "@modkit/xml",
       "owner": "extensions/data",
       "state": "demoted",
       "note": "owner decision 2026-08-24: demoted from the package catalog to the common data extension. Shared codec helpers may live in optional codec-kit, while the user-visible XML implementation and ownership stay in common/data."
@@ -331,11 +331,11 @@
         "Contracts live in sdk (decision 71, and 2.3 rule 2 'SDK owns contracts'). `sdk/runtime` and `sdk/language` already are those contract surfaces, and moving them into a new package would take contracts out of sdk to satisfy a directory name.",
         "Item 16 fixes `sdk/runtime`, language, games/discovery contracts and host adapters as public SUBPATHS, explicitly 'без дублирования'. A package that re-exported them would be the duplication that line forbids.",
         "Reference profile `sdk-runtime` forbids 'host implementation' and is enforced by scripts/test/minimal-build.test.ts. A `packages/runtime` that carried the routing and leased-session code from `host/runtime` would make the optional runtime unit depend on the largest package in the catalogue — the opposite of what optional-by-profile is for.",
-        "The legacy sources agree with the split rather than with a package. `@modkitx/runtime` was 126 lines of contracts plus a 45-line registry, and its own header says it 'intentionally contains no game AST, simulation, transport, filesystem, or host code'. `@modkitx/lsp` was a protocol module plus a 598-line host router. Contracts and host routing are two different owners in MK3, and they are already in the two packages that own those roles."
+        "The legacy sources agree with the split rather than with a package. `@modkit/runtime` was 126 lines of contracts plus a 45-line registry, and its own header says it 'intentionally contains no game AST, simulation, transport, filesystem, or host code'. `@modkit/lsp` was a protocol module plus a 598-line host router. Contracts and host routing are two different owners in MK3, and they are already in the two packages that own those roles."
       ],
       "consequence": "The catalogue is eight units and six directories. `realisedAs` above records which is which, so the difference is stated rather than looked like an omission.",
       "proposedCanonWording": "2.3 rule 1, appended: «Publication unit — это опубликованная поверхность, а не каталог. `runtime` и `lsp` реализованы как subpaths (`sdk/runtime` + `host/runtime`, `sdk/language` + `host/language`), потому что contracts принадлежат sdk, а resolution — host; отдельный каталог для них означал бы либо вынос contracts из sdk, либо дублирующую re-export оболочку. Каталог из восьми units и шести директорий — это соответствие правилу, а не отступление от него.»",
-      "ifTheOwnerDisagrees": "The mechanical alternative is two directories whose entire content is `export * from '@modkitx-x3/sdk/runtime'` and `export * from '@modkitx-x3/host/runtime'`. That is a one-hour change and it is deliberately not made here: it would add two publication surfaces that duplicate four existing ones, and the import guard would then have to permit runtime -> host, which is the edge the minimal-closure profile exists to forbid."
+      "ifTheOwnerDisagrees": "The mechanical alternative is two directories whose entire content is `export * from '@modkit/sdk/runtime'` and `export * from '@modkit/host/runtime'`. That is a one-hour change and it is deliberately not made here: it would add two publication surfaces that duplicate four existing ones, and the import guard would then have to permit runtime -> host, which is the edge the minimal-closure profile exists to forbid."
     }
   ]
 }

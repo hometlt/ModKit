@@ -13,7 +13,7 @@
  * original bit depth, the interlacing and the filter choices — does not.
  */
 
-import { defineWriter } from '@modkitx-x3/codec-kit'
+import { defineWriter } from '@modkit/codec-kit'
 
 const SIGNATURE = Object.freeze([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 const ascii = new TextEncoder()
@@ -167,7 +167,7 @@ function readRequest(change) {
   }
 }
 
-const PROVIDER_ID = 'org.modkitx/png-encoder-writer'
+const PROVIDER_ID = 'modkit/png-encoder-writer'
 const OFFER_ID = 'png-rgba8-encoder'
 
 const writerModule = defineWriter({
@@ -175,7 +175,7 @@ const writerModule = defineWriter({
   providerVersion: '1.0.0',
   // not a content hash: the artifact this identity names is the module inside the bundled images
   // extension, and a writer module cannot honestly digest itself at runtime
-  artifactDigest: 'artifact:org.modkitx/images#png-encoder-v1',
+  artifactDigest: 'artifact:modkit/images#png-encoder-v1',
   offerId: OFFER_ID,
   formatId: 'png',
   representationId: 'rgba8',

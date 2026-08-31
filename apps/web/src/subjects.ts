@@ -16,11 +16,11 @@
  * unchanged in the page.
  */
 
-import { codeModule } from '@modkitx-x3/code/module'
-import type { Diagnostic } from '@modkitx-x3/core'
-import { sceneModule } from '@modkitx-x3/scene/module'
-import type { ServiceContractDefinitionRegistry } from '@modkitx-x3/sdk'
-import { uvModule } from '@modkitx-x3/uv/module'
+import { codeModule } from '@modkit/code/module'
+import type { Diagnostic } from '@modkit/core'
+import { sceneModule } from '@modkit/scene/module'
+import type { ServiceContractDefinitionRegistry } from '@modkit/sdk'
+import { uvModule } from '@modkit/uv/module'
 import {
   createBundledServiceDefinitionRegistry,
   createExecutionBackendRegistry,
@@ -35,7 +35,7 @@ import {
   type ExtensionOrigin,
   type HostComposition,
   type SubjectServices,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import {
   browserLoaderHooks,
   createBrowserWorkerBackend,
@@ -48,7 +48,7 @@ import {
   type BrowserSubtleCryptoLike,
   type BrowserWorkerConstructorLike,
   type BrowserWorkerPolicy,
-} from '@modkitx-x3/host/browser'
+} from '@modkit/host/browser'
 import {
   containerCoordinate,
   extensionCoordinate,
@@ -161,10 +161,10 @@ export function catalogCoordinates(catalog: WebExtensionCatalog): readonly strin
  * anything not listed here is refused by the loader.
  */
 export const WEB_WORKER_MODULE_MAP: Readonly<Record<string, string>> = Object.freeze({
-  '@modkitx-x3/codec-kit': 'vendor/codec-kit/index.js',
-  '@modkitx-x3/codec-kit/text': 'vendor/codec-kit/text/index.js',
-  '@modkitx-x3/core': 'vendor/core/index.js',
-  '@modkitx-x3/sdk': 'vendor/sdk/index.js',
+  '@modkit/codec-kit': 'vendor/codec-kit/index.js',
+  '@modkit/codec-kit/text': 'vendor/codec-kit/text/index.js',
+  '@modkit/core': 'vendor/core/index.js',
+  '@modkit/sdk': 'vendor/sdk/index.js',
   '@rgrove/parse-xml': 'vendor/parse-xml/index.js',
   'smol-toml': 'vendor/smol-toml/index.js',
   yaml: 'vendor/yaml/index.js',

@@ -21,10 +21,10 @@
  */
 import { defineWriter } from '../support.js'
 
-const PROVIDER_ID = 'org.modkitx/uvt-writer'
+const PROVIDER_ID = 'modkit/uvt-writer'
 const EVIDENCE_ID = 'uv-materializer-uvt-writer-v1'
 /** A module cannot see its own artifact digest; the host inventory carries the attested one. */
-const ARTIFACT_DIGEST = 'x3:org.modkitx/uvt-writer@1.0.0'
+const ARTIFACT_DIGEST = 'x3:modkit/uvt-writer@1.0.0'
 
 const PAYLOAD_KINDS = Object.freeze(['inline', 'staged'])
 
@@ -35,7 +35,7 @@ function validateExport(change) {
   if (change.targets.length === 0 || change.edits.length === 0) {
     diagnostics.push(
       error(
-        'org.modkitx/uvt-writer-change-empty',
+        'modkit/uvt-writer-change-empty',
         'a change set must carry at least one target and one edit',
       ),
     )
@@ -45,7 +45,7 @@ function validateExport(change) {
     if (edit.operation !== 'create') {
       diagnostics.push(
         error(
-          'org.modkitx/uvt-writer-operation-unsupported',
+          'modkit/uvt-writer-operation-unsupported',
           `a UVT export creates new artifacts: «${edit.operation}» is not an export-only edit`,
         ),
       )
@@ -54,7 +54,7 @@ function validateExport(change) {
     if (!targetIds.has(edit.targetId)) {
       diagnostics.push(
         error(
-          'org.modkitx/uvt-writer-target-foreign',
+          'modkit/uvt-writer-target-foreign',
           `edit target «${edit.targetId}» is not a target of this change set`,
         ),
       )
@@ -62,7 +62,7 @@ function validateExport(change) {
     }
     if (typeof edit.newPath !== 'string' || edit.newPath.trim() === '') {
       diagnostics.push(
-        error('org.modkitx/uvt-writer-path-missing', 'a create edit must name the path it writes'),
+        error('modkit/uvt-writer-path-missing', 'a create edit must name the path it writes'),
       )
       continue
     }
@@ -74,7 +74,7 @@ function validateExport(change) {
     if (!edit.newPath.endsWith('.uvt.ktx2') && !edit.newPath.endsWith('.uvt.json')) {
       diagnostics.push(
         error(
-          'org.modkitx/uvt-writer-path-unexpected',
+          'modkit/uvt-writer-path-unexpected',
           `a UVT export writes «<name>.uvt.ktx2» and «<name>.uvt.json»; «${edit.newPath}» is neither`,
         ),
       )
@@ -82,7 +82,7 @@ function validateExport(change) {
     if (!PAYLOAD_KINDS.includes(edit.payload?.kind)) {
       diagnostics.push(
         error(
-          'org.modkitx/uvt-writer-payload-unsupported',
+          'modkit/uvt-writer-payload-unsupported',
           `UVT bytes arrive inline or staged, not as «${String(edit.payload?.kind)}»`,
         ),
       )

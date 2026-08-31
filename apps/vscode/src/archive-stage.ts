@@ -1,14 +1,14 @@
 /** Namespace tree plus a selected-entry byte pane for the VS Code webview. */
-import type { JsonValue, NamespaceEntrySource, ViewerModule } from '@modkitx-x3/sdk'
+import type { JsonValue, NamespaceEntrySource, ViewerModule } from '@modkit/sdk'
 import {
   defineViewerModule,
   element,
   requireContainer,
   setViewerText,
   unknownSourceLease,
-} from '@modkitx-x3/ui/viewer'
-import { createNamespaceViewer } from '@modkitx-x3/ui/namespace'
-import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+} from '@modkit/ui/viewer'
+import { createNamespaceViewer } from '@modkit/ui/namespace'
+import type { UiLocalizer } from '@modkit/ui/localization'
 
 import {
   ARCHIVE_ENTRY_PREVIEW_BYTES,

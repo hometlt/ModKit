@@ -9,11 +9,11 @@
  * same description, and none of them needs a `vscode` module to produce it.
  *
  * (The Electron app carries the same twenty lines. Both would rather import one function from
- * `@modkitx-x3/host`, beside `supportedExtensionHints`, which reads the inventory for exactly the
+ * `@modkit/host`, beside `supportedExtensionHints`, which reads the inventory for exactly the
  * same kind of hint — see the report accompanying this branch.)
  */
-import { compareUtf8 } from '@modkitx-x3/core'
-import type { Inventory } from '@modkitx-x3/host'
+import { compareUtf8 } from '@modkit/core'
+import type { Inventory } from '@modkit/host'
 
 /** The host's own reason a contribution is inert because the user switched it off. */
 export const CONTRIBUTION_DISABLED_CODE = 'x3.host/contribution-disabled'
@@ -23,7 +23,7 @@ export interface ContributionRow {
   /** Qualified contribution id. Absent when the envelope did not parse — then there is no switch. */
   readonly id?: string
   readonly displayName: string
-  /** The contract it implements (`org.modkitx/codec-contribution`) and that contract's major. */
+  /** The contract it implements (`modkit/codec-contribution`) and that contract's major. */
   readonly contract?: string
   readonly contractMajor?: number
   /** `publisher/id` of the extension that ships it. */

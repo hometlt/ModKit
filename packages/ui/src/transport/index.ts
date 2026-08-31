@@ -1,4 +1,4 @@
-import type { TransportSnapshot, TransportSource, ViewerModule } from '@modkitx-x3/sdk'
+import type { TransportSnapshot, TransportSource, ViewerModule } from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,

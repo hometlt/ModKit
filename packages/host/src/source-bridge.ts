@@ -6,9 +6,9 @@
  * cannot be represented exactly; it never rounds an offset or silently truncates a range.
  */
 
-import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
-import type { ArtifactByteSource, AssetSourceRef, RevisionId } from '@modkitx-x3/sdk'
-import type { RandomAccessSource } from '@modkitx-x3/vfs'
+import { ModkitError, throwIfAborted } from '@modkit/core'
+import type { ArtifactByteSource, AssetSourceRef, RevisionId } from '@modkit/sdk'
+import type { RandomAccessSource } from '@modkit/vfs'
 
 export interface ArtifactByteSourceBridgeOptions {
   readonly ref: AssetSourceRef

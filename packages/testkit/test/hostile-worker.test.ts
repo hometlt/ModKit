@@ -5,14 +5,14 @@
  * acc-8…acc-10 that any production supervisor (NXT-114) must reproduce.
  */
 import { afterEach, describe, expect, it } from 'vitest'
-import { OperationCancelledError } from '@modkitx-x3/core'
+import { OperationCancelledError } from '@modkit/core'
 import {
   CAPABILITY_OF,
   protocolLimits,
   type Endpoint,
   type RemoteCapability,
-} from '@modkitx-x3/host/execution'
-import { DEFAULT_WORKER_BACKEND_POLICY } from '@modkitx-x3/host/node'
+} from '@modkit/host/execution'
+import { DEFAULT_WORKER_BACKEND_POLICY } from '@modkit/host/node'
 import {
   DEMO_LOAD_REQUEST,
   DEMO_SOURCE,
@@ -22,7 +22,7 @@ import {
   type HostileWorkerFixtureId,
   type SupervisedWorker,
   type SuperviseOptions,
-} from '@modkitx-x3/testkit'
+} from '@modkit/testkit'
 
 const live: SupervisedWorker[] = []
 let sessions = 0

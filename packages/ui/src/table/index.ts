@@ -1,11 +1,4 @@
-import type {
-  CellCoord,
-  KnowledgeHit,
-  Page,
-  Row,
-  TableDataSource,
-  ViewerModule,
-} from '@modkitx-x3/sdk'
+import type { CellCoord, KnowledgeHit, Page, Row, TableDataSource, ViewerModule } from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,

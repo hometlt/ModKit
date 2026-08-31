@@ -13,7 +13,7 @@ import {
   serializeSubjectRef,
   subjectRefEquals,
   sourceRefFromAssetSourceRef,
-} from '@modkitx-x3/sdk/subjects'
+} from '@modkit/sdk/subjects'
 
 function extendedSubject(payload: unknown): string {
   return `x3-subject:${encodeURIComponent(JSON.stringify(payload))}`

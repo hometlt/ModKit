@@ -18,20 +18,20 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { uint64 } from '@modkitx-x3/core'
+import { uint64 } from '@modkit/core'
 import {
   createHostTopology,
   type ChangeSet,
   type FidelityEvidence,
   type PermissionGrant,
   type Writer,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   createHostServiceResolver,
   createSubjectEditing,
   type ExtensionInput,
   type OpenedSubject,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import {
   createFileEditingBackend,
   createNodeSubjectServices,
@@ -42,7 +42,7 @@ import {
   openFileArtifactSource,
   workerBackendPolicy,
   type NodeSubjectServices,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const dataExtensionDir = join(repoRoot, 'extensions', 'data')
@@ -149,7 +149,7 @@ function textEvidence(writer: Writer, source: string): FidelityEvidence {
     roundTrip: 'byte-identical',
     preservesUnknownData: true,
     evidenceId: writer.offer.fidelityEvidenceId,
-    corpusId: `modkitX3/packages/host/test/text-writers:${writer.identity.formatId}`,
+    corpusId: `modkit/packages/host/test/text-writers:${writer.identity.formatId}`,
     corpusDigest: `sha256:${createHash('sha256').update(source).digest('hex')}`,
     conformanceProfile: 'common.edit/writer-v1' as never,
     writer: writer.identity,
@@ -178,8 +178,8 @@ interface TextWriterCase {
 const CASES: readonly TextWriterCase[] = [
   {
     formatId: 'json',
-    codecId: 'org.modkitx/text-json',
-    providerId: 'org.modkitx/text-json-writer',
+    codecId: 'modkit/text-json',
+    providerId: 'modkit/text-json-writer',
     evidenceId: 'text-json-text-writer-v1',
     file: 'sample.json',
     source: '{\n  "name": "alpha",\n  "count": 1\n}\n',
@@ -188,8 +188,8 @@ const CASES: readonly TextWriterCase[] = [
   },
   {
     formatId: 'ini',
-    codecId: 'org.modkitx/text-ini',
-    providerId: 'org.modkitx/text-ini-writer',
+    codecId: 'modkit/text-ini',
+    providerId: 'modkit/text-ini-writer',
     evidenceId: 'text-ini-text-writer-v1',
     file: 'sample.ini',
     source: '[server]\nhost = localhost\nport = 8080\n',
@@ -198,8 +198,8 @@ const CASES: readonly TextWriterCase[] = [
   },
   {
     formatId: 'csv',
-    codecId: 'org.modkitx/text-csv',
-    providerId: 'org.modkitx/text-delimited-writer',
+    codecId: 'modkit/text-csv',
+    providerId: 'modkit/text-delimited-writer',
     evidenceId: 'text-delimited-text-writer-v1',
     file: 'sample.csv',
     source: 'id,name,size\n1,alpha,10\n2,beta,20\n',
@@ -210,8 +210,8 @@ const CASES: readonly TextWriterCase[] = [
     // Block 11 slice 11A: plain text could be edited before the migration and it can again — but
     // through its own writer contribution, never through the read-only codec.
     formatId: 'txt',
-    codecId: 'org.modkitx/txt',
-    providerId: 'org.modkitx/plain-text-writer',
+    codecId: 'modkit/txt',
+    providerId: 'modkit/plain-text-writer',
     evidenceId: 'plain-text-writer-v1',
     file: 'sample.txt',
     source: 'First paragraph.\nStill first.\n\nSecond paragraph.\n',
@@ -306,7 +306,7 @@ describe('A6 — text writers resolve by facet and save through the host coordin
       })
       expect(refused.valid).toBe(false)
       expect(refused.diagnostics.map(item => item.code)).toEqual([
-        'org.modkitx/text-writer-operation-unsupported',
+        'modkit/text-writer-operation-unsupported',
       ])
 
       // pass-through: the plan carries the editor's edits unchanged, at the writer's claim
@@ -369,7 +369,7 @@ describe('A6 — text writers resolve by facet and save through the host coordin
         minimumRoundTrip: 'semantic',
       },
     })
-    expect((lease.value as Writer).offer.providerId).toBe('org.modkitx/text-delimited-writer')
+    expect((lease.value as Writer).offer.providerId).toBe('modkit/text-delimited-writer')
     await lease.release()
 
     // RTF is not part of the common data extension loaded by this lab.

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { describeInventoryContributions } from '@modkitx-x3/host'
+import { describeInventoryContributions } from '@modkit/host'
 import type {
   KnowledgeResolveQuery,
   KnowledgeSearchQuery,
@@ -16,7 +16,7 @@ import type {
   SubjectFactGroup,
   SubjectFactsSource,
   SubjectSelectorSource,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { McpOpenedSubject, ModkitMcpHostPort } from './host-port.js'
 import {
   MCP_MAX_CURSOR_LENGTH,

@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "id": "org.modkitx/contract-definition",
+    "id": "modkit/contract-definition",
     "major": 1
   },
-  "id": "org.modkitx/toml-syntax-contract",
+  "id": "modkit/toml-syntax-contract",
   "displayName": "TOML syntax service contract",
   "spec": {
     "schemaVersion": 1,
@@ -18,7 +18,7 @@
       "presence": "forbidden"
     },
     "matching": {
-      "profile": "org.modkitx/facetless-matcher",
+      "profile": "modkit/facetless-matcher",
       "major": 1
     },
     "conformanceProfile": "common.text-data/toml-syntax-v1",

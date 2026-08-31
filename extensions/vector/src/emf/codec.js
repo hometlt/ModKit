@@ -2,9 +2,9 @@ import {
   createInspectionCodec,
   createTreeDataSource,
   createVectorSceneSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/emf'
+const ID = 'modkit/emf'
 const EMF_SIGNATURE = 0x464d4520
 const NAMES = Object.freeze({ 1: 'EMR_HEADER', 14: 'EMR_EOF', 43: 'EMR_RECTANGLE' })
 

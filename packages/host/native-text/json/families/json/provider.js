@@ -49,7 +49,7 @@ function parseJson(decoded, dialect, budget) {
   if (!root || errors.length > 0) {
     const first = errors[0] ?? { error: 0, offset: 0, length: 0 }
     return failure(
-      'org.modkitx/text-data-json-parse',
+      'modkit/text-data-json-parse',
       printParseErrorCode(first.error),
       decoded.text,
       first.offset,

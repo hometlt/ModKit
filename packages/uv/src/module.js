@@ -1,4 +1,4 @@
-import { defineBuiltinModule } from '@modkitx-x3/host'
+import { defineBuiltinModule } from '@modkit/host'
 
 import modelContractManifest from '../contributions/contract-model-materializer.json' with { type: 'json' }
 import textureContractManifest from '../contributions/contract-texture-materializer.json' with { type: 'json' }
@@ -19,7 +19,7 @@ import * as textureWriter from './texture/writer.js'
  * explicit built-in kind keeps it out of Extension Manager's install/remove lifecycle.
  */
 export const uvModule = defineBuiltinModule({
-  coordinate: 'org.modkitx/uv',
+  coordinate: 'modkit/uv',
   packageJson,
   contributions: [
     { path: 'contributions/contract-model-materializer.json', manifest: modelContractManifest },

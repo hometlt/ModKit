@@ -3,7 +3,7 @@
  * descriptor produced by the real open path, so a codec that changes what it publishes changes
  * this test rather than quietly changing the product.
  *
- * The catalog itself lives in `../src/stages.ts`, which imports explicit `@modkitx-x3/ui/*`
+ * The catalog itself lives in `../src/stages.ts`, which imports explicit `@modkit/ui/*`
  * surfaces and therefore the DOM; the policy under test is deliberately DOM-free, so the stage
  * *facts* are restated here in the same shape the catalog uses. `orderStages` throws on an id the
  * order does not rank, while the source-boundary test below keeps unrelated UI scenes out of the
@@ -12,8 +12,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { createNodeSubjectServices, loadExtensionRoots } from '@modkitx-x3/host/node'
-import { revisionId, type ArtifactByteSource } from '@modkitx-x3/sdk'
+import { createNodeSubjectServices, loadExtensionRoots } from '@modkit/host/node'
+import { revisionId, type ArtifactByteSource } from '@modkit/sdk'
 import {
   applicableStages,
   descriptorTraits,
@@ -167,7 +167,7 @@ async function openGltfDescriptor(): Promise<Record<string, unknown>> {
 describe('VS Code view policy', () => {
   it('imports only the UI surfaces that the stage catalog enables', () => {
     const source = readFileSync(new URL('../src/stages.ts', import.meta.url), 'utf8')
-    const importedSurfaces = [...source.matchAll(/from '@modkitx-x3\/ui\/([^']+)'/gu)].map(
+    const importedSurfaces = [...source.matchAll(/from '@modkit\/ui\/([^']+)'/gu)].map(
       match => match[1],
     )
 
@@ -193,11 +193,11 @@ describe('VS Code view policy', () => {
       'world',
       'localization',
     ])
-    expect(source).not.toMatch(/from '@modkitx-x3\/ui'/u)
+    expect(source).not.toMatch(/from '@modkit\/ui'/u)
     expect(source).toContain('module: createRelationGraphViewer({ localizer: context.localizer })')
-    expect(source).not.toContain('@modkitx-x3/ui/monaco')
-    expect(source).not.toContain('@modkitx-x3/ui/settings')
-    expect(source).not.toContain('@modkitx-x3/ui/workbench')
+    expect(source).not.toContain('@modkit/ui/monaco')
+    expect(source).not.toContain('@modkit/ui/settings')
+    expect(source).not.toContain('@modkit/ui/workbench')
     for (const id of ['text-editor', 'edit', 'metadata', 'hex-editor']) {
       expect(source).toMatch(
         new RegExp(`id: '${id}',[\\s\\S]*?appLocal: true,[\\s\\S]*?\\n    \\}`, 'u'),

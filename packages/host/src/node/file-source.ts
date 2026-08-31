@@ -1,13 +1,13 @@
 /**
  * Concrete Node file adapter for the portable `RandomAccessSource` contract — lives in
- * host/node, never in browser-safe `@modkitx-x3/vfs` (BRIEF-12 §5 S2; canon §5.9:
+ * host/node, never in browser-safe `@modkit/vfs` (BRIEF-12 §5 S2; canon §5.9:
  * concrete file adapters are host-owned).
  */
 
 import { open, stat, type FileHandle } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
-import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
-import { rangeError, type RandomAccessSource } from '@modkitx-x3/vfs'
+import { ModkitError, throwIfAborted } from '@modkit/core'
+import { rangeError, type RandomAccessSource } from '@modkit/vfs'
 
 const CHUNK = 256 * 1024
 

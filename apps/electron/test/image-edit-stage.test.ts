@@ -7,8 +7,8 @@
  */
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { revisionId } from '@modkitx-x3/sdk'
-import type { AssetRevision, SubjectEditTarget } from '@modkitx-x3/sdk'
+import { revisionId } from '@modkit/sdk'
+import type { AssetRevision, SubjectEditTarget } from '@modkit/sdk'
 
 import { PNG_SEMANTIC_WARNING, pngPixelChange } from '../src/image-edit-stage.js'
 

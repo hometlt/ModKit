@@ -15,14 +15,14 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { proves } from '@modkitx-x3/testkit'
+import { proves } from '@modkit/testkit'
 import {
   revisionId,
   type ArtifactByteSource,
   type AssetInput,
   type RasterImageSource,
   type ResourceBudget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const fixtures = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
@@ -214,7 +214,7 @@ describe('12-5 PKM publishes decoded ETC pixels', () => {
     await session.dispose()
 
     proves({
-      contributionId: 'org.modkitx/pkm',
+      contributionId: 'modkit/pkm',
       operation: 'read',
       note: 'ETC1 block decoded to rgba8 and served through readRegion',
     })

@@ -1,13 +1,13 @@
-// Hand-ported from org.modkitx/gltf. This single-source profile decodes standard glTF 2.x
+// Hand-ported from modkit/gltf. This single-source profile decodes standard glTF 2.x
 // geometry from embedded data-URI buffers into format-neutral model primitives.
 
 import {
   createInspectionCodec,
   createModelSceneSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/gltf'
+const ID = 'modkit/gltf'
 const decoder = new TextDecoder('utf-8', { fatal: true })
 const probeDecoder = new TextDecoder('utf-8', { fatal: false })
 const COMPONENT_BYTES = Object.freeze({ 5120: 1, 5121: 1, 5122: 2, 5123: 2, 5125: 4, 5126: 4 })

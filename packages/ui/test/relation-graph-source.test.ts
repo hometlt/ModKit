@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { PageRequest, RelationGraphSource } from '@modkitx-x3/sdk'
+import type { PageRequest, RelationGraphSource } from '@modkit/sdk'
 import { loadRelationGraphOptions } from '../src/graph/index.js'
 
 function page<T>(items: readonly T[], request: PageRequest) {

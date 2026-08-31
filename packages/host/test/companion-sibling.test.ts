@@ -21,15 +21,15 @@ import {
   createHostContributionContractRegistry,
   createSubjectServices,
   type SubjectServices,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import {
   createFileEditingBackend,
   createPathSubjectOpener,
   loadExtensionDirectory,
   openFileArtifactSource,
-} from '@modkitx-x3/host/node'
-import { isModkitError, type Diagnostic } from '@modkitx-x3/core'
-import { revisionId, type ResourceBudget } from '@modkitx-x3/sdk'
+} from '@modkit/host/node'
+import { isModkitError, type Diagnostic } from '@modkit/core'
+import { revisionId, type ResourceBudget } from '@modkit/sdk'
 import {
   COMPANION_REQUIRED_MISSING,
   COMPANION_UNAVAILABLE,

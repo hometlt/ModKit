@@ -1,5 +1,5 @@
 {
-  "name": "modkit-extension-x3-documents",
+  "name": "modkit-extension-documents",
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
@@ -23,24 +23,32 @@
   ],
   "modkit": {
     "schemaVersion": 1,
-    "publisher": "org.modkitx",
+    "publisher": "modkit",
     "id": "documents",
+    "presentation": {
+      "displayName": "Modkit Documents",
+      "description": "Isolated MK3 document codecs.",
+      "vendor": {
+        "id": "modkit",
+        "displayName": "Modkit"
+      }
+    },
     "contributionManifests": [
       "./contributions/*.json"
     ]
   },
   "dependencies": {
-    "@modkitx-x3/codec-kit": "workspace:*"
+    "@modkit/codec-kit": "workspace:*"
   },
   "peerDependencies": {
-    "@modkitx-x3/host": "workspace:*",
-    "@modkitx-x3/sdk": "workspace:*"
+    "@modkit/host": "workspace:*",
+    "@modkit/sdk": "workspace:*"
   },
   "peerDependenciesMeta": {
-    "@modkitx-x3/host": {
+    "@modkit/host": {
       "optional": true
     },
-    "@modkitx-x3/sdk": {
+    "@modkit/sdk": {
       "optional": true
     }
   }

@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.modkit.dev/extension-manager/modkit.game-support-plan.schema.json",
+  "title": "Modkit game support plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "game", "targets", "actions", "blocked", "ready"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "game": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "displayName"],
+      "properties": {
+        "id": { "$ref": "#/$defs/coordinate" },
+        "displayName": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "targets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/target" }
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/installAction" },
+          { "$ref": "#/$defs/enableAction" },
+          { "$ref": "#/$defs/updateAction" }
+        ]
+      }
+    },
+    "blocked": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/blocker" }
+    },
+    "ready": { "type": "boolean" }
+  },
+  "$defs": {
+    "coordinate": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*\\/[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "nonEmptyString": { "type": "string", "minLength": 1 },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "packageId",
+        "displayName",
+        "availableVersion",
+        "enabled",
+        "updateAvailable",
+        "trusted",
+        "desiredEnabled"
+      ],
+      "properties": {
+        "packageId": { "$ref": "#/$defs/coordinate" },
+        "displayName": { "$ref": "#/$defs/nonEmptyString" },
+        "availableVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "installedVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "enabled": { "type": "boolean" },
+        "updateAvailable": { "type": "boolean" },
+        "trusted": { "type": "boolean" },
+        "desiredEnabled": { "const": true }
+      }
+    },
+    "installAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "packageId", "version", "reversible"],
+      "properties": {
+        "kind": { "const": "install" },
+        "packageId": { "$ref": "#/$defs/coordinate" },
+        "version": { "$ref": "#/$defs/nonEmptyString" },
+        "reversible": { "const": true }
+      }
+    },
+    "enableAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "packageId", "reversible"],
+      "properties": {
+        "kind": { "const": "enable" },
+        "packageId": { "$ref": "#/$defs/coordinate" },
+        "reversible": { "const": true }
+      }
+    },
+    "updateAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "packageId", "fromVersion", "toVersion", "reversible"],
+      "properties": {
+        "kind": { "const": "update" },
+        "packageId": { "$ref": "#/$defs/coordinate" },
+        "fromVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "toVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "reversible": { "const": false }
+      }
+    },
+    "blocker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["packageId", "code", "message"],
+      "properties": {
+        "packageId": { "$ref": "#/$defs/coordinate" },
+        "code": { "$ref": "#/$defs/nonEmptyString" },
+        "message": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    }
+  }
+}

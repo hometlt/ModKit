@@ -12,9 +12,9 @@ import {
   setState,
   setViewerText,
   ViewerMountScope,
-} from '@modkitx-x3/ui/viewer'
-import type { AnyDescriptor, AssetEditPlan, ViewerModule } from '@modkitx-x3/sdk'
-import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+} from '@modkit/ui/viewer'
+import type { AnyDescriptor, AssetEditPlan, ViewerModule } from '@modkit/sdk'
+import type { UiLocalizer } from '@modkit/ui/localization'
 
 import {
   editOffer,

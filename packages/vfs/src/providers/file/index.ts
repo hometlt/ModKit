@@ -2,7 +2,7 @@ import { open, readdir, realpath, stat } from 'node:fs/promises'
 import { isAbsolute, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
+import { ModkitError, throwIfAborted } from '@modkit/core'
 
 import { assertReadRangeLimit, assertStreamLimit, VfsReadBudget } from '../../read-budget.js'
 import { rangeError, type RandomAccessSource } from '../../source.js'
@@ -353,7 +353,7 @@ export class FileVfsProvider implements VfsProvider {
   private readonly limits: VfsLimits
 
   constructor(options: FileVfsProviderOptions = {}) {
-    this.id = options.id ?? 'org.modkitx-x3.vfs.file'
+    this.id = options.id ?? 'modkit-x3.vfs.file'
     this.limits = clampVfsLimits(options.limits)
   }
 

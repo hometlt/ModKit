@@ -19,8 +19,8 @@
  * empty screen.
  */
 import { describe, expect, it } from 'vitest'
-import { assembleSubjectDescriptor, evaluateViewerContribution } from '@modkitx-x3/host'
-import type { AnyDescriptor, ViewerContributionSpecV1 } from '@modkitx-x3/sdk'
+import { assembleSubjectDescriptor, evaluateViewerContribution } from '@modkit/host'
+import type { AnyDescriptor, ViewerContributionSpecV1 } from '@modkit/sdk'
 import { resolvedDescriptorWire } from './fixtures/descriptor.js'
 
 const SCENE = 'common.view/model-scene-source'

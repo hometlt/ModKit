@@ -1,7 +1,7 @@
 /**
  * The webview's editor ports over the subject RPC (S14).
  *
- * A `ViewerModule`-hosted editor from `@modkitx-x3/ui` expects four ports — `edit`, `commit`,
+ * A `ViewerModule`-hosted editor from `@modkit/ui` expects four ports — `edit`, `commit`,
  * `payloads`, `authorization` — and calls them as if it held the host's editing objects. This page
  * holds none of them: the grant snapshot, the commit coordinator, the file backend and every
  * prepared commit live in the extension host. This module is the adapter, and it is deliberately
@@ -14,7 +14,7 @@
  * crosses. It is the same adapter Electron's renderer uses, for the same reason.
  */
 
-import type { SubjectEditingArm, SubjectEditingPrepareResult } from '@modkitx-x3/host'
+import type { SubjectEditingArm, SubjectEditingPrepareResult } from '@modkit/host'
 import type {
   AssetEditPlan,
   ChangeSet,
@@ -22,8 +22,8 @@ import type {
   PrepareCommitResult,
   SubjectEditTarget,
   ValidationResult,
-} from '@modkitx-x3/sdk'
-import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+} from '@modkit/sdk'
+import type { UiLocalizer } from '@modkit/ui/localization'
 
 import { createVscodeLocalizer } from './localization.js'
 

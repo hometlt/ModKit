@@ -5,7 +5,7 @@
  * keeping them out of the wire DTOs lets the schema const remain the exact authority.
  */
 
-import type { ContractId, TraitId } from '@modkitx-x3/core'
+import type { ContractId, TraitId } from '@modkit/core'
 import type { ConformanceProfileId, DataSourceRefFor } from '../asset-capabilities/data-sources.js'
 import type {
   AssetOperationId,

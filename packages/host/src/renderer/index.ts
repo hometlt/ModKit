@@ -1,6 +1,6 @@
 /** Host definition, routing matcher and activation adapter for the standard scene renderer. */
 
-import { contractId, diagnostic, type Diagnostic } from '@modkitx-x3/core'
+import { contractId, diagnostic, type Diagnostic } from '@modkit/core'
 import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE,
@@ -8,7 +8,7 @@ import {
   type SceneRendererOfferFacet,
   type SceneRendererOutputKind,
   type SceneRendererRequestFacet,
-} from '@modkitx-x3/sdk/renderer'
+} from '@modkit/sdk/renderer'
 import type {
   DefinitionInventoryResult,
   PermissionGrant,
@@ -19,13 +19,13 @@ import type {
   ServiceFacetMatchContext,
   ServiceFacetMatchResult,
   ServiceFacetMatcherProfile,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { Inventory } from '../inventory.js'
 import { createHostServiceResolver } from '../service-leases.js'
 
 /** Owner id under which the standard scene-renderer definition is registered. */
-export const STANDARD_RENDERER_OWNER = 'org.modkitx/renderer'
+export const STANDARD_RENDERER_OWNER = 'modkit/renderer'
 
 const OFFER_KEYS = new Set(['rendererIds', 'outputKinds'])
 const REQUEST_KEYS = new Set(['rendererId', 'outputKind'])
@@ -132,13 +132,13 @@ export const SCENE_RENDERER_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1
     offerFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/scene-renderer-offer.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/scene-renderer-offer.v1.schema.json',
       }),
     }),
     requestFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/scene-renderer-request.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/scene-renderer-request.v1.schema.json',
       }),
     }),
     matching: Object.freeze({ profile: SCENE_RENDERER_MATCHER_PROFILE, major: 1 }),

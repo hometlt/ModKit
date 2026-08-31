@@ -5,7 +5,7 @@
 // API. This checks the promises the repository actually makes in its extension-facing READMEs:
 //
 //   1. every fenced `js` block parses;
-//   2. every `@modkitx-x3/...` specifier it imports resolves;
+//   2. every `@modkit/...` specifier it imports resolves;
 //   3. every *named* import exists in that module's real exports — the check that catches a renamed
 //      or removed export, which is how documentation usually rots;
 //   4. every method the block calls on a codec (`open`, `descriptor`, `dispose`) exists on the real
@@ -156,11 +156,11 @@ const IMPORT = /import\s*\{([^}]*)\}\s*from\s*'([^']+)'/gu
  * platform-side consumer of the thing the guard exists to keep out.
  */
 function resolveSpecifier(specifier) {
-  if (specifier === '@modkitx-x3/codec-kit') {
+  if (specifier === '@modkit/codec-kit') {
     return pathToFileURL(path.join(repoRoot, 'packages', 'codec-kit', 'src', 'index.js')).href
   }
-  if (specifier.startsWith('@modkitx-x3/codec-kit/')) {
-    const rest = specifier.slice('@modkitx-x3/codec-kit/'.length)
+  if (specifier.startsWith('@modkit/codec-kit/')) {
+    const rest = specifier.slice('@modkit/codec-kit/'.length)
     return pathToFileURL(path.join(repoRoot, 'packages', 'codec-kit', 'src', rest, 'index.js')).href
   }
   return specifier
@@ -178,7 +178,7 @@ async function checkNamedImports(label, block) {
       )
       .filter(item => item !== undefined && item !== '')
     const specifier = match[2]
-    if (specifier.startsWith('@modkitx-x3/')) {
+    if (specifier.startsWith('@modkit/')) {
       let module
       try {
         module = await import(resolveSpecifier(specifier))
@@ -213,7 +213,7 @@ for (const document of [...documents(), scaffold]) {
  * checked against the real modules rather than against a list written here, so a rename breaks this
  * gate instead of breaking a reader.
  *
- * `@modkitx-x3/codec-kit` is resolved by path on purpose: it is an extension-side library, outside
+ * `@modkit/codec-kit` is resolved by path on purpose: it is an extension-side library, outside
  * the platform closure by the owner's 2026-08-24 decision, and the import guard forbids platform
  * code from naming it as a specifier. Reading it by path respects that boundary instead of quietly
  * crossing it to run a check.

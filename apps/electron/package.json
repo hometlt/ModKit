@@ -1,5 +1,5 @@
 {
-  "name": "@modkitx-x3/electron-app",
+  "name": "@modkit/electron-app",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -16,14 +16,14 @@
     "generated"
   ],
   "dependencies": {
-    "@modkitx/extension-manager": "workspace:*",
-    "@modkitx-x3/core": "workspace:*",
-    "@modkitx-x3/code": "workspace:*",
-    "@modkitx-x3/host": "workspace:*",
-    "@modkitx-x3/scene": "workspace:*",
-    "@modkitx-x3/sdk": "workspace:*",
-    "@modkitx-x3/ui": "workspace:*",
-    "@modkitx-x3/uv": "workspace:*"
+    "@modkit/extension-manager": "workspace:*",
+    "@modkit/core": "workspace:*",
+    "@modkit/code": "workspace:*",
+    "@modkit/host": "workspace:*",
+    "@modkit/scene": "workspace:*",
+    "@modkit/sdk": "workspace:*",
+    "@modkit/ui": "workspace:*",
+    "@modkit/uv": "workspace:*"
   },
   "devDependencies": {
     "electron": "^43.4.0"

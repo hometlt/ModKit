@@ -8,7 +8,7 @@ import {
   type CodecContributionSpecV1Wire,
   type ContributionManifestV1Wire,
   type UnresolvedSourceDescriptorWire,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const budgets = {
   maxInputBytes: '1073741824',

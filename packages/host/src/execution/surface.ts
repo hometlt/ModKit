@@ -10,7 +10,7 @@
  * a second allowlist next to `sdk` (review F-01/F-02).
  */
 
-import { isQualifiedId, ModkitError } from '@modkitx-x3/core'
+import { isQualifiedId, ModkitError } from '@modkit/core'
 import { isMethodName, type WireValue } from './protocol.js'
 
 /**

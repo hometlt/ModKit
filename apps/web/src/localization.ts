@@ -5,14 +5,14 @@ import {
   UI_MESSAGES,
   type UiCatalogDocument,
   type UiLocalizer,
-} from '@modkitx-x3/ui/localization'
+} from '@modkit/ui/localization'
 import {
   loadLocalizationCatalogs,
   type Inventory,
   type LoadedLocalizationCatalogs,
-} from '@modkitx-x3/host'
-import { createBrowserExtensionVfs } from '@modkitx/extension-manager/browser'
-import type { RandomAccessSource, VfsMount, VfsNode, VfsOpenOptions } from '@modkitx-x3/vfs'
+} from '@modkit/host'
+import { createBrowserExtensionVfs } from '@modkit/extension-manager/browser'
+import type { RandomAccessSource, VfsMount, VfsNode, VfsOpenOptions } from '@modkit/vfs'
 
 import {
   isUserExtensionUrl,
@@ -23,9 +23,9 @@ import {
 
 const EN = parseUiCatalogDocument(
   {
-    schema: 'org.modkitx/ui-message-catalog@1',
+    schema: 'modkit/ui-message-catalog@1',
     locale: 'en',
-    namespace: 'org.modkitx/web-app',
+    namespace: 'modkit/web-app',
     messages: {
       'web.capability.folder':
         'This browser grants folder access: pick a folder to browse it in place.',
@@ -253,9 +253,9 @@ const EN = parseUiCatalogDocument(
 
 const RU = parseUiCatalogDocument(
   {
-    schema: 'org.modkitx/ui-message-catalog@1',
+    schema: 'modkit/ui-message-catalog@1',
     locale: 'ru',
-    namespace: 'org.modkitx/web-app',
+    namespace: 'modkit/web-app',
     messages: {
       'web.capability.folder':
         'Браузер разрешает доступ к папкам: выберите папку для просмотра на месте.',

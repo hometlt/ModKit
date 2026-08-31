@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "id": "org.modkitx/codec-contribution",
+    "id": "modkit/codec-contribution",
     "major": 1
   },
-  "id": "org.modkitx/odg",
+  "id": "modkit/odg",
   "displayName": "OpenDocument drawing",
   "status": "partial",
   "runtimeVariants": [

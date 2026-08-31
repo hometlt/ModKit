@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { CANCELLED_CODE } from '@modkitx-x3/core'
+import { CANCELLED_CODE } from '@modkit/core'
 import {
   revisionId,
   type ArtifactSource,
@@ -16,7 +16,7 @@ import {
   type Lease,
   type LogicalResourceRequirement,
   type ResourceResolution,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   createResourceSession,
   DEFAULT_RESOURCE_SESSION_LIMITS,

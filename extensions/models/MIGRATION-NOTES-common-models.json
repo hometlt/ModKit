@@ -2,7 +2,7 @@
   "$comment": "Historical migration notes for the common model family. DAE, PLY and STL moved into the product package; GLB/glTF, OBJ and UVM are superseded by richer native MK3 contributions in the same package. This file is inert and outside the loader manifest glob.",
   "schemaVersion": 1,
   "source": {
-    "repository": "modkitx",
+    "repository": "modkit",
     "manifests": [
       "extensions/models/codecs/dae/codec.manifest.json",
       "extensions/models/codecs/glb/codec.manifest.json",
@@ -15,7 +15,7 @@
   },
   "verdict": "needs-new-contract",
   "codecs": {
-    "org.modkitx/dae": {
+    "modkit/dae": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -30,7 +30,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/glb": {
+    "modkit/glb": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -45,7 +45,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/gltf": {
+    "modkit/gltf": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -60,7 +60,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/obj": {
+    "modkit/obj": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -77,7 +77,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/ply": {
+    "modkit/ply": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -92,7 +92,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/stl": {
+    "modkit/stl": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -107,7 +107,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/uvm": {
+    "modkit/uvm": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [

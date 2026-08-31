@@ -14,26 +14,26 @@ import {
   type PageBootstrap,
   type WebviewLike,
 } from '../src/page.js'
-import { VIEWER_CSP } from '@modkitx-x3/ui'
+import { VIEWER_CSP } from '@modkit/ui'
 import { createVscodeLocalizer } from '../src/localization.js'
 
 const webview: WebviewLike = {
-  cspSource: 'vscode-resource://modkitx.modkit',
-  asWebviewUri: name => ({ toString: () => `vscode-resource://modkitx.modkit/dist-app/${name}` }),
+  cspSource: 'vscode-resource://modkit.modkit',
+  asWebviewUri: name => ({ toString: () => `vscode-resource://modkit.modkit/dist-app/${name}` }),
 }
 
 const bootstrap: PageBootstrap = {
   localizationCatalogs: [],
   locale: 'en',
   extensionHost: {
-    realmId: 'org.modkitx.app.vscode/desktop-extension',
+    realmId: 'modkit.app.vscode/desktop-extension',
     facilities: ['native.load'],
   },
-  webview: { realmId: 'org.modkitx.app.vscode/webview', facilities: ['gpu.webgl2'] },
-  topologyId: 'org.modkitx.app/vscode-desktop',
+  webview: { realmId: 'modkit.app.vscode/webview', facilities: ['gpu.webgl2'] },
+  topologyId: 'modkit.app/vscode-desktop',
   session: 'vscode-abc',
   moduleUrl: 'x3-app://vscode/subject-services',
-  contributionId: 'org.modkitx.app.vscode/subject-services',
+  contributionId: 'modkit.app.vscode/subject-services',
   supportedExtensions: ['json'],
   extensions: { bundled: [], installed: [], failures: [], problems: [] },
   diagnostics: 0,
@@ -81,9 +81,9 @@ describe('webview page', () => {
     const html = pageHtml({ webview, bootstrap, nonce: 'abc123' })
     expect([...html.matchAll(/nonce="abc123"/gu)].length).toBe(2)
     expect(html).toContain('<script nonce="abc123" type="module"')
-    expect(html).toContain('vscode-resource://modkitx.modkit/dist-app/webview.js')
-    expect(html).toContain('vscode-resource://modkitx.modkit/dist-app/modkit-ui.css')
-    expect(html).toContain('vscode-resource://modkitx.modkit/dist-app/app.css')
+    expect(html).toContain('vscode-resource://modkit.modkit/dist-app/webview.js')
+    expect(html).toContain('vscode-resource://modkit.modkit/dist-app/modkit-ui.css')
+    expect(html).toContain('vscode-resource://modkit.modkit/dist-app/app.css')
   })
 
   it('uses the host-resolved locale for the webview document', () => {

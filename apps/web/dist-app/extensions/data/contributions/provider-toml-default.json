@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "id": "org.modkitx/service-provider-contribution",
+    "id": "modkit/service-provider-contribution",
     "major": 1
   },
-  "id": "org.modkitx/toml-syntax-default",
+  "id": "modkit/toml-syntax-default",
   "displayName": "toml syntax provider",
   "runtimeVariants": [
     {

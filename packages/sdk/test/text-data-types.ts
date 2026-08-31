@@ -1,6 +1,6 @@
-import type { SourceSpan } from '@modkitx-x3/core'
-import type { ResourceBudget } from '@modkitx-x3/sdk'
-import type { ContractOf, TypedResolveRequest } from '@modkitx-x3/sdk/service-contracts'
+import type { SourceSpan } from '@modkit/core'
+import type { ResourceBudget } from '@modkit/sdk'
+import type { ContractOf, TypedResolveRequest } from '@modkit/sdk/service-contracts'
 import type {
   JsonDocument,
   ParseRequest,
@@ -8,7 +8,7 @@ import type {
   TextDataSourceMap,
   TextSyntaxProvider,
   XmlDocument,
-} from '@modkitx-x3/sdk/text-data'
+} from '@modkit/sdk/text-data'
 
 declare const span: SourceSpan
 declare const budget: ResourceBudget

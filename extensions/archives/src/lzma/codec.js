@@ -4,9 +4,9 @@
  * header declares a finite uncompressed size, so allocation and output are budgeted up front.
  */
 
-import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/lzma'
+const ID = 'modkit/lzma'
 const PROBABILITY_TOTAL = 2048
 const MOVE_BITS = 5
 const TOP_VALUE = 1 << 24

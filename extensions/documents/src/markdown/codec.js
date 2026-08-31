@@ -1,4 +1,4 @@
-import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec, createTreeDataSource } from '@modkit/codec-kit'
 
 const decoder = new TextDecoder('utf-8', { fatal: true })
 
@@ -74,7 +74,7 @@ function parseMarkdown(text, maxNodes) {
 }
 
 const definition = Object.freeze({
-  id: 'org.modkitx/document-markdown',
+  id: 'modkit/document-markdown',
   format: Object.freeze({ id: 'markdown', label: 'Markdown document', mediaType: 'text/markdown' }),
   async detect(bytes, uri) {
     const structure = looksLikeMarkdown(bytes)

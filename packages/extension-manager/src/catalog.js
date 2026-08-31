@@ -1,6 +1,8 @@
 import { ExtensionManagerError } from './schema.js'
 
 const COORDINATE = /^[a-z0-9]+(?:[.-][a-z0-9]+)*\/[a-z0-9]+(?:[.-][a-z0-9]+)*$/u
+const DOTTED_ID = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/u
+const WINDOWS_DRIVE = /^[a-z]:[\\/]/iu
 const SEMVER = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z.-]+))?$/u
 const INTEGRITY = /^sha256:[0-9a-f]{64}$/u
 const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u
@@ -66,6 +68,122 @@ function signature(value, path, issues) {
   if (!nonEmptyText(value.value, `${path}.value`, issues) || !BASE64.test(value.value)) {
     issue(issues, `${path}.value`, 'must be canonical base64')
   }
+}
+
+function confinedVfsPath(value, path, issues) {
+  if (!nonEmptyText(value, path, issues)) return
+  if (
+    value.includes('\0') ||
+    value.includes('\\') ||
+    value.startsWith('/') ||
+    WINDOWS_DRIVE.test(value)
+  ) {
+    issue(issues, path, 'must be a confined VFS-relative path')
+    return
+  }
+  const segments = value.split('/').filter(segment => segment !== '' && segment !== '.')
+  if (segments.length === 0 || segments.some(segment => segment === '..')) {
+    issue(issues, path, 'must be a confined VFS-relative path')
+  }
+}
+
+function presentationAsset(value, path, issues) {
+  if (!record(value)) {
+    issue(issues, path, 'must be an object')
+    return
+  }
+  checkKeys(value, new Set(['path', 'displayName', 'mediaType']), path, issues)
+  confinedVfsPath(value.path, `${path}.path`, issues)
+  if (value.displayName !== undefined) {
+    nonEmptyText(value.displayName, `${path}.displayName`, issues)
+  }
+  if (value.mediaType !== undefined) nonEmptyText(value.mediaType, `${path}.mediaType`, issues)
+}
+
+function presentation(value, path, issues) {
+  if (!record(value)) {
+    issue(issues, path, 'must be an object')
+    return
+  }
+  checkKeys(
+    value,
+    new Set(['displayName', 'description', 'vendor', 'games', 'icon', 'source', 'licenseFiles']),
+    path,
+    issues,
+  )
+  for (const field of ['displayName', 'description']) {
+    if (value[field] !== undefined) nonEmptyText(value[field], `${path}.${field}`, issues)
+  }
+  if (value.vendor !== undefined) {
+    if (!record(value.vendor)) issue(issues, `${path}.vendor`, 'must be an object')
+    else {
+      checkKeys(value.vendor, new Set(['id', 'displayName']), `${path}.vendor`, issues)
+      if (typeof value.vendor.id !== 'string' || !DOTTED_ID.test(value.vendor.id)) {
+        issue(issues, `${path}.vendor.id`, 'must be a vendor id')
+      }
+      nonEmptyText(value.vendor.displayName, `${path}.vendor.displayName`, issues)
+    }
+  }
+  if (value.games !== undefined) {
+    if (!Array.isArray(value.games)) issue(issues, `${path}.games`, 'must be an array')
+    else {
+      const ids = new Set()
+      value.games.forEach((game, index) => {
+        const gamePath = `${path}.games[${index}]`
+        if (!record(game)) {
+          issue(issues, gamePath, 'must be an object')
+          return
+        }
+        checkKeys(game, new Set(['id', 'displayName']), gamePath, issues)
+        if (typeof game.id !== 'string' || !COORDINATE.test(game.id)) {
+          issue(issues, `${gamePath}.id`, 'must be a publisher/id coordinate')
+        } else if (ids.has(game.id)) issue(issues, `${gamePath}.id`, 'is duplicated')
+        else ids.add(game.id)
+        nonEmptyText(game.displayName, `${gamePath}.displayName`, issues)
+      })
+    }
+  }
+  if (value.icon !== undefined) presentationAsset(value.icon, `${path}.icon`, issues)
+  if (value.source !== undefined) {
+    if (!record(value.source)) issue(issues, `${path}.source`, 'must be an object')
+    else if (value.source.kind === 'root') {
+      checkKeys(value.source, new Set(['kind', 'root']), `${path}.source`, issues)
+      confinedVfsPath(value.source.root, `${path}.source.root`, issues)
+    } else if (value.source.kind === 'url') {
+      checkKeys(value.source, new Set(['kind', 'url']), `${path}.source`, issues)
+      if (nonEmptyText(value.source.url, `${path}.source.url`, issues)) {
+        try {
+          const parsed = new URL(value.source.url)
+          if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error()
+        } catch {
+          issue(issues, `${path}.source.url`, 'must be an absolute HTTP(S) URL')
+        }
+      }
+    } else issue(issues, `${path}.source.kind`, 'must be root or url')
+  }
+  if (value.licenseFiles !== undefined) {
+    if (!Array.isArray(value.licenseFiles)) {
+      issue(issues, `${path}.licenseFiles`, 'must be an array')
+    } else {
+      value.licenseFiles.forEach((asset, index) =>
+        presentationAsset(asset, `${path}.licenseFiles[${index}]`, issues),
+      )
+    }
+  }
+}
+
+/** Shared runtime guard for catalog, local discovery and persisted manager state. */
+export function snapshotExtensionPresentation(value, label = 'presentation') {
+  const issues = []
+  presentation(value, label, issues)
+  if (issues.length > 0) {
+    throw new ExtensionManagerError(
+      'extension-manager/presentation-invalid',
+      `extension presentation is invalid (${issues[0].path}: ${issues[0].message})`,
+      { issues: Object.freeze(issues) },
+    )
+  }
+  return deepFreeze(jsonClone(value))
 }
 
 export function isRemoteCatalogUri(uri) {
@@ -170,7 +288,16 @@ function catalogPackage(value, path, issues) {
   }
   checkKeys(
     value,
-    new Set(['id', 'publisher', 'displayName', 'summary', 'license', 'homepage', 'versions']),
+    new Set([
+      'id',
+      'publisher',
+      'displayName',
+      'summary',
+      'license',
+      'homepage',
+      'presentation',
+      'versions',
+    ]),
     path,
     issues,
   )
@@ -181,6 +308,8 @@ function catalogPackage(value, path, issues) {
     nonEmptyText(value[field], `${path}.${field}`, issues)
   }
   if (value.license !== undefined) nonEmptyText(value.license, `${path}.license`, issues)
+  if (value.presentation !== undefined)
+    presentation(value.presentation, `${path}.presentation`, issues)
   if (value.homepage !== undefined) {
     if (nonEmptyText(value.homepage, `${path}.homepage`, issues)) {
       try {

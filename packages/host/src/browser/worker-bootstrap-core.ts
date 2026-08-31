@@ -6,7 +6,7 @@
  * (`loadVerifiedModuleGraph`), so there is no window for a tamper to fit into.
  */
 
-import { ModkitError } from '@modkitx-x3/core'
+import { ModkitError } from '@modkit/core'
 import {
   createEndpoint,
   createStandardSurfaceRegistry,

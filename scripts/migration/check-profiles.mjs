@@ -240,9 +240,9 @@ if (optionalClosures === undefined) {
       }
     }
     for (const subpath of closure.subpaths) {
-      const match = /^@modkitx-x3\/([a-z-]+)(\/.+)?$/u.exec(subpath)
+      const match = /^@modkit\/([a-z-]+)(\/.+)?$/u.exec(subpath)
       if (match === null) {
-        fail(`${label}: ${subpath} is not a @modkitx-x3 specifier`)
+        fail(`${label}: ${subpath} is not a @modkit specifier`)
         continue
       }
       const [, packageName, rest] = match

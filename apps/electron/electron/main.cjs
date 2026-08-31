@@ -401,7 +401,7 @@ async function createWindow() {
 
   /*
    * Bootstrap data, not a broker call. The renderer must not compose the topology itself: the
-   * composition root imports `@modkitx-x3/host/node`, so a renderer that could run it would need
+   * composition root imports `@modkit/host/node`, so a renderer that could run it would need
    * Node access — exactly what `nodeIntegration: false` denies. Main composes, and the renderer
    * receives the snapshot its own realm is allowed to see.
    */
@@ -657,7 +657,7 @@ async function createWindow() {
                 roundTrip: 'semantic',
                 preservesUnknownData: false,
                 evidenceId: 'png-encoder-v1',
-                corpusId: 'modkitX3/packages/host/test/media-edits.test.ts',
+                corpusId: 'modkit/packages/host/test/media-edits.test.ts',
                 corpusDigest: 'none:proof-suite',
                 conformanceProfile: 'common.edit/writer-v1',
                 writer: formatWriter.writer.identity,

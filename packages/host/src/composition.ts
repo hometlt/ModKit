@@ -1,4 +1,4 @@
-import { ModkitError } from '@modkitx-x3/core'
+import { ModkitError } from '@modkit/core'
 import {
   createHostTopology,
   hostRealmCacheKey,
@@ -7,7 +7,7 @@ import {
   type HostRealmProfile,
   type HostTopology,
   type RuntimeTarget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { createHostContributionContractRegistry } from './contribution-registry.js'
 import { buildInventory, type ExtensionInput, type Inventory } from './inventory.js'
 import { DEFAULT_EXECUTION_BACKENDS, type ExecutionBackendRegistry } from './execution/backend.js'

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/viewer-contribution", "major": 1 },
-  "id": "org.modkitx.ui/hex-stage",
+  "contract": { "id": "modkit/viewer-contribution", "major": 1 },
+  "id": "modkit.ui/hex-stage",
   "displayName": "hex stage",
   "runtimeVariants": [
     {

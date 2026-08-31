@@ -8,21 +8,21 @@
  * still be shown. The live end of it (an edit reaching a file on disk) is the `--selftest` run.
  */
 import { describe, expect, it } from 'vitest'
-import { revisionId } from '@modkitx-x3/sdk'
-import { createUiLocalizer, type UiLocalizer } from '@modkitx-x3/ui/localization'
+import { revisionId } from '@modkit/sdk'
+import { createUiLocalizer, type UiLocalizer } from '@modkit/ui/localization'
 import type {
   AssetEditPlan,
   AssetRevision,
   ChangeSet,
   SubjectEditTarget,
   ValidationResult,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type {
   SubjectEditingArm,
   SubjectEditingCommitResult,
   SubjectEditingPrepareResult,
   SubjectEditingState,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 
 import {
   commitStatus,

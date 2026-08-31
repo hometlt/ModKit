@@ -5,13 +5,13 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
 import { describe, expect, it } from 'vitest'
-import { contractId } from '@modkitx-x3/core'
+import { contractId } from '@modkit/core'
 import {
   buildInventory,
   createHostContributionContractRegistry,
   offersFromInventory,
-} from '@modkitx-x3/host'
-import { loadExtensionDirectory } from '@modkitx-x3/host/node'
+} from '@modkit/host'
+import { loadExtensionDirectory } from '@modkit/host/node'
 import {
   revisionId,
   type ArtifactByteSource,
@@ -21,8 +21,8 @@ import {
   type ModelSceneSource,
   type ProviderRequest,
   type ResourceBudget,
-} from '@modkitx-x3/sdk'
-import { runMinimalHost } from '@modkitx-x3/testkit'
+} from '@modkit/sdk'
+import { runMinimalHost } from '@modkit/testkit'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(here, '..', '..', '..')
@@ -46,7 +46,7 @@ const request: ProviderRequest = {
   },
   target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
   pin: {
-    providerId: 'org.modkitx/model-uvm',
+    providerId: 'modkit/model-uvm',
     runtimeVariant: 'trusted-node',
     offerId: 'uvm-scene',
   },
@@ -133,7 +133,7 @@ function minimalUvm(
       ? {}
       : {
           UV_game_material: {
-            shader: 'org.modkitx.render-material.v1',
+            shader: 'modkit.render-material.v1',
             params: {
               renderModel: {
                 version: materialSnapshotVersion,
@@ -146,7 +146,7 @@ function minimalUvm(
   const document = {
     asset: {
       version: '2.0',
-      generator: 'modkitX3 UVM convergence fixture',
+      generator: 'modkit UVM convergence fixture',
       extras: { uv: { format: 'UVM', version: '1.0', profile: 'core' } },
     },
     extensionsUsed: [
@@ -161,7 +161,7 @@ function minimalUvm(
       UV_asset: { id: 'corpus/a2-a3-triangle', class: 'prop', coreRenderable: true },
       UV_provenance: {
         source: { format: 'obj', file: 'triangle.obj' },
-        importer: { id: 'org.modkitx/uvm-writer', version: '0.1.0' },
+        importer: { id: 'modkit/uvm-writer', version: '0.1.0' },
         lost: [],
       },
       ...(effects
@@ -353,13 +353,13 @@ describe('UVM convergence through A-2 inventory and A-3 sessions', () => {
     expect(inventory.diagnostics).toEqual([])
     const uvmContribution = inventory.extensions
       .flatMap(extension => extension.contributions)
-      .find(contribution => contribution.manifest?.id === 'org.modkitx/model-uvm')
+      .find(contribution => contribution.manifest?.id === 'modkit/model-uvm')
     expect(uvmContribution?.diagnostics).toEqual([])
     expect(uvmContribution).toMatchObject({ inventoryEligible: true, activationEligible: true })
     expect(
-      offersFromInventory(inventory).find(offer => offer.providerId === 'org.modkitx/model-uvm'),
+      offersFromInventory(inventory).find(offer => offer.providerId === 'modkit/model-uvm'),
     ).toMatchObject({
-      providerId: 'org.modkitx/model-uvm',
+      providerId: 'modkit/model-uvm',
       provides: [
         {
           offerId: 'uvm-scene',
@@ -378,7 +378,7 @@ describe('UVM convergence through A-2 inventory and A-3 sessions', () => {
     expect(run.result.state).toBe('resolved')
     if (run.result.state !== 'resolved') throw new TypeError('UVM provider did not resolve')
     expect(run.result.selected.offer).toMatchObject({
-      providerId: 'org.modkitx/model-uvm',
+      providerId: 'modkit/model-uvm',
       runtimeVariant: 'trusted-node',
       provides: [
         {
@@ -397,7 +397,7 @@ describe('UVM convergence through A-2 inventory and A-3 sessions', () => {
     expect(run.activation.effectiveGrant.classes).toEqual(['read-source'])
     expect(
       run.inventory.extensions[0]?.contributions.find(
-        contribution => contribution.manifest?.id === 'org.modkitx/model-uvm',
+        contribution => contribution.manifest?.id === 'modkit/model-uvm',
       ),
     ).toMatchObject({ inventoryEligible: true, activationEligible: true })
 
@@ -426,7 +426,7 @@ describe('UVM convergence through A-2 inventory and A-3 sessions', () => {
       plan: { kind: 'bytes', ranges: [{ from: 'start', length: 65536 }], maxBytes: 65536 },
     })
     expect(detection).toMatchObject({
-      codecId: 'org.modkitx/model-uvm',
+      codecId: 'modkit/model-uvm',
       confidence: 0.995,
       evidence: [{ kind: 'structure', note: 'uvm-core-1.0' }],
     })
@@ -438,7 +438,7 @@ describe('UVM convergence through A-2 inventory and A-3 sessions', () => {
       subjectUri: source.ref.uri,
       interpretation: 'codec',
       identity: {
-        codecId: 'org.modkitx/model-uvm',
+        codecId: 'modkit/model-uvm',
         formatId: 'uvm',
         formatLabel: 'Universal Verse Model 1.0',
       },

@@ -2,9 +2,9 @@ import {
   createAudioMediaSource,
   createInspectionCodec,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/flac'
+const ID = 'modkit/flac'
 const BLOCK_TYPES = Object.freeze([
   'STREAMINFO',
   'PADDING',

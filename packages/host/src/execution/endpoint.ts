@@ -18,12 +18,7 @@
  * ABI, or any standard surface data (a `SurfaceRegistry` is injected).
  */
 
-import {
-  isModkitError,
-  ModkitError,
-  OperationCancelledError,
-  type Diagnostic,
-} from '@modkitx-x3/core'
+import { isModkitError, ModkitError, OperationCancelledError, type Diagnostic } from '@modkit/core'
 import {
   ActiveCalls,
   HandleTable,

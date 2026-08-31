@@ -10,6 +10,6 @@
     "serve": "node scripts/build.mjs --serve"
   },
   "dependencies": {
-    "@modkitx-x3/code": "file:../../packages/code"
+    "@modkit/code": "file:../../packages/code"
   }
 }

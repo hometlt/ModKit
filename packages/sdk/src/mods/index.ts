@@ -6,7 +6,7 @@ import type { ServiceProviderModule } from '../runtime-abi.js'
 export const MOD_WORKSPACE_COMPOSITION_CONTRACT = 'common.mod/workspace-composition' as const
 
 /** Host-owned matcher profile for exact game-id routing. */
-export const MOD_WORKSPACE_MATCHER_PROFILE = 'org.modkitx/mod-workspace-matcher' as const
+export const MOD_WORKSPACE_MATCHER_PROFILE = 'modkit/mod-workspace-matcher' as const
 
 export type ModWorkspaceDependencyProvenance = 'declared' | 'implicit'
 

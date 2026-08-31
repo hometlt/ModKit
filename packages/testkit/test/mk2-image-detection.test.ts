@@ -8,7 +8,7 @@ import {
   type Codec,
   type ContributionContext,
   type ResourceBudget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const imagesRoot = join(repoRoot, 'extensions', 'images')

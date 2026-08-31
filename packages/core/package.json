@@ -1,5 +1,5 @@
 {
-  "name": "@modkitx-x3/core",
+  "name": "@modkit/core",
   "version": "0.1.0",
   "description": "MK3 clean-core lab: IDs, structured errors/diagnostics, deterministic ordering/serialization, cancellation, lifecycle (BRIEF-12; not a release)",
   "license": "UNLICENSED",

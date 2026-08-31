@@ -1,4 +1,4 @@
-import { uint64, type SourceSpan, type SourceSpanWire } from '@modkitx-x3/core'
+import { uint64, type SourceSpan, type SourceSpanWire } from '@modkit/core'
 
 export const byteOnlySpan = {
   byteOffset: uint64('0'),

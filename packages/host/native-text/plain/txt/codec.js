@@ -1,18 +1,18 @@
 /**
- * `org.modkitx/txt` — the plain-text codec, relocated out of MK2 staging by block 11 slice 11A.
+ * `modkit/txt` — the plain-text codec, relocated out of MK2 staging by block 11 slice 11A.
  *
  * Read-only by construction: the codec decodes, describes and hands out sources. Editing plain text
- * is the separate `org.modkitx/plain-text-writer` contribution, so nothing here can write a source.
+ * is the separate `modkit/plain-text-writer` contribution, so nothing here can write a source.
  */
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import { createTreeDataSource, lease as simpleLease, newlineOf } from '../../runtime/basic.js'
-import { revisionId } from '@modkitx-x3/sdk'
+import { revisionId } from '@modkit/sdk'
 
-const CODEC_ID = 'org.modkitx/txt'
+const CODEC_ID = 'modkit/txt'
 /** Control characters that are text: tab, line feed, carriage return, form feed. */
 const TEXT_CONTROLS = new Set([0x09, 0x0a, 0x0c, 0x0d])
 /** Above this share of other control bytes the sample is binary, not prose. */
@@ -364,7 +364,7 @@ export const createCodec = () =>
           if (contract === 'common.view/text-data-source' && text !== undefined) {
             return simpleLease(text)
           }
-          throw new TypeError(`org.modkitx/txt does not publish ${contract}`)
+          throw new TypeError(`modkit/txt does not publish ${contract}`)
         },
         release: [() => sourceLease.release()],
       })

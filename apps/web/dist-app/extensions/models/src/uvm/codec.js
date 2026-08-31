@@ -6,7 +6,7 @@ import {
   createModelSocketSource,
   createProjectionReceipt,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
 /**
  * UVM/core is a glTF 2.0 profile, so its space is glTF's: right-handed, Y up, −Z forward, metres.
@@ -238,7 +238,7 @@ function validateSocketMetadata(document, used) {
     if (socket.up !== undefined && !axes.has(socket.up)) {
       throw new TypeError(`node ${nodeIndex} socket up axis is invalid`)
     }
-    const identity = socket.extras?.modkitx
+    const identity = socket.extras?.modkit
     if (identity !== undefined && (!nonBlank(identity.id) || !nonBlank(identity.nodeId))) {
       throw new TypeError(`node ${nodeIndex} socket Modkit identity is invalid`)
     }
@@ -258,7 +258,7 @@ function decodeSockets(document) {
     const extension = node.extensions?.UV_game_socket
     if (extension === undefined) continue
     const socket = object(extension, `node ${nodeIndex} UV_game_socket`)
-    const identity = socket.extras?.modkitx
+    const identity = socket.extras?.modkit
     sockets.push({
       id: nonBlank(identity?.id) ? identity.id : `uvm-socket-${nodeIndex}`,
       nodeId: nonBlank(identity?.nodeId) ? identity.nodeId : `node-${nodeIndex}`,
@@ -1199,7 +1199,7 @@ function inspectUvm(bytes, context) {
       { id: 'structure.hierarchy', parameters: { nodeCount: decoded.jsonNodes, lazy: true } },
     ],
     projectionReceipt: createProjectionReceipt({
-      adapter: { id: 'org.modkitx/model-uvm', version: '1.0.0' },
+      adapter: { id: 'modkit/model-uvm', version: '1.0.0' },
       subjectRevision: context.input.revisions.revision,
       companions: [],
       basis: UVM_BASIS,
@@ -1311,7 +1311,7 @@ function inspectUvm(bytes, context) {
 }
 
 const definition = Object.freeze({
-  id: 'org.modkitx/model-uvm',
+  id: 'modkit/model-uvm',
   format: Object.freeze({
     id: 'uvm',
     label: 'Universal Verse Model 1.0',

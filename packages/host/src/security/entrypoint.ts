@@ -6,7 +6,7 @@
  * these shapes, but the host must not rely on someone else having validated the input).
  */
 
-import { ModkitError } from '@modkitx-x3/core'
+import { ModkitError } from '@modkit/core'
 
 const SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:/
 const WINDOWS_DRIVE = /^[a-zA-Z]:/

@@ -1,8 +1,8 @@
 /** Generic explicit-consent seam for native game launch from the VS Code adapter. */
 
-import type { PermissionGrant } from '@modkitx-x3/sdk'
-import type { GameInstallation, GameLaunchResource } from '@modkitx-x3/sdk/games'
-import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+import type { PermissionGrant } from '@modkit/sdk'
+import type { GameInstallation, GameLaunchResource } from '@modkit/sdk/games'
+import type { UiLocalizer } from '@modkit/ui/localization'
 
 import { createVscodeLocalizer } from './localization.js'
 

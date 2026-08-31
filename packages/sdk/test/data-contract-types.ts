@@ -1,10 +1,10 @@
-import type { ServiceProviderContributionSpecV1 } from '@modkitx-x3/sdk/formats'
+import type { ServiceProviderContributionSpecV1 } from '@modkit/sdk/formats'
 import type {
   DataCatalogAnalysis,
   DataCatalogAnalysisRequest,
   DataCatalogProviderModule,
-} from '@modkitx-x3/sdk/data'
-import type { TypedServiceContractRequest } from '@modkitx-x3/sdk/service-contracts'
+} from '@modkit/sdk/data'
+import type { TypedServiceContractRequest } from '@modkit/sdk/service-contracts'
 
 export const catalogRoute = {
   contract: 'common.data/catalog-analysis',

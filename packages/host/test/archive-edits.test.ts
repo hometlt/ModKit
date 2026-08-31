@@ -19,7 +19,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { crc32, deflateRawSync, inflateRawSync } from 'node:zlib'
 import { afterAll, describe, expect, it } from 'vitest'
-import { uint64 } from '@modkitx-x3/core'
+import { uint64 } from '@modkit/core'
 import {
   createHostTopology,
   type AssetEditPlan,
@@ -27,8 +27,8 @@ import {
   type JsonValue,
   type NamespaceEntrySource,
   type PermissionGrant,
-} from '@modkitx-x3/sdk'
-import { createSubjectEditing, type ExtensionInput, type OpenedSubject } from '@modkitx-x3/host'
+} from '@modkit/sdk'
+import { createSubjectEditing, type ExtensionInput, type OpenedSubject } from '@modkit/host'
 import {
   createFileEditingBackend,
   createNodeSubjectServices,
@@ -39,7 +39,7 @@ import {
   openFileArtifactSource,
   workerBackendPolicy,
   type NodeSubjectServices,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const archivesDir = join(repoRoot, 'extensions', 'archives')
@@ -307,8 +307,8 @@ let digest: string | undefined
 async function artifactDigest(): Promise<string> {
   if (digest !== undefined) return digest
   const found = (await services()).inventory.extensions
-    .find(item => item.contributions.some(c => c.manifest?.id === 'org.modkitx/archive-zip'))
-    ?.contributions.find(c => c.manifest?.id === 'org.modkitx/archive-zip')?.record?.artifactDigest
+    .find(item => item.contributions.some(c => c.manifest?.id === 'modkit/archive-zip'))
+    ?.contributions.find(c => c.manifest?.id === 'modkit/archive-zip')?.record?.artifactDigest
   if (found === undefined) throw new Error('no archives artifact digest')
   digest = found
   return found
@@ -325,9 +325,9 @@ function zipEvidence(
     roundTrip: 'semantic',
     preservesUnknownData: plan.fidelity.preservesUnknownData,
     evidenceId: 'zip-verbatim-reassembly-v1',
-    corpusId: 'modkitX3/packages/host/test/archive-edits.test.ts',
+    corpusId: 'modkit/packages/host/test/archive-edits.test.ts',
     corpusDigest: `sha256:${createHash('sha256').update(corpus).digest('hex')}`,
-    conformanceProfile: 'org.modkitx/codec-contribution-v1' as never,
+    conformanceProfile: 'modkit/codec-contribution-v1' as never,
     writer: {
       providerId: opened.selected.contributionId,
       providerVersion: '1.0.0',

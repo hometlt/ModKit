@@ -19,6 +19,8 @@
  * without a `vscode` module and without touching a real filesystem.
  */
 
+import { normalizeModkitIdentifier } from '@modkit/sdk'
+
 /** The filesystem questions discovery asks. `node:fs` answers them in `./host.js`. */
 export interface DirectoryProbe {
   /** Entry names directly inside `path`, or `undefined` when it is not a readable directory. */
@@ -285,7 +287,7 @@ export function configuredDisabledContributions(value: unknown): {
       problems.push(`modkit.disabledContributions[${index}] is not a contribution id`)
       continue
     }
-    const id = item.trim()
+    const id = normalizeModkitIdentifier(item.trim())
     if (seen.has(id)) continue
     seen.add(id)
     ids.push(id)
@@ -395,10 +397,11 @@ export function withContributionDisabled(
   id: string,
   disabled: boolean,
 ): { readonly next: readonly string[]; readonly changed: boolean } {
+  const target = normalizeModkitIdentifier(id)
   const current = configuredDisabledContributions(value).ids
-  const has = current.includes(id)
+  const has = current.includes(target)
   if (has === disabled) return { next: current, changed: false }
-  const next = disabled ? [...current, id].sort() : current.filter(other => other !== id)
+  const next = disabled ? [...current, target].sort() : current.filter(other => other !== target)
   return { next: Object.freeze(next), changed: true }
 }
 
@@ -409,7 +412,9 @@ export function withContributionsDisabled(
   disabled: boolean,
 ): { readonly next: readonly string[]; readonly changed: boolean } {
   const current = configuredDisabledContributions(value).ids
-  const selected = new Set(ids.filter(id => id.trim().length > 0))
+  const selected = new Set(
+    ids.map(id => normalizeModkitIdentifier(id.trim())).filter(id => id.length > 0),
+  )
   if (selected.size === 0) return { next: current, changed: false }
   const next = disabled
     ? [...new Set([...current, ...selected])].sort()

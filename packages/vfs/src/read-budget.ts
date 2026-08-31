@@ -1,4 +1,4 @@
-import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
+import { ModkitError, throwIfAborted } from '@modkit/core'
 
 import { rangeError, type RandomAccessSource } from './source.js'
 import type { VfsLimits } from './vfs.js'

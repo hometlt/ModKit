@@ -16,7 +16,7 @@ import { tmpdir } from 'node:os'
 
 import { extensionArtifactDigest } from '../lib/extension-artifact-digest.mjs'
 
-const RELEASE_ID = 'modkitx-mk3-focused-local-rc'
+const RELEASE_ID = 'modkit-mk3-focused-local-rc'
 const GENERATED_NAMES = Object.freeze([
   'LICENSE-NOTICES.txt',
   'release-manifest.json',
@@ -102,6 +102,20 @@ function assertSafeRelativePath(path, label = 'path') {
 function pathInside(parent, child) {
   const rel = relative(resolve(parent), resolve(child))
   return rel === '' || (!rel.startsWith(`..${sep}`) && rel !== '..' && !isAbsolute(rel))
+}
+
+function pnpmDependencyBoundary(path) {
+  const parts = resolve(path).split(sep)
+  for (let index = parts.length - 1; index >= 3; index -= 1) {
+    if (
+      parts[index] === 'node_modules' &&
+      parts[index - 2] === '.pnpm' &&
+      parts[index - 3] === 'node_modules'
+    ) {
+      return parts.slice(0, index).join(sep)
+    }
+  }
+  return undefined
 }
 
 function addFile(entries, archivePath, sourcePath) {
@@ -490,14 +504,37 @@ function packageRef(metadata) {
 }
 
 function nearestPackageJson(dependency, from, repoRoot) {
-  let current = existsSync(from) ? realpathSync(resolve(from)) : resolve(from)
   const boundary = resolve(repoRoot)
-  while (pathInside(boundary, current)) {
-    const candidate = join(current, 'node_modules', ...dependency.split('/'), 'package.json')
-    if (existsSync(candidate)) return candidate
-    const parent = dirname(current)
-    if (parent === current) break
-    current = parent
+  const starts = []
+  const logical = resolve(from)
+  const dependencyParts = dependency.split('/')
+  if (pathInside(boundary, logical)) starts.push({ current: logical, boundary })
+  if (existsSync(logical)) {
+    const physical = realpathSync(logical)
+    if (pathInside(boundary, physical)) {
+      if (!starts.some(start => start.current === physical)) {
+        starts.push({ current: physical, boundary })
+      }
+    } else if (pathInside(boundary, logical)) {
+      const pnpmBoundary = pnpmDependencyBoundary(physical)
+      if (pnpmBoundary !== undefined && pathInside(pnpmBoundary, physical)) {
+        starts.push({ current: physical, boundary: pnpmBoundary })
+      }
+    }
+  }
+  for (const start of starts) {
+    let current = start.current
+    while (pathInside(start.boundary, current)) {
+      const candidate = join(current, 'node_modules', ...dependencyParts, 'package.json')
+      if (existsSync(candidate)) return candidate
+      if (current.split(sep).at(-1) === 'node_modules') {
+        const sibling = join(current, ...dependencyParts, 'package.json')
+        if (existsSync(sibling)) return sibling
+      }
+      const parent = dirname(current)
+      if (parent === current) break
+      current = parent
+    }
   }
   return undefined
 }
@@ -648,8 +685,8 @@ export function buildLicenseDocuments({ repoRoot, artifacts, releaseVersion }) {
         : {}),
       name: component.metadata.name,
       properties: [
-        { name: 'modkitx:artifacts', value: [...component.artifacts].sort().join(',') },
-        { name: 'modkitx:metadata-source', value: component.sourceLabel },
+        { name: 'modkit:artifacts', value: [...component.artifacts].sort().join(',') },
+        { name: 'modkit:metadata-source', value: component.sourceLabel },
       ],
       purl: component.ref,
       type: component.metadata.private === true ? 'application' : 'library',
@@ -664,12 +701,12 @@ export function buildLicenseDocuments({ repoRoot, artifacts, releaseVersion }) {
     dependencies: dependencyRows,
     metadata: {
       component: {
-        'bom-ref': `urn:modkitx:${RELEASE_ID}:${releaseVersion}`,
+        'bom-ref': `urn:modkit:${RELEASE_ID}:${releaseVersion}`,
         name: RELEASE_ID,
         type: 'application',
         version: releaseVersion,
       },
-      tools: [{ vendor: 'ModkitX', name: 'scripts/release/rc.mjs' }],
+      tools: [{ vendor: 'Modkit', name: 'scripts/release/rc.mjs' }],
     },
     specVersion: '1.5',
     version: 1,
@@ -763,7 +800,7 @@ function artifactDefinitions(repoRoot, composition) {
   )
   const common = {
     id: 'common',
-    file: 'artifacts/modkitx-common.tar',
+    file: 'artifacts/modkit-common.tar',
     kind: 'common-extension-bundle',
     entries: commonArtifact(repoRoot, composition),
     catalog: composition.commonRoots.map(root =>
@@ -773,7 +810,7 @@ function artifactDefinitions(repoRoot, composition) {
   return [
     {
       id: 'platform',
-      file: 'artifacts/modkitx-platform.tar',
+      file: 'artifacts/modkit-platform.tar',
       kind: 'application-and-package-bundle',
       entries: platformArtifact(repoRoot, composition),
       catalog: [],
@@ -823,7 +860,7 @@ function writeAtomically(outDir, files) {
   mkdirSync(parent, { recursive: true })
   const temporary = join(
     parent,
-    `.modkitx-rc-${process.pid}-${createHash('sha256').update(outDir).digest('hex').slice(0, 12)}`,
+    `.modkit-rc-${process.pid}-${createHash('sha256').update(outDir).digest('hex').slice(0, 12)}`,
   )
   if (existsSync(temporary))
     throw new Error(`temporary release output already exists: ${temporary}`)
@@ -1012,7 +1049,7 @@ export function checkRc({ repoRoot, generatedDir } = {}) {
   const generated = resolve(generatedDir ?? join(root, 'scripts', 'release', 'generated'))
   const scratch = join(
     tmpdir(),
-    `modkitx-rc-check-${process.pid}-${createHash('sha256').update(root).digest('hex').slice(0, 12)}`,
+    `modkit-rc-check-${process.pid}-${createHash('sha256').update(root).digest('hex').slice(0, 12)}`,
   )
   if (existsSync(scratch)) throw new Error(`release check scratch already exists: ${scratch}`)
   mkdirSync(scratch, { recursive: true })
@@ -1044,7 +1081,7 @@ export function emitRcMetadata({ repoRoot, generatedDir } = {}) {
   const generated = resolve(generatedDir ?? join(root, 'scripts', 'release', 'generated'))
   const scratch = join(
     tmpdir(),
-    `modkitx-rc-emit-${process.pid}-${createHash('sha256').update(root).digest('hex').slice(0, 12)}`,
+    `modkit-rc-emit-${process.pid}-${createHash('sha256').update(root).digest('hex').slice(0, 12)}`,
   )
   buildRc({ repoRoot: root, outDir: scratch })
   try {

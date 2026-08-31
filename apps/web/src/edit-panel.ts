@@ -31,9 +31,9 @@ import {
   setState,
   setViewerText,
   ViewerMountScope,
-} from '@modkitx-x3/ui/viewer'
-import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
-import type { AnyDescriptor, AssetEditPlan, OperationOutput, ViewerModule } from '@modkitx-x3/sdk'
+} from '@modkit/ui/viewer'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkit/ui/localization'
+import type { AnyDescriptor, AssetEditPlan, OperationOutput, ViewerModule } from '@modkit/sdk'
 
 import {
   declaredMutatingOperations,

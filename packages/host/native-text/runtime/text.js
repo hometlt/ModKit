@@ -1,10 +1,10 @@
-import { diagnostic, throwIfAborted, uint64 } from '@modkitx-x3/core'
+import { diagnostic, throwIfAborted, uint64 } from '@modkit/core'
 import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource,
-} from '@modkitx-x3/host'
-import { revisionId } from '@modkitx-x3/sdk'
+} from '@modkit/host'
+import { revisionId } from '@modkit/sdk'
 import { lease, newlineOf } from './basic.js'
 
 function decodeInput(input) {
@@ -75,14 +75,10 @@ export function failure(code, message, text = '', offset = 0, length = 0) {
 function preflight(decoded, budget, signal) {
   throwIfAborted(signal)
   if (BigInt(decoded.bytes.byteLength) > budget.maxInputBytes) {
-    return failure(
-      'org.modkitx/text-data-input-budget',
-      'input exceeds maxInputBytes',
-      decoded.text,
-    )
+    return failure('modkit/text-data-input-budget', 'input exceeds maxInputBytes', decoded.text)
   }
   if (decoded.text.includes('\0')) {
-    return failure('org.modkitx/text-data-nul', 'NUL is forbidden in text input', decoded.text)
+    return failure('modkit/text-data-nul', 'NUL is forbidden in text input', decoded.text)
   }
   return undefined
 }
@@ -184,7 +180,7 @@ export function createTextSyntaxProvider(definition) {
         decoded = decodeInput(request.input)
       } catch (cause) {
         return failure(
-          'org.modkitx/text-data-decode',
+          'modkit/text-data-decode',
           cause instanceof Error ? cause.message : String(cause),
         )
       }
@@ -201,7 +197,7 @@ export function createTextSyntaxProvider(definition) {
         diagnostics: [
           diagnostic(
             'error',
-            'org.modkitx/text-data-output-budget',
+            'modkit/text-data-output-budget',
             'serialized output exceeds maxInputBytes',
           ),
         ],
@@ -289,7 +285,7 @@ export function createTextCodec(definition, context) {
         text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
       } catch {
         return {
-          codecId: `org.modkitx/text-${definition.format}`,
+          codecId: `modkit/text-${definition.format}`,
           confidence: 0.01,
           evidence: [{ kind: 'structure', weight: -1, note: 'invalid-utf8' }],
           requiredRanges: [{ byteOffset: '0', byteLength: String(bytes.byteLength) }],
@@ -297,7 +293,7 @@ export function createTextCodec(definition, context) {
       }
       const result = definition.detect(text, request.source.ref.uri)
       return {
-        codecId: `org.modkitx/text-${definition.format}`,
+        codecId: `modkit/text-${definition.format}`,
         confidence: result.confidence,
         evidence: [{ kind: 'structure', weight: result.confidence, note: result.note }],
         requiredRanges: [{ byteOffset: '0', byteLength: String(bytes.byteLength) }],
@@ -369,7 +365,7 @@ export function createTextCodec(definition, context) {
         },
         interpretation: 'codec',
         identity: {
-          codecId: `org.modkitx/text-${definition.format}`,
+          codecId: `modkit/text-${definition.format}`,
           codecVersion: '1.0.0',
           formatId: definition.format,
           formatLabel: definition.format.toUpperCase(),

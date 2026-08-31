@@ -1,4 +1,4 @@
-import { createTextCodec } from '@modkitx-x3/codec-kit/text'
+import { createTextCodec } from '@modkit/codec-kit/text'
 import { definition } from './definition.js'
 
 function detect(text) {

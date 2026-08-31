@@ -24,7 +24,7 @@
  *    uses, so the registry key and the gate's resolution cannot drift apart.
  */
 
-import { ModkitError } from '@modkitx-x3/core'
+import { ModkitError } from '@modkit/core'
 import type { ExtensionInput } from './inventory.js'
 import { resolveContainedEntrypoint } from './security/entrypoint.js'
 

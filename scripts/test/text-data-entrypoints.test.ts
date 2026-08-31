@@ -23,10 +23,7 @@ function contribution(root: string, packageName: string, kind: 'codec' | 'provid
   writeFileSync(entrypoint, 'export const createCodec = () => ({})\n')
   const manifest = {
     contract: {
-      id:
-        kind === 'codec'
-          ? 'org.modkitx/codec-contribution'
-          : 'org.modkitx/service-provider-contribution',
+      id: kind === 'codec' ? 'modkit/codec-contribution' : 'modkit/service-provider-contribution',
     },
     runtimeVariants: [{ entrypoint: `./src/moved-family/${kind}.js` }],
     spec:

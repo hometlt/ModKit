@@ -25,18 +25,18 @@ import {
   type SettingsUiGroup,
   type SettingsUiGroupContext,
   type SubjectCard,
-} from '@modkitx-x3/ui'
-import { contributionContractLabel, type UiLocalizer } from '@modkitx-x3/ui/localization'
+} from '@modkit/ui'
+import { contributionContractLabel, type UiLocalizer } from '@modkit/ui/localization'
 import {
   subjectFactsSourceFromWire,
   type ExtensionSubjectCardWireDocument,
   type ExtensionManagerClient,
   type ExtensionManagerEntry,
   type ExtensionManagerSnapshot,
-} from '@modkitx/extension-manager'
+} from '@modkit/extension-manager'
 import { createElectronLocalizer } from './localization.js'
 
-export type { ExtensionManagerSnapshot } from '@modkitx/extension-manager'
+export type { ExtensionManagerSnapshot } from '@modkit/extension-manager'
 
 // ---------------------------------------------------------------------------------------------
 // what main reports
@@ -488,7 +488,7 @@ export function createExtensionsSettingsGroups(
     node.tabIndex = 0
     node.setAttribute('role', 'button')
     node.title = localizer.text(
-      kind === 'org.modkitx/contribution'
+      kind === 'modkit/contribution'
         ? 'extensions.action.openContributionCard'
         : 'extensions.action.openExtensionCard',
     )
@@ -539,7 +539,7 @@ export function createExtensionsSettingsGroups(
     const actions = element(host, 'div', { part: 'settings.adder' })
     addEnablementIcon(
       actions,
-      wire.subject.kind === 'org.modkitx/contribution'
+      wire.subject.kind === 'modkit/contribution'
         ? wire.subject.effectiveEnabled === true
         : wire.subject.enabled,
       wire.subject.displayName,
@@ -555,7 +555,7 @@ export function createExtensionsSettingsGroups(
       draw()
     })
 
-    if (wire.subject.kind === 'org.modkitx/contribution') {
+    if (wire.subject.kind === 'modkit/contribution') {
       const toggle = element(actions, 'button', {
         part: 'settings.add',
         text: wire.subject.enabled ? copy.disableContribution : copy.enableContribution,
@@ -726,7 +726,7 @@ export function createExtensionsSettingsGroups(
               `${entry.installedVersion ?? copy.notInstalled} → ${entry.availableVersion} · ` +
               `${entry.trusted ? copy.trustedSource : copy.untrustedSource}`,
           })
-          makeSubjectLink(text, 'org.modkitx/extension', entry.id)
+          makeSubjectLink(text, 'modkit/extension', entry.id)
           action(entry, row)
         }
       }
@@ -868,7 +868,7 @@ export function createExtensionsSettingsGroups(
                 ? copy.entryFailed(entry.code ?? '', entry.message ?? '')
                 : copy.entryAbsent,
       })
-      if (entry.id !== undefined) makeSubjectLink(text, 'org.modkitx/extension', entry.id)
+      if (entry.id !== undefined) makeSubjectLink(text, 'modkit/extension', entry.id)
 
       const remove = element(item, 'button', {
         part: 'settings.remove',
@@ -943,7 +943,7 @@ export function createExtensionsSettingsGroups(
         // Whole bundled extensions are not removable here; their contributions are, next door.
         text: enabled ? copy.bundledEnabled : copy.bundledDisabled,
       })
-      makeSubjectLink(text, 'org.modkitx/extension', coordinate)
+      makeSubjectLink(text, 'modkit/extension', coordinate)
     }
   }
 
@@ -977,7 +977,7 @@ export function createExtensionsSettingsGroups(
         part: 'settings.label',
         text: copy.ownerSummary(owner, owned.length, off),
       })
-      makeSubjectLink(ownerLabel, 'org.modkitx/extension', owner)
+      makeSubjectLink(ownerLabel, 'modkit/extension', owner)
       for (const contractGroup of groupContributionsByContract(owned)) {
         element(host, 'div', {
           part: 'settings.description',
@@ -1032,7 +1032,7 @@ export function createExtensionsSettingsGroups(
                   ? copy.contributionActive(contribution.origin)
                   : copy.contributionInert(contribution.origin),
           })
-          if (id !== undefined) makeSubjectLink(text, 'org.modkitx/contribution', id)
+          if (id !== undefined) makeSubjectLink(text, 'modkit/contribution', id)
         }
       }
     }

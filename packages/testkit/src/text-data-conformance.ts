@@ -1,11 +1,11 @@
-import type { ResourceBudget } from '@modkitx-x3/sdk'
+import type { ResourceBudget } from '@modkit/sdk'
 import type {
   ParseResult,
   TextDataContractId,
   TextDocumentMap,
   TextInput,
   TextSyntaxProvider,
-} from '@modkitx-x3/sdk/text-data'
+} from '@modkit/sdk/text-data'
 
 export interface TextDataConformanceCase<Contract extends TextDataContractId> {
   readonly name: string

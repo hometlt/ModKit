@@ -1,14 +1,16 @@
 import type { KeyObject } from 'node:crypto'
 
-import type { VirtualFileSystem, VfsLimits } from '@modkitx-x3/vfs'
+import type { VirtualFileSystem, VfsLimits } from '@modkit/vfs'
 import type {
   ArtifactAcquirer,
   ArtifactStore,
   CatalogSource,
   EnablementStore,
   ExtensionManagerClient,
+  GameSupportExtensionManagerClient,
   InstalledExtensionRoot,
 } from './index.js'
+import type { ExtensionPresentation } from '@modkit/sdk'
 export * from './index.js'
 
 export interface DiscoveredExtensionRoot {
@@ -85,6 +87,7 @@ export interface LocalExtensionCandidate {
   readonly summary?: string
   readonly license?: string
   readonly homepage?: string
+  readonly presentation?: ExtensionPresentation
   readonly contributionManifests: readonly string[]
   readonly contributions: readonly LocalContributionCandidate[]
   /** Non-fatal contribution inspection failures scoped to this extension. */
@@ -275,7 +278,7 @@ export interface CreateNodeExtensionManagerOptions {
 }
 
 export interface NodeExtensionManager extends ExtensionManagerClient {
-  readonly client: ExtensionManagerClient
+  readonly client: GameSupportExtensionManagerClient
   readonly catalogSource: CatalogSource
   readonly artifactAcquirer: ArtifactAcquirer
   readonly artifactStore: ArtifactStore

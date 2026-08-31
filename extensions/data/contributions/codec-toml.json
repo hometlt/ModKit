@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "id": "org.modkitx/codec-contribution",
+    "id": "modkit/codec-contribution",
     "major": 1
   },
-  "id": "org.modkitx/text-toml",
+  "id": "modkit/text-toml",
   "displayName": "TOML text data",
   "runtimeVariants": [
     {

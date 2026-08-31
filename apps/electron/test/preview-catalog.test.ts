@@ -10,7 +10,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { COMMON_PRESENTATION_CATALOG } from '@modkitx-x3/host'
+import { COMMON_PRESENTATION_CATALOG } from '@modkit/host'
 
 import { APP_STAGE_POLICY, STAGE_ORDER } from '../src/view-policy.js'
 
@@ -39,7 +39,7 @@ function viewerManifests(): readonly ViewerManifest[] {
     readdirSync(directory)
       .filter(name => name.endsWith('.json'))
       .map(name => JSON.parse(readFileSync(join(directory, name), 'utf8')) as ViewerManifest)
-      .filter(manifest => manifest.contract?.id === 'org.modkitx/viewer-contribution'),
+      .filter(manifest => manifest.contract?.id === 'modkit/viewer-contribution'),
   )
 }
 
@@ -66,8 +66,8 @@ describe('the Electron preview policy', () => {
     // its richer application adapter; image editing is application-only.
     expect(APP_STAGE_POLICY.map(policy => policy.id).sort()).toEqual(['archive', 'image-edit'])
     const kinds = new Map(viewerManifests().map(manifest => [manifest.id, manifest.spec?.kind]))
-    expect(kinds.get('org.modkitx.ui/namespace-tree')).toBe('tree')
-    expect(kinds.get('org.modkitx.ui/archive-stage')).toBe('stage')
+    expect(kinds.get('modkit.ui/namespace-tree')).toBe('tree')
+    expect(kinds.get('modkit.ui/archive-stage')).toBe('stage')
   })
 
   it('binds each slot to exactly one data source, shared by both catalogs', () => {

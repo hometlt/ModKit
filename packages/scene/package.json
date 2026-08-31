@@ -1,5 +1,5 @@
 {
-  "name": "@modkitx-x3/scene",
+  "name": "@modkit/scene",
   "version": "1.0.0",
   "description": "Built-in Modkit scene rendering and 3D relation-graph module.",
   "license": "MIT",
@@ -29,8 +29,8 @@
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
-    "@modkitx-x3/host": "workspace:*",
-    "@modkitx-x3/sdk": "workspace:*",
+    "@modkit/host": "workspace:*",
+    "@modkit/sdk": "workspace:*",
     "three": "^0.180.0"
   },
   "sideEffects": false

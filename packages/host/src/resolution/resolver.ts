@@ -11,7 +11,7 @@ import {
   parseSemver,
   parseVersionRange,
   satisfiesRange,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import type {
   ProviderOffer,
   ProviderRequest,
@@ -21,8 +21,8 @@ import type {
   ResolvedProvider,
   TraitDefinitionOffer,
   TraitDefinitionRequirement,
-} from '@modkitx-x3/sdk'
-import { isStandardTraitId } from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
+import { isStandardTraitId } from '@modkit/sdk'
 
 export const RESOLVER_VERSION = 1
 

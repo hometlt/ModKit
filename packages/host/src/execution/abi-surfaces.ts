@@ -3,7 +3,7 @@
  * (NXT-105 R2): the codec module and codec, asset/operation sessions, and the host-side objects a
  * worker calls back into (artifact sources, namespaces, asset inputs, the diagnostic sink and the
  * contract resolver). These are not data-source contracts and not public data — they are pinned
- * to the runtime-ABI interfaces in `@modkitx-x3/sdk` at compile time (`AbiSurfaceOf<T>`) so an ABI
+ * to the runtime-ABI interfaces in `@modkit/sdk` at compile time (`AbiSurfaceOf<T>`) so an ABI
  * change that forgets its surface does not compile.
  *
  * Objects that mix data and methods (`AssetSession.revision`, `ArtifactByteSource.size`, an
@@ -35,7 +35,7 @@ import type {
   OperationSession,
   ServiceProviderModule,
   SingleAssetInput,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { CapabilitySurface, MethodSurface } from './surface.js'
 
 // ---------------------------------------------------------------------------------------------

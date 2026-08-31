@@ -14,7 +14,7 @@
  * Pure data structures: no transport, no timers, no I/O.
  */
 
-import { ModkitError, OperationCancelledError } from '@modkitx-x3/core'
+import { ModkitError, OperationCancelledError } from '@modkit/core'
 import type {
   ErrorDto,
   HandleKind,

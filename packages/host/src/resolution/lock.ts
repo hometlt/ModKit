@@ -15,15 +15,15 @@ import {
   parseSemver,
   parseVersionRange,
   satisfiesRange,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import type {
   ProviderLockKey,
   ProviderPolicyLockEntry,
   ProviderRequest,
   ResolutionResult,
   TraitDefinitionRequirement,
-} from '@modkitx-x3/sdk'
-import { isStandardTraitId } from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
+import { isStandardTraitId } from '@modkit/sdk'
 import { isResolutionForRequest, resolveProvider, RESOLVER_VERSION } from './resolver.js'
 
 function normalizeTraitRequirements(
@@ -352,7 +352,7 @@ export function parsePolicyLock(text: string): ProviderPolicyLock {
 /** Replay one exact key and verify that current inventory still offers the locked selection. */
 export function replayPolicyLock(
   request: ProviderRequest,
-  offers: readonly import('@modkitx-x3/sdk').ProviderOffer[],
+  offers: readonly import('@modkit/sdk').ProviderOffer[],
   text: string,
 ): ResolutionResult {
   const lock = parsePolicyLock(text)

@@ -1,6 +1,6 @@
 /**
  * The DOM worker script of the browser worker backend — published as
- * `@modkitx-x3/host/browser/worker-entry` and spawned by `createDomWorkerRealmFactory` as a
+ * `@modkit/host/browser/worker-entry` and spawned by `createDomWorkerRealmFactory` as a
  * module worker. It accepts exactly one init message (`x3.host/worker-init`, port transferred),
  * runs the shared bootstrap core over that port, and closes itself when the host says
  * `terminate`. Anything else on the worker's own message channel is ignored: the protocol lives

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { revisionId, type ArtifactByteSource } from '@modkitx-x3/sdk'
-import type { Diagnostic } from '@modkitx-x3/core'
+import { revisionId, type ArtifactByteSource } from '@modkit/sdk'
+import type { Diagnostic } from '@modkit/core'
 import {
   codecFidelityEvidenceRecords,
   createElectronSubjectServices,
@@ -38,12 +38,7 @@ describe('Electron host-owned subject services', () => {
       services.application.main.inventory.extensions.map(
         extension => `${extension.manifest.publisher}/${extension.manifest.id}`,
       ),
-    ).toEqual([
-      'org.modkitx/code',
-      'org.modkitx/core-native-text',
-      'org.modkitx/scene',
-      'org.modkitx/uv',
-    ])
+    ).toEqual(['modkit/code', 'modkit/core-native-text', 'modkit/scene', 'modkit/uv'])
     expect(services.supportedExtensions).toEqual(['json', 'jsonc', 'txt'])
     expect(services.executionProfiles).toEqual(['trusted-in-process', 'worker-brokered'])
     expect(services.application.workers.profile.realmId).toBe(ELECTRON_WORKER_REALM)
@@ -65,7 +60,7 @@ describe('Electron host-owned subject services', () => {
     expect(result.state).toBe('opened')
     if (result.state !== 'opened') throw new TypeError(result.reason)
     expect(result.selected).toMatchObject({
-      contributionId: 'org.modkitx/text-json',
+      contributionId: 'modkit/text-json',
       variantId: 'core-native',
     })
     // the honest SB-1 statement travels with the open result (gate) and to the app sink (backend)

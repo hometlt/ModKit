@@ -1,4 +1,4 @@
-// Hand-ported from the MK2 codec org.modkitx/wav (OPUS-MK2-02 task G, wave 1).
+// Hand-ported from the MK2 codec modkit/wav (OPUS-MK2-02 task G, wave 1).
 //
 // RIFF/WAVE is a chunk list, so the port is a chunk walk: `fmt ` gives the stream shape, `data`
 // gives the sample bytes, everything else is inventoried by id and size. PCM samples are not
@@ -12,9 +12,9 @@ import {
   createAudioMediaSource,
   createInspectionCodec,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/wav'
+const ID = 'modkit/wav'
 const latin1 = new TextDecoder('latin1')
 
 /** RIFF WAVE wFormatTag values worth naming; anything else is reported by its number. */

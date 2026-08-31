@@ -18,7 +18,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { uint64 } from '@modkitx-x3/core'
+import { uint64 } from '@modkit/core'
 import {
   createHostTopology,
   type ChangeSet,
@@ -27,13 +27,13 @@ import {
   type RasterImageSource,
   type Writer,
   type WriterIdentity,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   createHostServiceResolver,
   createSubjectEditing,
   type ExtensionInput,
   type OpenedSubject,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import {
   createFileEditingBackend,
   createNodeSubjectServices,
@@ -44,7 +44,7 @@ import {
   openFileArtifactSource,
   workerBackendPolicy,
   type NodeSubjectServices,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const imagesDir = join(repoRoot, 'extensions', 'images')
@@ -162,7 +162,7 @@ function byteIdenticalEvidence(
     evidenceId,
     corpusId: corpus.id,
     corpusDigest: sha256(corpus.bytes),
-    conformanceProfile: 'org.modkitx/codec-contribution-v1' as never,
+    conformanceProfile: 'modkit/codec-contribution-v1' as never,
     writer,
     optionsFingerprint: 'options:none',
     inputClass: writer.formatId,
@@ -283,7 +283,7 @@ describe('A5 Path A — JPEG metadata edits on the 13D seam', () => {
 
     const evidence = byteIdenticalEvidence(
       'jpeg-set-comment-v1',
-      { id: 'modkitX3/assets/themes/nexus-forge/preview-web.jpg', bytes: original },
+      { id: 'modkit/assets/themes/nexus-forge/preview-web.jpg', bytes: original },
       await codecWriter(result, 'jpeg'),
     )
     const { editBytes } = await commitPlan(result, invoked.output, evidence)
@@ -320,7 +320,7 @@ describe('A5 Path A — JPEG metadata edits on the 13D seam', () => {
       again.output,
       byteIdenticalEvidence(
         'jpeg-set-comment-v1',
-        { id: 'modkitX3/assets/themes/nexus-forge/preview-web.jpg', bytes: original },
+        { id: 'modkit/assets/themes/nexus-forge/preview-web.jpg', bytes: original },
         await codecWriter(reopened.result, 'jpeg'),
       ),
     )
@@ -359,7 +359,7 @@ describe('A5 Path A — JPEG metadata edits on the 13D seam', () => {
       invoked.output,
       byteIdenticalEvidence(
         'jpeg-remove-segment-v1',
-        { id: 'modkitX3/assets/themes/nexus-forge/preview-web.jpg', bytes: original },
+        { id: 'modkit/assets/themes/nexus-forge/preview-web.jpg', bytes: original },
         await codecWriter(result, 'jpeg'),
       ),
     )
@@ -623,7 +623,7 @@ describe('A5 Path B — the PNG encoder writer resolves by facet and its plan co
     })
     const writer = lease.value as Writer
     expect(writer.offer).toMatchObject({
-      providerId: 'org.modkitx/png-encoder-writer',
+      providerId: 'modkit/png-encoder-writer',
       fidelityEvidenceId: 'png-encoder-v1',
       minimumRoundTrip: 'semantic',
     })

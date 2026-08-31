@@ -16,7 +16,7 @@ const decoder = new TextDecoder()
  * @param {{
  *   id: string
  *   magic: string
- *   requirement: import('@modkitx-x3/sdk').AssetInputRequirement
+ *   requirement: import('@modkit/sdk').AssetInputRequirement
  * }} options
  */
 export const companionCodec = options =>

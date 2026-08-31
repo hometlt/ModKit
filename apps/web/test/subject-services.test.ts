@@ -12,20 +12,20 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { MessageChannel } from 'node:worker_threads'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { Diagnostic } from '@modkitx-x3/core'
+import type { Diagnostic } from '@modkit/core'
 import {
   commandRequest,
   COMMAND_PROTOCOL_SCHEMA_VERSION,
   CONTRIBUTION_DISABLED_CODE,
   EXTENSION_DISABLED_CODE,
-} from '@modkitx-x3/host'
-import { revisionId, type ArtifactByteSource } from '@modkitx-x3/sdk'
+} from '@modkit/host'
+import { revisionId, type ArtifactByteSource } from '@modkit/sdk'
 import {
   installBrowserWorkerEntry,
   type BrowserObjectUrlLike,
   type BrowserWorkerLike,
-} from '@modkitx-x3/host/browser'
-import { checkCommandFixture, COMMAND_FIXTURES } from '@modkitx-x3/testkit'
+} from '@modkit/host/browser'
+import { checkCommandFixture, COMMAND_FIXTURES } from '@modkit/testkit'
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import {
   catalogToExtensionInputs,
@@ -116,16 +116,14 @@ class FakeWorker implements BrowserWorkerLike {
 
 /** Node module map: bare specifiers → file: URLs of the real sources / built packages. */
 const nodeModuleMap = {
-  '@modkitx-x3/codec-kit': pathToFileURL(
+  '@modkit/codec-kit': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'src', 'index.js'),
   ).href,
-  '@modkitx-x3/codec-kit/text': pathToFileURL(
+  '@modkit/codec-kit/text': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'src', 'text', 'index.js'),
   ).href,
-  '@modkitx-x3/core': pathToFileURL(join(repositoryRoot, 'packages', 'core', 'dist', 'index.js'))
-    .href,
-  '@modkitx-x3/sdk': pathToFileURL(join(repositoryRoot, 'packages', 'sdk', 'dist', 'index.js'))
-    .href,
+  '@modkit/core': pathToFileURL(join(repositoryRoot, 'packages', 'core', 'dist', 'index.js')).href,
+  '@modkit/sdk': pathToFileURL(join(repositoryRoot, 'packages', 'sdk', 'dist', 'index.js')).href,
   '@rgrove/parse-xml': pathToFileURL(dataRequire.resolve('@rgrove/parse-xml')).href,
   'smol-toml': pathToFileURL(dataRequire.resolve('smol-toml')).href,
   yaml: pathToFileURL(dataRequire.resolve('yaml')).href,
@@ -198,7 +196,7 @@ afterEach(() => {
 
 describe('PWA product path — catalog → composition → worker-brokered open', () => {
   it('the generated catalog is the loader attestation: same digests as loading the directories now', async () => {
-    const { loadExtensionDirectory } = await import('@modkitx-x3/host/node')
+    const { loadExtensionDirectory } = await import('@modkit/host/node')
     expect(catalog.extensions.length).toBeGreaterThan(0)
     for (const entry of catalog.extensions) {
       const fresh = await loadExtensionDirectory(join(repositoryRoot, entry.source))
@@ -221,8 +219,8 @@ describe('PWA product path — catalog → composition → worker-brokered open'
       catalog,
       identity,
       probe,
-      disabledExtensions: ['org.modkitx/images'],
-      disabledContributions: ['org.modkitx/image-png'],
+      disabledExtensions: ['modkit/images'],
+      disabledContributions: ['modkit/image-png'],
       dom: {
         fetch: diskOrigin().fetch,
         subtle: webcrypto.subtle as never,
@@ -235,7 +233,7 @@ describe('PWA product path — catalog → composition → worker-brokered open'
     })
     const contribution = services.main.inventory.extensions
       .flatMap(extension => extension.contributions)
-      .find(item => item.manifest?.id === 'org.modkitx/image-png')
+      .find(item => item.manifest?.id === 'modkit/image-png')
     expect(contribution).toBeDefined()
     expect(contribution?.activationEligible).toBe(false)
     expect(contribution?.diagnostics.map(item => item.code)).toContain(CONTRIBUTION_DISABLED_CODE)
@@ -278,7 +276,7 @@ describe('PWA product path — catalog → composition → worker-brokered open'
     expect(result.state).toBe('opened')
     if (result.state !== 'opened') throw new Error(result.reason)
     expect(result.selected).toMatchObject({
-      contributionId: 'org.modkitx/image-png',
+      contributionId: 'modkit/image-png',
       variantId: 'portable',
     })
     // the honest boundary statements: the gate's profile notice + the browser backend's origin notice
@@ -360,12 +358,12 @@ describe('PWA product path — catalog → composition → worker-brokered open'
       moduleMap: nodeModuleMap,
     })
     const samples = [
-      ['sample.csv', 'x,y\n1,2\n', 'org.modkitx/text-csv'],
-      ['sample.tsv', 'x\ty\n1\t2\n', 'org.modkitx/text-tsv'],
-      ['sample.ini', '[x]\ny=1\n', 'org.modkitx/text-ini'],
-      ['sample.toml', 'x = 1\n', 'org.modkitx/text-toml'],
-      ['sample.xml', '<x value="1"/>', 'org.modkitx/text-xml'],
-      ['sample.yaml', 'x: 1\n', 'org.modkitx/text-yaml'],
+      ['sample.csv', 'x,y\n1,2\n', 'modkit/text-csv'],
+      ['sample.tsv', 'x\ty\n1\t2\n', 'modkit/text-tsv'],
+      ['sample.ini', '[x]\ny=1\n', 'modkit/text-ini'],
+      ['sample.toml', 'x = 1\n', 'modkit/text-toml'],
+      ['sample.xml', '<x value="1"/>', 'modkit/text-xml'],
+      ['sample.yaml', 'x: 1\n', 'modkit/text-yaml'],
     ] as const
     for (const [path, text, codecId] of samples) {
       const result = await services.open({
@@ -434,9 +432,9 @@ describe('PWA product path — catalog → composition → worker-brokered open'
     expect(native).toHaveLength(1)
     expect(native[0]?.origin).toBe('bundled')
     expect(builtins.map(extension => extension.source).sort()).toEqual([
-      'builtin:org.modkitx/code',
-      'builtin:org.modkitx/scene',
-      'builtin:org.modkitx/uv',
+      'builtin:modkit/code',
+      'builtin:modkit/scene',
+      'builtin:modkit/uv',
     ])
     expect(builtins.every(extension => extension.origin === 'bundled')).toBe(true)
     expect(supplied.length).toBeGreaterThan(0)
@@ -451,13 +449,13 @@ describe('PWA product path — catalog → composition → worker-brokered open'
     expect(result.state).toBe('unresolved')
     if (result.state !== 'unresolved') throw new Error('tampered artifact must not open')
     const png = result.candidates.find(
-      item => item.contributionId === 'org.modkitx/image-png' && item.variantId === 'portable',
+      item => item.contributionId === 'modkit/image-png' && item.variantId === 'portable',
     )
     expect(png?.state).toBe('rejected')
     expect(png?.diagnostics.map(item => item.code)).toContain('x3.host/artifact-digest-mismatch')
     // and the trusted-node variant is refused for the honest reason: no in-page boundary here
     const trusted = result.candidates.find(
-      item => item.contributionId === 'org.modkitx/image-png' && item.variantId === 'trusted-node',
+      item => item.contributionId === 'modkit/image-png' && item.variantId === 'trusted-node',
     )
     expect(trusted?.diagnostics.map(item => item.code)).toContain(
       'x3.host/codec-execution-unavailable',

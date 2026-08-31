@@ -5,7 +5,7 @@
  * code, but it never becomes schema authority and never grants an operation or permission.
  */
 
-import { canonicalJsonStringify, isQualifiedId } from '@modkitx-x3/core'
+import { canonicalJsonStringify, isQualifiedId } from '@modkit/core'
 import type { JsonValue } from '../asset-capabilities/types.js'
 
 export type KnowledgeClaimKind =

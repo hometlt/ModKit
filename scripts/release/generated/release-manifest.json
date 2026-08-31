@@ -3,162 +3,162 @@
   "artifacts": [
     {
       "catalog": [],
-      "file": "artifacts/modkitx-platform.tar",
+      "file": "artifacts/modkit-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:f1b494d157e899c7fc1c3d0f9251d89cc45b1919b9028a2dcb4aa5ac09db0116",
-      "size": 63432192
+      "sha256": "sha256:2d3bbe19bbefd1b034cbaa16eda3dab27375ed8123f72b457713edc4e34095c7",
+      "size": 64055296
     },
     {
       "catalog": [
         {
           "contributions": [
-            "org.modkitx/7z",
-            "org.modkitx/archive-zip",
-            "org.modkitx/brotli",
-            "org.modkitx/bzip2",
-            "org.modkitx/cab",
-            "org.modkitx/dmg",
-            "org.modkitx/gzip",
-            "org.modkitx/iso",
-            "org.modkitx/lzma",
-            "org.modkitx/pe",
-            "org.modkitx/rar",
-            "org.modkitx/tar",
-            "org.modkitx/xz",
-            "org.modkitx/zstd"
+            "modkit/7z",
+            "modkit/archive-zip",
+            "modkit/brotli",
+            "modkit/bzip2",
+            "modkit/cab",
+            "modkit/dmg",
+            "modkit/gzip",
+            "modkit/iso",
+            "modkit/lzma",
+            "modkit/pe",
+            "modkit/rar",
+            "modkit/tar",
+            "modkit/xz",
+            "modkit/zstd"
           ],
-          "coordinate": "org.modkitx/archives",
+          "coordinate": "modkit/archives",
           "root": "extensions/archives",
-          "sourceDigest": "sha256:da6a60fb9daf01b570f35b3642f19476cfbc9a8731925e3fa3fae002a6abb46d"
+          "sourceDigest": "sha256:0cb356a96ed9a541422f37e686793925900400b0471e547941146d01e3883c93"
         },
         {
           "contributions": [
-            "org.modkitx/aac",
-            "org.modkitx/audio-mp3",
-            "org.modkitx/audio-ogg",
-            "org.modkitx/flac",
-            "org.modkitx/m4a",
-            "org.modkitx/wav"
+            "modkit/aac",
+            "modkit/audio-mp3",
+            "modkit/audio-ogg",
+            "modkit/flac",
+            "modkit/m4a",
+            "modkit/wav"
           ],
-          "coordinate": "org.modkitx/audio",
+          "coordinate": "modkit/audio",
           "root": "extensions/audio",
-          "sourceDigest": "sha256:1abe77e5f842a25068f7be19b86522e15764e0d9bbac4cd24accdf5722ab9b85"
+          "sourceDigest": "sha256:859afeaeca94d2dfd67338c1a9c235861b86a76cfcc0d8defad8ba605211ebca"
         },
         {
           "contributions": [
-            "org.modkitx/csv-syntax-contract",
-            "org.modkitx/csv-syntax-default",
-            "org.modkitx/ini-syntax-contract",
-            "org.modkitx/ini-syntax-default",
-            "org.modkitx/text-csv",
-            "org.modkitx/text-delimited-writer",
-            "org.modkitx/text-ini",
-            "org.modkitx/text-ini-writer",
-            "org.modkitx/text-toml",
-            "org.modkitx/text-toml-writer",
-            "org.modkitx/text-tsv",
-            "org.modkitx/text-xml",
-            "org.modkitx/text-xml-writer",
-            "org.modkitx/text-yaml",
-            "org.modkitx/text-yaml-writer",
-            "org.modkitx/toml-syntax-contract",
-            "org.modkitx/toml-syntax-default",
-            "org.modkitx/tsv-syntax-contract",
-            "org.modkitx/tsv-syntax-default",
-            "org.modkitx/xml-syntax-contract",
-            "org.modkitx/xml-syntax-default",
-            "org.modkitx/yaml-syntax-contract",
-            "org.modkitx/yaml-syntax-default"
+            "modkit/csv-syntax-contract",
+            "modkit/csv-syntax-default",
+            "modkit/ini-syntax-contract",
+            "modkit/ini-syntax-default",
+            "modkit/text-csv",
+            "modkit/text-delimited-writer",
+            "modkit/text-ini",
+            "modkit/text-ini-writer",
+            "modkit/text-toml",
+            "modkit/text-toml-writer",
+            "modkit/text-tsv",
+            "modkit/text-xml",
+            "modkit/text-xml-writer",
+            "modkit/text-yaml",
+            "modkit/text-yaml-writer",
+            "modkit/toml-syntax-contract",
+            "modkit/toml-syntax-default",
+            "modkit/tsv-syntax-contract",
+            "modkit/tsv-syntax-default",
+            "modkit/xml-syntax-contract",
+            "modkit/xml-syntax-default",
+            "modkit/yaml-syntax-contract",
+            "modkit/yaml-syntax-default"
           ],
-          "coordinate": "org.modkitx/data",
+          "coordinate": "modkit/data",
           "root": "extensions/data",
-          "sourceDigest": "sha256:4b3562033f198fca289fe0f6dab6dbd38e47eb7ee368e2a3301bc1fa27766abf"
+          "sourceDigest": "sha256:20e1cf4f6a7f6b7b5716c05bfaf25aa5a0af650cf2b8e6f1c863260a93441b0b"
         },
         {
           "contributions": [
-            "org.modkitx/document-markdown",
-            "org.modkitx/document-rtf",
-            "org.modkitx/odg",
-            "org.modkitx/odp",
-            "org.modkitx/ods",
-            "org.modkitx/odt"
+            "modkit/document-markdown",
+            "modkit/document-rtf",
+            "modkit/odg",
+            "modkit/odp",
+            "modkit/ods",
+            "modkit/odt"
           ],
-          "coordinate": "org.modkitx/documents",
+          "coordinate": "modkit/documents",
           "root": "extensions/documents",
-          "sourceDigest": "sha256:04d9f9729477fc6e14cc10c12c70ced7c79ddd39fcc1d25711412f05d6659a15"
+          "sourceDigest": "sha256:c5f1c036b70833f3f5425039db0101a41885a9d7c9b3c7f87fef677e5498028e"
         },
         {
           "contributions": [
-            "org.modkitx/ani",
-            "org.modkitx/astc",
-            "org.modkitx/avif",
-            "org.modkitx/basis",
-            "org.modkitx/bmp",
-            "org.modkitx/cur",
-            "org.modkitx/dds",
-            "org.modkitx/exr",
-            "org.modkitx/gif",
-            "org.modkitx/hdr",
-            "org.modkitx/ico",
-            "org.modkitx/image-jpeg",
-            "org.modkitx/image-png",
-            "org.modkitx/ktx",
-            "org.modkitx/ktx2",
-            "org.modkitx/pal",
-            "org.modkitx/pcx",
-            "org.modkitx/pkm",
-            "org.modkitx/png-encoder-writer",
-            "org.modkitx/pvr",
-            "org.modkitx/tga",
-            "org.modkitx/tiff",
-            "org.modkitx/webp"
+            "modkit/ani",
+            "modkit/astc",
+            "modkit/avif",
+            "modkit/basis",
+            "modkit/bmp",
+            "modkit/cur",
+            "modkit/dds",
+            "modkit/exr",
+            "modkit/gif",
+            "modkit/hdr",
+            "modkit/ico",
+            "modkit/image-jpeg",
+            "modkit/image-png",
+            "modkit/ktx",
+            "modkit/ktx2",
+            "modkit/pal",
+            "modkit/pcx",
+            "modkit/pkm",
+            "modkit/png-encoder-writer",
+            "modkit/pvr",
+            "modkit/tga",
+            "modkit/tiff",
+            "modkit/webp"
           ],
-          "coordinate": "org.modkitx/images",
+          "coordinate": "modkit/images",
           "root": "extensions/images",
-          "sourceDigest": "sha256:7fd990b5fb805eba8113a8ac460776d3af030d0516f0915389016f1ec2de1dc2"
+          "sourceDigest": "sha256:77485d8227d0e5bd39284cf673c48b34324fb56d5ab7935d3e944a48acc01a74"
         },
         {
           "contributions": [
-            "org.modkitx/dae",
-            "org.modkitx/model-gltf",
-            "org.modkitx/model-obj",
-            "org.modkitx/model-uvm",
-            "org.modkitx/ply",
-            "org.modkitx/stl"
+            "modkit/dae",
+            "modkit/model-gltf",
+            "modkit/model-obj",
+            "modkit/model-uvm",
+            "modkit/ply",
+            "modkit/stl"
           ],
-          "coordinate": "org.modkitx/models",
+          "coordinate": "modkit/models",
           "root": "extensions/models",
-          "sourceDigest": "sha256:ca62968a0ea68b179bcc4d9f7e7f3e36cf2e082293ba9f38cd3b09e7f215cc1e"
+          "sourceDigest": "sha256:0fbf0fab122104ae4b475a517b6cb161ae350ebd13ce6194a4d795468c3e72de"
         },
         {
           "contributions": [
-            "org.modkitx/emf",
-            "org.modkitx/vector-svg",
-            "org.modkitx/wmf"
+            "modkit/emf",
+            "modkit/vector-svg",
+            "modkit/wmf"
           ],
-          "coordinate": "org.modkitx/vector",
+          "coordinate": "modkit/vector",
           "root": "extensions/vector",
-          "sourceDigest": "sha256:b0d3782a1b731e8aac86ac654d03cd410c4a058d26a3c86469e28af3b7302971"
+          "sourceDigest": "sha256:35c72e642e3137361d1156a55da46c707f6cf5a8cb496e3a6c0747af8bc695a7"
         },
         {
           "contributions": [
-            "org.modkitx/avi",
-            "org.modkitx/mpeg",
-            "org.modkitx/ogv",
-            "org.modkitx/video-mp4",
-            "org.modkitx/video-webm",
-            "org.modkitx/wmv"
+            "modkit/avi",
+            "modkit/mpeg",
+            "modkit/ogv",
+            "modkit/video-mp4",
+            "modkit/video-webm",
+            "modkit/wmv"
           ],
-          "coordinate": "org.modkitx/video",
+          "coordinate": "modkit/video",
           "root": "extensions/video",
-          "sourceDigest": "sha256:617d061b0d48a246e8fe0257aeaf4e71749c0c7d72a2a7d479b378751f198015"
+          "sourceDigest": "sha256:234da4501402ba810b30b90ca44f7d8098d45f790bd2b8ed926879f6e0e4c80c"
         }
       ],
-      "file": "artifacts/modkitx-common.tar",
+      "file": "artifacts/modkit-common.tar",
       "id": "common",
       "kind": "common-extension-bundle",
-      "sha256": "sha256:923da9375baccdbf1cca6433a8c98ac844b4dcf25c110ffca2ce59e6028c760b",
+      "sha256": "sha256:982a47b06187ca5dd0e6dfbc02570c55fd72bf58ae60634f698ec835862ce7cc",
       "size": 1425920
     }
   ],
@@ -173,11 +173,11 @@
       },
       {
         "path": "apps/vscode/generated/bundled-catalog.json",
-        "sha256": "sha256:3ba11c6a1e8b95e83d69319814f4d07a34a78a66260c7379e8817d23ab27ff7c"
+        "sha256": "sha256:524d203e12786fe041c4a1447ce22e0646e5826fa94b32f8399180fbadd9072d"
       },
       {
         "path": "apps/web/generated/extension-catalog.js",
-        "sha256": "sha256:11a6d1dad845a85d4482d3dbf581f9a10f07850c8b2e20d0741f9be6ae6f3d37"
+        "sha256": "sha256:8460dd72d59182f8a85d7fee0a04356271ebea586d40854c524f226bf6b5ede6"
       },
       {
         "path": "config/build-composition.json",
@@ -189,7 +189,7 @@
       },
       {
         "path": "scripts/bundle-hashes.json",
-        "sha256": "sha256:f1701f71af83287074287323bfcb8e01b16fdb029dbb4878d6206f1d97c64de0"
+        "sha256": "sha256:1ba67b74ebe4fca12e1ecb512927c50822158786948b60ba95c89860a63eef85"
       }
     ],
     "closure": "mk3-ga",
@@ -208,12 +208,12 @@
   },
   "licenseNotices": {
     "file": "LICENSE-NOTICES.txt",
-    "sha256": "sha256:938d331699b9fd1f9fdbeb6703be28e9971f573740107d5d2ceca57c8d9ea427"
+    "sha256": "sha256:cb026fb419df3821b55d1b4eb77601d8850ee3ca5ee4d9945e60b7ecec29a580"
   },
   "release": {
     "authenticode": false,
     "channel": "local-rc",
-    "id": "modkitx-mk3-focused-local-rc",
+    "id": "modkit-mk3-focused-local-rc",
     "installation": {
       "cleanMachineInstaller": true,
       "instructions": {
@@ -229,7 +229,7 @@
   "sbom": {
     "file": "sbom.cdx.json",
     "format": "CycloneDX-1.5",
-    "sha256": "sha256:a3f8dd5f2cb6dd505cf40f57fdfbfafd7e839bbe31965c99e667ed1aabd56b84"
+    "sha256": "sha256:2ee6bebb819c044af2e9f76df875e7d2d073dcd02d23e4e640ba7ab4d54a2ba3"
   },
   "schemaVersion": "release-manifest-1",
   "signing": {

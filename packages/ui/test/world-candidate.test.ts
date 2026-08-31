@@ -6,9 +6,9 @@ import type {
   WorldSceneLayerItem,
   WorldScenePage,
   WorldScenePageRequest,
-} from '@modkitx-x3/sdk/maps'
-import { WORLD_SCENE_SOURCE_CONTRACT } from '@modkitx-x3/sdk/maps'
-import { drawCandidateWorld, inspectCandidateWorld } from '@modkitx-x3/ui/world'
+} from '@modkit/sdk/maps'
+import { WORLD_SCENE_SOURCE_CONTRACT } from '@modkit/sdk/maps'
+import { drawCandidateWorld, inspectCandidateWorld } from '@modkit/ui/world'
 
 const contract = 'example.publisher/world-source'
 const snapshotId = 'example-snapshot'

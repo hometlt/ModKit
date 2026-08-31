@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveModWorkspaceGraph, type ModWorkspaceGraphRoot } from '@modkitx-x3/sdk/mods'
+import { resolveModWorkspaceGraph, type ModWorkspaceGraphRoot } from '@modkit/sdk/mods'
 
 const source = { sourceId: 'fixture', kind: 'memory', location: 'memory://mods' }
 

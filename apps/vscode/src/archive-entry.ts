@@ -1,5 +1,5 @@
 /** Pure policy and rendering helpers for the composite archive-entry stage. */
-import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkitx-x3/core'
+import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkit/core'
 
 export const ARCHIVE_ENTRY_PREVIEW_BYTES = 64 * 1024
 export const ARCHIVE_LISTING_PAGES = 25

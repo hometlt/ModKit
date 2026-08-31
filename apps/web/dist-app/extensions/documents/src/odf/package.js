@@ -38,28 +38,28 @@ const MAX_ENTRY_RATIO = 100
 /** The media type each format's `mimetype` entry must contain, exactly. */
 export const ODF_FORMATS = Object.freeze({
   odt: Object.freeze({
-    id: 'org.modkitx/odt',
+    id: 'modkit/odt',
     formatId: 'odt',
     label: 'OpenDocument text',
     mediaType: 'application/vnd.oasis.opendocument.text',
     body: 'text',
   }),
   ods: Object.freeze({
-    id: 'org.modkitx/ods',
+    id: 'modkit/ods',
     formatId: 'ods',
     label: 'OpenDocument spreadsheet',
     mediaType: 'application/vnd.oasis.opendocument.spreadsheet',
     body: 'spreadsheet',
   }),
   odp: Object.freeze({
-    id: 'org.modkitx/odp',
+    id: 'modkit/odp',
     formatId: 'odp',
     label: 'OpenDocument presentation',
     mediaType: 'application/vnd.oasis.opendocument.presentation',
     body: 'presentation',
   }),
   odg: Object.freeze({
-    id: 'org.modkitx/odg',
+    id: 'modkit/odg',
     formatId: 'odg',
     label: 'OpenDocument drawing',
     mediaType: 'application/vnd.oasis.opendocument.graphics',

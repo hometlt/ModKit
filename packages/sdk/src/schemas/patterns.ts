@@ -1,6 +1,6 @@
 /**
  * Shared regex sources for schema `pattern` keywords. Mirrors the runtime validators in
- * @modkitx-x3/core (MK3/23 §3); the drift gate keeps types and schemas aligned, and the
+ * @modkit/core (MK3/23 §3); the drift gate keeps types and schemas aligned, and the
  * pattern tests exercise schema and runtime validator on the same fixtures.
  *
  * These are JSON-Schema pattern *sources*, so every backslash is escaped once for the

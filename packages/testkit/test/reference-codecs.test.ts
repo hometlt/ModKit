@@ -27,8 +27,8 @@ import {
   type TreeDataSource,
   type VectorSceneSource,
   type VideoMediaSource,
-} from '@modkitx-x3/sdk'
-import { loadSubjectCardSections } from '@modkitx-x3/ui'
+} from '@modkit/sdk'
+import { loadSubjectCardSections } from '@modkit/ui'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(here, '..', '..', '..')

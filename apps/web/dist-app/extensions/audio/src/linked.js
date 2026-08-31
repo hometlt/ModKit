@@ -1,4 +1,4 @@
-import { defineLinkedExtension } from '@modkitx-x3/host'
+import { defineLinkedExtension } from '@modkit/host'
 
 import aacManifest from '../contributions/codec-aac.json' with { type: 'json' }
 import flacManifest from '../contributions/codec-flac.json' with { type: 'json' }

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/viewer-contribution", "major": 1 },
-  "id": "org.modkitx.ui/namespace-tree",
+  "contract": { "id": "modkit/viewer-contribution", "major": 1 },
+  "id": "modkit.ui/namespace-tree",
   "displayName": "namespace tree",
   "runtimeVariants": [
     {

@@ -13,7 +13,7 @@
  * grant the caller holds.
  */
 
-import { canonicalJsonStringify, ModkitError } from '@modkitx-x3/core'
+import { canonicalJsonStringify, ModkitError } from '@modkit/core'
 import type {
   AnyDescriptor,
   AssetEditPlan,
@@ -31,7 +31,7 @@ import type {
   SubjectEditTarget,
   Writer,
   WriterIdentity,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   createCommitCoordinator,
   createEditSession,
@@ -173,7 +173,7 @@ export interface SubjectEditingOptions {
 }
 
 /**
- * The four ports a `ViewerModule`-hosted editor (`@modkitx-x3/ui`) expects: the 13D edit session,
+ * The four ports a `ViewerModule`-hosted editor (`@modkit/ui`) expects: the 13D edit session,
  * the commit coordinator, the payload store and a host authorization port. Present only when a
  * writer backs the subject (Path B); the ui drops editable stages when these are absent.
  */

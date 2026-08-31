@@ -1,4 +1,4 @@
-import type { ResolvedAssetDescriptorWire } from '@modkitx-x3/sdk'
+import type { ResolvedAssetDescriptorWire } from '@modkit/sdk'
 
 export function resolvedDescriptorWire(
   operations: ResolvedAssetDescriptorWire['operations'] = [],

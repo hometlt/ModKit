@@ -44,14 +44,14 @@
       "capabilityId": "block9/decoded-gpu-texture-payloads",
       "operation": "read",
       "test": "packages/testkit/test/pkm-etc-decode.test.ts",
-      "contributionId": "org.modkitx/pkm",
+      "contributionId": "modkit/pkm",
       "note": "ETC1 block decoded to rgba8 and served through readRegion"
     },
     {
       "capabilityId": "format/pkm/open-inspect",
       "operation": "read",
       "test": "packages/testkit/test/pkm-etc-decode.test.ts",
-      "contributionId": "org.modkitx/pkm",
+      "contributionId": "modkit/pkm",
       "note": "ETC1 block decoded to rgba8 and served through readRegion"
     }
   ]

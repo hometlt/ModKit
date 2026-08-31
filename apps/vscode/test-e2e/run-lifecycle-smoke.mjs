@@ -127,13 +127,9 @@ async function main() {
   }
 
   console.log('lifecycle smoke: building the current deterministic shell...')
-  const build = await run('pnpm', ['--filter', '@modkitx-x3/modkit-vscode', 'ext:build'])
+  const build = await run('pnpm', ['--filter', '@modkit/modkit-vscode', 'ext:build'])
   if (build.code !== 0) throw new Error(`ext:build failed (${build.code})\n${build.output}`)
-  const deterministic = await run('pnpm', [
-    '--filter',
-    '@modkitx-x3/modkit-vscode',
-    'dist-app:check',
-  ])
+  const deterministic = await run('pnpm', ['--filter', '@modkit/modkit-vscode', 'dist-app:check'])
   if (deterministic.code !== 0) {
     throw new Error(`dist-app:check failed (${deterministic.code})\n${deterministic.output}`)
   }
@@ -158,7 +154,11 @@ async function main() {
       throw new Error('the staged predecessor unexpectedly equals the current extension entry')
     }
 
-    const cachePath = process.env.MODKITX_VSCODE_TEST_CACHE ?? join(tmpdir(), 'modkitx-vscode-test')
+    const cachePath =
+      process.env.MODKIT_VSCODE_TEST_CACHE ??
+      // Deprecated compatibility alias for existing local CI configuration.
+      process.env.MODKITX_VSCODE_TEST_CACHE ??
+      join(tmpdir(), 'modkit-vscode-test')
     console.log('lifecycle smoke: resolving VS Code...')
     const executable = await downloadAndUnzipVSCode({ version: 'stable', cachePath })
     const editor = describeEditor(executable)
@@ -188,13 +188,13 @@ async function main() {
             '--no-sandbox',
           ],
           extensionTestsEnv: {
-            MODKITX_LIFECYCLE_CURRENT_EXTENSION: extensionRoot,
-            MODKITX_LIFECYCLE_EXPECTED_DIGESTS: JSON.stringify(expectedDigests),
-            MODKITX_LIFECYCLE_EXPECTED_HEAD: commit,
-            MODKITX_LIFECYCLE_EXPECTED_VERSION: currentManifest.version,
-            MODKITX_LIFECYCLE_RESULTS: resultsPath,
-            MODKITX_LIFECYCLE_STAGE: stagedExtension,
-            MODKITX_LIFECYCLE_STATE: statePath,
+            MODKIT_LIFECYCLE_CURRENT_EXTENSION: extensionRoot,
+            MODKIT_LIFECYCLE_EXPECTED_DIGESTS: JSON.stringify(expectedDigests),
+            MODKIT_LIFECYCLE_EXPECTED_HEAD: commit,
+            MODKIT_LIFECYCLE_EXPECTED_VERSION: currentManifest.version,
+            MODKIT_LIFECYCLE_RESULTS: resultsPath,
+            MODKIT_LIFECYCLE_STAGE: stagedExtension,
+            MODKIT_LIFECYCLE_STATE: statePath,
           },
         })
       } catch (failure) {
@@ -246,9 +246,9 @@ async function main() {
         hermetic: true,
       },
       build: {
-        command: 'pnpm --filter @modkitx-x3/modkit-vscode ext:build',
+        command: 'pnpm --filter @modkit/modkit-vscode ext:build',
         exitCode: build.code,
-        deterministicCheck: 'pnpm --filter @modkitx-x3/modkit-vscode dist-app:check',
+        deterministicCheck: 'pnpm --filter @modkit/modkit-vscode dist-app:check',
         deterministicExitCode: deterministic.code,
       },
       lifecycle: suite,

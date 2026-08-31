@@ -24,7 +24,7 @@ import {
   ModkitError,
   throwIfAborted,
   type Diagnostic,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import { isResolverProduct, resolveProvider } from '../resolution/resolver.js'
 import { inventoryBindingForOffer } from '../offers.js'
 import { inventoryRecordFor, type InventoryContribution } from '../inventory.js'
@@ -41,7 +41,7 @@ import {
   type ResolutionResult,
   type RuntimeTarget,
   type RuntimeVariantDeclaration,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { resolveContainedEntrypoint } from './entrypoint.js'
 import {
   activateExecutionBackend,

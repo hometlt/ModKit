@@ -5,7 +5,7 @@
  * gradient with a distinct alpha wedge, which makes a channel-isolated write visible at a glance
  * (paint with `A` isolated and only the wedge moves).
  */
-import { createImageEditor, type ImageChannel } from '@modkitx-x3/ui'
+import { createImageEditor, type ImageChannel } from '@modkit/ui'
 
 const CHANNELS: readonly ImageChannel[] = ['rgb', 'r', 'g', 'b', 'a']
 

@@ -110,7 +110,7 @@ await build({
 /*
  * The extension worker runtime: the host's browser worker entry plus the vendor modules a codec
  * may import inside the worker (`WEB_WORKER_MODULE_MAP` in src/subjects.ts). One esbuild graph
- * with code splitting, so `@modkitx-x3/core` and `@modkitx-x3/sdk` are a single instance shared
+ * with code splitting, so `@modkit/core` and `@modkit/sdk` are a single instance shared
  * by the entry and every vendor (an `instanceof ModkitError` in the worker sees one class). Bare
  * dependencies of extensions outside this map are not served — the catalog emitter lists such
  * extensions as excluded with the reason instead of shipping them broken.
@@ -166,7 +166,7 @@ for (const entry of WEB_EXTENSION_CATALOG.extensions) {
 const stylesheet = join(repoRoot, 'packages', 'ui', 'styles', 'modkit-ui.css')
 if (!existsSync(stylesheet)) {
   console.error(
-    'missing packages/ui/styles/modkit-ui.css — run pnpm --filter @modkitx-x3/ui tokens:emit',
+    'missing packages/ui/styles/modkit-ui.css — run pnpm --filter @modkit/ui tokens:emit',
   )
   process.exit(1)
 }

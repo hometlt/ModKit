@@ -1,13 +1,13 @@
-// Hand-ported from org.modkitx/avi. The reader validates the classic Microsoft RIFF AVI form,
+// Hand-ported from modkit/avi. The reader validates the classic Microsoft RIFF AVI form,
 // its mandatory header/data lists, stream headers, and video/audio format structures.
 
 import {
   createInspectionCodec,
   createTreeDataSource,
   createVideoMediaSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/avi'
+const ID = 'modkit/avi'
 const latin1 = new TextDecoder('latin1')
 
 const fourCc = (bytes, offset) => latin1.decode(bytes.subarray(offset, offset + 4))

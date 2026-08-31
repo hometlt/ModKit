@@ -16,7 +16,7 @@
  */
 
 /** The two things this module needs from `vscode.Webview`. */
-import type { UiCatalogDocument, UiLocale, UiLocalizer } from '@modkitx-x3/ui/localization'
+import type { UiCatalogDocument, UiLocale, UiLocalizer } from '@modkit/ui/localization'
 
 import { createVscodeLocalizer } from './localization.js'
 

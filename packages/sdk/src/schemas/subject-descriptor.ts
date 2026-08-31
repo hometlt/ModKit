@@ -1,6 +1,6 @@
 /** Strict, wire-first schema authority for the MK3 AnyDescriptor v2 union. */
 
-import { deepFreeze, sourceSpanSchema, UINT64_DECIMAL_PATTERN } from '@modkitx-x3/core'
+import { deepFreeze, sourceSpanSchema, UINT64_DECIMAL_PATTERN } from '@modkit/core'
 import { dataSourceRefWireSchema } from './contribution-specs.js'
 import { REVISION_ID_PATTERN } from '../subjects/refs.js'
 import {
@@ -529,7 +529,7 @@ const resolvedAssetDescriptorSchema = {
  */
 export const subjectDescriptorV2Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://schemas.modkitx.org/x3/subject-descriptor.v2.schema.json',
+  $id: 'https://schemas.modkit.org/x3/subject-descriptor.v2.schema.json',
   $defs: { jsonValue: jsonValueSchema },
   oneOf: [unresolvedSourceDescriptorSchema, resolvedAssetDescriptorSchema],
 } as const

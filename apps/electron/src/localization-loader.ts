@@ -2,15 +2,15 @@
 import {
   createNodeExtensionVfs,
   type NodeExtensionVfsOptions,
-} from '@modkitx/extension-manager/node'
-import { loadLocalizationCatalogs, type Inventory } from '@modkitx-x3/host'
+} from '@modkit/extension-manager/node'
+import { loadLocalizationCatalogs, type Inventory } from '@modkit/host'
 import {
   parseUiCatalogDocument,
   UI_MESSAGES,
   type UiCatalogDocument,
   type UiLocalizer,
-} from '@modkitx-x3/ui/localization'
-import type { Diagnostic } from '@modkitx-x3/core'
+} from '@modkit/ui/localization'
+import type { Diagnostic } from '@modkit/core'
 
 import { createElectronLocalizer, ELECTRON_UI_CATALOGS } from './localization.js'
 

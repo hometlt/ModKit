@@ -11,7 +11,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 // imports, and runs the full route from its own cwd.
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
-const exampleSrc = join(repoRoot, 'examples', 'modkit-extension-x3-greeter')
+const exampleSrc = join(repoRoot, 'examples', 'modkit-extension-greeter')
 const tmp = mkdtempSync(join(tmpdir(), 'x3-external-'))
 
 afterAll(() => rmSync(tmp, { recursive: true, force: true }))
@@ -67,7 +67,7 @@ describe('external packed-tarball extension (S4/PR-23 shape)', () => {
       const exampleDir = join(tmp, 'example')
       cpSync(exampleSrc, exampleDir, { recursive: true })
       const tarballOf = (pkg: string) => {
-        const hit = tarballs.find(t => t.startsWith(`modkitx-x3-${pkg}-`))
+        const hit = tarballs.find(t => t.startsWith(`modkit-${pkg}-`))
         if (!hit) throw new Error(`no tarball for ${pkg} in ${tarballs.join(', ')}`)
         return join(packDest, hit)
       }
@@ -83,19 +83,19 @@ describe('external packed-tarball extension (S4/PR-23 shape)', () => {
       )
       expect(install.status, install.stderr).toBe(0)
       const resolveFromExample = createRequire(join(exampleDir, 'package.json')).resolve
-      expect(resolveFromExample('@modkitx-x3/core/schemas/source-span.v1.schema.json')).toContain(
+      expect(resolveFromExample('@modkit/core/schemas/source-span.v1.schema.json')).toContain(
         'source-span.v1.schema.json',
       )
-      expect(
-        resolveFromExample('@modkitx-x3/sdk/schemas/subject-descriptor.v2.schema.json'),
-      ).toContain('subject-descriptor.v2.schema.json')
+      expect(resolveFromExample('@modkit/sdk/schemas/subject-descriptor.v2.schema.json')).toContain(
+        'subject-descriptor.v2.schema.json',
+      )
 
       // 3. hygiene: no workspace:/deep-dist imports in the example sources;
       //    installed packages came from artifacts, not links
       for (const file of ['src/greeter-plain.js', 'src/greeter-fancy.js', 'runner.mjs']) {
         const text = readFileSync(join(exampleDir, file), 'utf8')
         expect(text.includes('workspace:'), file).toBe(false)
-        expect(/@modkitx-x3\/[a-z-]+\/dist\//.test(text), `${file} deep import`).toBe(false)
+        expect(/@modkit\/[a-z-]+\/dist\//.test(text), `${file} deep import`).toBe(false)
       }
       const installedPkg = JSON.parse(readFileSync(join(exampleDir, 'package.json'), 'utf8')) as {
         dependencies: Record<string, string>
@@ -113,14 +113,14 @@ describe('external packed-tarball extension (S4/PR-23 shape)', () => {
       }
       // canon §6.1: testkit is dev-only and must never sit in the production closure
       expect(Object.keys(installedPkg.dependencies).sort()).toEqual([
-        '@modkitx-x3/core',
-        '@modkitx-x3/host',
-        '@modkitx-x3/sdk',
-        '@modkitx-x3/vfs',
+        '@modkit/core',
+        '@modkit/host',
+        '@modkit/sdk',
+        '@modkit/vfs',
       ])
-      expect(Object.keys(installedPkg.devDependencies ?? {})).toEqual(['@modkitx-x3/testkit'])
+      expect(Object.keys(installedPkg.devDependencies ?? {})).toEqual(['@modkit/testkit'])
       for (const pkg of ['core', 'sdk', 'vfs', 'host', 'testkit']) {
-        const stat = statSync(join(exampleDir, 'node_modules', '@modkitx-x3', pkg))
+        const stat = statSync(join(exampleDir, 'node_modules', '@modkit', pkg))
         expect(stat.isDirectory()).toBe(true)
       }
 
@@ -148,7 +148,7 @@ describe('external packed-tarball extension (S4/PR-23 shape)', () => {
       //    the dev-only testkit, since the earlier single number silently included it.
       const nodeModules = join(exampleDir, 'node_modules')
       const totalMb = dirSizeBytes(nodeModules) / (1024 * 1024)
-      const testkitMb = dirSizeBytes(join(nodeModules, '@modkitx-x3', 'testkit')) / (1024 * 1024)
+      const testkitMb = dirSizeBytes(join(nodeModules, '@modkit', 'testkit')) / (1024 * 1024)
       console.log(
         `external example node_modules: ${totalMb.toFixed(2)} MB total, ` +
           `${(totalMb - testkitMb).toFixed(2)} MB production closure (testkit ${testkitMb.toFixed(2)} MB, dev-only)`,

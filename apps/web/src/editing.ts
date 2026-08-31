@@ -4,7 +4,7 @@
  * Three host pieces already exist and are composed here rather than reimplemented:
  * `createBrowserEditingBackend` (File System Access writable streams, with a pre-image rollback),
  * `createSubjectEditing` (13D targets, grant snapshot, commit coordinator, and the four
- * `editorPorts` a `@modkitx-x3/ui` editor stage expects) and `createRawWriter` +
+ * `editorPorts` a `@modkit/ui` editor stage expects) and `createRawWriter` +
  * `createEvidenceRegistry` (literal replacements, byte-identical, proven by construction) plus
  * the opened codec's proof citations materialized from the trusted host inventory.
  *
@@ -36,7 +36,7 @@
  *
  * Nothing here touches the DOM, so all of it is unit-tested in Node against structural fakes.
  */
-import { diagnostic, type Diagnostic } from '@modkitx-x3/core'
+import { diagnostic, type Diagnostic } from '@modkit/core'
 import type {
   AssetEditPlan,
   AnyDescriptor,
@@ -51,7 +51,7 @@ import type {
   SubjectEditTarget,
   ValidationResult,
   Writer,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   codecFidelityEvidenceRecords,
   createEvidenceRegistry,
@@ -62,9 +62,9 @@ import {
   type OpenedSubject,
   type SubjectEditing,
   type SubjectEditorPorts,
-} from '@modkitx-x3/host'
-import { createBrowserEditingBackend, type BrowserEditingBackend } from '@modkitx-x3/host/browser'
-import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+} from '@modkit/host'
+import { createBrowserEditingBackend, type BrowserEditingBackend } from '@modkit/host/browser'
+import type { UiLocalizer } from '@modkit/ui/localization'
 
 import {
   isWritableHandle,
@@ -436,7 +436,7 @@ export interface EditApplyStatus {
  * single commit coordinator rather than two that happen to agree.
  */
 export interface WebSubjectEditor {
-  /** The four ports a `@modkitx-x3/ui` editor stage expects. */
+  /** The four ports a `@modkit/ui` editor stage expects. */
   readonly ports: SubjectEditorPorts
   /**
    * Path A's gate: accept an operation's output as an edit plan *for this subject at its open

@@ -13,9 +13,10 @@ import {
   hasErrors,
   isQualifiedId,
   type Diagnostic,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import {
   expandContributionManifests,
+  normalizeModkitIdentifier,
   normalizeExtensionManifest,
   validateContributionManifest,
   type AuthoredContainerKind,
@@ -26,7 +27,7 @@ import {
   type ContributionProjectionContext,
   type InventoryFact,
   type SpecState,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 export interface ArtifactAttestationInput {
   /** Stable content-addressed inventory identity assigned by the trusted loader. */
@@ -212,8 +213,10 @@ export async function buildInventory(
   registry: ContributionContractRegistry,
   options: InventoryBuildOptions = {},
 ): Promise<Inventory> {
-  const disabled = new Set(options.disabledContributions ?? [])
-  const disabledExtensions = new Set(options.disabledExtensions ?? [])
+  const disabled = new Set((options.disabledContributions ?? []).map(normalizeModkitIdentifier))
+  const disabledExtensions = new Set(
+    (options.disabledExtensions ?? []).map(normalizeModkitIdentifier),
+  )
   const diagnostics: Diagnostic[] = []
   const extensions: InventoryExtension[] = []
 

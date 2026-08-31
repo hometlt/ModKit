@@ -22,7 +22,7 @@
  *    `AssetInput` (fields + host-executed openers + locally derived `bindingsFor`);
  *  - exits 0 on `terminate`, 2 on a protocol failure (the host has already torn down).
  *
- * The bootstrap is a published entry (`@modkitx-x3/host/node/worker-bootstrap`) so it survives
+ * The bootstrap is a published entry (`@modkit/host/node/worker-bootstrap`) so it survives
  * bundling as its own file; the backend resolves it relative to its own module URL.
  */
 
@@ -32,7 +32,7 @@ import { readFile, realpath } from 'node:fs/promises'
 import { registerHooks } from 'node:module'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { workerData, type MessagePort } from 'node:worker_threads'
-import { ModkitError } from '@modkitx-x3/core'
+import { ModkitError } from '@modkit/core'
 import {
   createEndpoint,
   createStandardSurfaceRegistry,

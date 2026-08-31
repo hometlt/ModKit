@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { collectStream } from '@modkitx-x3/vfs'
+import { collectStream } from '@modkit/vfs'
 import {
   createBrowserFileHandleSource,
   createHttpRangeSource,
   type BrowserFetch,
-} from '@modkitx-x3/host/browser'
+} from '@modkit/host/browser'
 
 describe('browser host sources', () => {
   it('adapts a File System Access snapshot without ambient filesystem authority', async () => {

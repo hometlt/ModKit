@@ -12,7 +12,11 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { createExtensionManagerClient } from './client.js'
-import { extensionCatalogSigningBytes, parseExtensionCatalog } from './catalog.js'
+import {
+  extensionCatalogSigningBytes,
+  parseExtensionCatalog,
+  snapshotExtensionPresentation,
+} from './catalog.js'
 import { createNodeExtensionVfs } from './providers-node.js'
 import { ExtensionManagerError, normalizeRepositoryManifest } from './schema.js'
 import { openRepositorySource, readMountBytes } from './vfs.js'
@@ -936,6 +940,7 @@ function validateArtifactPackage(root, value) {
       'publisher',
       'source',
       'trusted',
+      ...(value.presentation === undefined ? [] : ['presentation']),
       'storage',
       'artifactKey',
       'roots',
@@ -989,6 +994,10 @@ function validateArtifactPackage(root, value) {
     expectedIds.add(installedRoot.expectedId)
     return installedRoot
   })
+  const presentation =
+    value.presentation === undefined
+      ? undefined
+      : snapshotExtensionPresentation(value.presentation, 'installed package.presentation')
   return Object.freeze({
     id: value.id,
     version: value.version,
@@ -996,6 +1005,7 @@ function validateArtifactPackage(root, value) {
     publisher: value.publisher,
     source: value.source,
     trusted: value.trusted,
+    ...(presentation === undefined ? {} : { presentation }),
     roots: Object.freeze(roots),
   })
 }
@@ -1272,6 +1282,9 @@ function storedPackage(request, storage) {
     publisher: request.entry.publisher,
     source: request.entry.source.uri,
     trusted: request.entry.trusted,
+    ...(request.entry.presentation === undefined
+      ? {}
+      : { presentation: request.entry.presentation }),
     storage: storage.storage,
     artifactKey: storage.artifactKey,
     roots: storage.roots,

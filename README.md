@@ -37,8 +37,8 @@ pnpm check
 проверок. После успешной сборки PWA и Electron можно запустить из исходников:
 
 ```powershell
-pnpm --filter @modkitx-x3/web-app app:serve
-pnpm --filter @modkitx-x3/electron-app start
+pnpm --filter @modkit/web-app app:serve
+pnpm --filter @modkit/electron-app start
 ```
 
 Долгоживущая документация вынесена в отдельный справочный репозиторий
@@ -48,9 +48,10 @@ pnpm --filter @modkitx-x3/electron-app start
 ## Установленные игры
 
 Игровые расширения сами проверяют известные места установки. Ручной путь можно передать через
-`MODKITX_SC2_ROOT` или `MODKITX_WARZONE_ROOT`; хосты также могут передать упорядоченные пути через
-`SettingsDocument.gameInstallations`. Любой найденный путь принимается только после проверки
-маркеров соответствующей игры.
+`MODKIT_SC2_ROOT` или `MODKIT_WARZONE_ROOT`; прежние имена `MODKITX_SC2_ROOT` и
+`MODKITX_WARZONE_ROOT` временно принимаются как устаревшие совместимые варианты. Хосты также могут
+передать упорядоченные пути через `SettingsDocument.gameInstallations`. Любой найденный путь
+принимается только после проверки маркеров соответствующей игры.
 
 Нативный запуск карты SC2 — отдельное явное действие. Хост должен подтвердить установку, карту,
 исполняемый файл и активное разрешение `process-launch`; тесты используют подменённый запускатель и

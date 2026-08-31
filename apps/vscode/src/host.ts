@@ -25,12 +25,12 @@
 import { readFile, readdir, stat } from 'node:fs/promises'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { basename, isAbsolute, join, relative, resolve } from 'node:path'
-import type { Diagnostic } from '@modkitx-x3/core'
-import { sceneModule } from '@modkitx-x3/scene/module'
-import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
-import { uvModule } from '@modkitx-x3/uv/module'
-import type { MapPreviewResourcePlanResolver } from '@modkitx-x3/host/maps'
-import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+import type { Diagnostic } from '@modkit/core'
+import { sceneModule } from '@modkit/scene/module'
+import type { PermissionGrant, ResourceBudget } from '@modkit/sdk'
+import { uvModule } from '@modkit/uv/module'
+import type { MapPreviewResourcePlanResolver } from '@modkit/host/maps'
+import type { UiLocalizer } from '@modkit/ui/localization'
 import {
   codecFidelityEvidenceRecords,
   createEvidenceRegistry,
@@ -49,7 +49,7 @@ import {
   type SubjectOpener,
   type SubjectRpcExposure,
   type SubjectServices,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import {
   createFileEditingBackend,
   createNodeSubjectServices,
@@ -57,7 +57,7 @@ import {
   loadExtensionRoots,
   type ExtensionRootFailure,
   type NodeSubjectServices,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host/node'
 
 import { STAGE_ORDER } from './view-policy.js'
 
@@ -73,6 +73,7 @@ import {
   type ShellSettingsView,
   type WebviewChannel,
 } from './bridge.js'
+import type { ExtensionCardResourceTarget } from './extension-cards.js'
 import { containerUriText, isContainerUriText, parseContainerUriText } from './container-uri.js'
 import { createContainerRegistry, type ContainerRegistry } from './containers.js'
 import { describeInventoryContributions, type ContributionRow } from './contributions.js'
@@ -114,7 +115,7 @@ import {
 /** Module identity of the services root served over the webview channel (nothing to import). */
 export const VSCODE_SUBJECT_SERVICES_URL = 'x3-app://vscode/subject-services'
 /** Identity the consuming side records for the loaded root; both ends must agree. */
-export const VSCODE_SUBJECT_CONTRIBUTION_ID = 'org.modkitx.app.vscode/subject-services'
+export const VSCODE_SUBJECT_CONTRIBUTION_ID = 'modkit.app.vscode/subject-services'
 
 /**
  * Largest file this host reads into memory for a preview.
@@ -435,6 +436,15 @@ export interface VsCodeServeOptions {
    * the bridge and arbitrary page input can never become a configured filesystem root.
    */
   readonly linkableExtensionRoots?: ReadonlyMap<string, string>
+  /**
+   * Resources a currently-open extension card may request by opaque subject/resource ids.
+   *
+   * Paths and URLs are never sent back to the page as authority: the adapter receives them only
+   * after this host has matched the card's subject id, resource id and role exactly.
+   */
+  readonly extensionCardResources?: ReadonlyMap<string, readonly ExtensionCardResourceTarget[]>
+  /** Native adapter that opens a resource after the host-owned lookup above succeeds. */
+  readonly openExtensionCardResource?: (resource: ExtensionCardResourceTarget) => Promise<void>
   /** Host-owned package ids accepted from extension cards, plus their manager mutation port. */
   readonly managedPackageIds?: ReadonlySet<string>
   readonly setManagedPackageEnabled?: (id: string, enabled: boolean) => Promise<void>
@@ -947,6 +957,16 @@ function serveVsCode(
 
   /** Every write goes through here, so "changed" and "reload to apply" are said in one place. */
   const applies = 'Reload the window to apply it.'
+  const cardResourceText = (
+    key:
+      | 'vscode.extensions.resourceNotGranted'
+      | 'vscode.extensions.sourceOpened'
+      | 'vscode.extensions.licenseOpened',
+    fallback: string,
+  ): string => {
+    const translated = options.localizer?.text(key)
+    return translated === undefined || translated === key ? fallback : translated
+  }
 
   bridge.serve(async (request: ShellRequest): Promise<unknown> => {
     const roots = options.roots().map(root => resolve(root))
@@ -1065,6 +1085,30 @@ function serveVsCode(
             ? `${request.id} was linked through modkit.extensions (${configuration.scope}). ${applies}`
             : (reason ?? `${request.id} is already linked.`),
         )
+      }
+      case 'open-extension-resource': {
+        const resource = options.extensionCardResources
+          ?.get(request.subjectId)
+          ?.find(item => item.id === request.resourceId && item.role === request.role)
+        if (resource === undefined || options.openExtensionCardResource === undefined) {
+          return {
+            opened: false,
+            message: cardResourceText(
+              'vscode.extensions.resourceNotGranted',
+              'This extension card does not grant that source or license resource.',
+            ),
+          }
+        }
+        await options.openExtensionCardResource(resource)
+        return {
+          opened: true,
+          message: cardResourceText(
+            resource.role === 'source'
+              ? 'vscode.extensions.sourceOpened'
+              : 'vscode.extensions.licenseOpened',
+            resource.role === 'source' ? 'Extension source opened.' : 'License file opened.',
+          ),
+        }
       }
       case 'set-extension': {
         if (configuration === undefined) return answer(false, CANNOT_CONFIGURE)

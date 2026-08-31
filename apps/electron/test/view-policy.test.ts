@@ -7,7 +7,7 @@
  * can extract an archive member, and the bounds of the namespace walk.
  */
 import { describe, expect, it } from 'vitest'
-import type { NamespaceEntry, Page } from '@modkitx-x3/sdk'
+import type { NamespaceEntry, Page } from '@modkit/sdk'
 
 import {
   applicablePanels,
@@ -192,9 +192,9 @@ describe('the self-test line', () => {
     )
     expect(
       selfTestCodecLine('sample.w3x', {
-        identity: { codecId: 'org.modkitx/sage-w3x', formatId: 'sage-w3x' },
+        identity: { codecId: 'modkit/sage-w3x', formatId: 'sage-w3x' },
       }),
-    ).toBe('selftest: sample.w3x codec=org.modkitx/sage-w3x')
+    ).toBe('selftest: sample.w3x codec=modkit/sage-w3x')
     expect(selfTestCodecLine('unknown.bin', {})).toBe('selftest: unknown.bin codec=none')
   })
 })

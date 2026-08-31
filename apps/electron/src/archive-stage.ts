@@ -1,7 +1,7 @@
 /**
  * Archive stage — the shipped namespace tree beside an inline preview of the selected entry.
  *
- * `@modkitx-x3/ui` ships `namespaceViewer` as a `tree` contribution, not a `stage`, so the Electron
+ * `@modkit/ui` ships `namespaceViewer` as a `tree` contribution, not a `stage`, so the Electron
  * policy composes the stage itself: the tree on the left, the bytes of whatever entry the user
  * activates on the right. Nothing about the tree is reimplemented — this file mounts the shipped
  * module and listens for the `modkit-open-source` event it already dispatches.
@@ -20,9 +20,9 @@ import {
   setState,
   setViewerText,
   ViewerMountScope,
-} from '@modkitx-x3/ui'
-import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
-import type { NamespaceEntrySource, OperationSession, ViewerModule } from '@modkitx-x3/sdk'
+} from '@modkit/ui'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkit/ui/localization'
+import type { NamespaceEntrySource, OperationSession, ViewerModule } from '@modkit/sdk'
 
 import { mountViewer, type MountedViewer } from './mount.js'
 import { indexNamespace, type ArchiveEntryFact } from './namespace-index.js'

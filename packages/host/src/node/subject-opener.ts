@@ -9,8 +9,8 @@
 
 import { randomUUID } from 'node:crypto'
 import { isAbsolute, relative, resolve } from 'node:path'
-import type { Diagnostic } from '@modkitx-x3/core'
-import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
+import type { Diagnostic } from '@modkit/core'
+import type { PermissionGrant, ResourceBudget } from '@modkit/sdk'
 import type { SubjectServices } from '../subject-services.js'
 import type { Inventory } from '../inventory.js'
 import type { OpenedSubject, SubjectInputResolver } from '../subject-open.js'

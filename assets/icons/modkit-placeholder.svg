@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Modkit placeholder icon">
+  <title>Modkit placeholder icon</title>
+  <rect width="64" height="64" rx="12" fill="#172033"/>
+  <path d="M14 18h36v9H23v10h21v9H23v9h-9z" fill="#66d9ef"/>
+  <circle cx="48" cy="46" r="6" fill="#f6c85f"/>
+</svg>

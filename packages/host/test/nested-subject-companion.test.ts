@@ -23,7 +23,7 @@ import { crc32, deflateRawSync } from 'node:zlib'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { CANCELLED_CODE, isModkitError } from '@modkitx-x3/core'
+import { CANCELLED_CODE, isModkitError } from '@modkit/core'
 import {
   buildInventory,
   createExecutionBackendRegistry,
@@ -31,8 +31,8 @@ import {
   createSubjectServices,
   openSubject,
   type SubjectServices,
-} from '@modkitx-x3/host'
-import { loadExtensionDirectory } from '@modkitx-x3/host/node'
+} from '@modkit/host'
+import { loadExtensionDirectory } from '@modkit/host/node'
 import {
   revisionId,
   type ArtifactByteSource,
@@ -40,7 +40,7 @@ import {
   type NamespaceEntrySource,
   type PageRequest,
   type ResourceBudget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   NESTED_ENTRY_UNREADABLE,
   NESTED_SUBJECT_UNSUPPORTED,
@@ -196,7 +196,7 @@ async function openArchive(entries: readonly ZipEntryInput[]): Promise<AssetSess
   if (result.state !== 'opened') {
     throw new Error(`the ZIP fixture did not open: ${JSON.stringify(result.diagnostics)}`)
   }
-  expect(result.selected.contributionId).toBe('org.modkitx/archive-zip')
+  expect(result.selected.contributionId).toBe('modkit/archive-zip')
   return result.session
 }
 

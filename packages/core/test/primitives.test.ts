@@ -15,7 +15,7 @@ import {
   sortedUtf8,
   throwIfAborted,
   uniqueSortedUtf8,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 
 describe('ModkitError + diagnostics', () => {
   it('carries a qualified code, context and retryability, and serializes', () => {

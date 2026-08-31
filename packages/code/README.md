@@ -1,4 +1,4 @@
-# @modkitx-x3/code
+# @modkit/code
 
 Built-in code workspace for MK3 applications, with Monaco as its browser editor implementation.
 The runtime contribution remains **trusted in-process only**.
@@ -20,7 +20,7 @@ Measured, not assumed:
 | `script-src 'self'; style-src 'self' 'unsafe-inline'` | yes               | yes          | yes (900 rules)                                     |
 
 `script-src 'unsafe-eval'` is **not** required. Hosts embedding this backend serve
-`VIEWER_CSP_TRUSTED_EDITOR` from `@modkitx-x3/ui/viewer`, which adds `style-src 'unsafe-inline'`
+`VIEWER_CSP_TRUSTED_EDITOR` from `@modkit/ui/viewer`, which adds `style-src 'unsafe-inline'`
 and changes nothing else. Untrusted third-party viewers keep `VIEWER_CSP` and stay in a restricted
 frame (BRIEF-13C §6), so the relaxation does not reach them.
 

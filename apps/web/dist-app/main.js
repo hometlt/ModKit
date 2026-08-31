@@ -60,6 +60,7 @@ import {
   mountWebWorkbench,
   narrowGrant,
   nestedSubjectServices,
+  normalizeModkitIdentifier,
   openNestedSubject,
   operationScopedPermissionClasses,
   parseSemver,
@@ -85,10 +86,16 @@ import {
   throwIfAborted,
   validateSubjectDescriptorV2,
   webExtensionSubjectCardBundle
-} from "./chunks/chunk-L3K7ZEVL.js";
-import "./chunks/chunk-DJDDRNPC.js";
+} from "./chunks/chunk-4S3NB3QE.js";
+import {
+  init_define_MODKIT_EMBED_EXTENSION_ORIGINS
+} from "./chunks/chunk-BLWUC7LO.js";
+
+// apps/web/src/shell.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/ui/dist/settings/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var PARTS = Object.freeze([
   // shared surface
   "viewer",
@@ -553,12 +560,13 @@ function normalizeSettings(value) {
         problems.push(`extensions[${index}] is not an object; ignored`);
         continue;
       }
-      const id = asText(item["id"]);
+      const rawId = asText(item["id"]);
       const path = asText(item["path"]);
-      if (id === void 0 || path === void 0) {
+      if (rawId === void 0 || path === void 0) {
         problems.push(`extensions[${index}] needs both "id" and "path"; ignored`);
         continue;
       }
+      const id = normalizeModkitIdentifier(rawId);
       const entry = {
         id,
         path,
@@ -582,7 +590,7 @@ function normalizeSettings(value) {
     problems.push("gameInstallations must be an object; it was ignored");
   } else {
     for (const [rawGameId, item] of Object.entries(gameInstallationsInput ?? {})) {
-      const gameId = rawGameId.trim().toLowerCase();
+      const gameId = normalizeModkitIdentifier(rawGameId.trim().toLowerCase());
       if (!/^[a-z0-9][a-z0-9.-]*\/[a-z0-9][a-z0-9._-]*$/u.test(gameId)) {
         problems.push(`gameInstallations key "${rawGameId}" is not a qualified game id; ignored`);
         continue;
@@ -645,7 +653,8 @@ function normalizeSettings(value) {
   } else {
     const seenIds = /* @__PURE__ */ new Set();
     for (const [index, item] of (disabledExtensionsInput ?? []).entries()) {
-      const id = asText(item);
+      const rawId = asText(item);
+      const id = rawId === void 0 ? void 0 : normalizeModkitIdentifier(rawId);
       if (id === void 0 || !isQualifiedId(id)) {
         problems.push(`disabledExtensions[${index}] is not an extension coordinate; ignored`);
         continue;
@@ -663,7 +672,8 @@ function normalizeSettings(value) {
   } else {
     const seenIds = /* @__PURE__ */ new Set();
     for (const [index, item] of (disabledInput ?? []).entries()) {
-      const id = asText(item);
+      const rawId = asText(item);
+      const id = rawId === void 0 ? void 0 : normalizeModkitIdentifier(rawId);
       if (id === void 0) {
         problems.push(`disabledContributions[${index}] is not a contribution id; ignored`);
         continue;
@@ -1208,7 +1218,11 @@ function createSettingsUi(document2, options) {
   return ui;
 }
 
+// apps/web/src/map-preview.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
 // packages/host/dist/maps/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var MAX_SIGNATURE_WINDOW_BYTES = 4096 + 64;
 var INVENTORY_RECORD = /* @__PURE__ */ Symbol.for("x3.host/inventory-record");
 function inventoryRecordFor(contribution) {
@@ -1220,10 +1234,10 @@ var RESTRICTED_LINKED_EXECUTION = Object.freeze({
   allowTrustedInProcess: false
 });
 var PROVIDER_OFFER_INVENTORY_FACT = contractId(
-  "org.modkitx.inventory/provider-offer"
+  "modkit.inventory/provider-offer"
 );
 var VIEWER_CONTRIBUTION_INVENTORY_FACT = contractId(
-  "org.modkitx.inventory/viewer-contribution"
+  "modkit.inventory/viewer-contribution"
 );
 var offerBindings = /* @__PURE__ */ new WeakMap();
 function inventoryBindingForOffer(offer) {
@@ -3191,13 +3205,13 @@ var DATA_CATALOG_CONTRACT_DEFINITION = Object.freeze({
   offerFacet: Object.freeze({
     presence: "required",
     schema: Object.freeze({
-      $ref: "https://schemas.modkitx.org/x3/data-catalog-offer.v1.schema.json"
+      $ref: "https://schemas.modkit.org/x3/data-catalog-offer.v1.schema.json"
     })
   }),
   requestFacet: Object.freeze({
     presence: "required",
     schema: Object.freeze({
-      $ref: "https://schemas.modkitx.org/x3/data-catalog-request.v1.schema.json"
+      $ref: "https://schemas.modkit.org/x3/data-catalog-request.v1.schema.json"
     })
   }),
   matching: Object.freeze({ profile: DATA_CATALOG_MATCHER_PROFILE, major: 1 }),
@@ -3221,13 +3235,13 @@ var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
   offerFacet: Object.freeze({
     presence: "required",
     schema: Object.freeze({
-      $ref: "https://schemas.modkitx.org/x3/data-catalog-offer.v1.schema.json"
+      $ref: "https://schemas.modkit.org/x3/data-catalog-offer.v1.schema.json"
     })
   }),
   requestFacet: Object.freeze({
     presence: "required",
     schema: Object.freeze({
-      $ref: "https://schemas.modkitx.org/x3/data-catalog-request.v1.schema.json"
+      $ref: "https://schemas.modkit.org/x3/data-catalog-request.v1.schema.json"
     })
   }),
   matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),
@@ -4508,13 +4522,13 @@ var MAP_SEMANTIC_CONTRACT_DEFINITION = Object.freeze({
   offerFacet: Object.freeze({
     presence: "required",
     schema: Object.freeze({
-      $ref: "https://schemas.modkitx.org/x3/map-semantic-offer.v1.schema.json"
+      $ref: "https://schemas.modkit.org/x3/map-semantic-offer.v1.schema.json"
     })
   }),
   requestFacet: Object.freeze({
     presence: "required",
     schema: Object.freeze({
-      $ref: "https://schemas.modkitx.org/x3/map-semantic-request.v1.schema.json"
+      $ref: "https://schemas.modkit.org/x3/map-semantic-request.v1.schema.json"
     })
   }),
   matching: Object.freeze({ profile: MAP_SEMANTIC_MATCHER_PROFILE, major: 1 }),
@@ -4538,13 +4552,13 @@ var RESOLVED_MAP_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
   offerFacet: Object.freeze({
     presence: "required",
     schema: Object.freeze({
-      $ref: "https://schemas.modkitx.org/x3/map-semantic-offer.v1.schema.json"
+      $ref: "https://schemas.modkit.org/x3/map-semantic-offer.v1.schema.json"
     })
   }),
   requestFacet: Object.freeze({
     presence: "required",
     schema: Object.freeze({
-      $ref: "https://schemas.modkitx.org/x3/map-semantic-request.v1.schema.json"
+      $ref: "https://schemas.modkit.org/x3/map-semantic-request.v1.schema.json"
     })
   }),
   matching: Object.freeze({ profile: MAP_SEMANTIC_MATCHER_PROFILE, major: 1 }),
@@ -4573,13 +4587,13 @@ var MAP_PREVIEW_PREPARATION_CONTRACT_DEFINITION = Object.freeze({
   offerFacet: Object.freeze({
     presence: "required",
     schema: Object.freeze({
-      $ref: "https://schemas.modkitx.org/x3/map-preview-preparation-offer.v1.schema.json"
+      $ref: "https://schemas.modkit.org/x3/map-preview-preparation-offer.v1.schema.json"
     })
   }),
   requestFacet: Object.freeze({
     presence: "required",
     schema: Object.freeze({
-      $ref: "https://schemas.modkitx.org/x3/map-preview-preparation-request.v1.schema.json"
+      $ref: "https://schemas.modkit.org/x3/map-preview-preparation-request.v1.schema.json"
     })
   }),
   matching: Object.freeze({
@@ -6336,6 +6350,7 @@ async function prepareWebMapPreview(request) {
 }
 
 // apps/web/src/extensions-ui.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function extensionCopy(localizer) {
   return {
     title: localizer.text("extensions.title"),
@@ -6703,7 +6718,7 @@ function mountExtensionsUi(documentRef, options) {
         const toolbar = documentRef.createElement("div");
         toolbar.dataset["mkPart"] = "settings.adder";
         const subject = active.subject;
-        if (subject.kind === "org.modkitx/contribution" && options.setContributionEnabled !== void 0) {
+        if (subject.kind === "modkit/contribution" && options.setContributionEnabled !== void 0) {
           button(
             toolbar,
             "settings.add",
@@ -6713,7 +6728,7 @@ function mountExtensionsUi(documentRef, options) {
               `${subject.enabled ? copy.disabled : copy.enabled} ${subject.displayName}.`
             )
           );
-        } else if (subject.kind === "org.modkitx/extension" && options.setExtensionEnabled !== void 0) {
+        } else if (subject.kind === "modkit/extension" && options.setExtensionEnabled !== void 0) {
           button(
             toolbar,
             "settings.add",
@@ -6905,7 +6920,11 @@ function mountExtensionsUi(documentRef, options) {
   };
 }
 
+// apps/web/src/edit-panel.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
 // apps/web/src/edit-operations.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function metadataEntries(descriptor, groupId) {
   if (!("metadata" in descriptor)) return [];
   return descriptor.metadata.find((group) => group.id === groupId)?.entries ?? [];
@@ -7440,7 +7459,11 @@ function createEditPanel(options) {
   });
 }
 
+// apps/web/src/inspector.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
 // packages/ui/dist/panels/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var PARTS2 = Object.freeze([
   // shared surface
   "viewer",
@@ -8121,8 +8144,8 @@ function panelSlot(slotId, kind) {
   return {
     slotId: presentationSlotId(slotId),
     kind,
-    contributionId: "org.modkitx.app.web/inspector",
-    extensionId: "org.modkitx.app.web",
+    contributionId: "modkit.app.web/inspector",
+    extensionId: "modkit.app.web",
     priority: 100,
     bindings: []
   };
@@ -8242,6 +8265,7 @@ function createInspector(document2, options = {}) {
 }
 
 // apps/web/src/session-recovery.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var WEB_WORKER_CRASHED = "x3.host/worker-crashed";
 function createWebSessionRecovery(options) {
   let current = "healthy";
@@ -8268,7 +8292,11 @@ function createWebSessionRecovery(options) {
   });
 }
 
+// apps/web/src/settings.ts
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
 // packages/ui/dist/tokens/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var t = (name, tier, type, description, extra = {}) => ({ name, tier, type, isPublic: true, description, ...extra });
 var PALETTE_STEPS = [
   "050",
@@ -9023,7 +9051,7 @@ function applyDensity(root, density) {
 }
 
 // apps/web/src/settings.ts
-var SETTINGS_STORAGE_KEY = "org.modkitx.app.web/settings";
+var SETTINGS_STORAGE_KEY = "modkit.app.web/settings";
 var EXTENSIONS_READ_ONLY_REASON = "browser extension locations are managed through granted folders and downloaded packages, so the portable locator list cannot be written here; use the Extensions panel to add sources or enable and disable inventoried extensions";
 var sameExtensions = (left, right) => left.length === right.length && left.every((entry, index) => {
   const other = right[index];

@@ -14,7 +14,7 @@
  * enforces the endpoint's global transfer/nesting limits.
  */
 
-import { contractId, deepFreeze, type ContractIdLiteral } from '@modkitx-x3/core'
+import { contractId, deepFreeze, type ContractIdLiteral } from '@modkit/core'
 import type {
   DataSourceMethodSurfaceV1,
   DataSourceSurfaceRef,

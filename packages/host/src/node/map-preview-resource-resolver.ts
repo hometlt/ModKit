@@ -8,17 +8,17 @@ import {
   ModkitError,
   diagnostic,
   type Diagnostic,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import {
   revisionIdFromRef,
   type AssetSession,
   type NamespaceEntrySource,
   type RevisionId,
-} from '@modkitx-x3/sdk'
-import type { GameInstallation } from '@modkitx-x3/sdk/games'
-import type { MapPreviewHostResourceRoot } from '@modkitx-x3/sdk/maps'
-import { VirtualFileSystem } from '@modkitx-x3/vfs'
-import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
+} from '@modkit/sdk'
+import type { GameInstallation } from '@modkit/sdk/games'
+import type { MapPreviewHostResourceRoot } from '@modkit/sdk/maps'
+import { VirtualFileSystem } from '@modkit/vfs'
+import { createFileVfsProvider } from '@modkit/vfs/providers/file'
 import { discoverGameInstallations } from '../games/index.js'
 import {
   createCompositeWorkspaceNamespaceCompanionOrigin,
@@ -37,9 +37,9 @@ import { openFileArtifactSource } from './file-artifact-source.js'
 const LOCATOR_KIND = 'game-installation-archive'
 const SUBJECT_LOCATOR_KIND = 'game-installation-subject'
 export const NODE_GAME_INSTALLATION_ARCHIVE_MAP_PREVIEW_RESOLVER_ID =
-  'org.modkitx.node/game-installation-archive-map-preview'
+  'modkit.node/game-installation-archive-map-preview'
 export const NODE_GAME_INSTALLATION_RESOURCE_MAP_PREVIEW_RESOLVER_ID =
-  'org.modkitx.node/game-installation-resource-map-preview'
+  'modkit.node/game-installation-resource-map-preview'
 const LOCATOR_KEYS = new Set([
   'schemaVersion',
   'kind',

@@ -13,19 +13,20 @@ const vscode = require('vscode')
 
 const INJECTED_ERROR = 'x3.block14/injected-update-activation-failure'
 
+// MODKITX_* remains a deprecated read-only alias so older local smoke launchers still work.
 const required = name => {
-  const value = process.env[name]
+  const value = process.env[name] ?? process.env[name.replace(/^MODKIT_/, 'MODKITX_')]
   if (value === undefined || value === '') throw new Error(`${name} is not set`)
   return value
 }
 
-const stagePath = required('MODKITX_LIFECYCLE_STAGE')
-const currentPath = required('MODKITX_LIFECYCLE_CURRENT_EXTENSION')
-const statePath = required('MODKITX_LIFECYCLE_STATE')
-const resultsPath = required('MODKITX_LIFECYCLE_RESULTS')
-const expectedHead = required('MODKITX_LIFECYCLE_EXPECTED_HEAD')
-const expectedVersion = required('MODKITX_LIFECYCLE_EXPECTED_VERSION')
-const expectedDigests = JSON.parse(required('MODKITX_LIFECYCLE_EXPECTED_DIGESTS'))
+const stagePath = required('MODKIT_LIFECYCLE_STAGE')
+const currentPath = required('MODKIT_LIFECYCLE_CURRENT_EXTENSION')
+const statePath = required('MODKIT_LIFECYCLE_STATE')
+const resultsPath = required('MODKIT_LIFECYCLE_RESULTS')
+const expectedHead = required('MODKIT_LIFECYCLE_EXPECTED_HEAD')
+const expectedVersion = required('MODKIT_LIFECYCLE_EXPECTED_VERSION')
+const expectedDigests = JSON.parse(required('MODKIT_LIFECYCLE_EXPECTED_DIGESTS'))
 
 const digest = file =>
   `sha256:${crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')}`

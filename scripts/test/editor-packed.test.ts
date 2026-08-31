@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
 
 const repository = fileURLToPath(new URL('../..', import.meta.url))
-const fixture = join(repository, 'examples', 'modkit-extension-x3-synthetic-editor')
+const fixture = join(repository, 'examples', 'modkit-extension-synthetic-editor')
 const temporary = mkdtempSync(join(tmpdir(), 'x3-packed-editor-'))
 
 afterAll(() => rmSync(temporary, { recursive: true, force: true }))

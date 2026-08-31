@@ -1,5 +1,5 @@
 /**
- * Thin page model over the shared `@modkitx/extension-manager` client.
+ * Thin page model over the shared `@modkit/extension-manager` client.
  *
  * Trust, version selection, install eligibility, integrity matching and package/root validation
  * belong to the common client. This adapter only translates its snapshot into labels used by the
@@ -9,7 +9,7 @@
 import type {
   ExtensionManagerClient,
   ExtensionManagerEntry,
-} from '@modkitx/extension-manager/browser'
+} from '@modkit/extension-manager/browser'
 
 export interface ManagedExtensionPageRow {
   readonly id: string

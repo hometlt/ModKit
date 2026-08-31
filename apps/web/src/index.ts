@@ -1,14 +1,14 @@
-import { uint64 } from '@modkitx-x3/core'
+import { uint64 } from '@modkit/core'
 import {
   createHostTopology,
   type Architecture,
   type HostFacilityId,
   type HostTopology,
   type OperatingSystem,
-} from '@modkitx-x3/sdk'
-import { createHostComposition, type ExtensionInput, type HostComposition } from '@modkitx-x3/host'
-import { createWorkbench, type Workbench } from '@modkitx-x3/ui/workbench'
-import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+} from '@modkit/sdk'
+import { createHostComposition, type ExtensionInput, type HostComposition } from '@modkit/host'
+import { createWorkbench, type Workbench } from '@modkit/ui/workbench'
+import type { UiLocalizer } from '@modkit/ui/localization'
 import { createWebLocalizer } from './localization.js'
 export {
   createWebLocalizer,
@@ -26,8 +26,8 @@ export {
   type BrowserDirectoryHandle,
   type BrowserFileHandle,
   type HttpRangeSourceOptions,
-} from '@modkitx-x3/host/browser'
-export { createWorkbench, type Workbench } from '@modkitx-x3/ui/workbench'
+} from '@modkit/host/browser'
+export { createWorkbench, type Workbench } from '@modkit/ui/workbench'
 export {
   createWebCommandProtocol,
   DEFAULT_WEB_COMMAND_MAX_AUTHORIZATIONS,
@@ -159,8 +159,8 @@ export {
   type LoadedManagedExtensionRoots,
 } from './managed-extension-roots.js'
 
-export const WEB_MAIN_REALM = 'org.modkitx.app.web/main'
-export const WEB_WORKER_REALM = 'org.modkitx.app.web/worker'
+export const WEB_MAIN_REALM = 'modkit.app.web/main'
+export const WEB_WORKER_REALM = 'modkit.app.web/worker'
 
 export interface WebRuntimeIdentity {
   readonly operatingSystem: Exclude<OperatingSystem, 'any'>
@@ -218,7 +218,7 @@ export function createWebTopology(
     : (['stream', 'structured-clone', 'transferable-buffer'] as const)
   return createHostTopology({
     schemaVersion: 1,
-    topologyId: 'org.modkitx.app/web',
+    topologyId: 'modkit.app/web',
     realms: [
       {
         schemaVersion: 1,
@@ -233,7 +233,7 @@ export function createWebTopology(
           maxTransferBytes: uint64('268435456'),
           defaultDeadlineMs: 120_000,
         },
-        policy: { id: 'org.modkitx.policy/web-default', revision: '1' },
+        policy: { id: 'modkit.policy/web-default', revision: '1' },
       },
       {
         schemaVersion: 1,
@@ -248,7 +248,7 @@ export function createWebTopology(
           maxTransferBytes: uint64('268435456'),
           defaultDeadlineMs: 120_000,
         },
-        policy: { id: 'org.modkitx.policy/web-worker', revision: '1' },
+        policy: { id: 'modkit.policy/web-worker', revision: '1' },
       },
     ],
     links: [

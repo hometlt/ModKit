@@ -49,7 +49,7 @@ const textCoordinateProperties = {
  */
 export const sourceSpanSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://schemas.modkitx.org/x3/source-span.v1.schema.json',
+  $id: 'https://schemas.modkit.org/x3/source-span.v1.schema.json',
   oneOf: [
     {
       type: 'object',

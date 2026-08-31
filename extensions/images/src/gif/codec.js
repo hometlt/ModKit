@@ -2,9 +2,9 @@ import {
   createInspectionCodec,
   createRasterImageSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/gif'
+const ID = 'modkit/gif'
 const ascii = new TextDecoder('latin1')
 
 function isGifPrefix(bytes) {

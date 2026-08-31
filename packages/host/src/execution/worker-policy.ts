@@ -6,7 +6,7 @@
  * its own budgets.
  */
 
-import { ModkitError } from '@modkitx-x3/core'
+import { ModkitError } from '@modkit/core'
 
 export interface WorkerResourceLimits {
   readonly maxOldGenerationSizeMb: number

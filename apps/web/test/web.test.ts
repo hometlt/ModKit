@@ -86,7 +86,7 @@ describe('web composition root', () => {
       expect(realm.inventory.extensions).toHaveLength(1)
       expect(realm.inventory.extensions[0]).toMatchObject({
         source: 'native:core/text',
-        manifest: { publisher: 'org.modkitx', id: 'core-native-text' },
+        manifest: { publisher: 'modkit', id: 'core-native-text' },
       })
     }
     expect(app.main.inventory.diagnostics.filter(d => d.severity === 'error')).toHaveLength(0)

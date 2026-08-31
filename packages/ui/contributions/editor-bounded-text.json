@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/editor-contribution", "major": 1 },
-  "id": "org.modkitx.ui/bounded-text-editor",
+  "contract": { "id": "modkit/editor-contribution", "major": 1 },
+  "id": "modkit.ui/bounded-text-editor",
   "displayName": "bounded text editor",
   "runtimeVariants": [
     {

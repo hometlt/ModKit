@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { test } from 'node:test'
 
-import { parseSubjectRef, serializeSubjectRef } from '@modkitx-x3/sdk/subjects'
+import { parseSubjectRef, serializeSubjectRef } from '@modkit/sdk/subjects'
 
 import {
   CONTRIBUTION_SUBJECT_KIND,
@@ -21,6 +21,14 @@ const extension = Object.freeze({
   version: '1.2.3',
   license: 'MIT',
   contributionManifests: ['./contributions/*.json'],
+  presentation: {
+    displayName: 'Model tools from manifest',
+    vendor: { id: 'example.vendor', displayName: 'Example Vendor' },
+    games: [{ id: 'example.vendor/model-game', displayName: 'Model Game' }],
+    icon: { path: 'assets/model-tools.png', mediaType: 'image/png' },
+    source: { kind: 'url', url: 'https://example.invalid/model-tools' },
+    licenseFiles: [{ path: './LICENSE.txt', displayName: 'MIT License' }],
+  },
 })
 
 const contribution = ({ id, displayName, contract, spec = {}, status }) => ({
@@ -42,17 +50,17 @@ test('projects extension and contribution subjects grouped by exact manifest con
       contribution({
         id: 'example.vendor/viewer',
         displayName: 'Model viewer',
-        contract: { id: 'org.modkitx/viewer-contribution', major: 1 },
+        contract: { id: 'modkit/viewer-contribution', major: 1 },
       }),
       contribution({
         id: 'example.vendor/obj',
         displayName: 'OBJ',
-        contract: { id: 'org.modkitx/codec-contribution', major: 2 },
+        contract: { id: 'modkit/codec-contribution', major: 2 },
       }),
       contribution({
         id: 'example.vendor/gltf',
         displayName: 'glTF',
-        contract: { id: 'org.modkitx/codec-contribution', major: 1 },
+        contract: { id: 'modkit/codec-contribution', major: 1 },
         spec: {
           formatRefs: [{ formatId: 'gltf', label: 'glTF' }],
           operations: [{ id: 'view.inspect' }],
@@ -66,11 +74,7 @@ test('projects extension and contribution subjects grouped by exact manifest con
   assert.equal(projection.contributions.length, 3)
   assert.deepEqual(
     projection.contractGroups.map(group => group.key),
-    [
-      'org.modkitx/codec-contribution@1',
-      'org.modkitx/codec-contribution@2',
-      'org.modkitx/viewer-contribution@1',
-    ],
+    ['modkit/codec-contribution@1', 'modkit/codec-contribution@2', 'modkit/viewer-contribution@1'],
   )
   assert.equal(projection.contractGroups[0].contributions[0].id, 'example.vendor/gltf')
   assert.equal(projection.contributions[0].kind, CONTRIBUTION_SUBJECT_KIND)
@@ -94,6 +98,10 @@ test('projects extension and contribution subjects grouped by exact manifest con
     extensionRelations.items.map(item => [item.role, item.subjectId]),
     projection.contributions.map(item => ['owns', item.subjectId]),
   )
+  assert.deepEqual(
+    projection.extension.contributions.map(item => [item.role, item.id, item.contractKey]),
+    projection.contributions.map(item => ['owns', item.id, item.contractKey]),
+  )
   const contributionRelations = await gltf.facts.relations({ limit: 10 })
   assert.deepEqual(contributionRelations.items, [
     {
@@ -114,9 +122,15 @@ test('projects extension and contribution subjects grouped by exact manifest con
   assert.equal(secondPage.items[0].id, 'spec.operations')
   assert.equal(secondPage.nextCursor, undefined)
 
+  const overview = await gltf.facts.facts('overview', { limit: 20 })
+  assert.equal(
+    overview.items.find(item => item.id === 'description').value,
+    'glTF support for glTF.',
+  )
+
   const wire = await extensionSubjectRecordToWire(gltf)
   const transferred = JSON.parse(JSON.stringify(wire))
-  assert.equal(transferred.subject.contractKey, 'org.modkitx/codec-contribution@1')
+  assert.equal(transferred.subject.contractKey, 'modkit/codec-contribution@1')
   assert.equal(transferred.groups.find(item => item.id === 'specification').facts.length, 2)
   assert.deepEqual(transferred.relations, contributionRelations.items)
   const restored = subjectFactsSourceFromWire(transferred)
@@ -125,6 +139,25 @@ test('projects extension and contribution subjects grouped by exact manifest con
     await restored.relations({ limit: 10 }),
     await gltf.facts.relations({ limit: 10 }),
   )
+
+  const extensionWire = JSON.parse(
+    JSON.stringify(await extensionSubjectRecordToWire(projection.extension)),
+  )
+  assert.equal(extensionWire.subject.presentation.vendor.displayName, 'Example Vendor')
+  assert.equal(extensionWire.subject.contributions.length, 3)
+  assert.deepEqual(
+    extensionWire.subject.contributions.map(item => item.subjectId),
+    extensionWire.relations.map(item => item.subjectId),
+  )
+  assert.equal(
+    extensionWire.groups.some(item => item.id === 'contracts'),
+    false,
+  )
+  const contributionGroup = extensionWire.groups.find(item => item.id === 'contributions')
+  assert.equal(contributionGroup.facts.length, 3)
+  assert.equal(contributionGroup.facts[0].value.role, 'owns')
+  assert.equal(typeof contributionGroup.facts[0].value.subjectId, 'string')
+  assert.equal(typeof contributionGroup.facts[0].value.contractKey, 'string')
   assert.deepEqual(
     await restored.facts('specification', { limit: 10 }),
     await gltf.facts.facts('specification', { limit: 10 }),
@@ -148,18 +181,18 @@ test('projects a real common extension root and contribution manifest', async ()
     contributions: [gltf],
   })
 
-  assert.equal(projection.extension.id, 'org.modkitx/models')
-  assert.equal(projection.contractGroups[0].key, 'org.modkitx/codec-contribution@1')
-  assert.equal(projection.contractGroups[0].contributions[0].id, 'org.modkitx/model-gltf')
+  assert.equal(projection.extension.id, 'modkit/models')
+  assert.equal(projection.contractGroups[0].key, 'modkit/codec-contribution@1')
+  assert.equal(projection.contractGroups[0].contributions[0].id, 'modkit/model-gltf')
   const summary = await projection.contractGroups[0].contributions[0].facts.summary()
-  assert.equal(summary.identity.type, 'org.modkitx/codec-contribution@1')
+  assert.equal(summary.identity.type, 'modkit/codec-contribution@1')
 })
 
 test('rejects duplicate contributions and malformed pagination', async () => {
   const duplicate = contribution({
     id: 'example.vendor/repeated',
     displayName: 'Repeated',
-    contract: { id: 'org.modkitx/codec-contribution', major: 1 },
+    contract: { id: 'modkit/codec-contribution', major: 1 },
   })
   assert.throws(
     () =>

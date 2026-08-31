@@ -1,3 +1,5 @@
+import { normalizeModkitIdentifier, normalizeModkitSourceIdentifier } from '@modkit/sdk'
+
 const SOURCE_ID = /^[a-z0-9][a-z0-9._-]*$/i
 const EXTENSION_ID = /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/i
 
@@ -48,7 +50,7 @@ export function normalizeWorkspaceConfiguration(value) {
   const ids = new Set()
   const sources = input.sources.map((raw, index) => {
     const source = object(raw, `sources[${index}]`)
-    const id = text(source.id, `sources[${index}].id`)
+    const id = normalizeModkitSourceIdentifier(text(source.id, `sources[${index}].id`))
     if (!SOURCE_ID.test(id))
       fail('extension-manager/source-id-invalid', `invalid source id «${id}»`)
     if (ids.has(id)) fail('extension-manager/source-duplicate', `source «${id}» is duplicated`)
@@ -82,12 +84,20 @@ export function normalizeWorkspaceConfiguration(value) {
         ...(profile.sources === undefined
           ? {}
           : {
-              sources: stringList(profile.sources, `profiles.${name}.sources`),
+              sources: Object.freeze(
+                stringList(profile.sources, `profiles.${name}.sources`).map(source =>
+                  normalizeModkitSourceIdentifier(source),
+                ),
+              ),
             }),
         ...(profile.extensions === undefined
           ? {}
           : {
-              extensions: stringList(profile.extensions, `profiles.${name}.extensions`),
+              extensions: Object.freeze(
+                stringList(profile.extensions, `profiles.${name}.extensions`).map(extension =>
+                  extension === '*' ? extension : normalizeModkitIdentifier(extension),
+                ),
+              ),
             }),
         locked: profile.locked === true,
       })
@@ -108,7 +118,9 @@ export function normalizeWorkspaceConfiguration(value) {
       legacyPaths.push(
         Object.freeze({
           prefix: stringList(entry.prefix, `legacyPaths[${index}].prefix`),
-          source: text(entry.source, `legacyPaths[${index}].source`),
+          source: normalizeModkitSourceIdentifier(
+            text(entry.source, `legacyPaths[${index}].source`),
+          ),
           strip: Number.isInteger(entry.strip) && entry.strip >= 0 ? entry.strip : undefined,
         }),
       )
@@ -136,7 +148,8 @@ export function normalizeRepositoryManifest(value) {
   const ids = new Set()
   const extensions = input.extensions.map((raw, index) => {
     const entry = object(raw, `extensions[${index}]`)
-    const id = optionalText(entry.id, `extensions[${index}].id`)
+    const rawId = optionalText(entry.id, `extensions[${index}].id`)
+    const id = rawId === undefined ? undefined : normalizeModkitIdentifier(rawId)
     if (id !== undefined && !EXTENSION_ID.test(id)) {
       fail('extension-manager/extension-id-invalid', `invalid extension id «${id}»`)
     }
@@ -184,14 +197,18 @@ export function normalizeExtensionLock(value) {
   if (!Array.isArray(input.extensions)) {
     fail('extension-manager/schema-invalid', 'lock extensions must be a list')
   }
+  const ids = new Set()
   const extensions = input.extensions.map((raw, index) => {
     const entry = object(raw, `extensions[${index}]`)
-    const id = text(entry.id, `extensions[${index}].id`)
+    const id = normalizeModkitIdentifier(text(entry.id, `extensions[${index}].id`))
     if (!EXTENSION_ID.test(id))
       fail('extension-manager/extension-id-invalid', `invalid lock id «${id}»`)
+    if (ids.has(id))
+      fail('extension-manager/extension-duplicate', `extension «${id}» is duplicated`)
+    ids.add(id)
     return Object.freeze({
       id,
-      source: text(entry.source, `extensions[${index}].source`),
+      source: normalizeModkitSourceIdentifier(text(entry.source, `extensions[${index}].source`)),
       version: text(entry.version, `extensions[${index}].version`),
       digest: text(entry.digest, `extensions[${index}].digest`).toLowerCase(),
     })

@@ -183,7 +183,7 @@ describe('single-file production dist', () => {
     const sdk = readFileSync(bundlePath('packages/sdk/dist/index.js'), 'utf8')
     // sdk uses core at runtime: that must remain a real package import, never inlined —
     // inlining would duplicate a sibling package's module state.
-    expect(importSpecifiers(sdk)).toContain('@modkitx-x3/core')
+    expect(importSpecifiers(sdk)).toContain('@modkit/core')
     // JSON Schema validators are emitted at build time. Runtime compilation would violate the
     // production viewer CSP and break every codec.open() in browser hosts.
     expect(sdk).not.toContain('ajv/dist/2020.js')
@@ -204,8 +204,8 @@ describe('single-file production dist', () => {
 
     const host = readFileSync(bundlePath('packages/host/dist/index.js'), 'utf8')
     const hostImports = importSpecifiers(host)
-    expect(hostImports).toContain('@modkitx-x3/core')
-    expect(hostImports).toContain('@modkitx-x3/sdk')
+    expect(hostImports).toContain('@modkit/core')
+    expect(hostImports).toContain('@modkit/sdk')
 
     const ui = readFileSync(bundlePath('packages/ui/dist/index.js'), 'utf8')
     expect(ui).not.toContain('node:')

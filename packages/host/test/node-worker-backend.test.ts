@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { Diagnostic } from '@modkitx-x3/core'
+import type { Diagnostic } from '@modkit/core'
 import type {
   AssetInput,
   Codec,
@@ -18,7 +18,7 @@ import type {
   ContributionContext,
   DataSourceSurfaceV1Wire,
   ResourceBudget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   activateExecutionBackend,
   createExecutionBackendRegistry,
@@ -709,7 +709,7 @@ describe('node worker backend — a real bundled extension codec runs in the wor
       source,
       plan: { kind: 'bytes', ranges: [{ from: 'start', length: 4096 }], maxBytes: 4096 },
     })
-    expect(detection.codecId).toBe('org.modkitx/text-csv')
+    expect(detection.codecId).toBe('modkit/text-csv')
     expect(detection.confidence).toBeGreaterThan(0.5)
   }, 30_000)
 })

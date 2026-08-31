@@ -1,17 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import {
-  createContributionContractRegistry,
-  LOCALIZATION_CONTRIBUTION_CONTRACT,
-} from '@modkitx-x3/sdk'
+import { createContributionContractRegistry, LOCALIZATION_CONTRIBUTION_CONTRACT } from '@modkit/sdk'
 import {
   buildInventory,
   createHostContributionContractRegistry,
   loadLocalizationCatalogs,
   type ExtensionInput,
-} from '@modkitx-x3/host'
-import { parseUiCatalogDocument } from '@modkitx-x3/ui/localization'
-import { VirtualFileSystem, type VfsMount } from '@modkitx-x3/vfs'
-import { createMemoryVfsProvider } from '@modkitx-x3/vfs/providers/memory'
+} from '@modkit/host'
+import { parseUiCatalogDocument } from '@modkit/ui/localization'
+import { VirtualFileSystem, type VfsMount } from '@modkit/vfs'
+import { createMemoryVfsProvider } from '@modkit/vfs/providers/memory'
 
 const encoder = new TextEncoder()
 
@@ -26,7 +23,7 @@ function catalog(
   namespace = 'org.example.pack',
   messages: Readonly<Record<string, string>> = { 'pack.title': 'Titel' },
 ) {
-  return { schema: 'org.modkitx/ui-message-catalog@1', locale, namespace, messages }
+  return { schema: 'modkit/ui-message-catalog@1', locale, namespace, messages }
 }
 
 function manifest(path: string, messagePrefixes: readonly string[] = ['pack.'], locale = 'de') {

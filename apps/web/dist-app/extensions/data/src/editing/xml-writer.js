@@ -12,9 +12,9 @@
  * Nothing here writes: the module requests no permission classes and the host coordinator commits
  * under `write-source`.
  */
-import { defineWriter } from '@modkitx-x3/codec-kit'
+import { defineWriter } from '@modkit/codec-kit'
 
-const PROVIDER_ID = 'org.modkitx/text-xml-writer'
+const PROVIDER_ID = 'modkit/text-xml-writer'
 
 /** Range kinds a text source can splice. `utf16` is what a text editor authors. */
 const RANGE_KINDS = Object.freeze(['utf16', 'bytes'])
@@ -29,7 +29,7 @@ function validateTextChange(change) {
   if (change.targets.length === 0 || change.edits.length === 0) {
     diagnostics.push(
       error(
-        'org.modkitx/text-writer-change-empty',
+        'modkit/text-writer-change-empty',
         'a change set must carry at least one target and one edit',
       ),
     )
@@ -40,7 +40,7 @@ function validateTextChange(change) {
     if (edit.operation !== 'replace') {
       diagnostics.push(
         error(
-          'org.modkitx/text-writer-operation-unsupported',
+          'modkit/text-writer-operation-unsupported',
           `a text writer rewrites its own source: «${edit.operation}» is not a text edit`,
         ),
       )
@@ -49,7 +49,7 @@ function validateTextChange(change) {
     if (!targetIds.has(edit.targetId) || !sourceIds.has(edit.source.id)) {
       diagnostics.push(
         error(
-          'org.modkitx/text-writer-target-foreign',
+          'modkit/text-writer-target-foreign',
           `edit target «${edit.targetId}» is not a target of this change set`,
         ),
       )
@@ -58,7 +58,7 @@ function validateTextChange(change) {
     if (edit.range !== undefined && !RANGE_KINDS.includes(edit.range.kind)) {
       diagnostics.push(
         error(
-          'org.modkitx/text-writer-range-unsupported',
+          'modkit/text-writer-range-unsupported',
           `«${edit.range.kind}» is not a text range (utf16 or bytes)`,
         ),
       )
@@ -67,7 +67,7 @@ function validateTextChange(change) {
     if (!PAYLOAD_KINDS.includes(edit.payload.kind)) {
       diagnostics.push(
         error(
-          'org.modkitx/text-writer-payload-unsupported',
+          'modkit/text-writer-payload-unsupported',
           `«${edit.payload.kind}» payloads are not readable inline (text or inline)`,
         ),
       )
@@ -80,7 +80,7 @@ export const { abiVersion, provides, createProvider } = defineWriter({
   providerId: PROVIDER_ID,
   providerVersion: '1.0.0',
   /** A module cannot see its own artifact digest; the host inventory carries the attested one. */
-  artifactDigest: 'x3:org.modkitx/text-xml-writer@1.0.0',
+  artifactDigest: 'x3:modkit/text-xml-writer@1.0.0',
   offerId: 'xml-source',
   formatId: 'xml',
   representationId: 'source',

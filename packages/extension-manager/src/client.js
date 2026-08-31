@@ -1,4 +1,10 @@
-import { compareCatalogVersions, isRemoteCatalogUri, parseExtensionCatalog } from './catalog.js'
+import {
+  compareCatalogVersions,
+  isRemoteCatalogUri,
+  parseExtensionCatalog,
+  snapshotExtensionPresentation,
+} from './catalog.js'
+import { createGameSupportPlan, gameSupportPlansEqual } from './game-support.js'
 import { ExtensionManagerError } from './schema.js'
 
 const ALL_CHANNELS = Object.freeze(['stable', 'preview', 'development'])
@@ -103,6 +109,7 @@ function candidateOf(state, item, channels, requested) {
     version: version.version,
     channel: version.channel,
     summary: item.summary,
+    ...(item.presentation === undefined ? {} : { presentation: item.presentation }),
     extensions: version.extensions,
     source,
     catalogId: state.catalog.registryId,
@@ -165,7 +172,17 @@ function installedRecords(value) {
         )
       }
       ids.add(entry.id)
-      return entry
+      const presentation =
+        entry.presentation === undefined
+          ? undefined
+          : snapshotExtensionPresentation(
+              entry.presentation,
+              `ArtifactStore.list()[${index}].presentation`,
+            )
+      return Object.freeze({
+        ...entry,
+        ...(presentation === undefined ? {} : { presentation }),
+      })
     }),
   )
 }
@@ -266,6 +283,17 @@ function validateInstalled(candidate, installed) {
   }
 }
 
+function errorRecord(error) {
+  if (error instanceof Error) {
+    return Object.freeze({
+      name: error.name,
+      message: error.message,
+      ...(typeof error.code === 'string' ? { code: error.code } : {}),
+    })
+  }
+  return Object.freeze({ name: 'Error', message: String(error) })
+}
+
 /**
  * Compose the browser-safe extension manager from storage and acquisition ports.
  *
@@ -349,44 +377,130 @@ export function createExtensionManagerClient(options) {
     return installed
   }
 
-  return Object.freeze({
-    async snapshot() {
-      const [state, installedValue, enablementValue] = await Promise.all([
-        cachedState(),
-        artifactStore.list(),
-        enablementStore.list(),
-      ])
-      const available = candidatesOf(state, channels)
-      const installed = installedRecords(installedValue)
-      const enablement = enablementRecords(enablementValue)
-      const availableById = new Map(available.map(entry => [entry.id, entry]))
-      const installedById = new Map(installed.map(entry => [entry.id, entry]))
-      const ids = [...new Set([...availableById.keys(), ...installedById.keys()])].sort()
-      return Object.freeze({
-        entries: Object.freeze(
-          ids.map(id => {
-            const offered = availableById.get(id)
-            const present = installedById.get(id)
-            const availableVersion = offered?.version ?? present?.version ?? 'unknown'
-            return Object.freeze({
-              id,
-              displayName: offered?.displayName ?? present?.displayName ?? id,
-              publisher: offered?.publisher ?? present?.publisher ?? publisherFrom(id),
-              availableVersion,
-              ...(present === undefined ? {} : { installedVersion: present.version }),
-              enabled:
-                present !== undefined &&
-                (enablement.get(id) ?? (typeof present.enabled === 'boolean' && present.enabled)),
-              updateAvailable:
-                present !== undefined &&
-                offered !== undefined &&
-                compareCatalogVersions(offered.version, present.version) > 0,
-              source: offered?.source.uri ?? present?.source ?? 'local',
-              trusted: offered?.trusted ?? present?.trusted ?? false,
-            })
-          }),
-        ),
+  const snapshotOperation = async () => {
+    const [state, installedValue, enablementValue] = await Promise.all([
+      cachedState(),
+      artifactStore.list(),
+      enablementStore.list(),
+    ])
+    const available = candidatesOf(state, channels)
+    const installed = installedRecords(installedValue)
+    const enablement = enablementRecords(enablementValue)
+    const availableById = new Map(available.map(entry => [entry.id, entry]))
+    const installedById = new Map(installed.map(entry => [entry.id, entry]))
+    const ids = [...new Set([...availableById.keys(), ...installedById.keys()])].sort()
+    return Object.freeze({
+      entries: Object.freeze(
+        ids.map(id => {
+          const offered = availableById.get(id)
+          const present = installedById.get(id)
+          const availableVersion = offered?.version ?? present?.version ?? 'unknown'
+          return Object.freeze({
+            id,
+            displayName: offered?.displayName ?? present?.displayName ?? id,
+            publisher: offered?.publisher ?? present?.publisher ?? publisherFrom(id),
+            availableVersion,
+            ...(present === undefined ? {} : { installedVersion: present.version }),
+            enabled:
+              present !== undefined &&
+              (enablement.get(id) ?? (typeof present.enabled === 'boolean' && present.enabled)),
+            updateAvailable:
+              present !== undefined &&
+              offered !== undefined &&
+              compareCatalogVersions(offered.version, present.version) > 0,
+            source: offered?.source.uri ?? present?.source ?? 'local',
+            trusted: offered?.trusted ?? present?.trusted ?? false,
+            ...(offered?.presentation === undefined && present?.presentation === undefined
+              ? {}
+              : { presentation: offered?.presentation ?? present?.presentation }),
+          })
+        }),
+      ),
+    })
+  }
+
+  const installOperation = async (id, version) => {
+    const installed = installedRecords(await artifactStore.list()).find(entry => entry.id === id)
+    if (installed !== undefined) {
+      fail(
+        'extension-manager/artifact-already-installed',
+        `extension «${id}» is already installed`,
+        { id, version: installed.version },
+      )
+    }
+    const candidate = await catalogCandidate(id, version)
+    // Disable first so a store commit followed by validation/enablement failure can never expose
+    // partial roots to a Host. Atomic adapters leave this false record in place on later failure.
+    await enablementStore.setEnabled(id, false)
+    try {
+      await acquireAndInstall(candidate)
+      await enablementStore.setEnabled(id, true)
+    } catch (error) {
+      // A fresh install has no prior artifact to preserve, so compensating removal is safe. This
+      // covers both a post-store validation failure and a final enablement write failure.
+      let artifactError
+      let enablementError
+      try {
+        await artifactStore.remove(id)
+      } catch (cause) {
+        artifactError = cause
+      }
+      try {
+        // Reassert fail-closed state in case a custom port committed true before throwing.
+        await enablementStore.setEnabled(id, false)
+        if (artifactError === undefined) await enablementStore.remove(id)
+      } catch (cause) {
+        enablementError = cause
+      }
+      if (artifactError !== undefined || enablementError !== undefined) {
+        fail(
+          'extension-manager/install-compensation-failed',
+          `extension «${id}» failed installation and could not be removed`,
+          { id, error, artifactError, enablementError },
+        )
+      }
+      throw error
+    }
+  }
+
+  const updateOperation = async id => {
+    const installed = installedRecords(await artifactStore.list()).find(entry => entry.id === id)
+    if (installed === undefined) {
+      fail('extension-manager/artifact-not-installed', `extension «${id}» is not installed`, {
+        id,
       })
+    }
+    const candidate = await catalogCandidate(id)
+    if (compareCatalogVersions(candidate.version, installed.version) <= 0) return
+    const wasEnabled = enablementRecords(await enablementStore.list()).get(id) === true
+    await enablementStore.setEnabled(id, false)
+    await acquireAndInstall(candidate)
+    if (wasEnabled) await enablementStore.setEnabled(id, true)
+  }
+
+  const removeOperation = async id => {
+    await artifactStore.remove(id)
+    await enablementStore.remove(id)
+  }
+
+  const setEnabledOperation = async (id, enabled) => {
+    if (typeof enabled !== 'boolean') {
+      fail('extension-manager/enablement-invalid', 'enabled must be boolean', { id, enabled })
+    }
+    const installed = installedRecords(await artifactStore.list()).some(entry => entry.id === id)
+    if (!installed) {
+      fail('extension-manager/artifact-not-installed', `extension «${id}» is not installed`, {
+        id,
+      })
+    }
+    await enablementStore.setEnabled(id, enabled)
+  }
+
+  return Object.freeze({
+    snapshot: snapshotOperation,
+
+    async planGameSupport(gameId) {
+      return createGameSupportPlan(await snapshotOperation(), gameId)
     },
 
     refresh() {
@@ -403,93 +517,120 @@ export function createExtensionManagerClient(options) {
     },
 
     install(id, version) {
-      return mutate(async () => {
-        const installed = installedRecords(await artifactStore.list()).find(
-          entry => entry.id === id,
-        )
-        if (installed !== undefined) {
-          fail(
-            'extension-manager/artifact-already-installed',
-            `extension «${id}» is already installed`,
-            { id, version: installed.version },
-          )
-        }
-        const candidate = await catalogCandidate(id, version)
-        // Disable first so a store commit followed by validation/enablement failure can never expose
-        // partial roots to a Host. Atomic adapters leave this false record in place on later failure.
-        await enablementStore.setEnabled(id, false)
-        try {
-          await acquireAndInstall(candidate)
-          await enablementStore.setEnabled(id, true)
-        } catch (error) {
-          // A fresh install has no prior artifact to preserve, so compensating removal is safe. This
-          // covers both a post-store validation failure and a final enablement write failure.
-          let artifactError
-          let enablementError
-          try {
-            await artifactStore.remove(id)
-          } catch (cause) {
-            artifactError = cause
-          }
-          try {
-            // Reassert fail-closed state in case a custom port committed true before throwing.
-            await enablementStore.setEnabled(id, false)
-            if (artifactError === undefined) await enablementStore.remove(id)
-          } catch (cause) {
-            enablementError = cause
-          }
-          if (artifactError !== undefined || enablementError !== undefined) {
-            fail(
-              'extension-manager/install-compensation-failed',
-              `extension «${id}» failed installation and could not be removed`,
-              { id, error, artifactError, enablementError },
-            )
-          }
-          throw error
-        }
-      })
+      return mutate(() => installOperation(id, version))
     },
 
     update(id) {
-      return mutate(async () => {
-        const installed = installedRecords(await artifactStore.list()).find(
-          entry => entry.id === id,
-        )
-        if (installed === undefined) {
-          fail('extension-manager/artifact-not-installed', `extension «${id}» is not installed`, {
-            id,
-          })
-        }
-        const candidate = await catalogCandidate(id)
-        if (compareCatalogVersions(candidate.version, installed.version) <= 0) return
-        const wasEnabled = enablementRecords(await enablementStore.list()).get(id) === true
-        await enablementStore.setEnabled(id, false)
-        await acquireAndInstall(candidate)
-        if (wasEnabled) await enablementStore.setEnabled(id, true)
-      })
+      return mutate(() => updateOperation(id))
     },
 
     remove(id) {
-      return mutate(async () => {
-        await artifactStore.remove(id)
-        await enablementStore.remove(id)
-      })
+      return mutate(() => removeOperation(id))
     },
 
     setEnabled(id, enabled) {
+      return mutate(() => setEnabledOperation(id, enabled))
+    },
+
+    applyGameSupport(plan) {
       return mutate(async () => {
-        if (typeof enabled !== 'boolean') {
-          fail('extension-manager/enablement-invalid', 'enabled must be boolean', { id, enabled })
+        const gameId = record(plan) && record(plan.game) ? plan.game.id : undefined
+        const current = createGameSupportPlan(await snapshotOperation(), gameId)
+        if (!gameSupportPlansEqual(plan, current)) {
+          fail(
+            'extension-manager/game-support-plan-stale',
+            'game support plan no longer matches the cached catalog and installed state',
+            { gameId },
+          )
         }
-        const installed = installedRecords(await artifactStore.list()).some(
-          entry => entry.id === id,
-        )
-        if (!installed) {
-          fail('extension-manager/artifact-not-installed', `extension «${id}» is not installed`, {
-            id,
+        if (!current.ready) {
+          fail(
+            'extension-manager/game-support-plan-blocked',
+            'game support plan contains untrusted package actions',
+            { gameId, blocked: current.blocked },
+          )
+        }
+
+        const beforeEnablement = enablementRecords(await enablementStore.list())
+        const completed = []
+        try {
+          for (const action of current.actions) {
+            if (action.kind === 'install') {
+              await installOperation(action.packageId, action.version)
+            } else if (action.kind === 'enable') {
+              await setEnabledOperation(action.packageId, true)
+            } else {
+              await updateOperation(action.packageId)
+            }
+            completed.push(action)
+          }
+          return Object.freeze({
+            schemaVersion: 1,
+            game: current.game,
+            status: 'applied',
+            applied: Object.freeze(completed.map(action => Object.freeze({ ...action }))),
+            rollback: Object.freeze([]),
+          })
+        } catch (error) {
+          const rollback = []
+          let partial = completed.some(action => action.reversible === false)
+          const failedAction = current.actions[completed.length]
+          if (failedAction?.reversible === false) partial = true
+
+          for (const action of completed.toReversed()) {
+            if (!action.reversible) {
+              rollback.push(
+                Object.freeze({
+                  packageId: action.packageId,
+                  kind: action.kind,
+                  status: 'not-reversible',
+                }),
+              )
+              continue
+            }
+            try {
+              if (action.kind === 'install') {
+                await removeOperation(action.packageId)
+              } else if (beforeEnablement.has(action.packageId)) {
+                await enablementStore.setEnabled(
+                  action.packageId,
+                  beforeEnablement.get(action.packageId),
+                )
+              } else {
+                await enablementStore.remove(action.packageId)
+              }
+              rollback.push(
+                Object.freeze({
+                  packageId: action.packageId,
+                  kind: action.kind,
+                  status: 'rolled-back',
+                }),
+              )
+            } catch (rollbackError) {
+              partial = true
+              rollback.push(
+                Object.freeze({
+                  packageId: action.packageId,
+                  kind: action.kind,
+                  status: 'rollback-failed',
+                  error: errorRecord(rollbackError),
+                }),
+              )
+            }
+          }
+
+          return Object.freeze({
+            schemaVersion: 1,
+            game: current.game,
+            status: partial ? 'partial' : 'rolled-back',
+            applied: Object.freeze(completed.map(action => Object.freeze({ ...action }))),
+            failed:
+              failedAction === undefined
+                ? Object.freeze({ error: errorRecord(error) })
+                : Object.freeze({ ...failedAction, error: errorRecord(error) }),
+            rollback: Object.freeze(rollback),
           })
         }
-        await enablementStore.setEnabled(id, enabled)
       })
     },
   })

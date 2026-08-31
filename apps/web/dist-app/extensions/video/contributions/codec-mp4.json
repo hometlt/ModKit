@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
-  "id": "org.modkitx/video-mp4",
+  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "id": "modkit/video-mp4",
   "displayName": "MPEG-4 media",
   "runtimeVariants": [
     {

@@ -10,7 +10,7 @@
  * created (the usual order in an application bootstrap) still reach the workers.
  */
 
-import type { Diagnostic } from '@modkitx-x3/core'
+import type { Diagnostic } from '@modkit/core'
 import {
   linkedInProcessBackend,
   createExecutionBackendRegistry,

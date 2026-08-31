@@ -9,8 +9,8 @@ import type {
   ViewerModule,
   ViewerMount,
   ViewerSources,
-} from '@modkitx-x3/sdk'
-import { VIEWER_CSP_TEXT, safeViewerText } from '@modkitx-x3/ui/viewer'
+} from '@modkit/sdk'
+import { VIEWER_CSP_TEXT, safeViewerText } from '@modkit/ui/viewer'
 
 export interface BrowserViewerHostOptions {
   readonly root: HTMLElement

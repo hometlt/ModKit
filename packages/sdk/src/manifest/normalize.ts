@@ -9,7 +9,8 @@ import {
   parseSemver,
   parseVersionRange,
   type Diagnostic,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
+import { normalizeModkitIdentifier } from '../identity.js'
 import { extensionManifestSchema, modkitBlockSchema } from '../schemas/extension-manifest.js'
 import { snapshotJsonWireData, snapshotJsonWireObject, validateWithSchema } from './validate.js'
 import { validateContributionPattern } from './patterns.js'
@@ -70,6 +71,53 @@ function exactVersionDiagnostics(manifest: ExtensionManifest): Diagnostic[] {
         ),
       ]
     : []
+}
+
+function splitExtensionCoordinate(coordinate: string): Pick<ExtensionManifest, 'publisher' | 'id'> {
+  const separator = coordinate.indexOf('/')
+  return {
+    publisher: coordinate.slice(0, separator),
+    id: coordinate.slice(separator + 1),
+  }
+}
+
+function normalizeExtensionIdentityParts(
+  publisher: string,
+  id: string,
+): Pick<ExtensionManifest, 'publisher' | 'id'> {
+  return splitExtensionCoordinate(normalizeModkitIdentifier(`${publisher}/${id}`))
+}
+
+function normalizeExtensionManifestIdentities(manifest: ExtensionManifest): ExtensionManifest {
+  const identity = normalizeExtensionIdentityParts(manifest.publisher, manifest.id)
+  return snapshotJsonWireObject({
+    ...manifest,
+    publisher: identity.publisher,
+    id: identity.id,
+    ...(manifest.presentation === undefined
+      ? {}
+      : {
+          presentation: {
+            ...manifest.presentation,
+            ...(manifest.presentation.games === undefined
+              ? {}
+              : {
+                  games: manifest.presentation.games.map(game => ({
+                    ...game,
+                    id: normalizeModkitIdentifier(game.id),
+                  })),
+                }),
+          },
+        }),
+    ...(manifest.dependsOn === undefined
+      ? {}
+      : {
+          dependsOn: manifest.dependsOn.map(requirement => ({
+            ...requirement,
+            extension: normalizeModkitIdentifier(requirement.extension),
+          })),
+        }),
+  }) as ExtensionManifest
 }
 
 export async function normalizeExtensionManifest(
@@ -139,9 +187,10 @@ export async function normalizeExtensionManifest(
   if (hasStandalone) {
     const diagnostics = await validateWithSchema(extensionManifestSchema, standaloneInput)
     if (hasErrors(diagnostics)) return { container: 'standalone', diagnostics }
-    const manifest = standaloneInput as ExtensionManifest
+    const manifest = normalizeExtensionManifestIdentities(standaloneInput as ExtensionManifest)
     const all = [
       ...diagnostics,
+      ...(await validateWithSchema(extensionManifestSchema, manifest)),
       ...exactVersionDiagnostics(manifest),
       ...patternDiagnostics(manifest),
       ...rangeDiagnostics(manifest),
@@ -192,19 +241,32 @@ export async function normalizeExtensionManifest(
   }
   if (hasErrors(diagnostics)) return { container: 'package-json', diagnostics }
 
-  const manifest = snapshotJsonWireObject({
-    schemaVersion: 1,
-    publisher: blockRecord['publisher'] as string,
-    id: blockRecord['id'] as string,
-    version: version as string,
-    license: license as string,
-    contributionManifests: blockRecord['contributionManifests'] as readonly string[],
-    ...(blockRecord['dependsOn'] === undefined
-      ? {}
-      : {
-          dependsOn: blockRecord['dependsOn'] as NonNullable<ExtensionManifest['dependsOn']>,
-        }),
-  }) as ExtensionManifest
+  const identity = normalizeExtensionIdentityParts(
+    blockRecord['publisher'] as string,
+    blockRecord['id'] as string,
+  )
+  const manifest = normalizeExtensionManifestIdentities(
+    snapshotJsonWireObject({
+      schemaVersion: 1,
+      publisher: identity.publisher,
+      id: identity.id,
+      version: version as string,
+      license: license as string,
+      contributionManifests: blockRecord['contributionManifests'] as readonly string[],
+      ...(blockRecord['dependsOn'] === undefined
+        ? {}
+        : {
+            dependsOn: blockRecord['dependsOn'] as NonNullable<ExtensionManifest['dependsOn']>,
+          }),
+      ...(blockRecord['presentation'] === undefined
+        ? {}
+        : {
+            presentation: blockRecord['presentation'] as NonNullable<
+              ExtensionManifest['presentation']
+            >,
+          }),
+    }) as ExtensionManifest,
+  )
   const all = [
     ...diagnostics,
     ...(await validateWithSchema(extensionManifestSchema, manifest)),

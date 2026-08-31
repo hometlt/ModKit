@@ -10,7 +10,7 @@
  *
  *     const descriptor = await session.descriptor()
  *     expect(descriptor.dataSources).toContain(…)
- *     proves({ contributionId: 'org.modkitx/png', operation: 'inspect' })
+ *     proves({ contributionId: 'modkit/png', operation: 'inspect' })
  *
  * not in a table somewhere else. A list kept beside the tests is a second thing to maintain and it
  * rots in the direction that flatters: assertions get deleted, list entries do not. A declaration

@@ -43,10 +43,10 @@ import {
   type RasterImageSource,
   type ResourceBudget,
   type Writer,
-} from '@modkitx-x3/sdk'
-import { createSubjectEditing, type UnresolvedSubject } from '@modkitx-x3/host'
-import { createFileEditingBackend } from '@modkitx-x3/host/node'
-import { materializeTextureAndCompare, readKtx2Container } from '@modkitx-x3/testkit'
+} from '@modkit/sdk'
+import { createSubjectEditing, type UnresolvedSubject } from '@modkit/host'
+import { createFileEditingBackend } from '@modkit/host/node'
+import { materializeTextureAndCompare, readKtx2Container } from '@modkit/testkit'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const fixtures = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
@@ -207,7 +207,7 @@ describe('12-2 UVT export writes through the host coordinator and reopens', () =
       roundTrip: 'lossy',
       preservesUnknownData: false,
       evidenceId: writer.offer.fidelityEvidenceId,
-      corpusId: 'modkitX3/packages/testkit/test/uvt-writer',
+      corpusId: 'modkit/packages/testkit/test/uvt-writer',
       corpusDigest: `sha256:${createHash('sha256').update(verdict.bytes).digest('hex')}`,
       conformanceProfile: 'common.edit/writer-v1' as never,
       writer: writer.identity,
@@ -359,7 +359,7 @@ describe('12-2 UVT export writes through the host coordinator and reopens', () =
     // overwriting an existing file is a mutation, and this offer does not claim one
     expect(replaced.valid).toBe(false)
     expect(replaced.diagnostics.map(item => item.code)).toContain(
-      'org.modkitx/uvt-writer-operation-unsupported',
+      'modkit/uvt-writer-operation-unsupported',
     )
 
     const misnamed = await writer.validate({
@@ -377,7 +377,7 @@ describe('12-2 UVT export writes through the host coordinator and reopens', () =
     // the pairing is the whole reason the sidecar is worth having, so the names are checked
     expect(misnamed.valid).toBe(false)
     expect(misnamed.diagnostics.map(item => item.code)).toContain(
-      'org.modkitx/uvt-writer-path-unexpected',
+      'modkit/uvt-writer-path-unexpected',
     )
   })
 })
@@ -397,7 +397,7 @@ describe('12-3 the UVM export takes the same coordinator seam', () => {
     const directory = await mkdtemp(join(tmpdir(), 'x3-uvm-write-'))
     scratchDirectories.push(directory)
 
-    const { loadUvTools, materializeAndCompare } = await import('@modkitx-x3/testkit')
+    const { loadUvTools, materializeAndCompare } = await import('@modkit/testkit')
     const gltf = (await import(
       pathToFileURL(join(repoRoot, 'vendor', 'multiverse-specs', 'specs', 'tools', 'uvm-core.mjs'))
         .href
@@ -438,7 +438,7 @@ describe('12-3 the UVM export takes the same coordinator seam', () => {
         roundTrip: 'semantic',
         preservesUnknownData: false,
         evidenceId: writer.offer.fidelityEvidenceId,
-        corpusId: 'modkitX3/packages/testkit/test/uvm-writer-seam',
+        corpusId: 'modkit/packages/testkit/test/uvm-writer-seam',
         corpusDigest: `sha256:${createHash('sha256').update(verdict.bytes).digest('hex')}`,
         conformanceProfile: 'common.edit/writer-v1' as never,
         writer: writer.identity,
@@ -493,11 +493,11 @@ const UVT_EXPORT_CONFIRMED = 'uvt-export-confirmed'
  * descriptor still carries the namespace origin, which is all an edit target is derived from.
  */
 async function openNamespaceSubjectFor(directory: string): Promise<UnresolvedSubject> {
-  const { openSubject, artifactNamespaceSourceFromVfsMount } = await import('@modkitx-x3/host')
-  const { VirtualFileSystem } = await import('@modkitx-x3/vfs')
-  const { createFileVfsProvider } = await import('@modkitx-x3/vfs/providers/file')
+  const { openSubject, artifactNamespaceSourceFromVfsMount } = await import('@modkit/host')
+  const { VirtualFileSystem } = await import('@modkit/vfs')
+  const { createFileVfsProvider } = await import('@modkit/vfs/providers/file')
   const { buildInventory, createHostContributionContractRegistry, createExecutionBackendRegistry } =
-    await import('@modkitx-x3/host')
+    await import('@modkit/host')
   const vfs = new VirtualFileSystem().registerProvider(createFileVfsProvider())
   const mount = await vfs.openMount(pathToFileURL(directory).href)
   const uri = pathToFileURL(directory).href

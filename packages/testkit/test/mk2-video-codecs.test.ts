@@ -11,7 +11,7 @@ import {
   type ResourceBudget,
   type TreeDataSource,
   type VideoMediaSource,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const videoRoot = join(repoRoot, 'extensions', 'video')

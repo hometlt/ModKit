@@ -1,9 +1,9 @@
 // Hand-ported from the MK2 Basis Universal codec. The dependency-free MK3 slice validates the
 // container header and slice table; BasisU transcoding is intentionally not claimed.
 
-import { createInspectionCodec, createTreeDataSource } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec, createTreeDataSource } from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/basis'
+const ID = 'modkit/basis'
 const HEADER_BYTES = 77
 const SLICE_BYTES = 23
 

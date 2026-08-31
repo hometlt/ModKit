@@ -92,7 +92,7 @@ function runNode(file: string): { readonly status: number | null; readonly outpu
 }
 
 const CONSUMER = (withBootstrap: boolean) => `
-const { createModkit } = require('@modkitx-x3/host/node')
+const { createModkit } = require('@modkit/host/node')
 const { pathToFileURL } = require('node:url')
 const path = require('node:path')
 
@@ -132,7 +132,7 @@ describe('the published surface survives being bundled as CommonJS', () => {
     const { status, output } = runNode(file)
 
     expect(output).toContain('STATE=opened')
-    expect(output).toContain('CODEC=org.modkitx/image-png')
+    expect(output).toContain('CODEC=modkit/image-png')
     // worker-brokered, so the bundle really did reach a spawned worker rather than staying in-process
     expect(output).toContain('VARIANT=portable')
     expect(output).toContain('DONE')
@@ -159,9 +159,9 @@ describe('the package advertises what a consumer needs to resolve', () => {
     const file = join(scratch, 'resolve.cjs')
     writeFileSync(
       file,
-      `const p = require.resolve('@modkitx-x3/host/node')\n` +
+      `const p = require.resolve('@modkit/host/node')\n` +
         `console.log('RESOLVED=' + (typeof p === 'string' && p.length > 0))\n` +
-        `const surface = require('@modkitx-x3/host/node')\n` +
+        `const surface = require('@modkit/host/node')\n` +
         `console.log('CREATE_MODKIT=' + typeof surface.createModkit)\n` +
         `console.log('OPENER=' + typeof surface.createPathSubjectOpener)\n`,
       'utf8',

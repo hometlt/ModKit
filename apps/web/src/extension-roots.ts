@@ -52,15 +52,15 @@
  * against fakes and runs unchanged in the page.
  */
 
-import { ModkitError } from '@modkitx-x3/core'
-import { expandContributionManifests, normalizeExtensionManifest } from '@modkitx-x3/sdk'
-import type { ExtensionInput, ExtensionOrigin } from '@modkitx-x3/host'
+import { ModkitError } from '@modkit/core'
+import { expandContributionManifests, normalizeExtensionManifest } from '@modkit/sdk'
+import type { ExtensionInput, ExtensionOrigin } from '@modkit/host'
 import type {
   BrowserFetchLike,
   BrowserResponseLike,
   BrowserSubtleCryptoLike,
   VerifiedModuleRoot,
-} from '@modkitx-x3/host/browser'
+} from '@modkit/host/browser'
 import {
   iterateDirectoryChildren,
   type WebDirectoryHandleLike,

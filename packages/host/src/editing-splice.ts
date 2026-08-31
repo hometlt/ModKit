@@ -8,8 +8,8 @@
  * Nothing here touches a filesystem: it takes bytes and returns bytes.
  */
 
-import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
-import type { AssetRevision, EditPayload, PayloadStore, SourceEdit } from '@modkitx-x3/sdk'
+import { ModkitError, throwIfAborted } from '@modkit/core'
+import type { AssetRevision, EditPayload, PayloadStore, SourceEdit } from '@modkit/sdk'
 
 const STAGED_CHUNK = 1024 * 1024
 

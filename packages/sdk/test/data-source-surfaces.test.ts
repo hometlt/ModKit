@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { contractId } from '@modkitx-x3/core'
+import { contractId } from '@modkit/core'
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   ADMITTED_DATA_SOURCE_CONTRACTS,
@@ -20,7 +20,7 @@ import {
   type ContributionManifestV1Wire,
   type DataSourceContractDefinitionSpecV1Wire,
   type DataSourceSurfaceV1Wire,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { METHOD_NAME_PATTERN } from '../src/schemas/patterns.js'
 
 const METHOD_NAME = new RegExp(METHOD_NAME_PATTERN, 'u')
@@ -103,7 +103,7 @@ describe('NXT-103 — data-source method surface schema', () => {
       major: 1,
       offerFacet: { presence: 'forbidden' },
       requestFacet: { presence: 'forbidden' },
-      matching: { profile: 'org.modkitx/facetless-matcher', major: 1 },
+      matching: { profile: 'modkit/facetless-matcher', major: 1 },
       conformanceProfile: 'org.example/thing-syntax-v1',
       surface,
     }

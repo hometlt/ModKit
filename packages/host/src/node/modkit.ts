@@ -7,7 +7,7 @@
  * edit it" does not first need to learn topologies, realms, grants and backends:
  *
  * ```ts
- * import { createModkit } from '@modkitx-x3/host/node'
+ * import { createModkit } from '@modkit/host/node'
  *
  * const modkit = await createModkit({
  *   extensions: ['./node_modules/@my-app/codecs'],
@@ -31,8 +31,8 @@
 
 import { randomUUID } from 'node:crypto'
 import { isAbsolute, relative, resolve } from 'node:path'
-import { uint64, type Diagnostic } from '@modkitx-x3/core'
-import { createHostTopology, type AssetSession, type PermissionGrant } from '@modkitx-x3/sdk'
+import { uint64, type Diagnostic } from '@modkit/core'
+import { createHostTopology, type AssetSession, type PermissionGrant } from '@modkit/sdk'
 import type { SubjectOpenSnapshot } from '../subject-rpc.js'
 import { createSubjectEditing, type SubjectEditing } from '../subject-editing.js'
 import { createSubjectServices } from '../subject-services.js'
@@ -55,8 +55,8 @@ import { createNodeSubjectServices, type NodeSubjectServices } from './subject-s
 import { nodeRuntimeTargetBase, nodeWorkerLinks, nodeWorkerRealmProfile } from './profile.js'
 import type { WorkerBackendPolicy } from '../execution/worker-policy.js'
 
-const MODKIT_REALM = 'org.modkitx.host/library-main'
-const MODKIT_WORKER_REALM = 'org.modkitx.host/library-worker'
+const MODKIT_REALM = 'modkit.host/library-main'
+const MODKIT_WORKER_REALM = 'modkit.host/library-worker'
 
 export interface ModkitOptions {
   /**
@@ -108,7 +108,7 @@ export interface ModkitOpened {
   readonly session?: AssetSession
   /**
    * The editing surface, present only when the subject sits inside `writableRoots` and its shape
-   * supports editing. `editing.editorPorts` is what a `@modkitx-x3/ui` editor stage mounts with;
+   * supports editing. `editing.editorPorts` is what a `@modkit/ui` editor stage mounts with;
    * `editing.coordinator` is the prepare/commit pair for a host that drives saves itself.
    */
   readonly editing?: SubjectEditing
@@ -143,7 +143,7 @@ const asRequests = (
 function modkitTopology() {
   return createHostTopology({
     schemaVersion: 1,
-    topologyId: 'org.modkitx.host/library',
+    topologyId: 'modkit.host/library',
     realms: [
       {
         schemaVersion: 1,
@@ -158,7 +158,7 @@ function modkitTopology() {
           maxTransferBytes: uint64('268435456'),
           defaultDeadlineMs: 60_000,
         },
-        policy: { id: 'org.modkitx.policy/library-default', revision: '1' },
+        policy: { id: 'modkit.policy/library-default', revision: '1' },
       },
       nodeWorkerRealmProfile({
         realmId: MODKIT_WORKER_REALM,
@@ -169,7 +169,7 @@ function modkitTopology() {
           maxTransferBytes: uint64('268435456'),
           defaultDeadlineMs: 60_000,
         },
-        policy: { id: 'org.modkitx.policy/library-worker', revision: '1' },
+        policy: { id: 'modkit.policy/library-worker', revision: '1' },
       }),
     ],
     links: [...nodeWorkerLinks(MODKIT_REALM, MODKIT_WORKER_REALM)],
@@ -342,7 +342,7 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
                   roundTrip: 'byte-identical',
                   preservesUnknownData: true,
                   evidenceId: 'facade:facet-writer/byte-identical',
-                  corpusId: 'modkitX3/packages/host/test/text-writers.test.ts',
+                  corpusId: 'modkit/packages/host/test/text-writers.test.ts',
                   corpusDigest: 'none:byte-identical-by-contract',
                   conformanceProfile: 'common.edit/writer-v1' as never,
                   writer: resolution.writer.identity,

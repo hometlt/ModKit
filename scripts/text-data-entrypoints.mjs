@@ -48,9 +48,9 @@ export function discoverTextDataEntrypoints(repoRoot, requestedFormatIds) {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
     const contract = manifest?.contract?.id
     const kind =
-      contract === 'org.modkitx/codec-contribution'
+      contract === 'modkit/codec-contribution'
         ? 'codec'
-        : contract === 'org.modkitx/service-provider-contribution'
+        : contract === 'modkit/service-provider-contribution'
           ? 'provider'
           : undefined
     if (kind === undefined) continue

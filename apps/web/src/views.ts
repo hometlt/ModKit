@@ -1,7 +1,7 @@
 /**
  * The PWA's preview policy: which shipped viewer may appear for which subject.
  *
- * Every stage is a `@modkitx-x3/ui` module bound to one published data-source contract. The
+ * Every stage is a `@modkit/ui` module bound to one published data-source contract. The
  * application owns the *list*; `createCodecPreview` owns the *decision*, and it makes it from the
  * descriptor alone — a codec that grows a new data source gets a new tab here without this file
  * changing, and a codec that publishes nothing gets the built-in text/hex fallback.
@@ -25,7 +25,7 @@
  * Monaco is Electron-only (it needs a relaxed CSP and a trusted in-process editor); the browser
  * uses the bounded and virtual text viewers.
  */
-import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkitx-x3/core'
+import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkit/core'
 import {
   bindingId,
   presentationSlotId,
@@ -38,36 +38,36 @@ import {
   type PresentationSlot,
   type ViewerModule,
   type ViewerMount,
-} from '@modkitx-x3/sdk'
-import { boundedTextViewer, createBoundedTextViewer } from '@modkitx-x3/ui/code'
-import type { PreviewStage } from '@modkitx-x3/ui/explorer'
-import { gameTemplateViewer } from '@modkitx-x3/ui/template'
-import { createHexViewer, hexViewer } from '@modkitx-x3/ui/hex'
-import { createHexEditor } from '@modkitx-x3/ui/hex-editor'
-import { createImageViewer } from '@modkitx-x3/ui/image'
-import { metadataPanel } from '@modkitx-x3/ui/metadata'
-import { createModelViewer, MODEL_FACET_CONTRACTS } from '@modkitx-x3/ui/model'
-import { createNamespaceViewer } from '@modkitx-x3/ui/namespace'
-import { createRelationGraphViewer } from '@modkitx-x3/ui/graph'
-import { createSubjectCalculationsViewer } from '@modkitx-x3/ui/calculations'
-import { createSubjectCardViewer } from '@modkitx-x3/ui/card'
-import { createTextEditorModule } from '@modkitx-x3/ui/editor'
-import { tableViewer } from '@modkitx-x3/ui/table'
-import { virtualTextViewer } from '@modkitx-x3/ui/text-virtual'
-import { transportViewer } from '@modkitx-x3/ui/transport'
-import { createAudioViewer } from '@modkitx-x3/ui/audio'
-import { createTreeViewer } from '@modkitx-x3/ui/tree'
-import { createVectorViewer } from '@modkitx-x3/ui/vector'
-import { createVideoViewer } from '@modkitx-x3/ui/video'
-import { createWorldViewer } from '@modkitx-x3/ui/world'
-import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkitx-x3/ui/localization'
+} from '@modkit/sdk'
+import { boundedTextViewer, createBoundedTextViewer } from '@modkit/ui/code'
+import type { PreviewStage } from '@modkit/ui/explorer'
+import { gameTemplateViewer } from '@modkit/ui/template'
+import { createHexViewer, hexViewer } from '@modkit/ui/hex'
+import { createHexEditor } from '@modkit/ui/hex-editor'
+import { createImageViewer } from '@modkit/ui/image'
+import { metadataPanel } from '@modkit/ui/metadata'
+import { createModelViewer, MODEL_FACET_CONTRACTS } from '@modkit/ui/model'
+import { createNamespaceViewer } from '@modkit/ui/namespace'
+import { createRelationGraphViewer } from '@modkit/ui/graph'
+import { createSubjectCalculationsViewer } from '@modkit/ui/calculations'
+import { createSubjectCardViewer } from '@modkit/ui/card'
+import { createTextEditorModule } from '@modkit/ui/editor'
+import { tableViewer } from '@modkit/ui/table'
+import { virtualTextViewer } from '@modkit/ui/text-virtual'
+import { transportViewer } from '@modkit/ui/transport'
+import { createAudioViewer } from '@modkit/ui/audio'
+import { createTreeViewer } from '@modkit/ui/tree'
+import { createVectorViewer } from '@modkit/ui/vector'
+import { createVideoViewer } from '@modkit/ui/video'
+import { createWorldViewer } from '@modkit/ui/world'
+import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkit/ui/localization'
 import {
   defineViewerModule,
   element,
   requireContainer,
   setViewerText,
   unknownSourceLease,
-} from '@modkitx-x3/ui/viewer'
+} from '@modkit/ui/viewer'
 
 /** How many bytes of an archive entry the inline preview reads. */
 export const ARCHIVE_ENTRY_PREVIEW_BYTES = 64 * 1024
@@ -164,8 +164,8 @@ function partSlot(slotId: string, contract: KnownDataSourceId): PresentationSlot
   return {
     slotId: presentationSlotId(slotId),
     kind: 'stage',
-    contributionId: 'org.modkitx.app.web/preview',
-    extensionId: 'org.modkitx.app.web',
+    contributionId: 'modkit.app.web/preview',
+    extensionId: 'modkit.app.web',
     priority: 100,
     bindings: [contentBinding(contract)],
   }

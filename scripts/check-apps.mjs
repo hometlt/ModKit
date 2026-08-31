@@ -215,22 +215,22 @@ async function checkApplicationSet(application, setName, create, realmExpectatio
 
 const server = await createServerApp()
 const nativeTextContributionIds = [
-  'org.modkitx/text-json',
-  'org.modkitx/text-jsonc',
-  'org.modkitx/txt',
-  'org.modkitx/json-syntax-contract',
-  'org.modkitx/jsonc-syntax-contract',
-  'org.modkitx/json-syntax-default',
-  'org.modkitx/jsonc-syntax-default',
-  'org.modkitx/text-json-writer',
-  'org.modkitx/plain-text-writer',
+  'modkit/text-json',
+  'modkit/text-jsonc',
+  'modkit/txt',
+  'modkit/json-syntax-contract',
+  'modkit/jsonc-syntax-contract',
+  'modkit/json-syntax-default',
+  'modkit/jsonc-syntax-default',
+  'modkit/text-json-writer',
+  'modkit/plain-text-writer',
 ]
 const serverNativeText = server.composition.inventory.extensions[0]
 if (
   server.health().status !== 'ok' ||
   server.composition.inventory.extensions.length !== 1 ||
   serverNativeText?.source !== 'native:core/text' ||
-  coordinate(serverNativeText) !== 'org.modkitx/core-native-text'
+  coordinate(serverNativeText) !== 'modkit/core-native-text'
 ) {
   throw new Error('apps:check: server did not start with only the mandatory native text inventory')
 }
@@ -412,7 +412,7 @@ const automationSource = await readFile(
   new URL('../apps/automation-host/src/index.ts', import.meta.url),
   'utf8',
 )
-if (/\@modkitx-x3\/ui|\bDocument\b|\bHTMLElement\b/.test(`${serverSource}\n${automationSource}`)) {
+if (/\@modkit\/ui|\bDocument\b|\bHTMLElement\b/.test(`${serverSource}\n${automationSource}`)) {
   throw new Error('apps:check: headless composition imports viewer/workbench concerns')
 }
 

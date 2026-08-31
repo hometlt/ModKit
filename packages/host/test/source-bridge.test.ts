@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { isModkitError } from '@modkitx-x3/core'
-import { revisionId } from '@modkitx-x3/sdk'
-import { createMemorySource, type RandomAccessSource } from '@modkitx-x3/vfs'
-import { artifactByteSourceFromRandomAccess } from '@modkitx-x3/host'
+import { isModkitError } from '@modkit/core'
+import { revisionId } from '@modkit/sdk'
+import { createMemorySource, type RandomAccessSource } from '@modkit/vfs'
+import { artifactByteSourceFromRandomAccess } from '@modkit/host'
 
 const options = {
   ref: { id: 'memory:test', uri: 'memory:test' },

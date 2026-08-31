@@ -2,9 +2,9 @@ import {
   createInspectionCodec,
   createRasterImageSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/hdr'
+const ID = 'modkit/hdr'
 const ascii = new TextDecoder('latin1')
 
 function matchesSignature(bytes) {

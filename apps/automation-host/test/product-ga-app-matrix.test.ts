@@ -15,8 +15,8 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
-import { openFileArtifactSource } from '@modkitx-x3/host/node'
-import type { ArtifactByteSource, ResourceBudget } from '@modkitx-x3/sdk'
+import { openFileArtifactSource } from '@modkit/host/node'
+import type { ArtifactByteSource, ResourceBudget } from '@modkit/sdk'
 import { createAutomationHost } from '../src/index.js'
 import { createElectronSubjectServices } from '../../electron/src/index.js'
 import { createServerApp } from '../../server/src/index.js'
@@ -113,7 +113,7 @@ async function assertNodeOpen(
   })
   expect(result.state).toBe('opened')
   expect(result.selected).toMatchObject({
-    contributionId: 'org.modkitx/image-png',
+    contributionId: 'modkit/image-png',
     variantId: 'portable',
   })
   if (result.session === undefined)
@@ -155,7 +155,7 @@ describe('Product-GA application matrix', () => {
     expect(answer.snapshot.state).toBe('opened')
     if (answer.snapshot.state !== 'opened') throw new Error('VS Code did not open the subject')
     expect(answer.snapshot.selected).toMatchObject({
-      contributionId: 'org.modkitx/image-png',
+      contributionId: 'modkit/image-png',
       variantId: 'portable',
     })
     if (answer.session === undefined) throw new Error('VS Code did not return a subject session')
@@ -188,7 +188,7 @@ describe('Product-GA application matrix', () => {
     expect(result.state).toBe('opened')
     if (result.state !== 'opened') throw new Error(result.reason)
     expect(result.selected).toMatchObject({
-      contributionId: 'org.modkitx/image-png',
+      contributionId: 'modkit/image-png',
       variantId: 'portable',
     })
     expect(spawned).toHaveLength(1)
@@ -213,7 +213,7 @@ describe('Product-GA application matrix', () => {
     }
     expect(report).toMatchObject({
       state: 'opened',
-      selected: { contributionId: 'org.modkitx/image-png', variantId: 'portable' },
+      selected: { contributionId: 'modkit/image-png', variantId: 'portable' },
       descriptor: { identity: { formatId: matrix.formatId } },
     })
     expect(report.descriptor.dataSources).toContainEqual({ contract: matrix.dataSource, major: 1 })

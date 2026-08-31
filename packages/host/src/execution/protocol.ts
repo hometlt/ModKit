@@ -30,7 +30,7 @@ import {
   ModkitError,
   OperationCancelledError,
   type Retryability,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 
 // ---------------------------------------------------------------------------------------------
 // constants and grammars

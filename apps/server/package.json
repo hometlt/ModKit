@@ -1,5 +1,5 @@
 {
-  "name": "@modkitx-x3/server",
+  "name": "@modkit/server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,8 +13,8 @@
     "dist"
   ],
   "dependencies": {
-    "@modkitx-x3/core": "workspace:*",
-    "@modkitx-x3/sdk": "workspace:*",
-    "@modkitx-x3/host": "workspace:*"
+    "@modkit/core": "workspace:*",
+    "@modkit/sdk": "workspace:*",
+    "@modkit/host": "workspace:*"
   }
 }

@@ -17,7 +17,7 @@ import {
   STANDARD_EDITING_SURFACES,
   type DataSourceMethodSurfaceV1Wire,
   type DataSourceSurfaceV1Wire,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { RUNTIME_ABI_SURFACES } from './abi-surfaces.js'
 import type { WireValue } from './protocol.js'
 import {

@@ -2,7 +2,7 @@
  * Browser persistence for extensions installed from a catalog or CDN.
  *
  * This module deliberately does not know how an extension is discovered, downloaded, mounted or
- * imported. The future `@modkitx/extension-manager/browser` adapter supplies an immutable package
+ * imported. The future `@modkit/extension-manager/browser` adapter supplies an immutable package
  * response through `BrowserExtensionArtifactAdapter`; this layer verifies it, stores the response
  * in Cache Storage and keeps only its digest-pinned metadata in IndexedDB.
  *
@@ -64,7 +64,7 @@ export interface BrowserVerifiedExtensionInstallRequest {
 }
 
 /**
- * Acquisition seam for `@modkitx/extension-manager/browser`.
+ * Acquisition seam for `@modkit/extension-manager/browser`.
  *
  * A web-only app can supply a `fetch` adapter, a test can return an in-memory `Response`, and an
  * offline build can read a statically bundled package. Storage never performs network I/O itself.
@@ -170,9 +170,9 @@ export interface IndexedDbManagedExtensionMetadataStoreOptions {
   readonly databaseExists?: (name: string) => Promise<boolean>
 }
 
-export const MANAGED_EXTENSION_DATABASE = 'org.modkitx.app.web/managed-extensions'
+export const MANAGED_EXTENSION_DATABASE = 'modkit.app.web/managed-extensions'
 export const MANAGED_EXTENSION_METADATA_STORE = 'installations'
-export const MANAGED_EXTENSION_CACHE = 'org.modkitx.app.web/extension-packages-v1'
+export const MANAGED_EXTENSION_CACHE = 'modkit.app.web/extension-packages-v1'
 
 function settle<T>(request: ManagedExtensionIdbRequestLike<T>): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -486,7 +486,7 @@ export interface BrowserExtensionUiPreferenceStore {
   write(value: BrowserExtensionUiPreferences): void
 }
 
-export const MANAGED_EXTENSION_UI_PREFERENCES = 'org.modkitx.app.web/managed-extension-ui-v1'
+export const MANAGED_EXTENSION_UI_PREFERENCES = 'modkit.app.web/managed-extension-ui-v1'
 
 export function createLocalStorageExtensionUiPreferenceStore(
   storage: BrowserLocalStorageLike,

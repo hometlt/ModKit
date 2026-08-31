@@ -3,7 +3,7 @@
  * compile-time drift gate (test/schema-drift.ts).
  */
 
-import type { ContractId } from '@modkitx-x3/core'
+import type { ContractId } from '@modkit/core'
 import type { ContributionId, JsonValue } from '../asset-capabilities/types.js'
 import type { RequirementMode, RequirementScope } from './types.js'
 

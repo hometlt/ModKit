@@ -8,13 +8,13 @@
  * world, so the run does not depend on any production data.
  */
 
-import { ModkitError, OperationCancelledError } from '@modkitx-x3/core'
+import { ModkitError, OperationCancelledError } from '@modkit/core'
 import {
   createSurfaceRegistry,
   type LoadRequest,
   type LoadedModule,
   type SurfaceRegistry,
-} from '@modkitx-x3/host/execution'
+} from '@modkit/host/execution'
 
 export const DEMO_MODULE = { contract: 'x3.testkit/module', major: 1 } as const
 export const DEMO_CODEC = { contract: 'x3.testkit/codec', major: 1 } as const

@@ -1,4 +1,4 @@
-import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
+import { ModkitError, throwIfAborted } from '@modkit/core'
 
 import { budgetRandomAccessSource, VfsReadBudget } from '../../read-budget.js'
 import { createMemorySource, type RandomAccessSource } from '../../source.js'
@@ -167,7 +167,7 @@ export class MemoryVfsProvider implements VfsProvider {
   private readonly limits: VfsLimits
 
   constructor(options: MemoryVfsProviderOptions = {}) {
-    this.id = options.id ?? 'org.modkitx-x3.vfs.memory'
+    this.id = options.id ?? 'modkit-x3.vfs.memory'
     this.authority = options.authority
     this.limits = clampVfsLimits(options.limits)
     const entries = new Map<string, StoredEntry>()

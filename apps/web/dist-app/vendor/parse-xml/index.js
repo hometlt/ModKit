@@ -1,6 +1,6 @@
 import {
   __commonJS
-} from "../../chunks/chunk-XNBPKNUQ.js";
+} from "../../chunks/chunk-CQ52GEHY.js";
 
 // node_modules/.pnpm/@rgrove+parse-xml@4.2.3/node_modules/@rgrove/parse-xml/dist/browser.js
 var require_browser = __commonJS({

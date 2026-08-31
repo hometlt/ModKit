@@ -15,8 +15,8 @@
  * only. Every activation reports `x3.host/worker-shared-origin`.
  */
 
-import { ModkitError, type Diagnostic } from '@modkitx-x3/core'
-import type { RuntimeTarget, RuntimeVariantDeclaration } from '@modkitx-x3/sdk'
+import { ModkitError, type Diagnostic } from '@modkit/core'
+import type { RuntimeTarget, RuntimeVariantDeclaration } from '@modkit/sdk'
 import {
   createEndpoint,
   createStandardSurfaceRegistry,

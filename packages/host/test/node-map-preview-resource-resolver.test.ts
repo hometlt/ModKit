@@ -3,16 +3,16 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkitx-x3/core'
+import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkit/core'
 import {
   resolveModWorkspaceGraph,
   revisionId,
   type JsonValue,
   type OperationDecl,
   type OperationOutput,
-} from '@modkitx-x3/sdk'
-import type { GameInstallationDiscoveryResult } from '@modkitx-x3/sdk/games'
-import type { MapPreviewResourcePlan } from '@modkitx-x3/sdk/maps'
+} from '@modkit/sdk'
+import type { GameInstallationDiscoveryResult } from '@modkit/sdk/games'
+import type { MapPreviewResourcePlan } from '@modkit/sdk/maps'
 import { assembleSubjectDescriptor, createAssetSession } from '../src/index.js'
 import type { ResolveMapPreviewResourcePlanRequest } from '../src/maps/index.js'
 import {
@@ -36,7 +36,7 @@ afterEach(async () => {
 })
 
 async function installationRoot(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), 'modkitx-preview-resolver-'))
+  const root = await mkdtemp(join(tmpdir(), 'modkit-preview-resolver-'))
   temporaryRoots.push(root)
   await mkdir(join(root, 'data'), { recursive: true })
   return root

@@ -26,8 +26,8 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
-import { ModkitError, OperationCancelledError, throwIfAborted } from '@modkitx-x3/core'
-import { normalizeExtensionManifest } from '@modkitx-x3/sdk'
+import { ModkitError, OperationCancelledError, throwIfAborted } from '@modkit/core'
+import { normalizeExtensionManifest } from '@modkit/sdk'
 import type { ExtensionInput } from '../inventory.js'
 import { loadExtensionDirectory } from './loader.js'
 

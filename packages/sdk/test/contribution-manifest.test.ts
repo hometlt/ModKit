@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { contractId } from '@modkitx-x3/core'
+import { contractId } from '@modkit/core'
 import {
   createSpecSchemaRegistry,
   validateContributionManifest,
   type ContributionManifestV1Wire,
   type PrecompiledSchemaValidator,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 // Lab demo contract (used through S3/S4): x3.demo/greeter@1.
 const greeterSpecSchema = {
@@ -68,14 +68,14 @@ const greeterContribution: ContributionManifestV1Wire = {
   spec: { greeting: 'Hello' },
 }
 
-// Provenance fixture (PORTED.md): converted from modkitx
+// Provenance fixture (PORTED.md): converted from modkit
 // extensions/images/codecs/dds/codec.manifest.json@8a21060f — v1 kind/capabilities/
 // entrypoints-map become contract + spec + single-entrypoint runtime variants; the
 // legacy `capabilities` verbs are dropped (final vocabulary MK3/02 §1).
 const convertedDds: ContributionManifestV1Wire = {
   schemaVersion: 1,
   contract: { id: 'x3.compat/codec-v1', major: 1 },
-  id: 'org.modkitx/dds',
+  id: 'modkit/dds',
   displayName: 'DirectDraw Surface',
   status: 'partial',
   runtimeVariants: [
@@ -132,8 +132,33 @@ describe('ContributionManifestV1 envelope (27 §6 + §0.5)', () => {
     const result = await validateContributionManifest(convertedDds, registry)
     expect(result.specState).toBe('unknown-contract')
     expect(result.activationEligible).toBe(false)
-    expect(result.manifest?.id).toBe('org.modkitx/dds') // data preserved for inspection
+    expect(result.manifest?.id).toBe('modkit/dds') // data preserved for inspection
     expect(result.diagnostics.some(d => d.code === 'x3.sdk/unknown-contract')).toBe(true)
+  })
+
+  it('canonicalizes pre-rename ModkitX contribution identities before inventory', async () => {
+    const result = await validateContributionManifest(
+      {
+        ...greeterContribution,
+        contract: { id: 'org.modkitx/unknown-contract', major: 1 },
+        id: 'org.modkitx.blizzard/casc',
+        dependsOn: [
+          {
+            contract: 'org.modkitx/codec-contribution',
+            major: 1,
+            range: '^1.0',
+            mode: 'integrates',
+            scope: { kind: 'operation', id: 'demo.greet' },
+          },
+        ],
+      },
+      registry,
+    )
+
+    expect(result.specState).toBe('unknown-contract')
+    expect(result.manifest?.id).toBe('blizzard/casc')
+    expect(result.manifest?.contract.id).toBe('modkit/unknown-contract')
+    expect(result.manifest?.dependsOn?.[0]?.contract).toBe('modkit/codec-contribution')
   })
 
   it('rejects an invalid spec for a known contract', async () => {

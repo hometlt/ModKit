@@ -13,8 +13,8 @@
  *    refusal keeps the reason the host gave.
  */
 import { describe, expect, it } from 'vitest'
-import type { AssetEditPlan } from '@modkitx-x3/sdk'
-import { createUiLocalizer } from '@modkitx-x3/ui/localization'
+import type { AssetEditPlan } from '@modkit/sdk'
+import { createUiLocalizer } from '@modkit/ui/localization'
 
 import {
   base64OfUtf8,

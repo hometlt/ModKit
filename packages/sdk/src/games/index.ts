@@ -9,7 +9,7 @@ export const GAME_INSTALLATION_DISCOVERY_CONTRACT = 'common.game/installation-di
 export const GAME_LAUNCH_PLAN_CONTRACT = 'common.game/launch-plan' as const
 
 /** Host-owned matcher profile for exact game-id routing. */
-export const GAME_INSTALLATION_MATCHER_PROFILE = 'org.modkitx/game-installation-matcher' as const
+export const GAME_INSTALLATION_MATCHER_PROFILE = 'modkit/game-installation-matcher' as const
 
 export type GameInstallationOrigin =
   'configured-path' | 'default-directory' | 'registry' | 'steam' | 'epic'

@@ -2,7 +2,7 @@
 export type BuiltinUiLocale = 'en' | 'ru'
 export type UiLocale = string
 
-export const UI_CATALOG_SCHEMA = 'org.modkitx/ui-message-catalog@1' as const
+export const UI_CATALOG_SCHEMA = 'modkit/ui-message-catalog@1' as const
 
 /** Raw JSON should be rejected by a host before decoding when it exceeds this byte budget. */
 export const UI_CATALOG_RECOMMENDED_MAXIMUM_JSON_BYTES = 8 * 1024 * 1024
@@ -122,6 +122,10 @@ const EN_MESSAGES = Object.freeze({
   'extensions.action.disableExtension': 'Disable extension',
   'extensions.action.enableExtension': 'Enable extension',
   'extensions.action.reloadWindow': 'Reload window',
+  'extensions.action.openSource': 'Open source',
+  'extensions.action.openLicense': 'Open license',
+  'extensions.label.source': 'Source',
+  'extensions.label.license': 'License',
   'extensions.status.configurationUpdated': 'Extension configuration updated.',
   'extensions.status.reloadRequired': '{id} was {state}. Reload the window.',
   'viewer.audio': 'Audio viewer',
@@ -285,9 +289,9 @@ const EN_MESSAGES = Object.freeze({
   'card.namedSubject': '{label} subject card',
   'card.extension.group.overview': 'Overview',
   'card.extension.group.state': 'State',
+  'card.extension.group.contributions': 'Contributions',
   'card.extension.group.declaration': 'Declaration',
   'card.extension.group.specification': 'Specification',
-  'card.extension.group.contracts': 'Contracts',
   'card.extension.fact.id': 'Extension ID',
   'card.extension.fact.displayName': 'Display name',
   'card.extension.fact.publisher': 'Publisher',
@@ -300,6 +304,10 @@ const EN_MESSAGES = Object.freeze({
   'card.extension.fact.enabled': 'Extension enabled',
   'card.extension.fact.contributionCount': 'Contributions',
   'card.extension.fact.contractCount': 'Contracts',
+  'card.extension.fact.vendor': 'Vendor',
+  'card.extension.fact.games': 'Games',
+  'card.extension.fact.sourceDetails': 'Source details',
+  'card.extension.fact.licenseFiles': 'License files',
   'card.contribution.fact.id': 'Contribution ID',
   'card.contribution.fact.displayName': 'Display name',
   'card.contribution.fact.ownerExtension': 'Owner extension',
@@ -713,6 +721,10 @@ const RU_MESSAGES: Readonly<Record<CoreUiMessageKey, string>> = Object.freeze({
   'extensions.action.disableExtension': 'Отключить расширение',
   'extensions.action.enableExtension': 'Включить расширение',
   'extensions.action.reloadWindow': 'Перезагрузить окно',
+  'extensions.action.openSource': 'Открыть источник',
+  'extensions.action.openLicense': 'Открыть лицензию',
+  'extensions.label.source': 'Источник',
+  'extensions.label.license': 'Лицензия',
   'extensions.status.configurationUpdated': 'Настройки расширений обновлены.',
   'extensions.status.reloadRequired': '{id}: состояние «{state}» сохранено. Перезагрузите окно.',
   'viewer.audio': 'Просмотр аудио',
@@ -879,9 +891,9 @@ const RU_MESSAGES: Readonly<Record<CoreUiMessageKey, string>> = Object.freeze({
   'card.namedSubject': 'Карточка субъекта «{label}»',
   'card.extension.group.overview': 'Обзор',
   'card.extension.group.state': 'Состояние',
+  'card.extension.group.contributions': 'Возможности',
   'card.extension.group.declaration': 'Описание',
   'card.extension.group.specification': 'Спецификация',
-  'card.extension.group.contracts': 'Контракты',
   'card.extension.fact.id': 'Идентификатор расширения',
   'card.extension.fact.displayName': 'Отображаемое имя',
   'card.extension.fact.publisher': 'Издатель',
@@ -894,6 +906,10 @@ const RU_MESSAGES: Readonly<Record<CoreUiMessageKey, string>> = Object.freeze({
   'card.extension.fact.enabled': 'Расширение включено',
   'card.extension.fact.contributionCount': 'Возможности',
   'card.extension.fact.contractCount': 'Контракты',
+  'card.extension.fact.vendor': 'Разработчик',
+  'card.extension.fact.games': 'Игры',
+  'card.extension.fact.sourceDetails': 'Источник',
+  'card.extension.fact.licenseFiles': 'Файлы лицензий',
   'card.contribution.fact.id': 'Идентификатор возможности',
   'card.contribution.fact.displayName': 'Отображаемое имя',
   'card.contribution.fact.ownerExtension': 'Расширение-владелец',

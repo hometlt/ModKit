@@ -5,7 +5,7 @@ import {
   createTreeDataSource,
   createVideoMediaSource,
   TRANSPORT_OPERATIONS,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
 const latin1 = new TextDecoder('latin1')
 const SIGNATURE = Object.freeze([0x1a, 0x45, 0xdf, 0xa3])
@@ -46,7 +46,7 @@ function parseWebm(bytes) {
 }
 
 const definition = Object.freeze({
-  id: 'org.modkitx/video-webm',
+  id: 'modkit/video-webm',
   format: Object.freeze({ id: 'webm', label: 'WebM video', mediaType: 'video/webm' }),
   operations: TRANSPORT_OPERATIONS,
   async detect(bytes) {

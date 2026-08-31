@@ -4,7 +4,7 @@ import {
   createTreeDataSource,
   editPlanFromInput,
   replaceBytes,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
 const SOF = new Set([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf])
 const latin1 = new TextDecoder('latin1')
@@ -252,7 +252,7 @@ function removeSegmentHandler(jpeg, input) {
 }
 
 const definition = Object.freeze({
-  id: 'org.modkitx/image-jpeg',
+  id: 'modkit/image-jpeg',
   operations: JPEG_EDIT_OPERATIONS,
   format: Object.freeze({ id: 'jpeg', label: 'JPEG image', mediaType: 'image/jpeg' }),
   async detect(bytes) {

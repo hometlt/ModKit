@@ -2,7 +2,7 @@
  * Core-native plain text: the implementation is compiled into Host, not installed as an extension.
  *
  * The MK2 route decoded strict UTF-8 and rejected everything else. The relocated codec keeps the
- * contribution identity `org.modkitx/txt`, stays read-only, and proves the three things the plan
+ * contribution identity `modkit/txt`, stays read-only, and proves the three things the plan
  * asks of it: a bounded UTF-8/UTF-16 decode whose byte-order mark is provenance rather than
  * content, binary rejection with a named reason, and a text source published only where its line
  * index is actually true. Editing is the separate writer contribution — proven in
@@ -23,7 +23,7 @@ import {
   type ContributionManifestV1Wire,
   type ResourceBudget,
   type TreeDataSource,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const nativeRoot = join(repoRoot, 'packages', 'host', 'native-text')
@@ -130,7 +130,7 @@ describe('11A common/plain-text', () => {
     ) as ContributionManifestV1Wire & {
       spec: { operations: readonly { id: string; mutatesSource: boolean }[] }
     }
-    expect(codecManifest.id).toBe('org.modkitx/txt')
+    expect(codecManifest.id).toBe('modkit/txt')
     expect(codecManifest.spec.operations.map(operation => operation.id).toSorted()).toEqual([
       'asset.search',
       'asset.validate',

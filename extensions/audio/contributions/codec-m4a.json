@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
-  "id": "org.modkitx/m4a",
+  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "id": "modkit/m4a",
   "displayName": "AAC (M4A/MP4)",
   "status": "supported",
   "runtimeVariants": [

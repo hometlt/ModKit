@@ -29,6 +29,12 @@ export interface WorkbenchOptions {
   readonly localizer?: UiLocalizer
   readonly title: string
   readonly host?: WorkbenchHostState
+  /**
+   * Omit application chrome when a host already provides it (for example, a VS Code editor).
+   * `aside` retains only the workbench sidebar beside `main`; title, activity, panel and status
+   * are never mounted in this mode.
+   */
+  readonly embedded?: boolean | { readonly aside?: boolean }
 }
 
 export interface Workbench {
@@ -49,6 +55,9 @@ export function createWorkbench(document: Document, options: WorkbenchOptions): 
   const root = document.createElement('div')
   root.className = 'modkit-viewer modkit-workbench'
   setPart(root, 'workbench')
+  const embedded = options.embedded !== undefined && options.embedded !== false
+  const includeAside = typeof options.embedded === 'object' && options.embedded.aside === true
+  if (embedded) root.classList.add('modkit-workbench--embedded')
 
   const titlebar = document.createElement('header')
   titlebar.textContent = safeViewerText(options.title, 256)
@@ -73,7 +82,12 @@ export function createWorkbench(document: Document, options: WorkbenchOptions): 
   const hostStatus = document.createElement('span')
   setPart(hostStatus, 'workbench.host-status')
   statusbar.append(hostStatus)
-  root.append(titlebar, activitybar, sidebar, main, panel, statusbar)
+  if (embedded) {
+    if (includeAside) root.append(sidebar)
+    root.append(main)
+  } else {
+    root.append(titlebar, activitybar, sidebar, main, panel, statusbar)
+  }
 
   const setHostState = (state: WorkbenchHostState): void => {
     const reasons = state.degradedReasons ?? []

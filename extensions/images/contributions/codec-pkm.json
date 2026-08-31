@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
-  "id": "org.modkitx/pkm",
+  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "id": "modkit/pkm",
   "displayName": "PKM ETC Texture",
   "status": "partial",
   "runtimeVariants": [

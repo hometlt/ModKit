@@ -5,7 +5,7 @@
  * workers, and source handles never enter a descriptor.
  */
 
-import { isQualifiedId } from '@modkitx-x3/core'
+import { isQualifiedId } from '@modkit/core'
 import type {
   Diagnostic as CoreDiagnostic,
   OperationId,
@@ -13,7 +13,7 @@ import type {
   SourceSpanWire,
   TraitId,
   UInt64String,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import type { DataSourceOffer, DataSourceOfferWire } from './data-sources.js'
 import {
   parseRevisionRef,

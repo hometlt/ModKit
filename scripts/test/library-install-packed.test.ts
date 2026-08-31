@@ -62,11 +62,11 @@ describe('createModkit as a packed foreign-project dependency', () => {
         join(consumer, 'open.mjs'),
         `import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createModkit } from '@modkitx-x3/host/node'
+import { createModkit } from '@modkit/host/node'
 
 const projectRoot = dirname(fileURLToPath(import.meta.url))
 const extensionRoot = dirname(
-  fileURLToPath(import.meta.resolve('modkit-extension-x3-images/package.json')),
+  fileURLToPath(import.meta.resolve('modkit-extension-images/package.json')),
 )
 const modkit = await createModkit({ extensions: [extensionRoot], roots: [projectRoot] })
 const opened = await modkit.open(join(projectRoot, 'sample.png'))
@@ -110,9 +110,9 @@ try {
       }
       expect(output).toMatchObject({
         state: 'opened',
-        selected: 'org.modkitx/image-png',
+        selected: 'modkit/image-png',
         variant: 'portable',
-        extensions: ['org.modkitx/images'],
+        extensions: ['modkit/images'],
       })
       expect(output.revision).toMatch(/^provider-token:/u)
       expect(output.sources).toContain('common.view/raster-image-source')

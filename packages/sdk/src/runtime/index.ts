@@ -18,7 +18,7 @@ export const RUNTIME_PROVIDER_CONTRACT = 'common.runtime/provider' as const
 export const RUNTIME_SESSION_CONTRACT = 'common.runtime/session' as const
 
 /** Host-owned matcher profile for runtime ids. */
-export const RUNTIME_PROVIDER_MATCHER_PROFILE = 'org.modkitx/runtime-provider-matcher' as const
+export const RUNTIME_PROVIDER_MATCHER_PROFILE = 'modkit/runtime-provider-matcher' as const
 
 /** Resource ceiling fixed when a runtime session is created. All values are safe integers. */
 export interface RuntimeBudget {

@@ -29,7 +29,7 @@ function run(args: readonly string[]) {
 }
 
 function tempPath(name: string): string {
-  return join(mkdtempSync(join(tmpdir(), 'modkitx-workflow-ledger-')), name)
+  return join(mkdtempSync(join(tmpdir(), 'modkit-workflow-ledger-')), name)
 }
 
 interface InventoryUnit {

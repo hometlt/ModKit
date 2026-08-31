@@ -2,7 +2,7 @@
   "$comment": "Historical migration notes for common image formats. Twenty codecs moved into the product images package; JPG and PNG are superseded by richer native MK3 contributions. This file is inert and outside the loader manifest glob.",
   "schemaVersion": 1,
   "source": {
-    "repository": "modkitx",
+    "repository": "modkit",
     "manifests": [
       "extensions/images/codecs/ani/codec.manifest.json",
       "extensions/images/codecs/astc/codec.manifest.json",
@@ -30,7 +30,7 @@
   },
   "verdict": "needs-new-contract",
   "codecs": {
-    "org.modkitx/ani": {
+    "modkit/ani": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -46,7 +46,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/astc": {
+    "modkit/astc": {
       "verdict": "convertible-with-rework",
       "lostPlanes": [],
       "contractGaps": [],
@@ -61,7 +61,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/avif": {
+    "modkit/avif": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -77,7 +77,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/basis": {
+    "modkit/basis": {
       "verdict": "convertible-with-rework",
       "lostPlanes": [],
       "contractGaps": [],
@@ -93,7 +93,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/bmp": {
+    "modkit/bmp": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -110,7 +110,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/cur": {
+    "modkit/cur": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -127,7 +127,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/dds": {
+    "modkit/dds": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -144,7 +144,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/exr": {
+    "modkit/exr": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -159,7 +159,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/gif": {
+    "modkit/gif": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -176,7 +176,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/hdr": {
+    "modkit/hdr": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -193,7 +193,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/ico": {
+    "modkit/ico": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -210,7 +210,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/jpg": {
+    "modkit/jpg": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -225,7 +225,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/ktx": {
+    "modkit/ktx": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -242,7 +242,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/ktx2": {
+    "modkit/ktx2": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -259,7 +259,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/pal": {
+    "modkit/pal": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],
@@ -275,7 +275,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/pcx": {
+    "modkit/pcx": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -294,7 +294,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/pkm": {
+    "modkit/pkm": {
       "verdict": "convertible-with-rework",
       "lostPlanes": [],
       "contractGaps": [],
@@ -309,7 +309,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/png": {
+    "modkit/png": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -326,7 +326,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/pvr": {
+    "modkit/pvr": {
       "verdict": "convertible-with-rework",
       "lostPlanes": [],
       "contractGaps": [],
@@ -341,7 +341,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/tga": {
+    "modkit/tga": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -359,7 +359,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/tiff": {
+    "modkit/tiff": {
       "verdict": "needs-new-contract",
       "lostPlanes": [],
       "contractGaps": [
@@ -377,7 +377,7 @@
       "needsSignatures": false,
       "portState": "ported"
     },
-    "org.modkitx/webp": {
+    "modkit/webp": {
       "verdict": "mechanical",
       "lostPlanes": [],
       "contractGaps": [],

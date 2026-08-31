@@ -1,5 +1,5 @@
 {
-  "name": "@modkitx-x3/codec-kit",
+  "name": "@modkit/codec-kit",
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
@@ -17,18 +17,18 @@
     "README.md"
   ],
   "peerDependencies": {
-    "@modkitx-x3/core": "workspace:*",
-    "@modkitx-x3/host": "workspace:*",
-    "@modkitx-x3/sdk": "workspace:*"
+    "@modkit/core": "workspace:*",
+    "@modkit/host": "workspace:*",
+    "@modkit/sdk": "workspace:*"
   },
   "peerDependenciesMeta": {
-    "@modkitx-x3/core": {
+    "@modkit/core": {
       "optional": true
     },
-    "@modkitx-x3/host": {
+    "@modkit/host": {
       "optional": true
     },
-    "@modkitx-x3/sdk": {
+    "@modkit/sdk": {
       "optional": true
     }
   }

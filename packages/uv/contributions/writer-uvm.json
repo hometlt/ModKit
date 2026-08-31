@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "id": "org.modkitx/service-provider-contribution",
+    "id": "modkit/service-provider-contribution",
     "major": 1
   },
-  "id": "org.modkitx/uvm-writer",
+  "id": "modkit/uvm-writer",
   "displayName": "UVM export writer",
   "runtimeVariants": [
     {
@@ -33,7 +33,7 @@
         "major": 1,
         "version": "1.0.0",
         "facet": {
-          "providerId": "org.modkitx/uvm-writer",
+          "providerId": "modkit/uvm-writer",
           "fidelityEvidenceId": "uv-materializer-uvm-writer-v1",
           "formatId": "uvm",
           "representationId": "source",

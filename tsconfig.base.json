@@ -1,5 +1,5 @@
 {
-  // Known modkitx trap (BRIEF-12 §3.1/§9): never emit .js/.d.ts next to sources.
+  // Known modkit trap (BRIEF-12 §3.1/§9): never emit .js/.d.ts next to sources.
   // Every package tsconfig extends this and MUST set "outDir": "dist", "rootDir": "src".
   "compilerOptions": {
     "target": "ES2023",

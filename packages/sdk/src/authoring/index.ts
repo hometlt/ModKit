@@ -1,6 +1,6 @@
 /** Safe authoring sugar. Wire schemas remain authoritative; builders only remove boilerplate. */
 
-import { ModkitError, canonicalJsonStringify } from '@modkitx-x3/core'
+import { ModkitError, canonicalJsonStringify } from '@modkit/core'
 import type {
   ArtifactStage,
   ByteProbePlan,

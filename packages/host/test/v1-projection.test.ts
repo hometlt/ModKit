@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createV1DescriptorProjectionPort, assembleSubjectDescriptor } from '@modkitx-x3/host'
+import { createV1DescriptorProjectionPort, assembleSubjectDescriptor } from '@modkit/host'
 import { resolvedDescriptorWire } from './fixtures/descriptor.js'
 
 describe('A-3 host-local descriptor v2 → v1 projection', () => {
@@ -41,7 +41,7 @@ describe('A-3 host-local descriptor v2 → v1 projection', () => {
       const result = await port.project(descriptor, catalog)
       expect(result).toMatchObject({
         state: 'unavailable',
-        diagnostics: [{ code: 'org.modkitx/compat-v1-projection-unavailable' }],
+        diagnostics: [{ code: 'modkit/compat-v1-projection-unavailable' }],
       })
     }
   })

@@ -31,7 +31,7 @@ export {
   type CandidateWorldUvwRefusalReport,
 } from './uvw-materialization.js'
 export { runMinimalHost, type MinimalHostOptions, type MinimalHostRun } from './minimal-host.js'
-export { offersFromInventory } from '@modkitx-x3/host'
+export { offersFromInventory } from '@modkit/host'
 export {
   assertGoldenPathMetrics,
   GOLDEN_PATH_BASELINE,

@@ -126,7 +126,7 @@ function renderStandaloneValidators() {
       addUsedSchema: false,
       code: { source: true, esm: true, lines: true },
     })
-    const key = `modkitx-precompiled:${name}`
+    const key = `modkit-precompiled:${name}`
     ajv.addSchema(schema, key)
     const compiled = standaloneCode(ajv, { [name]: key })
       .replace(

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import type { OpenedSubject } from '@modkitx-x3/host'
+import type { OpenedSubject } from '@modkit/host'
 
 import {
   MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,

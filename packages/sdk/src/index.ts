@@ -1,10 +1,21 @@
 export {
   extensionManifestSchema,
   extensionRequirementSchema,
+  extensionAssetReferenceSchema,
+  extensionGameDescriptorSchema,
+  extensionPresentationSchema,
+  extensionSourceDetailsSchema,
+  extensionVendorDescriptorSchema,
   modkitBlockSchema,
   requirementScopeSchema,
   REQUIREMENT_SCOPE_KINDS,
+  EXTENSION_VFS_PATH_PATTERN,
 } from './schemas/extension-manifest.js'
+export {
+  normalizeModkitIdentifier,
+  normalizeModkitPackageSpecifier,
+  normalizeModkitSourceIdentifier,
+} from './identity.js'
 export {
   contributionManifestSchema,
   runtimeVariantDeclarationSchema,
@@ -238,7 +249,12 @@ export {
 export type {
   AuthoredContainerKind,
   ExtensionManifest,
+  ExtensionAssetReference,
+  ExtensionGameDescriptor,
+  ExtensionPresentation,
   ExtensionRequirement,
+  ExtensionSourceDetails,
+  ExtensionVendorDescriptor,
   ModkitBlock,
   RequirementMode,
   RequirementScope,

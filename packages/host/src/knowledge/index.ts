@@ -1,6 +1,6 @@
 /** Inventory-backed, immutable knowledge catalog shared by UI, CLI, MCP and agent adapters. */
 
-import { canonicalJsonStringify, compareUtf8 } from '@modkitx-x3/core'
+import { canonicalJsonStringify, compareUtf8 } from '@modkit/core'
 import {
   KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
   KNOWLEDGE_PACK_FACT,
@@ -18,7 +18,7 @@ import {
   type KnowledgeResolveQuery,
   type KnowledgeSearchQuery,
   type KnowledgeTarget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { Inventory } from '../inventory.js'
 
 const DEFAULT_PAGE_LIMIT = 20

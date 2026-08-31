@@ -3,9 +3,9 @@
 import { spawn as spawnChildProcess } from 'node:child_process'
 import { realpath, stat } from 'node:fs/promises'
 import { isAbsolute, relative, resolve, sep } from 'node:path'
-import { diagnostic, type Diagnostic } from '@modkitx-x3/core'
-import { grantValidity, type PermissionGrant, type ResourceBudget } from '@modkitx-x3/sdk'
-import type { GameInstallation, GameLaunchPlan, GameLaunchResource } from '@modkitx-x3/sdk/games'
+import { diagnostic, type Diagnostic } from '@modkit/core'
+import { grantValidity, type PermissionGrant, type ResourceBudget } from '@modkit/sdk'
+import type { GameInstallation, GameLaunchPlan, GameLaunchResource } from '@modkit/sdk/games'
 import { planGameLaunch, type GamesHostServices, type GameLaunchPlanning } from '../games/index.js'
 
 export type NodeGameLaunchPathKind = 'file' | 'directory' | 'missing'

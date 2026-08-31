@@ -9,7 +9,7 @@
  * bounded probe under the probe grant.
  */
 
-import type { SignatureRule } from '@modkitx-x3/sdk'
+import type { SignatureRule } from '@modkit/sdk'
 
 /** Hard ceiling per window, matching the schema bounds (offset ≤ 4096 + pattern ≤ 64). */
 export const MAX_SIGNATURE_WINDOW_BYTES = 4096 + 64

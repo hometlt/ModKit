@@ -14,7 +14,7 @@ import {
   isCancellation,
   throwIfAborted,
   type Diagnostic,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import {
   LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
   type LanguageAnalysis,
@@ -41,8 +41,8 @@ import {
   type LanguageToken,
   type LanguageWorkspaceEdit,
   type LanguageWorkspaceSymbolList,
-} from '@modkitx-x3/sdk/language'
-import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
+} from '@modkit/sdk/language'
+import type { PermissionGrant, ResourceBudget } from '@modkit/sdk'
 import type { Inventory } from '../inventory.js'
 import { offersFromInventory } from '../offers.js'
 import {

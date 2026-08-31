@@ -2,9 +2,9 @@ import {
   createInspectionCodec,
   createRasterImageSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/pal'
+const ID = 'modkit/pal'
 const latin1 = new TextDecoder('latin1')
 
 function tag(bytes, offset) {

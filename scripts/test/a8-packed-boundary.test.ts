@@ -15,7 +15,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
-const extensionRoot = join(repoRoot, 'examples', 'modkit-extension-x3-plain-text')
+const extensionRoot = join(repoRoot, 'examples', 'modkit-extension-plain-text')
 const temporaryRoot = mkdtempSync(join(tmpdir(), 'x3-a8-packed-'))
 const tarballDirectory = join(temporaryRoot, 'tarballs')
 
@@ -82,10 +82,10 @@ describe('A-8 packed/direct-library/dependency-boundary proof', () => {
       expect(directInstall.status, directInstall.stderr).toBe(0)
       const directRequire = createRequire(join(directConsumer, 'package.json'))
       expect(
-        existsSync(join(directConsumer, 'node_modules', '@modkitx-x3', 'host', 'package.json')),
+        existsSync(join(directConsumer, 'node_modules', '@modkit', 'host', 'package.json')),
       ).toBe(false)
       const direct = (await import(
-        pathToFileURL(directRequire.resolve('modkit-extension-x3-plain-text/direct')).href
+        pathToFileURL(directRequire.resolve('modkit-extension-plain-text/direct')).href
       )) as {
         sampleLooksText(bytes: Uint8Array): { text: boolean; reason: string }
       }
@@ -98,8 +98,8 @@ describe('A-8 packed/direct-library/dependency-boundary proof', () => {
         reason: 'nul-byte',
       })
       await expect(
-        import(pathToFileURL(directRequire.resolve('modkit-extension-x3-plain-text/runtime')).href),
-      ).rejects.toThrow(/@modkitx-x3\/host/u)
+        import(pathToFileURL(directRequire.resolve('modkit-extension-plain-text/runtime')).href),
+      ).rejects.toThrow(/@modkit\/host/u)
 
       const hostedConsumer = emptyConsumer('hosted')
       const hostedInstall = sh(
@@ -110,7 +110,7 @@ describe('A-8 packed/direct-library/dependency-boundary proof', () => {
       expect(hostedInstall.status, hostedInstall.stderr).toBe(0)
       const hostedRequire = createRequire(join(hostedConsumer, 'package.json'))
       const runtime = (await import(
-        pathToFileURL(hostedRequire.resolve('modkit-extension-x3-plain-text/runtime')).href
+        pathToFileURL(hostedRequire.resolve('modkit-extension-plain-text/runtime')).href
       )) as { createCodec(): unknown }
       expect(runtime.createCodec()).toMatchObject({
         probe: expect.any(Function),
@@ -118,13 +118,13 @@ describe('A-8 packed/direct-library/dependency-boundary proof', () => {
       })
 
       const installedPackage = JSON.parse(
-        readFileSync(hostedRequire.resolve('modkit-extension-x3-plain-text/package.json'), 'utf8'),
+        readFileSync(hostedRequire.resolve('modkit-extension-plain-text/package.json'), 'utf8'),
       ) as { dependencies: Record<string, string>; peerDependencies: Record<string, string> }
       expect(Object.keys(installedPackage.dependencies).sort()).toEqual([
-        '@modkitx-x3/core',
-        '@modkitx-x3/sdk',
+        '@modkit/core',
+        '@modkit/sdk',
       ])
-      expect(installedPackage.peerDependencies).toEqual({ '@modkitx-x3/host': '*' })
+      expect(installedPackage.peerDependencies).toEqual({ '@modkit/host': '*' })
     },
   )
 })

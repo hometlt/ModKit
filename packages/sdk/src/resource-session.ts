@@ -22,7 +22,7 @@
  * budgets and its diagnostic codes.
  */
 
-import type { Diagnostic } from '@modkitx-x3/core'
+import type { Diagnostic } from '@modkit/core'
 import type { RevisionId } from './asset-capabilities/types.js'
 import type { Lease } from './asset-capabilities/data-sources.js'
 import type { ModelResourceRole } from './asset-capabilities/model-facet-sources.js'

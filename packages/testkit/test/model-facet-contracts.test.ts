@@ -12,8 +12,8 @@ import {
   type ModelMaterialSource,
   type ModelResourceRefsSource,
   type ResourceBudget,
-} from '@modkitx-x3/sdk'
-import { MODEL_FACET_CONTRACTS, readModelFacets } from '@modkitx-x3/ui/model'
+} from '@modkit/sdk'
+import { MODEL_FACET_CONTRACTS, readModelFacets } from '@modkit/ui/model'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')

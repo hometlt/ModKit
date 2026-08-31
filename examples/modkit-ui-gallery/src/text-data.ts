@@ -25,7 +25,7 @@ export interface FormatSpec {
 }
 
 const CATALOG_JSON = `{
-  "$schema": "https://schemas.modkitx.org/unit.json",
+  "$schema": "https://schemas.modkit.org/unit.json",
   "id": "Marine",
   "parent": "CUnitStandard",
   "life": 45,

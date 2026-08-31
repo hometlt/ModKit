@@ -4,8 +4,11 @@ import type {
   ExtensionManagerClient,
   ExtensionManagerEntry,
   ExtensionManagerSnapshot,
-} from '@modkitx/extension-manager'
-import type { NodeExtensionManager } from '@modkitx/extension-manager/node'
+  GameSupportExtensionManagerClient,
+  GameSupportApplyResult,
+  GameSupportPlan,
+} from '@modkit/extension-manager'
+import type { NodeExtensionManager } from '@modkit/extension-manager/node'
 
 import type { ManagedExtensionRootRequest } from './extension-roots.js'
 
@@ -14,7 +17,10 @@ export {
   type ExtensionManagerClient,
   type ExtensionManagerEntry,
   type ExtensionManagerSnapshot,
-} from '@modkitx/extension-manager'
+  type GameSupportExtensionManagerClient,
+  type GameSupportApplyResult,
+  type GameSupportPlan,
+} from '@modkit/extension-manager'
 
 /** A root already supplied by the build, workspace, or manual `modkit.extensions` configuration. */
 export interface StaticExtensionPackage {
@@ -31,7 +37,7 @@ export interface VsCodeManagedExtensionState {
 }
 
 export interface CreateVsCodeExtensionManagerClientOptions {
-  readonly client: ExtensionManagerClient
+  readonly client: GameSupportExtensionManagerClient
   readonly staticPackages?: () => readonly StaticExtensionPackage[]
 }
 
@@ -96,7 +102,7 @@ export async function installedManagerExtensionState(
  */
 export function createVsCodeExtensionManagerClient(
   options: CreateVsCodeExtensionManagerClientOptions,
-): ExtensionManagerClient {
+): GameSupportExtensionManagerClient {
   const staticPackages = (): readonly StaticExtensionPackage[] => options.staticPackages?.() ?? []
   const staticPackage = (id: string): StaticExtensionPackage | undefined =>
     staticPackages().find(entry => entry.entry.id === id)
@@ -113,7 +119,7 @@ export function createVsCodeExtensionManagerClient(
     }
   }
 
-  const client: ExtensionManagerClient = {
+  const client: GameSupportExtensionManagerClient = {
     async snapshot() {
       // An installed manager row wins and owns its enablement. An available-but-not-installed
       // catalog row must not hide an immutable build/workspace/manual package with the same id.
@@ -151,6 +157,9 @@ export function createVsCodeExtensionManagerClient(
       await requireManagedWhenStatic(id)
       await options.client.setEnabled(id, enabled)
     },
+
+    planGameSupport: gameId => options.client.planGameSupport(gameId),
+    applyGameSupport: plan => options.client.applyGameSupport(plan),
   }
   return Object.freeze(client)
 }
@@ -177,8 +186,10 @@ export function extensionManagerCommandCompletion(
 export class ExtensionManagerController {
   private snapshotPromise: Promise<ExtensionManagerSnapshot> | undefined
   private readonly listeners = new Set<() => void>()
+  /** Storage has changed, while this extension host still runs the composition from startup. */
+  private readonly reloadPendingIds = new Set<string>()
 
-  constructor(private readonly client: ExtensionManagerClient) {}
+  constructor(private readonly client: GameSupportExtensionManagerClient) {}
 
   snapshot(): Promise<ExtensionManagerSnapshot> {
     this.snapshotPromise ??= this.client.snapshot()
@@ -193,6 +204,27 @@ export class ExtensionManagerController {
   invalidate(): void {
     this.snapshotPromise = undefined
     for (const listener of this.listeners) listener()
+  }
+
+  /** Package ids whose manager state is current but whose runtime activation needs a reload. */
+  pendingReloadIds(): readonly string[] {
+    return Object.freeze([...this.reloadPendingIds].sort())
+  }
+
+  planGameSupport(gameId: string): Promise<GameSupportPlan> {
+    return this.client.planGameSupport(gameId)
+  }
+
+  async applyGameSupport(plan: GameSupportPlan): Promise<GameSupportApplyResult> {
+    const result = await this.client.applyGameSupport(plan)
+    if (result.status !== 'rolled-back') {
+      for (const action of result.applied) this.reloadPendingIds.add(action.packageId)
+      if (result.failed !== undefined && 'packageId' in result.failed) {
+        this.reloadPendingIds.add(result.failed.packageId)
+      }
+    }
+    this.invalidate()
+    return result
   }
 
   private async apply(command: ExtensionManagerCommand): Promise<void> {
@@ -217,6 +249,7 @@ export class ExtensionManagerController {
 
   async execute(command: ExtensionManagerCommand): Promise<ExtensionManagerSnapshot> {
     await this.apply(command)
+    if (command.kind !== 'refresh') this.reloadPendingIds.add(command.id)
     this.invalidate()
     return this.snapshot()
   }
@@ -226,7 +259,10 @@ export class ExtensionManagerController {
     commands: readonly ExtensionManagerCommand[],
   ): Promise<ExtensionManagerSnapshot> {
     try {
-      for (const command of commands) await this.apply(command)
+      for (const command of commands) {
+        await this.apply(command)
+        if (command.kind !== 'refresh') this.reloadPendingIds.add(command.id)
+      }
     } finally {
       this.invalidate()
     }

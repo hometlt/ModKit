@@ -25,7 +25,7 @@
  * replaced by the editor area (tabs and split groups), so this file owns "open a file" and "accept a
  * drop" rather than letting the explorer preview into a pane that is no longer in the document.
  */
-import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkitx-x3/core'
+import { CONTAINER_EXTRACT_OPERATION_ID } from '@modkit/core'
 import {
   revisionId,
   type AnyDescriptor,
@@ -33,19 +33,19 @@ import {
   type ArtifactByteSource,
   type OperationSession,
   type PermissionGrant,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import {
   nestedSubjectServices,
   openNestedSubject,
   resolveFormatWriter,
   resolveCommonPresentationPlan,
   type OpenSubjectResult,
-} from '@modkitx-x3/host'
+} from '@modkit/host'
 import type {
   BrowserBlobConstructorLike,
   BrowserMessageChannelConstructorLike,
   BrowserObjectUrlLike,
-} from '@modkitx-x3/host/browser'
+} from '@modkit/host/browser'
 import {
   createCodecPreview,
   createEditorArea,
@@ -54,14 +54,10 @@ import {
   type EditorArea,
   type ExplorerEntry,
   type PreviewResolver,
-} from '@modkitx-x3/ui/explorer'
-import {
-  createSettingsUi,
-  readAppThemeChoices,
-  type SettingsDocument,
-} from '@modkitx-x3/ui/settings'
-import { element, setPart, setState, setViewerText } from '@modkitx-x3/ui/viewer'
-import type { UiMessageKey } from '@modkitx-x3/ui/localization'
+} from '@modkit/ui/explorer'
+import { createSettingsUi, readAppThemeChoices, type SettingsDocument } from '@modkit/ui/settings'
+import { element, setPart, setState, setViewerText } from '@modkit/ui/viewer'
+import type { UiMessageKey } from '@modkit/ui/localization'
 
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
 import { createWebTopology, mountWebWorkbench, probeWebFacilities } from './index.js'

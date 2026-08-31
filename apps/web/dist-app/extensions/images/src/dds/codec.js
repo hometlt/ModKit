@@ -2,9 +2,9 @@ import {
   createInspectionCodec,
   createRasterImageSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/dds'
+const ID = 'modkit/dds'
 const DDS_MAGIC = 0x20534444
 const DDPF_FOURCC = 0x4
 const DDPF_RGB = 0x40

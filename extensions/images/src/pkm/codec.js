@@ -2,11 +2,11 @@ import {
   createInspectionCodec,
   createRasterImageSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
 import { decodeEtcRgba } from './etc.js'
 
-const ID = 'org.modkitx/pkm'
+const ID = 'modkit/pkm'
 const ascii = new TextDecoder('latin1')
 
 function versionOf(bytes) {

@@ -88,7 +88,7 @@ await build({
 const stylesheet = join(repoRoot, 'packages', 'ui', 'styles', 'modkit-ui.css')
 if (!existsSync(stylesheet)) {
   console.error(
-    'missing packages/ui/styles/modkit-ui.css — run pnpm --filter @modkitx-x3/ui tokens:emit',
+    'missing packages/ui/styles/modkit-ui.css — run pnpm --filter @modkit/ui tokens:emit',
   )
   process.exit(1)
 }

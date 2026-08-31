@@ -1,4 +1,4 @@
-import { defineLinkedExtension } from '@modkitx-x3/host'
+import { defineLinkedExtension } from '@modkit/host'
 
 import daeManifest from '../contributions/codec-dae.json' with { type: 'json' }
 import gltfManifest from '../contributions/codec-gltf.json' with { type: 'json' }

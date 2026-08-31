@@ -1,9 +1,9 @@
-import { createInspectionCodec } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec } from '@modkit/codec-kit'
 
 import { createIconDefinition } from '../ico/container.js'
 
 const definition = createIconDefinition({
-  id: 'org.modkitx/cur',
+  id: 'modkit/cur',
   formatId: 'cur',
   label: 'Windows Cursor',
   type: 2,

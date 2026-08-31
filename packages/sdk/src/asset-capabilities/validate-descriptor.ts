@@ -12,7 +12,7 @@ import {
   type Diagnostic,
   type SourceSpan,
   type SourceSpanWire,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import { subjectDescriptorV2Schema } from '../schemas/subject-descriptor.js'
 import { snapshotJsonWireData, validateWithSchema } from '../manifest/validate.js'
 import { parseSubjectRef, serializeSubjectRef } from '../subjects/refs.js'
@@ -121,7 +121,7 @@ function normalizeCompanion(item: CompanionDescriptorWire): CompanionDescriptor 
 }
 
 function operationOwnerId(wire: AnyDescriptorWire): string {
-  return wire.interpretation === 'none' ? 'org.modkitx/host' : wire.identity.codecId
+  return wire.interpretation === 'none' ? 'modkit/host' : wire.identity.codecId
 }
 
 function normalizeOrigin(origin: AssetOriginDescriptorWire): AssetOriginDescriptor {

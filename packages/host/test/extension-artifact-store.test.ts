@@ -6,7 +6,7 @@ import {
   createLocalExtensionArtifactStore,
   loadExtensionDirectory,
   type LocalExtensionCatalogEntry,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host/node'
 
 const scratch = mkdtempSync(join(tmpdir(), 'x3-extension-artifact-store-'))
 afterAll(() => rmSync(scratch, { recursive: true, force: true }))

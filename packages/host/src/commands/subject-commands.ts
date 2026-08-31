@@ -15,7 +15,7 @@
  * described as such rather than special-cased.
  */
 
-import type { AssetSession, JsonValue, NamespaceEntrySource } from '@modkitx-x3/sdk'
+import type { AssetSession, JsonValue, NamespaceEntrySource } from '@modkit/sdk'
 import { SUBJECT_COMMAND_TARGETS } from './subject-command-targets.js'
 import {
   commandDiagnostic,

@@ -17,8 +17,8 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { connectSubjectRpc, type SubjectRpcClient } from '@modkitx-x3/host'
-import type { ChangeSet } from '@modkitx-x3/sdk'
+import { connectSubjectRpc, type SubjectRpcClient } from '@modkit/host'
+import type { ChangeSet } from '@modkit/sdk'
 import { createBridge, type WebviewChannel } from '../src/bridge.js'
 import {
   createVsCodeSubjectHost,

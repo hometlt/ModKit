@@ -5,7 +5,7 @@ import {
   createModelSceneSource,
   createProjectionReceipt,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
 /**
  * OBJ authors in a right-handed Y-up space and the reader copies coordinates verbatim, so the
@@ -177,7 +177,7 @@ function parseObj(bytes, budget) {
 }
 
 const definition = Object.freeze({
-  id: 'org.modkitx/model-obj',
+  id: 'modkit/model-obj',
   format: Object.freeze({ id: 'obj', label: 'Wavefront OBJ', mediaType: 'model/obj' }),
   async detect(bytes) {
     const match = looksLikeObj(bytes)
@@ -284,7 +284,7 @@ const definition = Object.freeze({
       ],
       text: true,
       projectionReceipt: createProjectionReceipt({
-        adapter: { id: 'org.modkitx/model-obj', version: '1.0.0' },
+        adapter: { id: 'modkit/model-obj', version: '1.0.0' },
         subjectRevision: context.input.revisions.revision,
         companions: [],
         basis: OBJ_BASIS,

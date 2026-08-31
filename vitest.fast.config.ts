@@ -8,6 +8,9 @@ export default defineConfig({
     fileParallelism: true,
     minWorkers: 1,
     maxWorkers: 4,
+    // Parallel Windows workers can push the heaviest import-isolation checks past
+    // Vitest's 5 s default even though the same checks finish quickly in isolation.
+    testTimeout: 10_000,
     include: [
       'packages/vfs/test/vfs.test.ts',
       'packages/sdk/test/contribution-specs.test.ts',

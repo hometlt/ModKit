@@ -5,13 +5,13 @@
  * honest refusals for what a file handle cannot do.
  */
 import { describe, expect, it } from 'vitest'
-import { canonicalJsonStringify } from '@modkitx-x3/core'
-import type { AssetRevision, PayloadStore, SubjectEditTarget } from '@modkitx-x3/sdk'
+import { canonicalJsonStringify } from '@modkit/core'
+import type { AssetRevision, PayloadStore, SubjectEditTarget } from '@modkit/sdk'
 import {
   createBrowserEditingBackend,
   type BrowserWritableFile,
   type BrowserWritableFileHandle,
-} from '@modkitx-x3/host/browser'
+} from '@modkit/host/browser'
 
 const payloads: PayloadStore = {
   async open() {

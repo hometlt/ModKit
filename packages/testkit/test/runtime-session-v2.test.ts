@@ -15,7 +15,7 @@
  */
 import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { runRuntimeSessionV2Conformance } from '@modkitx-x3/testkit'
+import { runRuntimeSessionV2Conformance } from '@modkit/testkit'
 import {
   RUNTIME_SESSION_CONTRACT,
   type RuntimeEvent,
@@ -23,7 +23,7 @@ import {
   type RuntimeSessionOffer,
   type RuntimeSessionV2,
   type RuntimeSnapshot,
-} from '@modkitx-x3/sdk/runtime'
+} from '@modkit/sdk/runtime'
 
 const SCHEMA_ID = 'x3.test/counter-state'
 const SCHEMA_VERSION = 1

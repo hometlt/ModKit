@@ -11,7 +11,7 @@ import type {
   ViewerMount,
   ViewerModule,
   ViewerSources,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { setPart, setState, type PartName, type StateName } from '../parts.js'
 
 export {

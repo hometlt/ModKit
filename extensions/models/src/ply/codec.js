@@ -1,13 +1,13 @@
-// Hand-ported from org.modkitx/ply. PLY 1.0 ASCII and both binary byte orders are decoded from
+// Hand-ported from modkit/ply. PLY 1.0 ASCII and both binary byte orders are decoded from
 // the element/property schema; polygon faces are deterministically triangulated as fans.
 
 import {
   createInspectionCodec,
   createModelSceneSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/ply'
+const ID = 'modkit/ply'
 const decoder = new TextDecoder('ascii', { fatal: false })
 const encoder = new TextEncoder()
 const IDENTITY = Object.freeze([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])

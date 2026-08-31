@@ -6,7 +6,7 @@ import type {
   SubjectCalculationsSource,
   SubjectCalculationsSummary,
   ViewerModule,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { setPart, setState } from '../parts.js'
 import {
   createSurface,

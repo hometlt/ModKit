@@ -1,4 +1,4 @@
-import { defineLinkedExtension } from '@modkitx-x3/host'
+import { defineLinkedExtension } from '@modkit/host'
 
 import codecCsvManifest from '../contributions/codec-csv.json' with { type: 'json' }
 import codecIniManifest from '../contributions/codec-ini.json' with { type: 'json' }

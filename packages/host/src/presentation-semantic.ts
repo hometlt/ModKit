@@ -1,11 +1,11 @@
-import { canonicalJsonStringify, compareUtf8 } from '@modkitx-x3/core'
+import { canonicalJsonStringify, compareUtf8 } from '@modkit/core'
 import {
   algorithmQualifiedDigest,
   type JsonValue,
   type PresentationPlan,
   type ScopedSemanticHash,
   type SemanticScopeRef,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 export interface PresentationSemanticHashRequest {
   /** A scope name owns which semantic fields the caller supplied in `semantic`. */

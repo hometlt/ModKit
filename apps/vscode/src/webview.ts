@@ -21,20 +21,20 @@ import {
   type ExplorerEntry,
   type FileAccess,
   type PreviewResolver,
-} from '@modkitx-x3/ui/explorer'
-import { createWorkbench } from '@modkitx-x3/ui/workbench'
-import type { UiCatalogDocument, UiLocale, UiLocalizer } from '@modkitx-x3/ui/localization'
+} from '@modkit/ui/explorer'
+import { createWorkbench } from '@modkit/ui/workbench'
+import type { UiCatalogDocument, UiLocale, UiLocalizer } from '@modkit/ui/localization'
 import {
   createSubjectCard,
   loadSubjectCardSections,
   type CardRef,
   type SubjectCard,
-} from '@modkitx-x3/ui/card'
-import { connectSubjectRpc, type SubjectPreviewSession } from '@modkitx-x3/host'
+} from '@modkit/ui/card'
+import { connectSubjectRpc, type SubjectPreviewSession } from '@modkit/host'
 import {
   subjectFactsSourceFromWire,
   type ExtensionSubjectCardWireDocument,
-} from '@modkitx/extension-manager'
+} from '@modkit/extension-manager'
 
 import { createBridge, type ShellEntry, type WebviewChannel } from './bridge.js'
 import { probeWebviewFacilities } from './facilities.js'
@@ -170,6 +170,8 @@ async function mount(
     localizer,
     title: localizer.text('app.title'),
     host: { label: snapshot.webview.realmId, facilities: snapshot.webview.facilities },
+    // VS Code owns this editor's chrome; the page mounts only its subject surface.
+    embedded: true,
   })
   mountPoint.replaceChildren(workbench.root)
 
@@ -587,6 +589,20 @@ async function mountExtensionSubjectCard(
   toolbar.dataset['mkPart'] = 'settings.adder'
   const status = document.createElement('span')
   status.dataset['mkPart'] = 'settings.status'
+  const resources = document.createElement('div')
+  resources.className = 'modkit-extension-subject__resources'
+  resources.dataset['mkPart'] = 'card.facts'
+  const icon =
+    bundle.extension.iconUri === undefined
+      ? undefined
+      : (() => {
+          const image = document.createElement('img')
+          image.className = 'modkit-extension-subject__icon'
+          image.src = bundle.extension.iconUri
+          image.alt = ''
+          image.setAttribute('aria-hidden', 'true')
+          return image
+        })()
   let card: SubjectCard | undefined
 
   const configure = async (
@@ -614,6 +630,58 @@ async function mountExtensionSubjectCard(
     return button
   }
 
+  const openResource = async (
+    resource: (typeof bundle.extension.resources)[number],
+  ): Promise<void> => {
+    const result = (await bridge.request({
+      op: 'open-extension-resource',
+      subjectId: bundle.extension.subjectId,
+      resourceId: resource.id,
+      role: resource.role,
+    })) as { readonly opened?: unknown; readonly message?: unknown }
+    status.textContent =
+      typeof result.message === 'string'
+        ? result.message
+        : result.opened === true
+          ? localizer.text('extensions.status.configurationUpdated')
+          : localizer.text('vscode.webview.unknownExtensionSubject', { id: bundle.extension.id })
+  }
+
+  const resourceRows = (): readonly HTMLElement[] =>
+    bundle.extension.resources.map(resource => {
+      const row = document.createElement('div')
+      row.className = 'modkit-extension-subject__resource'
+      row.dataset['mkPart'] = 'card.fact'
+      const label = document.createElement('span')
+      label.className = 'modkit-extension-subject__resource-label'
+      label.textContent =
+        resource.role === 'source'
+          ? localizer.text('extensions.label.source')
+          : resource.label === 'License'
+            ? localizer.text('extensions.label.license')
+            : resource.label
+      const display = document.createElement('code')
+      display.className = 'modkit-extension-subject__resource-path'
+      display.textContent = resource.display
+      row.append(
+        label,
+        display,
+        button(
+          localizer.text(
+            resource.role === 'source'
+              ? 'extensions.action.openSource'
+              : 'extensions.action.openLicense',
+          ),
+          () => {
+            void openResource(resource).catch(error => {
+              status.textContent = describe(error)
+            })
+          },
+        ),
+      )
+      return row
+    })
+
   const actionButtons = (
     active: ExtensionSubjectCardWireDocument,
   ): readonly HTMLButtonElement[] => {
@@ -636,7 +704,7 @@ async function mountExtensionSubjectCard(
         }),
       ]
     }
-    if (subject.kind === 'org.modkitx/contribution') {
+    if (subject.kind === 'modkit/contribution') {
       return [
         button(
           localizer.text(
@@ -696,7 +764,7 @@ async function mountExtensionSubjectCard(
       localizer,
     })
     card?.destroy()
-    toolbar.replaceChildren(...actionButtons(active), status)
+    toolbar.replaceChildren(...(icon === undefined ? [] : [icon]), ...actionButtons(active), status)
     const navigate = (ref: CardRef): void => {
       if (ref.href !== undefined && documents.has(ref.href)) {
         void render(ref.href)
@@ -708,7 +776,8 @@ async function mountExtensionSubjectCard(
       sections,
       onNavigate: navigate,
     })
-    root.replaceChildren(toolbar, card.root)
+    resources.replaceChildren(...resourceRows())
+    root.replaceChildren(toolbar, resources, card.root)
   }
 
   workbench.setMain(root)

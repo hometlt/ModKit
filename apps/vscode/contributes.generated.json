@@ -54,6 +54,11 @@
       "icon": "$(cloud-download)"
     },
     {
+      "command": "modkit.extensions.installGameSupport",
+      "title": "%command.installGameSupport%",
+      "icon": "$(cloud-download)"
+    },
+    {
       "command": "modkit.extensions.openContribution",
       "title": "%command.openContributionCard%"
     },
@@ -223,6 +228,11 @@
       {
         "command": "modkit.extensions.installAll",
         "when": "view == modkit.extensions && viewItem == modkitExtensionGroup.available",
+        "group": "inline@1"
+      },
+      {
+        "command": "modkit.extensions.installGameSupport",
+        "when": "view == modkit.extensions && viewItem == modkitExtensionComponent.game",
         "group": "inline@1"
       },
       {

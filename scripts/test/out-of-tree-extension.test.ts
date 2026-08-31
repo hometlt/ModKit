@@ -28,14 +28,14 @@ import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:pat
 import { fileURLToPath } from 'node:url'
 import { build, type Metafile, type Plugin } from 'esbuild'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { ModkitError } from '@modkitx-x3/core'
+import { ModkitError } from '@modkit/core'
 import {
   createLocalExtensionArtifactStore,
   loadExtensionDirectory,
   openFileArtifactSource,
   type InstalledExtensionArtifact,
-} from '@modkitx-x3/host/node'
-import { scanModuleSpecifiers } from '@modkitx-x3/host/browser'
+} from '@modkit/host/node'
+import { scanModuleSpecifiers } from '@modkit/host/browser'
 import {
   createElectronSubjectServices,
   type ElectronSubjectServices,
@@ -67,11 +67,11 @@ const scaffold = join(repoRoot, 'scripts', 'scaffold-extension.mjs')
 const coordinate = 'org.example/outside-demo'
 const formatId = 'outside-demo'
 const expectedAbiVersions = Object.freeze({
-  '@modkitx-x3/core': '0.1.0',
-  '@modkitx-x3/sdk': '0.1.0',
-  '@modkitx-x3/vfs': '0.1.0',
-  '@modkitx-x3/host': '0.1.0',
-  '@modkitx-x3/codec-kit': '1.0.0',
+  '@modkit/core': '0.1.0',
+  '@modkit/sdk': '0.1.0',
+  '@modkit/vfs': '0.1.0',
+  '@modkit/host': '0.1.0',
+  '@modkit/codec-kit': '1.0.0',
 })
 
 const temporaryRoot = mkdtempSync(join(tmpdir(), 'modkit-x3-out-of-tree-'))
@@ -311,12 +311,12 @@ beforeAll(async () => {
     readonly peerDependencies?: Readonly<Record<string, string>>
   }
   expect(authoredPackage.peerDependencies).toEqual({
-    '@modkitx-x3/codec-kit': '^1.0.0',
-    '@modkitx-x3/sdk': '^0.1.0',
+    '@modkit/codec-kit': '^1.0.0',
+    '@modkit/sdk': '^0.1.0',
   })
   expect(JSON.stringify(authoredPackage)).not.toContain('workspace:')
   expect(readFileSync(join(sourceRoot, 'src', 'codec.js'), 'utf8')).toMatch(
-    /from '@modkitx-x3\/codec-kit'/u,
+    /from '@modkit\/codec-kit'/u,
   )
 
   writeFileSync(
@@ -377,7 +377,7 @@ beforeAll(async () => {
   expect(buildInputs.length).toBeGreaterThan(1)
   expect(buildOutputs).toHaveLength(1)
   expect(buildOutputs[0]?.imports).toEqual([])
-  expect(buildInputs.some(path => path.includes('@modkitx-x3/codec-kit'))).toBe(true)
+  expect(buildInputs.some(path => path.includes('@modkit/codec-kit'))).toBe(true)
   expect(buildInputs.every(path => !path.replaceAll('\\', '/').includes('/apps/'))).toBe(true)
   expect(
     buildInputs.every(path => {
@@ -394,7 +394,7 @@ beforeAll(async () => {
     readFileSync(releaseEntrypoint, 'utf8'),
   )
   writeFileSync(releaseEntrypoint, releaseSource, 'utf8')
-  expect(releaseSource).not.toMatch(/\bfrom\s+['"]@modkitx/u)
+  expect(releaseSource).not.toMatch(/\bfrom\s+['"]@modkit/u)
   expect(releaseSource).not.toMatch(/\bfrom\s+['"]node:/u)
   expect(releaseSource).not.toMatch(/\bawait\s+import\s*\(/u)
   expect(scanModuleSpecifiers(releaseSource)).toEqual([])

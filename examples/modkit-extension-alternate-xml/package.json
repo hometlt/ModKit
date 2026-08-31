@@ -1,0 +1,36 @@
+{
+  "name": "modkit-extension-alternate-xml",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "Alternate XML syntax provider proving replaceability and lock replay.",
+  "exports": {
+    ".": "./src/index.js",
+    "./runtime": "./src/provider.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "contributions",
+    "src"
+  ],
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.example",
+    "id": "alternate-xml",
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "peerDependencies": {
+    "@modkit/core": "*",
+    "@modkit/sdk": "*"
+  },
+  "peerDependenciesMeta": {
+    "@modkit/core": {
+      "optional": true
+    },
+    "@modkit/sdk": {
+      "optional": true
+    }
+  }
+}

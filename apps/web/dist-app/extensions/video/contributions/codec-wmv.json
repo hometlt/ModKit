@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "org.modkitx/codec-contribution", "major": 1 },
-  "id": "org.modkitx/wmv",
+  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "id": "modkit/wmv",
   "displayName": "Windows Media Video / ASF",
   "status": "partial",
   "runtimeVariants": [

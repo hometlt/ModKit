@@ -26,8 +26,8 @@
  *     VS Code. That is the seam that lets one fixture run in all three.
  */
 
-import type { Diagnostic } from '@modkitx-x3/core'
-import type { AssetSession, JsonValue } from '@modkitx-x3/sdk'
+import type { Diagnostic } from '@modkit/core'
+import type { AssetSession, JsonValue } from '@modkit/sdk'
 import type { SubjectOpenSnapshot } from '../subject-rpc.js'
 
 /** The run was asked to stop. Reported, never thrown past the runtime. */

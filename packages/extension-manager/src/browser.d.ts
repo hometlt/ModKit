@@ -1,4 +1,4 @@
-import type { VirtualFileSystem, VfsLimits } from '@modkitx-x3/vfs'
+import type { VirtualFileSystem, VfsLimits } from '@modkit/vfs'
 export * from './index.js'
 
 export function createBrowserExtensionVfs(options?: {

@@ -5,7 +5,7 @@
  * public contract and wraps one invocation/result in a stable envelope, so a batch runner never
  * has to infer meaning from terminal prose or copy a domain handler into its own adapter.
  */
-import type { JsonValue } from '@modkitx-x3/sdk'
+import type { JsonValue } from '@modkit/sdk'
 import type { SubjectCommandTarget } from './subject-command-targets.js'
 import type { CommandContext, CommandInput, CommandResult, CommandRuntime } from './runtime.js'
 

@@ -10,7 +10,7 @@ import {
   type ContributionContext,
   type NamespaceEntrySource,
   type ResourceBudget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const archiveRoot = join(repoRoot, 'extensions', 'archives')

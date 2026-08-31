@@ -8,8 +8,8 @@ import {
   hasErrors,
   isQualifiedId,
   type Diagnostic,
-} from '@modkitx-x3/core'
-import { CONTRACT_DEFINITION_FACT } from '@modkitx-x3/sdk'
+} from '@modkit/core'
+import { CONTRACT_DEFINITION_FACT } from '@modkit/sdk'
 import type {
   DefinitionInventoryProvenance,
   DefinitionInventoryResult,
@@ -24,7 +24,7 @@ import type {
   ServiceFacetMatcherProfile,
   ServiceFacetMatcherProfileRegistry,
   ServiceFacetValidationContext,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { Inventory } from './inventory.js'
 
 export interface ServiceContractDefinitionRegistryOptions {
@@ -46,7 +46,7 @@ export interface ServiceContractDefinitionRegistryOptions {
 }
 
 /** Standard profile for contracts whose offer and request facets are both forbidden. */
-export const FACETLESS_SERVICE_MATCHER_PROFILE = contractId('org.modkitx/facetless-matcher')
+export const FACETLESS_SERVICE_MATCHER_PROFILE = contractId('modkit/facetless-matcher')
 
 const facetlessMatcher: ServiceFacetMatcherProfile = Object.freeze({
   profile: FACETLESS_SERVICE_MATCHER_PROFILE,

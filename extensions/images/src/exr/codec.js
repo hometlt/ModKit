@@ -5,9 +5,9 @@ import {
   createInspectionCodec,
   createRasterImageSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/exr'
+const ID = 'modkit/exr'
 const MAGIC = 0x01312f76
 const latin1 = new TextDecoder('latin1')
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { OperationCancelledError } from '@modkitx-x3/core'
+import { OperationCancelledError } from '@modkit/core'
 import {
   revisionId,
   type Codec,
@@ -7,8 +7,8 @@ import {
   type OperationDecl,
   type OperationOutput,
   type PermissionGrant,
-} from '@modkitx-x3/sdk'
-import { assembleSubjectDescriptor, createAssetSession } from '@modkitx-x3/host'
+} from '@modkit/sdk'
+import { assembleSubjectDescriptor, createAssetSession } from '@modkit/host'
 import { resolvedDescriptorWire } from './fixtures/descriptor.js'
 
 const operations = [

@@ -9,8 +9,8 @@
  * Only the loaded window is editable, and only bytes that actually changed are emitted — a
  * one-byte change in a 1 TiB source produces a one-byte edit, never a whole-file rewrite.
  */
-import type { ByteRangeSource, ChangeSet, EditorModule, EditorMount } from '@modkitx-x3/sdk'
-import { bindingId } from '@modkitx-x3/sdk'
+import type { ByteRangeSource, ChangeSet, EditorModule, EditorMount } from '@modkit/sdk'
+import { bindingId } from '@modkit/sdk'
 
 import {
   createSurface,

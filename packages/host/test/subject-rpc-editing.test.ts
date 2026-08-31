@@ -9,8 +9,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { MessageChannel } from 'node:worker_threads'
 import { afterAll, afterEach, describe, expect, it } from 'vitest'
-import { uint64 } from '@modkitx-x3/core'
-import { createHostTopology, type ChangeSet, type PermissionGrant } from '@modkitx-x3/sdk'
+import { uint64 } from '@modkit/core'
+import { createHostTopology, type ChangeSet, type PermissionGrant } from '@modkit/sdk'
 import {
   connectSubjectRpc,
   createEvidenceRegistry,
@@ -19,8 +19,8 @@ import {
   exposeSubjectRpc,
   type SubjectEditing,
   type SubjectRpcClient,
-} from '@modkitx-x3/host'
-import type { MessagePortLike } from '@modkitx-x3/host/execution'
+} from '@modkit/host'
+import type { MessagePortLike } from '@modkit/host/execution'
 import {
   createFileEditingBackend,
   createNodeSubjectServices,
@@ -29,7 +29,7 @@ import {
   nodeWorkerLinks,
   nodeWorkerRealmProfile,
   workerBackendPolicy,
-} from '@modkitx-x3/host/node'
+} from '@modkit/host/node'
 
 const HOST = 'org.example.app/host'
 const WORKERS = 'org.example.app/workers'

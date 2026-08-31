@@ -1,4 +1,4 @@
-import { deepFreeze, type Diagnostic, type UInt64String } from '@modkitx-x3/core'
+import { deepFreeze, type Diagnostic, type UInt64String } from '@modkit/core'
 import type { SurfaceOf } from './asset-capabilities/data-source-surfaces.js'
 import type { DataSourceSurfaceV1 } from './definitions.js'
 import type { DataSourceRef, DataSourceRefWire, Lease } from './asset-capabilities/data-sources.js'
@@ -461,7 +461,7 @@ export const WRITER_CONTRACT_ID = 'common.edit/writer' as const
 export type WriterContractId = typeof WRITER_CONTRACT_ID
 
 /** Matcher profile id the standard writer definition selects (host-trusted code, never injected). */
-export const WRITER_FACET_MATCHER_PROFILE = 'org.modkitx/writer-facet-matcher' as const
+export const WRITER_FACET_MATCHER_PROFILE = 'modkit/writer-facet-matcher' as const
 
 /**
  * How a writer object is called across an execution boundary: `validate`/`plan` carry the

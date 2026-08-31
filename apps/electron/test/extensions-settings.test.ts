@@ -12,9 +12,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
-import type { Inventory } from '@modkitx-x3/host'
-import { normalizeSettings, serializeSettings } from '@modkitx-x3/ui/settings'
-import { subjectFactsSourceFromWire } from '@modkitx/extension-manager'
+import type { Inventory } from '@modkit/host'
+import { normalizeSettings, serializeSettings } from '@modkit/ui/settings'
+import { subjectFactsSourceFromWire } from '@modkit/extension-manager'
 
 import {
   createElectronSubjectServices,
@@ -33,7 +33,7 @@ import {
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
 const imagesExtension = join(repositoryRoot, 'extensions', 'images')
-const PNG_CODEC = 'org.modkitx/image-png'
+const PNG_CODEC = 'modkit/image-png'
 
 /** The two directories the "connect a folder" flow is verified against, built by the fixture script. */
 const extensionFolders = ((): { readonly ok: string; readonly junk: string } => {
@@ -142,15 +142,15 @@ describe('contribution contract groups', () => {
       path: `${id}.json`,
     })
     const groups = groupContributionsByContract([
-      contribution('org.example/codec-v2', 'org.modkitx/codec-contribution', 2),
-      contribution('org.example/viewer', 'org.modkitx/viewer-contribution', 1),
-      contribution('org.example/codec-v1', 'org.modkitx/codec-contribution', 1),
+      contribution('org.example/codec-v2', 'modkit/codec-contribution', 2),
+      contribution('org.example/viewer', 'modkit/viewer-contribution', 1),
+      contribution('org.example/codec-v1', 'modkit/codec-contribution', 1),
       contribution('org.example/unreadable', undefined, undefined),
     ])
     expect(groups.map(group => group.key)).toEqual([
-      'org.modkitx/codec-contribution@1',
-      'org.modkitx/codec-contribution@2',
-      'org.modkitx/viewer-contribution@1',
+      'modkit/codec-contribution@1',
+      'modkit/codec-contribution@2',
+      'modkit/viewer-contribution@1',
       undefined,
     ])
     expect(groups.flatMap(group => group.contributions.map(item => item.id))).toEqual([
@@ -187,7 +187,7 @@ describe('what the codecs section lists', () => {
     const documents = await describeInventoryExtensionSubjects(inventory, [coordinate])
     expect(documents).toHaveLength(1)
     expect(documents[0]?.subject).toMatchObject({
-      kind: 'org.modkitx/extension',
+      kind: 'modkit/extension',
       id: coordinate,
       enabled: false,
     })
@@ -204,8 +204,8 @@ describe('what the codecs section lists', () => {
     expect(png).toMatchObject({
       disabled: true,
       activationEligible: false,
-      contract: 'org.modkitx/codec-contribution',
-      extension: 'org.modkitx/images',
+      contract: 'modkit/codec-contribution',
+      extension: 'modkit/images',
       origin: 'bundled',
     })
     expect(png.displayName.length).toBeGreaterThan(0)
@@ -222,16 +222,15 @@ describe('what the codecs section lists', () => {
     const documents = await describeInventoryExtensionSubjects(services.application.main.inventory)
     const extension = documents.find(
       document =>
-        document.subject.kind === 'org.modkitx/extension' &&
-        document.subject.id === 'org.modkitx/images',
+        document.subject.kind === 'modkit/extension' && document.subject.id === 'modkit/images',
     )
     const pngCard = documents.find(
       document =>
-        document.subject.kind === 'org.modkitx/contribution' && document.subject.id === PNG_CODEC,
+        document.subject.kind === 'modkit/contribution' && document.subject.id === PNG_CODEC,
     )
     expect(extension).toBeDefined()
     expect(pngCard?.subject).toMatchObject({
-      contractKey: 'org.modkitx/codec-contribution@1',
+      contractKey: 'modkit/codec-contribution@1',
       enabled: false,
       effectiveEnabled: false,
     })
@@ -280,7 +279,7 @@ describe('a folder the user connected reaches the inventory', () => {
     const rows = describeInventoryContributions(services.application.main.inventory)
     expect(rows.find(row => row.id === 'org.example/fixture-thirdparty')).toMatchObject({
       origin: 'installed',
-      contract: 'org.modkitx/codec-contribution',
+      contract: 'modkit/codec-contribution',
     })
     // its declared format is offered by the picker hints, so the app can say it can open it
     expect(services.supportedExtensions).toContain('mkfixture')
@@ -308,7 +307,7 @@ describe('a folder the user connected reaches the inventory', () => {
     const extension = documents.find(document => document.subject.id === coordinate)
     const contributions = documents.filter(document => document.subject.extensionId === coordinate)
     expect(extension?.subject).toMatchObject({
-      kind: 'org.modkitx/extension',
+      kind: 'modkit/extension',
       id: coordinate,
       enabled: false,
     })

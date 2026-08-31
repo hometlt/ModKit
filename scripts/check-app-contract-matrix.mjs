@@ -6,7 +6,7 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 const cliMain = join(root, 'apps', 'cli', 'dist', 'main.js')
 const counterRoot = join(root, 'examples', 'extensions', 'counter-runtime')
 
-const UNKNOWN_COMMAND = 'org.modkitx.contract-matrix/not-installed'
+const UNKNOWN_COMMAND = 'modkit.contract-matrix/not-installed'
 const RUNTIME_ID = 'reference.counter'
 const COMMAND_CALLERS = Object.freeze(['automation', 'cli', 'electron', 'pwa', 'server', 'vscode'])
 const RUNTIME_BUDGET = Object.freeze({

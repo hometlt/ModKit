@@ -1,6 +1,6 @@
-import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkitx-x3/codec-kit'
+import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
 
-const ID = 'org.modkitx/cab'
+const ID = 'modkit/cab'
 const latin1 = new TextDecoder('latin1')
 const utf8 = new TextDecoder('utf-8', { fatal: true })
 

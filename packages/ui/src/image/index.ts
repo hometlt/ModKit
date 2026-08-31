@@ -7,7 +7,7 @@
  *
  * Rendering goes to a canvas, so no `img-src blob:` allowance is required.
  */
-import type { RasterImageSource, ViewerModule } from '@modkitx-x3/sdk'
+import type { RasterImageSource, ViewerModule } from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,

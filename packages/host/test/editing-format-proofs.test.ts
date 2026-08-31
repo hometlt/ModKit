@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SourceEdit } from '@modkitx-x3/sdk'
+import type { SourceEdit } from '@modkit/sdk'
 
 function spliceUtf16(
   source: string,

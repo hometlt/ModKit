@@ -6,14 +6,14 @@ import {
   isCancellation,
   throwIfAborted,
   type Diagnostic,
-} from '@modkitx-x3/core'
+} from '@modkit/core'
 import {
   LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
   LANGUAGE_DOCUMENT_MATCHER_PROFILE,
   type LanguageProvider,
   type LanguageProviderOfferFacet,
   type LanguageProviderRequestFacet,
-} from '@modkitx-x3/sdk/language'
+} from '@modkit/sdk/language'
 import type {
   DefinitionInventoryResult,
   PermissionGrant,
@@ -24,13 +24,13 @@ import type {
   ServiceFacetMatchContext,
   ServiceFacetMatchResult,
   ServiceFacetMatcherProfile,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { Inventory } from '../inventory.js'
 import { createHostServiceResolver } from '../service-leases.js'
 
 /** Owner id under which the platform definition is registered. */
-export const STANDARD_LANGUAGE_OWNER = 'org.modkitx/language'
+export const STANDARD_LANGUAGE_OWNER = 'modkit/language'
 
 const OFFER_KEYS = new Set(['languageIds', 'documentKinds', 'extensions'])
 const REQUEST_KEYS = new Set(['languageId', 'documentKind', 'extension'])
@@ -152,13 +152,13 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
     offerFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/language-provider-offer.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/language-provider-offer.v1.schema.json',
       }),
     }),
     requestFacet: Object.freeze({
       presence: 'required',
       schema: Object.freeze({
-        $ref: 'https://schemas.modkitx.org/x3/language-provider-request.v1.schema.json',
+        $ref: 'https://schemas.modkit.org/x3/language-provider-request.v1.schema.json',
       }),
     }),
     matching: Object.freeze({ profile: LANGUAGE_DOCUMENT_MATCHER_PROFILE, major: 1 }),

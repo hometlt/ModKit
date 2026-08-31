@@ -7,11 +7,11 @@ import {
   createInspectionCodec,
   createRasterImageSource,
   createTreeDataSource,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
 import { decodeAstcLdr2d } from './ldr.js'
 
-const ID = 'org.modkitx/astc'
+const ID = 'modkit/astc'
 const HEADER_BYTES = 16
 const BLOCK_BYTES = 16
 const MAGIC = Object.freeze([0x13, 0xab, 0xa1, 0x5c])

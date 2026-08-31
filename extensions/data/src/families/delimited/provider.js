@@ -1,5 +1,5 @@
-import { throwIfAborted } from '@modkitx-x3/core'
-import { createTextSyntaxProvider, encodeText, failure, span } from '@modkitx-x3/codec-kit/text'
+import { throwIfAborted } from '@modkit/core'
+import { createTextSyntaxProvider, encodeText, failure, span } from '@modkit/codec-kit/text'
 
 function* delimitedRows(text, delimiter, signal, includeRanges = true) {
   let cells = []
@@ -72,7 +72,7 @@ function parseDelimited(decoded, delimiter, budget, signal) {
       : { state: 'truncated', document, truncated: { limit: 'maxNodes' }, diagnostics: [] }
   } catch (error) {
     return failure(
-      'org.modkitx/text-data-delimited-parse',
+      'modkit/text-data-delimited-parse',
       error instanceof Error ? error.message : String(error),
       decoded.text,
     )

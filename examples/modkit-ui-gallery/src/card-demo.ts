@@ -5,7 +5,7 @@
  * is SC2-aware code — it is a section list. A different subject (a file, a texture, an upgrade)
  * gets a different list and the same renderer.
  */
-import { createRelationGraph, createSubjectCard, type CardSection } from '@modkitx-x3/ui'
+import { createRelationGraph, createSubjectCard, type CardSection } from '@modkit/ui'
 import { threeGraphRenderer } from '../../../packages/scene/src/relations/index.js'
 
 const STATS: readonly (readonly [string, string, string?])[] = [

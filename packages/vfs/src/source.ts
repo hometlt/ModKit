@@ -4,7 +4,7 @@
  * Every potentially blocking call takes an `AbortSignal`.
  */
 
-import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
+import { ModkitError, throwIfAborted } from '@modkit/core'
 
 export interface RandomAccessSource {
   /** Stable source locator id (also the subject root URI, MK3/25 §3). */

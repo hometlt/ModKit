@@ -4,13 +4,13 @@
  * only kind that carries `result`/`wrapper`. No runtime behaviour — `pnpm typecheck` is the test.
  */
 
-import { contractId } from '@modkitx-x3/core'
+import { contractId } from '@modkit/core'
 import type {
   DataSourceMethodSurfaceV1Wire,
   RasterImageSource,
   SurfaceOf,
   TextDataSource,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const sig = { signal: 'last' } as const
 const encoded = { contract: contractId('common.view/encoded-media'), major: 1 } as const

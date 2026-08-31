@@ -5,7 +5,7 @@ import {
   createTransportSource,
   createTreeDataSource,
   TRANSPORT_OPERATIONS,
-} from '@modkitx-x3/codec-kit'
+} from '@modkit/codec-kit'
 
 const latin1 = new TextDecoder('latin1')
 
@@ -84,7 +84,7 @@ function parseOgg(bytes, maxPages) {
 }
 
 const definition = Object.freeze({
-  id: 'org.modkitx/audio-ogg',
+  id: 'modkit/audio-ogg',
   format: Object.freeze({ id: 'ogg', label: 'Ogg media', mediaType: 'audio/ogg' }),
   operations: TRANSPORT_OPERATIONS.filter(operation => operation.id !== 'media.seek'),
   async detect(bytes) {

@@ -5,14 +5,14 @@
  * should never mean "nothing to look at". These sources implement the same bounded SDK contracts
  * as codec-published sources; they do not infer format structure or import a codec.
  */
-import { uint64, type SourceSpan } from '@modkitx-x3/core'
+import { uint64, type SourceSpan } from '@modkit/core'
 import type {
   ByteRangeSource,
   TextDataSource,
   TextQuery,
   TextSlice,
   TextSliceRequest,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 const encoder = new TextEncoder()
 

@@ -1,4 +1,4 @@
-import type { AnyDescriptor, ViewerModule } from '@modkitx-x3/sdk'
+import type { AnyDescriptor, ViewerModule } from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,

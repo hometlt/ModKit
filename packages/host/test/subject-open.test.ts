@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { canonicalJsonStringify, traitId } from '@modkitx-x3/core'
+import { canonicalJsonStringify, traitId } from '@modkit/core'
 import {
   buildInventory,
   artifactNamespaceSourceFromVfsMount,
@@ -24,10 +24,10 @@ import {
   registerServiceContractDefinitionsFromInventory,
   replayPolicyLock,
   resolvePresentationPlan,
-} from '@modkitx-x3/host'
-import { VirtualFileSystem, type VfsMount } from '@modkitx-x3/vfs'
-import { createFileVfsProvider } from '@modkitx-x3/vfs/providers/file'
-import { loadExtensionDirectory } from '@modkitx-x3/host/node'
+} from '@modkit/host'
+import { VirtualFileSystem, type VfsMount } from '@modkit/vfs'
+import { createFileVfsProvider } from '@modkit/vfs/providers/file'
+import { loadExtensionDirectory } from '@modkit/host/node'
 import {
   bindingId,
   presentationSlotId,
@@ -37,7 +37,7 @@ import {
   type RasterImageSource,
   type ResolvedBinding,
   type ResourceBudget,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 declare global {
   /** Bumped by the empty-match fixture entry point; proves it was never imported. */
@@ -156,7 +156,7 @@ describe('host-owned subject opening pipeline', () => {
     expect(unavailable.candidates).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          contributionId: 'org.modkitx/image-png',
+          contributionId: 'modkit/image-png',
           variantId: 'portable',
           state: 'rejected',
           diagnostics: [expect.objectContaining({ code: 'x3.host/codec-execution-unavailable' })],
@@ -220,8 +220,8 @@ describe('host-owned subject opening pipeline', () => {
       throw new TypeError(`unexpected ${result.reason}: ${JSON.stringify(result)}`)
     }
     expect(result.selected).toEqual({
-      extensionId: 'org.modkitx/images',
-      contributionId: 'org.modkitx/image-png',
+      extensionId: 'modkit/images',
+      contributionId: 'modkit/image-png',
       variantId: 'trusted-node',
       offerId: 'raster-metadata',
       confidence: 0.999,
@@ -232,8 +232,8 @@ describe('host-owned subject opening pipeline', () => {
       schemaVersion: 1,
       sourceRevision: source.revision,
       selected: {
-        extensionId: 'org.modkitx/images',
-        contributionId: 'org.modkitx/image-png',
+        extensionId: 'modkit/images',
+        contributionId: 'modkit/image-png',
         variantId: 'trusted-node',
         offerId: 'raster-metadata',
         sourceTopology: 'single',
@@ -256,7 +256,7 @@ describe('host-owned subject opening pipeline', () => {
       interpretation: 'codec',
       subjectUri: source.ref.uri,
       revision: source.revision,
-      identity: { codecId: 'org.modkitx/image-png', formatId: 'png' },
+      identity: { codecId: 'modkit/image-png', formatId: 'png' },
       traits: expect.arrayContaining([
         expect.objectContaining({ id: 'image.raster', state: 'available' }),
       ]),
@@ -321,8 +321,8 @@ describe('host-owned subject opening pipeline', () => {
         {
           slotId: presentationSlotId('image'),
           kind: imageSpec.kind,
-          contributionId: 'org.modkitx.ui/image-stage',
-          extensionId: 'org.modkitx/ui',
+          contributionId: 'modkit.ui/image-stage',
+          extensionId: 'modkit/ui',
           priority: imageSpec.priority,
           singletonGroup: imageSpec.singletonGroup,
           bindings: [imageBinding],
@@ -346,7 +346,7 @@ describe('host-owned subject opening pipeline', () => {
       alternateStages: [],
       slots: [
         expect.objectContaining({
-          contributionId: 'org.modkitx.ui/image-stage',
+          contributionId: 'modkit.ui/image-stage',
           bindings: [imageBinding],
         }),
       ],
@@ -354,7 +354,7 @@ describe('host-owned subject opening pipeline', () => {
     expect(presentation.bindings).toEqual([
       expect.objectContaining({
         bindingId: imageBinding.bindingId,
-        providerId: 'org.modkitx/image-png',
+        providerId: 'modkit/image-png',
         variantId: 'trusted-node',
       }),
     ])
@@ -378,7 +378,7 @@ describe('host-owned subject opening pipeline', () => {
     }
     expect(jpeg.lockText).toBe(result.lockText)
     expect(parseCodecDetectionSelection(jpeg.detectionSelectionText).selected).toMatchObject({
-      contributionId: 'org.modkitx/image-jpeg',
+      contributionId: 'modkit/image-jpeg',
       offerId: 'raster-metadata',
     })
     expect(jpeg.detectionSelectionText).not.toBe(result.detectionSelectionText)
@@ -410,8 +410,8 @@ describe('host-owned subject opening pipeline', () => {
     }
     expect(result.state).toBe('opened')
     expect(result.selected).toEqual({
-      extensionId: 'org.modkitx/models',
-      contributionId: 'org.modkitx/model-uvm',
+      extensionId: 'modkit/models',
+      contributionId: 'modkit/model-uvm',
       variantId: 'trusted-node',
       offerId: 'uvm-scene',
       confidence: 0.995,
@@ -421,17 +421,17 @@ describe('host-owned subject opening pipeline', () => {
       interpretation: 'codec',
       subjectUri: source.ref.uri,
       revision: source.revision,
-      identity: { codecId: 'org.modkitx/model-uvm', formatId: 'uvm' },
+      identity: { codecId: 'modkit/model-uvm', formatId: 'uvm' },
     })
     expect(result.candidates).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          contributionId: 'org.modkitx/model-uvm',
+          contributionId: 'modkit/model-uvm',
           variantId: 'portable',
           state: 'rejected',
         }),
         expect.objectContaining({
-          contributionId: 'org.modkitx/model-uvm',
+          contributionId: 'modkit/model-uvm',
           variantId: 'trusted-node',
           state: 'selected',
           confidence: 0.995,
@@ -440,7 +440,7 @@ describe('host-owned subject opening pipeline', () => {
     )
     expect(parsePolicyLock(result.lockText).entries).toEqual([])
     expect(parseCodecDetectionSelection(result.detectionSelectionText).selected).toMatchObject({
-      contributionId: 'org.modkitx/model-uvm',
+      contributionId: 'modkit/model-uvm',
       variantId: 'trusted-node',
       offerId: 'uvm-scene',
     })
@@ -551,13 +551,13 @@ describe('host-owned subject opening pipeline', () => {
     }
     expect(result.state).toBe('opened')
     expect(result.selected).toMatchObject({
-      contributionId: 'org.modkitx/text-json',
+      contributionId: 'modkit/text-json',
       variantId: 'core-native',
       offerId: 'syntax-document',
     })
     expect(result.descriptor).toMatchObject({
       interpretation: 'codec',
-      identity: { codecId: 'org.modkitx/text-json', formatId: 'json' },
+      identity: { codecId: 'modkit/text-json', formatId: 'json' },
       traits: expect.arrayContaining([
         expect.objectContaining({ id: 'structure.hierarchy', state: 'available' }),
       ]),
@@ -565,13 +565,13 @@ describe('host-owned subject opening pipeline', () => {
     expect(parsePolicyLock(result.lockText).entries).toEqual([
       expect.objectContaining({
         primary: expect.objectContaining({
-          contributionId: 'org.modkitx/json-syntax-default',
+          contributionId: 'modkit/json-syntax-default',
           offerId: 'json-syntax-default-v1',
         }),
       }),
     ])
     expect(parseCodecDetectionSelection(result.detectionSelectionText).selected).toMatchObject({
-      contributionId: 'org.modkitx/text-json',
+      contributionId: 'modkit/text-json',
       offerId: 'syntax-document',
     })
     expect(
@@ -661,7 +661,7 @@ describe('host-owned subject opening pipeline', () => {
   })
 
   it('opens a real directory through file VFS, the namespace bridge, Host and codec-kit', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'modkitx-x3-namespace-'))
+    const directory = await mkdtemp(join(tmpdir(), 'modkit-namespace-'))
     await writeFile(join(directory, 'project.marker'), 'namespace fixture\n')
     await writeFile(join(directory, 'not-declared.txt'), 'must not be probed\n')
     const filesystem = new VirtualFileSystem().registerProvider(createFileVfsProvider())
@@ -829,7 +829,7 @@ describe('detection-hostile: the bounded data-only signature index (NXT-101B / F
     })
     expect(result.state).toBe('opened')
     if (result.state !== 'opened') throw new Error(result.reason)
-    expect(result.selected.contributionId).toBe('org.modkitx/image-png')
+    expect(result.selected.contributionId).toBe('modkit/image-png')
     // the shortlist admission is explained, not silent
     const selected = result.candidates.find(item => item.state === 'selected')
     expect(selected?.diagnostics.map(item => item.code)).toContain('x3.host/signature-match')
@@ -863,8 +863,8 @@ describe('detection-hostile: the bounded data-only signature index (NXT-101B / F
     const probedIds = new Set(
       result.candidates.filter(item => item.state !== 'rejected').map(item => item.contributionId),
     )
-    expect(probedIds.has('org.modkitx/image-png')).toBe(true)
-    expect(probedIds.has('org.modkitx/archive-zip')).toBe(true)
+    expect(probedIds.has('modkit/image-png')).toBe(true)
+    expect(probedIds.has('modkit/archive-zip')).toBe(true)
     // the signature windows are two bounded reads: head (max prefix need) + tail (EOCD window)
     expect(reads[0]?.offset).toBe(0n)
     expect(Number(reads[0]?.length)).toBeLessThanOrEqual(4096 + 64)
@@ -877,12 +877,10 @@ describe('detection-hostile: the bounded data-only signature index (NXT-101B / F
     if (result.state === 'unresolved') {
       expect(result.reason).toBe('input-unresolved')
       const png = result.candidates.find(
-        item =>
-          item.contributionId === 'org.modkitx/image-png' && item.variantId === 'trusted-node',
+        item => item.contributionId === 'modkit/image-png' && item.variantId === 'trusted-node',
       )
       const zip = result.candidates.find(
-        item =>
-          item.contributionId === 'org.modkitx/archive-zip' && item.variantId === 'trusted-node',
+        item => item.contributionId === 'modkit/archive-zip' && item.variantId === 'trusted-node',
       )
       expect(png?.confidence).toBeGreaterThan(0.9)
       expect(zip?.confidence).toBeLessThan(0.1)
@@ -906,7 +904,7 @@ describe('detection-hostile: the bounded data-only signature index (NXT-101B / F
     // the PNG codec was shortlisted by its signature; its probe is the authority and refuses
     expect(result.state).toBe('unresolved')
     if (result.state !== 'unresolved') throw new Error('collision must not open')
-    const png = result.candidates.find(item => item.contributionId === 'org.modkitx/image-png')
+    const png = result.candidates.find(item => item.contributionId === 'modkit/image-png')
     expect(png).toBeDefined()
     expect(png?.state).not.toBe('selected')
   })

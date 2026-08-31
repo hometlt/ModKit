@@ -1,4 +1,4 @@
-import { ModkitError, throwIfAborted } from '@modkitx-x3/core'
+import { ModkitError, throwIfAborted } from '@modkit/core'
 
 import { budgetRandomAccessSource, VfsReadBudget } from '../../read-budget.js'
 import { rangeError, type RandomAccessSource } from '../../source.js'
@@ -238,7 +238,7 @@ export class BrowserFileVfsProvider implements VfsProvider {
   private readonly limits: VfsLimits
 
   constructor(private readonly options: BrowserFileVfsProviderOptions = {}) {
-    this.id = options.id ?? 'org.modkitx-x3.vfs.browser-file'
+    this.id = options.id ?? 'modkit-x3.vfs.browser-file'
     this.limits = clampVfsLimits(options.limits)
   }
 

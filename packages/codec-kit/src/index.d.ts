@@ -1,4 +1,4 @@
-import type { Diagnostic } from '@modkitx-x3/core'
+import type { Diagnostic } from '@modkit/core'
 import type {
   ArtifactByteSource,
   AssetInputPlan,
@@ -63,7 +63,7 @@ import type {
   VectorSceneSource,
   VideoMediaInfo,
   VideoMediaSource,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 
 export interface InspectionTreeNode {
   readonly kind: string

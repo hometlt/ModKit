@@ -1,7 +1,7 @@
 /**
  * Capability-RPC core v1 (NXT-105): transport-agnostic protocol + handle/lease state machine +
  * method-surface port. Deliberately *not* part of the package root: it is published as the
- * `@modkitx-x3/host/execution` subpath so transports (NXT-114/115/401), preload/worker
+ * `@modkit/host/execution` subpath so transports (NXT-114/115/401), preload/worker
  * bootstraps and the testkit conformance kit can depend on the protocol alone, without pulling
  * inventory/resolution/gate code into a renderer or worker bundle. The execution backend SPI
  * (NXT-100) composes it inside the host. See ./protocol.ts, ./surface.ts, ./handles.ts and

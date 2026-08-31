@@ -18,7 +18,7 @@ import type {
   SubjectFact,
   SubjectFactsSource,
   ViewerModule,
-} from '@modkitx-x3/sdk'
+} from '@modkit/sdk'
 import { createAccordion, accordionField } from '../primitives/accordion.js'
 import { setPart, setState } from '../parts.js'
 import { setToken } from '../tokens/index.js'
@@ -198,8 +198,8 @@ function factValue(value: JsonValue): string {
   return JSON.stringify(value)
 }
 
-const EXTENSION_SUBJECT_KIND = 'org.modkitx/extension'
-const CONTRIBUTION_SUBJECT_KIND = 'org.modkitx/contribution'
+const EXTENSION_SUBJECT_KIND = 'modkit/extension'
+const CONTRIBUTION_SUBJECT_KIND = 'modkit/contribution'
 
 /**
  * Presentation labels for Modkit's own extension-subject projection.
@@ -211,9 +211,9 @@ const CONTRIBUTION_SUBJECT_KIND = 'org.modkitx/contribution'
 const EXTENSION_GROUP_MESSAGE_KEYS: Readonly<Record<string, UiMessageKey>> = Object.freeze({
   overview: 'card.extension.group.overview',
   state: 'card.extension.group.state',
+  contributions: 'card.extension.group.contributions',
   declaration: 'card.extension.group.declaration',
   specification: 'card.extension.group.specification',
-  contracts: 'card.extension.group.contracts',
 })
 
 const EXTENSION_FACT_MESSAGE_KEYS: Readonly<Record<string, UiMessageKey>> = Object.freeze({
@@ -228,12 +228,16 @@ const EXTENSION_FACT_MESSAGE_KEYS: Readonly<Record<string, UiMessageKey>> = Obje
   trusted: 'card.extension.fact.trusted',
   enabled: 'card.extension.fact.enabled',
   'contribution-count': 'card.extension.fact.contributionCount',
-  'contract-count': 'card.extension.fact.contractCount',
+  vendor: 'card.extension.fact.vendor',
+  games: 'card.extension.fact.games',
+  'source-details': 'card.extension.fact.sourceDetails',
+  'license-files': 'card.extension.fact.licenseFiles',
 })
 
 const CONTRIBUTION_FACT_MESSAGE_KEYS: Readonly<Record<string, UiMessageKey>> = Object.freeze({
   id: 'card.contribution.fact.id',
   'display-name': 'card.contribution.fact.displayName',
+  description: 'card.extension.fact.description',
   'owner-extension': 'card.contribution.fact.ownerExtension',
   'contract-id': 'card.contribution.fact.contractId',
   'contract-major': 'card.contribution.fact.contractMajor',
@@ -339,7 +343,17 @@ export async function loadSubjectCardSections(
       ),
     })),
   )
+  const description = factGroups
+    .find(item => item.group.id === 'overview')
+    ?.page.items.find(item => item.id === 'description')?.value
+  if (typeof description === 'string' && description.trim() !== '') {
+    const header = sections[0]
+    if (header?.kind === 'header') sections[0] = { ...header, description }
+  }
   for (const { group, page } of factGroups) {
+    // Extension-owned contributions are navigable subjects, not opaque JSON fields. Their
+    // canonical links come from the relation page below; suppress the duplicate fact projection.
+    if (summary.identity.kind === EXTENSION_SUBJECT_KIND && group.id === 'contributions') continue
     const groupLabel = systemSubjectLabel(
       localizer,
       summary.identity.kind,
@@ -359,15 +373,19 @@ export async function loadSubjectCardSections(
     })
   }
   if (relations.items.length > 0) {
+    const extensionContributions = summary.identity.kind === EXTENSION_SUBJECT_KIND
     sections.push({
       kind: 'links',
-      id: 'related-subjects',
-      title: localizer.text('card.relatedSubjects'),
+      id: extensionContributions ? 'contributions' : 'related-subjects',
+      title: extensionContributions
+        ? localizer.text('card.extension.group.contributions')
+        : localizer.text('card.relatedSubjects'),
       links: relations.items.map(item => ({
         label: item.label,
         href: item.subjectId,
         title: `${item.role} · ${item.kind}`,
       })),
+      ...(extensionContributions ? { expanded: true } : {}),
     })
   }
   return Object.freeze(sections)
@@ -562,7 +580,7 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
   knowledge.dataset['knowledgeState'] = 'missing'
   setPart(knowledge, 'card.knowledge')
   knowledge.textContent = localizer.text('card.descriptionUnavailable')
-  root.append(knowledge)
+  if (options.knowledge !== undefined) root.append(knowledge)
 
   let lookupRevision = 0
   let lookupController: AbortController | undefined
@@ -648,7 +666,12 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
         setPart(panel.parentElement ?? panel, 'accordion.section')
         switch (section.kind) {
           case 'fields':
-            renderFields(document, panel, section.fields, inspectKnowledge)
+            renderFields(
+              document,
+              panel,
+              section.fields,
+              options.knowledge === undefined ? undefined : inspectKnowledge,
+            )
             return
           case 'links': {
             const list = document.createElement('div')

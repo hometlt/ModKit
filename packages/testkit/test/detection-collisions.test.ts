@@ -16,9 +16,9 @@ import {
   registerServiceDefinitionsOrThrow,
   type Inventory,
   type SubjectServices,
-} from '@modkitx-x3/host'
-import { createPathSubjectOpener, loadExtensionDirectory } from '@modkitx-x3/host/node'
-import type { ResourceBudget } from '@modkitx-x3/sdk'
+} from '@modkit/host'
+import { createPathSubjectOpener, loadExtensionDirectory } from '@modkit/host/node'
+import type { ResourceBudget } from '@modkit/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const fixtures = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
@@ -100,17 +100,15 @@ describe('common codec collision arbitration', () => {
   it('lets ODF beat its generic ZIP carrier', async () => {
     const verdict = await open('document.odt', { fixture: 'minimal.odt' })
     expect(verdict.state).toBe('opened')
-    expect(verdict.winner).toBe('org.modkitx/odt')
-    expect(verdict.detected['org.modkitx/archive-zip']).toBeTypeOf('number')
-    expect(verdict.confidence).toBeGreaterThan(
-      verdict.detected['org.modkitx/archive-zip'] as number,
-    )
+    expect(verdict.winner).toBe('modkit/odt')
+    expect(verdict.detected['modkit/archive-zip']).toBeTypeOf('number')
+    expect(verdict.confidence).toBeGreaterThan(verdict.detected['modkit/archive-zip'] as number)
   })
 
   it.each([
-    ['notes.txt', 'plain text\n', 'org.modkitx/txt'],
-    ['settings.xml', '<settings><volume value="7"/></settings>\n', 'org.modkitx/text-xml'],
-    ['stats.json', '{ "name": "Fixture" }\n', 'org.modkitx/text-json'],
+    ['notes.txt', 'plain text\n', 'modkit/txt'],
+    ['settings.xml', '<settings><volume value="7"/></settings>\n', 'modkit/text-xml'],
+    ['stats.json', '{ "name": "Fixture" }\n', 'modkit/text-json'],
   ] as const)('keeps the generic route for %s', async (name, sample, winner) => {
     const verdict = await open(name, sample)
     expect(verdict.state).toBe('opened')
@@ -119,8 +117,8 @@ describe('common codec collision arbitration', () => {
 
   it('does not let a misleading ODF name decide a foreign payload', async () => {
     const verdict = await open('fake.odt', 'this is not a package at all\n')
-    expect(verdict.winner).not.toBe('org.modkitx/odt')
-    expect(verdict.detected['org.modkitx/odt']).toBe(0)
+    expect(verdict.winner).not.toBe('modkit/odt')
+    expect(verdict.detected['modkit/odt']).toBe(0)
     expect(verdict.state).toBe('unresolved')
   })
 

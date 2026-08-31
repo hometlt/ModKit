@@ -1,7 +1,7 @@
 /**
  * The browser's file capability, in the shape the explorer asks for.
  *
- * `@modkitx-x3/ui`'s `createExplorer` takes a `FileAccess` — list a folder, read a file — and
+ * `@modkit/ui`'s `createExplorer` takes a `FileAccess` — list a folder, read a file — and
  * nothing else. This module is the browser implementation of exactly that: the File System Access
  * API when the page has it, a single picked `File` when it does not, and an honest report of which
  * of the two the user is getting.
@@ -20,7 +20,7 @@
  * module is unit-tested in Node against fakes and runs unchanged in the page. Nothing here reads
  * bytes eagerly: the explorer decides when to read and how much.
  */
-import type { ExplorerEntry, FileAccess } from '@modkitx-x3/ui/explorer'
+import type { ExplorerEntry, FileAccess } from '@modkit/ui/explorer'
 
 // ---------------------------------------------------------------------------------------------
 // structural platform shapes
