@@ -117,6 +117,7 @@ const receipt = {
   cleanup: {
     attempted: !keepProfile,
     profileRemoved: null,
+    applicationCloseAttempts: [],
     applicationCloseErrors: [],
     error: null,
   },
@@ -233,7 +234,7 @@ const freePort = () =>
       server.close(() => resolvePromise(address.port))
     })
   })
-const activePorts = new Set()
+const activeApplications = new Map()
 
 async function waitFor(check, { timeoutMs = 30_000, stepMs = 250 } = {}) {
   const deadline = Date.now() + timeoutMs
@@ -369,55 +370,329 @@ function evaluateTarget(webSocketDebuggerUrl, expression, timeoutMs = 10_000) {
   })
 }
 
-async function closeApplication(port) {
-  let webSocketDebuggerUrl
+async function cdpVersion(port) {
   try {
-    const response = await fetch(`http://127.0.0.1:${port}/json/version`)
-    if (!response.ok) return true
-    const version = await response.json()
-    webSocketDebuggerUrl = version.webSocketDebuggerUrl
-  } catch {
-    return true
-  }
-  if (typeof webSocketDebuggerUrl === 'string') {
-    await new Promise(resolvePromise => {
-      const socket = new WebSocket(webSocketDebuggerUrl)
-      let finished = false
-      const finish = () => {
-        if (finished) return
-        finished = true
-        clearTimeout(timer)
-        try {
-          socket.close()
-        } catch {
-          // Browser.close normally tears the socket down before it can acknowledge the request.
-        }
-        resolvePromise()
-      }
-      const timer = setTimeout(finish, 5_000)
-      socket.addEventListener('open', () => {
-        socket.send(JSON.stringify({ id: 1, method: 'Browser.close' }))
-      })
-      socket.addEventListener('message', event => {
-        const message = JSON.parse(String(event.data))
-        if (message.id === 1) finish()
-      })
-      socket.addEventListener('close', finish)
-      socket.addEventListener('error', finish)
+    const response = await fetch(`http://127.0.0.1:${port}/json/version`, {
+      signal: AbortSignal.timeout(2_000),
     })
+    if (!response.ok) return undefined
+    return await response.json()
+  } catch {
+    return undefined
   }
+}
+
+async function waitForEndpointStopped(port, timeoutMs) {
   const stopped = await waitFor(
     async () => {
-      try {
-        const response = await fetch(`http://127.0.0.1:${port}/json/version`)
-        return response.ok ? undefined : true
-      } catch {
-        return true
-      }
+      const version = await cdpVersion(port)
+      return version === undefined ? true : undefined
     },
-    { timeoutMs: 15_000, stepMs: 250 },
+    { timeoutMs, stepMs: 250 },
   )
   return stopped === true
+}
+
+async function sendBrowserClose(webSocketDebuggerUrl) {
+  const evidence = {
+    method: 'Browser.close',
+    attempted: typeof webSocketDebuggerUrl === 'string',
+    sent: false,
+    acknowledged: false,
+    socketClosed: false,
+    timedOut: false,
+    error: null,
+  }
+  if (!evidence.attempted) return evidence
+  await new Promise(resolvePromise => {
+    let socket
+    let finished = false
+    const finish = () => {
+      if (finished) return
+      finished = true
+      clearTimeout(timer)
+      try {
+        socket?.close()
+      } catch {
+        // Browser.close normally tears the socket down before it can acknowledge the request.
+      }
+      resolvePromise()
+    }
+    const timer = setTimeout(() => {
+      evidence.timedOut = true
+      finish()
+    }, 5_000)
+    try {
+      socket = new WebSocket(webSocketDebuggerUrl)
+    } catch (error) {
+      evidence.error = error instanceof Error ? error.message : String(error)
+      finish()
+      return
+    }
+    socket.addEventListener('open', () => {
+      evidence.sent = true
+      socket.send(JSON.stringify({ id: 1, method: 'Browser.close' }))
+    })
+    socket.addEventListener('message', event => {
+      const message = JSON.parse(String(event.data))
+      if (message.id !== 1) return
+      evidence.acknowledged = true
+      finish()
+    })
+    socket.addEventListener('close', () => {
+      evidence.socketClosed = true
+      finish()
+    })
+    socket.addEventListener('error', event => {
+      evidence.error = String(event?.message ?? 'WebSocket error')
+      finish()
+    })
+  })
+  return evidence
+}
+
+function normalizeProcessList(value) {
+  const processes = Array.isArray(value) ? value : value === undefined ? [] : [value]
+  return processes
+    .map(item => ({
+      pid: Number(item.ProcessId ?? item.pid),
+      ppid: Number(item.ParentProcessId ?? item.ppid),
+      name: String(item.Name ?? item.name ?? ''),
+      commandLine: String(item.CommandLine ?? item.commandLine ?? ''),
+    }))
+    .filter(item => Number.isInteger(item.pid) && item.pid > 0)
+}
+
+function listProcesses() {
+  if (process.platform === 'win32') {
+    const powershell =
+      resolveCommand('powershell.exe') ?? resolveCommand('pwsh.exe') ?? 'powershell.exe'
+    const result = spawnSync(
+      powershell,
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        'Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name,CommandLine | ConvertTo-Json -Compress',
+      ],
+      {
+        encoding: 'utf8',
+        shell: false,
+        windowsHide: true,
+      },
+    )
+    if ((result.status ?? 1) !== 0) {
+      return {
+        processes: [],
+        error: compact(result.stderr ?? result.error?.message ?? result.stdout),
+      }
+    }
+    try {
+      return { processes: normalizeProcessList(JSON.parse(result.stdout || '[]')), error: null }
+    } catch (error) {
+      return { processes: [], error: error instanceof Error ? error.message : String(error) }
+    }
+  }
+
+  const result = spawnSync('ps', ['-eo', 'pid=,ppid=,comm=,args='], {
+    encoding: 'utf8',
+    shell: false,
+  })
+  if ((result.status ?? 1) !== 0) {
+    return {
+      processes: [],
+      error: compact(result.stderr ?? result.error?.message ?? result.stdout),
+    }
+  }
+  return {
+    processes: result.stdout
+      .split(/\r?\n/u)
+      .map(line => line.match(/^\s*(\d+)\s+(\d+)\s+(\S+)\s*(.*)$/u))
+      .filter(match => match !== null)
+      .map(([, pid, ppid, name, commandLine]) => ({
+        pid: Number(pid),
+        ppid: Number(ppid),
+        name,
+        commandLine,
+      })),
+    error: null,
+  }
+}
+
+function isolatedProcessMatch(processInfo, port) {
+  const commandLine = processInfo.commandLine
+  const reasons = []
+  if (commandLine.includes(userData)) reasons.push('isolated-user-data-dir')
+  if (commandLine.includes(extensionsDir)) reasons.push('isolated-extensions-dir')
+  if (
+    commandLine.includes(`--remote-debugging-port=${port}`) ||
+    commandLine.includes(`--remote-debugging-port ${port}`)
+  ) {
+    reasons.push('remote-debugging-port')
+  }
+  return reasons
+}
+
+function findIsolatedProcesses(port) {
+  const listed = listProcesses()
+  const errors = listed.error === null ? [] : [`process-list: ${listed.error}`]
+  const matched = listed.processes
+    .map(processInfo => ({ processInfo, reasons: isolatedProcessMatch(processInfo, port) }))
+    .filter(match => match.reasons.length > 0)
+  return {
+    processes: listed.processes,
+    matched,
+    evidence: {
+      processes: matched.map(({ processInfo, reasons }) => ({
+        pid: processInfo.pid,
+        name: processInfo.name,
+        reasons,
+      })),
+      errors,
+    },
+  }
+}
+
+async function waitForIsolatedProcessesExited(port, timeoutMs) {
+  let lastEvidence = { processes: [], errors: [] }
+  const exited = await waitFor(
+    async () => {
+      lastEvidence = findIsolatedProcesses(port).evidence
+      if (lastEvidence.errors.length > 0) return undefined
+      return lastEvidence.processes.length === 0 ? true : undefined
+    },
+    { timeoutMs, stepMs: 1_000 },
+  )
+  return { exited: exited === true, ...lastEvidence }
+}
+
+function descendantPids(processes, rootPids) {
+  const children = new Map()
+  for (const processInfo of processes) {
+    const siblings = children.get(processInfo.ppid) ?? []
+    siblings.push(processInfo.pid)
+    children.set(processInfo.ppid, siblings)
+  }
+  const discovered = new Set(rootPids)
+  const queue = [...rootPids]
+  while (queue.length > 0) {
+    const pid = queue.shift()
+    for (const child of children.get(pid) ?? []) {
+      if (discovered.has(child)) continue
+      discovered.add(child)
+      queue.push(child)
+    }
+  }
+  return discovered
+}
+
+function terminateIsolatedProcessTree(port) {
+  const evidence = {
+    attempted: true,
+    platform: process.platform,
+    matchedProcesses: [],
+    killedProcesses: [],
+    errors: [],
+  }
+  const isolated = findIsolatedProcesses(port)
+  evidence.errors.push(...isolated.evidence.errors)
+  const matched = isolated.matched
+  evidence.matchedProcesses = matched.map(({ processInfo, reasons }) => ({
+    pid: processInfo.pid,
+    name: processInfo.name,
+    reasons,
+  }))
+  if (matched.length === 0) return evidence
+
+  const matchedPids = matched.map(match => match.processInfo.pid)
+  const killPids = descendantPids(isolated.processes, matchedPids)
+  killPids.delete(process.pid)
+
+  if (process.platform === 'win32') {
+    const taskkill = resolveCommand('taskkill.exe') ?? 'taskkill.exe'
+    const matchedPidSet = new Set(matchedPids)
+    const treeRoots = matched
+      .filter(match => !matchedPidSet.has(match.processInfo.ppid))
+      .map(match => match.processInfo.pid)
+    for (const pid of treeRoots) {
+      if (pid === process.pid) continue
+      const result = spawnSync(taskkill, ['/PID', String(pid), '/T', '/F'], {
+        encoding: 'utf8',
+        shell: false,
+        windowsHide: true,
+      })
+      evidence.killedProcesses.push({ pid, method: 'taskkill /T /F', exitCode: result.status ?? 1 })
+      if ((result.status ?? 1) !== 0) {
+        evidence.errors.push(
+          `taskkill ${pid}: ${compact(result.stderr || result.stdout || result.error?.message)}`,
+        )
+      }
+    }
+    return evidence
+  }
+
+  for (const pid of killPids) {
+    try {
+      process.kill(pid, 'SIGTERM')
+      evidence.killedProcesses.push({ pid, method: 'SIGTERM', exitCode: 0 })
+    } catch (error) {
+      evidence.errors.push(
+        `SIGTERM ${pid}: ${error instanceof Error ? error.message : String(error)}`,
+      )
+    }
+  }
+  return evidence
+}
+
+async function closeApplication(port, generation = null) {
+  const started = Date.now()
+  const evidence = {
+    generation,
+    port,
+    startedAt: new Date(started).toISOString(),
+    endpointReachableBefore: false,
+    cdp: null,
+    endpointStoppedAfterCdp: false,
+    isolatedProcessesExitedAfterCdp: false,
+    isolatedProcessesAfterCdp: [],
+    isolatedProcessErrorsAfterCdp: [],
+    fallback: { attempted: false },
+    endpointStoppedAfterFallback: false,
+    isolatedProcessesExitedAfterFallback: false,
+    isolatedProcessesAfterFallback: [],
+    isolatedProcessErrorsAfterFallback: [],
+    finishedAt: null,
+    elapsedMs: null,
+    verdict: 'fail',
+  }
+  const version = await cdpVersion(port)
+  evidence.endpointReachableBefore = version !== undefined
+  if (version === undefined) {
+    evidence.endpointStoppedAfterCdp = true
+  } else {
+    evidence.cdp = await sendBrowserClose(version.webSocketDebuggerUrl)
+    evidence.endpointStoppedAfterCdp = await waitForEndpointStopped(port, 20_000)
+  }
+  const afterCdpProcesses = await waitForIsolatedProcessesExited(port, 10_000)
+  evidence.isolatedProcessesExitedAfterCdp = afterCdpProcesses.exited
+  evidence.isolatedProcessesAfterCdp = afterCdpProcesses.processes
+  evidence.isolatedProcessErrorsAfterCdp = afterCdpProcesses.errors
+  if (!evidence.endpointStoppedAfterCdp || !evidence.isolatedProcessesExitedAfterCdp) {
+    evidence.fallback = terminateIsolatedProcessTree(port)
+    evidence.endpointStoppedAfterFallback = await waitForEndpointStopped(port, 15_000)
+    const afterFallbackProcesses = await waitForIsolatedProcessesExited(port, 10_000)
+    evidence.isolatedProcessesExitedAfterFallback = afterFallbackProcesses.exited
+    evidence.isolatedProcessesAfterFallback = afterFallbackProcesses.processes
+    evidence.isolatedProcessErrorsAfterFallback = afterFallbackProcesses.errors
+  }
+  evidence.verdict =
+    (evidence.endpointStoppedAfterCdp && evidence.isolatedProcessesExitedAfterCdp) ||
+    (evidence.endpointStoppedAfterFallback && evidence.isolatedProcessesExitedAfterFallback)
+      ? 'pass'
+      : 'fail'
+  evidence.finishedAt = new Date().toISOString()
+  evidence.elapsedMs = Date.now() - started
+  return evidence
 }
 
 async function webviewValues(port, expression) {
@@ -520,14 +795,6 @@ async function inspectModkitCommands(page) {
     throw new Error('installed extension exposed no Modkit commands in the command palette')
   }
   return commandTexts
-}
-
-async function exitApplication(page) {
-  // Exercise the ordinary platform quit accelerator and prove the CDP endpoint disappears before
-  // the next generation starts. This avoids relying on a localized command-palette label.
-  const accelerator =
-    process.platform === 'win32' ? 'Alt+F4' : process.platform === 'darwin' ? 'Meta+Q' : 'Control+Q'
-  await page.keyboard.press(accelerator).catch(() => undefined)
 }
 
 async function reopenWithModkit(page) {
@@ -642,7 +909,7 @@ function assertDds(probe) {
 
 async function launchGeneration(generation) {
   const port = await freePort()
-  activePorts.add(port)
+  activeApplications.set(port, { generation, launchPid: null })
   const launchArguments = [
     '--new-window',
     '--user-data-dir',
@@ -668,6 +935,7 @@ async function launchGeneration(generation) {
     env: process.env,
   })
   launcher.unref()
+  activeApplications.set(port, { generation, launchPid: launcher.pid ?? null })
   const endpoint = await waitFor(
     async () => {
       const response = await fetch(`http://127.0.0.1:${port}/json/version`)
@@ -851,23 +1119,16 @@ async function launchGeneration(generation) {
   }
   receipt.runs.push(runReceipt)
 
-  // The platform quit accelerator is a full application stop, not a webview reload or an Extension
-  // Host restart. The second generation cannot start until the CDP endpoint is gone.
-  await exitApplication(page)
-  const stopped = await waitFor(
-    async () => {
-      try {
-        await fetch(`http://127.0.0.1:${port}/json/version`)
-        return undefined
-      } catch {
-        return true
-      }
-    },
-    { timeoutMs: 30_000, stepMs: 500 },
-  )
-  if (stopped !== true) throw new Error(`VS Code generation ${generation} did not fully exit`)
-  activePorts.delete(port)
+  // Stop the installed workbench deterministically through CDP, then prove the endpoint is gone
+  // before the next generation starts. If CDP close wedges, the fallback only targets processes
+  // whose command lines prove they belong to this isolated profile or exact debug port.
+  const teardown = await closeApplication(port, generation)
+  runReceipt.teardown = teardown
   await browser.close().catch(() => undefined)
+  if (teardown.verdict !== 'pass') {
+    throw new Error(`VS Code generation ${generation} did not fully exit`)
+  }
+  activeApplications.delete(port)
 }
 
 let failure
@@ -887,12 +1148,14 @@ try {
   failure = error
   receipt.error = error instanceof Error ? error.message : String(error)
 } finally {
-  for (const port of activePorts) {
-    if (!(await closeApplication(port))) {
+  for (const [port, application] of activeApplications) {
+    const teardown = await closeApplication(port, application.generation ?? null)
+    receipt.cleanup.applicationCloseAttempts.push(teardown)
+    if (teardown.verdict !== 'pass') {
       receipt.cleanup.applicationCloseErrors.push(`CDP endpoint ${port} did not stop`)
     }
   }
-  activePorts.clear()
+  activeApplications.clear()
   if (!keepProfile) {
     try {
       rmSync(scratch, { recursive: true, force: true, maxRetries: 10, retryDelay: 250 })
