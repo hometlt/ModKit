@@ -852,10 +852,10 @@ capabilities:
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'implemented'
+    migrationState: 'partial'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -878,6 +878,7 @@ capabilities:
         read: 'extensions/images/test/astc-ordinary-ldr.test.ts'
         materialize: null
     knownLoss:
+      - 'АУДИТ 2026-08-31: после уплощения extensions/images корневой vitest glob больше не включает 25 image-family тестов; принудительный запуск текущих файлов падает на устаревших относительных путях к codec-kit и fixtures. Декларации остаются кодом, но E2 временно снят до восстановления owner-suite.'
       - 'СУЖЕННЫЙ SCOPE (§0.2): PKM декодирует ETC1/ETC2 и unsigned EAC_R11/RG11; ASTC декодирует 2D LDR void-extent и пять независимо закреплённых single-partition block modes 0x42/0x163/0x243/0x452/0x7cd (binary/trit/quint, infill, single/dual plane); ANI через общий ICO/CUR DIB-путь декодирует первый кадр с AND-маской. Все три публикуют raster-image-source под maxScalarBytes и имеют operation-level доказательства.'
       - 'НАЗВАННЫЙ ОСТАТОК: все непроверенные ASTC block modes, multi-partition/HDR/3D, signed EAC_R11/RG11 без согласованного signed raster-view, AVIF/AV1, Basis ETC1S/UASTC и KTX2-supercompressed. В доступном KTX2-корпусе UASTC имеет supercompressionScheme=0, ETC1S — BasisLZ; законной Zstd-фикстуры и готового decoder seam нет.'
     receipts:
@@ -4201,6 +4202,8 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
+      - 'АУДИТ 2026-08-31: installed VS Code штатно не получает DDS codec root: официальный VSIX не собирается, а временно упакованный shell имеет packagedCodecRoots=[]; Reopen With открывает только оболочку с typed warning. CLI и Electron декодируют реальный CASC DXT1, поэтому это packaging/install regression, а не отказ проверенного DXT1 decoder.'
+      - 'АУДИТ 2026-08-31: contribution metadata обещает BC6H/BC7 и выбор mip/layer/face/slice, но текущий decoder реализует только legacy DXT1/3/5, ограниченный DXGI BC1/2/3 и mip/layer/face/slice=0; manifest должен быть сужен до исполняемой правды.'
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: image.compressed-read'
       - 'operation dropped at port: image.inspect'
@@ -10587,10 +10590,10 @@ capabilities:
       x3ContributionId: 'modkit/sc2-map'
       portFamily: 'blizzard/starcraft2'
       portVerdict: 'needs-new-contract'
-    migrationState: 'implemented'
+    migrationState: 'partial'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E4'
+    evidenceLevel: 'E3'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -10614,6 +10617,7 @@ capabilities:
         read: 'apps/electron/test/subject-open-smoke.test.ts'
         materialize: null
     knownLoss:
+      - 'АУДИТ 2026-08-31: реальный loose mission-nod.SC2Map не открывается общим CLI как directory subject, project.validate оставляет 24 файла unclaimed, а полный materials/textures/objects 3D user route не доказан; прежний E4 снят до установленного app-сценария и bounded directory routing.'
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
       - 'capability «launch»: launch is a runtime side-effect operation (17); not in X3'
       - 'languages → language contribution kind not in X3'
@@ -10951,7 +10955,7 @@ capabilities:
       x3ContributionId: 'modkit/sc2-triggers'
       portFamily: 'blizzard/starcraft2'
       portVerdict: 'needs-new-contract'
-    migrationState: 'implemented'
+    migrationState: 'partial'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
     evidenceLevel: 'E1'
@@ -10977,6 +10981,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
+      - 'АУДИТ 2026-08-31: корневой Triggers из реального tib-data.SC2Mod заканчивается x3.host/subject-input-open-failed (no-candidate), хотя contribution объявляет **/Triggers; реальный пользовательский маршрут не закрыт.'
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
       - 'operation dropped at port: asset.search'
       - 'operation dropped at port: asset.validate'
@@ -14085,8 +14090,8 @@ capabilities:
       x3ContributionId: 'modkit/warzone-wz'
       portFamily: 'opensource/warzone-2100'
       portVerdict: 'relocated-and-rewritten'
-    migrationState: 'implemented'
-    supportState: 'supported'
+    migrationState: 'partial'
+    supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
     evidenceLevel: 'E1'
     hostEvidence: 'node'
@@ -14110,7 +14115,8 @@ capabilities:
         validate: null
         read: null
         materialize: null
-    knownLoss: []
+    knownLoss:
+      - 'АУДИТ 2026-08-31: обязательный реальный ARmod_4.0.1.wz (около 102 MiB) не открывается общим host и возвращает x3.host/subject-input-open-failed; Scavenger_Mod_V2.0.wz, 10p-Riviera.wz и установленный corpus проходят.'
     receipts:
       projection: null
       materialization: null
@@ -17398,8 +17404,8 @@ capabilities:
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'implemented'
-    supportState: 'supported'
+    migrationState: 'partial'
+    supportState: 'partial'
     runtimeAvailability: 'host-facility-dependent'
     evidenceLevel: 'E2'
     hostEvidence: 'node'
@@ -17424,6 +17430,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
+      - 'АУДИТ 2026-08-31: официальный VS Code package нельзя собрать/установить штатным путём (scoped extension name, engines mismatch и workspace:* prepublish), временный shell-only VSIX содержит ноль codec roots, а Electron selftest открывает реальные изображения, но не завершает extension-management шаг. Headless composition tests не являются E5.'
       - 'отдельные replay, media и другие legacy-функции вне Focused Product GA остаются в явном post-GA backlog и не заявлены как часть этой возможности'
     receipts:
       projection: null
@@ -18248,8 +18255,8 @@ capabilities:
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'implemented'
-    supportState: 'supported'
+    migrationState: 'partial'
+    supportState: 'partial'
     runtimeAvailability: 'node-only'
     evidenceLevel: 'E2'
     hostEvidence: 'node'
@@ -18274,6 +18281,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
+      - 'АУДИТ 2026-08-31: migration:check падает на неучтённом @modkit/rts-shared surface, evidence:check — на org.modkitx/pkm и wz2100project/warzone2100-map-semantic без capability rows, а корневой pnpm test имеет 24 failed; zero-gap утверждение временно недействительно.'
       - 'явный post-GA backlog сохранён отдельно и не считается скрытым долгом Focused Product GA'
     receipts:
       projection: null
@@ -18426,8 +18434,8 @@ capabilities:
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'implemented'
-    supportState: 'supported'
+    migrationState: 'partial'
+    supportState: 'partial'
     runtimeAvailability: 'node-only'
     evidenceLevel: 'E2'
     hostEvidence: 'node'
@@ -18452,6 +18460,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
+      - 'АУДИТ 2026-08-31: VS Code artifact из текущего checkout не проходит штатный package/install route и не включает codec roots; release-rc test проверяет состав headlessly, но не доказывает установленный пользовательский VS Code workflow.'
       - 'локальный RC использует detached Ed25519 с переданным внешним private key; Authenticode, публичная публикация и обязательная семидневная выдержка не входят в этот gate'
     receipts:
       projection: null
@@ -20389,10 +20398,10 @@ capabilities:
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'equivalent-better'
+    migrationState: 'partial'
     supportState: 'partial'
     runtimeAvailability: 'node-only'
-    evidenceLevel: 'E4'
+    evidenceLevel: 'E3'
     hostEvidence: 'node'
     writerEvidence: 'write-reopen-compared'
     parityEvidence:
@@ -20416,6 +20425,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
+      - 'АУДИТ 2026-08-31: semantic MPQ Save As на реальном WTE70 SC2Map превышает 60 s timeout; writer-enabled E4 временно снят до исправления производительности и повторного write→reopen на том же corpus.'
       - 'опечатанный legacy game manifest имел status partial и объявлял только game.discover-install/game.inspect; MK3 сохраняет этот scope и добавляет bounded authoring через общую host editing chain'
       - 'реальный retail CASC остаётся read-only authority: неполный локальный namespace fail-closed, а полный loose workspace копируется byte-identical в отдельное назначение'
       - 'native packed-map authoring ограничен fixed-slot MPQ v0/v1 complete-source Save As с заменой существующей stored либо single-unit zlib записи; остальные MPQ dialects и signing перечислены в native-round-trip remainder'
@@ -20794,10 +20804,10 @@ capabilities:
       x3ContributionId: null
       portFamily: null
       portVerdict: null
-    migrationState: 'equivalent-better'
+    migrationState: 'partial'
     supportState: 'partial'
     runtimeAvailability: 'node-only'
-    evidenceLevel: 'E4'
+    evidenceLevel: 'E3'
     hostEvidence: 'node'
     writerEvidence: 'write-reopen-compared'
     parityEvidence:
@@ -20821,6 +20831,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
+      - 'АУДИТ 2026-08-31: ARmod_4.0.1.wz не проходит общий host open, поэтому заявленный real-corpus inspect/authoring closure неполон; writer round-trip на поддержанном classic corpus остаётся доказанным.'
       - 'опечатанный legacy game manifest имел status partial и объявлял только game.discover-install; MK3 дополнительно открывает installed WZ/PIE/map/data через общие codec, VFS и host workflows'
       - 'authoring ограничен typed tile texture/height и existing gateway edits одного существующего game.map внутри complete classic canonical .wz с export-only Save As'
       - 'другие map companions, scripts, произвольные ZIP entries, multi-package overlay и in-place write остаются named remainder и не выводятся из inspect/preview'
