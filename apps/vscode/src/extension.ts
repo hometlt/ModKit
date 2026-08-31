@@ -182,6 +182,8 @@ const GAME_DISCOVERY_BUDGET = Object.freeze({
   maxDiagnostics: 100,
 })
 
+const PACKAGE_INSTALL_GATE_COMMAND = '_modkit.acceptance.packageInstallGate'
+const PACKAGE_INSTALL_GATE_ENV = 'MODKIT_VSCODE_ACCEPTANCE_PACKAGE_GATE'
 const SELECTED_SOURCES_KEY = 'modkit.selectedContentSources'
 
 /**
@@ -1183,6 +1185,157 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     staticPackages: staticManagerPackages,
   })
   const extensionManager = new ExtensionManagerController(managerClient)
+  const packageInstallGateReceipt = async () => {
+    const snapshot = await extensionManager.snapshot()
+    const expectedGames = Object.freeze([
+      { id: 'blizzard/starcraft-2', displayName: 'StarCraft II' },
+      { id: 'wz2100project/warzone-2100', displayName: 'Warzone 2100' },
+    ])
+    const entrySummary = (entry: ExtensionManagerEntry) =>
+      Object.freeze({
+        id: entry.id,
+        displayName: entry.displayName,
+        publisher: entry.publisher,
+        availableVersion: entry.availableVersion,
+        installedVersion: entry.installedVersion,
+        enabled: entry.enabled,
+        updateAvailable: entry.updateAvailable,
+        source: entry.source,
+        trusted: entry.trusted,
+        games: Object.freeze(entry.presentation?.games?.map(game => game.id).sort() ?? []),
+      })
+    const entries = Object.freeze(snapshot.entries.map(entrySummary))
+    const checkoutEntries = entries.filter(
+      entry => entry.source === 'workspace' || entry.source.startsWith('local:'),
+    )
+    const gameAvailability = Object.freeze(
+      expectedGames.map(game => {
+        const matchingEntries = entries.filter(entry => entry.games.includes(game.id))
+        const availableEntries = matchingEntries.filter(
+          entry => entry.installedVersion === undefined,
+        )
+        return Object.freeze({
+          game,
+          state: availableEntries.length > 0 ? ('available' as const) : ('missing' as const),
+          entries: Object.freeze(matchingEntries.map(entry => entry.id)),
+        })
+      }),
+    )
+    const failures: { code: string; message: string }[] = []
+    const extensionDevelopmentMode = context.extensionMode === vscode.ExtensionMode.Development
+    if (extensionDevelopmentMode) {
+      failures.push({
+        code: 'x3.acceptance/extension-development-host-refused',
+        message: 'the package/install gate must run from an ordinarily installed VSIX',
+      })
+    }
+    if (!entries.some(entry => entry.trusted && entry.installedVersion === undefined)) {
+      failures.push({
+        code: 'x3.acceptance/offline-signed-catalog-missing',
+        message: 'no trusted available extension from the bundled/offline catalog is visible',
+      })
+    }
+    for (const availability of gameAvailability) {
+      if (availability.state !== 'available') {
+        failures.push({
+          code: 'x3.acceptance/game-extension-not-available',
+          message: `${availability.game.displayName} (${availability.game.id}) is not Available in the installed offline catalog snapshot`,
+        })
+      }
+    }
+    if (checkoutEntries.length > 0) {
+      failures.push({
+        code: 'x3.acceptance/checkout-source-visible',
+        message: `package/install gate saw checkout-local entries: ${checkoutEntries
+          .map(entry => entry.id)
+          .join(', ')}`,
+      })
+    }
+    failures.push({
+      code: 'x3.acceptance/package-lifecycle-not-implemented',
+      message:
+        'A3/A5 requires Available -> install -> disable -> enable -> uninstall -> reinstall with persisted restart state; this test-command contract records the red gate but does not implement product package delivery.',
+    })
+    return Object.freeze({
+      kind: 'x3.modkit/vscode-package-install-gate',
+      schemaVersion: 1,
+      command: PACKAGE_INSTALL_GATE_COMMAND,
+      execution: Object.freeze({
+        host: 'vscode-extension-host',
+        extensionDevelopmentMode,
+        catalogRefreshRequested: false,
+        networkAccessRequested: false,
+        checkoutDependencyDetected: checkoutEntries.length > 0,
+      }),
+      expected: Object.freeze({
+        offlineCatalogSigned: true,
+        offlineCatalogVisible: true,
+        games: expectedGames,
+        lifecycle: Object.freeze([
+          'available',
+          'install',
+          'disable',
+          'enable',
+          'uninstall',
+          'reinstall',
+        ]),
+        persistedAcrossFullProcessRestart: true,
+      }),
+      catalog: Object.freeze({
+        entries,
+        trustedAvailableEntries: Object.freeze(
+          entries
+            .filter(entry => entry.trusted && entry.installedVersion === undefined)
+            .map(entry => entry.id),
+        ),
+      }),
+      gameAvailability,
+      lifecycle: Object.freeze({
+        attempted: false,
+        reason:
+          'production package delivery is intentionally not implemented by this acceptance-contract patch',
+      }),
+      failures: Object.freeze(failures),
+      verdict: failures.length === 0 ? ('pass' as const) : ('fail' as const),
+    })
+  }
+  const writePackageInstallGateReceipt = async () => {
+    const target = vscode.Uri.joinPath(context.globalStorageUri, 'package-install-gate.json')
+    let gateReceipt: unknown
+    try {
+      gateReceipt = await packageInstallGateReceipt()
+    } catch (error) {
+      gateReceipt = Object.freeze({
+        kind: 'x3.modkit/vscode-package-install-gate',
+        schemaVersion: 1,
+        command: PACKAGE_INSTALL_GATE_COMMAND,
+        failures: Object.freeze([
+          Object.freeze({
+            code: 'x3.acceptance/package-install-gate-threw',
+            message: error instanceof Error ? error.message : String(error),
+          }),
+        ]),
+        verdict: 'fail' as const,
+      })
+    }
+    await vscode.workspace.fs.createDirectory(context.globalStorageUri)
+    await vscode.workspace.fs.writeFile(
+      target,
+      new TextEncoder().encode(`${JSON.stringify(gateReceipt, null, 2)}\n`),
+    )
+  }
+  context.subscriptions.push(
+    vscode.commands.registerCommand(PACKAGE_INSTALL_GATE_COMMAND, packageInstallGateReceipt),
+  )
+  if (process.env[PACKAGE_INSTALL_GATE_ENV] === '1') {
+    void writePackageInstallGateReceipt().catch(error => {
+      log(
+        `[acceptance] package install gate failed to write: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      )
+    })
+  }
   // Reproject on open so a settings write is reflected even when the user postpones the reload.
   // Inventory stays the activation snapshot; direct enablement is the live preference layered on
   // top of it, and the card names both instead of showing a stale button.

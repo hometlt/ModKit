@@ -64,10 +64,21 @@ const workspace = join(scratch, 'workspace')
 const userData = join(scratch, 'user-data')
 const extensionsDir = join(scratch, 'extensions')
 const ddsPath = join(workspace, 'wave1a-minimal.dds')
+const packageInstallGateCommand = '_modkit.acceptance.packageInstallGate'
+const packageInstallGateFlag = 'MODKIT_VSCODE_ACCEPTANCE_PACKAGE_GATE'
+const packageInstallGatePath = join(
+  userData,
+  'User',
+  'globalStorage',
+  'modkit.modkit-vscode',
+  'package-install-gate.json',
+)
 const builtArtifact = resolve(artifactOut ?? join(scratch, 'artifact', 'modkit-vscode.vsix'))
 const artifactPath = resolve(suppliedVsix ?? builtArtifact)
 const portablePath = (path, fallback = basename(path)) =>
-  path.startsWith(scratch) ? path.replaceAll(scratch, '<isolated-profile>') : fallback
+  path.startsWith(scratch)
+    ? path.replaceAll(scratch, '<isolated-profile>').replaceAll('\\', '/')
+    : fallback
 for (const directory of [workspace, userData, extensionsDir, dirname(artifactPath)]) {
   mkdirSync(directory, { recursive: true })
 }
@@ -111,6 +122,44 @@ const receipt = {
     commandPaletteMatches: [],
     reopenCommand: null,
     output: '',
+  },
+  packageInstallGate: {
+    kind: 'x3.vscode-installed-package-install-gate',
+    schemaVersion: 1,
+    expected: {
+      command: packageInstallGateCommand,
+      offlineCatalog: {
+        signed: true,
+        visible: true,
+        networkAccess: false,
+        checkoutDependency: false,
+      },
+      games: [
+        { id: 'blizzard/starcraft-2', displayName: 'StarCraft II', expectedState: 'available' },
+        {
+          id: 'wz2100project/warzone-2100',
+          displayName: 'Warzone 2100',
+          expectedState: 'available',
+        },
+      ],
+      lifecycle: ['available', 'install', 'disable', 'enable', 'uninstall', 'reinstall'],
+      restart:
+        'same isolated profile preserves installed/enabled state across full process restart',
+      typedFailures: true,
+    },
+    runtime: {
+      receipt: portablePath(packageInstallGatePath),
+      environment: {
+        MODKIT_EXTENSION_REGISTRY: '<cleared>',
+        MODKIT_EXTENSION_ALLOWED_ORIGINS: '<cleared>',
+        MODKIT_EXTENSION_RAPID_POOL_ROOT: '<cleared>',
+      },
+      received: false,
+      verdict: null,
+      failures: [],
+      error: null,
+    },
+    verdict: 'fail',
   },
   runs: [],
   restart: { attempted: false, sameProfile: true, passed: false },
@@ -301,6 +350,65 @@ function findInstalledManifest(directory) {
   return undefined
 }
 
+function readPackageInstallGateReceipt() {
+  if (!existsSync(packageInstallGatePath)) return undefined
+  try {
+    return JSON.parse(readFileSync(packageInstallGatePath, 'utf8'))
+  } catch (error) {
+    receipt.packageInstallGate.runtime.error =
+      error instanceof Error ? error.message : String(error)
+    return undefined
+  }
+}
+
+function assertPackageInstallGate() {
+  const gateReceipt = readPackageInstallGateReceipt()
+  receipt.packageInstallGate.runtime.received = gateReceipt !== undefined
+  if (gateReceipt === undefined) {
+    const message = `A3/A5 package/install gate produced no runtime receipt: ${receipt.packageInstallGate.runtime.receipt}`
+    receipt.packageInstallGate.runtime.failures = [
+      {
+        code: 'x3.acceptance/package-install-gate-receipt-missing',
+        message,
+      },
+    ]
+    receipt.packageInstallGate.runtime.error = message
+    throw new Error(message)
+  }
+  receipt.packageInstallGate.runtime.verdict =
+    typeof gateReceipt.verdict === 'string' ? gateReceipt.verdict : null
+  receipt.packageInstallGate.runtime.failures = Array.isArray(gateReceipt.failures)
+    ? gateReceipt.failures.map(failure => ({
+        code: String(failure?.code ?? 'x3.acceptance/package-install-gate-unknown'),
+        message: compact(failure?.message ?? ''),
+      }))
+    : []
+  if (
+    gateReceipt.kind !== 'x3.modkit/vscode-package-install-gate' ||
+    gateReceipt.schemaVersion !== 1
+  ) {
+    const message = 'A3/A5 package/install gate receipt has an unsupported schema'
+    receipt.packageInstallGate.runtime.failures = [
+      {
+        code: 'x3.acceptance/package-install-gate-schema-unsupported',
+        message,
+      },
+    ]
+    receipt.packageInstallGate.runtime.error = message
+    throw new Error(message)
+  }
+  if (gateReceipt.verdict !== 'pass') {
+    const failures =
+      receipt.packageInstallGate.runtime.failures.length === 0
+        ? 'no typed failure was reported'
+        : receipt.packageInstallGate.runtime.failures
+            .map(failure => `${failure.code}: ${failure.message}`)
+            .join('; ')
+    throw new Error(`A3/A5 package/install gate failed: ${failures}`)
+  }
+  receipt.packageInstallGate.verdict = 'pass'
+}
+
 function installVsix() {
   const version = run(codeCommand, ['--version'])
   if (version.code !== 0) throw new Error(`installed VS Code CLI is unavailable: ${version.output}`)
@@ -325,7 +433,7 @@ function installVsix() {
   receipt.install.extension = {
     id: `${installed.manifest.publisher}.${installed.manifest.name}`,
     version: installed.manifest.version,
-    manifest: installed.path.replaceAll(scratch, '<isolated-profile>'),
+    manifest: portablePath(installed.path),
   }
 }
 
@@ -932,7 +1040,13 @@ async function launchGeneration(generation) {
     shell: process.platform === 'win32',
     stdio: 'ignore',
     windowsHide: true,
-    env: process.env,
+    env: {
+      ...process.env,
+      MODKIT_EXTENSION_ALLOWED_ORIGINS: '',
+      MODKIT_EXTENSION_RAPID_POOL_ROOT: '',
+      MODKIT_EXTENSION_REGISTRY: '',
+      [packageInstallGateFlag]: '1',
+    },
   })
   launcher.unref()
   activeApplications.set(port, { generation, launchPid: launcher.pid ?? null })
@@ -1143,6 +1257,7 @@ try {
   if (receipt.runs.some(runReceipt => runReceipt.artifactSha256 !== receipt.artifact.sha256)) {
     throw new Error('run receipts do not name the one accepted VSIX SHA-256')
   }
+  assertPackageInstallGate()
   receipt.verdict = 'pass'
 } catch (error) {
   failure = error
