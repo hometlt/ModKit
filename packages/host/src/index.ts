@@ -17,6 +17,18 @@ export {
   VIEWER_CONTRIBUTION_INVENTORY_FACT,
 } from './contribution-registry.js'
 export { offersFromInventory } from './offers.js'
+export {
+  LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES,
+  loadLocalizationCatalogs,
+  type LoadedLocalizationCatalogs,
+  type LoadLocalizationCatalogsOptions,
+  type LocalizationCatalogLike,
+  type LocalizationCatalogParseOptions,
+  type LocalizationCatalogParser,
+  type LocalizationMessagePrefixAuthorizationRequest,
+  type LocalizationMessagePrefixAuthorizer,
+  type LocalizationVfsPort,
+} from './localization.js'
 // Block 13 works 4–6: one command runtime, composed by every application, owned by none.
 export {
   commandSubjectsFrom,
