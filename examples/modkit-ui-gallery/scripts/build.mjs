@@ -142,10 +142,7 @@ await build({
 // paints and tokenises, but every worker request throws and JSON validation silently never runs.
 // monaco-editor is a dependency of the editor extension, not of the repo root, so a bare specifier
 // does not resolve from `absWorkingDir`. Point at the files and say so plainly if they move.
-const monacoRoot = resolve(
-  repoRoot,
-  'extensions/common/ui/monaco/node_modules/monaco-editor/esm/vs',
-)
+const monacoRoot = resolve(repoRoot, 'packages/code/node_modules/monaco-editor/esm/vs')
 const workerEntries = {
   'editor.worker': join(monacoRoot, 'editor', 'editor.worker.js'),
   'json.worker': join(monacoRoot, 'language', 'json', 'json.worker.js'),

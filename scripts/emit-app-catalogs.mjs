@@ -215,8 +215,8 @@ function viewerContributions(root) {
       directory: join(root, 'packages', 'ui', 'contributions'),
     },
     {
-      extensionId: 'org.modkitx/ui-monaco',
-      directory: join(root, 'extensions', 'common', 'ui', 'monaco', 'contributions'),
+      extensionId: 'org.modkitx/code',
+      directory: join(root, 'packages', 'code', 'contributions'),
     },
   ]
   const contributions = new Map()
@@ -375,14 +375,15 @@ ${entries}
 /**
  * Stage modules that do not come from `@modkitx-x3/ui`, and where each does come from.
  *
- * Monaco is an extension, not part of the ui package, so its modules need their own import line.
+ * Monaco belongs to the statically composed code package, not the format-neutral ui package, so
+ * its modules need their own import line.
  * This is a map rather than a hard-coded name because it was a hard-coded name: adding the
  * read-only Monaco to the policy emitted a catalog that imported it from `@modkitx-x3/ui`, and the
  * app failed to build with "No matching export". A second forgotten name would do the same.
  */
 const EXTERNAL_STAGE_MODULES = Object.freeze({
-  monacoEditor: '../../../extensions/common/ui/monaco/src/index.js',
-  monacoViewer: '../../../extensions/common/ui/monaco/src/index.js',
+  monacoEditor: '@modkitx-x3/code',
+  monacoViewer: '@modkitx-x3/code',
 })
 
 const LOCALIZED_STAGE_FACTORIES = Object.freeze({

@@ -35,7 +35,7 @@ import {
   virtualTextViewer,
   worldViewer,
 } from '@modkitx-x3/ui'
-import { monacoEditor, monacoViewer } from '../../../extensions/common/ui/monaco/src/index.js'
+import { monacoEditor, monacoViewer } from '@modkitx-x3/code'
 
 export const PREVIEW_STAGES = Object.freeze([
   {

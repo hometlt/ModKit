@@ -333,8 +333,11 @@ export {
   type HostCompositionOptions,
 } from './composition.js'
 export {
+  defineBuiltinModule,
   defineLinkedExtension,
   linkedExtensionInputs,
+  type BuiltinModule,
+  type BuiltinModuleInit,
   type LinkedContributionExclusion,
   type LinkedContributionInit,
   type LinkedExtension,

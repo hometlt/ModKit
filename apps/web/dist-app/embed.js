@@ -20,10 +20,10 @@ import {
   sourceRevisionToken,
   sourceUriFor,
   stageIdOf
-} from "./chunks/chunk-FT3RKDJJ.js";
+} from "./chunks/chunk-FUITVY2G.js";
 import {
   define_MODKIT_EMBED_EXTENSION_ORIGINS_default
-} from "./chunks/chunk-HVXSZ42C.js";
+} from "./chunks/chunk-DJDDRNPC.js";
 
 // apps/web/src/embed.ts
 var MODKIT_VIEWER_TAG = "modkit-viewer";

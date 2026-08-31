@@ -1,7 +1,10 @@
 import { uint64 } from '@modkitx-x3/core'
+import { sceneModule } from '@modkitx-x3/scene/module'
 import { createHostTopology, type HostTopology } from '@modkitx-x3/sdk'
+import { uvModule } from '@modkitx-x3/uv/module'
 import {
   createHostComposition,
+  linkedExtensionInputs,
   type ExecutionBackendRegistry,
   type ExtensionInput,
   type HostComposition,
@@ -17,6 +20,8 @@ import {
   type NodeSubjectServices,
   type WorkerBackendPolicy,
 } from '@modkitx-x3/host/node'
+
+const CLI_BUILTIN_MODULES = /* @__PURE__ */ linkedExtensionInputs([sceneModule, uvModule])
 
 export const MODKIT_CLI_REALM = 'org.modkitx.app.cli/main'
 /** Worker threads of the CLI process: where portable (`worker-brokered`) variants run. */
@@ -89,7 +94,10 @@ export interface ModkitCliCompositionOptions {
 
 /** The CLI's execution backends: trusted in-process (gated per artifact) + Node worker threads. */
 export function createModkitCliExecutionBackends(): ExecutionBackendRegistry {
-  return createNodeExecutionBackends({ policy: MODKIT_CLI_WORKER_POLICY })
+  return createNodeExecutionBackends({
+    policy: MODKIT_CLI_WORKER_POLICY,
+    linkedModules: CLI_BUILTIN_MODULES.modules,
+  })
 }
 
 export function createModkitCliComposition(
@@ -99,7 +107,7 @@ export function createModkitCliComposition(
   return createHostComposition({
     topology: createModkitCliTopology(),
     realmId: options.realmId ?? MODKIT_CLI_REALM,
-    extensions,
+    extensions: [...CLI_BUILTIN_MODULES.inputs, ...extensions],
     executionBackends: options.executionBackends ?? createModkitCliExecutionBackends(),
   })
 }
@@ -116,7 +124,8 @@ export function createModkitCliSubjectServices(
   return createNodeSubjectServices({
     topology: createModkitCliTopology(),
     realms: { host: MODKIT_CLI_REALM, workers: MODKIT_CLI_WORKER_REALM },
-    extensions,
+    extensions: [...CLI_BUILTIN_MODULES.inputs, ...extensions],
+    linkedModules: CLI_BUILTIN_MODULES.modules,
     policy: MODKIT_CLI_WORKER_POLICY,
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })

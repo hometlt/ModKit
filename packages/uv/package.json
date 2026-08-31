@@ -1,0 +1,30 @@
+{
+  "name": "@modkitx-x3/uv",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "Built-in universal visual materialization for UVM and UVT.",
+  "exports": {
+    ".": "./src/index.js",
+    "./module": {
+      "types": "./src/module.d.ts",
+      "default": "./src/module.js"
+    },
+    "./model/materializer": "./src/model/materializer.js",
+    "./model/provider": "./src/model/provider.js",
+    "./model/writer": "./src/model/writer.js",
+    "./texture/materializer": "./src/texture/materializer.js",
+    "./texture/provider": "./src/texture/provider.js",
+    "./texture/writer": "./src/texture/writer.js",
+    "./world": "./src/world/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "contributions",
+    "src",
+    "README.md"
+  ],
+  "dependencies": {
+    "@modkitx-x3/host": "workspace:*"
+  }
+}

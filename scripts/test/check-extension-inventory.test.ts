@@ -99,6 +99,6 @@ describe('extension inventory gate (MK3/27 §0.2/§5.1, 24 §8 data-only read)',
     const match = /clean \((\d+) extension director/.exec(stdout)
     expect(match).not.toBeNull()
     // bundled common family + examples; a regression to zero would mean the scan is broken
-    expect(Number(match?.[1])).toBeGreaterThanOrEqual(15)
+    expect(Number(match?.[1])).toBeGreaterThanOrEqual(14)
   })
 })

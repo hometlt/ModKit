@@ -40,7 +40,7 @@ const fail = message => problems.push(message)
 /** The eight units of §2.3 rule 1, in canonical order. */
 const CANONICAL_UNITS = ['core', 'sdk', 'vfs', 'host', 'ui', 'runtime', 'testkit', 'lsp']
 /** Optional application control planes may be packages without joining the platform-unit closure. */
-const OPTIONAL_PACKAGE_UNITS = ['extension-manager', 'codec-kit', 'ui-graph-3d']
+const OPTIONAL_PACKAGE_UNITS = ['extension-manager', 'codec-kit', 'code', 'scene', 'uv']
 /** The bootstrap runtime closure of §2.3 rule 1. */
 const BOOTSTRAP = ['core', 'sdk', 'vfs', 'host']
 
@@ -54,6 +54,7 @@ const BOOTSTRAP = ['core', 'sdk', 'vfs', 'host']
  */
 const isOwner = owner =>
   CANONICAL_UNITS.includes(owner) ||
+  OPTIONAL_PACKAGE_UNITS.includes(owner) ||
   owner === 'multiverse' ||
   owner === 'tooling' ||
   owner === 'extensions' ||

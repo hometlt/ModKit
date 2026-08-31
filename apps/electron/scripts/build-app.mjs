@@ -63,10 +63,7 @@ if (codecInputs.length > 0) {
 
 // Monaco runs its language services in workers and asks the host for them through
 // `MonacoEnvironment`. Bundled separately because a worker is its own entry point.
-const monacoRoot = resolve(
-  repoRoot,
-  'extensions/common/ui/monaco/node_modules/monaco-editor/esm/vs',
-)
+const monacoRoot = resolve(repoRoot, 'packages/code/node_modules/monaco-editor/esm/vs')
 const workerEntries = {
   'editor.worker': join(monacoRoot, 'editor', 'editor.worker.js'),
   'json.worker': join(monacoRoot, 'language', 'json', 'json.worker.js'),

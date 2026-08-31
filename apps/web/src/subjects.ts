@@ -8,25 +8,29 @@
  * They join the same pipeline on the same terms — worker-only, verified per file before
  * evaluation — and differ in exactly one respect, which the UI must keep visible: a catalog
  * digest is a build-time attestation by a third party, a user-folder digest is this page's own
- * measurement of bytes the user pointed it at. Neither buys page-thread execution; nothing here
- * evaluates extension code on the page thread at all, because the execution registry holds the
- * worker backend only and the gate refuses (never downgrades) a variant with no boundary here.
+ * measurement of bytes the user pointed it at. Neither buys page-thread execution: external
+ * artifacts remain worker-only. The statically imported code, scene and UV product modules are
+ * already part of the application bundle and use the linked in-process lane beside that worker.
  *
  * DOM globals are injected structurally so this file is unit-tested in Node with fakes and used
  * unchanged in the page.
  */
 
+import { codeModule } from '@modkitx-x3/code/module'
 import type { Diagnostic } from '@modkitx-x3/core'
+import { sceneModule } from '@modkitx-x3/scene/module'
 import type { ServiceContractDefinitionRegistry } from '@modkitx-x3/sdk'
+import { uvModule } from '@modkitx-x3/uv/module'
 import {
   createBundledServiceDefinitionRegistry,
   createExecutionBackendRegistry,
   createHostComposition,
   createSubjectServices,
+  linkedExtensionInputs,
   linkedInProcessBackend,
-  NATIVE_TEXT_MODULES,
   registerServiceDefinitionsOrThrow,
   serviceDefinitionSurfaces,
+  withNativeTextModules,
   type ExtensionInput,
   type ExtensionOrigin,
   type HostComposition,
@@ -62,6 +66,12 @@ import {
   type WebRuntimeIdentity,
 } from './index.js'
 import { createWebCommandProtocol, type WebCommandProtocol } from './commands.js'
+
+const WEB_BUILTIN_MODULES = /* @__PURE__ */ linkedExtensionInputs([
+  codeModule,
+  sceneModule,
+  uvModule,
+])
 
 // ---------------------------------------------------------------------------------------------
 // the generated catalog → ExtensionInput
@@ -281,7 +291,7 @@ export async function createWebSubjectServices(
   // First wins, second reported. A caller that passed the catalog's coordinates as `claimed`
   // has already seen these; a caller that did not still cannot end up with two loaded claimants,
   // because resolution order would then decide which extension a user actually gets.
-  const claimed = new Set<string>()
+  const claimed = new Set<string>(WEB_BUILTIN_MODULES.coordinates)
   for (const input of catalogInputs) {
     const coordinate = extensionCoordinate(input)
     if (coordinate !== undefined) claimed.add(coordinate)
@@ -304,7 +314,7 @@ export async function createWebSubjectServices(
     if (coordinate !== undefined) claimed.add(coordinate)
     userInputs.push(input)
   }
-  const extensions = [...catalogInputs, ...userInputs]
+  const extensions = [...WEB_BUILTIN_MODULES.inputs, ...catalogInputs, ...userInputs]
   const definitions =
     options.serviceDefinitions === false
       ? undefined
@@ -352,7 +362,7 @@ export async function createWebSubjectServices(
   const executionBackends = createExecutionBackendRegistry([
     // Plain text and JSON are Core code, not user-installed extensions, so they may execute in
     // the page process while all external artifacts remain worker-only below.
-    linkedInProcessBackend(NATIVE_TEXT_MODULES),
+    linkedInProcessBackend(withNativeTextModules(WEB_BUILTIN_MODULES.modules)),
     createBrowserWorkerBackend({
       realm: createDomWorkerRealmFactory({
         workerUrl: options.workerUrl ?? new URL(WEB_WORKER_ENTRY, options.baseUrl).href,

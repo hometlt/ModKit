@@ -5,7 +5,7 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
       slotId: 'code',
       kind: 'stage',
       contributionId: 'org.modkitx.ui-monaco/code-stage',
-      extensionId: 'org.modkitx/ui-monaco',
+      extensionId: 'org.modkitx/code',
       priority: 400,
       singletonGroup: 'stage.code',
       bindings: Object.freeze([

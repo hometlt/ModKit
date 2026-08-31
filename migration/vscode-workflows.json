@@ -348,6 +348,13 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.extensions.disableAllCodecs",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.disableAllCodecs",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.extensions.disableContribution",
       "kind": "vscode-command",
       "key": "modkit.extensions.disableContribution",
@@ -362,6 +369,13 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.extensions.enableAllCodecs",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.enableAllCodecs",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.extensions.enableContribution",
       "kind": "vscode-command",
       "key": "modkit.extensions.enableContribution",
@@ -372,6 +386,13 @@
       "factId": "x3:vscode-command:modkit.extensions.install",
       "kind": "vscode-command",
       "key": "modkit.extensions.install",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.extensions.installAll",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.installAll",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
@@ -551,9 +572,23 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.disableAllCodecs//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C..*%5C.codecs%5C.enabled%24%2F/inline%401",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.disableAllCodecs//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C..*%5C.codecs%5C.enabled%24%2F/inline%401",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.disableContribution//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitContribution.codec.enabled/inline%401",
       "kind": "vscode-menu-item",
       "key": "view%2Fitem%2Fcontext/modkit.extensions.disableContribution//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitContribution.codec.enabled/inline%401",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.enableAllCodecs//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C..*%5C.codecs%5C.disabled%24%2F/inline%401",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.enableAllCodecs//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C..*%5C.codecs%5C.disabled%24%2F/inline%401",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
@@ -565,16 +600,23 @@
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.remove//view%20%3D%3D%20modkit.extensions%20%26%26%20(viewItem%20%3D%3D%20modkitExtension.installed.mutable%20%7C%7C%20viewItem%20%3D%3D%20modkitExtension.installed.mutable.update)/inline%402",
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.installAll//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionGroup.available/inline%401",
       "kind": "vscode-menu-item",
-      "key": "view%2Fitem%2Fcontext/modkit.extensions.remove//view%20%3D%3D%20modkit.extensions%20%26%26%20(viewItem%20%3D%3D%20modkitExtension.installed.mutable%20%7C%7C%20viewItem%20%3D%3D%20modkitExtension.installed.mutable.update)/inline%402",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.installAll//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionGroup.available/inline%401",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.update//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtension.installed.mutable.update/inline%401",
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.remove//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C.mutable(%3F%3A%5C.update)%3F(%3F%3A%5C.codecs%5C.(%3F%3Aenabled%7Cdisabled))%3F%24%2F/inline%402",
       "kind": "vscode-menu-item",
-      "key": "view%2Fitem%2Fcontext/modkit.extensions.update//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtension.installed.mutable.update/inline%401",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.remove//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C.mutable(%3F%3A%5C.update)%3F(%3F%3A%5C.codecs%5C.(%3F%3Aenabled%7Cdisabled))%3F%24%2F/inline%402",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.update//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C.mutable%5C.update(%3F%3A%5C.%7C%24)%2F/inline%401",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.update//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C.mutable%5C.update(%3F%3A%5C.%7C%24)%2F/inline%401",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
@@ -620,11 +662,11 @@
   "packagingBoundary": {
     "state": "already-equivalent",
     "ownerBlockerId": null,
-    "cataloguedCommonRoots": 11,
+    "cataloguedCommonRoots": 8,
     "packagedCodecRoots": 0,
     "deterministicShellArtifact": true,
     "provenVsixCodecArtifact": false,
-    "reason": "The accepted B plus C topology keeps the deterministic VSIX as an 11-root common shell; six structured-text codecs share the data extension, plain text and JSON are native Core capabilities, and publisher codecs install separately through extension management."
+    "reason": "The accepted B plus C topology keeps the deterministic VSIX as an 8-root common shell; code, scene and UV are built-in product modules, while publisher codecs install separately through extension management."
   },
   "workflows": [
     {

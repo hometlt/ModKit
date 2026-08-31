@@ -98,6 +98,7 @@ await build({
   platform: 'browser',
   target: ['chrome120', 'firefox121', 'safari17'],
   chunkNames: 'chunks/[name]-[hash]',
+  loader: { '.css': 'css', '.ttf': 'dataurl' },
   absWorkingDir: repoRoot,
   define: {
     __MODKIT_EMBED_EXTENSION_ORIGINS__: JSON.stringify(embedExtensionOrigins),
@@ -179,6 +180,7 @@ cpSync(join(repoRoot, 'assets', 'fonts'), join(dist, 'fonts'), { recursive: true
 const indexHtml = readFileSync(join(appRoot, 'index.html'), 'utf8').replace(
   '<link rel="stylesheet" href="./app.css" />',
   `<link rel="stylesheet" href="./app.css" />
+    <link rel="stylesheet" href="./main.css" />
 ${themeStylesheets
   .map(theme => `    <link rel="stylesheet" href="${theme.stylesheet}" />`)
   .join('\n')}

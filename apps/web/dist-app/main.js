@@ -85,8 +85,8 @@ import {
   throwIfAborted,
   validateSubjectDescriptorV2,
   webExtensionSubjectCardBundle
-} from "./chunks/chunk-FT3RKDJJ.js";
-import "./chunks/chunk-HVXSZ42C.js";
+} from "./chunks/chunk-FUITVY2G.js";
+import "./chunks/chunk-DJDDRNPC.js";
 
 // packages/ui/dist/settings/index.js
 var PARTS = Object.freeze([

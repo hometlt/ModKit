@@ -23,19 +23,19 @@ const { softwareRenderer } = (await import(
   pathToFileURL(join(repoRoot, 'examples', 'extensions', 'software-renderer', 'src', 'linked.js'))
     .href
 )) as { readonly softwareRenderer: LinkedExtension }
-const renderingRoot = join(repoRoot, 'extensions', 'common', 'rendering', 'rendering-3d')
+const renderingRoot = join(repoRoot, 'packages', 'scene')
 const { rendering3d } = (await import(
-  pathToFileURL(join(renderingRoot, 'src', 'linked.js')).href
+  pathToFileURL(join(renderingRoot, 'src', 'module.js')).href
 )) as { readonly rendering3d: LinkedExtension }
 const referenceModule = (await import(
   pathToFileURL(join(repoRoot, 'examples', 'extensions', 'software-renderer', 'src', 'provider.js'))
     .href
 )) as RendererModule
 const headlessModule = (await import(
-  pathToFileURL(join(renderingRoot, 'src', 'headless.js')).href
+  pathToFileURL(join(renderingRoot, 'src', 'render', 'headless.js')).href
 )) as RendererModule
 const { encodeRgbaPng } = (await import(
-  pathToFileURL(join(renderingRoot, 'src', 'png.js')).href
+  pathToFileURL(join(renderingRoot, 'src', 'output', 'png.js')).href
 )) as {
   encodeRgbaPng(frame: { width: number; height: number; rgba: Uint8Array }): Promise<Uint8Array>
 }
@@ -120,7 +120,7 @@ describe('standard scene renderer contract and software provider', () => {
       grant: { id: 'renderer-test', classes: [] },
       budgets: activationBudget,
     })
-    expect(resolution.state).toBe('resolved')
+    expect(resolution.state, JSON.stringify(resolution.diagnostics)).toBe('resolved')
     if (resolution.state !== 'resolved') throw new Error('software renderer did not resolve')
 
     try {
@@ -175,7 +175,7 @@ describe('standard scene renderer contract and software provider', () => {
       grant: { id: 'renderer-test-headless', classes: [] },
       budgets: activationBudget,
     })
-    expect(resolution.state).toBe('resolved')
+    expect(resolution.state, JSON.stringify(resolution.diagnostics)).toBe('resolved')
     if (resolution.state !== 'resolved') throw new Error('headless renderer did not resolve')
     try {
       const frame = await resolution.renderer.render({

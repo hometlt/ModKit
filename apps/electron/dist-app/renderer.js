@@ -19912,6 +19912,281 @@ function validate2010(data, { instancePath = "", parentData, parentDataProperty,
     evaluated0.items = void 0;
   }
   if (data && typeof data == "object" && !Array.isArray(data)) {
+    if (data.catalogs === void 0) {
+      const err0 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "catalogs" }, message: "must have required property 'catalogs'" };
+      if (vErrors === null) {
+        vErrors = [err0];
+      } else {
+        vErrors.push(err0);
+      }
+      errors++;
+    }
+    for (const key0 in data) {
+      if (!(key0 === "catalogs")) {
+        const err1 = { instancePath, schemaPath: "#/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties" };
+        if (vErrors === null) {
+          vErrors = [err1];
+        } else {
+          vErrors.push(err1);
+        }
+        errors++;
+      }
+    }
+    if (data.catalogs !== void 0) {
+      let data0 = data.catalogs;
+      if (Array.isArray(data0)) {
+        if (data0.length > 256) {
+          const err2 = { instancePath: instancePath + "/catalogs", schemaPath: "#/properties/catalogs/maxItems", keyword: "maxItems", params: { limit: 256 }, message: "must NOT have more than 256 items" };
+          if (vErrors === null) {
+            vErrors = [err2];
+          } else {
+            vErrors.push(err2);
+          }
+          errors++;
+        }
+        if (data0.length < 1) {
+          const err3 = { instancePath: instancePath + "/catalogs", schemaPath: "#/properties/catalogs/minItems", keyword: "minItems", params: { limit: 1 }, message: "must NOT have fewer than 1 items" };
+          if (vErrors === null) {
+            vErrors = [err3];
+          } else {
+            vErrors.push(err3);
+          }
+          errors++;
+        }
+        const len0 = data0.length;
+        for (let i0 = 0; i0 < len0; i0++) {
+          let data1 = data0[i0];
+          if (data1 && typeof data1 == "object" && !Array.isArray(data1)) {
+            if (data1.locale === void 0) {
+              const err4 = { instancePath: instancePath + "/catalogs/" + i0, schemaPath: "#/properties/catalogs/items/required", keyword: "required", params: { missingProperty: "locale" }, message: "must have required property 'locale'" };
+              if (vErrors === null) {
+                vErrors = [err4];
+              } else {
+                vErrors.push(err4);
+              }
+              errors++;
+            }
+            if (data1.path === void 0) {
+              const err5 = { instancePath: instancePath + "/catalogs/" + i0, schemaPath: "#/properties/catalogs/items/required", keyword: "required", params: { missingProperty: "path" }, message: "must have required property 'path'" };
+              if (vErrors === null) {
+                vErrors = [err5];
+              } else {
+                vErrors.push(err5);
+              }
+              errors++;
+            }
+            if (data1.messagePrefixes === void 0) {
+              const err6 = { instancePath: instancePath + "/catalogs/" + i0, schemaPath: "#/properties/catalogs/items/required", keyword: "required", params: { missingProperty: "messagePrefixes" }, message: "must have required property 'messagePrefixes'" };
+              if (vErrors === null) {
+                vErrors = [err6];
+              } else {
+                vErrors.push(err6);
+              }
+              errors++;
+            }
+            for (const key1 in data1) {
+              if (!(key1 === "locale" || key1 === "path" || key1 === "messagePrefixes")) {
+                const err7 = { instancePath: instancePath + "/catalogs/" + i0, schemaPath: "#/properties/catalogs/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key1 }, message: "must NOT have additional properties" };
+                if (vErrors === null) {
+                  vErrors = [err7];
+                } else {
+                  vErrors.push(err7);
+                }
+                errors++;
+              }
+            }
+            if (data1.locale !== void 0) {
+              let data2 = data1.locale;
+              if (typeof data2 === "string") {
+                if (func19(data2) > 64) {
+                  const err8 = { instancePath: instancePath + "/catalogs/" + i0 + "/locale", schemaPath: "#/properties/catalogs/items/properties/locale/maxLength", keyword: "maxLength", params: { limit: 64 }, message: "must NOT have more than 64 characters" };
+                  if (vErrors === null) {
+                    vErrors = [err8];
+                  } else {
+                    vErrors.push(err8);
+                  }
+                  errors++;
+                }
+                if (!pattern410.test(data2)) {
+                  const err9 = { instancePath: instancePath + "/catalogs/" + i0 + "/locale", schemaPath: "#/properties/catalogs/items/properties/locale/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$" }, message: 'must match pattern "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$"' };
+                  if (vErrors === null) {
+                    vErrors = [err9];
+                  } else {
+                    vErrors.push(err9);
+                  }
+                  errors++;
+                }
+              } else {
+                const err10 = { instancePath: instancePath + "/catalogs/" + i0 + "/locale", schemaPath: "#/properties/catalogs/items/properties/locale/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                if (vErrors === null) {
+                  vErrors = [err10];
+                } else {
+                  vErrors.push(err10);
+                }
+                errors++;
+              }
+            }
+            if (data1.path !== void 0) {
+              let data3 = data1.path;
+              if (typeof data3 === "string") {
+                if (func19(data3) > 1024) {
+                  const err11 = { instancePath: instancePath + "/catalogs/" + i0 + "/path", schemaPath: "#/properties/catalogs/items/properties/path/maxLength", keyword: "maxLength", params: { limit: 1024 }, message: "must NOT have more than 1024 characters" };
+                  if (vErrors === null) {
+                    vErrors = [err11];
+                  } else {
+                    vErrors.push(err11);
+                  }
+                  errors++;
+                }
+                if (!pattern56.test(data3)) {
+                  const err12 = { instancePath: instancePath + "/catalogs/" + i0 + "/path", schemaPath: "#/properties/catalogs/items/properties/path/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$" }, message: 'must match pattern "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$"' };
+                  if (vErrors === null) {
+                    vErrors = [err12];
+                  } else {
+                    vErrors.push(err12);
+                  }
+                  errors++;
+                }
+              } else {
+                const err13 = { instancePath: instancePath + "/catalogs/" + i0 + "/path", schemaPath: "#/properties/catalogs/items/properties/path/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                if (vErrors === null) {
+                  vErrors = [err13];
+                } else {
+                  vErrors.push(err13);
+                }
+                errors++;
+              }
+            }
+            if (data1.messagePrefixes !== void 0) {
+              let data4 = data1.messagePrefixes;
+              if (Array.isArray(data4)) {
+                if (data4.length > 64) {
+                  const err14 = { instancePath: instancePath + "/catalogs/" + i0 + "/messagePrefixes", schemaPath: "#/properties/catalogs/items/properties/messagePrefixes/maxItems", keyword: "maxItems", params: { limit: 64 }, message: "must NOT have more than 64 items" };
+                  if (vErrors === null) {
+                    vErrors = [err14];
+                  } else {
+                    vErrors.push(err14);
+                  }
+                  errors++;
+                }
+                if (data4.length < 1) {
+                  const err15 = { instancePath: instancePath + "/catalogs/" + i0 + "/messagePrefixes", schemaPath: "#/properties/catalogs/items/properties/messagePrefixes/minItems", keyword: "minItems", params: { limit: 1 }, message: "must NOT have fewer than 1 items" };
+                  if (vErrors === null) {
+                    vErrors = [err15];
+                  } else {
+                    vErrors.push(err15);
+                  }
+                  errors++;
+                }
+                const len1 = data4.length;
+                for (let i1 = 0; i1 < len1; i1++) {
+                  let data5 = data4[i1];
+                  if (typeof data5 === "string") {
+                    if (func19(data5) > 256) {
+                      const err16 = { instancePath: instancePath + "/catalogs/" + i0 + "/messagePrefixes/" + i1, schemaPath: "#/properties/catalogs/items/properties/messagePrefixes/items/maxLength", keyword: "maxLength", params: { limit: 256 }, message: "must NOT have more than 256 characters" };
+                      if (vErrors === null) {
+                        vErrors = [err16];
+                      } else {
+                        vErrors.push(err16);
+                      }
+                      errors++;
+                    }
+                    if (!pattern67.test(data5)) {
+                      const err17 = { instancePath: instancePath + "/catalogs/" + i0 + "/messagePrefixes/" + i1, schemaPath: "#/properties/catalogs/items/properties/messagePrefixes/items/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$" }, message: 'must match pattern "^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$"' };
+                      if (vErrors === null) {
+                        vErrors = [err17];
+                      } else {
+                        vErrors.push(err17);
+                      }
+                      errors++;
+                    }
+                  } else {
+                    const err18 = { instancePath: instancePath + "/catalogs/" + i0 + "/messagePrefixes/" + i1, schemaPath: "#/properties/catalogs/items/properties/messagePrefixes/items/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                    if (vErrors === null) {
+                      vErrors = [err18];
+                    } else {
+                      vErrors.push(err18);
+                    }
+                    errors++;
+                  }
+                }
+                let i2 = data4.length;
+                let j0;
+                if (i2 > 1) {
+                  const indices0 = {};
+                  for (; i2--; ) {
+                    let item0 = data4[i2];
+                    if (typeof item0 !== "string") {
+                      continue;
+                    }
+                    if (typeof indices0[item0] == "number") {
+                      j0 = indices0[item0];
+                      const err19 = { instancePath: instancePath + "/catalogs/" + i0 + "/messagePrefixes", schemaPath: "#/properties/catalogs/items/properties/messagePrefixes/uniqueItems", keyword: "uniqueItems", params: { i: i2, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i2 + " are identical)" };
+                      if (vErrors === null) {
+                        vErrors = [err19];
+                      } else {
+                        vErrors.push(err19);
+                      }
+                      errors++;
+                      break;
+                    }
+                    indices0[item0] = i2;
+                  }
+                }
+              } else {
+                const err20 = { instancePath: instancePath + "/catalogs/" + i0 + "/messagePrefixes", schemaPath: "#/properties/catalogs/items/properties/messagePrefixes/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+                if (vErrors === null) {
+                  vErrors = [err20];
+                } else {
+                  vErrors.push(err20);
+                }
+                errors++;
+              }
+            }
+          } else {
+            const err21 = { instancePath: instancePath + "/catalogs/" + i0, schemaPath: "#/properties/catalogs/items/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+            if (vErrors === null) {
+              vErrors = [err21];
+            } else {
+              vErrors.push(err21);
+            }
+            errors++;
+          }
+        }
+      } else {
+        const err22 = { instancePath: instancePath + "/catalogs", schemaPath: "#/properties/catalogs/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+        if (vErrors === null) {
+          vErrors = [err22];
+        } else {
+          vErrors.push(err22);
+        }
+        errors++;
+      }
+    }
+  } else {
+    const err23 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+    if (vErrors === null) {
+      vErrors = [err23];
+    } else {
+      vErrors.push(err23);
+    }
+    errors++;
+  }
+  validate2010.errors = vErrors;
+  return errors === 0;
+}
+function validate2011(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+  ;
+  let vErrors = null;
+  let errors = 0;
+  const evaluated0 = validate2011.evaluated;
+  if (evaluated0.dynamicProps) {
+    evaluated0.props = void 0;
+  }
+  if (evaluated0.dynamicItems) {
+    evaluated0.items = void 0;
+  }
+  if (data && typeof data == "object" && !Array.isArray(data)) {
     if (data.formatId === void 0) {
       const err0 = { instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: "formatId" }, message: "must have required property 'formatId'" };
       if (vErrors === null) {
@@ -19962,7 +20237,7 @@ function validate2010(data, { instancePath = "", parentData, parentDataProperty,
     if (data.formatId !== void 0) {
       let data0 = data.formatId;
       if (typeof data0 === "string") {
-        if (func19(data0) < 1) {
+        if (func110(data0) < 1) {
           const err5 = { instancePath: instancePath + "/formatId", schemaPath: "#/properties/formatId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err5];
@@ -19984,7 +20259,7 @@ function validate2010(data, { instancePath = "", parentData, parentDataProperty,
     if (data.representationId !== void 0) {
       let data1 = data.representationId;
       if (typeof data1 === "string") {
-        if (func19(data1) < 1) {
+        if (func110(data1) < 1) {
           const err7 = { instancePath: instancePath + "/representationId", schemaPath: "#/properties/representationId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err7];
@@ -20036,14 +20311,14 @@ function validate2010(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2010.errors = vErrors;
+  validate2011.errors = vErrors;
   return errors === 0;
 }
-function validate2011(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+function validate2012(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2011.evaluated;
+  const evaluated0 = validate2012.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -20119,7 +20394,7 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
     if (data.formatId !== void 0) {
       let data0 = data.formatId;
       if (typeof data0 === "string") {
-        if (func110(data0) < 1) {
+        if (func111(data0) < 1) {
           const err7 = { instancePath: instancePath + "/formatId", schemaPath: "#/properties/formatId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err7];
@@ -20141,7 +20416,7 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
     if (data.representationId !== void 0) {
       let data1 = data.representationId;
       if (typeof data1 === "string") {
-        if (func110(data1) < 1) {
+        if (func111(data1) < 1) {
           const err9 = { instancePath: instancePath + "/representationId", schemaPath: "#/properties/representationId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err9];
@@ -20187,7 +20462,7 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
     if (data.providerId !== void 0) {
       let data4 = data.providerId;
       if (typeof data4 === "string") {
-        if (func110(data4) < 1) {
+        if (func111(data4) < 1) {
           const err13 = { instancePath: instancePath + "/providerId", schemaPath: "#/properties/providerId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err13];
@@ -20209,7 +20484,7 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
     if (data.fidelityEvidenceId !== void 0) {
       let data5 = data.fidelityEvidenceId;
       if (typeof data5 === "string") {
-        if (func110(data5) < 1) {
+        if (func111(data5) < 1) {
           const err15 = { instancePath: instancePath + "/fidelityEvidenceId", schemaPath: "#/properties/fidelityEvidenceId/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err15];
@@ -20237,14 +20512,14 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2011.errors = vErrors;
+  validate2012.errors = vErrors;
   return errors === 0;
 }
-function validate2012(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+function validate2013(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2012.evaluated;
+  const evaluated0 = validate2013.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -20331,7 +20606,7 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
     if (data.id !== void 0) {
       let data1 = data.id;
       if (typeof data1 === "string") {
-        if (!pattern410.test(data1)) {
+        if (!pattern411.test(data1)) {
           const err8 = { instancePath: instancePath + "/id", schemaPath: "#/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
           if (vErrors === null) {
             vErrors = [err8];
@@ -20353,7 +20628,7 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
     if (data.version !== void 0) {
       let data2 = data.version;
       if (typeof data2 === "string") {
-        if (!pattern56.test(data2)) {
+        if (!pattern57.test(data2)) {
           const err10 = { instancePath: instancePath + "/version", schemaPath: "#/properties/version/pattern", keyword: "pattern", params: { pattern: "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, message: 'must match pattern "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"' };
           if (vErrors === null) {
             vErrors = [err10];
@@ -20390,7 +20665,7 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
       valid1 = valid1 || _valid0;
       const _errs10 = errors;
       if (typeof data3 === "string") {
-        if (!pattern67.test(data3)) {
+        if (!pattern68.test(data3)) {
           const err13 = { instancePath: instancePath + "/scope", schemaPath: "#/properties/scope/anyOf/1/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
           if (vErrors === null) {
             vErrors = [err13];
@@ -20455,7 +20730,7 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
         if (data4.$ref !== void 0) {
           let data5 = data4.$ref;
           if (typeof data5 === "string") {
-            if (func111(data5) < 1) {
+            if (func112(data5) < 1) {
               const err18 = { instancePath: instancePath + "/parametersSchema/$ref", schemaPath: "#/properties/parametersSchema/properties/%24ref/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
               if (vErrors === null) {
                 vErrors = [err18];
@@ -20499,7 +20774,7 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
     if (data.documentation !== void 0) {
       let data7 = data.documentation;
       if (typeof data7 === "string") {
-        if (func111(data7) < 1) {
+        if (func112(data7) < 1) {
           const err22 = { instancePath: instancePath + "/documentation", schemaPath: "#/properties/documentation/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err22];
@@ -20557,7 +20832,7 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
             if (data9.id !== void 0) {
               let data10 = data9.id;
               if (typeof data10 === "string") {
-                if (!pattern410.test(data10)) {
+                if (!pattern411.test(data10)) {
                   const err27 = { instancePath: instancePath + "/imports/" + i0 + "/id", schemaPath: "#/properties/imports/items/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
                   if (vErrors === null) {
                     vErrors = [err27];
@@ -20627,14 +20902,14 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2012.errors = vErrors;
+  validate2013.errors = vErrors;
   return errors === 0;
 }
-function validate2013(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+function validate2014(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2013.evaluated;
+  const evaluated0 = validate2014.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -20719,7 +20994,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
       errors++;
     }
     for (const key0 in data) {
-      if (!func112.call(schema3112.oneOf[0].properties, key0)) {
+      if (!func113.call(schema3112.oneOf[0].properties, key0)) {
         const err8 = { instancePath, schemaPath: "#/oneOf/0/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties" };
         if (vErrors === null) {
           vErrors = [err8];
@@ -20754,7 +21029,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
     if (data.contract !== void 0) {
       let data2 = data.contract;
       if (typeof data2 === "string") {
-        if (!pattern411.test(data2)) {
+        if (!pattern412.test(data2)) {
           const err11 = { instancePath: instancePath + "/contract", schemaPath: "#/oneOf/0/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
           if (vErrors === null) {
             vErrors = [err11];
@@ -21224,7 +21499,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
         if (data14.profile !== void 0) {
           let data15 = data14.profile;
           if (typeof data15 === "string") {
-            if (!pattern411.test(data15)) {
+            if (!pattern412.test(data15)) {
               const err49 = { instancePath: instancePath + "/matching/profile", schemaPath: "#/oneOf/0/properties/matching/properties/profile/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
               if (vErrors === null) {
                 vErrors = [err49];
@@ -21333,7 +21608,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
         if (data18.releaseVia !== void 0) {
           let data19 = data18.releaseVia;
           if (typeof data19 === "string") {
-            if (!pattern68.test(data19)) {
+            if (!pattern69.test(data19)) {
               const err59 = { instancePath: instancePath + "/surface/releaseVia", schemaPath: "#/oneOf/0/properties/surface/properties/releaseVia/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err59];
@@ -21368,7 +21643,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
             for (let i0 = 0; i0 < len0; i0++) {
               let data21 = data20[i0];
               if (typeof data21 === "string") {
-                if (!pattern68.test(data21)) {
+                if (!pattern69.test(data21)) {
                   const err62 = { instancePath: instancePath + "/surface/fields/" + i0, schemaPath: "#/oneOf/0/properties/surface/properties/fields/items/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                   if (vErrors === null) {
                     vErrors = [err62];
@@ -21435,7 +21710,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
             for (const key9 in data22) {
               const _errs60 = errors;
               if (typeof key9 === "string") {
-                if (!pattern68.test(key9)) {
+                if (!pattern69.test(key9)) {
                   const err67 = { instancePath: instancePath + "/surface/methods", schemaPath: "#/oneOf/0/properties/surface/properties/methods/propertyNames/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"', propertyName: key9 };
                   if (vErrors === null) {
                     vErrors = [err67];
@@ -21546,7 +21821,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data25.contract !== void 0) {
                       let data26 = data25.contract;
                       if (typeof data26 === "string") {
-                        if (!pattern411.test(data26)) {
+                        if (!pattern412.test(data26)) {
                           const err77 = { instancePath: instancePath + "/surface/methods/" + key10.replace(/~/g, "~0").replace(/\//g, "~1") + "/result/contract", schemaPath: "#/oneOf/0/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/result/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
                           if (vErrors === null) {
                             vErrors = [err77];
@@ -21701,7 +21976,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data29.key !== void 0) {
                       let data31 = data29.key;
                       if (typeof data31 === "string") {
-                        if (!pattern68.test(data31)) {
+                        if (!pattern69.test(data31)) {
                           const err91 = { instancePath: instancePath + "/surface/methods/" + key10.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/oneOf/0/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err91];
@@ -21817,7 +22092,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data32.key !== void 0) {
                       let data34 = data32.key;
                       if (typeof data34 === "string") {
-                        if (!pattern68.test(data34)) {
+                        if (!pattern69.test(data34)) {
                           const err101 = { instancePath: instancePath + "/surface/methods/" + key10.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/oneOf/0/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err101];
@@ -22140,7 +22415,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data42.key !== void 0) {
                       let data44 = data42.key;
                       if (typeof data44 === "string") {
-                        if (!pattern68.test(data44)) {
+                        if (!pattern69.test(data44)) {
                           const err130 = { instancePath: instancePath + "/surface/methods/" + key10.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/oneOf/0/properties/surface/properties/methods/additionalProperties/oneOf/1/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err130];
@@ -22256,7 +22531,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data45.key !== void 0) {
                       let data47 = data45.key;
                       if (typeof data47 === "string") {
-                        if (!pattern68.test(data47)) {
+                        if (!pattern69.test(data47)) {
                           const err140 = { instancePath: instancePath + "/surface/methods/" + key10.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/oneOf/0/properties/surface/properties/methods/additionalProperties/oneOf/1/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err140];
@@ -22616,7 +22891,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
     if (data.contract !== void 0) {
       let data56 = data.contract;
       if (typeof data56 === "string") {
-        if (!pattern411.test(data56)) {
+        if (!pattern412.test(data56)) {
           const err172 = { instancePath: instancePath + "/contract", schemaPath: "#/oneOf/1/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
           if (vErrors === null) {
             vErrors = [err172];
@@ -22770,7 +23045,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
         if (data61.releaseVia !== void 0) {
           let data62 = data61.releaseVia;
           if (typeof data62 === "string") {
-            if (!pattern68.test(data62)) {
+            if (!pattern69.test(data62)) {
               const err186 = { instancePath: instancePath + "/surface/releaseVia", schemaPath: "#/oneOf/1/properties/surface/properties/releaseVia/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err186];
@@ -22805,7 +23080,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
             for (let i2 = 0; i2 < len1; i2++) {
               let data64 = data63[i2];
               if (typeof data64 === "string") {
-                if (!pattern68.test(data64)) {
+                if (!pattern69.test(data64)) {
                   const err189 = { instancePath: instancePath + "/surface/fields/" + i2, schemaPath: "#/oneOf/1/properties/surface/properties/fields/items/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                   if (vErrors === null) {
                     vErrors = [err189];
@@ -22872,7 +23147,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
             for (const key23 in data65) {
               const _errs168 = errors;
               if (typeof key23 === "string") {
-                if (!pattern68.test(key23)) {
+                if (!pattern69.test(key23)) {
                   const err194 = { instancePath: instancePath + "/surface/methods", schemaPath: "#/oneOf/1/properties/surface/properties/methods/propertyNames/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"', propertyName: key23 };
                   if (vErrors === null) {
                     vErrors = [err194];
@@ -22983,7 +23258,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data68.contract !== void 0) {
                       let data69 = data68.contract;
                       if (typeof data69 === "string") {
-                        if (!pattern411.test(data69)) {
+                        if (!pattern412.test(data69)) {
                           const err204 = { instancePath: instancePath + "/surface/methods/" + key24.replace(/~/g, "~0").replace(/\//g, "~1") + "/result/contract", schemaPath: "#/oneOf/1/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/result/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
                           if (vErrors === null) {
                             vErrors = [err204];
@@ -23138,7 +23413,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data72.key !== void 0) {
                       let data74 = data72.key;
                       if (typeof data74 === "string") {
-                        if (!pattern68.test(data74)) {
+                        if (!pattern69.test(data74)) {
                           const err218 = { instancePath: instancePath + "/surface/methods/" + key24.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/oneOf/1/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err218];
@@ -23254,7 +23529,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data75.key !== void 0) {
                       let data77 = data75.key;
                       if (typeof data77 === "string") {
-                        if (!pattern68.test(data77)) {
+                        if (!pattern69.test(data77)) {
                           const err228 = { instancePath: instancePath + "/surface/methods/" + key24.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/oneOf/1/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err228];
@@ -23577,7 +23852,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data85.key !== void 0) {
                       let data87 = data85.key;
                       if (typeof data87 === "string") {
-                        if (!pattern68.test(data87)) {
+                        if (!pattern69.test(data87)) {
                           const err257 = { instancePath: instancePath + "/surface/methods/" + key24.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/oneOf/1/properties/surface/properties/methods/additionalProperties/oneOf/1/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err257];
@@ -23693,7 +23968,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
                     if (data88.key !== void 0) {
                       let data90 = data88.key;
                       if (typeof data90 === "string") {
-                        if (!pattern68.test(data90)) {
+                        if (!pattern69.test(data90)) {
                           const err267 = { instancePath: instancePath + "/surface/methods/" + key24.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/oneOf/1/properties/surface/properties/methods/additionalProperties/oneOf/1/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err267];
@@ -23986,7 +24261,7 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
       }
     }
   }
-  validate2013.errors = vErrors;
+  validate2014.errors = vErrors;
   evaluated0.props = props5;
   return errors === 0;
 }
@@ -24158,11 +24433,11 @@ function validate21(data, { instancePath = "", parentData, parentDataProperty, r
   evaluated0.items = items1;
   return errors === 0;
 }
-function validate2014(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+function validate2015(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2014.evaluated;
+  const evaluated0 = validate2015.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -24274,7 +24549,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
       errors++;
     }
     for (const key0 in data) {
-      if (!func113.call(schema3113.oneOf[0].properties, key0)) {
+      if (!func114.call(schema3113.oneOf[0].properties, key0)) {
         const err11 = { instancePath, schemaPath: "#/oneOf/0/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties" };
         if (vErrors === null) {
           vErrors = [err11];
@@ -24298,7 +24573,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
     if (data.subjectUri !== void 0) {
       let data1 = data.subjectUri;
       if (typeof data1 === "string") {
-        if (!pattern412.test(data1)) {
+        if (!pattern413.test(data1)) {
           const err13 = { instancePath: instancePath + "/subjectUri", schemaPath: "#/oneOf/0/properties/subjectUri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
           if (vErrors === null) {
             vErrors = [err13];
@@ -24511,7 +24786,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                 if (data7.id !== void 0) {
                   let data8 = data7.id;
                   if (typeof data8 === "string") {
-                    if (!pattern412.test(data8)) {
+                    if (!pattern413.test(data8)) {
                       const err33 = { instancePath: instancePath + "/origin/binding/source/id", schemaPath: "#/oneOf/0/properties/origin/oneOf/0/properties/binding/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                       if (vErrors === null) {
                         vErrors = [err33];
@@ -24533,7 +24808,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                 if (data7.uri !== void 0) {
                   let data9 = data7.uri;
                   if (typeof data9 === "string") {
-                    if (!pattern412.test(data9)) {
+                    if (!pattern413.test(data9)) {
                       const err35 = { instancePath: instancePath + "/origin/binding/source/uri", schemaPath: "#/oneOf/0/properties/origin/oneOf/0/properties/binding/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                       if (vErrors === null) {
                         vErrors = [err35];
@@ -24568,7 +24843,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     for (let i0 = 0; i0 < len0; i0++) {
                       let data11 = data10[i0];
                       if (typeof data11 === "string") {
-                        if (!pattern412.test(data11)) {
+                        if (!pattern413.test(data11)) {
                           const err38 = { instancePath: instancePath + "/origin/binding/source/parentIds/" + i0, schemaPath: "#/oneOf/0/properties/origin/oneOf/0/properties/binding/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err38];
@@ -24901,7 +25176,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data21.id !== void 0) {
                       let data22 = data21.id;
                       if (typeof data22 === "string") {
-                        if (!pattern412.test(data22)) {
+                        if (!pattern413.test(data22)) {
                           const err69 = { instancePath: instancePath + "/origin/bindings/" + i1 + "/source/id", schemaPath: "#/oneOf/0/properties/origin/oneOf/1/properties/bindings/items/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err69];
@@ -24923,7 +25198,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data21.uri !== void 0) {
                       let data23 = data21.uri;
                       if (typeof data23 === "string") {
-                        if (!pattern412.test(data23)) {
+                        if (!pattern413.test(data23)) {
                           const err71 = { instancePath: instancePath + "/origin/bindings/" + i1 + "/source/uri", schemaPath: "#/oneOf/0/properties/origin/oneOf/1/properties/bindings/items/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err71];
@@ -24958,7 +25233,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                         for (let i2 = 0; i2 < len2; i2++) {
                           let data25 = data24[i2];
                           if (typeof data25 === "string") {
-                            if (!pattern412.test(data25)) {
+                            if (!pattern413.test(data25)) {
                               const err74 = { instancePath: instancePath + "/origin/bindings/" + i1 + "/source/parentIds/" + i2, schemaPath: "#/oneOf/0/properties/origin/oneOf/1/properties/bindings/items/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                               if (vErrors === null) {
                                 vErrors = [err74];
@@ -25213,7 +25488,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
               if (data32.id !== void 0) {
                 let data33 = data32.id;
                 if (typeof data33 === "string") {
-                  if (!pattern412.test(data33)) {
+                  if (!pattern413.test(data33)) {
                     const err97 = { instancePath: instancePath + "/origin/root/id", schemaPath: "#/oneOf/0/properties/origin/oneOf/2/properties/root/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                     if (vErrors === null) {
                       vErrors = [err97];
@@ -25235,7 +25510,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
               if (data32.uri !== void 0) {
                 let data34 = data32.uri;
                 if (typeof data34 === "string") {
-                  if (!pattern412.test(data34)) {
+                  if (!pattern413.test(data34)) {
                     const err99 = { instancePath: instancePath + "/origin/root/uri", schemaPath: "#/oneOf/0/properties/origin/oneOf/2/properties/root/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                     if (vErrors === null) {
                       vErrors = [err99];
@@ -25270,7 +25545,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                   for (let i3 = 0; i3 < len3; i3++) {
                     let data36 = data35[i3];
                     if (typeof data36 === "string") {
-                      if (!pattern412.test(data36)) {
+                      if (!pattern413.test(data36)) {
                         const err102 = { instancePath: instancePath + "/origin/root/parentIds/" + i3, schemaPath: "#/oneOf/0/properties/origin/oneOf/2/properties/root/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                         if (vErrors === null) {
                           vErrors = [err102];
@@ -25817,7 +26092,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data53.id !== void 0) {
                       let data54 = data53.id;
                       if (typeof data54 === "string") {
-                        if (!pattern412.test(data54)) {
+                        if (!pattern413.test(data54)) {
                           const err152 = { instancePath: instancePath + "/origin/materialization/source/id", schemaPath: "#/oneOf/0/properties/origin/oneOf/3/properties/materialization/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err152];
@@ -25839,7 +26114,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data53.uri !== void 0) {
                       let data55 = data53.uri;
                       if (typeof data55 === "string") {
-                        if (!pattern412.test(data55)) {
+                        if (!pattern413.test(data55)) {
                           const err154 = { instancePath: instancePath + "/origin/materialization/source/uri", schemaPath: "#/oneOf/0/properties/origin/oneOf/3/properties/materialization/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err154];
@@ -25874,7 +26149,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                         for (let i5 = 0; i5 < len5; i5++) {
                           let data57 = data56[i5];
                           if (typeof data57 === "string") {
-                            if (!pattern412.test(data57)) {
+                            if (!pattern413.test(data57)) {
                               const err157 = { instancePath: instancePath + "/origin/materialization/source/parentIds/" + i5, schemaPath: "#/oneOf/0/properties/origin/oneOf/3/properties/materialization/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                               if (vErrors === null) {
                                 vErrors = [err157];
@@ -27268,7 +27543,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
               errors++;
             }
             for (const key23 in data105) {
-              if (!func113.call(schema3113.oneOf[0].properties.diagnostics.items.properties, key23)) {
+              if (!func114.call(schema3113.oneOf[0].properties.diagnostics.items.properties, key23)) {
                 const err275 = { instancePath: instancePath + "/diagnostics/" + i11, schemaPath: "#/oneOf/0/properties/diagnostics/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key23 }, message: "must NOT have additional properties" };
                 if (vErrors === null) {
                   vErrors = [err275];
@@ -29015,7 +29290,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                       errors++;
                     }
                     for (const key33 in data158) {
-                      if (!func113.call(schema3113.oneOf[0].properties.candidates.items.properties.diagnostics.items.properties, key33)) {
+                      if (!func114.call(schema3113.oneOf[0].properties.candidates.items.properties.diagnostics.items.properties, key33)) {
                         const err428 = { instancePath: instancePath + "/candidates/" + i14 + "/diagnostics/" + i17, schemaPath: "#/oneOf/0/properties/candidates/items/properties/diagnostics/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key33 }, message: "must NOT have additional properties" };
                         if (vErrors === null) {
                           vErrors = [err428];
@@ -30036,7 +30311,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
       errors++;
     }
     for (const key38 in data) {
-      if (!func113.call(schema3113.oneOf[1].properties, key38)) {
+      if (!func114.call(schema3113.oneOf[1].properties, key38)) {
         const err518 = { instancePath, schemaPath: "#/oneOf/1/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key38 }, message: "must NOT have additional properties" };
         if (vErrors === null) {
           vErrors = [err518];
@@ -30060,7 +30335,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
     if (data.subjectUri !== void 0) {
       let data186 = data.subjectUri;
       if (typeof data186 === "string") {
-        if (!pattern412.test(data186)) {
+        if (!pattern413.test(data186)) {
           const err520 = { instancePath: instancePath + "/subjectUri", schemaPath: "#/oneOf/1/properties/subjectUri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
           if (vErrors === null) {
             vErrors = [err520];
@@ -30273,7 +30548,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                 if (data192.id !== void 0) {
                   let data193 = data192.id;
                   if (typeof data193 === "string") {
-                    if (!pattern412.test(data193)) {
+                    if (!pattern413.test(data193)) {
                       const err540 = { instancePath: instancePath + "/origin/binding/source/id", schemaPath: "#/oneOf/1/properties/origin/oneOf/0/properties/binding/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                       if (vErrors === null) {
                         vErrors = [err540];
@@ -30295,7 +30570,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                 if (data192.uri !== void 0) {
                   let data194 = data192.uri;
                   if (typeof data194 === "string") {
-                    if (!pattern412.test(data194)) {
+                    if (!pattern413.test(data194)) {
                       const err542 = { instancePath: instancePath + "/origin/binding/source/uri", schemaPath: "#/oneOf/1/properties/origin/oneOf/0/properties/binding/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                       if (vErrors === null) {
                         vErrors = [err542];
@@ -30330,7 +30605,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     for (let i20 = 0; i20 < len20; i20++) {
                       let data196 = data195[i20];
                       if (typeof data196 === "string") {
-                        if (!pattern412.test(data196)) {
+                        if (!pattern413.test(data196)) {
                           const err545 = { instancePath: instancePath + "/origin/binding/source/parentIds/" + i20, schemaPath: "#/oneOf/1/properties/origin/oneOf/0/properties/binding/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err545];
@@ -30663,7 +30938,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data206.id !== void 0) {
                       let data207 = data206.id;
                       if (typeof data207 === "string") {
-                        if (!pattern412.test(data207)) {
+                        if (!pattern413.test(data207)) {
                           const err576 = { instancePath: instancePath + "/origin/bindings/" + i21 + "/source/id", schemaPath: "#/oneOf/1/properties/origin/oneOf/1/properties/bindings/items/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err576];
@@ -30685,7 +30960,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data206.uri !== void 0) {
                       let data208 = data206.uri;
                       if (typeof data208 === "string") {
-                        if (!pattern412.test(data208)) {
+                        if (!pattern413.test(data208)) {
                           const err578 = { instancePath: instancePath + "/origin/bindings/" + i21 + "/source/uri", schemaPath: "#/oneOf/1/properties/origin/oneOf/1/properties/bindings/items/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err578];
@@ -30720,7 +30995,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                         for (let i22 = 0; i22 < len22; i22++) {
                           let data210 = data209[i22];
                           if (typeof data210 === "string") {
-                            if (!pattern412.test(data210)) {
+                            if (!pattern413.test(data210)) {
                               const err581 = { instancePath: instancePath + "/origin/bindings/" + i21 + "/source/parentIds/" + i22, schemaPath: "#/oneOf/1/properties/origin/oneOf/1/properties/bindings/items/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                               if (vErrors === null) {
                                 vErrors = [err581];
@@ -30975,7 +31250,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
               if (data217.id !== void 0) {
                 let data218 = data217.id;
                 if (typeof data218 === "string") {
-                  if (!pattern412.test(data218)) {
+                  if (!pattern413.test(data218)) {
                     const err604 = { instancePath: instancePath + "/origin/root/id", schemaPath: "#/oneOf/1/properties/origin/oneOf/2/properties/root/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                     if (vErrors === null) {
                       vErrors = [err604];
@@ -30997,7 +31272,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
               if (data217.uri !== void 0) {
                 let data219 = data217.uri;
                 if (typeof data219 === "string") {
-                  if (!pattern412.test(data219)) {
+                  if (!pattern413.test(data219)) {
                     const err606 = { instancePath: instancePath + "/origin/root/uri", schemaPath: "#/oneOf/1/properties/origin/oneOf/2/properties/root/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                     if (vErrors === null) {
                       vErrors = [err606];
@@ -31032,7 +31307,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                   for (let i23 = 0; i23 < len23; i23++) {
                     let data221 = data220[i23];
                     if (typeof data221 === "string") {
-                      if (!pattern412.test(data221)) {
+                      if (!pattern413.test(data221)) {
                         const err609 = { instancePath: instancePath + "/origin/root/parentIds/" + i23, schemaPath: "#/oneOf/1/properties/origin/oneOf/2/properties/root/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                         if (vErrors === null) {
                           vErrors = [err609];
@@ -31579,7 +31854,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data238.id !== void 0) {
                       let data239 = data238.id;
                       if (typeof data239 === "string") {
-                        if (!pattern412.test(data239)) {
+                        if (!pattern413.test(data239)) {
                           const err659 = { instancePath: instancePath + "/origin/materialization/source/id", schemaPath: "#/oneOf/1/properties/origin/oneOf/3/properties/materialization/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err659];
@@ -31601,7 +31876,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                     if (data238.uri !== void 0) {
                       let data240 = data238.uri;
                       if (typeof data240 === "string") {
-                        if (!pattern412.test(data240)) {
+                        if (!pattern413.test(data240)) {
                           const err661 = { instancePath: instancePath + "/origin/materialization/source/uri", schemaPath: "#/oneOf/1/properties/origin/oneOf/3/properties/materialization/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                           if (vErrors === null) {
                             vErrors = [err661];
@@ -31636,7 +31911,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                         for (let i25 = 0; i25 < len25; i25++) {
                           let data242 = data241[i25];
                           if (typeof data242 === "string") {
-                            if (!pattern412.test(data242)) {
+                            if (!pattern413.test(data242)) {
                               const err664 = { instancePath: instancePath + "/origin/materialization/source/parentIds/" + i25, schemaPath: "#/oneOf/1/properties/origin/oneOf/3/properties/materialization/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                               if (vErrors === null) {
                                 vErrors = [err664];
@@ -33030,7 +33305,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
               errors++;
             }
             for (const key61 in data290) {
-              if (!func113.call(schema3113.oneOf[1].properties.diagnostics.items.properties, key61)) {
+              if (!func114.call(schema3113.oneOf[1].properties.diagnostics.items.properties, key61)) {
                 const err782 = { instancePath: instancePath + "/diagnostics/" + i31, schemaPath: "#/oneOf/1/properties/diagnostics/items/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key61 }, message: "must NOT have additional properties" };
                 if (vErrors === null) {
                   vErrors = [err782];
@@ -36066,7 +36341,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                                   if (data390.id !== void 0) {
                                     let data391 = data390.id;
                                     if (typeof data391 === "string") {
-                                      if (!pattern412.test(data391)) {
+                                      if (!pattern413.test(data391)) {
                                         const err1047 = { instancePath: instancePath + "/companions/" + i37 + "/candidates/" + i50 + "/source/id", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/items/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                                         if (vErrors === null) {
                                           vErrors = [err1047];
@@ -36088,7 +36363,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                                   if (data390.uri !== void 0) {
                                     let data392 = data390.uri;
                                     if (typeof data392 === "string") {
-                                      if (!pattern412.test(data392)) {
+                                      if (!pattern413.test(data392)) {
                                         const err1049 = { instancePath: instancePath + "/companions/" + i37 + "/candidates/" + i50 + "/source/uri", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/items/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                                         if (vErrors === null) {
                                           vErrors = [err1049];
@@ -36123,7 +36398,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                                       for (let i51 = 0; i51 < len45; i51++) {
                                         let data394 = data393[i51];
                                         if (typeof data394 === "string") {
-                                          if (!pattern412.test(data394)) {
+                                          if (!pattern413.test(data394)) {
                                             const err1052 = { instancePath: instancePath + "/companions/" + i37 + "/candidates/" + i50 + "/source/parentIds/" + i51, schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/items/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                                             if (vErrors === null) {
                                               vErrors = [err1052];
@@ -36545,7 +36820,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                                     if (data405.id !== void 0) {
                                       let data406 = data405.id;
                                       if (typeof data406 === "string") {
-                                        if (!pattern412.test(data406)) {
+                                        if (!pattern413.test(data406)) {
                                           const err1089 = { instancePath: instancePath + "/companions/" + i37 + "/candidates/" + i55 + "/source/id", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/items/properties/source/properties/id/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                                           if (vErrors === null) {
                                             vErrors = [err1089];
@@ -36567,7 +36842,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                                     if (data405.uri !== void 0) {
                                       let data407 = data405.uri;
                                       if (typeof data407 === "string") {
-                                        if (!pattern412.test(data407)) {
+                                        if (!pattern413.test(data407)) {
                                           const err1091 = { instancePath: instancePath + "/companions/" + i37 + "/candidates/" + i55 + "/source/uri", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/items/properties/source/properties/uri/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                                           if (vErrors === null) {
                                             vErrors = [err1091];
@@ -36602,7 +36877,7 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
                                         for (let i56 = 0; i56 < len48; i56++) {
                                           let data409 = data408[i56];
                                           if (typeof data409 === "string") {
-                                            if (!pattern412.test(data409)) {
+                                            if (!pattern413.test(data409)) {
                                               const err1094 = { instancePath: instancePath + "/companions/" + i37 + "/candidates/" + i55 + "/source/parentIds/" + i56, schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/items/properties/source/properties/parentIds/items/pattern", keyword: "pattern", params: { pattern: "\\S" }, message: 'must match pattern "\\S"' };
                                               if (vErrors === null) {
                                                 vErrors = [err1094];
@@ -36867,15 +37142,15 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
       }
     }
   }
-  validate2014.errors = vErrors;
+  validate2015.errors = vErrors;
   evaluated0.props = props12;
   return errors === 0;
 }
-function validate2015(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+function validate2016(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2015.evaluated;
+  const evaluated0 = validate2016.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -36929,7 +37204,7 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
       errors++;
     }
     for (const key0 in data) {
-      if (!func114.call(schema3114.properties, key0)) {
+      if (!func115.call(schema3114.properties, key0)) {
         const err5 = { instancePath, schemaPath: "#/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties" };
         if (vErrors === null) {
           vErrors = [err5];
@@ -36985,7 +37260,7 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
         if (data1.id !== void 0) {
           let data2 = data1.id;
           if (typeof data2 === "string") {
-            if (!pattern413.test(data2)) {
+            if (!pattern414.test(data2)) {
               const err10 = { instancePath: instancePath + "/contract/id", schemaPath: "#/properties/contract/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
               if (vErrors === null) {
                 vErrors = [err10];
@@ -37049,7 +37324,7 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
     if (data.id !== void 0) {
       let data4 = data.id;
       if (typeof data4 === "string") {
-        if (!pattern413.test(data4)) {
+        if (!pattern414.test(data4)) {
           const err16 = { instancePath: instancePath + "/id", schemaPath: "#/properties/id/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
           if (vErrors === null) {
             vErrors = [err16];
@@ -37168,7 +37443,7 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
             if (data8.variantId !== void 0) {
               let data9 = data8.variantId;
               if (typeof data9 === "string") {
-                if (!pattern69.test(data9)) {
+                if (!pattern610.test(data9)) {
                   const err27 = { instancePath: instancePath + "/runtimeVariants/" + i0 + "/variantId", schemaPath: "#/properties/runtimeVariants/items/properties/variantId/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*$"' };
                   if (vErrors === null) {
                     vErrors = [err27];
@@ -37561,7 +37836,7 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
             if (data28.contract !== void 0) {
               let data29 = data28.contract;
               if (typeof data29 === "string") {
-                if (!pattern413.test(data29)) {
+                if (!pattern414.test(data29)) {
                   const err61 = { instancePath: instancePath + "/dependsOn/" + i8 + "/contract", schemaPath: "#/properties/dependsOn/items/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
                   if (vErrors === null) {
                     vErrors = [err61];
@@ -37787,14 +38062,14 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2015.errors = vErrors;
+  validate2016.errors = vErrors;
   return errors === 0;
 }
-function validate2016(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+function validate2017(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2016.evaluated;
+  const evaluated0 = validate2017.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -37861,7 +38136,7 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
     if (data.variantId !== void 0) {
       let data0 = data.variantId;
       if (typeof data0 === "string") {
-        if (!pattern414.test(data0)) {
+        if (!pattern415.test(data0)) {
           const err6 = { instancePath: instancePath + "/variantId", schemaPath: "#/properties/variantId/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*$"' };
           if (vErrors === null) {
             vErrors = [err6];
@@ -37883,7 +38158,7 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
     if (data.entrypoint !== void 0) {
       let data1 = data.entrypoint;
       if (typeof data1 === "string") {
-        if (!pattern57.test(data1)) {
+        if (!pattern58.test(data1)) {
           const err8 = { instancePath: instancePath + "/entrypoint", schemaPath: "#/properties/entrypoint/pattern", keyword: "pattern", params: { pattern: "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, message: 'must match pattern "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$"' };
           if (vErrors === null) {
             vErrors = [err8];
@@ -38028,7 +38303,7 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
             for (let i3 = 0; i3 < len3; i3++) {
               let data10 = data9[i3];
               if (typeof data10 === "string") {
-                if (func115(data10) < 1) {
+                if (func116(data10) < 1) {
                   const err20 = { instancePath: instancePath + "/target/requiredHostCapabilities/" + i3, schemaPath: "#/properties/target/properties/requiredHostCapabilities/items/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
                   if (vErrors === null) {
                     vErrors = [err20];
@@ -38064,7 +38339,7 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
             for (let i4 = 0; i4 < len4; i4++) {
               let data12 = data11[i4];
               if (typeof data12 === "string") {
-                if (func115(data12) < 1) {
+                if (func116(data12) < 1) {
                   const err23 = { instancePath: instancePath + "/target/requiredWebApis/" + i4, schemaPath: "#/properties/target/properties/requiredWebApis/items/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
                   if (vErrors === null) {
                     vErrors = [err23];
@@ -38100,7 +38375,7 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
             for (let i5 = 0; i5 < len5; i5++) {
               let data14 = data13[i5];
               if (typeof data14 === "string") {
-                if (func115(data14) < 1) {
+                if (func116(data14) < 1) {
                   const err26 = { instancePath: instancePath + "/target/externalTools/" + i5, schemaPath: "#/properties/target/properties/externalTools/items/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
                   if (vErrors === null) {
                     vErrors = [err26];
@@ -38186,14 +38461,14 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2016.errors = vErrors;
+  validate2017.errors = vErrors;
   return errors === 0;
 }
-function validate2017(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+function validate2018(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2017.evaluated;
+  const evaluated0 = validate2018.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -38251,7 +38526,7 @@ function validate2017(data, { instancePath = "", parentData, parentDataProperty,
     if (data.contract !== void 0) {
       let data0 = data.contract;
       if (typeof data0 === "string") {
-        if (!pattern415.test(data0)) {
+        if (!pattern416.test(data0)) {
           const err5 = { instancePath: instancePath + "/contract", schemaPath: "#/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
           if (vErrors === null) {
             vErrors = [err5];
@@ -38305,7 +38580,7 @@ function validate2017(data, { instancePath = "", parentData, parentDataProperty,
     if (data.range !== void 0) {
       let data2 = data.range;
       if (typeof data2 === "string") {
-        if (!pattern58.test(data2)) {
+        if (!pattern59.test(data2)) {
           const err10 = { instancePath: instancePath + "/range", schemaPath: "#/properties/range/pattern", keyword: "pattern", params: { pattern: "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, message: 'must match pattern "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$"' };
           if (vErrors === null) {
             vErrors = [err10];
@@ -38383,7 +38658,7 @@ function validate2017(data, { instancePath = "", parentData, parentDataProperty,
         if (data4.id !== void 0) {
           let data6 = data4.id;
           if (typeof data6 === "string") {
-            if (func116(data6) < 1) {
+            if (func117(data6) < 1) {
               const err17 = { instancePath: instancePath + "/scope/id", schemaPath: "#/properties/scope/properties/id/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
               if (vErrors === null) {
                 vErrors = [err17];
@@ -38421,13 +38696,13 @@ function validate2017(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2017.errors = vErrors;
+  validate2018.errors = vErrors;
   return errors === 0;
 }
-function validate2018(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+function validate2019(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2018.evaluated;
+  const evaluated0 = validate2019.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -38525,7 +38800,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
     if (data.contract !== void 0) {
       let data2 = data.contract;
       if (typeof data2 === "string") {
-        if (!pattern416.test(data2)) {
+        if (!pattern417.test(data2)) {
           const err9 = { instancePath: instancePath + "/contract", schemaPath: "#/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
           if (vErrors === null) {
             vErrors = [err9];
@@ -38602,7 +38877,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
         if (data4.$ref !== void 0) {
           let data5 = data4.$ref;
           if (typeof data5 === "string") {
-            if (func117(data5) < 1) {
+            if (func118(data5) < 1) {
               const err16 = { instancePath: instancePath + "/schema/$ref", schemaPath: "#/properties/schema/properties/%24ref/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
               if (vErrors === null) {
                 vErrors = [err16];
@@ -38634,7 +38909,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
     if (data.conformanceProfile !== void 0) {
       let data6 = data.conformanceProfile;
       if (typeof data6 === "string") {
-        if (func117(data6) < 1) {
+        if (func118(data6) < 1) {
           const err19 = { instancePath: instancePath + "/conformanceProfile", schemaPath: "#/properties/conformanceProfile/minLength", keyword: "minLength", params: { limit: 1 }, message: "must NOT have fewer than 1 characters" };
           if (vErrors === null) {
             vErrors = [err19];
@@ -38679,7 +38954,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
         if (data7.releaseVia !== void 0) {
           let data8 = data7.releaseVia;
           if (typeof data8 === "string") {
-            if (!pattern59.test(data8)) {
+            if (!pattern510.test(data8)) {
               const err23 = { instancePath: instancePath + "/surface/releaseVia", schemaPath: "#/properties/surface/properties/releaseVia/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err23];
@@ -38714,7 +38989,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
             for (let i0 = 0; i0 < len0; i0++) {
               let data10 = data9[i0];
               if (typeof data10 === "string") {
-                if (!pattern59.test(data10)) {
+                if (!pattern510.test(data10)) {
                   const err26 = { instancePath: instancePath + "/surface/fields/" + i0, schemaPath: "#/properties/surface/properties/fields/items/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                   if (vErrors === null) {
                     vErrors = [err26];
@@ -38781,7 +39056,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
             for (const key3 in data11) {
               const _errs26 = errors;
               if (typeof key3 === "string") {
-                if (!pattern59.test(key3)) {
+                if (!pattern510.test(key3)) {
                   const err31 = { instancePath: instancePath + "/surface/methods", schemaPath: "#/properties/surface/properties/methods/propertyNames/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"', propertyName: key3 };
                   if (vErrors === null) {
                     vErrors = [err31];
@@ -38892,7 +39167,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
                     if (data14.contract !== void 0) {
                       let data15 = data14.contract;
                       if (typeof data15 === "string") {
-                        if (!pattern416.test(data15)) {
+                        if (!pattern417.test(data15)) {
                           const err41 = { instancePath: instancePath + "/surface/methods/" + key4.replace(/~/g, "~0").replace(/\//g, "~1") + "/result/contract", schemaPath: "#/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/result/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
                           if (vErrors === null) {
                             vErrors = [err41];
@@ -39047,7 +39322,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
                     if (data18.key !== void 0) {
                       let data20 = data18.key;
                       if (typeof data20 === "string") {
-                        if (!pattern59.test(data20)) {
+                        if (!pattern510.test(data20)) {
                           const err55 = { instancePath: instancePath + "/surface/methods/" + key4.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err55];
@@ -39163,7 +39438,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
                     if (data21.key !== void 0) {
                       let data23 = data21.key;
                       if (typeof data23 === "string") {
-                        if (!pattern59.test(data23)) {
+                        if (!pattern510.test(data23)) {
                           const err65 = { instancePath: instancePath + "/surface/methods/" + key4.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/properties/surface/properties/methods/additionalProperties/oneOf/0/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err65];
@@ -39486,7 +39761,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
                     if (data31.key !== void 0) {
                       let data33 = data31.key;
                       if (typeof data33 === "string") {
-                        if (!pattern59.test(data33)) {
+                        if (!pattern510.test(data33)) {
                           const err94 = { instancePath: instancePath + "/surface/methods/" + key4.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/properties/surface/properties/methods/additionalProperties/oneOf/1/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err94];
@@ -39602,7 +39877,7 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
                     if (data34.key !== void 0) {
                       let data36 = data34.key;
                       if (typeof data36 === "string") {
-                        if (!pattern59.test(data36)) {
+                        if (!pattern510.test(data36)) {
                           const err104 = { instancePath: instancePath + "/surface/methods/" + key4.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/properties/surface/properties/methods/additionalProperties/oneOf/1/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                           if (vErrors === null) {
                             vErrors = [err104];
@@ -39864,13 +40139,13 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2018.errors = vErrors;
+  validate2019.errors = vErrors;
   return errors === 0;
 }
-function validate2019(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+function validate2020(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2019.evaluated;
+  const evaluated0 = validate2020.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -39901,7 +40176,7 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
     if (data.releaseVia !== void 0) {
       let data0 = data.releaseVia;
       if (typeof data0 === "string") {
-        if (!pattern417.test(data0)) {
+        if (!pattern418.test(data0)) {
           const err2 = { instancePath: instancePath + "/releaseVia", schemaPath: "#/properties/releaseVia/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
           if (vErrors === null) {
             vErrors = [err2];
@@ -39936,7 +40211,7 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
         for (let i0 = 0; i0 < len0; i0++) {
           let data2 = data1[i0];
           if (typeof data2 === "string") {
-            if (!pattern417.test(data2)) {
+            if (!pattern418.test(data2)) {
               const err5 = { instancePath: instancePath + "/fields/" + i0, schemaPath: "#/properties/fields/items/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err5];
@@ -40003,7 +40278,7 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
         for (const key1 in data3) {
           const _errs10 = errors;
           if (typeof key1 === "string") {
-            if (!pattern417.test(key1)) {
+            if (!pattern418.test(key1)) {
               const err10 = { instancePath: instancePath + "/methods", schemaPath: "#/properties/methods/propertyNames/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"', propertyName: key1 };
               if (vErrors === null) {
                 vErrors = [err10];
@@ -40269,7 +40544,7 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
                 if (data10.key !== void 0) {
                   let data12 = data10.key;
                   if (typeof data12 === "string") {
-                    if (!pattern417.test(data12)) {
+                    if (!pattern418.test(data12)) {
                       const err34 = { instancePath: instancePath + "/methods/" + key2.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/properties/methods/additionalProperties/oneOf/0/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                       if (vErrors === null) {
                         vErrors = [err34];
@@ -40385,7 +40660,7 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
                 if (data13.key !== void 0) {
                   let data15 = data13.key;
                   if (typeof data15 === "string") {
-                    if (!pattern417.test(data15)) {
+                    if (!pattern418.test(data15)) {
                       const err44 = { instancePath: instancePath + "/methods/" + key2.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/properties/methods/additionalProperties/oneOf/0/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                       if (vErrors === null) {
                         vErrors = [err44];
@@ -40708,7 +40983,7 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
                 if (data23.key !== void 0) {
                   let data25 = data23.key;
                   if (typeof data25 === "string") {
-                    if (!pattern417.test(data25)) {
+                    if (!pattern418.test(data25)) {
                       const err73 = { instancePath: instancePath + "/methods/" + key2.replace(/~/g, "~0").replace(/\//g, "~1") + "/signal/key", schemaPath: "#/properties/methods/additionalProperties/oneOf/1/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                       if (vErrors === null) {
                         vErrors = [err73];
@@ -40824,7 +41099,7 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
                 if (data26.key !== void 0) {
                   let data28 = data26.key;
                   if (typeof data28 === "string") {
-                    if (!pattern417.test(data28)) {
+                    if (!pattern418.test(data28)) {
                       const err83 = { instancePath: instancePath + "/methods/" + key2.replace(/~/g, "~0").replace(/\//g, "~1") + "/progress/key", schemaPath: "#/properties/methods/additionalProperties/oneOf/1/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
                       if (vErrors === null) {
                         vErrors = [err83];
@@ -41076,13 +41351,13 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
     }
     errors++;
   }
-  validate2019.errors = vErrors;
+  validate2020.errors = vErrors;
   return errors === 0;
 }
-function validate2020(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
+function validate2021(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   let vErrors = null;
   let errors = 0;
-  const evaluated0 = validate2020.evaluated;
+  const evaluated0 = validate2021.evaluated;
   if (evaluated0.dynamicProps) {
     evaluated0.props = void 0;
   }
@@ -41169,7 +41444,7 @@ function validate2020(data, { instancePath = "", parentData, parentDataProperty,
         if (data1.contract !== void 0) {
           let data2 = data1.contract;
           if (typeof data2 === "string") {
-            if (!pattern418.test(data2)) {
+            if (!pattern419.test(data2)) {
               const err7 = { instancePath: instancePath + "/result/contract", schemaPath: "#/oneOf/0/properties/result/properties/contract/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, message: 'must match pattern "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$"' };
               if (vErrors === null) {
                 vErrors = [err7];
@@ -41324,7 +41599,7 @@ function validate2020(data, { instancePath = "", parentData, parentDataProperty,
         if (data5.key !== void 0) {
           let data7 = data5.key;
           if (typeof data7 === "string") {
-            if (!pattern510.test(data7)) {
+            if (!pattern511.test(data7)) {
               const err21 = { instancePath: instancePath + "/signal/key", schemaPath: "#/oneOf/0/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err21];
@@ -41440,7 +41715,7 @@ function validate2020(data, { instancePath = "", parentData, parentDataProperty,
         if (data8.key !== void 0) {
           let data10 = data8.key;
           if (typeof data10 === "string") {
-            if (!pattern510.test(data10)) {
+            if (!pattern511.test(data10)) {
               const err31 = { instancePath: instancePath + "/progress/key", schemaPath: "#/oneOf/0/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err31];
@@ -41763,7 +42038,7 @@ function validate2020(data, { instancePath = "", parentData, parentDataProperty,
         if (data18.key !== void 0) {
           let data20 = data18.key;
           if (typeof data20 === "string") {
-            if (!pattern510.test(data20)) {
+            if (!pattern511.test(data20)) {
               const err60 = { instancePath: instancePath + "/signal/key", schemaPath: "#/oneOf/1/properties/signal/anyOf/1/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err60];
@@ -41879,7 +42154,7 @@ function validate2020(data, { instancePath = "", parentData, parentDataProperty,
         if (data21.key !== void 0) {
           let data23 = data21.key;
           if (typeof data23 === "string") {
-            if (!pattern510.test(data23)) {
+            if (!pattern511.test(data23)) {
               const err70 = { instancePath: instancePath + "/progress/key", schemaPath: "#/oneOf/1/properties/progress/properties/key/pattern", keyword: "pattern", params: { pattern: "^[a-z][a-zA-Z0-9]{0,63}$" }, message: 'must match pattern "^[a-z][a-zA-Z0-9]{0,63}$"' };
               if (vErrors === null) {
                 vErrors = [err70];
@@ -42111,11 +42386,11 @@ function validate2020(data, { instancePath = "", parentData, parentDataProperty,
       }
     }
   }
-  validate2020.errors = vErrors;
+  validate2021.errors = vErrors;
   evaluated0.props = props1;
   return errors === 0;
 }
-var __create, __defProp2, __getOwnPropDesc, __getOwnPropNames2, __getProtoOf, __hasOwnProp, __commonJS, __copyProps, __toESM, require_ucs2length, require_fast_deep_equal, require_equal, sourceSpanV1, pattern4, func1Module, extensionManifestV1, schema31, pattern42, pattern6, pattern7, pattern8, func1, func1Module2, extensionManifestModkitBlockV1, schema312, pattern43, pattern62, pattern72, func12, func1Module3, extensionRequirementV1, schema313, pattern44, pattern5, func13, func2Module, func0Module, codecContributionSpecV1, schema314, func14, func2, func0, pattern45, pattern63, pattern73, pattern82, pattern13, pattern17, pattern21, pattern25, pattern26, func3Module, serviceProviderContributionSpecV1, schema315, func15, func3, pattern46, pattern52, pattern64, pattern9, pattern11, pattern12, func0Module2, func3Module2, viewerContributionSpecV1, schema316, func16, func02, func32, pattern47, pattern53, pattern65, pattern74, pattern92, func2Module2, func0Module3, editorContributionSpecV1, schema317, func17, func22, func03, pattern48, pattern54, pattern66, func1Module4, knowledgePackSpecV1, schema318, func18, func4, pattern49, pattern55, pattern93, pattern112, func1Module5, writerRequirementV1, schema319, func19, func1Module6, writerOfferV1, schema3110, func110, func1Module7, traitDefinitionSpecV1, schema3111, pattern410, pattern56, pattern67, pattern83, func111, func2Module3, contractDefinitionSpecV1, schema3112, func112, func23, pattern411, pattern68, func2Module4, func0Module4, subjectDescriptorV2, schema3113, func113, func24, func04, pattern412, pattern84, pattern18, pattern19, pattern212, pattern262, pattern32, wrapper0, func2Module5, contributionManifestV1, schema3114, func114, func25, pattern413, pattern69, pattern75, pattern94, func1Module8, runtimeVariantDeclarationV1, schema3115, pattern414, pattern57, func115, func1Module9, scopedContractRequirementV1, schema3116, pattern415, pattern58, func116, func1Module10, dataSourceContractDefinitionV1, schema3117, pattern416, pattern59, func117, dataSourceSurfaceV1, schema3118, pattern417, pattern76, dataSourceMethodSurfaceV1, schema3119, pattern418, pattern510, PRECOMPILED_SCHEMA_VALIDATORS;
+var __create, __defProp2, __getOwnPropDesc, __getOwnPropNames2, __getProtoOf, __hasOwnProp, __commonJS, __copyProps, __toESM, require_ucs2length, require_fast_deep_equal, require_equal, sourceSpanV1, pattern4, func1Module, extensionManifestV1, schema31, pattern42, pattern6, pattern7, pattern8, func1, func1Module2, extensionManifestModkitBlockV1, schema312, pattern43, pattern62, pattern72, func12, func1Module3, extensionRequirementV1, schema313, pattern44, pattern5, func13, func2Module, func0Module, codecContributionSpecV1, schema314, func14, func2, func0, pattern45, pattern63, pattern73, pattern82, pattern13, pattern17, pattern21, pattern25, pattern26, func3Module, serviceProviderContributionSpecV1, schema315, func15, func3, pattern46, pattern52, pattern64, pattern9, pattern11, pattern12, func0Module2, func3Module2, viewerContributionSpecV1, schema316, func16, func02, func32, pattern47, pattern53, pattern65, pattern74, pattern92, func2Module2, func0Module3, editorContributionSpecV1, schema317, func17, func22, func03, pattern48, pattern54, pattern66, func1Module4, knowledgePackSpecV1, schema318, func18, func4, pattern49, pattern55, pattern93, pattern112, func1Module5, localizationContributionSpecV1, func19, pattern410, pattern56, pattern67, func1Module6, writerRequirementV1, schema319, func110, func1Module7, writerOfferV1, schema3110, func111, func1Module8, traitDefinitionSpecV1, schema3111, pattern411, pattern57, pattern68, pattern83, func112, func2Module3, contractDefinitionSpecV1, schema3112, func113, func23, pattern412, pattern69, func2Module4, func0Module4, subjectDescriptorV2, schema3113, func114, func24, func04, pattern413, pattern84, pattern18, pattern19, pattern212, pattern262, pattern32, wrapper0, func2Module5, contributionManifestV1, schema3114, func115, func25, pattern414, pattern610, pattern75, pattern94, func1Module9, runtimeVariantDeclarationV1, schema3115, pattern415, pattern58, func116, func1Module10, scopedContractRequirementV1, schema3116, pattern416, pattern59, func117, func1Module11, dataSourceContractDefinitionV1, schema3117, pattern417, pattern510, func118, dataSourceSurfaceV1, schema3118, pattern418, pattern76, dataSourceMethodSurfaceV1, schema3119, pattern419, pattern511, PRECOMPILED_SCHEMA_VALIDATORS;
 var init_validators_generated = __esm({
   "packages/sdk/dist/manifest/validators.generated.js"() {
     "use strict";
@@ -42305,40 +42580,47 @@ var init_validators_generated = __esm({
     pattern112 = new RegExp("^\\d{4}-\\d{2}-\\d{2}$", "u");
     validate209.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
     func1Module5 = __toESM(require_ucs2length(), 1);
-    writerRequirementV1 = validate2010;
-    schema319 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/writer-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] } } };
+    localizationContributionSpecV1 = validate2010;
     func19 = func1Module5.default?.default ?? func1Module5.default;
+    pattern410 = new RegExp("^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$", "u");
+    pattern56 = new RegExp("^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$", "u");
+    pattern67 = new RegExp("^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$", "u");
     validate2010.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
     func1Module6 = __toESM(require_ucs2length(), 1);
-    writerOfferV1 = validate2011;
-    schema3110 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/writer-offer.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip", "providerId", "fidelityEvidenceId"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] }, "providerId": { "type": "string", "minLength": 1 }, "fidelityEvidenceId": { "type": "string", "minLength": 1 } } };
+    writerRequirementV1 = validate2011;
+    schema319 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/writer-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] } } };
     func110 = func1Module6.default?.default ?? func1Module6.default;
     validate2011.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
     func1Module7 = __toESM(require_ucs2length(), 1);
-    traitDefinitionSpecV1 = validate2012;
-    schema3111 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "id", "version", "scope", "parametersSchema", "transport"], "properties": { "schemaVersion": { "const": 1 }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "scope": { "anyOf": [{ "enum": ["source", "asset", "subject", "workspace", "service", "operation", "view-session", "representation"] }, { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }] }, "parametersSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "transport": { "enum": ["json", "structured-clone"] }, "documentation": { "type": "string", "minLength": 1 }, "imports": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "range"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } } } };
-    pattern410 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern56 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
-    pattern67 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern83 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
+    writerOfferV1 = validate2012;
+    schema3110 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/writer-offer.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip", "providerId", "fidelityEvidenceId"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] }, "providerId": { "type": "string", "minLength": 1 }, "fidelityEvidenceId": { "type": "string", "minLength": 1 } } };
     func111 = func1Module7.default?.default ?? func1Module7.default;
     validate2012.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    func1Module8 = __toESM(require_ucs2length(), 1);
+    traitDefinitionSpecV1 = validate2013;
+    schema3111 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "id", "version", "scope", "parametersSchema", "transport"], "properties": { "schemaVersion": { "const": 1 }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "scope": { "anyOf": [{ "enum": ["source", "asset", "subject", "workspace", "service", "operation", "view-session", "representation"] }, { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }] }, "parametersSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "transport": { "enum": ["json", "structured-clone"] }, "documentation": { "type": "string", "minLength": 1 }, "imports": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "range"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } } } };
+    pattern411 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern57 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
+    pattern68 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern83 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
+    func112 = func1Module8.default?.default ?? func1Module8.default;
+    validate2013.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
     func2Module3 = __toESM(require_ucs2length(), 1);
-    contractDefinitionSpecV1 = validate2013;
+    contractDefinitionSpecV1 = validate2014;
     schema3112 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/contract-definition-spec.v1.schema.json", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "offerFacet", "requestFacet", "matching", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "service" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "offerFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } } } }] }, "requestFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } } } }] }, "matching": { "type": "object", "additionalProperties": false, "required": ["profile", "major"], "properties": { "profile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "configuration": { "title": "JsonValue" } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }, { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }] };
-    func112 = Object.prototype.hasOwnProperty;
+    func113 = Object.prototype.hasOwnProperty;
     func23 = func2Module3.default?.default ?? func2Module3.default;
-    pattern411 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern68 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
-    validate2013.evaluated = { "dynamicProps": true, "dynamicItems": false };
+    pattern412 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern69 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
+    validate2014.evaluated = { "dynamicProps": true, "dynamicItems": false };
     func2Module4 = __toESM(require_ucs2length(), 1);
     func0Module4 = __toESM(require_equal(), 1);
-    subjectDescriptorV2 = validate2014;
+    subjectDescriptorV2 = validate2015;
     schema3113 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/subject-descriptor.v2.schema.json", "$defs": { "jsonValue": { "title": "JsonValue", "oneOf": [{ "type": "null" }, { "type": "boolean" }, { "type": "number" }, { "type": "string" }, { "type": "array", "items": { "$ref": "#/$defs/jsonValue" } }, { "type": "object", "additionalProperties": { "$ref": "#/$defs/jsonValue" } }] } }, "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["schemaVersion", "subjectUri", "origin", "traits", "operations", "constraints", "dataSources", "diagnostics", "revision", "interpretation", "candidates"], "properties": { "schemaVersion": { "const": 2 }, "subjectUri": { "type": "string", "pattern": "\\S" }, "origin": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "binding"], "properties": { "kind": { "const": "single" }, "binding": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "bindings"], "properties": { "kind": { "const": "bundle" }, "bindings": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "primary": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "root", "revision"], "properties": { "kind": { "const": "namespace" }, "root": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "inputs"], "properties": { "kind": { "const": "derived" }, "inputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"], "properties": { "bindingId": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "subjectUri": { "type": "string", "minLength": 1 }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "compositionFingerprint": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "recipe": { "type": "object", "additionalProperties": false, "required": ["extensionId", "extensionVersion", "contributionId", "operation"], "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "extensionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "operation": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "parameters": { "$ref": "#/$defs/jsonValue" } } }, "materialization": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }] }, "traits": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "enum": ["partial", "disabled", "dependency-required"] }, "diagnosticIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 } } }] } }, "operations": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource", "reason"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "enum": ["disabled", "dependency-required"] }, "reason": { "type": "string", "minLength": 1 } } }] } }, "constraints": { "type": "object", "additionalProperties": false, "required": ["readOnly", "seekable", "randomAccess", "trusted"], "properties": { "readOnly": { "type": "boolean" }, "seekable": { "type": "boolean" }, "randomAccess": { "type": "boolean" }, "trusted": { "type": "boolean" }, "maxDecodedBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "unsupportedFeatures": { "type": "array", "items": { "type": "string" } } } }, "dataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "interpretation": { "const": "none" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["codecId", "confidence", "evidence", "requiredRanges"], "properties": { "codecId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "evidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "weight"], "properties": { "kind": { "enum": ["magic", "structure", "companion", "context", "extension", "user-override"] }, "weight": { "type": "number" }, "note": { "type": "string" } } } }, "requiredRanges": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } } } } } } }, { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "subjectUri", "origin", "traits", "operations", "constraints", "dataSources", "diagnostics", "revision", "interpretation", "identity", "metadata"], "properties": { "schemaVersion": { "const": 2 }, "subjectUri": { "type": "string", "pattern": "\\S" }, "origin": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "binding"], "properties": { "kind": { "const": "single" }, "binding": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "bindings"], "properties": { "kind": { "const": "bundle" }, "bindings": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "primary": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "root", "revision"], "properties": { "kind": { "const": "namespace" }, "root": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "inputs"], "properties": { "kind": { "const": "derived" }, "inputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"], "properties": { "bindingId": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "subjectUri": { "type": "string", "minLength": 1 }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "compositionFingerprint": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "recipe": { "type": "object", "additionalProperties": false, "required": ["extensionId", "extensionVersion", "contributionId", "operation"], "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "extensionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "operation": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "parameters": { "$ref": "#/$defs/jsonValue" } } }, "materialization": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }] }, "traits": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "enum": ["partial", "disabled", "dependency-required"] }, "diagnosticIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 } } }] } }, "operations": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource", "reason"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "enum": ["disabled", "dependency-required"] }, "reason": { "type": "string", "minLength": 1 } } }] } }, "constraints": { "type": "object", "additionalProperties": false, "required": ["readOnly", "seekable", "randomAccess", "trusted"], "properties": { "readOnly": { "type": "boolean" }, "seekable": { "type": "boolean" }, "randomAccess": { "type": "boolean" }, "trusted": { "type": "boolean" }, "maxDecodedBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "unsupportedFeatures": { "type": "array", "items": { "type": "string" } } } }, "dataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "interpretation": { "const": "codec" }, "identity": { "type": "object", "additionalProperties": false, "required": ["codecId", "codecVersion", "formatId", "formatLabel", "confidence", "detection"], "properties": { "codecId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "codecVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "formatId": { "type": "string", "minLength": 1 }, "formatLabel": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "detection": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "weight"], "properties": { "kind": { "enum": ["magic", "structure", "companion", "context", "extension", "user-override"] }, "weight": { "type": "number" }, "note": { "type": "string" } } } } } }, "metadata": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "label", "entries"], "properties": { "id": { "type": "string", "minLength": 1 }, "label": { "type": "string" }, "entries": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["key", "value"], "properties": { "key": { "type": "string", "minLength": 1 }, "value": { "$ref": "#/$defs/jsonValue" } } } } } } }, "companions": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true, "maxItems": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one-or-more" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "zero-or-one" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true, "maxItems": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "many" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "enum": ["one", "one-or-more"] }, "state": { "const": "missing" }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "enum": ["zero-or-one", "many"] }, "state": { "const": "missing" }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one" }, "state": { "const": "ambiguous" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, "minItems": 2, "uniqueItems": true }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "zero-or-one" }, "state": { "const": "ambiguous" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, "minItems": 2, "uniqueItems": true }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }] } } } }] };
-    func113 = Object.prototype.hasOwnProperty;
+    func114 = Object.prototype.hasOwnProperty;
     func24 = func2Module4.default?.default ?? func2Module4.default;
     func04 = func0Module4.default?.default ?? func0Module4.default;
-    pattern412 = new RegExp("\\S", "u");
+    pattern413 = new RegExp("\\S", "u");
     pattern84 = new RegExp("^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$", "u");
     pattern18 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
     pattern19 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
@@ -42347,48 +42629,48 @@ var init_validators_generated = __esm({
     pattern32 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
     wrapper0 = { validate: validate21 };
     validate21.evaluated = { "dynamicProps": true, "dynamicItems": true };
-    validate2014.evaluated = { "dynamicProps": true, "dynamicItems": false };
+    validate2015.evaluated = { "dynamicProps": true, "dynamicItems": false };
     func2Module5 = __toESM(require_ucs2length(), 1);
-    contributionManifestV1 = validate2015;
+    contributionManifestV1 = validate2016;
     schema3114 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/contribution-manifest.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "contract", "id", "displayName", "spec"], "properties": { "schemaVersion": { "const": 1 }, "contract": { "type": "object", "additionalProperties": false, "required": ["id", "major"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 }, "status": { "enum": ["supported", "partial", "unsupported", "experimental"] }, "runtimeVariants": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "spec": { "title": "JsonValue" } } };
-    func114 = Object.prototype.hasOwnProperty;
+    func115 = Object.prototype.hasOwnProperty;
     func25 = func2Module5.default?.default ?? func2Module5.default;
-    pattern413 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern69 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
+    pattern414 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern610 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
     pattern75 = new RegExp("^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$", "u");
     pattern94 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
-    validate2015.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-    func1Module8 = __toESM(require_ucs2length(), 1);
-    runtimeVariantDeclarationV1 = validate2016;
-    schema3115 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } };
-    pattern414 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
-    pattern57 = new RegExp("^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$", "u");
-    func115 = func1Module8.default?.default ?? func1Module8.default;
     validate2016.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
     func1Module9 = __toESM(require_ucs2length(), 1);
-    scopedContractRequirementV1 = validate2017;
-    schema3116 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } };
-    pattern415 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern58 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
+    runtimeVariantDeclarationV1 = validate2017;
+    schema3115 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } };
+    pattern415 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
+    pattern58 = new RegExp("^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$", "u");
     func116 = func1Module9.default?.default ?? func1Module9.default;
     validate2017.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
     func1Module10 = __toESM(require_ucs2length(), 1);
-    dataSourceContractDefinitionV1 = validate2018;
-    schema3117 = { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } };
+    scopedContractRequirementV1 = validate2018;
+    schema3116 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkitx.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } };
     pattern416 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern59 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
+    pattern59 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
     func117 = func1Module10.default?.default ?? func1Module10.default;
     validate2018.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-    dataSourceSurfaceV1 = validate2019;
-    schema3118 = { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } };
-    pattern417 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
-    pattern76 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    validate2019.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-    dataSourceMethodSurfaceV1 = validate2020;
-    schema3119 = { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] };
-    pattern418 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    func1Module11 = __toESM(require_ucs2length(), 1);
+    dataSourceContractDefinitionV1 = validate2019;
+    schema3117 = { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } };
+    pattern417 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
     pattern510 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
-    validate2020.evaluated = { "dynamicProps": true, "dynamicItems": false };
+    func118 = func1Module11.default?.default ?? func1Module11.default;
+    validate2019.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    dataSourceSurfaceV1 = validate2020;
+    schema3118 = { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } };
+    pattern418 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
+    pattern76 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    validate2020.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    dataSourceMethodSurfaceV1 = validate2021;
+    schema3119 = { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] };
+    pattern419 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern511 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
+    validate2021.evaluated = { "dynamicProps": true, "dynamicItems": false };
     PRECOMPILED_SCHEMA_VALIDATORS = /* @__PURE__ */ new Map([
       ['{\n  "$id": "https://schemas.modkitx.org/x3/source-span.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "oneOf": [\n    {\n      "additionalProperties": false,\n      "properties": {\n        "byteLength": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "byteOffset": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        }\n      },\n      "required": [\n        "byteOffset",\n        "byteLength"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "column": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "line": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Length": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Offset": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "required": [\n        "utf16Offset",\n        "utf16Length",\n        "line",\n        "column"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "byteLength": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "byteOffset": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "column": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "line": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Length": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Offset": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "required": [\n        "byteOffset",\n        "byteLength",\n        "utf16Offset",\n        "utf16Length",\n        "line",\n        "column"\n      ],\n      "type": "object"\n    }\n  ]\n}\n', sourceSpanV1],
       ['{\n  "$id": "https://schemas.modkitx.org/x3/extension-manifest.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "contributionManifests": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "dependsOn": {\n      "items": {\n        "$id": "https://schemas.modkitx.org/x3/extension-requirement.v1.schema.json",\n        "$schema": "https://json-schema.org/draft/2020-12/schema",\n        "additionalProperties": false,\n        "properties": {\n          "extension": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "mode": {\n            "enum": [\n              "required",\n              "default",\n              "suggested",\n              "integrates"\n            ]\n          },\n          "range": {\n            "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n            "type": "string"\n          },\n          "scope": {\n            "additionalProperties": false,\n            "properties": {\n              "id": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "kind": {\n                "enum": [\n                  "contribution",\n                  "offer",\n                  "operation",\n                  "intent",\n                  "variant",\n                  "profile",\n                  "projection",\n                  "slot"\n                ]\n              }\n            },\n            "required": [\n              "kind",\n              "id"\n            ],\n            "type": "object"\n          }\n        },\n        "required": [\n          "extension",\n          "mode",\n          "scope"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "id": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "license": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "publisher": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "schemaVersion": {\n      "const": 1\n    },\n    "version": {\n      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-((?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\\\.(?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\\+([0-9a-zA-Z-]+(?:\\\\.[0-9a-zA-Z-]+)*))?$",\n      "type": "string"\n    }\n  },\n  "required": [\n    "schemaVersion",\n    "publisher",\n    "id",\n    "version",\n    "license",\n    "contributionManifests"\n  ],\n  "type": "object"\n}\n', extensionManifestV1],
@@ -42399,6 +42681,7 @@ var init_validators_generated = __esm({
       ['{\n  "$id": "https://schemas.modkitx.org/x3/viewer-contribution-spec.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "applicability": {\n      "additionalProperties": false,\n      "properties": {\n        "interpretation": {\n          "enum": [\n            "none",\n            "codec",\n            "any"\n          ]\n        },\n        "longestLineBytes": {\n          "additionalProperties": false,\n          "properties": {\n            "maximum": {\n              "maximum": 9007199254740991,\n              "minimum": 0,\n              "type": "integer"\n            },\n            "whenUnknown": {\n              "enum": [\n                "eligible",\n                "ineligible"\n              ]\n            }\n          },\n          "required": [\n            "maximum",\n            "whenUnknown"\n          ],\n          "type": "object"\n        },\n        "sourceBytes": {\n          "additionalProperties": false,\n          "properties": {\n            "maximum": {\n              "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n              "type": "string"\n            }\n          },\n          "type": "object"\n        }\n      },\n      "type": "object"\n    },\n    "conflicts": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "consumesDataSources": {\n      "items": {\n        "oneOf": [\n          {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "enum": [\n                  "common.view/text-data-source",\n                  "common.view/byte-range-source",\n                  "common.view/tree-data-source",\n                  "common.view/table-data-source",\n                  "common.view/transport-source",\n                  "common.view/namespace-entry-source",\n                  "common.view/raster-image-source",\n                  "common.view/vector-scene-source",\n                  "common.view/audio-media-source",\n                  "common.view/video-media-source",\n                  "common.view/model-scene-source",\n                  "common.view/world-scene-source",\n                  "common.view/model-resource-refs-source",\n                  "common.view/model-skeleton-source",\n                  "common.view/model-animation-source",\n                  "common.view/model-collision-source",\n                  "common.view/model-material-source",\n                  "common.view/model-socket-source",\n                  "common.view/relation-graph-source",\n                  "common.view/subject-selector-source",\n                  "common.view/subject-facts-source",\n                  "common.view/subject-calculations-source",\n                  "common.view/slide-deck-source"\n                ]\n              },\n              "major": {\n                "const": 1\n              }\n            },\n            "required": [\n              "contract",\n              "major"\n            ],\n            "type": "object"\n          },\n          {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "not": {\n                  "enum": [\n                    "common.view/text-data-source",\n                    "common.view/byte-range-source",\n                    "common.view/tree-data-source",\n                    "common.view/table-data-source",\n                    "common.view/transport-source",\n                    "common.view/namespace-entry-source",\n                    "common.view/raster-image-source",\n                    "common.view/vector-scene-source",\n                    "common.view/audio-media-source",\n                    "common.view/video-media-source",\n                    "common.view/model-scene-source",\n                    "common.view/world-scene-source",\n                    "common.view/model-resource-refs-source",\n                    "common.view/model-skeleton-source",\n                    "common.view/model-animation-source",\n                    "common.view/model-collision-source",\n                    "common.view/model-material-source",\n                    "common.view/model-socket-source",\n                    "common.view/relation-graph-source",\n                    "common.view/subject-selector-source",\n                    "common.view/subject-facts-source",\n                    "common.view/subject-calculations-source",\n                    "common.view/slide-deck-source"\n                  ]\n                },\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "major": {\n                "maximum": 9007199254740991,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "opaque": {\n                "const": true\n              }\n            },\n            "required": [\n              "contract",\n              "major",\n              "opaque"\n            ],\n            "type": "object"\n          }\n        ]\n      },\n      "type": "array"\n    },\n    "hosts": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "kind": {\n      "enum": [\n        "stage",\n        "tree",\n        "panel",\n        "toolbar",\n        "transport",\n        "status",\n        "fallback"\n      ]\n    },\n    "optionalDataSources": {\n      "items": {\n        "oneOf": [\n          {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "enum": [\n                  "common.view/text-data-source",\n                  "common.view/byte-range-source",\n                  "common.view/tree-data-source",\n                  "common.view/table-data-source",\n                  "common.view/transport-source",\n                  "common.view/namespace-entry-source",\n                  "common.view/raster-image-source",\n                  "common.view/vector-scene-source",\n                  "common.view/audio-media-source",\n                  "common.view/video-media-source",\n                  "common.view/model-scene-source",\n                  "common.view/world-scene-source",\n                  "common.view/model-resource-refs-source",\n                  "common.view/model-skeleton-source",\n                  "common.view/model-animation-source",\n                  "common.view/model-collision-source",\n                  "common.view/model-material-source",\n                  "common.view/model-socket-source",\n                  "common.view/relation-graph-source",\n                  "common.view/subject-selector-source",\n                  "common.view/subject-facts-source",\n                  "common.view/subject-calculations-source",\n                  "common.view/slide-deck-source"\n                ]\n              },\n              "major": {\n                "const": 1\n              }\n            },\n            "required": [\n              "contract",\n              "major"\n            ],\n            "type": "object"\n          },\n          {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "not": {\n                  "enum": [\n                    "common.view/text-data-source",\n                    "common.view/byte-range-source",\n                    "common.view/tree-data-source",\n                    "common.view/table-data-source",\n                    "common.view/transport-source",\n                    "common.view/namespace-entry-source",\n                    "common.view/raster-image-source",\n                    "common.view/vector-scene-source",\n                    "common.view/audio-media-source",\n                    "common.view/video-media-source",\n                    "common.view/model-scene-source",\n                    "common.view/world-scene-source",\n                    "common.view/model-resource-refs-source",\n                    "common.view/model-skeleton-source",\n                    "common.view/model-animation-source",\n                    "common.view/model-collision-source",\n                    "common.view/model-material-source",\n                    "common.view/model-socket-source",\n                    "common.view/relation-graph-source",\n                    "common.view/subject-selector-source",\n                    "common.view/subject-facts-source",\n                    "common.view/subject-calculations-source",\n                    "common.view/slide-deck-source"\n                  ]\n                },\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "major": {\n                "maximum": 9007199254740991,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "opaque": {\n                "const": true\n              }\n            },\n            "required": [\n              "contract",\n              "major",\n              "opaque"\n            ],\n            "type": "object"\n          }\n        ]\n      },\n      "type": "array"\n    },\n    "priority": {\n      "type": "number"\n    },\n    "requiresOperations": {\n      "items": {\n        "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)$",\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "requiresTraits": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "definitionRange": {\n            "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n            "type": "string"\n          },\n          "id": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "states": {\n            "items": {\n              "enum": [\n                "available",\n                "partial",\n                "disabled",\n                "dependency-required"\n              ]\n            },\n            "minItems": 1,\n            "type": "array",\n            "uniqueItems": true\n          }\n        },\n        "required": [\n          "id"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "singletonGroup": {\n      "minLength": 1,\n      "type": "string"\n    }\n  },\n  "required": [\n    "kind",\n    "consumesDataSources",\n    "priority"\n  ],\n  "type": "object"\n}\n', viewerContributionSpecV1],
       ['{\n  "$id": "https://schemas.modkitx.org/x3/editor-contribution-spec.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "consumesDataSources": {\n      "items": {\n        "oneOf": [\n          {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "enum": [\n                  "common.view/text-data-source",\n                  "common.view/byte-range-source",\n                  "common.view/tree-data-source",\n                  "common.view/table-data-source",\n                  "common.view/transport-source",\n                  "common.view/namespace-entry-source",\n                  "common.view/raster-image-source",\n                  "common.view/vector-scene-source",\n                  "common.view/audio-media-source",\n                  "common.view/video-media-source",\n                  "common.view/model-scene-source",\n                  "common.view/world-scene-source",\n                  "common.view/model-resource-refs-source",\n                  "common.view/model-skeleton-source",\n                  "common.view/model-animation-source",\n                  "common.view/model-collision-source",\n                  "common.view/model-material-source",\n                  "common.view/model-socket-source",\n                  "common.view/relation-graph-source",\n                  "common.view/subject-selector-source",\n                  "common.view/subject-facts-source",\n                  "common.view/subject-calculations-source",\n                  "common.view/slide-deck-source"\n                ]\n              },\n              "major": {\n                "const": 1\n              }\n            },\n            "required": [\n              "contract",\n              "major"\n            ],\n            "type": "object"\n          },\n          {\n            "additionalProperties": false,\n            "properties": {\n              "contract": {\n                "not": {\n                  "enum": [\n                    "common.view/text-data-source",\n                    "common.view/byte-range-source",\n                    "common.view/tree-data-source",\n                    "common.view/table-data-source",\n                    "common.view/transport-source",\n                    "common.view/namespace-entry-source",\n                    "common.view/raster-image-source",\n                    "common.view/vector-scene-source",\n                    "common.view/audio-media-source",\n                    "common.view/video-media-source",\n                    "common.view/model-scene-source",\n                    "common.view/world-scene-source",\n                    "common.view/model-resource-refs-source",\n                    "common.view/model-skeleton-source",\n                    "common.view/model-animation-source",\n                    "common.view/model-collision-source",\n                    "common.view/model-material-source",\n                    "common.view/model-socket-source",\n                    "common.view/relation-graph-source",\n                    "common.view/subject-selector-source",\n                    "common.view/subject-facts-source",\n                    "common.view/subject-calculations-source",\n                    "common.view/slide-deck-source"\n                  ]\n                },\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              },\n              "major": {\n                "maximum": 9007199254740991,\n                "minimum": 0,\n                "type": "integer"\n              },\n              "opaque": {\n                "const": true\n              }\n            },\n            "required": [\n              "contract",\n              "major",\n              "opaque"\n            ],\n            "type": "object"\n          }\n        ]\n      },\n      "type": "array",\n      "uniqueItems": true\n    },\n    "hosts": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array",\n      "uniqueItems": true\n    },\n    "priority": {\n      "type": "number"\n    },\n    "requiresOperations": {\n      "items": {\n        "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)$",\n        "type": "string"\n      },\n      "type": "array",\n      "uniqueItems": true\n    },\n    "requiresTransactions": {\n      "type": "boolean"\n    },\n    "scaleLimits": {\n      "additionalProperties": false,\n      "properties": {\n        "maximumRows": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "maximumSourceBytes": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "maximumSubjects": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "type": "object"\n    },\n    "selectionKinds": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array",\n      "uniqueItems": true\n    },\n    "semanticLocationKinds": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array",\n      "uniqueItems": true\n    },\n    "sessionModel": {\n      "enum": [\n        "single-subject",\n        "multi-subject",\n        "workspace"\n      ]\n    },\n    "writer": {\n      "additionalProperties": false,\n      "properties": {\n        "formatId": {\n          "minLength": 1,\n          "type": "string"\n        },\n        "minimumRoundTrip": {\n          "enum": [\n            "byte-identical",\n            "semantic",\n            "lossy",\n            "none"\n          ]\n        },\n        "mutationMode": {\n          "enum": [\n            "export-only",\n            "mutate"\n          ]\n        },\n        "representationId": {\n          "minLength": 1,\n          "type": "string"\n        }\n      },\n      "required": [\n        "formatId",\n        "representationId",\n        "mutationMode",\n        "minimumRoundTrip"\n      ],\n      "type": "object"\n    }\n  },\n  "required": [\n    "sessionModel",\n    "selectionKinds",\n    "semanticLocationKinds",\n    "requiresTransactions",\n    "requiresOperations",\n    "consumesDataSources",\n    "writer",\n    "priority"\n  ],\n  "type": "object"\n}\n', editorContributionSpecV1],
       ['{\n  "$id": "https://schemas.modkitx.org/x3/knowledge-pack-spec.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "entries": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "aliases": {\n            "items": {\n              "maxLength": 128,\n              "minLength": 1,\n              "type": "string"\n            },\n            "maxItems": 32,\n            "type": "array",\n            "uniqueItems": true\n          },\n          "claimKind": {\n            "enum": [\n              "schema-derived-fact",\n              "documented-interpretation",\n              "community-note",\n              "external-reference"\n            ]\n          },\n          "confidence": {\n            "enum": [\n              "verified",\n              "high",\n              "medium",\n              "low"\n            ]\n          },\n          "details": {\n            "additionalProperties": false,\n            "properties": {\n              "allowedValues": {\n                "items": {\n                  "title": "JsonValue"\n                },\n                "maxItems": 512,\n                "type": "array"\n              },\n              "defaultValue": {\n                "title": "JsonValue"\n              },\n              "deprecated": {\n                "type": "boolean"\n              },\n              "formulaRole": {\n                "maxLength": 512,\n                "minLength": 1,\n                "type": "string"\n              },\n              "units": {\n                "maxLength": 128,\n                "minLength": 1,\n                "type": "string"\n              },\n              "valueType": {\n                "maxLength": 128,\n                "minLength": 1,\n                "type": "string"\n              }\n            },\n            "type": "object"\n          },\n          "examples": {\n            "items": {\n              "additionalProperties": false,\n              "properties": {\n                "text": {\n                  "maxLength": 2048,\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "title": {\n                  "maxLength": 256,\n                  "minLength": 1,\n                  "type": "string"\n                }\n              },\n              "required": [\n                "title",\n                "text"\n              ],\n              "type": "object"\n            },\n            "maxItems": 16,\n            "type": "array"\n          },\n          "id": {\n            "maxLength": 256,\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "keywords": {\n            "items": {\n              "maxLength": 128,\n              "minLength": 1,\n              "type": "string"\n            },\n            "maxItems": 32,\n            "type": "array",\n            "uniqueItems": true\n          },\n          "locale": {\n            "maxLength": 64,\n            "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$",\n            "type": "string"\n          },\n          "relations": {\n            "items": {\n              "additionalProperties": false,\n              "properties": {\n                "role": {\n                  "maxLength": 128,\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "target": {\n                  "oneOf": [\n                    {\n                      "additionalProperties": false,\n                      "properties": {\n                        "canonicalPath": {\n                          "items": {\n                            "maxLength": 128,\n                            "minLength": 1,\n                            "type": "string"\n                          },\n                          "maxItems": 32,\n                          "minItems": 1,\n                          "type": "array"\n                        },\n                        "ecosystem": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "kind": {\n                          "const": "field"\n                        },\n                        "schema": {\n                          "additionalProperties": false,\n                          "properties": {\n                            "contract": {\n                              "maxLength": 256,\n                              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                              "type": "string"\n                            },\n                            "major": {\n                              "maximum": 9007199254740991,\n                              "minimum": 0,\n                              "type": "integer"\n                            },\n                            "revision": {\n                              "maxLength": 256,\n                              "minLength": 1,\n                              "type": "string"\n                            }\n                          },\n                          "required": [\n                            "contract",\n                            "major",\n                            "revision"\n                          ],\n                          "type": "object"\n                        },\n                        "typeId": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        }\n                      },\n                      "required": [\n                        "kind",\n                        "ecosystem",\n                        "schema",\n                        "typeId",\n                        "canonicalPath"\n                      ],\n                      "type": "object"\n                    },\n                    {\n                      "additionalProperties": false,\n                      "properties": {\n                        "ecosystem": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "kind": {\n                          "const": "subject"\n                        },\n                        "subjectId": {\n                          "maxLength": 512,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "subjectKind": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        }\n                      },\n                      "required": [\n                        "kind",\n                        "ecosystem",\n                        "subjectKind"\n                      ],\n                      "type": "object"\n                    },\n                    {\n                      "additionalProperties": false,\n                      "properties": {\n                        "ecosystem": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "formatId": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "kind": {\n                          "const": "format"\n                        }\n                      },\n                      "required": [\n                        "kind",\n                        "ecosystem",\n                        "formatId"\n                      ],\n                      "type": "object"\n                    },\n                    {\n                      "additionalProperties": false,\n                      "properties": {\n                        "code": {\n                          "maxLength": 256,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "ecosystem": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "kind": {\n                          "const": "diagnostic"\n                        }\n                      },\n                      "required": [\n                        "kind",\n                        "ecosystem",\n                        "code"\n                      ],\n                      "type": "object"\n                    },\n                    {\n                      "additionalProperties": false,\n                      "properties": {\n                        "conceptId": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "ecosystem": {\n                          "maxLength": 128,\n                          "minLength": 1,\n                          "type": "string"\n                        },\n                        "kind": {\n                          "const": "concept"\n                        }\n                      },\n                      "required": [\n                        "kind",\n                        "ecosystem",\n                        "conceptId"\n                      ],\n                      "type": "object"\n                    }\n                  ]\n                }\n              },\n              "required": [\n                "role",\n                "target"\n              ],\n              "type": "object"\n            },\n            "maxItems": 64,\n            "type": "array"\n          },\n          "sources": {\n            "items": {\n              "additionalProperties": false,\n              "properties": {\n                "kind": {\n                  "enum": [\n                    "schema",\n                    "official-documentation",\n                    "source-code",\n                    "community-wiki",\n                    "observed-corpus",\n                    "external-reference"\n                  ]\n                },\n                "license": {\n                  "maxLength": 256,\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "reviewedAt": {\n                  "pattern": "^\\\\d{4}-\\\\d{2}-\\\\d{2}$",\n                  "type": "string"\n                },\n                "revision": {\n                  "maxLength": 256,\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "schema": {\n                  "additionalProperties": false,\n                  "properties": {\n                    "contract": {\n                      "maxLength": 256,\n                      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                      "type": "string"\n                    },\n                    "major": {\n                      "maximum": 9007199254740991,\n                      "minimum": 0,\n                      "type": "integer"\n                    },\n                    "revision": {\n                      "maxLength": 256,\n                      "minLength": 1,\n                      "type": "string"\n                    }\n                  },\n                  "required": [\n                    "contract",\n                    "major",\n                    "revision"\n                  ],\n                  "type": "object"\n                },\n                "title": {\n                  "maxLength": 256,\n                  "minLength": 1,\n                  "type": "string"\n                },\n                "url": {\n                  "maxLength": 2048,\n                  "pattern": "^https://[^\\\\s]+$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "kind",\n                "title",\n                "reviewedAt"\n              ],\n              "type": "object"\n            },\n            "maxItems": 16,\n            "minItems": 1,\n            "type": "array"\n          },\n          "summary": {\n            "maxLength": 1024,\n            "minLength": 1,\n            "type": "string"\n          },\n          "target": {\n            "oneOf": [\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "canonicalPath": {\n                    "items": {\n                      "maxLength": 128,\n                      "minLength": 1,\n                      "type": "string"\n                    },\n                    "maxItems": 32,\n                    "minItems": 1,\n                    "type": "array"\n                  },\n                  "ecosystem": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "kind": {\n                    "const": "field"\n                  },\n                  "schema": {\n                    "additionalProperties": false,\n                    "properties": {\n                      "contract": {\n                        "maxLength": 256,\n                        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                        "type": "string"\n                      },\n                      "major": {\n                        "maximum": 9007199254740991,\n                        "minimum": 0,\n                        "type": "integer"\n                      },\n                      "revision": {\n                        "maxLength": 256,\n                        "minLength": 1,\n                        "type": "string"\n                      }\n                    },\n                    "required": [\n                      "contract",\n                      "major",\n                      "revision"\n                    ],\n                    "type": "object"\n                  },\n                  "typeId": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  }\n                },\n                "required": [\n                  "kind",\n                  "ecosystem",\n                  "schema",\n                  "typeId",\n                  "canonicalPath"\n                ],\n                "type": "object"\n              },\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "ecosystem": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "kind": {\n                    "const": "subject"\n                  },\n                  "subjectId": {\n                    "maxLength": 512,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "subjectKind": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  }\n                },\n                "required": [\n                  "kind",\n                  "ecosystem",\n                  "subjectKind"\n                ],\n                "type": "object"\n              },\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "ecosystem": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "formatId": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "kind": {\n                    "const": "format"\n                  }\n                },\n                "required": [\n                  "kind",\n                  "ecosystem",\n                  "formatId"\n                ],\n                "type": "object"\n              },\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "code": {\n                    "maxLength": 256,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "ecosystem": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "kind": {\n                    "const": "diagnostic"\n                  }\n                },\n                "required": [\n                  "kind",\n                  "ecosystem",\n                  "code"\n                ],\n                "type": "object"\n              },\n              {\n                "additionalProperties": false,\n                "properties": {\n                  "conceptId": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "ecosystem": {\n                    "maxLength": 128,\n                    "minLength": 1,\n                    "type": "string"\n                  },\n                  "kind": {\n                    "const": "concept"\n                  }\n                },\n                "required": [\n                  "kind",\n                  "ecosystem",\n                  "conceptId"\n                ],\n                "type": "object"\n              }\n            ]\n          },\n          "title": {\n            "maxLength": 256,\n            "minLength": 1,\n            "type": "string"\n          }\n        },\n        "required": [\n          "id",\n          "target",\n          "locale",\n          "title",\n          "summary",\n          "claimKind",\n          "confidence",\n          "sources"\n        ],\n        "type": "object"\n      },\n      "maxItems": 10000,\n      "minItems": 1,\n      "type": "array"\n    },\n    "gameIds": {\n      "items": {\n        "maxLength": 128,\n        "minLength": 1,\n        "type": "string"\n      },\n      "maxItems": 32,\n      "type": "array",\n      "uniqueItems": true\n    },\n    "priority": {\n      "type": "number"\n    },\n    "schemaVersion": {\n      "const": 1\n    },\n    "sourceLocale": {\n      "maxLength": 64,\n      "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$",\n      "type": "string"\n    }\n  },\n  "required": [\n    "schemaVersion",\n    "sourceLocale",\n    "priority",\n    "entries"\n  ],\n  "type": "object"\n}\n', knowledgePackSpecV1],
+      ['{\n  "$id": "https://schemas.modkitx.org/x3/localization-contribution-spec.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "catalogs": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "locale": {\n            "maxLength": 64,\n            "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$",\n            "type": "string"\n          },\n          "messagePrefixes": {\n            "items": {\n              "maxLength": 256,\n              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\\\.$",\n              "type": "string"\n            },\n            "maxItems": 64,\n            "minItems": 1,\n            "type": "array",\n            "uniqueItems": true\n          },\n          "path": {\n            "maxLength": 1024,\n            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\\\.json$",\n            "type": "string"\n          }\n        },\n        "required": [\n          "locale",\n          "path",\n          "messagePrefixes"\n        ],\n        "type": "object"\n      },\n      "maxItems": 256,\n      "minItems": 1,\n      "type": "array"\n    }\n  },\n  "required": [\n    "catalogs"\n  ],\n  "type": "object"\n}\n', localizationContributionSpecV1],
       ['{\n  "$id": "https://schemas.modkitx.org/x3/writer-requirement.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "formatId": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "minimumRoundTrip": {\n      "enum": [\n        "byte-identical",\n        "semantic",\n        "lossy",\n        "none"\n      ]\n    },\n    "mutationMode": {\n      "enum": [\n        "export-only",\n        "mutate"\n      ]\n    },\n    "representationId": {\n      "minLength": 1,\n      "type": "string"\n    }\n  },\n  "required": [\n    "formatId",\n    "representationId",\n    "mutationMode",\n    "minimumRoundTrip"\n  ],\n  "type": "object"\n}\n', writerRequirementV1],
       ['{\n  "$id": "https://schemas.modkitx.org/x3/writer-offer.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "fidelityEvidenceId": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "formatId": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "minimumRoundTrip": {\n      "enum": [\n        "byte-identical",\n        "semantic",\n        "lossy",\n        "none"\n      ]\n    },\n    "mutationMode": {\n      "enum": [\n        "export-only",\n        "mutate"\n      ]\n    },\n    "providerId": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "representationId": {\n      "minLength": 1,\n      "type": "string"\n    }\n  },\n  "required": [\n    "formatId",\n    "representationId",\n    "mutationMode",\n    "minimumRoundTrip",\n    "providerId",\n    "fidelityEvidenceId"\n  ],\n  "type": "object"\n}\n', writerOfferV1],
       ['{\n  "$id": "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "documentation": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "id": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "imports": {\n      "items": {\n        "additionalProperties": false,\n        "properties": {\n          "id": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "range": {\n            "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n            "type": "string"\n          }\n        },\n        "required": [\n          "id",\n          "range"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "parametersSchema": {\n      "additionalProperties": false,\n      "properties": {\n        "$ref": {\n          "minLength": 1,\n          "type": "string"\n        }\n      },\n      "required": [\n        "$ref"\n      ],\n      "type": "object"\n    },\n    "schemaVersion": {\n      "const": 1\n    },\n    "scope": {\n      "anyOf": [\n        {\n          "enum": [\n            "source",\n            "asset",\n            "subject",\n            "workspace",\n            "service",\n            "operation",\n            "view-session",\n            "representation"\n          ]\n        },\n        {\n          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n          "type": "string"\n        }\n      ]\n    },\n    "transport": {\n      "enum": [\n        "json",\n        "structured-clone"\n      ]\n    },\n    "version": {\n      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-((?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\\\.(?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\\+([0-9a-zA-Z-]+(?:\\\\.[0-9a-zA-Z-]+)*))?$",\n      "type": "string"\n    }\n  },\n  "required": [\n    "schemaVersion",\n    "id",\n    "version",\n    "scope",\n    "parametersSchema",\n    "transport"\n  ],\n  "type": "object"\n}\n', traitDefinitionSpecV1],
@@ -50915,7 +51198,7 @@ function uriToFsPath(uri, keepDriveLetterCasing) {
   return value2;
 }
 function _asFormatted(uri, skipEncoding) {
-  const encoder3 = !skipEncoding ? encodeURIComponentFast : encodeURIComponentMinimal;
+  const encoder4 = !skipEncoding ? encodeURIComponentFast : encodeURIComponentMinimal;
   let res = "";
   let { scheme, authority, path, query, fragment } = uri;
   if (scheme) {
@@ -50933,20 +51216,20 @@ function _asFormatted(uri, skipEncoding) {
       authority = authority.substr(idx + 1);
       idx = userinfo.lastIndexOf(":");
       if (idx === -1) {
-        res += encoder3(userinfo, false, false);
+        res += encoder4(userinfo, false, false);
       } else {
-        res += encoder3(userinfo.substr(0, idx), false, false);
+        res += encoder4(userinfo.substr(0, idx), false, false);
         res += ":";
-        res += encoder3(userinfo.substr(idx + 1), false, true);
+        res += encoder4(userinfo.substr(idx + 1), false, true);
       }
       res += "@";
     }
     authority = authority.toLowerCase();
     idx = authority.lastIndexOf(":");
     if (idx === -1) {
-      res += encoder3(authority, false, true);
+      res += encoder4(authority, false, true);
     } else {
-      res += encoder3(authority.substr(0, idx), false, true);
+      res += encoder4(authority.substr(0, idx), false, true);
       res += authority.substr(idx);
     }
   }
@@ -50962,11 +51245,11 @@ function _asFormatted(uri, skipEncoding) {
         path = `${String.fromCharCode(code + 32)}:${path.substr(2)}`;
       }
     }
-    res += encoder3(path, true, false);
+    res += encoder4(path, true, false);
   }
   if (query) {
     res += "?";
-    res += encoder3(query, false, false);
+    res += encoder4(query, false, false);
   }
   if (fragment) {
     res += "#";
@@ -68422,14 +68705,14 @@ var init_lineTokens = __esm({
     init_offsetRange();
     init_errors();
     LineTokens = class _LineTokens {
-      static createEmpty(lineContent, decoder) {
+      static createEmpty(lineContent, decoder2) {
         const defaultMetadata = _LineTokens.defaultTokenMetadata;
         const tokens = new Uint32Array(2);
         tokens[0] = lineContent.length;
         tokens[1] = defaultMetadata;
-        return new _LineTokens(tokens, lineContent, decoder);
+        return new _LineTokens(tokens, lineContent, decoder2);
       }
-      static createFromTextAndMetadata(data, decoder) {
+      static createFromTextAndMetadata(data, decoder2) {
         let offset = 0;
         let fullText = "";
         const tokens = new Array();
@@ -68438,7 +68721,7 @@ var init_lineTokens = __esm({
           offset += text3.length;
           fullText += text3;
         }
-        return new _LineTokens(new Uint32Array(tokens), fullText, decoder);
+        return new _LineTokens(new Uint32Array(tokens), fullText, decoder2);
       }
       static convertToEndOffset(tokens, lineTextLength) {
         const tokenCount = tokens.length >>> 1;
@@ -68470,7 +68753,7 @@ var init_lineTokens = __esm({
       static {
         this.defaultTokenMetadata = (0 << 11 | 1 << 15 | 2 << 24) >>> 0;
       }
-      constructor(tokens, text3, decoder) {
+      constructor(tokens, text3, decoder2) {
         this._lineTokensBrand = void 0;
         const tokensLength = tokens.length > 1 ? tokens[tokens.length - 2] : 0;
         if (tokensLength !== text3.length) {
@@ -68479,7 +68762,7 @@ var init_lineTokens = __esm({
         this._tokens = tokens;
         this._tokensCount = this._tokens.length >>> 1;
         this._text = text3;
-        this.languageIdCodec = decoder;
+        this.languageIdCodec = decoder2;
       }
       getTextLength() {
         return this._text.length;
@@ -68728,8 +69011,8 @@ var init_lineTokens = __esm({
       constructor(_tokenInfo) {
         this._tokenInfo = _tokenInfo;
       }
-      toLineTokens(lineContent, decoder) {
-        return LineTokens.createFromTextAndMetadata(this.map((r, t3) => ({ text: r.substring(lineContent), metadata: t3.metadata })), decoder);
+      toLineTokens(lineContent, decoder2) {
+        return LineTokens.createFromTextAndMetadata(this.map((r, t3) => ({ text: r.substring(lineContent), metadata: t3.metadata })), decoder2);
       }
       forEach(cb) {
         let lengthSum = 0;
@@ -106610,9 +106893,9 @@ var init_rectangleRenderer = __esm({
           return;
         }
         this._update();
-        const encoder3 = this._device.createCommandEncoder({ label: "Monaco rectangle renderer command encoder" });
+        const encoder4 = this._device.createCommandEncoder({ label: "Monaco rectangle renderer command encoder" });
         this._renderPassColorAttachment.view = this._ctx.getCurrentTexture().createView();
-        const pass = encoder3.beginRenderPass(this._renderPassDescriptor);
+        const pass = encoder4.beginRenderPass(this._renderPassDescriptor);
         pass.setPipeline(this._pipeline);
         pass.setVertexBuffer(0, this._vertexBuffer);
         pass.setBindGroup(0, this._bindGroup);
@@ -106620,7 +106903,7 @@ var init_rectangleRenderer = __esm({
         pass.setScissorRect(contentLeft, 0, this._canvas.width - contentLeft, this._canvas.height);
         pass.draw(quadVertices.length / 2, this._shapeCollection.entryCount);
         pass.end();
-        const commandBuffer = encoder3.finish();
+        const commandBuffer = encoder4.finish();
         this._device.queue.submit([commandBuffer]);
       }
     };
@@ -108469,9 +108752,9 @@ var init_viewLinesGpu = __esm({
         const options = new ViewLineOptions(this._context.configuration, this._context.theme.type);
         this._renderStrategy.value.update(viewportData, options);
         this._updateAtlasStorageBufferAndTexture();
-        const encoder3 = this._device.createCommandEncoder({ label: "Monaco command encoder" });
+        const encoder4 = this._device.createCommandEncoder({ label: "Monaco command encoder" });
         this._renderPassColorAttachment.view = this._viewGpuContext.ctx.getCurrentTexture().createView({ label: "Monaco canvas texture view" });
-        const pass = encoder3.beginRenderPass(this._renderPassDescriptor);
+        const pass = encoder4.beginRenderPass(this._renderPassDescriptor);
         pass.setPipeline(this._pipeline);
         pass.setVertexBuffer(0, this._vertexBuffer);
         const contentLeft = Math.ceil(this._viewGpuContext.contentLeft.get() * this._viewGpuContext.devicePixelRatio.get());
@@ -108479,7 +108762,7 @@ var init_viewLinesGpu = __esm({
         pass.setBindGroup(0, this._bindGroup);
         this._renderStrategy.value.draw(pass, viewportData);
         pass.end();
-        const commandBuffer = encoder3.finish();
+        const commandBuffer = encoder4.finish();
         this._device.queue.submit([commandBuffer]);
         this._lastViewportData = viewportData;
         this._lastViewLineOptions = options;
@@ -210724,8 +211007,8 @@ var init_tokenWithTextArray = __esm({
       constructor(_tokenInfo) {
         this._tokenInfo = _tokenInfo;
       }
-      toLineTokens(decoder) {
-        return LineTokens.createFromTextAndMetadata(this.map((_r, t3) => ({ text: t3.text, metadata: t3.metadata })), decoder);
+      toLineTokens(decoder2) {
+        return LineTokens.createFromTextAndMetadata(this.map((_r, t3) => ({ text: t3.text, metadata: t3.metadata })), decoder2);
       }
       map(cb) {
         const result = [];
@@ -254498,6 +254781,1427 @@ var init_editor_api = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/external/monaco-lsp-client/out/index.js
+function isRequestOrNotification(msg) {
+  return msg.method !== void 0;
+}
+function createTimeout(delay, callback) {
+  const handle = setTimeout(callback, delay);
+  return { dispose: () => clearTimeout(handle) };
+}
+function setAndDeleteOnDispose(set, keyOrItem, item) {
+  if (set instanceof Set) {
+    set.add(keyOrItem);
+    return { dispose: () => set.delete(keyOrItem) };
+  } else {
+    set.set(keyOrItem, item);
+    return { dispose: () => set.delete(keyOrItem) };
+  }
+}
+function mapRequestHandlerContext(messageHandler, map) {
+  return {
+    handleNotification: (request, context) => messageHandler.handleNotification(request, map(context)),
+    handleRequest: (request, requestId, context) => messageHandler.handleRequest(request, requestId, map(context))
+  };
+}
+function assertObjectArrayOrNull(val) {
+  if (val !== null && Array.isArray(val) && typeof val !== "object") throw new Error("Invalid value! Only null, array and object is allowed.");
+}
+function unverifiedRequest(request) {
+  return new RequestType((request || {}).method, Serializers.sAny(), Serializers.sAny(), Serializers.sAny());
+}
+function unverifiedNotification(request) {
+  return new NotificationType((request || {}).method, Serializers.sAny());
+}
+function contract(contractObj) {
+  const server = transform(contractObj["server"]);
+  const client = transform(contractObj["client"]);
+  return new Contract(contractObj.tags || [], server, client);
+}
+function transform(requestMap) {
+  const result = {};
+  for (const [key, req] of Object.entries(requestMap)) {
+    const method = req.method ? req.method : key;
+    result[key] = req.withMethod(method);
+  }
+  return result;
+}
+var __defProp4, __defNormalProp, __publicField, _a3, _b2, _c2, _d, _e, ErrorObject, ErrorCode, EventEmitter, ValueWithChangeEvent, Deferred, BaseMessageTransport, StreamLogger, ConsoleMessageLogger, Channel, StreamBasedChannel, Serializers, OptionalMethodNotFound, TypedChannelBase, ContextualizedTypedChannel, TypedChannel, RequestHandlingError, RequestType, NotificationType, IsErrorWrapper, ErrorWrapper, Contract, FoldingRangeKind2, SymbolKind2, SymbolTag2, InlayHintKind3, CompletionItemKind2, CompletionItemTag2, InsertTextFormat, DocumentHighlightKind3, CodeActionKind2, DiagnosticSeverity, DiagnosticTag, CompletionTriggerKind2, SignatureHelpTriggerKind3, CodeActionTriggerKind, Capability, capabilities, api2, Disposable2, DisposableStore2, lspCodeActionKindToMonacoCodeActionKind, monacoCodeActionTriggerTypeToLspCodeActionTriggerKind, lspCompletionItemKindToMonacoCompletionItemKind, lspCompletionItemTagToMonacoCompletionItemTag, monacoCompletionTriggerKindToLspCompletionTriggerKind, lspInsertTextFormatToMonacoInsertTextRules, lspSymbolKindToMonacoSymbolKind, lspSymbolTagToMonacoSymbolTag, lspDocumentHighlightKindToMonacoDocumentHighlightKind, lspFoldingRangeKindToMonacoFoldingRangeKind, monacoMarkerSeverityToLspDiagnosticSeverity, lspDiagnosticSeverityToMonacoMarkerSeverity, lspDiagnosticTagToMonacoMarkerTag, monacoSignatureHelpTriggerKindToLspSignatureHelpTriggerKind, lspInlayHintKindToMonacoInlayHintKind, capabilitiesByMethod, ws;
+var init_out = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/external/monaco-lsp-client/out/index.js"() {
+    init_coreCommands();
+    init_codeEditorWidget();
+    init_diffEditor_contribution();
+    init_anchorSelect2();
+    init_bracketMatching2();
+    init_caretOperations();
+    init_transpose();
+    init_clipboard();
+    init_codeActionContributions();
+    init_codelensController();
+    init_colorPickerContribution();
+    init_comment();
+    init_contextmenu();
+    init_cursorUndo();
+    init_dnd6();
+    init_copyPasteContribution();
+    init_dropIntoEditorContribution();
+    init_findController();
+    init_folding2();
+    init_fontZoom();
+    init_formatActions();
+    init_documentSymbols();
+    init_inlineCompletions_contribution();
+    init_inlineProgress();
+    init_goToCommands();
+    init_goToDefinitionAtPosition2();
+    init_gotoError();
+    init_markerSelectionStatus();
+    init_gpuActions();
+    init_hoverContribution();
+    init_indentation3();
+    init_inlayHintsContribution();
+    init_inPlaceReplace2();
+    init_insertFinalNewLine();
+    init_lineSelection();
+    init_linesOperations();
+    init_linkedEditing2();
+    init_links2();
+    init_longLinesHelper();
+    init_middleScroll_contribution();
+    init_multicursor();
+    init_parameterHints2();
+    init_placeholderText_contribution();
+    init_rename();
+    init_sectionHeaders();
+    init_documentSemanticTokens();
+    init_viewportSemanticTokens();
+    init_smartSelect();
+    init_snippetController2();
+    init_stickyScrollContribution();
+    init_suggestController();
+    init_suggestInlineCompletions();
+    init_tokenization2();
+    init_toggleTabFocusMode();
+    init_unicodeHighlighter2();
+    init_unusualLineTerminators();
+    init_wordHighlighter();
+    init_wordOperations();
+    init_wordPartOperations();
+    init_contribution2();
+    init_contribution3();
+    init_floatingMenu_contribution();
+    init_standaloneStrings();
+    init_codicon();
+    init_codicon_modifiers();
+    init_iPadShowKeyboard2();
+    init_inspectTokens2();
+    init_standaloneHelpQuickAccess();
+    init_standaloneGotoLineQuickAccess();
+    init_standaloneGotoSymbolQuickAccess();
+    init_standaloneCommandsQuickAccess();
+    init_standaloneReferenceSearch();
+    init_toggleHighContrast();
+    init_editor_api();
+    __defProp4 = Object.defineProperty;
+    __defNormalProp = (obj, key, value2) => key in obj ? __defProp4(obj, key, { enumerable: true, configurable: true, writable: true, value: value2 }) : obj[key] = value2;
+    __publicField = (obj, key, value2) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value2);
+    (function(ErrorObject$1) {
+      function create3(obj) {
+        return obj;
+      }
+      ErrorObject$1.create = create3;
+    })(ErrorObject || (ErrorObject = {}));
+    (function(ErrorCode$1) {
+      ErrorCode$1.parseError = -32700;
+      ErrorCode$1.invalidRequest = -32600;
+      ErrorCode$1.methodNotFound = -32601;
+      ErrorCode$1.invalidParams = -32602;
+      ErrorCode$1.internalError = -32603;
+      function isServerError(code) {
+        return -32099 <= code && code <= -32e3;
+      }
+      ErrorCode$1.isServerError = isServerError;
+      function serverError(code) {
+        if (!isServerError(code)) throw new Error("Invalid range for a server error.");
+        return code;
+      }
+      ErrorCode$1.serverError = serverError;
+      ErrorCode$1.unexpectedServerError = -32e3;
+      function isApplicationError(code) {
+        return true;
+      }
+      ErrorCode$1.isApplicationError = isApplicationError;
+      function applicationError(code) {
+        return code;
+      }
+      ErrorCode$1.applicationError = applicationError;
+      ErrorCode$1.genericApplicationError = -320100;
+    })(ErrorCode || (ErrorCode = {}));
+    EventEmitter = class {
+      constructor() {
+        __publicField(this, "listeners", /* @__PURE__ */ new Set());
+        __publicField(this, "event", (listener) => {
+          this.listeners.add(listener);
+          return { dispose: () => {
+            this.listeners.delete(listener);
+          } };
+        });
+      }
+      fire(args) {
+        this.listeners.forEach((listener) => listener(args));
+      }
+    };
+    ValueWithChangeEvent = class {
+      constructor(initialValue) {
+        __publicField(this, "_value");
+        __publicField(this, "eventEmitter");
+        this._value = initialValue;
+        this.eventEmitter = new EventEmitter();
+      }
+      get value() {
+        return this._value;
+      }
+      set value(newValue) {
+        if (this._value !== newValue) {
+          this._value = newValue;
+          this.eventEmitter.fire(newValue);
+        }
+      }
+      get onChange() {
+        return this.eventEmitter.event;
+      }
+    };
+    Deferred = class {
+      constructor() {
+        __publicField(this, "_state", "none");
+        __publicField(this, "promise");
+        __publicField(this, "resolve", () => {
+        });
+        __publicField(this, "reject", () => {
+        });
+        this.promise = new Promise((resolve3, reject) => {
+          this.resolve = resolve3;
+          this.reject = reject;
+        });
+      }
+      get state() {
+        return this._state;
+      }
+    };
+    BaseMessageTransport = (_a3 = class {
+      constructor() {
+        __publicField(this, "_unprocessedMessages", []);
+        __publicField(this, "_messageListener");
+        __publicField(this, "id", _a3.id++);
+        __publicField(this, "_state", new ValueWithChangeEvent({ state: "open" }));
+        __publicField(this, "state", this._state);
+      }
+      /**
+      * Sets a callback for incoming messages.
+      */
+      setListener(listener) {
+        this._messageListener = listener;
+        if (!listener) return;
+        while (this._unprocessedMessages.length > 0 && this._messageListener !== void 0) {
+          const msg = this._unprocessedMessages.shift();
+          this._messageListener(msg);
+        }
+      }
+      /**
+      * Writes a message to the stream.
+      */
+      send(message) {
+        return this._sendImpl(message);
+      }
+      /**
+      * Call this in derived classes to signal a new message.
+      */
+      _dispatchReceivedMessage(message) {
+        if (this._unprocessedMessages.length === 0 && this._messageListener) this._messageListener(message);
+        else this._unprocessedMessages.push(message);
+      }
+      /**
+      * Call this in derived classes to signal that the connection closed.
+      */
+      _onConnectionClosed() {
+        this._state.value = {
+          state: "closed",
+          error: void 0
+        };
+      }
+      log(logger) {
+        return new StreamLogger(this, logger ?? new ConsoleMessageLogger());
+      }
+    }, __publicField(_a3, "id", 0), _a3);
+    StreamLogger = class {
+      constructor(baseStream, logger) {
+        __publicField(this, "baseStream");
+        __publicField(this, "logger");
+        this.baseStream = baseStream;
+        this.logger = logger;
+      }
+      get state() {
+        return this.baseStream.state;
+      }
+      setListener(listener) {
+        if (listener === void 0) {
+          this.baseStream.setListener(void 0);
+          return;
+        }
+        this.baseStream.setListener((readMessage) => {
+          this.logger.log(this.baseStream, "incoming", readMessage);
+          listener(readMessage);
+        });
+      }
+      send(message) {
+        this.logger.log(this.baseStream, "outgoing", message);
+        return this.baseStream.send(message);
+      }
+      toString() {
+        return `StreamLogger/${this.baseStream.toString()}`;
+      }
+    };
+    ConsoleMessageLogger = class {
+      log(stream, type, message) {
+        const char = type === "incoming" ? "<-" : "->";
+        console.log(`${char} [${stream.toString()}] ${JSON.stringify(message)}`);
+      }
+    };
+    Channel = class Channel2 {
+      constructor(connect) {
+        __publicField(this, "connect");
+        this.connect = connect;
+      }
+      mapContext(map) {
+        return new Channel2((listener) => this.connect(listener ? mapRequestHandlerContext(listener, map) : void 0));
+      }
+    };
+    StreamBasedChannel = class StreamBasedChannel2 {
+      constructor(_stream, _listener, _logger) {
+        __publicField(this, "_stream");
+        __publicField(this, "_listener");
+        __publicField(this, "_logger");
+        __publicField(this, "_unprocessedResponses", /* @__PURE__ */ new Map());
+        __publicField(this, "_lastUsedRequestId", 0);
+        this._stream = _stream;
+        this._listener = _listener;
+        this._logger = _logger;
+        this._stream.setListener((message) => {
+          if (isRequestOrNotification(message)) if (message.id === void 0) this._processNotification(message);
+          else this._processRequest(message);
+          else this._processResponse(message);
+        });
+      }
+      /**
+      * Creates a channel factory from a given stream and logger.
+      * This allows to delay specifying a `RequestHandler`.
+      * Once the channel is created, it processes incoming messages.
+      */
+      static createChannel(stream, logger) {
+        let constructed = false;
+        return new Channel((listener) => {
+          if (constructed) throw new Error(`A channel to the stream ${stream} was already constructed!`);
+          else constructed = true;
+          return new StreamBasedChannel2(stream, listener, logger);
+        });
+      }
+      get state() {
+        return this._stream.state;
+      }
+      async _processNotification(message) {
+        if (message.id !== void 0) throw new Error();
+        if (!this._listener) {
+          if (this._logger) this._logger.debug({
+            text: "Notification ignored",
+            message
+          });
+          return;
+        }
+        try {
+          await this._listener.handleNotification({
+            method: message.method,
+            params: message.params || null
+          });
+        } catch (exception) {
+          if (this._logger) this._logger.warn({
+            text: `Exception was thrown while handling notification: ${exception}`,
+            exception,
+            message
+          });
+        }
+      }
+      async _processRequest(message) {
+        if (message.id === void 0) throw new Error();
+        let result;
+        if (this._listener) try {
+          result = await this._listener.handleRequest({
+            method: message.method,
+            params: message.params || null
+          }, message.id);
+        } catch (exception) {
+          if (this._logger) this._logger.warn({
+            text: `Exception was thrown while handling request: ${exception}`,
+            message,
+            exception
+          });
+          result = { error: {
+            code: ErrorCode.internalError,
+            message: "An unexpected exception was thrown.",
+            data: void 0
+          } };
+        }
+        else {
+          if (this._logger) this._logger.debug({
+            text: "Received request even though not listening for requests",
+            message
+          });
+          result = { error: {
+            code: ErrorCode.methodNotFound,
+            message: "This endpoint does not listen for requests or notifications.",
+            data: void 0
+          } };
+        }
+        let responseMsg;
+        if ("result" in result) responseMsg = {
+          jsonrpc: "2.0",
+          id: message.id,
+          result: result.result
+        };
+        else responseMsg = {
+          jsonrpc: "2.0",
+          id: message.id,
+          error: result.error
+        };
+        await this._stream.send(responseMsg);
+      }
+      _processResponse(message) {
+        const strId = "" + message.id;
+        const callback = this._unprocessedResponses.get(strId);
+        if (!callback) {
+          if (this._logger) this._logger.debug({
+            text: "Got an unexpected response message",
+            message
+          });
+          return;
+        }
+        this._unprocessedResponses.delete(strId);
+        callback(message);
+      }
+      _newRequestId() {
+        return this._lastUsedRequestId++;
+      }
+      sendRequest(request, _context, messageIdCallback) {
+        const message = {
+          jsonrpc: "2.0",
+          id: this._newRequestId(),
+          method: request.method,
+          params: request.params || void 0
+        };
+        if (messageIdCallback) messageIdCallback(message.id);
+        return new Promise((resolve3, reject) => {
+          const strId = "" + message.id;
+          this._unprocessedResponses.set(strId, (response) => {
+            if ("result" in response) resolve3({ result: response.result });
+            else {
+              if (!response.error) reject(/* @__PURE__ */ new Error("Response had neither 'result' nor 'error' field set."));
+              resolve3({ error: response.error });
+            }
+          });
+          this._stream.send(message).then(void 0, (reason) => {
+            this._unprocessedResponses.delete(strId);
+            reject(reason);
+          });
+        });
+      }
+      sendNotification(notification, context) {
+        const msg = {
+          jsonrpc: "2.0",
+          id: void 0,
+          method: notification.method,
+          params: notification.params || void 0
+        };
+        return this._stream.send(msg);
+      }
+      toString() {
+        return "StreamChannel/" + this._stream.toString();
+      }
+    };
+    (function(Serializers$1) {
+      function sAny() {
+        return {
+          deserializeFromJson: (input) => ({
+            hasErrors: false,
+            value: input
+          }),
+          serializeToJson: (input) => input
+        };
+      }
+      Serializers$1.sAny = sAny;
+      function sEmptyObject() {
+        return {
+          deserializeFromJson: (input) => ({
+            hasErrors: false,
+            value: {}
+          }),
+          serializeToJson: (input) => ({})
+        };
+      }
+      Serializers$1.sEmptyObject = sEmptyObject;
+      function sVoidFromNull() {
+        return {
+          deserializeFromJson: (input) => ({
+            hasErrors: false,
+            value: void 0
+          }),
+          serializeToJson: (input) => null
+        };
+      }
+      Serializers$1.sVoidFromNull = sVoidFromNull;
+    })(Serializers || (Serializers = {}));
+    OptionalMethodNotFound = /* @__PURE__ */ Symbol("OptionalMethodNotFound");
+    TypedChannelBase = class {
+      contextualize(args) {
+        return new ContextualizedTypedChannel(this, args);
+      }
+    };
+    ContextualizedTypedChannel = class extends TypedChannelBase {
+      constructor(underylingTypedChannel, converters) {
+        super();
+        __publicField(this, "underylingTypedChannel");
+        __publicField(this, "converters");
+        this.underylingTypedChannel = underylingTypedChannel;
+        this.converters = converters;
+      }
+      async request(requestType, args, newContext) {
+        const context = await this.converters.getSendContext(newContext);
+        return this.underylingTypedChannel.request(requestType, args, context);
+      }
+      async notify(notificationType, params, newContext) {
+        const context = await this.converters.getSendContext(newContext);
+        return this.underylingTypedChannel.notify(notificationType, params, context);
+      }
+      registerNotificationHandler(type, handler) {
+        return this.underylingTypedChannel.registerNotificationHandler(type, async (arg, context) => {
+          return await handler(arg, await this.converters.getNewContext(context));
+        });
+      }
+      registerRequestHandler(requestType, handler) {
+        return this.underylingTypedChannel.registerRequestHandler(requestType, async (arg, requestId, context) => {
+          return await handler(arg, requestId, await this.converters.getNewContext(context));
+        });
+      }
+    };
+    TypedChannel = class TypedChannel2 extends TypedChannelBase {
+      constructor(channelCtor, options = {}) {
+        super();
+        __publicField(this, "channelCtor");
+        __publicField(this, "_requestSender");
+        __publicField(this, "_handler", /* @__PURE__ */ new Map());
+        __publicField(this, "_unknownNotificationHandler", /* @__PURE__ */ new Set());
+        __publicField(this, "_timeout");
+        __publicField(this, "sendExceptionDetails", false);
+        __publicField(this, "_logger");
+        __publicField(this, "listeningDeferred", new Deferred());
+        __publicField(this, "onListening", this.listeningDeferred.promise);
+        __publicField(this, "_requestDidErrorEventEmitter", new EventEmitter());
+        __publicField(this, "onRequestDidError", this._requestDidErrorEventEmitter.event);
+        this.channelCtor = channelCtor;
+        this._logger = options.logger;
+        this.sendExceptionDetails = !!options.sendExceptionDetails;
+        this._timeout = createTimeout(1e3, () => {
+          if (!this._requestSender) console.warn(`"${this.startListen.name}" has not been called within 1 second after construction of this channel. Did you forget to call it?`, this);
+        });
+      }
+      static fromTransport(stream, options = {}) {
+        return new TypedChannel2(StreamBasedChannel.createChannel(stream, options.logger), options);
+      }
+      /**
+      * This method must be called to forward messages from the stream to this channel.
+      * This is not done automatically on construction so that this instance
+      * can be setup properly before handling messages.
+      */
+      startListen() {
+        if (this._requestSender) throw new Error(`"${this.startListen.name}" can be called only once, but it already has been called.`);
+        if (this._timeout) {
+          this._timeout.dispose();
+          this._timeout = void 0;
+        }
+        this._requestSender = this.channelCtor.connect({
+          handleRequest: (req, id, context) => this.handleRequest(req, id, context),
+          handleNotification: (req, context) => this.handleNotification(req, context)
+        });
+        this.listeningDeferred.resolve();
+      }
+      checkChannel(channel) {
+        if (!channel) throw new Error(`"${this.startListen.name}" must be called before any messages can be sent or received.`);
+        return true;
+      }
+      async handleRequest(request, requestId, context) {
+        const handler = this._handler.get(request.method);
+        if (!handler) {
+          if (this._logger) this._logger.debug({
+            text: `No request handler for "${request.method}".`,
+            data: { requestObject: request }
+          });
+          return { error: {
+            code: ErrorCode.methodNotFound,
+            message: `No request handler for "${request.method}".`,
+            data: { method: request.method }
+          } };
+        }
+        if (handler.kind != "request") {
+          const message = `"${request.method}" is registered as notification, but was sent as request.`;
+          if (this._logger) this._logger.debug({
+            text: message,
+            data: { requestObject: request }
+          });
+          return { error: {
+            code: ErrorCode.invalidRequest,
+            message,
+            data: { method: request.method }
+          } };
+        }
+        const decodeResult = handler.requestType.paramsSerializer.deserializeFromJson(request.params);
+        if (decodeResult.hasErrors) {
+          const message = `Got invalid params: ${decodeResult.errorMessage}`;
+          if (this._logger) this._logger.debug({
+            text: message,
+            data: {
+              requestObject: request,
+              errorMessage: decodeResult.errorMessage
+            }
+          });
+          return { error: {
+            code: ErrorCode.invalidParams,
+            message,
+            data: { errors: decodeResult.errorMessage }
+          } };
+        } else {
+          const args = decodeResult.value;
+          let response;
+          try {
+            const result = await handler.handler(args, requestId, context);
+            if ("error" in result || "errorMessage" in result) {
+              const errorData = result.error ? handler.requestType.errorSerializer.serializeToJson(result.error) : void 0;
+              response = { error: {
+                code: result.errorCode || ErrorCode.genericApplicationError,
+                message: result.errorMessage || "An error was returned",
+                data: errorData
+              } };
+            } else response = { result: handler.requestType.resultSerializer.serializeToJson(result.ok) };
+          } catch (exception) {
+            if (exception instanceof RequestHandlingError) response = { error: {
+              code: exception.code,
+              message: exception.message
+            } };
+            else {
+              if (this._logger) this._logger.warn({
+                text: `An exception was thrown while handling a request: ${exception}.`,
+                exception,
+                data: { requestObject: request }
+              });
+              response = { error: {
+                code: ErrorCode.unexpectedServerError,
+                message: this.sendExceptionDetails ? `An exception was thrown while handling a request: ${exception}.` : "Server has thrown an unexpected exception"
+              } };
+            }
+          }
+          return response;
+        }
+      }
+      async handleNotification(request, context) {
+        const handler = this._handler.get(request.method);
+        if (!handler) {
+          for (const h2 of this._unknownNotificationHandler) h2(request);
+          if (this._unknownNotificationHandler.size === 0) {
+            if (this._logger) this._logger.debug({
+              text: `Unhandled notification "${request.method}"`,
+              data: { requestObject: request }
+            });
+          }
+          return;
+        }
+        if (handler.kind != "notification") {
+          if (this._logger) this._logger.debug({
+            text: `"${request.method}" is registered as request, but was sent as notification.`,
+            data: { requestObject: request }
+          });
+          return;
+        }
+        const decodeResult = handler.notificationType.paramsSerializer.deserializeFromJson(request.params);
+        if (decodeResult.hasErrors) {
+          if (this._logger) this._logger.debug({
+            text: `Got invalid params: ${decodeResult}`,
+            data: {
+              requestObject: request,
+              errorMessage: decodeResult.errorMessage
+            }
+          });
+          return;
+        }
+        const val = decodeResult.value;
+        for (const handlerFunc of handler.handlers) try {
+          handlerFunc(val, context);
+        } catch (exception) {
+          if (this._logger) this._logger.warn({
+            text: `An exception was thrown while handling a notification: ${exception}.`,
+            exception,
+            data: { requestObject: request }
+          });
+        }
+      }
+      registerUnknownNotificationHandler(handler) {
+        return setAndDeleteOnDispose(this._unknownNotificationHandler, handler);
+      }
+      registerRequestHandler(requestType, handler) {
+        if (this._handler.get(requestType.method)) throw new Error(`Handler with method "${requestType.method}" already registered.`);
+        return setAndDeleteOnDispose(this._handler, requestType.method, {
+          kind: "request",
+          requestType,
+          handler
+        });
+      }
+      registerNotificationHandler(type, handler) {
+        let registeredHandler = this._handler.get(type.method);
+        if (!registeredHandler) {
+          registeredHandler = {
+            kind: "notification",
+            notificationType: type,
+            handlers: /* @__PURE__ */ new Set()
+          };
+          this._handler.set(type.method, registeredHandler);
+        } else {
+          if (registeredHandler.kind !== "notification") throw new Error(`Method "${type.method}" was already registered as request handler.`);
+          if (registeredHandler.notificationType !== type) throw new Error(`Method "${type.method}" was registered for a different type.`);
+        }
+        return setAndDeleteOnDispose(registeredHandler.handlers, handler);
+      }
+      getRegisteredTypes() {
+        const result = [];
+        for (const h2 of this._handler.values()) if (h2.kind === "notification") result.push(h2.notificationType);
+        else if (h2.kind === "request") result.push(h2.requestType);
+        return result;
+      }
+      async request(requestType, args, context) {
+        if (!this.checkChannel(this._requestSender)) throw new Error("Impossible");
+        const params = requestType.paramsSerializer.serializeToJson(args);
+        assertObjectArrayOrNull(params);
+        const response = await this._requestSender.sendRequest({
+          method: requestType.method,
+          params
+        }, context);
+        if ("error" in response) {
+          if (requestType.isOptional && response.error.code === ErrorCode.methodNotFound) return OptionalMethodNotFound;
+          let errorData;
+          if (response.error.data !== void 0) {
+            const deserializationResult = requestType.errorSerializer.deserializeFromJson(response.error.data);
+            if (deserializationResult.hasErrors) throw new Error(deserializationResult.errorMessage);
+            errorData = deserializationResult.value;
+          } else errorData = void 0;
+          const error3 = new RequestHandlingError(response.error.message, errorData, response.error.code);
+          this._requestDidErrorEventEmitter.fire({ error: error3 });
+          throw error3;
+        } else {
+          const result = requestType.resultSerializer.deserializeFromJson(response.result);
+          if (result.hasErrors) throw new Error("Could not deserialize response: " + result.errorMessage + `
+
+${JSON.stringify(response, null, 2)}`);
+          else return result.value;
+        }
+      }
+      async notify(notificationType, params, context) {
+        if (!this.checkChannel(this._requestSender)) throw new Error();
+        const encodedParams = notificationType.paramsSerializer.serializeToJson(params);
+        assertObjectArrayOrNull(encodedParams);
+        this._requestSender.sendNotification({
+          method: notificationType.method,
+          params: encodedParams
+        }, context);
+      }
+    };
+    RequestHandlingError = class RequestHandlingError2 extends Error {
+      constructor(message, data, code = ErrorCode.genericApplicationError) {
+        super(message);
+        __publicField(this, "data");
+        __publicField(this, "code");
+        this.data = data;
+        this.code = code;
+        Object.setPrototypeOf(this, RequestHandlingError2.prototype);
+      }
+    };
+    RequestType = class RequestType2 {
+      constructor(method, paramsSerializer, resultSerializer, errorSerializer, isOptional = false) {
+        __publicField(this, "method");
+        __publicField(this, "paramsSerializer");
+        __publicField(this, "resultSerializer");
+        __publicField(this, "errorSerializer");
+        __publicField(this, "isOptional");
+        __publicField(this, "kind", "request");
+        this.method = method;
+        this.paramsSerializer = paramsSerializer;
+        this.resultSerializer = resultSerializer;
+        this.errorSerializer = errorSerializer;
+        this.isOptional = isOptional;
+      }
+      withMethod(method) {
+        return new RequestType2(method, this.paramsSerializer, this.resultSerializer, this.errorSerializer);
+      }
+      optional() {
+        return new RequestType2(this.method, this.paramsSerializer, this.resultSerializer, this.errorSerializer, true);
+      }
+    };
+    NotificationType = class NotificationType2 {
+      constructor(method, paramsSerializer) {
+        __publicField(this, "method");
+        __publicField(this, "paramsSerializer");
+        __publicField(this, "kind", "notification");
+        this.method = method;
+        this.paramsSerializer = paramsSerializer;
+      }
+      withMethod(method) {
+        return new NotificationType2(method, this.paramsSerializer);
+      }
+    };
+    IsErrorWrapper = /* @__PURE__ */ Symbol();
+    ErrorWrapper = (_b2 = IsErrorWrapper, _c2 = class {
+      constructor(error3) {
+        __publicField(this, "error");
+        __publicField(this, _b2);
+        this.error = error3;
+      }
+    }, __publicField(_c2, "factory", (error3) => {
+      return new _c2(error3);
+    }), _c2);
+    Contract = class Contract2 {
+      constructor(tags = [], server, client) {
+        __publicField(this, "tags");
+        __publicField(this, "server");
+        __publicField(this, "client");
+        this.tags = tags;
+        this.server = server;
+        this.client = client;
+      }
+      _onlyDesignTime() {
+        return /* @__PURE__ */ new Error("This property is not meant to be accessed at runtime");
+      }
+      get TContractObject() {
+        throw this._onlyDesignTime();
+      }
+      get TClientInterface() {
+        throw this._onlyDesignTime();
+      }
+      get TServerInterface() {
+        throw this._onlyDesignTime();
+      }
+      get TClientHandler() {
+        throw this._onlyDesignTime();
+      }
+      get TServerHandler() {
+        throw this._onlyDesignTime();
+      }
+      get TTags() {
+        throw this._onlyDesignTime();
+      }
+      getInterface(typedChannel, myContract, otherContract, myInterface) {
+        const counterpart = this.buildCounterpart(typedChannel, otherContract);
+        const disposable = this.registerHandlers(typedChannel, myContract, myInterface, counterpart);
+        return {
+          counterpart,
+          dispose: () => disposable.dispose()
+        };
+      }
+      buildCounterpart(typedChannel, otherContract) {
+        const counterpart = {};
+        for (const [key, req] of Object.entries(otherContract)) {
+          let method;
+          if (req.kind === "request") if (req.isOptional) method = async (args, context) => {
+            if (args === void 0) args = {};
+            try {
+              return await typedChannel.request(req, args, context);
+            } catch (error3) {
+              if (error3 && error3.code === ErrorCode.methodNotFound) return OptionalMethodNotFound;
+              throw error3;
+            }
+          };
+          else method = (args, context) => {
+            if (args === void 0) args = {};
+            return typedChannel.request(req, args, context);
+          };
+          else method = (args, context) => {
+            if (args === void 0) args = {};
+            return typedChannel.notify(req, args, context);
+          };
+          counterpart[key] = method;
+        }
+        return counterpart;
+      }
+      registerHandlers(typedChannel, myContract, myInterface, counterpart) {
+        const disposables = [];
+        for (const [key, req] of Object.entries(myContract)) if (req.kind === "request") {
+          let method = myInterface[key];
+          if (!method) continue;
+          const handler = this.createRequestHandler(counterpart, method);
+          disposables.push(typedChannel.registerRequestHandler(req, handler));
+        } else {
+          const method = myInterface[key];
+          if (method) disposables.push(typedChannel.registerNotificationHandler(req, (args, context) => {
+            method(args, {
+              context,
+              counterpart
+            });
+          }));
+        }
+        return { dispose: () => disposables.forEach((d) => d.dispose()) };
+      }
+      createRequestHandler(counterpart, method) {
+        return async (args, requestId, listenerContext) => {
+          const result = await method(args, {
+            context: listenerContext,
+            counterpart,
+            newErr: ErrorWrapper.factory,
+            requestId
+          });
+          if (result instanceof ErrorWrapper) return result.error;
+          return { ok: result };
+        };
+      }
+      /**
+      * Gets a server object directly from a stream by constructing a new `TypedChannel`.
+      * It also registers the client implementation to the stream.
+      * The channel starts listening immediately.
+      */
+      static getServerFromStream(contract$1, stream, options, clientImplementation) {
+        const channel = TypedChannel.fromTransport(stream, options);
+        const { server } = contract$1.getServer(channel, clientImplementation);
+        channel.startListen();
+        return {
+          channel,
+          server
+        };
+      }
+      /**
+      * Gets a client object directly from a stream by constructing a new `TypedChannel`.
+      * It also registers the server implementation to the stream.
+      * The channel starts listening immediately.
+      */
+      static registerServerToStream(contract$1, stream, options, serverImplementation) {
+        const channel = TypedChannel.fromTransport(stream, options);
+        const { client } = contract$1.registerServer(channel, serverImplementation);
+        channel.startListen();
+        return {
+          channel,
+          client
+        };
+      }
+      getServer(typedChannel, clientImplementation) {
+        const { counterpart, dispose: dispose2 } = this.getInterface(typedChannel, this.client, this.server, clientImplementation);
+        return {
+          server: counterpart,
+          dispose: dispose2
+        };
+      }
+      registerServer(typedChannel, serverImplementation) {
+        const { counterpart, dispose: dispose2 } = this.getInterface(typedChannel, this.server, this.client, serverImplementation);
+        return {
+          client: counterpart,
+          dispose: dispose2
+        };
+      }
+      withContext() {
+        return new Contract2(this.tags, this.server, this.client);
+      }
+    };
+    FoldingRangeKind2 = /* @__PURE__ */ (function(FoldingRangeKind$1) {
+      FoldingRangeKind$1["Comment"] = "comment";
+      FoldingRangeKind$1["Imports"] = "imports";
+      FoldingRangeKind$1["Region"] = "region";
+      return FoldingRangeKind$1;
+    })({});
+    SymbolKind2 = /* @__PURE__ */ (function(SymbolKind$1) {
+      SymbolKind$1[SymbolKind$1["File"] = 1] = "File";
+      SymbolKind$1[SymbolKind$1["Module"] = 2] = "Module";
+      SymbolKind$1[SymbolKind$1["Namespace"] = 3] = "Namespace";
+      SymbolKind$1[SymbolKind$1["Package"] = 4] = "Package";
+      SymbolKind$1[SymbolKind$1["Class"] = 5] = "Class";
+      SymbolKind$1[SymbolKind$1["Method"] = 6] = "Method";
+      SymbolKind$1[SymbolKind$1["Property"] = 7] = "Property";
+      SymbolKind$1[SymbolKind$1["Field"] = 8] = "Field";
+      SymbolKind$1[SymbolKind$1["Constructor"] = 9] = "Constructor";
+      SymbolKind$1[SymbolKind$1["Enum"] = 10] = "Enum";
+      SymbolKind$1[SymbolKind$1["Interface"] = 11] = "Interface";
+      SymbolKind$1[SymbolKind$1["Function"] = 12] = "Function";
+      SymbolKind$1[SymbolKind$1["Variable"] = 13] = "Variable";
+      SymbolKind$1[SymbolKind$1["Constant"] = 14] = "Constant";
+      SymbolKind$1[SymbolKind$1["String"] = 15] = "String";
+      SymbolKind$1[SymbolKind$1["Number"] = 16] = "Number";
+      SymbolKind$1[SymbolKind$1["Boolean"] = 17] = "Boolean";
+      SymbolKind$1[SymbolKind$1["Array"] = 18] = "Array";
+      SymbolKind$1[SymbolKind$1["Object"] = 19] = "Object";
+      SymbolKind$1[SymbolKind$1["Key"] = 20] = "Key";
+      SymbolKind$1[SymbolKind$1["Null"] = 21] = "Null";
+      SymbolKind$1[SymbolKind$1["EnumMember"] = 22] = "EnumMember";
+      SymbolKind$1[SymbolKind$1["Struct"] = 23] = "Struct";
+      SymbolKind$1[SymbolKind$1["Event"] = 24] = "Event";
+      SymbolKind$1[SymbolKind$1["Operator"] = 25] = "Operator";
+      SymbolKind$1[SymbolKind$1["TypeParameter"] = 26] = "TypeParameter";
+      return SymbolKind$1;
+    })({});
+    SymbolTag2 = /* @__PURE__ */ (function(SymbolTag$1) {
+      SymbolTag$1[SymbolTag$1["Deprecated"] = 1] = "Deprecated";
+      return SymbolTag$1;
+    })({});
+    InlayHintKind3 = /* @__PURE__ */ (function(InlayHintKind$1) {
+      InlayHintKind$1[InlayHintKind$1["Type"] = 1] = "Type";
+      InlayHintKind$1[InlayHintKind$1["Parameter"] = 2] = "Parameter";
+      return InlayHintKind$1;
+    })({});
+    CompletionItemKind2 = /* @__PURE__ */ (function(CompletionItemKind$1) {
+      CompletionItemKind$1[CompletionItemKind$1["Text"] = 1] = "Text";
+      CompletionItemKind$1[CompletionItemKind$1["Method"] = 2] = "Method";
+      CompletionItemKind$1[CompletionItemKind$1["Function"] = 3] = "Function";
+      CompletionItemKind$1[CompletionItemKind$1["Constructor"] = 4] = "Constructor";
+      CompletionItemKind$1[CompletionItemKind$1["Field"] = 5] = "Field";
+      CompletionItemKind$1[CompletionItemKind$1["Variable"] = 6] = "Variable";
+      CompletionItemKind$1[CompletionItemKind$1["Class"] = 7] = "Class";
+      CompletionItemKind$1[CompletionItemKind$1["Interface"] = 8] = "Interface";
+      CompletionItemKind$1[CompletionItemKind$1["Module"] = 9] = "Module";
+      CompletionItemKind$1[CompletionItemKind$1["Property"] = 10] = "Property";
+      CompletionItemKind$1[CompletionItemKind$1["Unit"] = 11] = "Unit";
+      CompletionItemKind$1[CompletionItemKind$1["Value"] = 12] = "Value";
+      CompletionItemKind$1[CompletionItemKind$1["Enum"] = 13] = "Enum";
+      CompletionItemKind$1[CompletionItemKind$1["Keyword"] = 14] = "Keyword";
+      CompletionItemKind$1[CompletionItemKind$1["Snippet"] = 15] = "Snippet";
+      CompletionItemKind$1[CompletionItemKind$1["Color"] = 16] = "Color";
+      CompletionItemKind$1[CompletionItemKind$1["File"] = 17] = "File";
+      CompletionItemKind$1[CompletionItemKind$1["Reference"] = 18] = "Reference";
+      CompletionItemKind$1[CompletionItemKind$1["Folder"] = 19] = "Folder";
+      CompletionItemKind$1[CompletionItemKind$1["EnumMember"] = 20] = "EnumMember";
+      CompletionItemKind$1[CompletionItemKind$1["Constant"] = 21] = "Constant";
+      CompletionItemKind$1[CompletionItemKind$1["Struct"] = 22] = "Struct";
+      CompletionItemKind$1[CompletionItemKind$1["Event"] = 23] = "Event";
+      CompletionItemKind$1[CompletionItemKind$1["Operator"] = 24] = "Operator";
+      CompletionItemKind$1[CompletionItemKind$1["TypeParameter"] = 25] = "TypeParameter";
+      return CompletionItemKind$1;
+    })({});
+    CompletionItemTag2 = /* @__PURE__ */ (function(CompletionItemTag$1) {
+      CompletionItemTag$1[CompletionItemTag$1["Deprecated"] = 1] = "Deprecated";
+      return CompletionItemTag$1;
+    })({});
+    InsertTextFormat = /* @__PURE__ */ (function(InsertTextFormat$1) {
+      InsertTextFormat$1[InsertTextFormat$1["PlainText"] = 1] = "PlainText";
+      InsertTextFormat$1[InsertTextFormat$1["Snippet"] = 2] = "Snippet";
+      return InsertTextFormat$1;
+    })({});
+    DocumentHighlightKind3 = /* @__PURE__ */ (function(DocumentHighlightKind$1) {
+      DocumentHighlightKind$1[DocumentHighlightKind$1["Text"] = 1] = "Text";
+      DocumentHighlightKind$1[DocumentHighlightKind$1["Read"] = 2] = "Read";
+      DocumentHighlightKind$1[DocumentHighlightKind$1["Write"] = 3] = "Write";
+      return DocumentHighlightKind$1;
+    })({});
+    CodeActionKind2 = /* @__PURE__ */ (function(CodeActionKind$1) {
+      CodeActionKind$1["Empty"] = "";
+      CodeActionKind$1["QuickFix"] = "quickfix";
+      CodeActionKind$1["Refactor"] = "refactor";
+      CodeActionKind$1["RefactorExtract"] = "refactor.extract";
+      CodeActionKind$1["RefactorInline"] = "refactor.inline";
+      CodeActionKind$1["RefactorRewrite"] = "refactor.rewrite";
+      CodeActionKind$1["Source"] = "source";
+      CodeActionKind$1["SourceOrganizeImports"] = "source.organizeImports";
+      CodeActionKind$1["SourceFixAll"] = "source.fixAll";
+      return CodeActionKind$1;
+    })({});
+    DiagnosticSeverity = /* @__PURE__ */ (function(DiagnosticSeverity$1) {
+      DiagnosticSeverity$1[DiagnosticSeverity$1["Error"] = 1] = "Error";
+      DiagnosticSeverity$1[DiagnosticSeverity$1["Warning"] = 2] = "Warning";
+      DiagnosticSeverity$1[DiagnosticSeverity$1["Information"] = 3] = "Information";
+      DiagnosticSeverity$1[DiagnosticSeverity$1["Hint"] = 4] = "Hint";
+      return DiagnosticSeverity$1;
+    })({});
+    DiagnosticTag = /* @__PURE__ */ (function(DiagnosticTag$1) {
+      DiagnosticTag$1[DiagnosticTag$1["Unnecessary"] = 1] = "Unnecessary";
+      DiagnosticTag$1[DiagnosticTag$1["Deprecated"] = 2] = "Deprecated";
+      return DiagnosticTag$1;
+    })({});
+    CompletionTriggerKind2 = /* @__PURE__ */ (function(CompletionTriggerKind$1) {
+      CompletionTriggerKind$1[CompletionTriggerKind$1["Invoked"] = 1] = "Invoked";
+      CompletionTriggerKind$1[CompletionTriggerKind$1["TriggerCharacter"] = 2] = "TriggerCharacter";
+      CompletionTriggerKind$1[CompletionTriggerKind$1["TriggerForIncompleteCompletions"] = 3] = "TriggerForIncompleteCompletions";
+      return CompletionTriggerKind$1;
+    })({});
+    SignatureHelpTriggerKind3 = /* @__PURE__ */ (function(SignatureHelpTriggerKind$1) {
+      SignatureHelpTriggerKind$1[SignatureHelpTriggerKind$1["Invoked"] = 1] = "Invoked";
+      SignatureHelpTriggerKind$1[SignatureHelpTriggerKind$1["TriggerCharacter"] = 2] = "TriggerCharacter";
+      SignatureHelpTriggerKind$1[SignatureHelpTriggerKind$1["ContentChange"] = 3] = "ContentChange";
+      return SignatureHelpTriggerKind$1;
+    })({});
+    CodeActionTriggerKind = /* @__PURE__ */ (function(CodeActionTriggerKind$1) {
+      CodeActionTriggerKind$1[CodeActionTriggerKind$1["Invoked"] = 1] = "Invoked";
+      CodeActionTriggerKind$1[CodeActionTriggerKind$1["Automatic"] = 2] = "Automatic";
+      return CodeActionTriggerKind$1;
+    })({});
+    Capability = class {
+      constructor(method) {
+        this.method = method;
+      }
+    };
+    capabilities = {
+      textDocumentImplementation: new Capability("textDocument/implementation"),
+      textDocumentTypeDefinition: new Capability("textDocument/typeDefinition"),
+      textDocumentDocumentColor: new Capability("textDocument/documentColor"),
+      textDocumentColorPresentation: new Capability("textDocument/colorPresentation"),
+      textDocumentFoldingRange: new Capability("textDocument/foldingRange"),
+      textDocumentDeclaration: new Capability("textDocument/declaration"),
+      textDocumentSelectionRange: new Capability("textDocument/selectionRange"),
+      textDocumentPrepareCallHierarchy: new Capability("textDocument/prepareCallHierarchy"),
+      textDocumentSemanticTokensFull: new Capability("textDocument/semanticTokens/full"),
+      textDocumentSemanticTokensFullDelta: new Capability("textDocument/semanticTokens/full/delta"),
+      textDocumentLinkedEditingRange: new Capability("textDocument/linkedEditingRange"),
+      workspaceWillCreateFiles: new Capability("workspace/willCreateFiles"),
+      workspaceWillRenameFiles: new Capability("workspace/willRenameFiles"),
+      workspaceWillDeleteFiles: new Capability("workspace/willDeleteFiles"),
+      textDocumentMoniker: new Capability("textDocument/moniker"),
+      textDocumentPrepareTypeHierarchy: new Capability("textDocument/prepareTypeHierarchy"),
+      textDocumentInlineValue: new Capability("textDocument/inlineValue"),
+      textDocumentInlayHint: new Capability("textDocument/inlayHint"),
+      textDocumentDiagnostic: new Capability("textDocument/diagnostic"),
+      textDocumentInlineCompletion: new Capability("textDocument/inlineCompletion"),
+      textDocumentWillSaveWaitUntil: new Capability("textDocument/willSaveWaitUntil"),
+      textDocumentCompletion: new Capability("textDocument/completion"),
+      textDocumentHover: new Capability("textDocument/hover"),
+      textDocumentSignatureHelp: new Capability("textDocument/signatureHelp"),
+      textDocumentDefinition: new Capability("textDocument/definition"),
+      textDocumentReferences: new Capability("textDocument/references"),
+      textDocumentDocumentHighlight: new Capability("textDocument/documentHighlight"),
+      textDocumentDocumentSymbol: new Capability("textDocument/documentSymbol"),
+      textDocumentCodeAction: new Capability("textDocument/codeAction"),
+      workspaceSymbol: new Capability("workspace/symbol"),
+      textDocumentCodeLens: new Capability("textDocument/codeLens"),
+      textDocumentDocumentLink: new Capability("textDocument/documentLink"),
+      textDocumentFormatting: new Capability("textDocument/formatting"),
+      textDocumentRangeFormatting: new Capability("textDocument/rangeFormatting"),
+      textDocumentRangesFormatting: new Capability("textDocument/rangesFormatting"),
+      textDocumentOnTypeFormatting: new Capability("textDocument/onTypeFormatting"),
+      textDocumentRename: new Capability("textDocument/rename"),
+      workspaceExecuteCommand: new Capability("workspace/executeCommand"),
+      workspaceDidCreateFiles: new Capability("workspace/didCreateFiles"),
+      workspaceDidRenameFiles: new Capability("workspace/didRenameFiles"),
+      workspaceDidDeleteFiles: new Capability("workspace/didDeleteFiles"),
+      workspaceDidChangeConfiguration: new Capability("workspace/didChangeConfiguration"),
+      textDocumentDidOpen: new Capability("textDocument/didOpen"),
+      textDocumentDidChange: new Capability("textDocument/didChange"),
+      textDocumentDidClose: new Capability("textDocument/didClose"),
+      textDocumentDidSave: new Capability("textDocument/didSave"),
+      textDocumentWillSave: new Capability("textDocument/willSave"),
+      workspaceDidChangeWatchedFiles: new Capability("workspace/didChangeWatchedFiles")
+    };
+    api2 = contract({
+      server: {
+        textDocumentImplementation: unverifiedRequest({ method: "textDocument/implementation" }),
+        textDocumentTypeDefinition: unverifiedRequest({ method: "textDocument/typeDefinition" }),
+        textDocumentDocumentColor: unverifiedRequest({ method: "textDocument/documentColor" }),
+        textDocumentColorPresentation: unverifiedRequest({ method: "textDocument/colorPresentation" }),
+        textDocumentFoldingRange: unverifiedRequest({ method: "textDocument/foldingRange" }),
+        textDocumentDeclaration: unverifiedRequest({ method: "textDocument/declaration" }),
+        textDocumentSelectionRange: unverifiedRequest({ method: "textDocument/selectionRange" }),
+        textDocumentPrepareCallHierarchy: unverifiedRequest({ method: "textDocument/prepareCallHierarchy" }),
+        callHierarchyIncomingCalls: unverifiedRequest({ method: "callHierarchy/incomingCalls" }),
+        callHierarchyOutgoingCalls: unverifiedRequest({ method: "callHierarchy/outgoingCalls" }),
+        textDocumentSemanticTokensFull: unverifiedRequest({ method: "textDocument/semanticTokens/full" }),
+        textDocumentSemanticTokensFullDelta: unverifiedRequest({ method: "textDocument/semanticTokens/full/delta" }),
+        textDocumentSemanticTokensRange: unverifiedRequest({ method: "textDocument/semanticTokens/range" }),
+        textDocumentLinkedEditingRange: unverifiedRequest({ method: "textDocument/linkedEditingRange" }),
+        workspaceWillCreateFiles: unverifiedRequest({ method: "workspace/willCreateFiles" }),
+        workspaceWillRenameFiles: unverifiedRequest({ method: "workspace/willRenameFiles" }),
+        workspaceWillDeleteFiles: unverifiedRequest({ method: "workspace/willDeleteFiles" }),
+        textDocumentMoniker: unverifiedRequest({ method: "textDocument/moniker" }),
+        textDocumentPrepareTypeHierarchy: unverifiedRequest({ method: "textDocument/prepareTypeHierarchy" }),
+        typeHierarchySupertypes: unverifiedRequest({ method: "typeHierarchy/supertypes" }),
+        typeHierarchySubtypes: unverifiedRequest({ method: "typeHierarchy/subtypes" }),
+        textDocumentInlineValue: unverifiedRequest({ method: "textDocument/inlineValue" }),
+        textDocumentInlayHint: unverifiedRequest({ method: "textDocument/inlayHint" }),
+        inlayHintResolve: unverifiedRequest({ method: "inlayHint/resolve" }),
+        textDocumentDiagnostic: unverifiedRequest({ method: "textDocument/diagnostic" }),
+        workspaceDiagnostic: unverifiedRequest({ method: "workspace/diagnostic" }),
+        textDocumentInlineCompletion: unverifiedRequest({ method: "textDocument/inlineCompletion" }),
+        initialize: unverifiedRequest({ method: "initialize" }),
+        shutdown: unverifiedRequest({ method: "shutdown" }),
+        textDocumentWillSaveWaitUntil: unverifiedRequest({ method: "textDocument/willSaveWaitUntil" }),
+        textDocumentCompletion: unverifiedRequest({ method: "textDocument/completion" }),
+        completionItemResolve: unverifiedRequest({ method: "completionItem/resolve" }),
+        textDocumentHover: unverifiedRequest({ method: "textDocument/hover" }),
+        textDocumentSignatureHelp: unverifiedRequest({ method: "textDocument/signatureHelp" }),
+        textDocumentDefinition: unverifiedRequest({ method: "textDocument/definition" }),
+        textDocumentReferences: unverifiedRequest({ method: "textDocument/references" }),
+        textDocumentDocumentHighlight: unverifiedRequest({ method: "textDocument/documentHighlight" }),
+        textDocumentDocumentSymbol: unverifiedRequest({ method: "textDocument/documentSymbol" }),
+        textDocumentCodeAction: unverifiedRequest({ method: "textDocument/codeAction" }),
+        codeActionResolve: unverifiedRequest({ method: "codeAction/resolve" }),
+        workspaceSymbol: unverifiedRequest({ method: "workspace/symbol" }),
+        workspaceSymbolResolve: unverifiedRequest({ method: "workspaceSymbol/resolve" }),
+        textDocumentCodeLens: unverifiedRequest({ method: "textDocument/codeLens" }),
+        codeLensResolve: unverifiedRequest({ method: "codeLens/resolve" }),
+        textDocumentDocumentLink: unverifiedRequest({ method: "textDocument/documentLink" }),
+        documentLinkResolve: unverifiedRequest({ method: "documentLink/resolve" }),
+        textDocumentFormatting: unverifiedRequest({ method: "textDocument/formatting" }),
+        textDocumentRangeFormatting: unverifiedRequest({ method: "textDocument/rangeFormatting" }),
+        textDocumentRangesFormatting: unverifiedRequest({ method: "textDocument/rangesFormatting" }),
+        textDocumentOnTypeFormatting: unverifiedRequest({ method: "textDocument/onTypeFormatting" }),
+        textDocumentRename: unverifiedRequest({ method: "textDocument/rename" }),
+        textDocumentPrepareRename: unverifiedRequest({ method: "textDocument/prepareRename" }),
+        workspaceExecuteCommand: unverifiedRequest({ method: "workspace/executeCommand" }),
+        workspaceDidChangeWorkspaceFolders: unverifiedNotification({ method: "workspace/didChangeWorkspaceFolders" }),
+        windowWorkDoneProgressCancel: unverifiedNotification({ method: "window/workDoneProgress/cancel" }),
+        workspaceDidCreateFiles: unverifiedNotification({ method: "workspace/didCreateFiles" }),
+        workspaceDidRenameFiles: unverifiedNotification({ method: "workspace/didRenameFiles" }),
+        workspaceDidDeleteFiles: unverifiedNotification({ method: "workspace/didDeleteFiles" }),
+        notebookDocumentDidOpen: unverifiedNotification({ method: "notebookDocument/didOpen" }),
+        notebookDocumentDidChange: unverifiedNotification({ method: "notebookDocument/didChange" }),
+        notebookDocumentDidSave: unverifiedNotification({ method: "notebookDocument/didSave" }),
+        notebookDocumentDidClose: unverifiedNotification({ method: "notebookDocument/didClose" }),
+        initialized: unverifiedNotification({ method: "initialized" }),
+        exit: unverifiedNotification({ method: "exit" }),
+        workspaceDidChangeConfiguration: unverifiedNotification({ method: "workspace/didChangeConfiguration" }),
+        textDocumentDidOpen: unverifiedNotification({ method: "textDocument/didOpen" }),
+        textDocumentDidChange: unverifiedNotification({ method: "textDocument/didChange" }),
+        textDocumentDidClose: unverifiedNotification({ method: "textDocument/didClose" }),
+        textDocumentDidSave: unverifiedNotification({ method: "textDocument/didSave" }),
+        textDocumentWillSave: unverifiedNotification({ method: "textDocument/willSave" }),
+        workspaceDidChangeWatchedFiles: unverifiedNotification({ method: "workspace/didChangeWatchedFiles" }),
+        setTrace: unverifiedNotification({ method: "$/setTrace" }),
+        cancelRequest: unverifiedNotification({ method: "$/cancelRequest" }),
+        progress: unverifiedNotification({ method: "$/progress" })
+      },
+      client: {
+        workspaceWorkspaceFolders: unverifiedRequest({ method: "workspace/workspaceFolders" }).optional(),
+        workspaceConfiguration: unverifiedRequest({ method: "workspace/configuration" }).optional(),
+        workspaceFoldingRangeRefresh: unverifiedRequest({ method: "workspace/foldingRange/refresh" }).optional(),
+        windowWorkDoneProgressCreate: unverifiedRequest({ method: "window/workDoneProgress/create" }).optional(),
+        workspaceSemanticTokensRefresh: unverifiedRequest({ method: "workspace/semanticTokens/refresh" }).optional(),
+        windowShowDocument: unverifiedRequest({ method: "window/showDocument" }).optional(),
+        workspaceInlineValueRefresh: unverifiedRequest({ method: "workspace/inlineValue/refresh" }).optional(),
+        workspaceInlayHintRefresh: unverifiedRequest({ method: "workspace/inlayHint/refresh" }).optional(),
+        workspaceDiagnosticRefresh: unverifiedRequest({ method: "workspace/diagnostic/refresh" }).optional(),
+        clientRegisterCapability: unverifiedRequest({ method: "client/registerCapability" }).optional(),
+        clientUnregisterCapability: unverifiedRequest({ method: "client/unregisterCapability" }).optional(),
+        windowShowMessageRequest: unverifiedRequest({ method: "window/showMessageRequest" }).optional(),
+        workspaceCodeLensRefresh: unverifiedRequest({ method: "workspace/codeLens/refresh" }).optional(),
+        workspaceApplyEdit: unverifiedRequest({ method: "workspace/applyEdit" }).optional(),
+        windowShowMessage: unverifiedNotification({ method: "window/showMessage" }),
+        windowLogMessage: unverifiedNotification({ method: "window/logMessage" }),
+        telemetryEvent: unverifiedNotification({ method: "telemetry/event" }),
+        textDocumentPublishDiagnostics: unverifiedNotification({ method: "textDocument/publishDiagnostics" }),
+        logTrace: unverifiedNotification({ method: "$/logTrace" }),
+        cancelRequest: unverifiedNotification({ method: "$/cancelRequest" }),
+        progress: unverifiedNotification({ method: "$/progress" })
+      }
+    });
+    Disposable2 = (_d = class {
+      constructor() {
+        __publicField(this, "_store", new DisposableStore2());
+      }
+      dispose() {
+        this._store.dispose();
+      }
+      _register(t3) {
+        if (t3 === this) throw new Error("Cannot register a disposable on itself!");
+        return this._store.add(t3);
+      }
+    }, __publicField(_d, "None", Object.freeze({ dispose() {
+    } })), _d);
+    DisposableStore2 = (_e = class {
+      constructor() {
+        __publicField(this, "_toDispose", /* @__PURE__ */ new Set());
+        __publicField(this, "_isDisposed", false);
+      }
+      dispose() {
+        if (this._isDisposed) return;
+        this._isDisposed = true;
+        this.clear();
+      }
+      clear() {
+        if (this._toDispose.size === 0) return;
+        try {
+          for (const item of this._toDispose) item.dispose();
+        } finally {
+          this._toDispose.clear();
+        }
+      }
+      add(t3) {
+        if (!t3) return t3;
+        if (t3 === this) throw new Error("Cannot register a disposable on itself!");
+        if (this._isDisposed) {
+          if (!_e.DISABLE_DISPOSED_WARNING) console.warn((/* @__PURE__ */ new Error("Trying to add a disposable to a DisposableStore that has already been disposed of. The added object will be leaked!")).stack);
+        } else this._toDispose.add(t3);
+        return t3;
+      }
+    }, __publicField(_e, "DISABLE_DISPOSED_WARNING", false), _e);
+    lspCodeActionKindToMonacoCodeActionKind = /* @__PURE__ */ new Map([
+      [CodeActionKind2.Empty, ""],
+      [CodeActionKind2.QuickFix, "quickfix"],
+      [CodeActionKind2.Refactor, "refactor"],
+      [CodeActionKind2.RefactorExtract, "refactor.extract"],
+      [CodeActionKind2.RefactorInline, "refactor.inline"],
+      [CodeActionKind2.RefactorRewrite, "refactor.rewrite"],
+      [CodeActionKind2.Source, "source"],
+      [CodeActionKind2.SourceOrganizeImports, "source.organizeImports"],
+      [CodeActionKind2.SourceFixAll, "source.fixAll"]
+    ]);
+    monacoCodeActionTriggerTypeToLspCodeActionTriggerKind = /* @__PURE__ */ new Map([[languages.CodeActionTriggerType.Invoke, CodeActionTriggerKind.Invoked], [languages.CodeActionTriggerType.Auto, CodeActionTriggerKind.Automatic]]);
+    lspCompletionItemKindToMonacoCompletionItemKind = /* @__PURE__ */ new Map([
+      [CompletionItemKind2.Text, languages.CompletionItemKind.Text],
+      [CompletionItemKind2.Method, languages.CompletionItemKind.Method],
+      [CompletionItemKind2.Function, languages.CompletionItemKind.Function],
+      [CompletionItemKind2.Constructor, languages.CompletionItemKind.Constructor],
+      [CompletionItemKind2.Field, languages.CompletionItemKind.Field],
+      [CompletionItemKind2.Variable, languages.CompletionItemKind.Variable],
+      [CompletionItemKind2.Class, languages.CompletionItemKind.Class],
+      [CompletionItemKind2.Interface, languages.CompletionItemKind.Interface],
+      [CompletionItemKind2.Module, languages.CompletionItemKind.Module],
+      [CompletionItemKind2.Property, languages.CompletionItemKind.Property],
+      [CompletionItemKind2.Unit, languages.CompletionItemKind.Unit],
+      [CompletionItemKind2.Value, languages.CompletionItemKind.Value],
+      [CompletionItemKind2.Enum, languages.CompletionItemKind.Enum],
+      [CompletionItemKind2.Keyword, languages.CompletionItemKind.Keyword],
+      [CompletionItemKind2.Snippet, languages.CompletionItemKind.Snippet],
+      [CompletionItemKind2.Color, languages.CompletionItemKind.Color],
+      [CompletionItemKind2.File, languages.CompletionItemKind.File],
+      [CompletionItemKind2.Reference, languages.CompletionItemKind.Reference],
+      [CompletionItemKind2.Folder, languages.CompletionItemKind.Folder],
+      [CompletionItemKind2.EnumMember, languages.CompletionItemKind.EnumMember],
+      [CompletionItemKind2.Constant, languages.CompletionItemKind.Constant],
+      [CompletionItemKind2.Struct, languages.CompletionItemKind.Struct],
+      [CompletionItemKind2.Event, languages.CompletionItemKind.Event],
+      [CompletionItemKind2.Operator, languages.CompletionItemKind.Operator],
+      [CompletionItemKind2.TypeParameter, languages.CompletionItemKind.TypeParameter]
+    ]);
+    lspCompletionItemTagToMonacoCompletionItemTag = /* @__PURE__ */ new Map([[CompletionItemTag2.Deprecated, languages.CompletionItemTag.Deprecated]]);
+    monacoCompletionTriggerKindToLspCompletionTriggerKind = /* @__PURE__ */ new Map([
+      [languages.CompletionTriggerKind.Invoke, CompletionTriggerKind2.Invoked],
+      [languages.CompletionTriggerKind.TriggerCharacter, CompletionTriggerKind2.TriggerCharacter],
+      [languages.CompletionTriggerKind.TriggerForIncompleteCompletions, CompletionTriggerKind2.TriggerForIncompleteCompletions]
+    ]);
+    lspInsertTextFormatToMonacoInsertTextRules = /* @__PURE__ */ new Map([[InsertTextFormat.Snippet, languages.CompletionItemInsertTextRule.InsertAsSnippet]]);
+    lspSymbolKindToMonacoSymbolKind = /* @__PURE__ */ new Map([
+      [SymbolKind2.File, languages.SymbolKind.File],
+      [SymbolKind2.Module, languages.SymbolKind.Module],
+      [SymbolKind2.Namespace, languages.SymbolKind.Namespace],
+      [SymbolKind2.Package, languages.SymbolKind.Package],
+      [SymbolKind2.Class, languages.SymbolKind.Class],
+      [SymbolKind2.Method, languages.SymbolKind.Method],
+      [SymbolKind2.Property, languages.SymbolKind.Property],
+      [SymbolKind2.Field, languages.SymbolKind.Field],
+      [SymbolKind2.Constructor, languages.SymbolKind.Constructor],
+      [SymbolKind2.Enum, languages.SymbolKind.Enum],
+      [SymbolKind2.Interface, languages.SymbolKind.Interface],
+      [SymbolKind2.Function, languages.SymbolKind.Function],
+      [SymbolKind2.Variable, languages.SymbolKind.Variable],
+      [SymbolKind2.Constant, languages.SymbolKind.Constant],
+      [SymbolKind2.String, languages.SymbolKind.String],
+      [SymbolKind2.Number, languages.SymbolKind.Number],
+      [SymbolKind2.Boolean, languages.SymbolKind.Boolean],
+      [SymbolKind2.Array, languages.SymbolKind.Array],
+      [SymbolKind2.Object, languages.SymbolKind.Object],
+      [SymbolKind2.Key, languages.SymbolKind.Key],
+      [SymbolKind2.Null, languages.SymbolKind.Null],
+      [SymbolKind2.EnumMember, languages.SymbolKind.EnumMember],
+      [SymbolKind2.Struct, languages.SymbolKind.Struct],
+      [SymbolKind2.Event, languages.SymbolKind.Event],
+      [SymbolKind2.Operator, languages.SymbolKind.Operator],
+      [SymbolKind2.TypeParameter, languages.SymbolKind.TypeParameter]
+    ]);
+    lspSymbolTagToMonacoSymbolTag = /* @__PURE__ */ new Map([[SymbolTag2.Deprecated, languages.SymbolTag.Deprecated]]);
+    lspDocumentHighlightKindToMonacoDocumentHighlightKind = /* @__PURE__ */ new Map([
+      [DocumentHighlightKind3.Text, languages.DocumentHighlightKind.Text],
+      [DocumentHighlightKind3.Read, languages.DocumentHighlightKind.Read],
+      [DocumentHighlightKind3.Write, languages.DocumentHighlightKind.Write]
+    ]);
+    lspFoldingRangeKindToMonacoFoldingRangeKind = /* @__PURE__ */ new Map([
+      [FoldingRangeKind2.Comment, languages.FoldingRangeKind.Comment],
+      [FoldingRangeKind2.Imports, languages.FoldingRangeKind.Imports],
+      [FoldingRangeKind2.Region, languages.FoldingRangeKind.Region]
+    ]);
+    monacoMarkerSeverityToLspDiagnosticSeverity = /* @__PURE__ */ new Map([
+      [MarkerSeverity3.Error, DiagnosticSeverity.Error],
+      [MarkerSeverity3.Warning, DiagnosticSeverity.Warning],
+      [MarkerSeverity3.Info, DiagnosticSeverity.Information],
+      [MarkerSeverity3.Hint, DiagnosticSeverity.Hint]
+    ]);
+    lspDiagnosticSeverityToMonacoMarkerSeverity = /* @__PURE__ */ new Map([
+      [DiagnosticSeverity.Error, MarkerSeverity3.Error],
+      [DiagnosticSeverity.Warning, MarkerSeverity3.Warning],
+      [DiagnosticSeverity.Information, MarkerSeverity3.Info],
+      [DiagnosticSeverity.Hint, MarkerSeverity3.Hint]
+    ]);
+    lspDiagnosticTagToMonacoMarkerTag = /* @__PURE__ */ new Map([[DiagnosticTag.Unnecessary, MarkerTag2.Unnecessary], [DiagnosticTag.Deprecated, MarkerTag2.Deprecated]]);
+    monacoSignatureHelpTriggerKindToLspSignatureHelpTriggerKind = /* @__PURE__ */ new Map([
+      [languages.SignatureHelpTriggerKind.Invoke, SignatureHelpTriggerKind3.Invoked],
+      [languages.SignatureHelpTriggerKind.TriggerCharacter, SignatureHelpTriggerKind3.TriggerCharacter],
+      [languages.SignatureHelpTriggerKind.ContentChange, SignatureHelpTriggerKind3.ContentChange]
+    ]);
+    lspInlayHintKindToMonacoInlayHintKind = /* @__PURE__ */ new Map([[InlayHintKind3.Type, languages.InlayHintKind.Type], [InlayHintKind3.Parameter, languages.InlayHintKind.Parameter]]);
+    capabilitiesByMethod = new Map([...Object.values(capabilities)].map((c3) => [c3.method, c3]));
+    ws = null;
+    if (typeof WebSocket !== "undefined") ws = WebSocket;
+    else if (typeof MozWebSocket !== "undefined") ws = MozWebSocket;
+    else if (typeof global !== "undefined") ws = global.WebSocket || global.MozWebSocket;
+    else if (typeof window !== "undefined") ws = window.WebSocket || window.MozWebSocket;
+    else if (typeof self !== "undefined") ws = self.WebSocket || self.MozWebSocket;
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/_.contribution.js
+function registerLanguage(def2) {
+  const languageId = def2.id;
+  languageDefinitions[languageId] = def2;
+  languages.register(def2);
+  const lazyLanguageLoader = LazyLanguageLoader.getOrCreate(languageId);
+  languages.registerTokensProviderFactory(languageId, {
+    create: async () => {
+      const mod = await lazyLanguageLoader.load();
+      return mod.language;
+    }
+  });
+  languages.onLanguageEncountered(languageId, async () => {
+    const mod = await lazyLanguageLoader.load();
+    languages.setLanguageConfiguration(languageId, mod.conf);
+  });
+}
+var languageDefinitions, lazyLanguageLoaders, LazyLanguageLoader;
+var init_contribution4 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/_.contribution.js"() {
+    init_editor_api();
+    languageDefinitions = {};
+    lazyLanguageLoaders = {};
+    LazyLanguageLoader = class _LazyLanguageLoader {
+      static getOrCreate(languageId) {
+        if (!lazyLanguageLoaders[languageId]) {
+          lazyLanguageLoaders[languageId] = new _LazyLanguageLoader(languageId);
+        }
+        return lazyLanguageLoaders[languageId];
+      }
+      constructor(languageId) {
+        this._languageId = languageId;
+        this._loadingTriggered = false;
+        this._lazyLoadPromise = new Promise((resolve3, reject) => {
+          this._lazyLoadPromiseResolve = resolve3;
+          this._lazyLoadPromiseReject = reject;
+        });
+      }
+      load() {
+        if (!this._loadingTriggered) {
+          this._loadingTriggered = true;
+          languageDefinitions[this._languageId].loader().then(
+            (mod) => this._lazyLoadPromiseResolve(mod),
+            (err) => this._lazyLoadPromiseReject(err)
+          );
+        }
+        return this._lazyLoadPromise;
+      }
+    };
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/abap/abap.js
 var abap_exports = {};
 __export(abap_exports, {
@@ -255905,6 +257609,19 @@ var init_abap = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/abap/register.js
+var init_register = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/abap/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "abap",
+      extensions: [".abap"],
+      aliases: ["abap", "ABAP"],
+      loader: () => Promise.resolve().then(() => (init_abap(), abap_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/apex/apex.js
 var apex_exports = {};
 __export(apex_exports, {
@@ -256244,6 +257961,20 @@ var init_apex = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/apex/register.js
+var init_register2 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/apex/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "apex",
+      extensions: [".cls"],
+      aliases: ["Apex", "apex"],
+      mimetypes: ["text/x-apex-source", "text/x-apex"],
+      loader: () => Promise.resolve().then(() => (init_apex(), apex_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/azcli/azcli.js
 var azcli_exports = {};
 __export(azcli_exports, {
@@ -256318,6 +258049,19 @@ var init_azcli = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/azcli/register.js
+var init_register3 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/azcli/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "azcli",
+      extensions: [".azcli"],
+      aliases: ["Azure CLI", "azcli"],
+      loader: () => Promise.resolve().then(() => (init_azcli(), azcli_exports))
+    });
   }
 });
 
@@ -256427,6 +258171,19 @@ var init_bat = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/bat/register.js
+var init_register4 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/bat/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "bat",
+      extensions: [".bat", ".cmd"],
+      aliases: ["Batch", "bat"],
+      loader: () => Promise.resolve().then(() => (init_bat(), bat_exports))
+    });
   }
 });
 
@@ -256545,6 +258302,19 @@ var init_bicep = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/bicep/register.js
+var init_register5 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/bicep/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "bicep",
+      extensions: [".bicep"],
+      aliases: ["Bicep"],
+      loader: () => Promise.resolve().then(() => (init_bicep(), bicep_exports))
+    });
   }
 });
 
@@ -256728,6 +258498,19 @@ var init_cameligo = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/cameligo/register.js
+var init_register6 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/cameligo/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "cameligo",
+      extensions: [".mligo"],
+      aliases: ["Cameligo"],
+      loader: () => Promise.resolve().then(() => (init_cameligo(), cameligo_exports))
+    });
   }
 });
 
@@ -257501,6 +259284,19 @@ var init_clojure = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/clojure/register.js
+var init_register7 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/clojure/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "clojure",
+      extensions: [".clj", ".cljs", ".cljc", ".edn"],
+      aliases: ["clojure", "Clojure"],
+      loader: () => Promise.resolve().then(() => (init_clojure(), clojure_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/coffee/coffee.js
 var coffee_exports = {};
 __export(coffee_exports, {
@@ -257739,6 +259535,20 @@ var init_coffee = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/coffee/register.js
+var init_register8 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/coffee/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "coffeescript",
+      extensions: [".coffee"],
+      aliases: ["CoffeeScript", "coffeescript", "coffee"],
+      mimetypes: ["text/x-coffeescript", "text/coffeescript"],
+      loader: () => Promise.resolve().then(() => (init_coffee(), coffee_exports))
+    });
   }
 });
 
@@ -258140,6 +259950,25 @@ var init_cpp = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/cpp/register.js
+var init_register9 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/cpp/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "c",
+      extensions: [".c", ".h"],
+      aliases: ["C", "c"],
+      loader: () => Promise.resolve().then(() => (init_cpp(), cpp_exports))
+    });
+    registerLanguage({
+      id: "cpp",
+      extensions: [".cpp", ".cc", ".cxx", ".hpp", ".hh", ".hxx"],
+      aliases: ["C++", "Cpp", "cpp"],
+      loader: () => Promise.resolve().then(() => (init_cpp(), cpp_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/csharp/csharp.js
 var csharp_exports = {};
 __export(csharp_exports, {
@@ -258475,6 +260304,19 @@ var init_csharp = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/csharp/register.js
+var init_register10 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/csharp/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "csharp",
+      extensions: [".cs", ".csx", ".cake"],
+      aliases: ["C#", "csharp"],
+      loader: () => Promise.resolve().then(() => (init_csharp(), csharp_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/csp/csp.js
 var csp_exports = {};
 __export(csp_exports, {
@@ -258534,6 +260376,19 @@ var init_csp = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/csp/register.js
+var init_register11 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/csp/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "csp",
+      extensions: [".csp"],
+      aliases: ["CSP", "csp"],
+      loader: () => Promise.resolve().then(() => (init_csp(), csp_exports))
+    });
   }
 });
 
@@ -258728,6 +260583,20 @@ var init_css = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/css/register.js
+var init_register12 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/css/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "css",
+      extensions: [".css"],
+      aliases: ["CSS", "css"],
+      mimetypes: ["text/css"],
+      loader: () => Promise.resolve().then(() => (init_css(), css_exports))
+    });
   }
 });
 
@@ -259000,6 +260869,19 @@ var init_cypher = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/cypher/register.js
+var init_register13 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/cypher/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "cypher",
+      extensions: [".cypher", ".cyp"],
+      aliases: ["Cypher", "OpenCypher"],
+      loader: () => Promise.resolve().then(() => (init_cypher(), cypher_exports))
+    });
   }
 });
 
@@ -259293,6 +261175,20 @@ var init_dart = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/dart/register.js
+var init_register14 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/dart/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "dart",
+      extensions: [".dart"],
+      aliases: ["Dart", "dart"],
+      mimetypes: ["text/x-dart-source", "text/x-dart"],
+      loader: () => Promise.resolve().then(() => (init_dart(), dart_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/dockerfile/dockerfile.js
 var dockerfile_exports = {};
 __export(dockerfile_exports, {
@@ -259429,6 +261325,20 @@ var init_dockerfile = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/dockerfile/register.js
+var init_register15 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/dockerfile/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "dockerfile",
+      extensions: [".dockerfile"],
+      filenames: ["Dockerfile"],
+      aliases: ["Dockerfile"],
+      loader: () => Promise.resolve().then(() => (init_dockerfile(), dockerfile_exports))
+    });
   }
 });
 
@@ -259894,6 +261804,19 @@ var init_ecl = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/ecl/register.js
+var init_register16 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/ecl/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "ecl",
+      extensions: [".ecl"],
+      aliases: ["ECL", "Ecl", "ecl"],
+      loader: () => Promise.resolve().then(() => (init_ecl(), ecl_exports))
+    });
   }
 });
 
@@ -260475,6 +262398,19 @@ var init_elixir = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/elixir/register.js
+var init_register17 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/elixir/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "elixir",
+      extensions: [".ex", ".exs"],
+      aliases: ["Elixir", "elixir", "ex"],
+      loader: () => Promise.resolve().then(() => (init_elixir(), elixir_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/flow9/flow9.js
 var flow9_exports = {};
 __export(flow9_exports, {
@@ -260623,6 +262559,19 @@ var init_flow9 = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/flow9/register.js
+var init_register18 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/flow9/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "flow9",
+      extensions: [".flow"],
+      aliases: ["Flow9", "Flow", "flow9", "flow"],
+      loader: () => Promise.resolve().then(() => (init_flow9(), flow9_exports))
+    });
   }
 });
 
@@ -260849,6 +262798,19 @@ var init_fsharp = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/fsharp/register.js
+var init_register19 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/fsharp/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "fsharp",
+      extensions: [".fs", ".fsi", ".ml", ".mli", ".fsx", ".fsscript"],
+      aliases: ["F#", "FSharp", "fsharp"],
+      loader: () => Promise.resolve().then(() => (init_fsharp(), fsharp_exports))
+    });
   }
 });
 
@@ -261855,6 +263817,63 @@ var init_freemarker2 = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/freemarker2/register.js
+var init_register20 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/freemarker2/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "freemarker2",
+      extensions: [".ftl", ".ftlh", ".ftlx"],
+      aliases: ["FreeMarker2", "Apache FreeMarker2"],
+      loader: () => {
+        return Promise.resolve().then(() => (init_freemarker2(), freemarker2_exports)).then((m) => m.TagAutoInterpolationDollar);
+      }
+    });
+    registerLanguage({
+      id: "freemarker2.tag-angle.interpolation-dollar",
+      aliases: ["FreeMarker2 (Angle/Dollar)", "Apache FreeMarker2 (Angle/Dollar)"],
+      loader: () => {
+        return Promise.resolve().then(() => (init_freemarker2(), freemarker2_exports)).then((m) => m.TagAngleInterpolationDollar);
+      }
+    });
+    registerLanguage({
+      id: "freemarker2.tag-bracket.interpolation-dollar",
+      aliases: ["FreeMarker2 (Bracket/Dollar)", "Apache FreeMarker2 (Bracket/Dollar)"],
+      loader: () => {
+        return Promise.resolve().then(() => (init_freemarker2(), freemarker2_exports)).then((m) => m.TagBracketInterpolationDollar);
+      }
+    });
+    registerLanguage({
+      id: "freemarker2.tag-angle.interpolation-bracket",
+      aliases: ["FreeMarker2 (Angle/Bracket)", "Apache FreeMarker2 (Angle/Bracket)"],
+      loader: () => {
+        return Promise.resolve().then(() => (init_freemarker2(), freemarker2_exports)).then((m) => m.TagAngleInterpolationBracket);
+      }
+    });
+    registerLanguage({
+      id: "freemarker2.tag-bracket.interpolation-bracket",
+      aliases: ["FreeMarker2 (Bracket/Bracket)", "Apache FreeMarker2 (Bracket/Bracket)"],
+      loader: () => {
+        return Promise.resolve().then(() => (init_freemarker2(), freemarker2_exports)).then((m) => m.TagBracketInterpolationBracket);
+      }
+    });
+    registerLanguage({
+      id: "freemarker2.tag-auto.interpolation-dollar",
+      aliases: ["FreeMarker2 (Auto/Dollar)", "Apache FreeMarker2 (Auto/Dollar)"],
+      loader: () => {
+        return Promise.resolve().then(() => (init_freemarker2(), freemarker2_exports)).then((m) => m.TagAutoInterpolationDollar);
+      }
+    });
+    registerLanguage({
+      id: "freemarker2.tag-auto.interpolation-bracket",
+      aliases: ["FreeMarker2 (Auto/Bracket)", "Apache FreeMarker2 (Auto/Bracket)"],
+      loader: () => {
+        return Promise.resolve().then(() => (init_freemarker2(), freemarker2_exports)).then((m) => m.TagAutoInterpolationBracket);
+      }
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/go/go.js
 var go_exports = {};
 __export(go_exports, {
@@ -262082,6 +264101,19 @@ var init_go = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/go/register.js
+var init_register21 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/go/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "go",
+      extensions: [".go"],
+      aliases: ["Go"],
+      loader: () => Promise.resolve().then(() => (init_go(), go_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/graphql/graphql.js
 var graphql_exports = {};
 __export(graphql_exports, {
@@ -262239,6 +264271,20 @@ var init_graphql = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/graphql/register.js
+var init_register22 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/graphql/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "graphql",
+      extensions: [".graphql", ".gql"],
+      aliases: ["GraphQL", "graphql", "gql"],
+      mimetypes: ["application/graphql"],
+      loader: () => Promise.resolve().then(() => (init_graphql(), graphql_exports))
+    });
   }
 });
 
@@ -262664,6 +264710,20 @@ var init_handlebars = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/handlebars/register.js
+var init_register23 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/handlebars/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "handlebars",
+      extensions: [".handlebars", ".hbs"],
+      aliases: ["Handlebars", "handlebars", "hbs"],
+      mimetypes: ["text/x-handlebars-template"],
+      loader: () => Promise.resolve().then(() => (init_handlebars(), handlebars_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/hcl/hcl.js
 var hcl_exports = {};
 __export(hcl_exports, {
@@ -262853,6 +264913,19 @@ var init_hcl = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/hcl/register.js
+var init_register24 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/hcl/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "hcl",
+      extensions: [".tf", ".tfvars", ".hcl"],
+      aliases: ["Terraform", "tf", "HCL", "hcl"],
+      loader: () => Promise.resolve().then(() => (init_hcl(), hcl_exports))
+    });
   }
 });
 
@@ -263167,6 +265240,20 @@ var init_html = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/html/register.js
+var init_register25 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/html/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "html",
+      extensions: [".html", ".htm", ".shtml", ".xhtml", ".mdoc", ".jsp", ".asp", ".aspx", ".jshtm"],
+      aliases: ["HTML", "htm", "html", "xhtml"],
+      mimetypes: ["text/html", "text/x-jshtm", "text/template", "text/ng-template"],
+      loader: () => Promise.resolve().then(() => (init_html(), html_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/ini/ini.js
 var ini_exports = {};
 __export(ini_exports, {
@@ -263244,6 +265331,20 @@ var init_ini = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/ini/register.js
+var init_register26 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/ini/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "ini",
+      extensions: [".ini", ".properties", ".gitconfig"],
+      filenames: ["config", ".gitattributes", ".gitconfig", ".editorconfig"],
+      aliases: ["Ini", "ini"],
+      loader: () => Promise.resolve().then(() => (init_ini(), ini_exports))
+    });
   }
 });
 
@@ -263485,6 +265586,20 @@ var init_java = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/java/register.js
+var init_register27 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/java/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "java",
+      extensions: [".java", ".jav"],
+      aliases: ["Java", "java"],
+      mimetypes: ["text/x-java-source", "text/x-java"],
+      loader: () => Promise.resolve().then(() => (init_java(), java_exports))
+    });
   }
 });
 
@@ -263909,6 +266024,22 @@ var init_javascript = __esm({
       regexpesc: language28.regexpesc,
       tokenizer: language28.tokenizer
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/javascript/register.js
+var init_register28 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/javascript/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "javascript",
+      extensions: [".js", ".es6", ".jsx", ".mjs", ".cjs"],
+      firstLine: "^#!.*\\bnode",
+      filenames: ["jakefile"],
+      aliases: ["JavaScript", "javascript", "js"],
+      mimetypes: ["text/javascript"],
+      loader: () => Promise.resolve().then(() => (init_javascript(), javascript_exports))
+    });
   }
 });
 
@@ -264432,6 +266563,19 @@ var init_julia = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/julia/register.js
+var init_register29 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/julia/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "julia",
+      extensions: [".jl"],
+      aliases: ["julia", "Julia"],
+      loader: () => Promise.resolve().then(() => (init_julia(), julia_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/kotlin/kotlin.js
 var kotlin_exports = {};
 __export(kotlin_exports, {
@@ -264693,6 +266837,20 @@ var init_kotlin = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/kotlin/register.js
+var init_register30 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/kotlin/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "kotlin",
+      extensions: [".kt", ".kts"],
+      aliases: ["Kotlin", "kotlin"],
+      mimetypes: ["text/x-kotlin-source", "text/x-kotlin"],
+      loader: () => Promise.resolve().then(() => (init_kotlin(), kotlin_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/less/less.js
 var less_exports = {};
 __export(less_exports, {
@@ -264863,6 +267021,20 @@ var init_less = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/less/register.js
+var init_register31 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/less/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "less",
+      extensions: [".less"],
+      aliases: ["Less", "less"],
+      mimetypes: ["text/x-less", "text/less"],
+      loader: () => Promise.resolve().then(() => (init_less(), less_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/lexon/lexon.js
 var lexon_exports = {};
 __export(lexon_exports, {
@@ -265026,6 +267198,19 @@ var init_lexon = __esm({
         whitespace: [[/[ \t\r\n]+/, "white"]]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/lexon/register.js
+var init_register32 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/lexon/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "lexon",
+      extensions: [".lex"],
+      aliases: ["Lexon"],
+      loader: () => Promise.resolve().then(() => (init_lexon(), lexon_exports))
+    });
   }
 });
 
@@ -265197,6 +267382,19 @@ var init_lua = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/lua/register.js
+var init_register33 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/lua/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "lua",
+      extensions: [".lua"],
+      aliases: ["Lua", "lua"],
+      loader: () => Promise.resolve().then(() => (init_lua(), lua_exports))
+    });
   }
 });
 
@@ -265443,6 +267641,20 @@ var init_liquid = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/liquid/register.js
+var init_register34 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/liquid/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "liquid",
+      extensions: [".liquid", ".html.liquid"],
+      aliases: ["Liquid", "liquid"],
+      mimetypes: ["application/liquid"],
+      loader: () => Promise.resolve().then(() => (init_liquid(), liquid_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/m3/m3.js
 var m3_exports = {};
 __export(m3_exports, {
@@ -265659,6 +267871,19 @@ var init_m3 = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/m3/register.js
+var init_register35 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/m3/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "m3",
+      extensions: [".m3", ".i3", ".mg", ".ig"],
+      aliases: ["Modula-3", "Modula3", "modula3", "m3"],
+      loader: () => Promise.resolve().then(() => (init_m3(), m3_exports))
+    });
   }
 });
 
@@ -265900,6 +268125,19 @@ var init_markdown = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/markdown/register.js
+var init_register36 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/markdown/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "markdown",
+      extensions: [".md", ".markdown", ".mdown", ".mkdn", ".mkd", ".mdwn", ".mdtxt", ".mdtext"],
+      aliases: ["Markdown", "markdown"],
+      loader: () => Promise.resolve().then(() => (init_markdown(), markdown_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/mdx/mdx.js
 var mdx_exports = {};
 __export(mdx_exports, {
@@ -266064,6 +268302,19 @@ var init_mdx = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/mdx/register.js
+var init_register37 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/mdx/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "mdx",
+      extensions: [".mdx"],
+      aliases: ["MDX", "mdx"],
+      loader: () => Promise.resolve().then(() => (init_mdx(), mdx_exports))
+    });
   }
 });
 
@@ -266271,6 +268522,20 @@ var init_mips = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/mips/register.js
+var init_register38 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/mips/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "mips",
+      extensions: [".s"],
+      aliases: ["MIPS", "MIPS-V"],
+      mimetypes: ["text/x-mips", "text/mips", "text/plaintext"],
+      loader: () => Promise.resolve().then(() => (init_mips(), mips_exports))
+    });
   }
 });
 
@@ -266655,6 +268920,19 @@ var init_msdax = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/msdax/register.js
+var init_register39 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/msdax/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "msdax",
+      extensions: [".dax", ".msdax"],
+      aliases: ["DAX", "MSDAX"],
+      loader: () => Promise.resolve().then(() => (init_msdax(), msdax_exports))
+    });
   }
 });
 
@@ -267545,6 +269823,19 @@ var init_mysql = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/mysql/register.js
+var init_register40 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/mysql/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "mysql",
+      extensions: [],
+      aliases: ["MySQL", "mysql"],
+      loader: () => Promise.resolve().then(() => (init_mysql(), mysql_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/objective-c/objective-c.js
 var objective_c_exports = {};
 __export(objective_c_exports, {
@@ -267734,6 +270025,19 @@ var init_objective_c = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/objective-c/register.js
+var init_register41 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/objective-c/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "objective-c",
+      extensions: [".m"],
+      aliases: ["Objective-C"],
+      loader: () => Promise.resolve().then(() => (init_objective_c(), objective_c_exports))
+    });
   }
 });
 
@@ -267997,6 +270301,20 @@ var init_pascal = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pascal/register.js
+var init_register42 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pascal/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "pascal",
+      extensions: [".pas", ".p", ".pp"],
+      aliases: ["Pascal", "pas"],
+      mimetypes: ["text/x-pascal-source", "text/x-pascal"],
+      loader: () => Promise.resolve().then(() => (init_pascal(), pascal_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pascaligo/pascaligo.js
 var pascaligo_exports = {};
 __export(pascaligo_exports, {
@@ -268167,6 +270485,19 @@ var init_pascaligo = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pascaligo/register.js
+var init_register43 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pascaligo/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "pascaligo",
+      extensions: [".ligo"],
+      aliases: ["Pascaligo", "ligo"],
+      loader: () => Promise.resolve().then(() => (init_pascaligo(), pascaligo_exports))
+    });
   }
 });
 
@@ -268802,6 +271133,19 @@ var init_perl = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/perl/register.js
+var init_register44 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/perl/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "perl",
+      extensions: [".pl", ".pm"],
+      aliases: ["Perl", "pl"],
+      loader: () => Promise.resolve().then(() => (init_perl(), perl_exports))
+    });
   }
 });
 
@@ -269665,6 +272009,19 @@ var init_pgsql = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pgsql/register.js
+var init_register45 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pgsql/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "pgsql",
+      extensions: [],
+      aliases: ["PostgreSQL", "postgres", "pg", "postgre"],
+      loader: () => Promise.resolve().then(() => (init_pgsql(), pgsql_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/php/php.js
 var php_exports = {};
 __export(php_exports, {
@@ -270174,6 +272531,20 @@ var init_php = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/php/register.js
+var init_register46 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/php/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "php",
+      extensions: [".php", ".php4", ".php5", ".phtml", ".ctp"],
+      aliases: ["PHP", "php"],
+      mimetypes: ["application/x-php"],
+      loader: () => Promise.resolve().then(() => (init_php(), php_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pla/pla.js
 var pla_exports = {};
 __export(pla_exports, {
@@ -270317,6 +272688,18 @@ var init_pla = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pla/register.js
+var init_register47 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pla/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "pla",
+      extensions: [".pla"],
+      loader: () => Promise.resolve().then(() => (init_pla(), pla_exports))
+    });
   }
 });
 
@@ -271236,6 +273619,19 @@ var init_postiats = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/postiats/register.js
+var init_register48 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/postiats/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "postiats",
+      extensions: [".dats", ".sats", ".hats"],
+      aliases: ["ATS", "ATS/Postiats"],
+      loader: () => Promise.resolve().then(() => (init_postiats(), postiats_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/powerquery/powerquery.js
 var powerquery_exports = {};
 __export(powerquery_exports, {
@@ -272135,6 +274531,19 @@ var init_powerquery = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/powerquery/register.js
+var init_register49 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/powerquery/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "powerquery",
+      extensions: [".pq", ".pqm"],
+      aliases: ["PQ", "M", "Power Query", "Power Query M"],
+      loader: () => Promise.resolve().then(() => (init_powerquery(), powerquery_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/powershell/powershell.js
 var powershell_exports = {};
 __export(powershell_exports, {
@@ -272380,6 +274789,19 @@ var init_powershell = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/powershell/register.js
+var init_register50 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/powershell/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "powershell",
+      extensions: [".ps1", ".psm1", ".psd1"],
+      aliases: ["PowerShell", "powershell", "ps", "ps1"],
+      loader: () => Promise.resolve().then(() => (init_powershell(), powershell_exports))
+    });
   }
 });
 
@@ -272812,6 +275234,19 @@ var init_protobuf = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/protobuf/register.js
+var init_register51 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/protobuf/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "proto",
+      extensions: [".proto"],
+      aliases: ["protobuf", "Protocol Buffers"],
+      loader: () => Promise.resolve().then(() => (init_protobuf(), protobuf_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pug/pug.js
 var pug_exports = {};
 __export(pug_exports, {
@@ -273223,6 +275658,19 @@ var init_pug = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pug/register.js
+var init_register52 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pug/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "pug",
+      extensions: [".jade", ".pug"],
+      aliases: ["Pug", "Jade", "jade"],
+      loader: () => Promise.resolve().then(() => (init_pug(), pug_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/python/python.js
 var python_exports = {};
 __export(python_exports, {
@@ -273523,6 +275971,20 @@ var init_python = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/python/register.js
+var init_register53 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/python/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "python",
+      extensions: [".py", ".rpy", ".pyw", ".cpy", ".gyp", ".gypi"],
+      aliases: ["Python", "py"],
+      firstLine: "^#!/.*\\bpython[0-9.-]*\\b",
+      loader: () => Promise.resolve().then(() => (init_python(), python_exports))
+    });
   }
 });
 
@@ -273836,6 +276298,19 @@ var init_qsharp = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/qsharp/register.js
+var init_register54 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/qsharp/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "qsharp",
+      extensions: [".qs"],
+      aliases: ["Q#", "qsharp"],
+      loader: () => Promise.resolve().then(() => (init_qsharp(), qsharp_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/r/r.js
 var r_exports = {};
 __export(r_exports, {
@@ -274085,6 +276560,19 @@ var init_r = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/r/register.js
+var init_register55 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/r/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "r",
+      extensions: [".r", ".rhistory", ".rmd", ".rprofile", ".rt"],
+      aliases: ["R", "r"],
+      loader: () => Promise.resolve().then(() => (init_r(), r_exports))
+    });
   }
 });
 
@@ -274641,6 +277129,20 @@ var init_razor = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/razor/register.js
+var init_register56 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/razor/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "razor",
+      extensions: [".cshtml"],
+      aliases: ["Razor", "razor"],
+      mimetypes: ["text/x-cshtml"],
+      loader: () => Promise.resolve().then(() => (init_razor(), razor_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/redis/redis.js
 var redis_exports = {};
 __export(redis_exports, {
@@ -274949,6 +277451,19 @@ var init_redis = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/redis/register.js
+var init_register57 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/redis/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "redis",
+      extensions: [".redis"],
+      aliases: ["redis"],
+      loader: () => Promise.resolve().then(() => (init_redis(), redis_exports))
+    });
   }
 });
 
@@ -275770,6 +278285,19 @@ var init_redshift = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/redshift/register.js
+var init_register58 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/redshift/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "redshift",
+      extensions: [],
+      aliases: ["Redshift", "redshift"],
+      loader: () => Promise.resolve().then(() => (init_redshift(), redshift_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/restructuredtext/restructuredtext.js
 var restructuredtext_exports = {};
 __export(restructuredtext_exports, {
@@ -275950,6 +278478,19 @@ var init_restructuredtext = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/restructuredtext/register.js
+var init_register59 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/restructuredtext/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "restructuredtext",
+      extensions: [".rst"],
+      aliases: ["reStructuredText", "restructuredtext"],
+      loader: () => Promise.resolve().then(() => (init_restructuredtext(), restructuredtext_exports))
+    });
   }
 });
 
@@ -276473,6 +279014,20 @@ var init_ruby = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/ruby/register.js
+var init_register60 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/ruby/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "ruby",
+      extensions: [".rb", ".rbx", ".rjs", ".gemspec", ".pp"],
+      filenames: ["rakefile", "Gemfile"],
+      aliases: ["Ruby", "rb"],
+      loader: () => Promise.resolve().then(() => (init_ruby(), ruby_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/rust/rust.js
 var rust_exports = {};
 __export(rust_exports, {
@@ -276825,6 +279380,19 @@ var init_rust = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/rust/register.js
+var init_register61 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/rust/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "rust",
+      extensions: [".rs", ".rlib"],
+      aliases: ["Rust", "rust"],
+      loader: () => Promise.resolve().then(() => (init_rust(), rust_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/sb/sb.js
 var sb_exports = {};
 __export(sb_exports, {
@@ -276946,6 +279514,19 @@ var init_sb = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/sb/register.js
+var init_register62 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/sb/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "sb",
+      extensions: [".sb"],
+      aliases: ["Small Basic", "sb"],
+      loader: () => Promise.resolve().then(() => (init_sb(), sb_exports))
+    });
   }
 });
 
@@ -277328,6 +279909,20 @@ var init_scala = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/scala/register.js
+var init_register63 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/scala/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "scala",
+      extensions: [".scala", ".sc", ".sbt"],
+      aliases: ["Scala", "scala", "SBT", "Sbt", "sbt", "Dotty", "dotty"],
+      mimetypes: ["text/x-scala-source", "text/x-scala", "text/x-sbt", "text/x-dotty"],
+      loader: () => Promise.resolve().then(() => (init_scala(), scala_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/scheme/scheme.js
 var scheme_exports = {};
 __export(scheme_exports, {
@@ -277442,6 +280037,19 @@ var init_scheme = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/scheme/register.js
+var init_register64 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/scheme/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "scheme",
+      extensions: [".scm", ".ss", ".sch", ".rkt"],
+      aliases: ["scheme", "Scheme"],
+      loader: () => Promise.resolve().then(() => (init_scheme(), scheme_exports))
+    });
   }
 });
 
@@ -277714,6 +280322,20 @@ var init_scss = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/scss/register.js
+var init_register65 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/scss/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "scss",
+      extensions: [".scss"],
+      aliases: ["Sass", "sass", "scss"],
+      mimetypes: ["text/x-scss", "text/scss"],
+      loader: () => Promise.resolve().then(() => (init_scss(), scss_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/shell/shell.js
 var shell_exports = {};
 __export(shell_exports, {
@@ -277941,6 +280563,19 @@ var init_shell = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/shell/register.js
+var init_register66 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/shell/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "shell",
+      extensions: [".sh", ".bash"],
+      aliases: ["Shell", "sh"],
+      loader: () => Promise.resolve().then(() => (init_shell(), shell_exports))
+    });
   }
 });
 
@@ -279320,6 +281955,19 @@ var init_solidity = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/solidity/register.js
+var init_register67 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/solidity/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "sol",
+      extensions: [".sol"],
+      aliases: ["sol", "solidity", "Solidity"],
+      loader: () => Promise.resolve().then(() => (init_solidity(), solidity_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/sophia/sophia.js
 var sophia_exports = {};
 __export(sophia_exports, {
@@ -279525,6 +282173,19 @@ var init_sophia = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/sophia/register.js
+var init_register68 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/sophia/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "aes",
+      extensions: [".aes"],
+      aliases: ["aes", "sophia", "Sophia"],
+      loader: () => Promise.resolve().then(() => (init_sophia(), sophia_exports))
+    });
   }
 });
 
@@ -279735,6 +282396,19 @@ var init_sparql = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/sparql/register.js
+var init_register69 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/sparql/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "sparql",
+      extensions: [".rq"],
+      aliases: ["sparql", "SPARQL"],
+      loader: () => Promise.resolve().then(() => (init_sparql(), sparql_exports))
+    });
   }
 });
 
@@ -280600,6 +283274,19 @@ var init_sql = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/sql/register.js
+var init_register70 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/sql/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "sql",
+      extensions: [".sql"],
+      aliases: ["SQL"],
+      loader: () => Promise.resolve().then(() => (init_sql(), sql_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/st/st.js
 var st_exports = {};
 __export(st_exports, {
@@ -281025,6 +283712,19 @@ var init_st = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/st/register.js
+var init_register71 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/st/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "st",
+      extensions: [".st", ".iecst", ".iecplc", ".lc3lib", ".TcPOU", ".TcDUT", ".TcGVL", ".TcIO"],
+      aliases: ["StructuredText", "scl", "stl"],
+      loader: () => Promise.resolve().then(() => (init_st(), st_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/swift/swift.js
 var swift_exports = {};
 __export(swift_exports, {
@@ -281340,6 +284040,20 @@ var init_swift = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/swift/register.js
+var init_register72 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/swift/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "swift",
+      aliases: ["Swift", "swift"],
+      extensions: [".swift"],
+      mimetypes: ["text/swift"],
+      loader: () => Promise.resolve().then(() => (init_swift(), swift_exports))
+    });
   }
 });
 
@@ -281928,6 +284642,25 @@ var init_systemverilog = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/systemverilog/register.js
+var init_register73 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/systemverilog/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "systemverilog",
+      extensions: [".sv", ".svh"],
+      aliases: ["SV", "sv", "SystemVerilog", "systemverilog"],
+      loader: () => Promise.resolve().then(() => (init_systemverilog(), systemverilog_exports))
+    });
+    registerLanguage({
+      id: "verilog",
+      extensions: [".v", ".vh"],
+      aliases: ["V", "v", "Verilog", "verilog"],
+      loader: () => Promise.resolve().then(() => (init_systemverilog(), systemverilog_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/tcl/tcl.js
 var tcl_exports = {};
 __export(tcl_exports, {
@@ -282166,6 +284899,19 @@ var init_tcl = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/tcl/register.js
+var init_register74 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/tcl/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "tcl",
+      extensions: [".tcl"],
+      aliases: ["tcl", "Tcl", "tcltk", "TclTk", "tcl/tk", "Tcl/Tk"],
+      loader: () => Promise.resolve().then(() => (init_tcl(), tcl_exports))
+    });
   }
 });
 
@@ -282570,6 +285316,36 @@ var init_twig = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/twig/register.js
+var init_register75 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/twig/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "twig",
+      extensions: [".twig"],
+      aliases: ["Twig", "twig"],
+      mimetypes: ["text/x-twig"],
+      loader: () => Promise.resolve().then(() => (init_twig(), twig_exports))
+    });
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/typescript/register.js
+var init_register76 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/typescript/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "typescript",
+      extensions: [".ts", ".tsx", ".cts", ".mts"],
+      aliases: ["TypeScript", "ts", "typescript"],
+      mimetypes: ["text/typescript"],
+      loader: () => {
+        return Promise.resolve().then(() => (init_typescript(), typescript_exports));
+      }
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/typespec/typespec.js
 var typespec_exports = {};
 __export(typespec_exports, {
@@ -282703,6 +285479,19 @@ var init_typespec = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/typespec/register.js
+var init_register77 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/typespec/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "typespec",
+      extensions: [".tsp"],
+      aliases: ["TypeSpec"],
+      loader: () => Promise.resolve().then(() => (init_typespec(), typespec_exports))
+    });
   }
 });
 
@@ -283084,6 +285873,19 @@ var init_vb = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/vb/register.js
+var init_register78 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/vb/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "vb",
+      extensions: [".vb"],
+      aliases: ["Visual Basic", "vb"],
+      loader: () => Promise.resolve().then(() => (init_vb(), vb_exports))
+    });
   }
 });
 
@@ -283549,6 +286351,19 @@ var init_wgsl = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/wgsl/register.js
+var init_register79 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/wgsl/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "wgsl",
+      extensions: [".wgsl"],
+      aliases: ["WebGPU Shading Language", "WGSL", "wgsl"],
+      loader: () => Promise.resolve().then(() => (init_wgsl(), wgsl_exports))
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/xml/xml.js
 var xml_exports = {};
 __export(xml_exports, {
@@ -283643,6 +286458,39 @@ var init_xml = __esm({
         ]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/xml/register.js
+var init_register80 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/xml/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "xml",
+      extensions: [
+        ".xml",
+        ".xsd",
+        ".dtd",
+        ".ascx",
+        ".csproj",
+        ".config",
+        ".props",
+        ".targets",
+        ".wxi",
+        ".wxl",
+        ".wxs",
+        ".xaml",
+        ".svg",
+        ".svgz",
+        ".opf",
+        ".xslt",
+        ".xsl"
+      ],
+      firstLine: "(\\<\\?xml.*)|(\\<svg)|(\\<\\!doctype\\s+svg)",
+      aliases: ["XML", "xml"],
+      mimetypes: ["text/xml", "application/xml", "application/xaml+xml", "application/xml-dtd"],
+      loader: () => Promise.resolve().then(() => (init_xml(), xml_exports))
+    });
   }
 });
 
@@ -283851,6 +286699,20 @@ var init_yaml = __esm({
         anchor: [[/[&*][^ ]+/, "namespace"]]
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/yaml/register.js
+var init_register81 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/yaml/register.js"() {
+    init_contribution4();
+    registerLanguage({
+      id: "yaml",
+      extensions: [".yaml", ".yml"],
+      aliases: ["YAML", "yaml", "YML", "yml"],
+      mimetypes: ["application/x-yaml", "text/x-yaml"],
+      loader: () => Promise.resolve().then(() => (init_yaml(), yaml_exports))
+    });
   }
 });
 
@@ -285975,6 +288837,122 @@ var init_cssMode = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/features/css/register.js
+function getMode() {
+  return Promise.resolve().then(() => (init_cssMode(), cssMode_exports));
+}
+var LanguageServiceDefaultsImpl, optionsDefault, modeConfigurationDefault, cssDefaults, scssDefaults, lessDefaults;
+var init_register82 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/features/css/register.js"() {
+    init_editor_api();
+    LanguageServiceDefaultsImpl = class {
+      constructor(languageId, options, modeConfiguration) {
+        this._onDidChange = new Emitter2();
+        this._languageId = languageId;
+        this.setOptions(options);
+        this.setModeConfiguration(modeConfiguration);
+      }
+      get onDidChange() {
+        return this._onDidChange.event;
+      }
+      get languageId() {
+        return this._languageId;
+      }
+      get modeConfiguration() {
+        return this._modeConfiguration;
+      }
+      get diagnosticsOptions() {
+        return this.options;
+      }
+      get options() {
+        return this._options;
+      }
+      setOptions(options) {
+        this._options = options || /* @__PURE__ */ Object.create(null);
+        this._onDidChange.fire(this);
+      }
+      setDiagnosticsOptions(options) {
+        this.setOptions(options);
+      }
+      setModeConfiguration(modeConfiguration) {
+        this._modeConfiguration = modeConfiguration || /* @__PURE__ */ Object.create(null);
+        this._onDidChange.fire(this);
+      }
+    };
+    optionsDefault = {
+      validate: true,
+      lint: {
+        compatibleVendorPrefixes: "ignore",
+        vendorPrefix: "warning",
+        duplicateProperties: "warning",
+        emptyRules: "warning",
+        importStatement: "ignore",
+        boxModel: "ignore",
+        universalSelector: "ignore",
+        zeroUnits: "ignore",
+        fontFaceProperties: "warning",
+        hexColorLength: "error",
+        argumentsInColorFunction: "error",
+        unknownProperties: "warning",
+        ieHack: "ignore",
+        unknownVendorSpecificProperties: "ignore",
+        propertyIgnoredDueToDisplay: "warning",
+        important: "ignore",
+        float: "ignore",
+        idSelector: "ignore"
+      },
+      data: { useDefaultDataProvider: true },
+      format: {
+        newlineBetweenSelectors: true,
+        newlineBetweenRules: true,
+        spaceAroundSelectorSeparator: false,
+        braceStyle: "collapse",
+        maxPreserveNewLines: void 0,
+        preserveNewLines: true
+      }
+    };
+    modeConfigurationDefault = {
+      completionItems: true,
+      hovers: true,
+      documentSymbols: true,
+      definitions: true,
+      references: true,
+      documentHighlights: true,
+      rename: true,
+      colors: true,
+      foldingRanges: true,
+      diagnostics: true,
+      selectionRanges: true,
+      documentFormattingEdits: true,
+      documentRangeFormattingEdits: true
+    };
+    cssDefaults = new LanguageServiceDefaultsImpl(
+      "css",
+      optionsDefault,
+      modeConfigurationDefault
+    );
+    scssDefaults = new LanguageServiceDefaultsImpl(
+      "scss",
+      optionsDefault,
+      modeConfigurationDefault
+    );
+    lessDefaults = new LanguageServiceDefaultsImpl(
+      "less",
+      optionsDefault,
+      modeConfigurationDefault
+    );
+    languages.onLanguage("less", () => {
+      getMode().then((mode2) => mode2.setupMode(lessDefaults));
+    });
+    languages.onLanguage("scss", () => {
+      getMode().then((mode2) => mode2.setupMode(scssDefaults));
+    });
+    languages.onLanguage("css", () => {
+      getMode().then((mode2) => mode2.setupMode(cssDefaults));
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/features/html/workerManager.js
 var STOP_WHEN_IDLE_FOR2, WorkerManager4;
 var init_workerManager2 = __esm({
@@ -286209,6 +289187,119 @@ var init_htmlMode = __esm({
         super(worker2, [".", ":", "<", '"', "=", "/"]);
       }
     };
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/features/html/register.js
+function getConfigurationDefault(languageId) {
+  return {
+    completionItems: true,
+    hovers: true,
+    documentSymbols: true,
+    links: true,
+    documentHighlights: true,
+    rename: true,
+    colors: true,
+    foldingRanges: true,
+    selectionRanges: true,
+    diagnostics: languageId === htmlLanguageId,
+    // turned off for Razor and Handlebar
+    documentFormattingEdits: languageId === htmlLanguageId,
+    // turned off for Razor and Handlebar
+    documentRangeFormattingEdits: languageId === htmlLanguageId
+    // turned off for Razor and Handlebar
+  };
+}
+function getMode2() {
+  return Promise.resolve().then(() => (init_htmlMode(), htmlMode_exports));
+}
+function registerHTMLLanguageService(languageId, options = optionsDefault2, modeConfiguration = getConfigurationDefault(languageId)) {
+  const defaults = new LanguageServiceDefaultsImpl2(languageId, options, modeConfiguration);
+  let mode2;
+  const onLanguageListener = languages.onLanguage(languageId, async () => {
+    mode2 = (await getMode2()).setupMode(defaults);
+  });
+  return {
+    defaults,
+    dispose() {
+      onLanguageListener.dispose();
+      mode2?.dispose();
+      mode2 = void 0;
+    }
+  };
+}
+var LanguageServiceDefaultsImpl2, formatDefaults, optionsDefault2, htmlLanguageId, handlebarsLanguageId, razorLanguageId, htmlLanguageService, htmlDefaults, handlebarLanguageService, handlebarDefaults, razorLanguageService, razorDefaults;
+var init_register83 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/features/html/register.js"() {
+    init_editor_api();
+    LanguageServiceDefaultsImpl2 = class {
+      constructor(languageId, options, modeConfiguration) {
+        this._onDidChange = new Emitter2();
+        this._languageId = languageId;
+        this.setOptions(options);
+        this.setModeConfiguration(modeConfiguration);
+      }
+      get onDidChange() {
+        return this._onDidChange.event;
+      }
+      get languageId() {
+        return this._languageId;
+      }
+      get options() {
+        return this._options;
+      }
+      get modeConfiguration() {
+        return this._modeConfiguration;
+      }
+      setOptions(options) {
+        this._options = options || /* @__PURE__ */ Object.create(null);
+        this._onDidChange.fire(this);
+      }
+      setModeConfiguration(modeConfiguration) {
+        this._modeConfiguration = modeConfiguration || /* @__PURE__ */ Object.create(null);
+        this._onDidChange.fire(this);
+      }
+    };
+    formatDefaults = {
+      tabSize: 4,
+      insertSpaces: false,
+      wrapLineLength: 120,
+      unformatted: 'default": "a, abbr, acronym, b, bdo, big, br, button, cite, code, dfn, em, i, img, input, kbd, label, map, object, q, samp, select, small, span, strong, sub, sup, textarea, tt, var',
+      contentUnformatted: "pre",
+      indentInnerHtml: false,
+      preserveNewLines: true,
+      maxPreserveNewLines: void 0,
+      indentHandlebars: false,
+      endWithNewline: false,
+      extraLiners: "head, body, /html",
+      wrapAttributes: "auto"
+    };
+    optionsDefault2 = {
+      format: formatDefaults,
+      suggest: {},
+      data: { useDefaultDataProvider: true }
+    };
+    htmlLanguageId = "html";
+    handlebarsLanguageId = "handlebars";
+    razorLanguageId = "razor";
+    htmlLanguageService = registerHTMLLanguageService(
+      htmlLanguageId,
+      optionsDefault2,
+      getConfigurationDefault(htmlLanguageId)
+    );
+    htmlDefaults = htmlLanguageService.defaults;
+    handlebarLanguageService = registerHTMLLanguageService(
+      handlebarsLanguageId,
+      optionsDefault2,
+      getConfigurationDefault(handlebarsLanguageId)
+    );
+    handlebarDefaults = handlebarLanguageService.defaults;
+    razorLanguageService = registerHTMLLanguageService(
+      razorLanguageId,
+      optionsDefault2,
+      getConfigurationDefault(razorLanguageId)
+    );
+    razorDefaults = razorLanguageService.defaults;
   }
 });
 
@@ -287199,6 +290290,81 @@ var init_jsonMode = __esm({
   }
 });
 
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/features/json/register.js
+function getMode3() {
+  return Promise.resolve().then(() => (init_jsonMode(), jsonMode_exports));
+}
+var LanguageServiceDefaultsImpl3, diagnosticDefault, modeConfigurationDefault2, jsonDefaults;
+var init_register84 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/features/json/register.js"() {
+    init_editor_api();
+    LanguageServiceDefaultsImpl3 = class {
+      constructor(languageId, diagnosticsOptions, modeConfiguration) {
+        this._onDidChange = new Emitter2();
+        this._languageId = languageId;
+        this.setDiagnosticsOptions(diagnosticsOptions);
+        this.setModeConfiguration(modeConfiguration);
+      }
+      get onDidChange() {
+        return this._onDidChange.event;
+      }
+      get languageId() {
+        return this._languageId;
+      }
+      get modeConfiguration() {
+        return this._modeConfiguration;
+      }
+      get diagnosticsOptions() {
+        return this._diagnosticsOptions;
+      }
+      setDiagnosticsOptions(options) {
+        this._diagnosticsOptions = options || /* @__PURE__ */ Object.create(null);
+        this._onDidChange.fire(this);
+      }
+      setModeConfiguration(modeConfiguration) {
+        this._modeConfiguration = modeConfiguration || /* @__PURE__ */ Object.create(null);
+        this._onDidChange.fire(this);
+      }
+    };
+    diagnosticDefault = {
+      validate: true,
+      allowComments: true,
+      schemas: [],
+      enableSchemaRequest: false,
+      schemaRequest: "warning",
+      schemaValidation: "warning",
+      comments: "error",
+      trailingCommas: "error"
+    };
+    modeConfigurationDefault2 = {
+      documentFormattingEdits: true,
+      documentRangeFormattingEdits: true,
+      completionItems: true,
+      hovers: true,
+      documentSymbols: true,
+      tokens: true,
+      colors: true,
+      foldingRanges: true,
+      diagnostics: true,
+      selectionRanges: true
+    };
+    jsonDefaults = new LanguageServiceDefaultsImpl3(
+      "json",
+      diagnosticDefault,
+      modeConfigurationDefault2
+    );
+    languages.register({
+      id: "json",
+      extensions: [".json", ".bowerrc", ".jshintrc", ".jscsrc", ".eslintrc", ".babelrc", ".har"],
+      aliases: ["JSON", "json"],
+      mimetypes: ["application/json"]
+    });
+    languages.onLanguage("json", () => {
+      getMode3().then((mode2) => mode2.setupMode(jsonDefaults));
+    });
+  }
+});
+
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/features/typescript/lib/typescriptServicesMetadata.js
 var init_typescriptServicesMetadata = __esm({
   "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/features/typescript/lib/typescriptServicesMetadata.js"() {
@@ -287437,7 +290603,7 @@ function tagToString(tag2) {
 var Adapter, LibFiles, DiagnosticsAdapter2, SuggestAdapter, SignatureHelpAdapter, QuickInfoAdapter, DocumentHighlightAdapter2, DefinitionAdapter2, ReferenceAdapter2, OutlineAdapter, Kind, outlineTypeTable, FormatHelper, FormatAdapter, FormatOnTypeAdapter, CodeActionAdaptor, RenameAdapter2, InlayHintsAdapter;
 var init_languageFeatures2 = __esm({
   "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/features/typescript/languageFeatures.js"() {
-    init_register();
+    init_register85();
     init_lib_index();
     init_editor_api();
     Adapter = class {
@@ -288506,7 +291672,7 @@ function getMode4() {
   return Promise.resolve().then(() => (init_tsMode(), tsMode_exports));
 }
 var LanguageServiceDefaultsImpl4, modeConfigurationDefault3, typescriptDefaults, javascriptDefaults;
-var init_register = __esm({
+var init_register85 = __esm({
   "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/features/typescript/register.js"() {
     init_typescriptServicesMetadata();
     init_editor_api();
@@ -288691,6 +291857,474 @@ var init_register = __esm({
     languages.onLanguage("javascript", () => {
       return getMode4().then((mode) => mode.setupJavaScript(javascriptDefaults));
     });
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/features/find/register.js
+function setFindWidgetTabbableState(widget, visible) {
+  const domNode = widget?._domNode;
+  if (!domNode) {
+    return;
+  }
+  const focusableElements = domNode.querySelectorAll('input, textarea, [tabindex], [role="button"], [role="checkbox"]');
+  for (const element2 of focusableElements) {
+    if (!(element2 instanceof HTMLElement)) {
+      continue;
+    }
+    if (visible) {
+      if (!(originalTabIndexKey in element2.dataset)) {
+        continue;
+      }
+      const originalTabIndex = element2.dataset[originalTabIndexKey];
+      if (originalTabIndex === "") {
+        element2.removeAttribute("tabindex");
+      } else {
+        element2.tabIndex = Number(originalTabIndex);
+      }
+      delete element2.dataset[originalTabIndexKey];
+    } else {
+      if (!(originalTabIndexKey in element2.dataset)) {
+        element2.dataset[originalTabIndexKey] = element2.getAttribute("tabindex") ?? "";
+      }
+      element2.tabIndex = -1;
+    }
+  }
+}
+var tabIndexPatchKey, originalTabIndexKey;
+var init_register86 = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/features/find/register.js"() {
+    init_findController();
+    init_findWidget2();
+    tabIndexPatchKey = "__monacoFindWidgetTabIndexPatchApplied";
+    originalTabIndexKey = "__monacoFindWidgetOriginalTabIndex";
+    if (!FindWidget[tabIndexPatchKey]) {
+      const originalReveal = FindWidget.prototype._reveal;
+      const originalHide = FindWidget.prototype._hide;
+      FindWidget.prototype._reveal = function(...args) {
+        originalReveal.apply(this, args);
+        setFindWidgetTabbableState(this, true);
+      };
+      FindWidget.prototype._hide = function(...args) {
+        originalHide.apply(this, args);
+        setFindWidgetTabbableState(this, false);
+      };
+      FindWidget[tabIndexPatchKey] = true;
+    }
+  }
+});
+
+// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/editor.main.js
+var init_editor_main = __esm({
+  "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/editor.main.js"() {
+    init_out();
+    init_register();
+    init_register2();
+    init_register3();
+    init_register4();
+    init_register5();
+    init_register6();
+    init_register7();
+    init_register8();
+    init_register9();
+    init_register10();
+    init_register11();
+    init_register12();
+    init_register13();
+    init_register14();
+    init_register15();
+    init_register16();
+    init_register17();
+    init_register18();
+    init_register19();
+    init_register20();
+    init_register21();
+    init_register22();
+    init_register23();
+    init_register24();
+    init_register25();
+    init_register26();
+    init_register27();
+    init_register28();
+    init_register29();
+    init_register30();
+    init_register31();
+    init_register32();
+    init_register33();
+    init_register34();
+    init_register35();
+    init_register36();
+    init_register37();
+    init_register38();
+    init_register39();
+    init_register40();
+    init_register41();
+    init_register42();
+    init_register43();
+    init_register44();
+    init_register45();
+    init_register46();
+    init_register47();
+    init_register48();
+    init_register49();
+    init_register50();
+    init_register51();
+    init_register52();
+    init_register53();
+    init_register54();
+    init_register55();
+    init_register56();
+    init_register57();
+    init_register58();
+    init_register59();
+    init_register60();
+    init_register61();
+    init_register62();
+    init_register63();
+    init_register64();
+    init_register65();
+    init_register66();
+    init_register67();
+    init_register68();
+    init_register69();
+    init_register70();
+    init_register71();
+    init_register72();
+    init_register73();
+    init_register74();
+    init_register75();
+    init_register76();
+    init_register77();
+    init_register78();
+    init_register79();
+    init_register80();
+    init_register81();
+    init_register82();
+    init_register83();
+    init_register84();
+    init_register85();
+    init_anchorSelect2();
+    init_bracketMatching2();
+    init_transpose();
+    init_clipboard();
+    init_codeActionContributions();
+    init_codeEditorWidget();
+    init_codelensController();
+    init_codicon();
+    init_colorPickerContribution();
+    init_comment();
+    init_contextmenu();
+    init_cursorUndo();
+    init_diffEditor_contribution();
+    init_contribution3();
+    init_dnd6();
+    init_documentSymbols();
+    init_dropIntoEditorContribution();
+    init_register86();
+    init_floatingMenu_contribution();
+    init_folding2();
+    init_fontZoom();
+    init_formatActions();
+    init_gotoError();
+    init_standaloneGotoLineQuickAccess();
+    init_goToDefinitionAtPosition2();
+    init_gpuActions();
+    init_hoverContribution();
+    init_indentation3();
+    init_inlayHintsContribution();
+    init_inlineCompletions_contribution();
+    init_inlineProgress();
+    init_inPlaceReplace2();
+    init_insertFinalNewLine();
+    init_inspectTokens2();
+    init_iPadShowKeyboard2();
+    init_lineSelection();
+    init_linesOperations();
+    init_linkedEditing2();
+    init_links2();
+    init_longLinesHelper();
+    init_middleScroll_contribution();
+    init_multicursor();
+    init_parameterHints2();
+    init_placeholderText_contribution();
+    init_standaloneCommandsQuickAccess();
+    init_standaloneHelpQuickAccess();
+    init_standaloneGotoSymbolQuickAccess();
+    init_contribution2();
+    init_standaloneReferenceSearch();
+    init_rename();
+    init_sectionHeaders();
+    init_viewportSemanticTokens();
+    init_smartSelect();
+    init_snippetController2();
+    init_stickyScrollContribution();
+    init_suggestInlineCompletions();
+    init_toggleHighContrast();
+    init_toggleTabFocusMode();
+    init_tokenization2();
+    init_unicodeHighlighter2();
+    init_unusualLineTerminators();
+    init_wordHighlighter();
+    init_wordOperations();
+    init_wordPartOperations();
+    init_coreCommands();
+    init_caretOperations();
+    init_copyPasteContribution();
+    init_findController();
+    init_goToCommands();
+    init_markerSelectionStatus();
+    init_documentSemanticTokens();
+    init_suggestController();
+    init_standaloneStrings();
+    init_codicon_modifiers();
+    init_editor_api();
+  }
+});
+
+// packages/code/src/editor.js
+var editor_exports = {};
+__export(editor_exports, {
+  abiVersion: () => abiVersion8,
+  createMonacoEditor: () => createMonacoEditor,
+  languageForFormat: () => languageForFormat,
+  monacoEditor: () => monacoEditor,
+  monacoViewer: () => monacoViewer
+});
+function languageForFormat(formatId) {
+  return LANGUAGE_BY_FORMAT[formatId] ?? "plaintext";
+}
+function defineTheme2(root) {
+  const styles = getComputedStyle(root);
+  const token = (name, fallback2) => {
+    const value2 = styles.getPropertyValue(name).trim();
+    return (value2.startsWith("#") ? value2 : fallback2).replace("#", "");
+  };
+  const base = styles.getPropertyValue("--mk-color-bg").trim();
+  const dark = base !== "" && Number.parseInt(base.slice(1, 3), 16) < 128;
+  editor.defineTheme("modkit", {
+    base: dark ? "vs-dark" : "vs",
+    inherit: true,
+    rules: [],
+    colors: {
+      "editor.background": `#${token("--mk-color-surface", "#1f1f1f")}`,
+      "editor.foreground": `#${token("--mk-color-fg", "#cccccc")}`,
+      "editorLineNumber.foreground": `#${token("--mk-color-fg-subtle", "#7a7a7a")}`,
+      "editorCursor.foreground": `#${token("--mk-color-accent", "#0078d4")}`,
+      "editor.selectionBackground": `#${token("--mk-color-selection", "#04395e")}`,
+      "editor.lineHighlightBackground": `#${token("--mk-color-hover", "#2a2d2e")}`,
+      "editorWidget.background": `#${token("--mk-color-overlay", "#2c2c2d")}`,
+      "editorWidget.border": `#${token("--mk-color-border", "#2b2b2b")}`
+    }
+  });
+  return "modkit";
+}
+async function loadText2(source, maximum, signal) {
+  const info = await source.info();
+  if (info.bytes > BigInt(maximum)) {
+    throw new RangeError(`source exceeds the editor budget: ${info.bytes} bytes`);
+  }
+  const slice = await source.slice(
+    {
+      kind: "from-line",
+      line: 0,
+      lineCount: info.lines === "unknown" ? Number.MAX_SAFE_INTEGER : Math.max(1, info.lines),
+      maxBytes: maximum
+    },
+    signal
+  );
+  return slice.text;
+}
+function editorFont(root) {
+  const style = root.ownerDocument.defaultView?.getComputedStyle(root);
+  if (style === void 0) return {};
+  const family = style.getPropertyValue("--mk-font-mono").trim();
+  const size2 = Number.parseFloat(style.getPropertyValue("--mk-font-size-sm")) || 12;
+  const ratio = Number.parseFloat(style.getPropertyValue("--mk-line-normal")) || 1.45;
+  return {
+    ...family === "" ? {} : { fontFamily: family },
+    fontSize: size2,
+    lineHeight: Math.round(size2 * ratio)
+  };
+}
+function createMonacoEditor(options = {}) {
+  const maximum = options.maximumSourceBytes ?? 8 * 1024 * 1024;
+  const readOnly = options.readOnly ?? false;
+  return {
+    abiVersion: 1,
+    async mount(args) {
+      const container = args.container;
+      const document2 = container.ownerDocument;
+      const root = document2.createElement("section");
+      root.className = "modkit-viewer";
+      root.setAttribute("role", "region");
+      root.setAttribute("aria-label", readOnly ? "Code viewer" : "Code editor");
+      root.dataset.mkPart = "viewer";
+      container.replaceChildren(root);
+      const toolbar = document2.createElement("div");
+      toolbar.dataset.mkPart = "editor.toolbar";
+      toolbar.setAttribute("role", "toolbar");
+      root.append(toolbar);
+      const status2 = document2.createElement("output");
+      status2.dataset.mkPart = "viewer.status";
+      status2.textContent = "Ready";
+      const save = document2.createElement("button");
+      save.type = "button";
+      save.textContent = "Save";
+      save.disabled = true;
+      save.dataset.mkPart = "operations.button";
+      if (!readOnly) toolbar.append(save);
+      toolbar.append(status2);
+      const host2 = document2.createElement("div");
+      host2.dataset.mkPart = "editor.text";
+      root.append(host2);
+      const lease2 = await args.sources.get(TEXT_SOURCE);
+      if (lease2 === void 0) throw new TypeError("code editor text binding is unavailable");
+      const formatId = args.descriptor?.identity?.formatId;
+      const language82 = languageForFormat(formatId);
+      const text3 = await loadText2(lease2.value, maximum, args.signal);
+      const font = editorFont(root);
+      const editor2 = editor.create(host2, {
+        value: text3,
+        language: language82,
+        theme: defineTheme2(root),
+        readOnly,
+        automaticLayout: true,
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        fontLigatures: false,
+        ...font
+      });
+      let disposed = false;
+      const remeasure = () => {
+        if (disposed) return;
+        editor.remeasureFonts();
+        editor2.layout();
+      };
+      document2.fonts?.ready.then(remeasure, () => {
+      });
+      const sizeWatch = new ResizeObserver((entries2) => {
+        const box = entries2[0]?.contentRect;
+        if (box === void 0 || box.width === 0 || box.height === 0) return;
+        sizeWatch.disconnect();
+        remeasure();
+      });
+      const themeWatch = new MutationObserver(() => {
+        if (disposed) return;
+        editor.setTheme(defineTheme2(root));
+      });
+      themeWatch.observe(root.ownerDocument.documentElement, {
+        attributes: true,
+        attributeFilter: ["data-mk-theme", "data-mk-density"]
+      });
+      sizeWatch.observe(host2);
+      root.__mkEditor = editor2;
+      let baseline = text3;
+      const syncDirty = () => {
+        const dirty = editor2.getValue() !== baseline;
+        save.disabled = readOnly || !dirty;
+        status2.textContent = dirty ? "Modified" : "Ready";
+        root.dataset.mkState = dirty ? "mutating" : "";
+      };
+      const subscription = editor2.onDidChangeModelContent(syncDirty);
+      save.addEventListener("click", async () => {
+        const next = editor2.getValue();
+        const target = args.edit.targets[0];
+        if (target === void 0) {
+          status2.textContent = "Nothing to save: this session carries no writable target";
+          root.dataset.mkState = "error";
+          return;
+        }
+        const change = {
+          targets: args.edit.targets,
+          edits: [
+            {
+              operation: "replace",
+              targetId: target.targetId,
+              source: target.ownerSource,
+              range: { kind: "utf16", offset: 0, length: baseline.length },
+              payload: { kind: "text", text: next },
+              label: "Edit text"
+            }
+          ],
+          provenance: { actor: "user" }
+        };
+        status2.textContent = "Validating\u2026";
+        const validation = await args.edit.propose(change);
+        if (validation?.valid === false) {
+          const first2 = validation.diagnostics?.[0];
+          status2.textContent = first2 === void 0 ? "Rejected by validation" : `Rejected: ${first2.message}`;
+          root.dataset.mkState = "error";
+          return;
+        }
+        const plan = await args.edit.plan(change);
+        const authorization = await args.authorization.request(plan);
+        if (authorization === void 0) {
+          status2.textContent = "Not authorised";
+          return;
+        }
+        const prepared = await args.commit.prepare(plan, { grant: authorization.grant });
+        if (prepared?.state !== "ready") {
+          status2.textContent = prepared?.state === "conflict" ? "Conflict: the source changed" : `Prepare rejected: ${prepared?.reason ?? prepared?.state ?? "unknown"}`;
+          root.dataset.mkState = "error";
+          return;
+        }
+        const receipt = await args.commit.commit(prepared.prepared, { grant: authorization.grant });
+        if (receipt?.state !== void 0 && receipt.state !== "committed") {
+          status2.textContent = receipt.state === "not-applied" ? `Save rejected: ${receipt.reason ?? "not applied"}` : `Save ${receipt.state}`;
+          root.dataset.mkState = "error";
+          return;
+        }
+        baseline = next;
+        syncDirty();
+        status2.textContent = "Committed";
+      });
+      return {
+        async update(next) {
+          root.dataset.revision = String(next.revision ?? "");
+        },
+        async unmount() {
+          disposed = true;
+          themeWatch.disconnect();
+          sizeWatch.disconnect();
+          subscription.dispose();
+          editor2.dispose();
+          await lease2.release();
+          root.remove();
+        }
+      };
+    }
+  };
+}
+var abiVersion8, LANGUAGE_BY_FORMAT, TEXT_SOURCE, monacoEditor, monacoViewer;
+var init_editor3 = __esm({
+  "packages/code/src/editor.js"() {
+    init_editor_main();
+    abiVersion8 = 1;
+    LANGUAGE_BY_FORMAT = Object.freeze({
+      json: "json",
+      jsonc: "json",
+      xml: "xml",
+      yaml: "yaml",
+      toml: "ini",
+      ini: "ini",
+      markdown: "markdown",
+      html: "html",
+      css: "css",
+      javascript: "javascript",
+      typescript: "typescript",
+      lua: "lua",
+      python: "python",
+      csharp: "csharp",
+      glsl: "cpp",
+      hlsl: "cpp",
+      wgsl: "rust",
+      galaxy: "cpp",
+      csv: "plaintext",
+      tsv: "plaintext",
+      rtf: "plaintext"
+    });
+    TEXT_SOURCE = { contract: "common.view/text-data-source", major: 1 };
+    monacoEditor = createMonacoEditor();
+    monacoViewer = createMonacoEditor({ readOnly: true });
   }
 });
 
@@ -290274,6 +293908,45 @@ var knowledgePackSpecV1Schema = {
     entries: { type: "array", items: knowledgeEntrySchema, minItems: 1, maxItems: 1e4 }
   }
 };
+var localizationCatalogResourceV1Schema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["locale", "path", "messagePrefixes"],
+  properties: {
+    locale: localeTag,
+    path: {
+      type: "string",
+      maxLength: 1024,
+      pattern: "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$"
+    },
+    messagePrefixes: {
+      type: "array",
+      minItems: 1,
+      maxItems: 64,
+      uniqueItems: true,
+      items: {
+        type: "string",
+        maxLength: 256,
+        pattern: "^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$"
+      }
+    }
+  }
+};
+var localizationContributionSpecV1Schema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/localization-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["catalogs"],
+  properties: {
+    catalogs: {
+      type: "array",
+      minItems: 1,
+      maxItems: 256,
+      items: localizationCatalogResourceV1Schema
+    }
+  }
+};
 var traitDefinitionSpecV1Schema = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json",
@@ -290506,6 +294179,7 @@ deepFreeze(serviceProviderContributionSpecV1Schema);
 deepFreeze(viewerContributionSpecV1Schema);
 deepFreeze(editorContributionSpecV1Schema);
 deepFreeze(knowledgePackSpecV1Schema);
+deepFreeze(localizationContributionSpecV1Schema);
 deepFreeze(traitDefinitionSpecV1Schema);
 deepFreeze(serviceContractDefinitionSpecV1Schema);
 deepFreeze(dataSourceMethodSurfaceV1Schema);
@@ -291582,6 +295256,9 @@ var CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT = contractId(
 var KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT = contractId(
   "org.modkitx/knowledge-pack"
 );
+var LOCALIZATION_CONTRIBUTION_CONTRACT = contractId(
+  "org.modkitx/localization-contribution"
+);
 var TRAIT_DEFINITION_FACT = contractId(
   "org.modkitx.inventory/trait-definition"
 );
@@ -291592,6 +295269,9 @@ var EDITOR_CONTRIBUTION_FACT = contractId(
   "org.modkitx.inventory/editor-contribution"
 );
 var KNOWLEDGE_PACK_FACT = contractId("org.modkitx.inventory/knowledge-pack");
+var LOCALIZATION_CONTRIBUTION_FACT = contractId(
+  "org.modkitx.inventory/localization-contribution"
+);
 function duplicateFieldDiagnostics(values, path, label) {
   const first2 = /* @__PURE__ */ new Map();
   const diagnostics = [];
@@ -292272,6 +295952,29 @@ var validateKnowledgePackSemantics = (manifest) => {
   }
   return diagnostics;
 };
+var validateLocalizationContributionSemantics = (manifest) => {
+  const spec = manifest.spec;
+  const diagnostics = duplicateFieldDiagnostics(
+    spec.catalogs.map((catalog) => catalog.path.toLowerCase()),
+    ["spec", "catalogs"],
+    "localization catalog path"
+  );
+  spec.catalogs.forEach((catalog, index) => {
+    try {
+      Intl.getCanonicalLocales(catalog.locale);
+    } catch {
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-localization-locale",
+          `localization catalog locale ${catalog.locale} is not a valid BCP-47 language tag`,
+          ["spec", "catalogs", index, "locale"]
+        )
+      );
+    }
+  });
+  return diagnostics;
+};
 function dataOnlyProjector(factContract) {
   return (manifest, context) => Object.freeze([
     Object.freeze({
@@ -292337,6 +296040,17 @@ var A1_SPEC_SCHEMA_ENTRIES = [
       mode: "data-only",
       project: dataOnlyProjector(KNOWLEDGE_PACK_FACT),
       conformanceProfile: "org.modkitx/knowledge-pack-v1"
+    }
+  },
+  {
+    contract: LOCALIZATION_CONTRIBUTION_CONTRACT,
+    major: 1,
+    schema: localizationContributionSpecV1Schema,
+    validateSemantics: validateLocalizationContributionSemantics,
+    registration: {
+      mode: "data-only",
+      project: dataOnlyProjector(LOCALIZATION_CONTRIBUTION_FACT),
+      conformanceProfile: "org.modkitx/localization-contribution-v1"
     }
   }
 ];
@@ -294325,6 +298039,45 @@ var PROVIDER_OFFER_INVENTORY_FACT = contractId(
 var VIEWER_CONTRIBUTION_INVENTORY_FACT = contractId(
   "org.modkitx.inventory/viewer-contribution"
 );
+var SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
+var WINDOWS_DRIVE = /^[a-zA-Z]:/;
+function refuse(entrypoint, why) {
+  return new ModkitError({
+    code: "x3.host/entrypoint-not-contained",
+    message: `entry point \xAB${entrypoint}\xBB is not a relative path inside the artifact: ${why}`,
+    context: { entrypoint, why }
+  });
+}
+function assertRelativeEntrypoint(entrypoint) {
+  if (entrypoint.trim().length === 0) throw refuse(entrypoint, "empty");
+  if (/[\u0000-\u001f\u007f]/.test(entrypoint)) {
+    throw refuse(entrypoint, "contains control characters");
+  }
+  if (SCHEME.test(entrypoint) && !WINDOWS_DRIVE.test(entrypoint)) {
+    throw refuse(entrypoint, "URL schemes are not allowed");
+  }
+  if (WINDOWS_DRIVE.test(entrypoint)) throw refuse(entrypoint, "absolute Windows path");
+  if (entrypoint.startsWith("/") || entrypoint.startsWith("\\")) {
+    throw refuse(entrypoint, "absolute path");
+  }
+  if (entrypoint.includes("\\")) throw refuse(entrypoint, "use forward slashes");
+  if (entrypoint.split("/").includes("..")) throw refuse(entrypoint, "`..` traversal");
+}
+function resolveContainedEntrypoint(baseUrl, entrypoint) {
+  assertRelativeEntrypoint(entrypoint);
+  const root = baseUrl.href.endsWith("/") ? baseUrl : new URL(`${baseUrl.href}/`);
+  const resolved2 = new URL(entrypoint, root);
+  if (resolved2.protocol !== root.protocol) {
+    throw refuse(entrypoint, `resolved to a different protocol (${resolved2.protocol})`);
+  }
+  if (!resolved2.href.startsWith(root.href)) {
+    throw refuse(entrypoint, `resolved outside the artifact root (${root.href})`);
+  }
+  return resolved2;
+}
+var LOCALIZATION_CATALOG_MAXIMUM_JSON_BYTES = 8 * 1024 * 1024;
+var encoder2 = new TextEncoder();
+var decoder = new TextDecoder("utf-8", { fatal: true });
 var COMMAND_SUBJECT_UNRESOLVED = "x3.command/subject-unresolved";
 var COMMAND_UNAVAILABLE = "x3.command/unavailable";
 var commandDiagnostic = (item) => ({
@@ -294845,42 +298598,6 @@ var DETECTION_UNTIE_RULES = Object.freeze([
   })
 ]);
 var MAX_SIGNATURE_WINDOW_BYTES = 4096 + 64;
-var SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
-var WINDOWS_DRIVE = /^[a-zA-Z]:/;
-function refuse(entrypoint, why) {
-  return new ModkitError({
-    code: "x3.host/entrypoint-not-contained",
-    message: `entry point \xAB${entrypoint}\xBB is not a relative path inside the artifact: ${why}`,
-    context: { entrypoint, why }
-  });
-}
-function assertRelativeEntrypoint(entrypoint) {
-  if (entrypoint.trim().length === 0) throw refuse(entrypoint, "empty");
-  if (/[\u0000-\u001f\u007f]/.test(entrypoint)) {
-    throw refuse(entrypoint, "contains control characters");
-  }
-  if (SCHEME.test(entrypoint) && !WINDOWS_DRIVE.test(entrypoint)) {
-    throw refuse(entrypoint, "URL schemes are not allowed");
-  }
-  if (WINDOWS_DRIVE.test(entrypoint)) throw refuse(entrypoint, "absolute Windows path");
-  if (entrypoint.startsWith("/") || entrypoint.startsWith("\\")) {
-    throw refuse(entrypoint, "absolute path");
-  }
-  if (entrypoint.includes("\\")) throw refuse(entrypoint, "use forward slashes");
-  if (entrypoint.split("/").includes("..")) throw refuse(entrypoint, "`..` traversal");
-}
-function resolveContainedEntrypoint(baseUrl, entrypoint) {
-  assertRelativeEntrypoint(entrypoint);
-  const root = baseUrl.href.endsWith("/") ? baseUrl : new URL(`${baseUrl.href}/`);
-  const resolved2 = new URL(entrypoint, root);
-  if (resolved2.protocol !== root.protocol) {
-    throw refuse(entrypoint, `resolved to a different protocol (${resolved2.protocol})`);
-  }
-  if (!resolved2.href.startsWith(root.href)) {
-    throw refuse(entrypoint, `resolved outside the artifact root (${root.href})`);
-  }
-  return resolved2;
-}
 var PROFILE_VALUES = Object.freeze([
   "browser-sandbox",
   "worker-brokered",
@@ -299354,7 +303071,7 @@ async function connectSubjectRpc(options) {
     surfaces: subjectRpcSurfaces(),
     limits: SUBJECT_RPC_LIMITS,
     ...options.onDiagnostic === void 0 ? {} : {
-      onDiagnostic: (diagnostic20) => options.onDiagnostic?.(diagnostic20)
+      onDiagnostic: (diagnostic21) => options.onDiagnostic?.(diagnostic21)
     },
     onFailure: (failure2) => {
       options.onDiagnostic?.({
@@ -299646,7 +303363,7 @@ var COMMON_PRESENTATION_CATALOG = Object.freeze([
       slotId: "code",
       kind: "stage",
       contributionId: "org.modkitx.ui-monaco/code-stage",
-      extensionId: "org.modkitx/ui-monaco",
+      extensionId: "org.modkitx/code",
       priority: 400,
       singletonGroup: "stage.code",
       bindings: Object.freeze([
@@ -302171,6 +305888,35 @@ function defineLinkedExtension(init) {
     excluded: Object.freeze([...automaticExcluded, ...init.excluded ?? []])
   });
 }
+function defineBuiltinModule(init) {
+  const parts = init.coordinate.split("/");
+  if (parts.length !== 2 || parts.some((part) => part.length === 0)) {
+    refuse2("built-in module coordinate must be publisher/id", { coordinate: init.coordinate });
+  }
+  const [publisher = "", id = ""] = parts;
+  const packageJson = init.packageJson ?? {};
+  const existingModkit = packageJson.modkit;
+  const modkit = typeof existingModkit === "object" && existingModkit !== null ? existingModkit : {};
+  const linked = defineLinkedExtension({
+    source: init.source ?? `builtin:${init.coordinate}`,
+    packageJson: {
+      ...packageJson,
+      modkit: {
+        ...modkit,
+        schemaVersion: modkit.schemaVersion ?? 1,
+        publisher,
+        id,
+        contributionManifests: modkit.contributionManifests ?? init.contributions.map((item) => `./${item.path.replace(/^\.\//u, "")}`)
+      }
+    },
+    ...init.files === void 0 ? {} : { files: init.files },
+    contributions: init.contributions,
+    ...init.excluded === void 0 ? {} : { excluded: init.excluded },
+    artifactDigest: init.artifactDigest ?? `builtin:${init.coordinate}`,
+    modules: init.modules
+  });
+  return Object.freeze({ ...linked, kind: "builtin" });
+}
 var NATIVE_ENVIRONMENTS = Object.freeze(["node", "node-worker", "browser-main", "browser-worker"]);
 var nativeExecutable = (manifest, entrypoint) => {
   const document2 = manifest;
@@ -302896,6 +306642,9 @@ var EN_MESSAGES = Object.freeze({
   "extensions.action.linkExtension": "Link extension",
   "extensions.action.disableContribution": "Disable contribution",
   "extensions.action.enableContribution": "Enable contribution",
+  "extensions.action.disableAllCodecs": "Disable all codecs",
+  "extensions.action.enableAllCodecs": "Enable all codecs",
+  "extensions.action.installAll": "Install all available extensions",
   "extensions.action.disableExtension": "Disable extension",
   "extensions.action.enableExtension": "Enable extension",
   "extensions.action.reloadWindow": "Reload window",
@@ -303452,6 +307201,9 @@ var RU_MESSAGES = Object.freeze({
   "extensions.action.linkExtension": "\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435",
   "extensions.action.disableContribution": "\u041E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u044C",
   "extensions.action.enableContribution": "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u044C",
+  "extensions.action.disableAllCodecs": "\u041E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0432\u0441\u0435 \u043A\u043E\u0434\u0435\u043A\u0438",
+  "extensions.action.enableAllCodecs": "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0432\u0441\u0435 \u043A\u043E\u0434\u0435\u043A\u0438",
+  "extensions.action.installAll": "\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0432\u0441\u0435 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B\u0435 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
   "extensions.action.disableExtension": "\u041E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435",
   "extensions.action.enableExtension": "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435",
   "extensions.action.reloadWindow": "\u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u043E\u043A\u043D\u043E",
@@ -310194,7 +313946,7 @@ function createSearchField(document2, options) {
     }
   };
 }
-var encoder2 = new TextEncoder();
+var encoder3 = new TextEncoder();
 function decodeUtf8(bytes) {
   try {
     return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
@@ -310218,7 +313970,7 @@ function indexText(text22) {
     const start = lineStarts[line] ?? text22.length;
     const next = lineStarts[line + 1] ?? text22.length;
     const withoutNewline = text22.slice(start, next).replace(/\r\n$|\r$|\n$/u, "");
-    longestLineBytes = Math.max(longestLineBytes, encoder2.encode(withoutNewline).byteLength);
+    longestLineBytes = Math.max(longestLineBytes, encoder3.encode(withoutNewline).byteLength);
   }
   const values = [...kinds];
   return Object.freeze({
@@ -310248,11 +314000,11 @@ function parseCursor2(value2) {
   return { character, line };
 }
 function truncateUtf8(value2, maximumBytes) {
-  if (encoder2.encode(value2).byteLength <= maximumBytes) return value2;
+  if (encoder3.encode(value2).byteLength <= maximumBytes) return value2;
   let result = "";
   let used = 0;
   for (const character of value2) {
-    const size2 = encoder2.encode(character).byteLength;
+    const size2 = encoder3.encode(character).byteLength;
     if (used + size2 > maximumBytes) {
       if (result === "") throw new RangeError("text page maxBytes cannot fit the next code point");
       break;
@@ -310340,8 +314092,8 @@ function builtinTextSource(bytes) {
       for (const match2 of text22.matchAll(expression)) {
         signal?.throwIfAborted();
         const character = match2.index ?? 0;
-        const byteOffset = encoder2.encode(text22.slice(0, character)).byteLength;
-        const byteLength = encoder2.encode(match2[0]).byteLength;
+        const byteOffset = encoder3.encode(text22.slice(0, character)).byteLength;
+        const byteLength = encoder3.encode(match2[0]).byteLength;
         yield Object.freeze({
           byteOffset: uint64(BigInt(byteOffset)),
           byteLength: uint64(BigInt(byteLength))
@@ -312591,2826 +316343,83 @@ function applyDensity(root, density) {
   requireElement2(root).setAttribute(DENSITY_ATTRIBUTE, density);
 }
 
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/external/monaco-lsp-client/out/index.js
-init_coreCommands();
-init_codeEditorWidget();
-init_diffEditor_contribution();
-init_anchorSelect2();
-init_bracketMatching2();
-init_caretOperations();
-init_transpose();
-init_clipboard();
-init_codeActionContributions();
-init_codelensController();
-init_colorPickerContribution();
-init_comment();
-init_contextmenu();
-init_cursorUndo();
-init_dnd6();
-init_copyPasteContribution();
-init_dropIntoEditorContribution();
-init_findController();
-init_folding2();
-init_fontZoom();
-init_formatActions();
-init_documentSymbols();
-init_inlineCompletions_contribution();
-init_inlineProgress();
-init_goToCommands();
-init_goToDefinitionAtPosition2();
-init_gotoError();
-init_markerSelectionStatus();
-init_gpuActions();
-init_hoverContribution();
-init_indentation3();
-init_inlayHintsContribution();
-init_inPlaceReplace2();
-init_insertFinalNewLine();
-init_lineSelection();
-init_linesOperations();
-init_linkedEditing2();
-init_links2();
-init_longLinesHelper();
-init_middleScroll_contribution();
-init_multicursor();
-init_parameterHints2();
-init_placeholderText_contribution();
-init_rename();
-init_sectionHeaders();
-init_documentSemanticTokens();
-init_viewportSemanticTokens();
-init_smartSelect();
-init_snippetController2();
-init_stickyScrollContribution();
-init_suggestController();
-init_suggestInlineCompletions();
-init_tokenization2();
-init_toggleTabFocusMode();
-init_unicodeHighlighter2();
-init_unusualLineTerminators();
-init_wordHighlighter();
-init_wordOperations();
-init_wordPartOperations();
-init_contribution2();
-init_contribution3();
-init_floatingMenu_contribution();
-init_standaloneStrings();
-init_codicon();
-init_codicon_modifiers();
-init_iPadShowKeyboard2();
-init_inspectTokens2();
-init_standaloneHelpQuickAccess();
-init_standaloneGotoLineQuickAccess();
-init_standaloneGotoSymbolQuickAccess();
-init_standaloneCommandsQuickAccess();
-init_standaloneReferenceSearch();
-init_toggleHighContrast();
-init_editor_api();
-var __defProp4 = Object.defineProperty;
-var __defNormalProp = (obj, key, value2) => key in obj ? __defProp4(obj, key, { enumerable: true, configurable: true, writable: true, value: value2 }) : obj[key] = value2;
-var __publicField = (obj, key, value2) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value2);
-var _a3;
-var _b2;
-var _c2;
-var _d;
-var _e;
-function isRequestOrNotification(msg) {
-  return msg.method !== void 0;
-}
-var ErrorObject;
-(function(ErrorObject$1) {
-  function create3(obj) {
-    return obj;
-  }
-  ErrorObject$1.create = create3;
-})(ErrorObject || (ErrorObject = {}));
-var ErrorCode;
-(function(ErrorCode$1) {
-  ErrorCode$1.parseError = -32700;
-  ErrorCode$1.invalidRequest = -32600;
-  ErrorCode$1.methodNotFound = -32601;
-  ErrorCode$1.invalidParams = -32602;
-  ErrorCode$1.internalError = -32603;
-  function isServerError(code) {
-    return -32099 <= code && code <= -32e3;
-  }
-  ErrorCode$1.isServerError = isServerError;
-  function serverError(code) {
-    if (!isServerError(code)) throw new Error("Invalid range for a server error.");
-    return code;
-  }
-  ErrorCode$1.serverError = serverError;
-  ErrorCode$1.unexpectedServerError = -32e3;
-  function isApplicationError(code) {
-    return true;
-  }
-  ErrorCode$1.isApplicationError = isApplicationError;
-  function applicationError(code) {
-    return code;
-  }
-  ErrorCode$1.applicationError = applicationError;
-  ErrorCode$1.genericApplicationError = -320100;
-})(ErrorCode || (ErrorCode = {}));
-var EventEmitter = class {
-  constructor() {
-    __publicField(this, "listeners", /* @__PURE__ */ new Set());
-    __publicField(this, "event", (listener) => {
-      this.listeners.add(listener);
-      return { dispose: () => {
-        this.listeners.delete(listener);
-      } };
-    });
-  }
-  fire(args) {
-    this.listeners.forEach((listener) => listener(args));
-  }
-};
-var ValueWithChangeEvent = class {
-  constructor(initialValue) {
-    __publicField(this, "_value");
-    __publicField(this, "eventEmitter");
-    this._value = initialValue;
-    this.eventEmitter = new EventEmitter();
-  }
-  get value() {
-    return this._value;
-  }
-  set value(newValue) {
-    if (this._value !== newValue) {
-      this._value = newValue;
-      this.eventEmitter.fire(newValue);
-    }
-  }
-  get onChange() {
-    return this.eventEmitter.event;
-  }
-};
-function createTimeout(delay, callback) {
-  const handle = setTimeout(callback, delay);
-  return { dispose: () => clearTimeout(handle) };
-}
-function setAndDeleteOnDispose(set, keyOrItem, item) {
-  if (set instanceof Set) {
-    set.add(keyOrItem);
-    return { dispose: () => set.delete(keyOrItem) };
-  } else {
-    set.set(keyOrItem, item);
-    return { dispose: () => set.delete(keyOrItem) };
-  }
-}
-var Deferred = class {
-  constructor() {
-    __publicField(this, "_state", "none");
-    __publicField(this, "promise");
-    __publicField(this, "resolve", () => {
-    });
-    __publicField(this, "reject", () => {
-    });
-    this.promise = new Promise((resolve3, reject) => {
-      this.resolve = resolve3;
-      this.reject = reject;
-    });
-  }
-  get state() {
-    return this._state;
-  }
-};
-var BaseMessageTransport = (_a3 = class {
-  constructor() {
-    __publicField(this, "_unprocessedMessages", []);
-    __publicField(this, "_messageListener");
-    __publicField(this, "id", _a3.id++);
-    __publicField(this, "_state", new ValueWithChangeEvent({ state: "open" }));
-    __publicField(this, "state", this._state);
-  }
-  /**
-  * Sets a callback for incoming messages.
-  */
-  setListener(listener) {
-    this._messageListener = listener;
-    if (!listener) return;
-    while (this._unprocessedMessages.length > 0 && this._messageListener !== void 0) {
-      const msg = this._unprocessedMessages.shift();
-      this._messageListener(msg);
-    }
-  }
-  /**
-  * Writes a message to the stream.
-  */
-  send(message) {
-    return this._sendImpl(message);
-  }
-  /**
-  * Call this in derived classes to signal a new message.
-  */
-  _dispatchReceivedMessage(message) {
-    if (this._unprocessedMessages.length === 0 && this._messageListener) this._messageListener(message);
-    else this._unprocessedMessages.push(message);
-  }
-  /**
-  * Call this in derived classes to signal that the connection closed.
-  */
-  _onConnectionClosed() {
-    this._state.value = {
-      state: "closed",
-      error: void 0
-    };
-  }
-  log(logger) {
-    return new StreamLogger(this, logger ?? new ConsoleMessageLogger());
-  }
-}, __publicField(_a3, "id", 0), _a3);
-var StreamLogger = class {
-  constructor(baseStream, logger) {
-    __publicField(this, "baseStream");
-    __publicField(this, "logger");
-    this.baseStream = baseStream;
-    this.logger = logger;
-  }
-  get state() {
-    return this.baseStream.state;
-  }
-  setListener(listener) {
-    if (listener === void 0) {
-      this.baseStream.setListener(void 0);
-      return;
-    }
-    this.baseStream.setListener((readMessage) => {
-      this.logger.log(this.baseStream, "incoming", readMessage);
-      listener(readMessage);
-    });
-  }
-  send(message) {
-    this.logger.log(this.baseStream, "outgoing", message);
-    return this.baseStream.send(message);
-  }
-  toString() {
-    return `StreamLogger/${this.baseStream.toString()}`;
-  }
-};
-var ConsoleMessageLogger = class {
-  log(stream, type, message) {
-    const char = type === "incoming" ? "<-" : "->";
-    console.log(`${char} [${stream.toString()}] ${JSON.stringify(message)}`);
-  }
-};
-var Channel = class Channel2 {
-  constructor(connect) {
-    __publicField(this, "connect");
-    this.connect = connect;
-  }
-  mapContext(map) {
-    return new Channel2((listener) => this.connect(listener ? mapRequestHandlerContext(listener, map) : void 0));
-  }
-};
-function mapRequestHandlerContext(messageHandler, map) {
-  return {
-    handleNotification: (request, context) => messageHandler.handleNotification(request, map(context)),
-    handleRequest: (request, requestId, context) => messageHandler.handleRequest(request, requestId, map(context))
-  };
-}
-var StreamBasedChannel = class StreamBasedChannel2 {
-  constructor(_stream, _listener, _logger) {
-    __publicField(this, "_stream");
-    __publicField(this, "_listener");
-    __publicField(this, "_logger");
-    __publicField(this, "_unprocessedResponses", /* @__PURE__ */ new Map());
-    __publicField(this, "_lastUsedRequestId", 0);
-    this._stream = _stream;
-    this._listener = _listener;
-    this._logger = _logger;
-    this._stream.setListener((message) => {
-      if (isRequestOrNotification(message)) if (message.id === void 0) this._processNotification(message);
-      else this._processRequest(message);
-      else this._processResponse(message);
-    });
-  }
-  /**
-  * Creates a channel factory from a given stream and logger.
-  * This allows to delay specifying a `RequestHandler`.
-  * Once the channel is created, it processes incoming messages.
-  */
-  static createChannel(stream, logger) {
-    let constructed = false;
-    return new Channel((listener) => {
-      if (constructed) throw new Error(`A channel to the stream ${stream} was already constructed!`);
-      else constructed = true;
-      return new StreamBasedChannel2(stream, listener, logger);
-    });
-  }
-  get state() {
-    return this._stream.state;
-  }
-  async _processNotification(message) {
-    if (message.id !== void 0) throw new Error();
-    if (!this._listener) {
-      if (this._logger) this._logger.debug({
-        text: "Notification ignored",
-        message
-      });
-      return;
-    }
-    try {
-      await this._listener.handleNotification({
-        method: message.method,
-        params: message.params || null
-      });
-    } catch (exception) {
-      if (this._logger) this._logger.warn({
-        text: `Exception was thrown while handling notification: ${exception}`,
-        exception,
-        message
-      });
-    }
-  }
-  async _processRequest(message) {
-    if (message.id === void 0) throw new Error();
-    let result;
-    if (this._listener) try {
-      result = await this._listener.handleRequest({
-        method: message.method,
-        params: message.params || null
-      }, message.id);
-    } catch (exception) {
-      if (this._logger) this._logger.warn({
-        text: `Exception was thrown while handling request: ${exception}`,
-        message,
-        exception
-      });
-      result = { error: {
-        code: ErrorCode.internalError,
-        message: "An unexpected exception was thrown.",
-        data: void 0
-      } };
-    }
-    else {
-      if (this._logger) this._logger.debug({
-        text: "Received request even though not listening for requests",
-        message
-      });
-      result = { error: {
-        code: ErrorCode.methodNotFound,
-        message: "This endpoint does not listen for requests or notifications.",
-        data: void 0
-      } };
-    }
-    let responseMsg;
-    if ("result" in result) responseMsg = {
-      jsonrpc: "2.0",
-      id: message.id,
-      result: result.result
-    };
-    else responseMsg = {
-      jsonrpc: "2.0",
-      id: message.id,
-      error: result.error
-    };
-    await this._stream.send(responseMsg);
-  }
-  _processResponse(message) {
-    const strId = "" + message.id;
-    const callback = this._unprocessedResponses.get(strId);
-    if (!callback) {
-      if (this._logger) this._logger.debug({
-        text: "Got an unexpected response message",
-        message
-      });
-      return;
-    }
-    this._unprocessedResponses.delete(strId);
-    callback(message);
-  }
-  _newRequestId() {
-    return this._lastUsedRequestId++;
-  }
-  sendRequest(request, _context, messageIdCallback) {
-    const message = {
-      jsonrpc: "2.0",
-      id: this._newRequestId(),
-      method: request.method,
-      params: request.params || void 0
-    };
-    if (messageIdCallback) messageIdCallback(message.id);
-    return new Promise((resolve3, reject) => {
-      const strId = "" + message.id;
-      this._unprocessedResponses.set(strId, (response) => {
-        if ("result" in response) resolve3({ result: response.result });
-        else {
-          if (!response.error) reject(/* @__PURE__ */ new Error("Response had neither 'result' nor 'error' field set."));
-          resolve3({ error: response.error });
-        }
-      });
-      this._stream.send(message).then(void 0, (reason) => {
-        this._unprocessedResponses.delete(strId);
-        reject(reason);
-      });
-    });
-  }
-  sendNotification(notification, context) {
-    const msg = {
-      jsonrpc: "2.0",
-      id: void 0,
-      method: notification.method,
-      params: notification.params || void 0
-    };
-    return this._stream.send(msg);
-  }
-  toString() {
-    return "StreamChannel/" + this._stream.toString();
-  }
-};
-var Serializers;
-(function(Serializers$1) {
-  function sAny() {
-    return {
-      deserializeFromJson: (input) => ({
-        hasErrors: false,
-        value: input
-      }),
-      serializeToJson: (input) => input
-    };
-  }
-  Serializers$1.sAny = sAny;
-  function sEmptyObject() {
-    return {
-      deserializeFromJson: (input) => ({
-        hasErrors: false,
-        value: {}
-      }),
-      serializeToJson: (input) => ({})
-    };
-  }
-  Serializers$1.sEmptyObject = sEmptyObject;
-  function sVoidFromNull() {
-    return {
-      deserializeFromJson: (input) => ({
-        hasErrors: false,
-        value: void 0
-      }),
-      serializeToJson: (input) => null
-    };
-  }
-  Serializers$1.sVoidFromNull = sVoidFromNull;
-})(Serializers || (Serializers = {}));
-var OptionalMethodNotFound = /* @__PURE__ */ Symbol("OptionalMethodNotFound");
-var TypedChannelBase = class {
-  contextualize(args) {
-    return new ContextualizedTypedChannel(this, args);
-  }
-};
-var ContextualizedTypedChannel = class extends TypedChannelBase {
-  constructor(underylingTypedChannel, converters) {
-    super();
-    __publicField(this, "underylingTypedChannel");
-    __publicField(this, "converters");
-    this.underylingTypedChannel = underylingTypedChannel;
-    this.converters = converters;
-  }
-  async request(requestType, args, newContext) {
-    const context = await this.converters.getSendContext(newContext);
-    return this.underylingTypedChannel.request(requestType, args, context);
-  }
-  async notify(notificationType, params, newContext) {
-    const context = await this.converters.getSendContext(newContext);
-    return this.underylingTypedChannel.notify(notificationType, params, context);
-  }
-  registerNotificationHandler(type, handler) {
-    return this.underylingTypedChannel.registerNotificationHandler(type, async (arg, context) => {
-      return await handler(arg, await this.converters.getNewContext(context));
-    });
-  }
-  registerRequestHandler(requestType, handler) {
-    return this.underylingTypedChannel.registerRequestHandler(requestType, async (arg, requestId, context) => {
-      return await handler(arg, requestId, await this.converters.getNewContext(context));
-    });
-  }
-};
-var TypedChannel = class TypedChannel2 extends TypedChannelBase {
-  constructor(channelCtor, options = {}) {
-    super();
-    __publicField(this, "channelCtor");
-    __publicField(this, "_requestSender");
-    __publicField(this, "_handler", /* @__PURE__ */ new Map());
-    __publicField(this, "_unknownNotificationHandler", /* @__PURE__ */ new Set());
-    __publicField(this, "_timeout");
-    __publicField(this, "sendExceptionDetails", false);
-    __publicField(this, "_logger");
-    __publicField(this, "listeningDeferred", new Deferred());
-    __publicField(this, "onListening", this.listeningDeferred.promise);
-    __publicField(this, "_requestDidErrorEventEmitter", new EventEmitter());
-    __publicField(this, "onRequestDidError", this._requestDidErrorEventEmitter.event);
-    this.channelCtor = channelCtor;
-    this._logger = options.logger;
-    this.sendExceptionDetails = !!options.sendExceptionDetails;
-    this._timeout = createTimeout(1e3, () => {
-      if (!this._requestSender) console.warn(`"${this.startListen.name}" has not been called within 1 second after construction of this channel. Did you forget to call it?`, this);
-    });
-  }
-  static fromTransport(stream, options = {}) {
-    return new TypedChannel2(StreamBasedChannel.createChannel(stream, options.logger), options);
-  }
-  /**
-  * This method must be called to forward messages from the stream to this channel.
-  * This is not done automatically on construction so that this instance
-  * can be setup properly before handling messages.
-  */
-  startListen() {
-    if (this._requestSender) throw new Error(`"${this.startListen.name}" can be called only once, but it already has been called.`);
-    if (this._timeout) {
-      this._timeout.dispose();
-      this._timeout = void 0;
-    }
-    this._requestSender = this.channelCtor.connect({
-      handleRequest: (req, id, context) => this.handleRequest(req, id, context),
-      handleNotification: (req, context) => this.handleNotification(req, context)
-    });
-    this.listeningDeferred.resolve();
-  }
-  checkChannel(channel) {
-    if (!channel) throw new Error(`"${this.startListen.name}" must be called before any messages can be sent or received.`);
-    return true;
-  }
-  async handleRequest(request, requestId, context) {
-    const handler = this._handler.get(request.method);
-    if (!handler) {
-      if (this._logger) this._logger.debug({
-        text: `No request handler for "${request.method}".`,
-        data: { requestObject: request }
-      });
-      return { error: {
-        code: ErrorCode.methodNotFound,
-        message: `No request handler for "${request.method}".`,
-        data: { method: request.method }
-      } };
-    }
-    if (handler.kind != "request") {
-      const message = `"${request.method}" is registered as notification, but was sent as request.`;
-      if (this._logger) this._logger.debug({
-        text: message,
-        data: { requestObject: request }
-      });
-      return { error: {
-        code: ErrorCode.invalidRequest,
-        message,
-        data: { method: request.method }
-      } };
-    }
-    const decodeResult = handler.requestType.paramsSerializer.deserializeFromJson(request.params);
-    if (decodeResult.hasErrors) {
-      const message = `Got invalid params: ${decodeResult.errorMessage}`;
-      if (this._logger) this._logger.debug({
-        text: message,
-        data: {
-          requestObject: request,
-          errorMessage: decodeResult.errorMessage
-        }
-      });
-      return { error: {
-        code: ErrorCode.invalidParams,
-        message,
-        data: { errors: decodeResult.errorMessage }
-      } };
-    } else {
-      const args = decodeResult.value;
-      let response;
-      try {
-        const result = await handler.handler(args, requestId, context);
-        if ("error" in result || "errorMessage" in result) {
-          const errorData = result.error ? handler.requestType.errorSerializer.serializeToJson(result.error) : void 0;
-          response = { error: {
-            code: result.errorCode || ErrorCode.genericApplicationError,
-            message: result.errorMessage || "An error was returned",
-            data: errorData
-          } };
-        } else response = { result: handler.requestType.resultSerializer.serializeToJson(result.ok) };
-      } catch (exception) {
-        if (exception instanceof RequestHandlingError) response = { error: {
-          code: exception.code,
-          message: exception.message
-        } };
-        else {
-          if (this._logger) this._logger.warn({
-            text: `An exception was thrown while handling a request: ${exception}.`,
-            exception,
-            data: { requestObject: request }
-          });
-          response = { error: {
-            code: ErrorCode.unexpectedServerError,
-            message: this.sendExceptionDetails ? `An exception was thrown while handling a request: ${exception}.` : "Server has thrown an unexpected exception"
-          } };
-        }
-      }
-      return response;
-    }
-  }
-  async handleNotification(request, context) {
-    const handler = this._handler.get(request.method);
-    if (!handler) {
-      for (const h2 of this._unknownNotificationHandler) h2(request);
-      if (this._unknownNotificationHandler.size === 0) {
-        if (this._logger) this._logger.debug({
-          text: `Unhandled notification "${request.method}"`,
-          data: { requestObject: request }
-        });
-      }
-      return;
-    }
-    if (handler.kind != "notification") {
-      if (this._logger) this._logger.debug({
-        text: `"${request.method}" is registered as request, but was sent as notification.`,
-        data: { requestObject: request }
-      });
-      return;
-    }
-    const decodeResult = handler.notificationType.paramsSerializer.deserializeFromJson(request.params);
-    if (decodeResult.hasErrors) {
-      if (this._logger) this._logger.debug({
-        text: `Got invalid params: ${decodeResult}`,
-        data: {
-          requestObject: request,
-          errorMessage: decodeResult.errorMessage
-        }
-      });
-      return;
-    }
-    const val = decodeResult.value;
-    for (const handlerFunc of handler.handlers) try {
-      handlerFunc(val, context);
-    } catch (exception) {
-      if (this._logger) this._logger.warn({
-        text: `An exception was thrown while handling a notification: ${exception}.`,
-        exception,
-        data: { requestObject: request }
-      });
-    }
-  }
-  registerUnknownNotificationHandler(handler) {
-    return setAndDeleteOnDispose(this._unknownNotificationHandler, handler);
-  }
-  registerRequestHandler(requestType, handler) {
-    if (this._handler.get(requestType.method)) throw new Error(`Handler with method "${requestType.method}" already registered.`);
-    return setAndDeleteOnDispose(this._handler, requestType.method, {
-      kind: "request",
-      requestType,
-      handler
-    });
-  }
-  registerNotificationHandler(type, handler) {
-    let registeredHandler = this._handler.get(type.method);
-    if (!registeredHandler) {
-      registeredHandler = {
-        kind: "notification",
-        notificationType: type,
-        handlers: /* @__PURE__ */ new Set()
-      };
-      this._handler.set(type.method, registeredHandler);
-    } else {
-      if (registeredHandler.kind !== "notification") throw new Error(`Method "${type.method}" was already registered as request handler.`);
-      if (registeredHandler.notificationType !== type) throw new Error(`Method "${type.method}" was registered for a different type.`);
-    }
-    return setAndDeleteOnDispose(registeredHandler.handlers, handler);
-  }
-  getRegisteredTypes() {
-    const result = [];
-    for (const h2 of this._handler.values()) if (h2.kind === "notification") result.push(h2.notificationType);
-    else if (h2.kind === "request") result.push(h2.requestType);
-    return result;
-  }
-  async request(requestType, args, context) {
-    if (!this.checkChannel(this._requestSender)) throw new Error("Impossible");
-    const params = requestType.paramsSerializer.serializeToJson(args);
-    assertObjectArrayOrNull(params);
-    const response = await this._requestSender.sendRequest({
-      method: requestType.method,
-      params
-    }, context);
-    if ("error" in response) {
-      if (requestType.isOptional && response.error.code === ErrorCode.methodNotFound) return OptionalMethodNotFound;
-      let errorData;
-      if (response.error.data !== void 0) {
-        const deserializationResult = requestType.errorSerializer.deserializeFromJson(response.error.data);
-        if (deserializationResult.hasErrors) throw new Error(deserializationResult.errorMessage);
-        errorData = deserializationResult.value;
-      } else errorData = void 0;
-      const error3 = new RequestHandlingError(response.error.message, errorData, response.error.code);
-      this._requestDidErrorEventEmitter.fire({ error: error3 });
-      throw error3;
-    } else {
-      const result = requestType.resultSerializer.deserializeFromJson(response.result);
-      if (result.hasErrors) throw new Error("Could not deserialize response: " + result.errorMessage + `
-
-${JSON.stringify(response, null, 2)}`);
-      else return result.value;
-    }
-  }
-  async notify(notificationType, params, context) {
-    if (!this.checkChannel(this._requestSender)) throw new Error();
-    const encodedParams = notificationType.paramsSerializer.serializeToJson(params);
-    assertObjectArrayOrNull(encodedParams);
-    this._requestSender.sendNotification({
-      method: notificationType.method,
-      params: encodedParams
-    }, context);
-  }
-};
-function assertObjectArrayOrNull(val) {
-  if (val !== null && Array.isArray(val) && typeof val !== "object") throw new Error("Invalid value! Only null, array and object is allowed.");
-}
-var RequestHandlingError = class RequestHandlingError2 extends Error {
-  constructor(message, data, code = ErrorCode.genericApplicationError) {
-    super(message);
-    __publicField(this, "data");
-    __publicField(this, "code");
-    this.data = data;
-    this.code = code;
-    Object.setPrototypeOf(this, RequestHandlingError2.prototype);
-  }
-};
-var RequestType = class RequestType2 {
-  constructor(method, paramsSerializer, resultSerializer, errorSerializer, isOptional = false) {
-    __publicField(this, "method");
-    __publicField(this, "paramsSerializer");
-    __publicField(this, "resultSerializer");
-    __publicField(this, "errorSerializer");
-    __publicField(this, "isOptional");
-    __publicField(this, "kind", "request");
-    this.method = method;
-    this.paramsSerializer = paramsSerializer;
-    this.resultSerializer = resultSerializer;
-    this.errorSerializer = errorSerializer;
-    this.isOptional = isOptional;
-  }
-  withMethod(method) {
-    return new RequestType2(method, this.paramsSerializer, this.resultSerializer, this.errorSerializer);
-  }
-  optional() {
-    return new RequestType2(this.method, this.paramsSerializer, this.resultSerializer, this.errorSerializer, true);
-  }
-};
-var NotificationType = class NotificationType2 {
-  constructor(method, paramsSerializer) {
-    __publicField(this, "method");
-    __publicField(this, "paramsSerializer");
-    __publicField(this, "kind", "notification");
-    this.method = method;
-    this.paramsSerializer = paramsSerializer;
-  }
-  withMethod(method) {
-    return new NotificationType2(method, this.paramsSerializer);
-  }
-};
-function unverifiedRequest(request) {
-  return new RequestType((request || {}).method, Serializers.sAny(), Serializers.sAny(), Serializers.sAny());
-}
-function unverifiedNotification(request) {
-  return new NotificationType((request || {}).method, Serializers.sAny());
-}
-var IsErrorWrapper = /* @__PURE__ */ Symbol();
-var ErrorWrapper = (_b2 = IsErrorWrapper, _c2 = class {
-  constructor(error3) {
-    __publicField(this, "error");
-    __publicField(this, _b2);
-    this.error = error3;
-  }
-}, __publicField(_c2, "factory", (error3) => {
-  return new _c2(error3);
-}), _c2);
-function contract(contractObj) {
-  const server = transform(contractObj["server"]);
-  const client = transform(contractObj["client"]);
-  return new Contract(contractObj.tags || [], server, client);
-}
-function transform(requestMap) {
-  const result = {};
-  for (const [key, req] of Object.entries(requestMap)) {
-    const method = req.method ? req.method : key;
-    result[key] = req.withMethod(method);
-  }
-  return result;
-}
-var Contract = class Contract2 {
-  constructor(tags = [], server, client) {
-    __publicField(this, "tags");
-    __publicField(this, "server");
-    __publicField(this, "client");
-    this.tags = tags;
-    this.server = server;
-    this.client = client;
-  }
-  _onlyDesignTime() {
-    return /* @__PURE__ */ new Error("This property is not meant to be accessed at runtime");
-  }
-  get TContractObject() {
-    throw this._onlyDesignTime();
-  }
-  get TClientInterface() {
-    throw this._onlyDesignTime();
-  }
-  get TServerInterface() {
-    throw this._onlyDesignTime();
-  }
-  get TClientHandler() {
-    throw this._onlyDesignTime();
-  }
-  get TServerHandler() {
-    throw this._onlyDesignTime();
-  }
-  get TTags() {
-    throw this._onlyDesignTime();
-  }
-  getInterface(typedChannel, myContract, otherContract, myInterface) {
-    const counterpart = this.buildCounterpart(typedChannel, otherContract);
-    const disposable = this.registerHandlers(typedChannel, myContract, myInterface, counterpart);
-    return {
-      counterpart,
-      dispose: () => disposable.dispose()
-    };
-  }
-  buildCounterpart(typedChannel, otherContract) {
-    const counterpart = {};
-    for (const [key, req] of Object.entries(otherContract)) {
-      let method;
-      if (req.kind === "request") if (req.isOptional) method = async (args, context) => {
-        if (args === void 0) args = {};
-        try {
-          return await typedChannel.request(req, args, context);
-        } catch (error3) {
-          if (error3 && error3.code === ErrorCode.methodNotFound) return OptionalMethodNotFound;
-          throw error3;
-        }
-      };
-      else method = (args, context) => {
-        if (args === void 0) args = {};
-        return typedChannel.request(req, args, context);
-      };
-      else method = (args, context) => {
-        if (args === void 0) args = {};
-        return typedChannel.notify(req, args, context);
-      };
-      counterpart[key] = method;
-    }
-    return counterpart;
-  }
-  registerHandlers(typedChannel, myContract, myInterface, counterpart) {
-    const disposables = [];
-    for (const [key, req] of Object.entries(myContract)) if (req.kind === "request") {
-      let method = myInterface[key];
-      if (!method) continue;
-      const handler = this.createRequestHandler(counterpart, method);
-      disposables.push(typedChannel.registerRequestHandler(req, handler));
-    } else {
-      const method = myInterface[key];
-      if (method) disposables.push(typedChannel.registerNotificationHandler(req, (args, context) => {
-        method(args, {
-          context,
-          counterpart
-        });
-      }));
-    }
-    return { dispose: () => disposables.forEach((d) => d.dispose()) };
-  }
-  createRequestHandler(counterpart, method) {
-    return async (args, requestId, listenerContext) => {
-      const result = await method(args, {
-        context: listenerContext,
-        counterpart,
-        newErr: ErrorWrapper.factory,
-        requestId
-      });
-      if (result instanceof ErrorWrapper) return result.error;
-      return { ok: result };
-    };
-  }
-  /**
-  * Gets a server object directly from a stream by constructing a new `TypedChannel`.
-  * It also registers the client implementation to the stream.
-  * The channel starts listening immediately.
-  */
-  static getServerFromStream(contract$1, stream, options, clientImplementation) {
-    const channel = TypedChannel.fromTransport(stream, options);
-    const { server } = contract$1.getServer(channel, clientImplementation);
-    channel.startListen();
-    return {
-      channel,
-      server
-    };
-  }
-  /**
-  * Gets a client object directly from a stream by constructing a new `TypedChannel`.
-  * It also registers the server implementation to the stream.
-  * The channel starts listening immediately.
-  */
-  static registerServerToStream(contract$1, stream, options, serverImplementation) {
-    const channel = TypedChannel.fromTransport(stream, options);
-    const { client } = contract$1.registerServer(channel, serverImplementation);
-    channel.startListen();
-    return {
-      channel,
-      client
-    };
-  }
-  getServer(typedChannel, clientImplementation) {
-    const { counterpart, dispose: dispose2 } = this.getInterface(typedChannel, this.client, this.server, clientImplementation);
-    return {
-      server: counterpart,
-      dispose: dispose2
-    };
-  }
-  registerServer(typedChannel, serverImplementation) {
-    const { counterpart, dispose: dispose2 } = this.getInterface(typedChannel, this.server, this.client, serverImplementation);
-    return {
-      client: counterpart,
-      dispose: dispose2
-    };
-  }
-  withContext() {
-    return new Contract2(this.tags, this.server, this.client);
-  }
-};
-var FoldingRangeKind2 = /* @__PURE__ */ (function(FoldingRangeKind$1) {
-  FoldingRangeKind$1["Comment"] = "comment";
-  FoldingRangeKind$1["Imports"] = "imports";
-  FoldingRangeKind$1["Region"] = "region";
-  return FoldingRangeKind$1;
-})({});
-var SymbolKind2 = /* @__PURE__ */ (function(SymbolKind$1) {
-  SymbolKind$1[SymbolKind$1["File"] = 1] = "File";
-  SymbolKind$1[SymbolKind$1["Module"] = 2] = "Module";
-  SymbolKind$1[SymbolKind$1["Namespace"] = 3] = "Namespace";
-  SymbolKind$1[SymbolKind$1["Package"] = 4] = "Package";
-  SymbolKind$1[SymbolKind$1["Class"] = 5] = "Class";
-  SymbolKind$1[SymbolKind$1["Method"] = 6] = "Method";
-  SymbolKind$1[SymbolKind$1["Property"] = 7] = "Property";
-  SymbolKind$1[SymbolKind$1["Field"] = 8] = "Field";
-  SymbolKind$1[SymbolKind$1["Constructor"] = 9] = "Constructor";
-  SymbolKind$1[SymbolKind$1["Enum"] = 10] = "Enum";
-  SymbolKind$1[SymbolKind$1["Interface"] = 11] = "Interface";
-  SymbolKind$1[SymbolKind$1["Function"] = 12] = "Function";
-  SymbolKind$1[SymbolKind$1["Variable"] = 13] = "Variable";
-  SymbolKind$1[SymbolKind$1["Constant"] = 14] = "Constant";
-  SymbolKind$1[SymbolKind$1["String"] = 15] = "String";
-  SymbolKind$1[SymbolKind$1["Number"] = 16] = "Number";
-  SymbolKind$1[SymbolKind$1["Boolean"] = 17] = "Boolean";
-  SymbolKind$1[SymbolKind$1["Array"] = 18] = "Array";
-  SymbolKind$1[SymbolKind$1["Object"] = 19] = "Object";
-  SymbolKind$1[SymbolKind$1["Key"] = 20] = "Key";
-  SymbolKind$1[SymbolKind$1["Null"] = 21] = "Null";
-  SymbolKind$1[SymbolKind$1["EnumMember"] = 22] = "EnumMember";
-  SymbolKind$1[SymbolKind$1["Struct"] = 23] = "Struct";
-  SymbolKind$1[SymbolKind$1["Event"] = 24] = "Event";
-  SymbolKind$1[SymbolKind$1["Operator"] = 25] = "Operator";
-  SymbolKind$1[SymbolKind$1["TypeParameter"] = 26] = "TypeParameter";
-  return SymbolKind$1;
-})({});
-var SymbolTag2 = /* @__PURE__ */ (function(SymbolTag$1) {
-  SymbolTag$1[SymbolTag$1["Deprecated"] = 1] = "Deprecated";
-  return SymbolTag$1;
-})({});
-var InlayHintKind3 = /* @__PURE__ */ (function(InlayHintKind$1) {
-  InlayHintKind$1[InlayHintKind$1["Type"] = 1] = "Type";
-  InlayHintKind$1[InlayHintKind$1["Parameter"] = 2] = "Parameter";
-  return InlayHintKind$1;
-})({});
-var CompletionItemKind2 = /* @__PURE__ */ (function(CompletionItemKind$1) {
-  CompletionItemKind$1[CompletionItemKind$1["Text"] = 1] = "Text";
-  CompletionItemKind$1[CompletionItemKind$1["Method"] = 2] = "Method";
-  CompletionItemKind$1[CompletionItemKind$1["Function"] = 3] = "Function";
-  CompletionItemKind$1[CompletionItemKind$1["Constructor"] = 4] = "Constructor";
-  CompletionItemKind$1[CompletionItemKind$1["Field"] = 5] = "Field";
-  CompletionItemKind$1[CompletionItemKind$1["Variable"] = 6] = "Variable";
-  CompletionItemKind$1[CompletionItemKind$1["Class"] = 7] = "Class";
-  CompletionItemKind$1[CompletionItemKind$1["Interface"] = 8] = "Interface";
-  CompletionItemKind$1[CompletionItemKind$1["Module"] = 9] = "Module";
-  CompletionItemKind$1[CompletionItemKind$1["Property"] = 10] = "Property";
-  CompletionItemKind$1[CompletionItemKind$1["Unit"] = 11] = "Unit";
-  CompletionItemKind$1[CompletionItemKind$1["Value"] = 12] = "Value";
-  CompletionItemKind$1[CompletionItemKind$1["Enum"] = 13] = "Enum";
-  CompletionItemKind$1[CompletionItemKind$1["Keyword"] = 14] = "Keyword";
-  CompletionItemKind$1[CompletionItemKind$1["Snippet"] = 15] = "Snippet";
-  CompletionItemKind$1[CompletionItemKind$1["Color"] = 16] = "Color";
-  CompletionItemKind$1[CompletionItemKind$1["File"] = 17] = "File";
-  CompletionItemKind$1[CompletionItemKind$1["Reference"] = 18] = "Reference";
-  CompletionItemKind$1[CompletionItemKind$1["Folder"] = 19] = "Folder";
-  CompletionItemKind$1[CompletionItemKind$1["EnumMember"] = 20] = "EnumMember";
-  CompletionItemKind$1[CompletionItemKind$1["Constant"] = 21] = "Constant";
-  CompletionItemKind$1[CompletionItemKind$1["Struct"] = 22] = "Struct";
-  CompletionItemKind$1[CompletionItemKind$1["Event"] = 23] = "Event";
-  CompletionItemKind$1[CompletionItemKind$1["Operator"] = 24] = "Operator";
-  CompletionItemKind$1[CompletionItemKind$1["TypeParameter"] = 25] = "TypeParameter";
-  return CompletionItemKind$1;
-})({});
-var CompletionItemTag2 = /* @__PURE__ */ (function(CompletionItemTag$1) {
-  CompletionItemTag$1[CompletionItemTag$1["Deprecated"] = 1] = "Deprecated";
-  return CompletionItemTag$1;
-})({});
-var InsertTextFormat = /* @__PURE__ */ (function(InsertTextFormat$1) {
-  InsertTextFormat$1[InsertTextFormat$1["PlainText"] = 1] = "PlainText";
-  InsertTextFormat$1[InsertTextFormat$1["Snippet"] = 2] = "Snippet";
-  return InsertTextFormat$1;
-})({});
-var DocumentHighlightKind3 = /* @__PURE__ */ (function(DocumentHighlightKind$1) {
-  DocumentHighlightKind$1[DocumentHighlightKind$1["Text"] = 1] = "Text";
-  DocumentHighlightKind$1[DocumentHighlightKind$1["Read"] = 2] = "Read";
-  DocumentHighlightKind$1[DocumentHighlightKind$1["Write"] = 3] = "Write";
-  return DocumentHighlightKind$1;
-})({});
-var CodeActionKind2 = /* @__PURE__ */ (function(CodeActionKind$1) {
-  CodeActionKind$1["Empty"] = "";
-  CodeActionKind$1["QuickFix"] = "quickfix";
-  CodeActionKind$1["Refactor"] = "refactor";
-  CodeActionKind$1["RefactorExtract"] = "refactor.extract";
-  CodeActionKind$1["RefactorInline"] = "refactor.inline";
-  CodeActionKind$1["RefactorRewrite"] = "refactor.rewrite";
-  CodeActionKind$1["Source"] = "source";
-  CodeActionKind$1["SourceOrganizeImports"] = "source.organizeImports";
-  CodeActionKind$1["SourceFixAll"] = "source.fixAll";
-  return CodeActionKind$1;
-})({});
-var DiagnosticSeverity = /* @__PURE__ */ (function(DiagnosticSeverity$1) {
-  DiagnosticSeverity$1[DiagnosticSeverity$1["Error"] = 1] = "Error";
-  DiagnosticSeverity$1[DiagnosticSeverity$1["Warning"] = 2] = "Warning";
-  DiagnosticSeverity$1[DiagnosticSeverity$1["Information"] = 3] = "Information";
-  DiagnosticSeverity$1[DiagnosticSeverity$1["Hint"] = 4] = "Hint";
-  return DiagnosticSeverity$1;
-})({});
-var DiagnosticTag = /* @__PURE__ */ (function(DiagnosticTag$1) {
-  DiagnosticTag$1[DiagnosticTag$1["Unnecessary"] = 1] = "Unnecessary";
-  DiagnosticTag$1[DiagnosticTag$1["Deprecated"] = 2] = "Deprecated";
-  return DiagnosticTag$1;
-})({});
-var CompletionTriggerKind2 = /* @__PURE__ */ (function(CompletionTriggerKind$1) {
-  CompletionTriggerKind$1[CompletionTriggerKind$1["Invoked"] = 1] = "Invoked";
-  CompletionTriggerKind$1[CompletionTriggerKind$1["TriggerCharacter"] = 2] = "TriggerCharacter";
-  CompletionTriggerKind$1[CompletionTriggerKind$1["TriggerForIncompleteCompletions"] = 3] = "TriggerForIncompleteCompletions";
-  return CompletionTriggerKind$1;
-})({});
-var SignatureHelpTriggerKind3 = /* @__PURE__ */ (function(SignatureHelpTriggerKind$1) {
-  SignatureHelpTriggerKind$1[SignatureHelpTriggerKind$1["Invoked"] = 1] = "Invoked";
-  SignatureHelpTriggerKind$1[SignatureHelpTriggerKind$1["TriggerCharacter"] = 2] = "TriggerCharacter";
-  SignatureHelpTriggerKind$1[SignatureHelpTriggerKind$1["ContentChange"] = 3] = "ContentChange";
-  return SignatureHelpTriggerKind$1;
-})({});
-var CodeActionTriggerKind = /* @__PURE__ */ (function(CodeActionTriggerKind$1) {
-  CodeActionTriggerKind$1[CodeActionTriggerKind$1["Invoked"] = 1] = "Invoked";
-  CodeActionTriggerKind$1[CodeActionTriggerKind$1["Automatic"] = 2] = "Automatic";
-  return CodeActionTriggerKind$1;
-})({});
-var Capability = class {
-  constructor(method) {
-    this.method = method;
-  }
-};
-var capabilities = {
-  textDocumentImplementation: new Capability("textDocument/implementation"),
-  textDocumentTypeDefinition: new Capability("textDocument/typeDefinition"),
-  textDocumentDocumentColor: new Capability("textDocument/documentColor"),
-  textDocumentColorPresentation: new Capability("textDocument/colorPresentation"),
-  textDocumentFoldingRange: new Capability("textDocument/foldingRange"),
-  textDocumentDeclaration: new Capability("textDocument/declaration"),
-  textDocumentSelectionRange: new Capability("textDocument/selectionRange"),
-  textDocumentPrepareCallHierarchy: new Capability("textDocument/prepareCallHierarchy"),
-  textDocumentSemanticTokensFull: new Capability("textDocument/semanticTokens/full"),
-  textDocumentSemanticTokensFullDelta: new Capability("textDocument/semanticTokens/full/delta"),
-  textDocumentLinkedEditingRange: new Capability("textDocument/linkedEditingRange"),
-  workspaceWillCreateFiles: new Capability("workspace/willCreateFiles"),
-  workspaceWillRenameFiles: new Capability("workspace/willRenameFiles"),
-  workspaceWillDeleteFiles: new Capability("workspace/willDeleteFiles"),
-  textDocumentMoniker: new Capability("textDocument/moniker"),
-  textDocumentPrepareTypeHierarchy: new Capability("textDocument/prepareTypeHierarchy"),
-  textDocumentInlineValue: new Capability("textDocument/inlineValue"),
-  textDocumentInlayHint: new Capability("textDocument/inlayHint"),
-  textDocumentDiagnostic: new Capability("textDocument/diagnostic"),
-  textDocumentInlineCompletion: new Capability("textDocument/inlineCompletion"),
-  textDocumentWillSaveWaitUntil: new Capability("textDocument/willSaveWaitUntil"),
-  textDocumentCompletion: new Capability("textDocument/completion"),
-  textDocumentHover: new Capability("textDocument/hover"),
-  textDocumentSignatureHelp: new Capability("textDocument/signatureHelp"),
-  textDocumentDefinition: new Capability("textDocument/definition"),
-  textDocumentReferences: new Capability("textDocument/references"),
-  textDocumentDocumentHighlight: new Capability("textDocument/documentHighlight"),
-  textDocumentDocumentSymbol: new Capability("textDocument/documentSymbol"),
-  textDocumentCodeAction: new Capability("textDocument/codeAction"),
-  workspaceSymbol: new Capability("workspace/symbol"),
-  textDocumentCodeLens: new Capability("textDocument/codeLens"),
-  textDocumentDocumentLink: new Capability("textDocument/documentLink"),
-  textDocumentFormatting: new Capability("textDocument/formatting"),
-  textDocumentRangeFormatting: new Capability("textDocument/rangeFormatting"),
-  textDocumentRangesFormatting: new Capability("textDocument/rangesFormatting"),
-  textDocumentOnTypeFormatting: new Capability("textDocument/onTypeFormatting"),
-  textDocumentRename: new Capability("textDocument/rename"),
-  workspaceExecuteCommand: new Capability("workspace/executeCommand"),
-  workspaceDidCreateFiles: new Capability("workspace/didCreateFiles"),
-  workspaceDidRenameFiles: new Capability("workspace/didRenameFiles"),
-  workspaceDidDeleteFiles: new Capability("workspace/didDeleteFiles"),
-  workspaceDidChangeConfiguration: new Capability("workspace/didChangeConfiguration"),
-  textDocumentDidOpen: new Capability("textDocument/didOpen"),
-  textDocumentDidChange: new Capability("textDocument/didChange"),
-  textDocumentDidClose: new Capability("textDocument/didClose"),
-  textDocumentDidSave: new Capability("textDocument/didSave"),
-  textDocumentWillSave: new Capability("textDocument/willSave"),
-  workspaceDidChangeWatchedFiles: new Capability("workspace/didChangeWatchedFiles")
-};
-var api2 = contract({
-  server: {
-    textDocumentImplementation: unverifiedRequest({ method: "textDocument/implementation" }),
-    textDocumentTypeDefinition: unverifiedRequest({ method: "textDocument/typeDefinition" }),
-    textDocumentDocumentColor: unverifiedRequest({ method: "textDocument/documentColor" }),
-    textDocumentColorPresentation: unverifiedRequest({ method: "textDocument/colorPresentation" }),
-    textDocumentFoldingRange: unverifiedRequest({ method: "textDocument/foldingRange" }),
-    textDocumentDeclaration: unverifiedRequest({ method: "textDocument/declaration" }),
-    textDocumentSelectionRange: unverifiedRequest({ method: "textDocument/selectionRange" }),
-    textDocumentPrepareCallHierarchy: unverifiedRequest({ method: "textDocument/prepareCallHierarchy" }),
-    callHierarchyIncomingCalls: unverifiedRequest({ method: "callHierarchy/incomingCalls" }),
-    callHierarchyOutgoingCalls: unverifiedRequest({ method: "callHierarchy/outgoingCalls" }),
-    textDocumentSemanticTokensFull: unverifiedRequest({ method: "textDocument/semanticTokens/full" }),
-    textDocumentSemanticTokensFullDelta: unverifiedRequest({ method: "textDocument/semanticTokens/full/delta" }),
-    textDocumentSemanticTokensRange: unverifiedRequest({ method: "textDocument/semanticTokens/range" }),
-    textDocumentLinkedEditingRange: unverifiedRequest({ method: "textDocument/linkedEditingRange" }),
-    workspaceWillCreateFiles: unverifiedRequest({ method: "workspace/willCreateFiles" }),
-    workspaceWillRenameFiles: unverifiedRequest({ method: "workspace/willRenameFiles" }),
-    workspaceWillDeleteFiles: unverifiedRequest({ method: "workspace/willDeleteFiles" }),
-    textDocumentMoniker: unverifiedRequest({ method: "textDocument/moniker" }),
-    textDocumentPrepareTypeHierarchy: unverifiedRequest({ method: "textDocument/prepareTypeHierarchy" }),
-    typeHierarchySupertypes: unverifiedRequest({ method: "typeHierarchy/supertypes" }),
-    typeHierarchySubtypes: unverifiedRequest({ method: "typeHierarchy/subtypes" }),
-    textDocumentInlineValue: unverifiedRequest({ method: "textDocument/inlineValue" }),
-    textDocumentInlayHint: unverifiedRequest({ method: "textDocument/inlayHint" }),
-    inlayHintResolve: unverifiedRequest({ method: "inlayHint/resolve" }),
-    textDocumentDiagnostic: unverifiedRequest({ method: "textDocument/diagnostic" }),
-    workspaceDiagnostic: unverifiedRequest({ method: "workspace/diagnostic" }),
-    textDocumentInlineCompletion: unverifiedRequest({ method: "textDocument/inlineCompletion" }),
-    initialize: unverifiedRequest({ method: "initialize" }),
-    shutdown: unverifiedRequest({ method: "shutdown" }),
-    textDocumentWillSaveWaitUntil: unverifiedRequest({ method: "textDocument/willSaveWaitUntil" }),
-    textDocumentCompletion: unverifiedRequest({ method: "textDocument/completion" }),
-    completionItemResolve: unverifiedRequest({ method: "completionItem/resolve" }),
-    textDocumentHover: unverifiedRequest({ method: "textDocument/hover" }),
-    textDocumentSignatureHelp: unverifiedRequest({ method: "textDocument/signatureHelp" }),
-    textDocumentDefinition: unverifiedRequest({ method: "textDocument/definition" }),
-    textDocumentReferences: unverifiedRequest({ method: "textDocument/references" }),
-    textDocumentDocumentHighlight: unverifiedRequest({ method: "textDocument/documentHighlight" }),
-    textDocumentDocumentSymbol: unverifiedRequest({ method: "textDocument/documentSymbol" }),
-    textDocumentCodeAction: unverifiedRequest({ method: "textDocument/codeAction" }),
-    codeActionResolve: unverifiedRequest({ method: "codeAction/resolve" }),
-    workspaceSymbol: unverifiedRequest({ method: "workspace/symbol" }),
-    workspaceSymbolResolve: unverifiedRequest({ method: "workspaceSymbol/resolve" }),
-    textDocumentCodeLens: unverifiedRequest({ method: "textDocument/codeLens" }),
-    codeLensResolve: unverifiedRequest({ method: "codeLens/resolve" }),
-    textDocumentDocumentLink: unverifiedRequest({ method: "textDocument/documentLink" }),
-    documentLinkResolve: unverifiedRequest({ method: "documentLink/resolve" }),
-    textDocumentFormatting: unverifiedRequest({ method: "textDocument/formatting" }),
-    textDocumentRangeFormatting: unverifiedRequest({ method: "textDocument/rangeFormatting" }),
-    textDocumentRangesFormatting: unverifiedRequest({ method: "textDocument/rangesFormatting" }),
-    textDocumentOnTypeFormatting: unverifiedRequest({ method: "textDocument/onTypeFormatting" }),
-    textDocumentRename: unverifiedRequest({ method: "textDocument/rename" }),
-    textDocumentPrepareRename: unverifiedRequest({ method: "textDocument/prepareRename" }),
-    workspaceExecuteCommand: unverifiedRequest({ method: "workspace/executeCommand" }),
-    workspaceDidChangeWorkspaceFolders: unverifiedNotification({ method: "workspace/didChangeWorkspaceFolders" }),
-    windowWorkDoneProgressCancel: unverifiedNotification({ method: "window/workDoneProgress/cancel" }),
-    workspaceDidCreateFiles: unverifiedNotification({ method: "workspace/didCreateFiles" }),
-    workspaceDidRenameFiles: unverifiedNotification({ method: "workspace/didRenameFiles" }),
-    workspaceDidDeleteFiles: unverifiedNotification({ method: "workspace/didDeleteFiles" }),
-    notebookDocumentDidOpen: unverifiedNotification({ method: "notebookDocument/didOpen" }),
-    notebookDocumentDidChange: unverifiedNotification({ method: "notebookDocument/didChange" }),
-    notebookDocumentDidSave: unverifiedNotification({ method: "notebookDocument/didSave" }),
-    notebookDocumentDidClose: unverifiedNotification({ method: "notebookDocument/didClose" }),
-    initialized: unverifiedNotification({ method: "initialized" }),
-    exit: unverifiedNotification({ method: "exit" }),
-    workspaceDidChangeConfiguration: unverifiedNotification({ method: "workspace/didChangeConfiguration" }),
-    textDocumentDidOpen: unverifiedNotification({ method: "textDocument/didOpen" }),
-    textDocumentDidChange: unverifiedNotification({ method: "textDocument/didChange" }),
-    textDocumentDidClose: unverifiedNotification({ method: "textDocument/didClose" }),
-    textDocumentDidSave: unverifiedNotification({ method: "textDocument/didSave" }),
-    textDocumentWillSave: unverifiedNotification({ method: "textDocument/willSave" }),
-    workspaceDidChangeWatchedFiles: unverifiedNotification({ method: "workspace/didChangeWatchedFiles" }),
-    setTrace: unverifiedNotification({ method: "$/setTrace" }),
-    cancelRequest: unverifiedNotification({ method: "$/cancelRequest" }),
-    progress: unverifiedNotification({ method: "$/progress" })
-  },
-  client: {
-    workspaceWorkspaceFolders: unverifiedRequest({ method: "workspace/workspaceFolders" }).optional(),
-    workspaceConfiguration: unverifiedRequest({ method: "workspace/configuration" }).optional(),
-    workspaceFoldingRangeRefresh: unverifiedRequest({ method: "workspace/foldingRange/refresh" }).optional(),
-    windowWorkDoneProgressCreate: unverifiedRequest({ method: "window/workDoneProgress/create" }).optional(),
-    workspaceSemanticTokensRefresh: unverifiedRequest({ method: "workspace/semanticTokens/refresh" }).optional(),
-    windowShowDocument: unverifiedRequest({ method: "window/showDocument" }).optional(),
-    workspaceInlineValueRefresh: unverifiedRequest({ method: "workspace/inlineValue/refresh" }).optional(),
-    workspaceInlayHintRefresh: unverifiedRequest({ method: "workspace/inlayHint/refresh" }).optional(),
-    workspaceDiagnosticRefresh: unverifiedRequest({ method: "workspace/diagnostic/refresh" }).optional(),
-    clientRegisterCapability: unverifiedRequest({ method: "client/registerCapability" }).optional(),
-    clientUnregisterCapability: unverifiedRequest({ method: "client/unregisterCapability" }).optional(),
-    windowShowMessageRequest: unverifiedRequest({ method: "window/showMessageRequest" }).optional(),
-    workspaceCodeLensRefresh: unverifiedRequest({ method: "workspace/codeLens/refresh" }).optional(),
-    workspaceApplyEdit: unverifiedRequest({ method: "workspace/applyEdit" }).optional(),
-    windowShowMessage: unverifiedNotification({ method: "window/showMessage" }),
-    windowLogMessage: unverifiedNotification({ method: "window/logMessage" }),
-    telemetryEvent: unverifiedNotification({ method: "telemetry/event" }),
-    textDocumentPublishDiagnostics: unverifiedNotification({ method: "textDocument/publishDiagnostics" }),
-    logTrace: unverifiedNotification({ method: "$/logTrace" }),
-    cancelRequest: unverifiedNotification({ method: "$/cancelRequest" }),
-    progress: unverifiedNotification({ method: "$/progress" })
-  }
-});
-var Disposable2 = (_d = class {
-  constructor() {
-    __publicField(this, "_store", new DisposableStore2());
-  }
-  dispose() {
-    this._store.dispose();
-  }
-  _register(t3) {
-    if (t3 === this) throw new Error("Cannot register a disposable on itself!");
-    return this._store.add(t3);
-  }
-}, __publicField(_d, "None", Object.freeze({ dispose() {
-} })), _d);
-var DisposableStore2 = (_e = class {
-  constructor() {
-    __publicField(this, "_toDispose", /* @__PURE__ */ new Set());
-    __publicField(this, "_isDisposed", false);
-  }
-  dispose() {
-    if (this._isDisposed) return;
-    this._isDisposed = true;
-    this.clear();
-  }
-  clear() {
-    if (this._toDispose.size === 0) return;
-    try {
-      for (const item of this._toDispose) item.dispose();
-    } finally {
-      this._toDispose.clear();
-    }
-  }
-  add(t3) {
-    if (!t3) return t3;
-    if (t3 === this) throw new Error("Cannot register a disposable on itself!");
-    if (this._isDisposed) {
-      if (!_e.DISABLE_DISPOSED_WARNING) console.warn((/* @__PURE__ */ new Error("Trying to add a disposable to a DisposableStore that has already been disposed of. The added object will be leaked!")).stack);
-    } else this._toDispose.add(t3);
-    return t3;
-  }
-}, __publicField(_e, "DISABLE_DISPOSED_WARNING", false), _e);
-var lspCodeActionKindToMonacoCodeActionKind = /* @__PURE__ */ new Map([
-  [CodeActionKind2.Empty, ""],
-  [CodeActionKind2.QuickFix, "quickfix"],
-  [CodeActionKind2.Refactor, "refactor"],
-  [CodeActionKind2.RefactorExtract, "refactor.extract"],
-  [CodeActionKind2.RefactorInline, "refactor.inline"],
-  [CodeActionKind2.RefactorRewrite, "refactor.rewrite"],
-  [CodeActionKind2.Source, "source"],
-  [CodeActionKind2.SourceOrganizeImports, "source.organizeImports"],
-  [CodeActionKind2.SourceFixAll, "source.fixAll"]
-]);
-var monacoCodeActionTriggerTypeToLspCodeActionTriggerKind = /* @__PURE__ */ new Map([[languages.CodeActionTriggerType.Invoke, CodeActionTriggerKind.Invoked], [languages.CodeActionTriggerType.Auto, CodeActionTriggerKind.Automatic]]);
-var lspCompletionItemKindToMonacoCompletionItemKind = /* @__PURE__ */ new Map([
-  [CompletionItemKind2.Text, languages.CompletionItemKind.Text],
-  [CompletionItemKind2.Method, languages.CompletionItemKind.Method],
-  [CompletionItemKind2.Function, languages.CompletionItemKind.Function],
-  [CompletionItemKind2.Constructor, languages.CompletionItemKind.Constructor],
-  [CompletionItemKind2.Field, languages.CompletionItemKind.Field],
-  [CompletionItemKind2.Variable, languages.CompletionItemKind.Variable],
-  [CompletionItemKind2.Class, languages.CompletionItemKind.Class],
-  [CompletionItemKind2.Interface, languages.CompletionItemKind.Interface],
-  [CompletionItemKind2.Module, languages.CompletionItemKind.Module],
-  [CompletionItemKind2.Property, languages.CompletionItemKind.Property],
-  [CompletionItemKind2.Unit, languages.CompletionItemKind.Unit],
-  [CompletionItemKind2.Value, languages.CompletionItemKind.Value],
-  [CompletionItemKind2.Enum, languages.CompletionItemKind.Enum],
-  [CompletionItemKind2.Keyword, languages.CompletionItemKind.Keyword],
-  [CompletionItemKind2.Snippet, languages.CompletionItemKind.Snippet],
-  [CompletionItemKind2.Color, languages.CompletionItemKind.Color],
-  [CompletionItemKind2.File, languages.CompletionItemKind.File],
-  [CompletionItemKind2.Reference, languages.CompletionItemKind.Reference],
-  [CompletionItemKind2.Folder, languages.CompletionItemKind.Folder],
-  [CompletionItemKind2.EnumMember, languages.CompletionItemKind.EnumMember],
-  [CompletionItemKind2.Constant, languages.CompletionItemKind.Constant],
-  [CompletionItemKind2.Struct, languages.CompletionItemKind.Struct],
-  [CompletionItemKind2.Event, languages.CompletionItemKind.Event],
-  [CompletionItemKind2.Operator, languages.CompletionItemKind.Operator],
-  [CompletionItemKind2.TypeParameter, languages.CompletionItemKind.TypeParameter]
-]);
-var lspCompletionItemTagToMonacoCompletionItemTag = /* @__PURE__ */ new Map([[CompletionItemTag2.Deprecated, languages.CompletionItemTag.Deprecated]]);
-var monacoCompletionTriggerKindToLspCompletionTriggerKind = /* @__PURE__ */ new Map([
-  [languages.CompletionTriggerKind.Invoke, CompletionTriggerKind2.Invoked],
-  [languages.CompletionTriggerKind.TriggerCharacter, CompletionTriggerKind2.TriggerCharacter],
-  [languages.CompletionTriggerKind.TriggerForIncompleteCompletions, CompletionTriggerKind2.TriggerForIncompleteCompletions]
-]);
-var lspInsertTextFormatToMonacoInsertTextRules = /* @__PURE__ */ new Map([[InsertTextFormat.Snippet, languages.CompletionItemInsertTextRule.InsertAsSnippet]]);
-var lspSymbolKindToMonacoSymbolKind = /* @__PURE__ */ new Map([
-  [SymbolKind2.File, languages.SymbolKind.File],
-  [SymbolKind2.Module, languages.SymbolKind.Module],
-  [SymbolKind2.Namespace, languages.SymbolKind.Namespace],
-  [SymbolKind2.Package, languages.SymbolKind.Package],
-  [SymbolKind2.Class, languages.SymbolKind.Class],
-  [SymbolKind2.Method, languages.SymbolKind.Method],
-  [SymbolKind2.Property, languages.SymbolKind.Property],
-  [SymbolKind2.Field, languages.SymbolKind.Field],
-  [SymbolKind2.Constructor, languages.SymbolKind.Constructor],
-  [SymbolKind2.Enum, languages.SymbolKind.Enum],
-  [SymbolKind2.Interface, languages.SymbolKind.Interface],
-  [SymbolKind2.Function, languages.SymbolKind.Function],
-  [SymbolKind2.Variable, languages.SymbolKind.Variable],
-  [SymbolKind2.Constant, languages.SymbolKind.Constant],
-  [SymbolKind2.String, languages.SymbolKind.String],
-  [SymbolKind2.Number, languages.SymbolKind.Number],
-  [SymbolKind2.Boolean, languages.SymbolKind.Boolean],
-  [SymbolKind2.Array, languages.SymbolKind.Array],
-  [SymbolKind2.Object, languages.SymbolKind.Object],
-  [SymbolKind2.Key, languages.SymbolKind.Key],
-  [SymbolKind2.Null, languages.SymbolKind.Null],
-  [SymbolKind2.EnumMember, languages.SymbolKind.EnumMember],
-  [SymbolKind2.Struct, languages.SymbolKind.Struct],
-  [SymbolKind2.Event, languages.SymbolKind.Event],
-  [SymbolKind2.Operator, languages.SymbolKind.Operator],
-  [SymbolKind2.TypeParameter, languages.SymbolKind.TypeParameter]
-]);
-var lspSymbolTagToMonacoSymbolTag = /* @__PURE__ */ new Map([[SymbolTag2.Deprecated, languages.SymbolTag.Deprecated]]);
-var lspDocumentHighlightKindToMonacoDocumentHighlightKind = /* @__PURE__ */ new Map([
-  [DocumentHighlightKind3.Text, languages.DocumentHighlightKind.Text],
-  [DocumentHighlightKind3.Read, languages.DocumentHighlightKind.Read],
-  [DocumentHighlightKind3.Write, languages.DocumentHighlightKind.Write]
-]);
-var lspFoldingRangeKindToMonacoFoldingRangeKind = /* @__PURE__ */ new Map([
-  [FoldingRangeKind2.Comment, languages.FoldingRangeKind.Comment],
-  [FoldingRangeKind2.Imports, languages.FoldingRangeKind.Imports],
-  [FoldingRangeKind2.Region, languages.FoldingRangeKind.Region]
-]);
-var monacoMarkerSeverityToLspDiagnosticSeverity = /* @__PURE__ */ new Map([
-  [MarkerSeverity3.Error, DiagnosticSeverity.Error],
-  [MarkerSeverity3.Warning, DiagnosticSeverity.Warning],
-  [MarkerSeverity3.Info, DiagnosticSeverity.Information],
-  [MarkerSeverity3.Hint, DiagnosticSeverity.Hint]
-]);
-var lspDiagnosticSeverityToMonacoMarkerSeverity = /* @__PURE__ */ new Map([
-  [DiagnosticSeverity.Error, MarkerSeverity3.Error],
-  [DiagnosticSeverity.Warning, MarkerSeverity3.Warning],
-  [DiagnosticSeverity.Information, MarkerSeverity3.Info],
-  [DiagnosticSeverity.Hint, MarkerSeverity3.Hint]
-]);
-var lspDiagnosticTagToMonacoMarkerTag = /* @__PURE__ */ new Map([[DiagnosticTag.Unnecessary, MarkerTag2.Unnecessary], [DiagnosticTag.Deprecated, MarkerTag2.Deprecated]]);
-var monacoSignatureHelpTriggerKindToLspSignatureHelpTriggerKind = /* @__PURE__ */ new Map([
-  [languages.SignatureHelpTriggerKind.Invoke, SignatureHelpTriggerKind3.Invoked],
-  [languages.SignatureHelpTriggerKind.TriggerCharacter, SignatureHelpTriggerKind3.TriggerCharacter],
-  [languages.SignatureHelpTriggerKind.ContentChange, SignatureHelpTriggerKind3.ContentChange]
-]);
-var lspInlayHintKindToMonacoInlayHintKind = /* @__PURE__ */ new Map([[InlayHintKind3.Type, languages.InlayHintKind.Type], [InlayHintKind3.Parameter, languages.InlayHintKind.Parameter]]);
-var capabilitiesByMethod = new Map([...Object.values(capabilities)].map((c3) => [c3.method, c3]));
-var ws = null;
-if (typeof WebSocket !== "undefined") ws = WebSocket;
-else if (typeof MozWebSocket !== "undefined") ws = MozWebSocket;
-else if (typeof global !== "undefined") ws = global.WebSocket || global.MozWebSocket;
-else if (typeof window !== "undefined") ws = window.WebSocket || window.MozWebSocket;
-else if (typeof self !== "undefined") ws = self.WebSocket || self.MozWebSocket;
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/_.contribution.js
-init_editor_api();
-var languageDefinitions = {};
-var lazyLanguageLoaders = {};
-var LazyLanguageLoader = class _LazyLanguageLoader {
-  static getOrCreate(languageId) {
-    if (!lazyLanguageLoaders[languageId]) {
-      lazyLanguageLoaders[languageId] = new _LazyLanguageLoader(languageId);
-    }
-    return lazyLanguageLoaders[languageId];
-  }
-  constructor(languageId) {
-    this._languageId = languageId;
-    this._loadingTriggered = false;
-    this._lazyLoadPromise = new Promise((resolve3, reject) => {
-      this._lazyLoadPromiseResolve = resolve3;
-      this._lazyLoadPromiseReject = reject;
-    });
-  }
-  load() {
-    if (!this._loadingTriggered) {
-      this._loadingTriggered = true;
-      languageDefinitions[this._languageId].loader().then(
-        (mod) => this._lazyLoadPromiseResolve(mod),
-        (err) => this._lazyLoadPromiseReject(err)
-      );
-    }
-    return this._lazyLoadPromise;
-  }
-};
-function registerLanguage(def2) {
-  const languageId = def2.id;
-  languageDefinitions[languageId] = def2;
-  languages.register(def2);
-  const lazyLanguageLoader = LazyLanguageLoader.getOrCreate(languageId);
-  languages.registerTokensProviderFactory(languageId, {
-    create: async () => {
-      const mod = await lazyLanguageLoader.load();
-      return mod.language;
-    }
-  });
-  languages.onLanguageEncountered(languageId, async () => {
-    const mod = await lazyLanguageLoader.load();
-    languages.setLanguageConfiguration(languageId, mod.conf);
-  });
-}
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/abap/register.js
-registerLanguage({
-  id: "abap",
-  extensions: [".abap"],
-  aliases: ["abap", "ABAP"],
-  loader: () => Promise.resolve().then(() => (init_abap(), abap_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/apex/register.js
-registerLanguage({
-  id: "apex",
-  extensions: [".cls"],
-  aliases: ["Apex", "apex"],
-  mimetypes: ["text/x-apex-source", "text/x-apex"],
-  loader: () => Promise.resolve().then(() => (init_apex(), apex_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/azcli/register.js
-registerLanguage({
-  id: "azcli",
-  extensions: [".azcli"],
-  aliases: ["Azure CLI", "azcli"],
-  loader: () => Promise.resolve().then(() => (init_azcli(), azcli_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/bat/register.js
-registerLanguage({
-  id: "bat",
-  extensions: [".bat", ".cmd"],
-  aliases: ["Batch", "bat"],
-  loader: () => Promise.resolve().then(() => (init_bat(), bat_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/bicep/register.js
-registerLanguage({
-  id: "bicep",
-  extensions: [".bicep"],
-  aliases: ["Bicep"],
-  loader: () => Promise.resolve().then(() => (init_bicep(), bicep_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/cameligo/register.js
-registerLanguage({
-  id: "cameligo",
-  extensions: [".mligo"],
-  aliases: ["Cameligo"],
-  loader: () => Promise.resolve().then(() => (init_cameligo(), cameligo_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/clojure/register.js
-registerLanguage({
-  id: "clojure",
-  extensions: [".clj", ".cljs", ".cljc", ".edn"],
-  aliases: ["clojure", "Clojure"],
-  loader: () => Promise.resolve().then(() => (init_clojure(), clojure_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/coffee/register.js
-registerLanguage({
-  id: "coffeescript",
-  extensions: [".coffee"],
-  aliases: ["CoffeeScript", "coffeescript", "coffee"],
-  mimetypes: ["text/x-coffeescript", "text/coffeescript"],
-  loader: () => Promise.resolve().then(() => (init_coffee(), coffee_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/cpp/register.js
-registerLanguage({
-  id: "c",
-  extensions: [".c", ".h"],
-  aliases: ["C", "c"],
-  loader: () => Promise.resolve().then(() => (init_cpp(), cpp_exports))
-});
-registerLanguage({
-  id: "cpp",
-  extensions: [".cpp", ".cc", ".cxx", ".hpp", ".hh", ".hxx"],
-  aliases: ["C++", "Cpp", "cpp"],
-  loader: () => Promise.resolve().then(() => (init_cpp(), cpp_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/csharp/register.js
-registerLanguage({
-  id: "csharp",
-  extensions: [".cs", ".csx", ".cake"],
-  aliases: ["C#", "csharp"],
-  loader: () => Promise.resolve().then(() => (init_csharp(), csharp_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/csp/register.js
-registerLanguage({
-  id: "csp",
-  extensions: [".csp"],
-  aliases: ["CSP", "csp"],
-  loader: () => Promise.resolve().then(() => (init_csp(), csp_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/css/register.js
-registerLanguage({
-  id: "css",
-  extensions: [".css"],
-  aliases: ["CSS", "css"],
-  mimetypes: ["text/css"],
-  loader: () => Promise.resolve().then(() => (init_css(), css_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/cypher/register.js
-registerLanguage({
-  id: "cypher",
-  extensions: [".cypher", ".cyp"],
-  aliases: ["Cypher", "OpenCypher"],
-  loader: () => Promise.resolve().then(() => (init_cypher(), cypher_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/dart/register.js
-registerLanguage({
-  id: "dart",
-  extensions: [".dart"],
-  aliases: ["Dart", "dart"],
-  mimetypes: ["text/x-dart-source", "text/x-dart"],
-  loader: () => Promise.resolve().then(() => (init_dart(), dart_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/dockerfile/register.js
-registerLanguage({
-  id: "dockerfile",
-  extensions: [".dockerfile"],
-  filenames: ["Dockerfile"],
-  aliases: ["Dockerfile"],
-  loader: () => Promise.resolve().then(() => (init_dockerfile(), dockerfile_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/ecl/register.js
-registerLanguage({
-  id: "ecl",
-  extensions: [".ecl"],
-  aliases: ["ECL", "Ecl", "ecl"],
-  loader: () => Promise.resolve().then(() => (init_ecl(), ecl_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/elixir/register.js
-registerLanguage({
-  id: "elixir",
-  extensions: [".ex", ".exs"],
-  aliases: ["Elixir", "elixir", "ex"],
-  loader: () => Promise.resolve().then(() => (init_elixir(), elixir_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/flow9/register.js
-registerLanguage({
-  id: "flow9",
-  extensions: [".flow"],
-  aliases: ["Flow9", "Flow", "flow9", "flow"],
-  loader: () => Promise.resolve().then(() => (init_flow9(), flow9_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/fsharp/register.js
-registerLanguage({
-  id: "fsharp",
-  extensions: [".fs", ".fsi", ".ml", ".mli", ".fsx", ".fsscript"],
-  aliases: ["F#", "FSharp", "fsharp"],
-  loader: () => Promise.resolve().then(() => (init_fsharp(), fsharp_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/freemarker2/register.js
-registerLanguage({
-  id: "freemarker2",
-  extensions: [".ftl", ".ftlh", ".ftlx"],
-  aliases: ["FreeMarker2", "Apache FreeMarker2"],
-  loader: () => {
-    return Promise.resolve().then(() => (init_freemarker2(), freemarker2_exports)).then((m) => m.TagAutoInterpolationDollar);
-  }
-});
-registerLanguage({
-  id: "freemarker2.tag-angle.interpolation-dollar",
-  aliases: ["FreeMarker2 (Angle/Dollar)", "Apache FreeMarker2 (Angle/Dollar)"],
-  loader: () => {
-    return Promise.resolve().then(() => (init_freemarker2(), freemarker2_exports)).then((m) => m.TagAngleInterpolationDollar);
-  }
-});
-registerLanguage({
-  id: "freemarker2.tag-bracket.interpolation-dollar",
-  aliases: ["FreeMarker2 (Bracket/Dollar)", "Apache FreeMarker2 (Bracket/Dollar)"],
-  loader: () => {
-    return Promise.resolve().then(() => (init_freemarker2(), freemarker2_exports)).then((m) => m.TagBracketInterpolationDollar);
-  }
-});
-registerLanguage({
-  id: "freemarker2.tag-angle.interpolation-bracket",
-  aliases: ["FreeMarker2 (Angle/Bracket)", "Apache FreeMarker2 (Angle/Bracket)"],
-  loader: () => {
-    return Promise.resolve().then(() => (init_freemarker2(), freemarker2_exports)).then((m) => m.TagAngleInterpolationBracket);
-  }
-});
-registerLanguage({
-  id: "freemarker2.tag-bracket.interpolation-bracket",
-  aliases: ["FreeMarker2 (Bracket/Bracket)", "Apache FreeMarker2 (Bracket/Bracket)"],
-  loader: () => {
-    return Promise.resolve().then(() => (init_freemarker2(), freemarker2_exports)).then((m) => m.TagBracketInterpolationBracket);
-  }
-});
-registerLanguage({
-  id: "freemarker2.tag-auto.interpolation-dollar",
-  aliases: ["FreeMarker2 (Auto/Dollar)", "Apache FreeMarker2 (Auto/Dollar)"],
-  loader: () => {
-    return Promise.resolve().then(() => (init_freemarker2(), freemarker2_exports)).then((m) => m.TagAutoInterpolationDollar);
-  }
-});
-registerLanguage({
-  id: "freemarker2.tag-auto.interpolation-bracket",
-  aliases: ["FreeMarker2 (Auto/Bracket)", "Apache FreeMarker2 (Auto/Bracket)"],
-  loader: () => {
-    return Promise.resolve().then(() => (init_freemarker2(), freemarker2_exports)).then((m) => m.TagAutoInterpolationBracket);
-  }
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/go/register.js
-registerLanguage({
-  id: "go",
-  extensions: [".go"],
-  aliases: ["Go"],
-  loader: () => Promise.resolve().then(() => (init_go(), go_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/graphql/register.js
-registerLanguage({
-  id: "graphql",
-  extensions: [".graphql", ".gql"],
-  aliases: ["GraphQL", "graphql", "gql"],
-  mimetypes: ["application/graphql"],
-  loader: () => Promise.resolve().then(() => (init_graphql(), graphql_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/handlebars/register.js
-registerLanguage({
-  id: "handlebars",
-  extensions: [".handlebars", ".hbs"],
-  aliases: ["Handlebars", "handlebars", "hbs"],
-  mimetypes: ["text/x-handlebars-template"],
-  loader: () => Promise.resolve().then(() => (init_handlebars(), handlebars_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/hcl/register.js
-registerLanguage({
-  id: "hcl",
-  extensions: [".tf", ".tfvars", ".hcl"],
-  aliases: ["Terraform", "tf", "HCL", "hcl"],
-  loader: () => Promise.resolve().then(() => (init_hcl(), hcl_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/html/register.js
-registerLanguage({
-  id: "html",
-  extensions: [".html", ".htm", ".shtml", ".xhtml", ".mdoc", ".jsp", ".asp", ".aspx", ".jshtm"],
-  aliases: ["HTML", "htm", "html", "xhtml"],
-  mimetypes: ["text/html", "text/x-jshtm", "text/template", "text/ng-template"],
-  loader: () => Promise.resolve().then(() => (init_html(), html_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/ini/register.js
-registerLanguage({
-  id: "ini",
-  extensions: [".ini", ".properties", ".gitconfig"],
-  filenames: ["config", ".gitattributes", ".gitconfig", ".editorconfig"],
-  aliases: ["Ini", "ini"],
-  loader: () => Promise.resolve().then(() => (init_ini(), ini_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/java/register.js
-registerLanguage({
-  id: "java",
-  extensions: [".java", ".jav"],
-  aliases: ["Java", "java"],
-  mimetypes: ["text/x-java-source", "text/x-java"],
-  loader: () => Promise.resolve().then(() => (init_java(), java_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/javascript/register.js
-registerLanguage({
-  id: "javascript",
-  extensions: [".js", ".es6", ".jsx", ".mjs", ".cjs"],
-  firstLine: "^#!.*\\bnode",
-  filenames: ["jakefile"],
-  aliases: ["JavaScript", "javascript", "js"],
-  mimetypes: ["text/javascript"],
-  loader: () => Promise.resolve().then(() => (init_javascript(), javascript_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/julia/register.js
-registerLanguage({
-  id: "julia",
-  extensions: [".jl"],
-  aliases: ["julia", "Julia"],
-  loader: () => Promise.resolve().then(() => (init_julia(), julia_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/kotlin/register.js
-registerLanguage({
-  id: "kotlin",
-  extensions: [".kt", ".kts"],
-  aliases: ["Kotlin", "kotlin"],
-  mimetypes: ["text/x-kotlin-source", "text/x-kotlin"],
-  loader: () => Promise.resolve().then(() => (init_kotlin(), kotlin_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/less/register.js
-registerLanguage({
-  id: "less",
-  extensions: [".less"],
-  aliases: ["Less", "less"],
-  mimetypes: ["text/x-less", "text/less"],
-  loader: () => Promise.resolve().then(() => (init_less(), less_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/lexon/register.js
-registerLanguage({
-  id: "lexon",
-  extensions: [".lex"],
-  aliases: ["Lexon"],
-  loader: () => Promise.resolve().then(() => (init_lexon(), lexon_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/lua/register.js
-registerLanguage({
-  id: "lua",
-  extensions: [".lua"],
-  aliases: ["Lua", "lua"],
-  loader: () => Promise.resolve().then(() => (init_lua(), lua_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/liquid/register.js
-registerLanguage({
-  id: "liquid",
-  extensions: [".liquid", ".html.liquid"],
-  aliases: ["Liquid", "liquid"],
-  mimetypes: ["application/liquid"],
-  loader: () => Promise.resolve().then(() => (init_liquid(), liquid_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/m3/register.js
-registerLanguage({
-  id: "m3",
-  extensions: [".m3", ".i3", ".mg", ".ig"],
-  aliases: ["Modula-3", "Modula3", "modula3", "m3"],
-  loader: () => Promise.resolve().then(() => (init_m3(), m3_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/markdown/register.js
-registerLanguage({
-  id: "markdown",
-  extensions: [".md", ".markdown", ".mdown", ".mkdn", ".mkd", ".mdwn", ".mdtxt", ".mdtext"],
-  aliases: ["Markdown", "markdown"],
-  loader: () => Promise.resolve().then(() => (init_markdown(), markdown_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/mdx/register.js
-registerLanguage({
-  id: "mdx",
-  extensions: [".mdx"],
-  aliases: ["MDX", "mdx"],
-  loader: () => Promise.resolve().then(() => (init_mdx(), mdx_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/mips/register.js
-registerLanguage({
-  id: "mips",
-  extensions: [".s"],
-  aliases: ["MIPS", "MIPS-V"],
-  mimetypes: ["text/x-mips", "text/mips", "text/plaintext"],
-  loader: () => Promise.resolve().then(() => (init_mips(), mips_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/msdax/register.js
-registerLanguage({
-  id: "msdax",
-  extensions: [".dax", ".msdax"],
-  aliases: ["DAX", "MSDAX"],
-  loader: () => Promise.resolve().then(() => (init_msdax(), msdax_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/mysql/register.js
-registerLanguage({
-  id: "mysql",
-  extensions: [],
-  aliases: ["MySQL", "mysql"],
-  loader: () => Promise.resolve().then(() => (init_mysql(), mysql_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/objective-c/register.js
-registerLanguage({
-  id: "objective-c",
-  extensions: [".m"],
-  aliases: ["Objective-C"],
-  loader: () => Promise.resolve().then(() => (init_objective_c(), objective_c_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pascal/register.js
-registerLanguage({
-  id: "pascal",
-  extensions: [".pas", ".p", ".pp"],
-  aliases: ["Pascal", "pas"],
-  mimetypes: ["text/x-pascal-source", "text/x-pascal"],
-  loader: () => Promise.resolve().then(() => (init_pascal(), pascal_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pascaligo/register.js
-registerLanguage({
-  id: "pascaligo",
-  extensions: [".ligo"],
-  aliases: ["Pascaligo", "ligo"],
-  loader: () => Promise.resolve().then(() => (init_pascaligo(), pascaligo_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/perl/register.js
-registerLanguage({
-  id: "perl",
-  extensions: [".pl", ".pm"],
-  aliases: ["Perl", "pl"],
-  loader: () => Promise.resolve().then(() => (init_perl(), perl_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pgsql/register.js
-registerLanguage({
-  id: "pgsql",
-  extensions: [],
-  aliases: ["PostgreSQL", "postgres", "pg", "postgre"],
-  loader: () => Promise.resolve().then(() => (init_pgsql(), pgsql_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/php/register.js
-registerLanguage({
-  id: "php",
-  extensions: [".php", ".php4", ".php5", ".phtml", ".ctp"],
-  aliases: ["PHP", "php"],
-  mimetypes: ["application/x-php"],
-  loader: () => Promise.resolve().then(() => (init_php(), php_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pla/register.js
-registerLanguage({
-  id: "pla",
-  extensions: [".pla"],
-  loader: () => Promise.resolve().then(() => (init_pla(), pla_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/postiats/register.js
-registerLanguage({
-  id: "postiats",
-  extensions: [".dats", ".sats", ".hats"],
-  aliases: ["ATS", "ATS/Postiats"],
-  loader: () => Promise.resolve().then(() => (init_postiats(), postiats_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/powerquery/register.js
-registerLanguage({
-  id: "powerquery",
-  extensions: [".pq", ".pqm"],
-  aliases: ["PQ", "M", "Power Query", "Power Query M"],
-  loader: () => Promise.resolve().then(() => (init_powerquery(), powerquery_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/powershell/register.js
-registerLanguage({
-  id: "powershell",
-  extensions: [".ps1", ".psm1", ".psd1"],
-  aliases: ["PowerShell", "powershell", "ps", "ps1"],
-  loader: () => Promise.resolve().then(() => (init_powershell(), powershell_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/protobuf/register.js
-registerLanguage({
-  id: "proto",
-  extensions: [".proto"],
-  aliases: ["protobuf", "Protocol Buffers"],
-  loader: () => Promise.resolve().then(() => (init_protobuf(), protobuf_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/pug/register.js
-registerLanguage({
-  id: "pug",
-  extensions: [".jade", ".pug"],
-  aliases: ["Pug", "Jade", "jade"],
-  loader: () => Promise.resolve().then(() => (init_pug(), pug_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/python/register.js
-registerLanguage({
-  id: "python",
-  extensions: [".py", ".rpy", ".pyw", ".cpy", ".gyp", ".gypi"],
-  aliases: ["Python", "py"],
-  firstLine: "^#!/.*\\bpython[0-9.-]*\\b",
-  loader: () => Promise.resolve().then(() => (init_python(), python_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/qsharp/register.js
-registerLanguage({
-  id: "qsharp",
-  extensions: [".qs"],
-  aliases: ["Q#", "qsharp"],
-  loader: () => Promise.resolve().then(() => (init_qsharp(), qsharp_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/r/register.js
-registerLanguage({
-  id: "r",
-  extensions: [".r", ".rhistory", ".rmd", ".rprofile", ".rt"],
-  aliases: ["R", "r"],
-  loader: () => Promise.resolve().then(() => (init_r(), r_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/razor/register.js
-registerLanguage({
-  id: "razor",
-  extensions: [".cshtml"],
-  aliases: ["Razor", "razor"],
-  mimetypes: ["text/x-cshtml"],
-  loader: () => Promise.resolve().then(() => (init_razor(), razor_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/redis/register.js
-registerLanguage({
-  id: "redis",
-  extensions: [".redis"],
-  aliases: ["redis"],
-  loader: () => Promise.resolve().then(() => (init_redis(), redis_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/redshift/register.js
-registerLanguage({
-  id: "redshift",
-  extensions: [],
-  aliases: ["Redshift", "redshift"],
-  loader: () => Promise.resolve().then(() => (init_redshift(), redshift_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/restructuredtext/register.js
-registerLanguage({
-  id: "restructuredtext",
-  extensions: [".rst"],
-  aliases: ["reStructuredText", "restructuredtext"],
-  loader: () => Promise.resolve().then(() => (init_restructuredtext(), restructuredtext_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/ruby/register.js
-registerLanguage({
-  id: "ruby",
-  extensions: [".rb", ".rbx", ".rjs", ".gemspec", ".pp"],
-  filenames: ["rakefile", "Gemfile"],
-  aliases: ["Ruby", "rb"],
-  loader: () => Promise.resolve().then(() => (init_ruby(), ruby_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/rust/register.js
-registerLanguage({
-  id: "rust",
-  extensions: [".rs", ".rlib"],
-  aliases: ["Rust", "rust"],
-  loader: () => Promise.resolve().then(() => (init_rust(), rust_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/sb/register.js
-registerLanguage({
-  id: "sb",
-  extensions: [".sb"],
-  aliases: ["Small Basic", "sb"],
-  loader: () => Promise.resolve().then(() => (init_sb(), sb_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/scala/register.js
-registerLanguage({
-  id: "scala",
-  extensions: [".scala", ".sc", ".sbt"],
-  aliases: ["Scala", "scala", "SBT", "Sbt", "sbt", "Dotty", "dotty"],
-  mimetypes: ["text/x-scala-source", "text/x-scala", "text/x-sbt", "text/x-dotty"],
-  loader: () => Promise.resolve().then(() => (init_scala(), scala_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/scheme/register.js
-registerLanguage({
-  id: "scheme",
-  extensions: [".scm", ".ss", ".sch", ".rkt"],
-  aliases: ["scheme", "Scheme"],
-  loader: () => Promise.resolve().then(() => (init_scheme(), scheme_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/scss/register.js
-registerLanguage({
-  id: "scss",
-  extensions: [".scss"],
-  aliases: ["Sass", "sass", "scss"],
-  mimetypes: ["text/x-scss", "text/scss"],
-  loader: () => Promise.resolve().then(() => (init_scss(), scss_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/shell/register.js
-registerLanguage({
-  id: "shell",
-  extensions: [".sh", ".bash"],
-  aliases: ["Shell", "sh"],
-  loader: () => Promise.resolve().then(() => (init_shell(), shell_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/solidity/register.js
-registerLanguage({
-  id: "sol",
-  extensions: [".sol"],
-  aliases: ["sol", "solidity", "Solidity"],
-  loader: () => Promise.resolve().then(() => (init_solidity(), solidity_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/sophia/register.js
-registerLanguage({
-  id: "aes",
-  extensions: [".aes"],
-  aliases: ["aes", "sophia", "Sophia"],
-  loader: () => Promise.resolve().then(() => (init_sophia(), sophia_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/sparql/register.js
-registerLanguage({
-  id: "sparql",
-  extensions: [".rq"],
-  aliases: ["sparql", "SPARQL"],
-  loader: () => Promise.resolve().then(() => (init_sparql(), sparql_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/sql/register.js
-registerLanguage({
-  id: "sql",
-  extensions: [".sql"],
-  aliases: ["SQL"],
-  loader: () => Promise.resolve().then(() => (init_sql(), sql_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/st/register.js
-registerLanguage({
-  id: "st",
-  extensions: [".st", ".iecst", ".iecplc", ".lc3lib", ".TcPOU", ".TcDUT", ".TcGVL", ".TcIO"],
-  aliases: ["StructuredText", "scl", "stl"],
-  loader: () => Promise.resolve().then(() => (init_st(), st_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/swift/register.js
-registerLanguage({
-  id: "swift",
-  aliases: ["Swift", "swift"],
-  extensions: [".swift"],
-  mimetypes: ["text/swift"],
-  loader: () => Promise.resolve().then(() => (init_swift(), swift_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/systemverilog/register.js
-registerLanguage({
-  id: "systemverilog",
-  extensions: [".sv", ".svh"],
-  aliases: ["SV", "sv", "SystemVerilog", "systemverilog"],
-  loader: () => Promise.resolve().then(() => (init_systemverilog(), systemverilog_exports))
-});
-registerLanguage({
-  id: "verilog",
-  extensions: [".v", ".vh"],
-  aliases: ["V", "v", "Verilog", "verilog"],
-  loader: () => Promise.resolve().then(() => (init_systemverilog(), systemverilog_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/tcl/register.js
-registerLanguage({
-  id: "tcl",
-  extensions: [".tcl"],
-  aliases: ["tcl", "Tcl", "tcltk", "TclTk", "tcl/tk", "Tcl/Tk"],
-  loader: () => Promise.resolve().then(() => (init_tcl(), tcl_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/twig/register.js
-registerLanguage({
-  id: "twig",
-  extensions: [".twig"],
-  aliases: ["Twig", "twig"],
-  mimetypes: ["text/x-twig"],
-  loader: () => Promise.resolve().then(() => (init_twig(), twig_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/typescript/register.js
-registerLanguage({
-  id: "typescript",
-  extensions: [".ts", ".tsx", ".cts", ".mts"],
-  aliases: ["TypeScript", "ts", "typescript"],
-  mimetypes: ["text/typescript"],
-  loader: () => {
-    return Promise.resolve().then(() => (init_typescript(), typescript_exports));
-  }
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/typespec/register.js
-registerLanguage({
-  id: "typespec",
-  extensions: [".tsp"],
-  aliases: ["TypeSpec"],
-  loader: () => Promise.resolve().then(() => (init_typespec(), typespec_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/vb/register.js
-registerLanguage({
-  id: "vb",
-  extensions: [".vb"],
-  aliases: ["Visual Basic", "vb"],
-  loader: () => Promise.resolve().then(() => (init_vb(), vb_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/wgsl/register.js
-registerLanguage({
-  id: "wgsl",
-  extensions: [".wgsl"],
-  aliases: ["WebGPU Shading Language", "WGSL", "wgsl"],
-  loader: () => Promise.resolve().then(() => (init_wgsl(), wgsl_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/xml/register.js
-registerLanguage({
-  id: "xml",
-  extensions: [
-    ".xml",
-    ".xsd",
-    ".dtd",
-    ".ascx",
-    ".csproj",
-    ".config",
-    ".props",
-    ".targets",
-    ".wxi",
-    ".wxl",
-    ".wxs",
-    ".xaml",
-    ".svg",
-    ".svgz",
-    ".opf",
-    ".xslt",
-    ".xsl"
-  ],
-  firstLine: "(\\<\\?xml.*)|(\\<svg)|(\\<\\!doctype\\s+svg)",
-  aliases: ["XML", "xml"],
-  mimetypes: ["text/xml", "application/xml", "application/xaml+xml", "application/xml-dtd"],
-  loader: () => Promise.resolve().then(() => (init_xml(), xml_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/definitions/yaml/register.js
-registerLanguage({
-  id: "yaml",
-  extensions: [".yaml", ".yml"],
-  aliases: ["YAML", "yaml", "YML", "yml"],
-  mimetypes: ["application/x-yaml", "text/x-yaml"],
-  loader: () => Promise.resolve().then(() => (init_yaml(), yaml_exports))
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/features/css/register.js
-init_editor_api();
-var LanguageServiceDefaultsImpl = class {
-  constructor(languageId, options, modeConfiguration) {
-    this._onDidChange = new Emitter2();
-    this._languageId = languageId;
-    this.setOptions(options);
-    this.setModeConfiguration(modeConfiguration);
-  }
-  get onDidChange() {
-    return this._onDidChange.event;
-  }
-  get languageId() {
-    return this._languageId;
-  }
-  get modeConfiguration() {
-    return this._modeConfiguration;
-  }
-  get diagnosticsOptions() {
-    return this.options;
-  }
-  get options() {
-    return this._options;
-  }
-  setOptions(options) {
-    this._options = options || /* @__PURE__ */ Object.create(null);
-    this._onDidChange.fire(this);
-  }
-  setDiagnosticsOptions(options) {
-    this.setOptions(options);
-  }
-  setModeConfiguration(modeConfiguration) {
-    this._modeConfiguration = modeConfiguration || /* @__PURE__ */ Object.create(null);
-    this._onDidChange.fire(this);
-  }
-};
-var optionsDefault = {
-  validate: true,
-  lint: {
-    compatibleVendorPrefixes: "ignore",
-    vendorPrefix: "warning",
-    duplicateProperties: "warning",
-    emptyRules: "warning",
-    importStatement: "ignore",
-    boxModel: "ignore",
-    universalSelector: "ignore",
-    zeroUnits: "ignore",
-    fontFaceProperties: "warning",
-    hexColorLength: "error",
-    argumentsInColorFunction: "error",
-    unknownProperties: "warning",
-    ieHack: "ignore",
-    unknownVendorSpecificProperties: "ignore",
-    propertyIgnoredDueToDisplay: "warning",
-    important: "ignore",
-    float: "ignore",
-    idSelector: "ignore"
-  },
-  data: { useDefaultDataProvider: true },
-  format: {
-    newlineBetweenSelectors: true,
-    newlineBetweenRules: true,
-    spaceAroundSelectorSeparator: false,
-    braceStyle: "collapse",
-    maxPreserveNewLines: void 0,
-    preserveNewLines: true
-  }
-};
-var modeConfigurationDefault = {
-  completionItems: true,
-  hovers: true,
-  documentSymbols: true,
-  definitions: true,
-  references: true,
-  documentHighlights: true,
-  rename: true,
-  colors: true,
-  foldingRanges: true,
-  diagnostics: true,
-  selectionRanges: true,
-  documentFormattingEdits: true,
-  documentRangeFormattingEdits: true
-};
-var cssDefaults = new LanguageServiceDefaultsImpl(
-  "css",
-  optionsDefault,
-  modeConfigurationDefault
-);
-var scssDefaults = new LanguageServiceDefaultsImpl(
-  "scss",
-  optionsDefault,
-  modeConfigurationDefault
-);
-var lessDefaults = new LanguageServiceDefaultsImpl(
-  "less",
-  optionsDefault,
-  modeConfigurationDefault
-);
-function getMode() {
-  return Promise.resolve().then(() => (init_cssMode(), cssMode_exports));
-}
-languages.onLanguage("less", () => {
-  getMode().then((mode2) => mode2.setupMode(lessDefaults));
-});
-languages.onLanguage("scss", () => {
-  getMode().then((mode2) => mode2.setupMode(scssDefaults));
-});
-languages.onLanguage("css", () => {
-  getMode().then((mode2) => mode2.setupMode(cssDefaults));
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/features/html/register.js
-init_editor_api();
-var LanguageServiceDefaultsImpl2 = class {
-  constructor(languageId, options, modeConfiguration) {
-    this._onDidChange = new Emitter2();
-    this._languageId = languageId;
-    this.setOptions(options);
-    this.setModeConfiguration(modeConfiguration);
-  }
-  get onDidChange() {
-    return this._onDidChange.event;
-  }
-  get languageId() {
-    return this._languageId;
-  }
-  get options() {
-    return this._options;
-  }
-  get modeConfiguration() {
-    return this._modeConfiguration;
-  }
-  setOptions(options) {
-    this._options = options || /* @__PURE__ */ Object.create(null);
-    this._onDidChange.fire(this);
-  }
-  setModeConfiguration(modeConfiguration) {
-    this._modeConfiguration = modeConfiguration || /* @__PURE__ */ Object.create(null);
-    this._onDidChange.fire(this);
-  }
-};
-var formatDefaults = {
-  tabSize: 4,
-  insertSpaces: false,
-  wrapLineLength: 120,
-  unformatted: 'default": "a, abbr, acronym, b, bdo, big, br, button, cite, code, dfn, em, i, img, input, kbd, label, map, object, q, samp, select, small, span, strong, sub, sup, textarea, tt, var',
-  contentUnformatted: "pre",
-  indentInnerHtml: false,
-  preserveNewLines: true,
-  maxPreserveNewLines: void 0,
-  indentHandlebars: false,
-  endWithNewline: false,
-  extraLiners: "head, body, /html",
-  wrapAttributes: "auto"
-};
-var optionsDefault2 = {
-  format: formatDefaults,
-  suggest: {},
-  data: { useDefaultDataProvider: true }
-};
-function getConfigurationDefault(languageId) {
-  return {
-    completionItems: true,
-    hovers: true,
-    documentSymbols: true,
-    links: true,
-    documentHighlights: true,
-    rename: true,
-    colors: true,
-    foldingRanges: true,
-    selectionRanges: true,
-    diagnostics: languageId === htmlLanguageId,
-    // turned off for Razor and Handlebar
-    documentFormattingEdits: languageId === htmlLanguageId,
-    // turned off for Razor and Handlebar
-    documentRangeFormattingEdits: languageId === htmlLanguageId
-    // turned off for Razor and Handlebar
-  };
-}
-var htmlLanguageId = "html";
-var handlebarsLanguageId = "handlebars";
-var razorLanguageId = "razor";
-var htmlLanguageService = registerHTMLLanguageService(
-  htmlLanguageId,
-  optionsDefault2,
-  getConfigurationDefault(htmlLanguageId)
-);
-var htmlDefaults = htmlLanguageService.defaults;
-var handlebarLanguageService = registerHTMLLanguageService(
-  handlebarsLanguageId,
-  optionsDefault2,
-  getConfigurationDefault(handlebarsLanguageId)
-);
-var handlebarDefaults = handlebarLanguageService.defaults;
-var razorLanguageService = registerHTMLLanguageService(
-  razorLanguageId,
-  optionsDefault2,
-  getConfigurationDefault(razorLanguageId)
-);
-var razorDefaults = razorLanguageService.defaults;
-function getMode2() {
-  return Promise.resolve().then(() => (init_htmlMode(), htmlMode_exports));
-}
-function registerHTMLLanguageService(languageId, options = optionsDefault2, modeConfiguration = getConfigurationDefault(languageId)) {
-  const defaults = new LanguageServiceDefaultsImpl2(languageId, options, modeConfiguration);
-  let mode2;
-  const onLanguageListener = languages.onLanguage(languageId, async () => {
-    mode2 = (await getMode2()).setupMode(defaults);
-  });
-  return {
-    defaults,
-    dispose() {
-      onLanguageListener.dispose();
-      mode2?.dispose();
-      mode2 = void 0;
-    }
-  };
-}
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/languages/features/json/register.js
-init_editor_api();
-var LanguageServiceDefaultsImpl3 = class {
-  constructor(languageId, diagnosticsOptions, modeConfiguration) {
-    this._onDidChange = new Emitter2();
-    this._languageId = languageId;
-    this.setDiagnosticsOptions(diagnosticsOptions);
-    this.setModeConfiguration(modeConfiguration);
-  }
-  get onDidChange() {
-    return this._onDidChange.event;
-  }
-  get languageId() {
-    return this._languageId;
-  }
-  get modeConfiguration() {
-    return this._modeConfiguration;
-  }
-  get diagnosticsOptions() {
-    return this._diagnosticsOptions;
-  }
-  setDiagnosticsOptions(options) {
-    this._diagnosticsOptions = options || /* @__PURE__ */ Object.create(null);
-    this._onDidChange.fire(this);
-  }
-  setModeConfiguration(modeConfiguration) {
-    this._modeConfiguration = modeConfiguration || /* @__PURE__ */ Object.create(null);
-    this._onDidChange.fire(this);
-  }
-};
-var diagnosticDefault = {
-  validate: true,
-  allowComments: true,
-  schemas: [],
-  enableSchemaRequest: false,
-  schemaRequest: "warning",
-  schemaValidation: "warning",
-  comments: "error",
-  trailingCommas: "error"
-};
-var modeConfigurationDefault2 = {
-  documentFormattingEdits: true,
-  documentRangeFormattingEdits: true,
-  completionItems: true,
-  hovers: true,
-  documentSymbols: true,
-  tokens: true,
-  colors: true,
-  foldingRanges: true,
-  diagnostics: true,
-  selectionRanges: true
-};
-var jsonDefaults = new LanguageServiceDefaultsImpl3(
-  "json",
-  diagnosticDefault,
-  modeConfigurationDefault2
-);
-function getMode3() {
-  return Promise.resolve().then(() => (init_jsonMode(), jsonMode_exports));
-}
-languages.register({
-  id: "json",
-  extensions: [".json", ".bowerrc", ".jshintrc", ".jscsrc", ".eslintrc", ".babelrc", ".har"],
-  aliases: ["JSON", "json"],
-  mimetypes: ["application/json"]
-});
-languages.onLanguage("json", () => {
-  getMode3().then((mode2) => mode2.setupMode(jsonDefaults));
-});
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/editor.main.js
-init_register();
-init_anchorSelect2();
-init_bracketMatching2();
-init_transpose();
-init_clipboard();
-init_codeActionContributions();
-init_codeEditorWidget();
-init_codelensController();
-init_codicon();
-init_colorPickerContribution();
-init_comment();
-init_contextmenu();
-init_cursorUndo();
-init_diffEditor_contribution();
-init_contribution3();
-init_dnd6();
-init_documentSymbols();
-init_dropIntoEditorContribution();
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/features/find/register.js
-init_findController();
-init_findWidget2();
-var tabIndexPatchKey = "__monacoFindWidgetTabIndexPatchApplied";
-var originalTabIndexKey = "__monacoFindWidgetOriginalTabIndex";
-function setFindWidgetTabbableState(widget, visible) {
-  const domNode = widget?._domNode;
-  if (!domNode) {
-    return;
-  }
-  const focusableElements = domNode.querySelectorAll('input, textarea, [tabindex], [role="button"], [role="checkbox"]');
-  for (const element2 of focusableElements) {
-    if (!(element2 instanceof HTMLElement)) {
-      continue;
-    }
-    if (visible) {
-      if (!(originalTabIndexKey in element2.dataset)) {
-        continue;
-      }
-      const originalTabIndex = element2.dataset[originalTabIndexKey];
-      if (originalTabIndex === "") {
-        element2.removeAttribute("tabindex");
-      } else {
-        element2.tabIndex = Number(originalTabIndex);
-      }
-      delete element2.dataset[originalTabIndexKey];
-    } else {
-      if (!(originalTabIndexKey in element2.dataset)) {
-        element2.dataset[originalTabIndexKey] = element2.getAttribute("tabindex") ?? "";
-      }
-      element2.tabIndex = -1;
-    }
-  }
-}
-if (!FindWidget[tabIndexPatchKey]) {
-  const originalReveal = FindWidget.prototype._reveal;
-  const originalHide = FindWidget.prototype._hide;
-  FindWidget.prototype._reveal = function(...args) {
-    originalReveal.apply(this, args);
-    setFindWidgetTabbableState(this, true);
-  };
-  FindWidget.prototype._hide = function(...args) {
-    originalHide.apply(this, args);
-    setFindWidgetTabbableState(this, false);
-  };
-  FindWidget[tabIndexPatchKey] = true;
-}
-
-// node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/editor.main.js
-init_floatingMenu_contribution();
-init_folding2();
-init_fontZoom();
-init_formatActions();
-init_gotoError();
-init_standaloneGotoLineQuickAccess();
-init_goToDefinitionAtPosition2();
-init_gpuActions();
-init_hoverContribution();
-init_indentation3();
-init_inlayHintsContribution();
-init_inlineCompletions_contribution();
-init_inlineProgress();
-init_inPlaceReplace2();
-init_insertFinalNewLine();
-init_inspectTokens2();
-init_iPadShowKeyboard2();
-init_lineSelection();
-init_linesOperations();
-init_linkedEditing2();
-init_links2();
-init_longLinesHelper();
-init_middleScroll_contribution();
-init_multicursor();
-init_parameterHints2();
-init_placeholderText_contribution();
-init_standaloneCommandsQuickAccess();
-init_standaloneHelpQuickAccess();
-init_standaloneGotoSymbolQuickAccess();
-init_contribution2();
-init_standaloneReferenceSearch();
-init_rename();
-init_sectionHeaders();
-init_viewportSemanticTokens();
-init_smartSelect();
-init_snippetController2();
-init_stickyScrollContribution();
-init_suggestInlineCompletions();
-init_toggleHighContrast();
-init_toggleTabFocusMode();
-init_tokenization2();
-init_unicodeHighlighter2();
-init_unusualLineTerminators();
-init_wordHighlighter();
-init_wordOperations();
-init_wordPartOperations();
-init_coreCommands();
-init_caretOperations();
-init_copyPasteContribution();
-init_findController();
-init_goToCommands();
-init_markerSelectionStatus();
-init_documentSemanticTokens();
-init_suggestController();
-init_standaloneStrings();
-init_codicon_modifiers();
-init_editor_api();
-
-// extensions/common/ui/monaco/src/index.js
-var LANGUAGE_BY_FORMAT = Object.freeze({
-  json: "json",
-  jsonc: "json",
-  xml: "xml",
-  yaml: "yaml",
-  toml: "ini",
-  ini: "ini",
-  markdown: "markdown",
-  html: "html",
-  css: "css",
-  javascript: "javascript",
-  typescript: "typescript",
-  lua: "lua",
-  python: "python",
-  csharp: "csharp",
-  glsl: "cpp",
-  hlsl: "cpp",
-  wgsl: "rust",
-  galaxy: "cpp",
-  csv: "plaintext",
-  tsv: "plaintext",
-  rtf: "plaintext"
-});
-function languageForFormat(formatId) {
-  return LANGUAGE_BY_FORMAT[formatId] ?? "plaintext";
-}
-function defineTheme2(root) {
-  const styles = getComputedStyle(root);
-  const token = (name, fallback2) => {
-    const value2 = styles.getPropertyValue(name).trim();
-    return (value2.startsWith("#") ? value2 : fallback2).replace("#", "");
-  };
-  const base = styles.getPropertyValue("--mk-color-bg").trim();
-  const dark = base !== "" && Number.parseInt(base.slice(1, 3), 16) < 128;
-  editor.defineTheme("modkit", {
-    base: dark ? "vs-dark" : "vs",
-    inherit: true,
-    rules: [],
-    colors: {
-      "editor.background": `#${token("--mk-color-surface", "#1f1f1f")}`,
-      "editor.foreground": `#${token("--mk-color-fg", "#cccccc")}`,
-      "editorLineNumber.foreground": `#${token("--mk-color-fg-subtle", "#7a7a7a")}`,
-      "editorCursor.foreground": `#${token("--mk-color-accent", "#0078d4")}`,
-      "editor.selectionBackground": `#${token("--mk-color-selection", "#04395e")}`,
-      "editor.lineHighlightBackground": `#${token("--mk-color-hover", "#2a2d2e")}`,
-      "editorWidget.background": `#${token("--mk-color-overlay", "#2c2c2d")}`,
-      "editorWidget.border": `#${token("--mk-color-border", "#2b2b2b")}`
-    }
-  });
-  return "modkit";
-}
-var TEXT_SOURCE = { contract: "common.view/text-data-source", major: 1 };
-async function loadText2(source, maximum, signal) {
-  const info = await source.info();
-  if (info.bytes > BigInt(maximum)) {
-    throw new RangeError(`source exceeds the editor budget: ${info.bytes} bytes`);
-  }
-  const slice = await source.slice(
+// packages/code/src/index.js
+init_editor3();
+
+// packages/code/contributions/editor-monaco-code.json
+var editor_monaco_code_default = {
+  schemaVersion: 1,
+  contract: { id: "org.modkitx/viewer-contribution", major: 1 },
+  id: "org.modkitx.ui-monaco/code-stage",
+  displayName: "Monaco code stage",
+  runtimeVariants: [
     {
-      kind: "from-line",
-      line: 0,
-      lineCount: info.lines === "unknown" ? Number.MAX_SAFE_INTEGER : Math.max(1, info.lines),
-      maxBytes: maximum
-    },
-    signal
-  );
-  return slice.text;
-}
-function editorFont(root) {
-  const style = root.ownerDocument.defaultView?.getComputedStyle(root);
-  if (style === void 0) return {};
-  const family = style.getPropertyValue("--mk-font-mono").trim();
-  const size2 = Number.parseFloat(style.getPropertyValue("--mk-font-size-sm")) || 12;
-  const ratio = Number.parseFloat(style.getPropertyValue("--mk-line-normal")) || 1.45;
-  return {
-    ...family === "" ? {} : { fontFamily: family },
-    fontSize: size2,
-    lineHeight: Math.round(size2 * ratio)
-  };
-}
-function createMonacoEditor(options = {}) {
-  const maximum = options.maximumSourceBytes ?? 8 * 1024 * 1024;
-  const readOnly = options.readOnly ?? false;
-  return {
-    abiVersion: 1,
-    async mount(args) {
-      const container = args.container;
-      const document2 = container.ownerDocument;
-      const root = document2.createElement("section");
-      root.className = "modkit-viewer";
-      root.setAttribute("role", "region");
-      root.setAttribute("aria-label", readOnly ? "Code viewer" : "Code editor");
-      root.dataset.mkPart = "viewer";
-      container.replaceChildren(root);
-      const toolbar = document2.createElement("div");
-      toolbar.dataset.mkPart = "editor.toolbar";
-      toolbar.setAttribute("role", "toolbar");
-      root.append(toolbar);
-      const status2 = document2.createElement("output");
-      status2.dataset.mkPart = "viewer.status";
-      status2.textContent = "Ready";
-      const save = document2.createElement("button");
-      save.type = "button";
-      save.textContent = "Save";
-      save.disabled = true;
-      save.dataset.mkPart = "operations.button";
-      if (!readOnly) toolbar.append(save);
-      toolbar.append(status2);
-      const host2 = document2.createElement("div");
-      host2.dataset.mkPart = "editor.text";
-      root.append(host2);
-      const lease2 = await args.sources.get(TEXT_SOURCE);
-      if (lease2 === void 0) throw new TypeError("code editor text binding is unavailable");
-      const formatId = args.descriptor?.identity?.formatId;
-      const language82 = languageForFormat(formatId);
-      const text3 = await loadText2(lease2.value, maximum, args.signal);
-      const font = editorFont(root);
-      const editor2 = editor.create(host2, {
-        value: text3,
-        language: language82,
-        theme: defineTheme2(root),
-        readOnly,
-        automaticLayout: true,
-        minimap: { enabled: false },
-        scrollBeyondLastLine: false,
-        fontLigatures: false,
-        ...font
-      });
-      let disposed = false;
-      const remeasure = () => {
-        if (disposed) return;
-        editor.remeasureFonts();
-        editor2.layout();
-      };
-      document2.fonts?.ready.then(remeasure, () => {
-      });
-      const sizeWatch = new ResizeObserver((entries2) => {
-        const box = entries2[0]?.contentRect;
-        if (box === void 0 || box.width === 0 || box.height === 0) return;
-        sizeWatch.disconnect();
-        remeasure();
-      });
-      const themeWatch = new MutationObserver(() => {
-        if (disposed) return;
-        editor.setTheme(defineTheme2(root));
-      });
-      themeWatch.observe(root.ownerDocument.documentElement, {
-        attributes: true,
-        attributeFilter: ["data-mk-theme", "data-mk-density"]
-      });
-      sizeWatch.observe(host2);
-      root.__mkEditor = editor2;
-      let baseline = text3;
-      const syncDirty = () => {
-        const dirty = editor2.getValue() !== baseline;
-        save.disabled = readOnly || !dirty;
-        status2.textContent = dirty ? "Modified" : "Ready";
-        root.dataset.mkState = dirty ? "mutating" : "";
-      };
-      const subscription = editor2.onDidChangeModelContent(syncDirty);
-      save.addEventListener("click", async () => {
-        const next = editor2.getValue();
-        const target = args.edit.targets[0];
-        if (target === void 0) {
-          status2.textContent = "Nothing to save: this session carries no writable target";
-          root.dataset.mkState = "error";
-          return;
-        }
-        const change = {
-          targets: args.edit.targets,
-          edits: [
-            {
-              operation: "replace",
-              targetId: target.targetId,
-              source: target.ownerSource,
-              range: { kind: "utf16", offset: 0, length: baseline.length },
-              payload: { kind: "text", text: next },
-              label: "Edit text"
-            }
-          ],
-          provenance: { actor: "user" }
-        };
-        status2.textContent = "Validating\u2026";
-        const validation = await args.edit.propose(change);
-        if (validation?.valid === false) {
-          const first2 = validation.diagnostics?.[0];
-          status2.textContent = first2 === void 0 ? "Rejected by validation" : `Rejected: ${first2.message}`;
-          root.dataset.mkState = "error";
-          return;
-        }
-        const plan = await args.edit.plan(change);
-        const authorization = await args.authorization.request(plan);
-        if (authorization === void 0) {
-          status2.textContent = "Not authorised";
-          return;
-        }
-        const prepared = await args.commit.prepare(plan, { grant: authorization.grant });
-        if (prepared?.state !== "ready") {
-          status2.textContent = prepared?.state === "conflict" ? "Conflict: the source changed" : `Prepare rejected: ${prepared?.reason ?? prepared?.state ?? "unknown"}`;
-          root.dataset.mkState = "error";
-          return;
-        }
-        const receipt = await args.commit.commit(prepared.prepared, { grant: authorization.grant });
-        if (receipt?.state !== void 0 && receipt.state !== "committed") {
-          status2.textContent = receipt.state === "not-applied" ? `Save rejected: ${receipt.reason ?? "not applied"}` : `Save ${receipt.state}`;
-          root.dataset.mkState = "error";
-          return;
-        }
-        baseline = next;
-        syncDirty();
-        status2.textContent = "Committed";
-      });
-      return {
-        async update(next) {
-          root.dataset.revision = String(next.revision ?? "");
-        },
-        async unmount() {
-          disposed = true;
-          themeWatch.disconnect();
-          sizeWatch.disconnect();
-          subscription.dispose();
-          editor2.dispose();
-          await lease2.release();
-          root.remove();
-        }
-      };
+      variantId: "browser",
+      entrypoint: "./src/index.js",
+      target: {
+        environments: ["browser-main"],
+        requiredHostCapabilities: ["editor.monaco"]
+      },
+      executionProfile: "trusted-in-process",
+      requestedPermissionClasses: []
     }
-  };
-}
-var monacoEditor = createMonacoEditor();
-var monacoViewer = createMonacoEditor({ readOnly: true });
+  ],
+  spec: {
+    kind: "stage",
+    requiresTraits: [{ id: "content.text", states: ["available"] }],
+    consumesDataSources: [{ contract: "common.view/text-data-source", major: 1 }],
+    applicability: { interpretation: "any", sourceBytes: { maximum: "8388608" } },
+    priority: 400,
+    singletonGroup: "stage.code"
+  }
+};
+
+// packages/code/package.json
+var package_default = {
+  name: "@modkitx-x3/code",
+  version: "1.0.0",
+  license: "MIT",
+  type: "module",
+  description: "Built-in MK3 code workspace and Monaco editor implementation.",
+  exports: {
+    ".": "./src/index.js",
+    "./editor": "./src/editor.js",
+    "./module": {
+      types: "./src/module.d.ts",
+      default: "./src/module.js"
+    },
+    "./linked": {
+      types: "./src/module.d.ts",
+      default: "./src/module.js"
+    },
+    "./package.json": "./package.json"
+  },
+  files: [
+    "contributions",
+    "src"
+  ],
+  dependencies: {
+    "@modkitx-x3/host": "workspace:*",
+    "monaco-editor": "^0.56.0"
+  }
+};
+
+// packages/code/src/module.js
+var lazyEditor = Object.freeze({
+  abiVersion: 1,
+  default: Object.freeze({
+    async mount(args) {
+      const { monacoEditor: monacoEditor2 } = await Promise.resolve().then(() => (init_editor3(), editor_exports));
+      return monacoEditor2.mount(args);
+    }
+  })
+});
+var codeModule = defineBuiltinModule({
+  coordinate: "org.modkitx/code",
+  packageJson: package_default,
+  contributions: [{ path: "contributions/editor-monaco-code.json", manifest: editor_monaco_code_default }],
+  modules: { "./src/index.js": lazyEditor }
+});
 
 // apps/electron/generated/viewer-catalog.js
 var PREVIEW_STAGES = Object.freeze([
@@ -315874,6 +316883,9 @@ var EN_MESSAGES2 = Object.freeze({
   "extensions.action.linkExtension": "Link extension",
   "extensions.action.disableContribution": "Disable contribution",
   "extensions.action.enableContribution": "Enable contribution",
+  "extensions.action.disableAllCodecs": "Disable all codecs",
+  "extensions.action.enableAllCodecs": "Enable all codecs",
+  "extensions.action.installAll": "Install all available extensions",
   "extensions.action.disableExtension": "Disable extension",
   "extensions.action.enableExtension": "Enable extension",
   "extensions.action.reloadWindow": "Reload window",
@@ -316430,6 +317442,9 @@ var RU_MESSAGES2 = Object.freeze({
   "extensions.action.linkExtension": "\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435",
   "extensions.action.disableContribution": "\u041E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u044C",
   "extensions.action.enableContribution": "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u044C",
+  "extensions.action.disableAllCodecs": "\u041E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0432\u0441\u0435 \u043A\u043E\u0434\u0435\u043A\u0438",
+  "extensions.action.enableAllCodecs": "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0432\u0441\u0435 \u043A\u043E\u0434\u0435\u043A\u0438",
+  "extensions.action.installAll": "\u0423\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0432\u0441\u0435 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B\u0435 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
   "extensions.action.disableExtension": "\u041E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435",
   "extensions.action.enableExtension": "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435",
   "extensions.action.reloadWindow": "\u041F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u043E\u043A\u043D\u043E",
@@ -317075,7 +318090,7 @@ function contributionContractKind(exactContract) {
   if (name === "editor-contribution") return "editors";
   if (name === "service-provider-contribution" || name === "service-contribution") return "services";
   if (name === "viewer-contribution") return "viewers";
-  if (name.includes("language")) return "languages";
+  if (name.includes("language") || name.includes("localization")) return "languages";
   if (name.includes("renderer")) return "renderers";
   if (name.includes("runtime")) return "runtimes";
   if (name.includes("command")) return "commands";
@@ -318799,6 +319814,45 @@ var knowledgePackSpecV1Schema2 = {
     entries: { type: "array", items: knowledgeEntrySchema2, minItems: 1, maxItems: 1e4 }
   }
 };
+var localizationCatalogResourceV1Schema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["locale", "path", "messagePrefixes"],
+  properties: {
+    locale: localeTag2,
+    path: {
+      type: "string",
+      maxLength: 1024,
+      pattern: "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$"
+    },
+    messagePrefixes: {
+      type: "array",
+      minItems: 1,
+      maxItems: 64,
+      uniqueItems: true,
+      items: {
+        type: "string",
+        maxLength: 256,
+        pattern: "^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$"
+      }
+    }
+  }
+};
+var localizationContributionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkitx.org/x3/localization-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["catalogs"],
+  properties: {
+    catalogs: {
+      type: "array",
+      minItems: 1,
+      maxItems: 256,
+      items: localizationCatalogResourceV1Schema2
+    }
+  }
+};
 var traitDefinitionSpecV1Schema2 = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json",
@@ -319031,6 +320085,7 @@ deepFreeze(serviceProviderContributionSpecV1Schema2);
 deepFreeze(viewerContributionSpecV1Schema2);
 deepFreeze(editorContributionSpecV1Schema2);
 deepFreeze(knowledgePackSpecV1Schema2);
+deepFreeze(localizationContributionSpecV1Schema2);
 deepFreeze(traitDefinitionSpecV1Schema2);
 deepFreeze(serviceContractDefinitionSpecV1Schema2);
 deepFreeze(dataSourceMethodSurfaceV1Schema2);
@@ -321890,8 +322945,6 @@ async function boot() {
   }
   const bridge = broker;
   const extensions = extensionsBridge;
-  const localizer = createElectronLocalizer(globalThis.navigator?.languages);
-  document.documentElement.lang = localizer.locale;
   const appThemes = readAppThemeChoices(document);
   const { port: subjectPort, session: subjectSession } = await acquireSubjectPort(subjects);
   const subjectClient = await connectElectronSubjectClient({
@@ -321900,6 +322953,11 @@ async function boot() {
     onDiagnostic: (diagnostic2) => console.warn(`[subject-rpc] ${diagnostic2.code}: ${diagnostic2.message}`)
   });
   const profile3 = await host.profile();
+  const localizer = createElectronLocalizer(
+    globalThis.navigator?.languages,
+    profile3.localizationCatalogs
+  );
+  document.documentElement.lang = localizer.locale;
   const shell = document.createElement("div");
   shell.className = "modkit-shell";
   setPart(shell, "workbench");
@@ -322935,8 +323993,8 @@ async function extensionProbes(options) {
 }
 async function editingProbes(options) {
   const { access, editors, entries: entries2, portsFor, footerText, showStage, inFocusedTab, dirtyTabs } = options;
-  const decoder = new TextDecoder();
-  const onDisk = async (entry) => decoder.decode(await access.read(entry.id, 4096));
+  const decoder2 = new TextDecoder();
+  const onDisk = async (entry) => decoder2.decode(await access.read(entry.id, 4096));
   const statusText = () => inFocusedTab('[data-mk-part="viewer.status"]')?.textContent ?? "";
   const click = (selector) => {
     const node = inFocusedTab(selector);

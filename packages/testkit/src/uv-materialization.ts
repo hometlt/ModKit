@@ -12,7 +12,7 @@
  * **Where the truth comes from.** The scope, the canonical form and the artifact reader are the
  * pinned `multiverse/specs` snapshot under `vendor/multiverse-specs/` — never the sibling
  * repository, and never a second copy of the rules inside X3. The materializer under test is the
- * `uv-materializer` extension. Two independent implementations meeting on committed data is what
+ * built-in `@modkitx-x3/uv` package. Two independent implementations meeting on committed data is what
  * makes the comparison worth anything.
  */
 
@@ -144,8 +144,8 @@ export async function loadUvTools(repoRoot: string): Promise<SpecTools> {
   if (cached !== undefined) return cached
   const specTool = (name: string): string =>
     pathToFileURL(join(repoRoot, 'vendor', 'multiverse-specs', 'specs', 'tools', name)).href
-  const extensionModule = (name: string): string =>
-    pathToFileURL(join(repoRoot, 'extensions', 'common', 'uv-materializer', 'src', name)).href
+  const uvModule = (...segments: string[]): string =>
+    pathToFileURL(join(repoRoot, 'packages', 'uv', 'src', ...segments)).href
   const modelInterchange = (await import(
     specTool('model-interchange.mjs')
   )) as SpecTools['modelInterchange']
@@ -155,10 +155,10 @@ export async function loadUvTools(repoRoot: string): Promise<SpecTools> {
   )) as SpecTools['textureInterchange']
   const uvtProfile = (await import(specTool('uvt-profile.mjs'))) as SpecTools['uvtProfile']
   const materializer = (await import(
-    extensionModule('materializer.js')
+    uvModule('model', 'materializer.js')
   )) as SpecTools['materializer']
   const textureMaterializer = (await import(
-    extensionModule('texture-materializer.js')
+    uvModule('texture', 'materializer.js')
   )) as SpecTools['textureMaterializer']
   cached = {
     modelInterchange,

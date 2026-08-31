@@ -10,6 +10,6 @@
     "serve": "node scripts/build.mjs --serve"
   },
   "dependencies": {
-    "modkit-extension-x3-ui-monaco": "file:../../extensions/common/ui/monaco"
+    "@modkitx-x3/code": "file:../../packages/code"
   }
 }

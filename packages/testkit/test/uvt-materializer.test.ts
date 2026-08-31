@@ -302,9 +302,7 @@ describe('the materializer refuses rather than guesses', () => {
 
   const materialize = async (source: unknown): Promise<unknown> => {
     const module = (await import(
-      pathToFileURL(
-        join(repoRoot, 'extensions', 'common', 'uv-materializer', 'src', 'texture-materializer.js'),
-      ).href
+      pathToFileURL(join(repoRoot, 'packages', 'uv', 'src', 'texture', 'materializer.js')).href
     )) as { materializeUvtCore(source: unknown, request: unknown): unknown }
     return module.materializeUvtCore(source, request)
   }

@@ -2002,7 +2002,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'owner-addition'
     obligation: 'experimental-optional'
-    owner: 'packages/ui-graph-3d'
+    owner: 'packages/scene'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds: []
@@ -2056,7 +2056,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'owner-addition'
     obligation: 'experimental-optional'
-    owner: 'packages/ui-graph-3d'
+    owner: 'packages/scene'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds: []
@@ -18978,7 +18978,7 @@ capabilities:
     releaseTrack: 'multiverse-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/uv-materializer'
+    owner: 'packages/uv'
     plannedBlock: 11
     dependsOn:
       - 'uv/projection-abi/receipts'

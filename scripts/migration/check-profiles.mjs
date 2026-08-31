@@ -257,6 +257,9 @@ if (optionalClosures === undefined) {
         fail(`${label}: ${subpath} is not a published export of ${packageName}`)
         continue
       }
+      // A separately composed package is itself a droppable unit. Only subpaths of a package that
+      // remains in the baseline need their own bundled entry to prove they can be excluded.
+      if (rest === undefined && (closure.units ?? []).includes(packageName)) continue
       // droppable means "its own entry": a surface fused into the package root cannot be declined
       const entry = `packages/${packageName}/dist${rest === undefined ? '' : rest}/index.js`
       if (!baselineEntries.has(entry)) {

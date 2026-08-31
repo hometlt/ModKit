@@ -32,8 +32,10 @@
     "@modkitx/extension-manager": "workspace:*",
     "@modkitx-x3/core": "workspace:*",
     "@modkitx-x3/host": "workspace:*",
+    "@modkitx-x3/scene": "workspace:*",
     "@modkitx-x3/sdk": "workspace:*",
-    "@modkitx-x3/ui": "workspace:*"
+    "@modkitx-x3/ui": "workspace:*",
+    "@modkitx-x3/uv": "workspace:*"
   },
   "devDependencies": {
     "@types/vscode": "^1.125.0",

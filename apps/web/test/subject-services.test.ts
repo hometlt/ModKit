@@ -427,11 +427,21 @@ describe('PWA product path — catalog → composition → worker-brokered open'
     const native = services.main.inventory.extensions.filter(
       extension => extension.source === 'native:core/text',
     )
+    const builtins = services.main.inventory.extensions.filter(extension =>
+      extension.source.startsWith('builtin:'),
+    )
     const supplied = services.main.inventory.extensions.filter(
-      extension => extension.source !== 'native:core/text',
+      extension =>
+        extension.source !== 'native:core/text' && !extension.source.startsWith('builtin:'),
     )
     expect(native).toHaveLength(1)
     expect(native[0]?.origin).toBe('bundled')
+    expect(builtins.map(extension => extension.source).sort()).toEqual([
+      'builtin:org.modkitx/code',
+      'builtin:org.modkitx/scene',
+      'builtin:org.modkitx/uv',
+    ])
+    expect(builtins.every(extension => extension.origin === 'bundled')).toBe(true)
     expect(supplied.length).toBeGreaterThan(0)
     expect(supplied.every(extension => extension.origin === 'installed')).toBe(true)
     const result = await services.open({

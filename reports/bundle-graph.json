@@ -4,20 +4,22 @@
   "entryCount": 74,
   "totals": {
     "modules": 710,
-    "bytes": 7740281
+    "bytes": 7743394
   },
   "entries": [
     {
       "entry": "apps/cli/dist/main.js",
       "surface": "cli/main",
       "modules": 4,
-      "bytes": 31574,
+      "bytes": 31993,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
         "@modkitx-x3/host",
         "@modkitx-x3/host/node",
-        "@modkitx-x3/sdk"
+        "@modkitx-x3/scene/module",
+        "@modkitx-x3/sdk",
+        "@modkitx-x3/uv/module"
       ]
     },
     {
@@ -91,7 +93,7 @@
       "entry": "packages/host/dist/index.js",
       "surface": "host",
       "modules": 88,
-      "bytes": 817295,
+      "bytes": 818537,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -486,7 +488,7 @@
       "entry": "packages/ui/dist/index.js",
       "surface": "ui",
       "modules": 47,
-      "bytes": 464922,
+      "bytes": 465648,
       "reachesUnits": [],
       "externalUnits": [
         "@modkitx-x3/core",
@@ -499,7 +501,7 @@
       "entry": "packages/ui/dist/localization/index.js",
       "surface": "ui/localization",
       "modules": 1,
-      "bytes": 127923,
+      "bytes": 128649,
       "reachesUnits": [],
       "externalUnits": []
     },

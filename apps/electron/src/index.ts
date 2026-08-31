@@ -1,4 +1,7 @@
 import { compareUtf8, ModkitError, uint64, type Diagnostic } from '@modkitx-x3/core'
+import { codeModule } from '@modkitx-x3/code/module'
+import { sceneModule } from '@modkitx-x3/scene/module'
+import { uvModule } from '@modkitx-x3/uv/module'
 import {
   extensionSubjectRecordToWire,
   projectExtensionSubjects,
@@ -15,6 +18,7 @@ import {
   createHostComposition,
   createSubjectServices,
   EXTENSION_DISABLED_CODE,
+  linkedExtensionInputs,
   registerServiceDefinitionsOrThrow,
   resolveCommonPresentationPlan,
   serviceDefinitionSurfaces,
@@ -38,6 +42,12 @@ import {
   type ExtensionRootRequest,
   type WorkerBackendPolicy,
 } from '@modkitx-x3/host/node'
+
+const ELECTRON_BUILTIN_MODULES = /* @__PURE__ */ linkedExtensionInputs([
+  codeModule,
+  sceneModule,
+  uvModule,
+])
 
 export {
   connectElectronSubjectRpc,
@@ -417,10 +427,12 @@ export async function createElectronApp(
   options: ElectronAppOptions = {},
 ): Promise<ElectronApp> {
   const topology = createElectronTopology()
+  const composedExtensions = [...ELECTRON_BUILTIN_MODULES.inputs, ...extensions]
   const executionBackends =
     options.executionBackends ??
     createNodeExecutionBackends({
       policy: ELECTRON_WORKER_POLICY,
+      linkedModules: ELECTRON_BUILTIN_MODULES.modules,
       ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
     })
   const disabled = {
@@ -435,20 +447,20 @@ export async function createElectronApp(
     createHostComposition({
       topology,
       realmId: ELECTRON_MAIN_REALM,
-      extensions,
+      extensions: composedExtensions,
       executionBackends,
       ...disabled,
     }),
     createHostComposition({
       topology,
       realmId: ELECTRON_RENDERER_REALM,
-      extensions,
+      extensions: composedExtensions,
       ...disabled,
     }),
     createHostComposition({
       topology,
       realmId: ELECTRON_WORKER_REALM,
-      extensions,
+      extensions: composedExtensions,
       executionBackends,
       ...disabled,
     }),
@@ -459,7 +471,8 @@ export async function createElectronApp(
 /**
  * Load the generated first-party catalog into the privileged realm and prepare the one subject-open
  * pipeline used by Electron. The caller supplies explicit roots from the generated catalog; this
- * helper never scans the repository or trusts installed/linked extensions in-process.
+ * helper never scans the repository or trusts installed extensions in-process; code, scene and UV
+ * are explicit product imports composed separately from the generated extension catalog.
  */
 export interface ElectronSubjectServicesOptions {
   /** Backend diagnostics of the worker realm (shared-process notice, restarts, crashes, worker stdio). */
@@ -698,6 +711,7 @@ export async function createElectronSubjectServices(
   const definitions = createBundledServiceDefinitionRegistry()
   const executionBackends = createNodeExecutionBackends({
     policy: ELECTRON_WORKER_POLICY,
+    linkedModules: ELECTRON_BUILTIN_MODULES.modules,
     foreignSurfaces: () => serviceDefinitionSurfaces(definitions),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })

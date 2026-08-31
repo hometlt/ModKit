@@ -6,8 +6,8 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:bb4b394f30083772e99b4ce81bc84ed664a9ea398871a8716472ab5e455ceedc",
-      "size": 49001984
+      "sha256": "sha256:a0416ac0b2f5ee1def424cdd66281b46bac3c9f39ffd41353f221d2221679fee",
+      "size": 63432704
     },
     {
       "catalog": [
@@ -133,28 +133,6 @@
         },
         {
           "contributions": [
-            "org.modkitx/browser-webgl-renderer",
-            "org.modkitx/headless-renderer"
-          ],
-          "coordinate": "org.modkitx/rendering-3d",
-          "root": "extensions/common/rendering/rendering-3d",
-          "sourceDigest": "sha256:a2e9143af0194457c0f7948a8d049aedbd91217ec16cff39217dbebfa4dd8c9a"
-        },
-        {
-          "contributions": [
-            "org.modkitx/uv-model-materializer-contract",
-            "org.modkitx/uv-texture-materializer-contract",
-            "org.modkitx/uvm-materializer",
-            "org.modkitx/uvm-writer",
-            "org.modkitx/uvt-materializer",
-            "org.modkitx/uvt-writer"
-          ],
-          "coordinate": "org.modkitx/uv-materializer",
-          "root": "extensions/common/uv-materializer",
-          "sourceDigest": "sha256:a4eca57da89ab3bd96256d6939bc7a1e0572243e0d550905f2f8f537c800c1b2"
-        },
-        {
-          "contributions": [
             "org.modkitx/emf",
             "org.modkitx/vector-svg",
             "org.modkitx/wmf"
@@ -180,8 +158,8 @@
       "file": "artifacts/modkitx-common.tar",
       "id": "common",
       "kind": "common-extension-bundle",
-      "sha256": "sha256:365c60599f13f27b135b4948b9b861606cf58c1c984c0ee345f97368ecbd1b4e",
-      "size": 1540096
+      "sha256": "sha256:eab700b595132dda3ae4e9f600506da86a3e62360c9013fd1cfa5032dd4d17fc",
+      "size": 1426432
     }
   ],
   "composition": {
@@ -195,7 +173,7 @@
       },
       {
         "path": "apps/vscode/generated/bundled-catalog.json",
-        "sha256": "sha256:9a675e50209132b6ff743c8c70b1fdaed3d3bc29f888960905e3a64abb9bfc2e"
+        "sha256": "sha256:05d86cee1fde214f5d8dfcf942c713cf477d19e6d84274f8444cb1c29c3db0b4"
       },
       {
         "path": "apps/web/generated/extension-catalog.js",
@@ -203,7 +181,7 @@
       },
       {
         "path": "config/build-composition.json",
-        "sha256": "sha256:ef8e00c525690e9ad9ed5600cc1b1af2a177fd47ac24467aacc6732ba7b3d773"
+        "sha256": "sha256:1f7b6f6ea77805af53a7453151f3e08dfae4e91377beb3ed66c4dc3813e7c3c2"
       },
       {
         "path": "scripts/app-extension-sets.mjs",
@@ -211,7 +189,7 @@
       },
       {
         "path": "scripts/bundle-hashes.json",
-        "sha256": "sha256:e7c2f75ae0ba7810b9ad315d177012f5eb05daa6764a06b75d14b95f2ec28ee9"
+        "sha256": "sha256:c528b45e30473764e4e7f648e5b8262720b9c7aae07236be29135dd2c173c6c5"
       }
     ],
     "closure": "mk3-ga",
@@ -222,8 +200,6 @@
       "extensions/common/documents",
       "extensions/common/images",
       "extensions/common/models",
-      "extensions/common/rendering/rendering-3d",
-      "extensions/common/uv-materializer",
       "extensions/common/vector",
       "extensions/common/video"
     ],
@@ -232,7 +208,7 @@
   },
   "licenseNotices": {
     "file": "LICENSE-NOTICES.txt",
-    "sha256": "sha256:44c46061eba12c5b8105fa276a9bca82e8f8e58e440854f9be445edfac1c4c97"
+    "sha256": "sha256:938d331699b9fd1f9fdbeb6703be28e9971f573740107d5d2ceca57c8d9ea427"
   },
   "release": {
     "authenticode": false,
@@ -253,7 +229,7 @@
   "sbom": {
     "file": "sbom.cdx.json",
     "format": "CycloneDX-1.5",
-    "sha256": "sha256:c904fcb7dad5bb3253c70576fb77844e3dabbfb433118c57df58d49539f4c3d8"
+    "sha256": "sha256:a3f8dd5f2cb6dd505cf40f57fdfbfafd7e839bbe31965c99e667ed1aabd56b84"
   },
   "schemaVersion": "release-manifest-1",
   "signing": {

@@ -60,7 +60,7 @@ import { createEditorPorts } from './editor-ports.js'
 import { mountShellDemo } from './shell-demo.js'
 import { mountCardDemo, mountGraphDemo } from './card-demo.js'
 import { mountImageEditDemo } from './imageedit-demo.js'
-import { monacoViewer } from '../../../extensions/common/ui/monaco/src/index.js'
+import { monacoViewer } from '../../../packages/code/src/index.js'
 
 /**
  * Monaco ships as an extension and speaks the editor ABI. The gallery adapts it to the viewer ABI

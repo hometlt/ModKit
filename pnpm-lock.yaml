@@ -8,12 +8,18 @@ importers:
 
   .:
     devDependencies:
+      '@modkitx-x3/code':
+        specifier: workspace:*
+        version: link:packages/code
       '@modkitx-x3/core':
         specifier: workspace:*
         version: link:packages/core
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:packages/host
+      '@modkitx-x3/scene':
+        specifier: workspace:*
+        version: link:packages/scene
       '@modkitx-x3/sdk':
         specifier: workspace:*
         version: link:packages/sdk
@@ -23,6 +29,9 @@ importers:
       '@modkitx-x3/ui':
         specifier: workspace:*
         version: link:packages/ui
+      '@modkitx-x3/uv':
+        specifier: workspace:*
+        version: link:packages/uv
       '@modkitx-x3/vfs':
         specifier: workspace:*
         version: link:packages/vfs
@@ -74,24 +83,39 @@ importers:
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../packages/host
+      '@modkitx-x3/scene':
+        specifier: workspace:*
+        version: link:../../packages/scene
       '@modkitx-x3/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+      '@modkitx-x3/uv':
+        specifier: workspace:*
+        version: link:../../packages/uv
 
   apps/electron:
     dependencies:
+      '@modkitx-x3/code':
+        specifier: workspace:*
+        version: link:../../packages/code
       '@modkitx-x3/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../packages/host
+      '@modkitx-x3/scene':
+        specifier: workspace:*
+        version: link:../../packages/scene
       '@modkitx-x3/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
       '@modkitx-x3/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@modkitx-x3/uv':
+        specifier: workspace:*
+        version: link:../../packages/uv
       '@modkitx/extension-manager':
         specifier: workspace:*
         version: link:../../packages/extension-manager
@@ -111,9 +135,15 @@ importers:
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../packages/host
+      '@modkitx-x3/scene':
+        specifier: workspace:*
+        version: link:../../packages/scene
       '@modkitx-x3/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+      '@modkitx-x3/uv':
+        specifier: workspace:*
+        version: link:../../packages/uv
       '@modkitx-x3/vfs':
         specifier: workspace:*
         version: link:../../packages/vfs
@@ -145,12 +175,18 @@ importers:
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../packages/host
+      '@modkitx-x3/scene':
+        specifier: workspace:*
+        version: link:../../packages/scene
       '@modkitx-x3/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
       '@modkitx-x3/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@modkitx-x3/uv':
+        specifier: workspace:*
+        version: link:../../packages/uv
       '@modkitx/extension-manager':
         specifier: workspace:*
         version: link:../../packages/extension-manager
@@ -164,18 +200,27 @@ importers:
 
   apps/web:
     dependencies:
+      '@modkitx-x3/code':
+        specifier: workspace:*
+        version: link:../../packages/code
       '@modkitx-x3/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@modkitx-x3/host':
         specifier: workspace:*
         version: link:../../packages/host
+      '@modkitx-x3/scene':
+        specifier: workspace:*
+        version: link:../../packages/scene
       '@modkitx-x3/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
       '@modkitx-x3/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@modkitx-x3/uv':
+        specifier: workspace:*
+        version: link:../../packages/uv
       '@modkitx/extension-manager':
         specifier: workspace:*
         version: link:../../packages/extension-manager
@@ -282,33 +327,6 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/sdk
 
-  extensions/common/rendering/rendering-3d:
-    dependencies:
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../../../packages/sdk
-
-  extensions/common/ui/monaco:
-    dependencies:
-      monaco-editor:
-        specifier: ^0.56.0
-        version: 0.56.0
-
-  extensions/common/uv-materializer:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../packages/codec-kit
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../../packages/sdk
-
   extensions/common/vector:
     dependencies:
       '@modkitx-x3/codec-kit':
@@ -332,6 +350,15 @@ importers:
       '@modkitx-x3/sdk':
         specifier: workspace:*
         version: link:../../../packages/sdk
+
+  packages/code:
+    dependencies:
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../host
+      monaco-editor:
+        specifier: ^0.56.0
+        version: 0.56.0
 
   packages/codec-kit:
     dependencies:
@@ -374,6 +401,18 @@ importers:
         specifier: ^3.3.1
         version: 3.3.1
 
+  packages/scene:
+    dependencies:
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../host
+      '@modkitx-x3/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      three:
+        specifier: ^0.180.0
+        version: 0.180.0
+
   packages/sdk:
     dependencies:
       '@modkitx-x3/core':
@@ -414,11 +453,11 @@ importers:
         specifier: workspace:*
         version: link:../sdk
 
-  packages/ui-graph-3d:
+  packages/uv:
     dependencies:
-      three:
-        specifier: ^0.180.0
-        version: 0.180.0
+      '@modkitx-x3/host':
+        specifier: workspace:*
+        version: link:../host
 
   packages/vfs:
     dependencies:

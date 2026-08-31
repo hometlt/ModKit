@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
-import { defineLinkedExtension, type LinkedExtension } from '@modkitx-x3/host'
+import { defineBuiltinModule, defineLinkedExtension, type LinkedExtension } from '@modkitx-x3/host'
 import { createModkit, type Modkit } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
@@ -111,6 +111,20 @@ describe('statically linked extensions (import lane)', () => {
         modules: {},
       }),
     ).toThrow(/has no imported module/u)
+  })
+
+  it('built-in modules use the linked protocol lane but carry an explicit product kind', () => {
+    const module = defineBuiltinModule({
+      coordinate: 'org.modkitx/code',
+      packageJson: { name: '@modkitx-x3/code', version: '1.0.0' },
+      contributions: [],
+      modules: {},
+    })
+
+    expect(module.kind).toBe('builtin')
+    expect(module.coordinate).toBe('org.modkitx/code')
+    expect(module.input.source).toBe('builtin:org.modkitx/code')
+    expect(module.input.execution).toEqual({ origin: 'bundled', allowTrustedInProcess: true })
   })
 
   it('editing works over a linked subject exactly as over a loaded one', async () => {

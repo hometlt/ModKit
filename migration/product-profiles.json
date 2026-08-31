@@ -2,7 +2,7 @@
   "$comment": "Generic core product profiles. External product compositions are supplied by extension-manager workspace/lock data.",
   "schemaVersion": "product-profiles-1",
   "compositionSource": "scripts/app-extension-sets.mjs",
-  "optionalFamilies": ["rendering-3d", "ui-monaco"],
+  "optionalFamilies": [],
   "counts": {
     "presets": 3,
     "available": 3,
@@ -41,15 +41,13 @@
         "documents",
         "images",
         "models",
-        "rendering-3d",
         "data",
-        "ui-monaco",
         "vector",
         "video"
       ],
       "plannedFamilies": [],
       "serviceProviders": [],
-      "note": "Полный common closure плюс editor и renderer: preset для просмотра произвольного файла без выбора игры."
+      "note": "Полный common closure для просмотра произвольного файла без выбора игры; редактор кода и renderer теперь подключаются приложением как встроенные пакеты code и scene."
     },
     {
       "id": "headless-mod-ci",
@@ -245,10 +243,10 @@
       {
         "capability": "renderer",
         "status": "available",
-        "units": ["sdk"],
-        "subpaths": ["@modkitx-x3/sdk/renderer"],
-        "extensionFamilies": ["rendering-3d"],
-        "note": "contracts in sdk, concrete renderers as contributions (2.3 rule 2); the family is already an optionalFamily above"
+        "units": ["sdk", "scene"],
+        "subpaths": ["@modkitx-x3/sdk/renderer", "@modkitx-x3/scene"],
+        "extensionFamilies": [],
+        "note": "contracts remain in sdk while the default browser and headless providers are statically composed from the built-in scene package"
       },
       {
         "capability": "runtime",

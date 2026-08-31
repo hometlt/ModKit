@@ -188,9 +188,7 @@ describe('12-2 UVT export writes through the host coordinator and reopens', () =
      * which is the ADR-UV-001 split working as designed rather than an inconvenience.
      */
     const writerModule = (await import(
-      pathToFileURL(
-        join(repoRoot, 'extensions', 'common', 'uv-materializer', 'src', 'texture-writer.js'),
-      ).href
+      pathToFileURL(join(repoRoot, 'packages', 'uv', 'src', 'texture', 'writer.js')).href
     )) as {
       createProvider(selection: { offerId: string }): Promise<{ value: Writer }>
     }
@@ -339,9 +337,7 @@ describe('12-2 UVT export writes through the host coordinator and reopens', () =
 
   it('refuses a replace and a path that is neither of the two the profile names', async () => {
     const writerModule = (await import(
-      pathToFileURL(
-        join(repoRoot, 'extensions', 'common', 'uv-materializer', 'src', 'texture-writer.js'),
-      ).href
+      pathToFileURL(join(repoRoot, 'packages', 'uv', 'src', 'texture', 'writer.js')).href
     )) as { createProvider(selection: { offerId: string }): Promise<{ value: Writer }> }
     const writer = (await writerModule.createProvider({ offerId: 'uvt-source' })).value
     const targets = [
@@ -429,8 +425,7 @@ describe('12-3 the UVM export takes the same coordinator seam', () => {
     )
 
     const writerModule = (await import(
-      pathToFileURL(join(repoRoot, 'extensions', 'common', 'uv-materializer', 'src', 'writer.js'))
-        .href
+      pathToFileURL(join(repoRoot, 'packages', 'uv', 'src', 'model', 'writer.js')).href
     )) as { createProvider(selection: { offerId: string }): Promise<{ value: Writer }> }
     const writer = (await writerModule.createProvider({ offerId: 'uvm-source' })).value
     expect(writer.offer).toMatchObject({ formatId: 'uvm', mutationMode: 'export-only' })

@@ -74,6 +74,26 @@ export interface LinkedExtension {
   readonly excluded: readonly LinkedContributionExclusion[]
 }
 
+/**
+ * A product module compiled into an application rather than installed by Extension Manager.
+ *
+ * Built-ins intentionally reuse the linked contribution lane: contracts, security decisions and
+ * provider resolution stay identical, while the explicit kind lets application and status UI keep
+ * product modules separate from user-managed extensions.
+ */
+export interface BuiltinModule extends LinkedExtension {
+  readonly kind: 'builtin'
+}
+
+export interface BuiltinModuleInit extends Omit<LinkedExtensionInit, 'packageJson' | 'source'> {
+  /** Stable protocol coordinate used for contribution ownership and diagnostics. */
+  readonly coordinate: `${string}/${string}`
+  /** The package metadata shown by diagnostics and release tooling. */
+  readonly packageJson?: Readonly<Record<string, unknown>>
+  /** Diagnostic label; defaults to `builtin:<coordinate>`. */
+  readonly source?: string
+}
+
 interface VariantShape {
   readonly entrypoint?: unknown
   readonly executionProfile?: unknown
@@ -186,6 +206,42 @@ export function defineLinkedExtension(init: LinkedExtensionInit): LinkedExtensio
     moduleEntries: Object.freeze(moduleEntries),
     excluded: Object.freeze([...automaticExcluded, ...(init.excluded ?? [])]),
   })
+}
+
+/** Define a statically imported product module without presenting it as an installable extension. */
+export function defineBuiltinModule(init: BuiltinModuleInit): BuiltinModule {
+  const parts = init.coordinate.split('/')
+  if (parts.length !== 2 || parts.some(part => part.length === 0)) {
+    refuse('built-in module coordinate must be publisher/id', { coordinate: init.coordinate })
+  }
+  const [publisher = '', id = ''] = parts
+  const packageJson = init.packageJson ?? {}
+  const existingModkit = (packageJson as { readonly modkit?: unknown }).modkit
+  const modkit =
+    typeof existingModkit === 'object' && existingModkit !== null
+      ? (existingModkit as Readonly<Record<string, unknown>>)
+      : {}
+  const linked = defineLinkedExtension({
+    source: init.source ?? `builtin:${init.coordinate}`,
+    packageJson: {
+      ...packageJson,
+      modkit: {
+        ...modkit,
+        schemaVersion: modkit.schemaVersion ?? 1,
+        publisher,
+        id,
+        contributionManifests:
+          modkit.contributionManifests ??
+          init.contributions.map(item => `./${item.path.replace(/^\.\//u, '')}`),
+      },
+    },
+    ...(init.files === undefined ? {} : { files: init.files }),
+    contributions: init.contributions,
+    ...(init.excluded === undefined ? {} : { excluded: init.excluded }),
+    artifactDigest: init.artifactDigest ?? `builtin:${init.coordinate}`,
+    modules: init.modules,
+  })
+  return Object.freeze({ ...linked, kind: 'builtin' as const })
 }
 
 export interface LinkedExtensionSet {

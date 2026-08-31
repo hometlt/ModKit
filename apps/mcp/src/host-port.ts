@@ -17,6 +17,8 @@ import {
   type ModkitOpened,
   workerBackendPolicy,
 } from '@modkitx-x3/host/node'
+import { sceneModule } from '@modkitx-x3/scene/module'
+import { uvModule } from '@modkitx-x3/uv/module'
 import { coordinateMapPreviewAssetSession } from '@modkitx-x3/host/maps'
 import type { AssetSession, KnowledgeCatalog } from '@modkitx-x3/sdk'
 import { VirtualFileSystem } from '@modkitx-x3/vfs'
@@ -195,6 +197,7 @@ export async function createHostMcpPort(
     canonicalDirectories(configuration.extensions, 'extension'),
   ])
   const modkit = await createModkit({
+    modules: [sceneModule, uvModule],
     extensions: [],
     userExtensions: extensions,
     roots,

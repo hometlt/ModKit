@@ -33,7 +33,10 @@ const [{ loadExtensionDirectory }, { inventoryHasErrors, offersFromInventory, re
 
 const coordinate = extension => `${extension.manifest.publisher}/${extension.manifest.id}`
 const installableExtensions = inventory =>
-  inventory.extensions.filter(extension => extension.source !== 'native:core/text')
+  inventory.extensions.filter(
+    extension =>
+      extension.source !== 'native:core/text' && !extension.source.startsWith('builtin:'),
+  )
 const contributionIds = inventory =>
   inventory.extensions
     .flatMap(extension =>
@@ -281,7 +284,7 @@ await checkApplicationSet(
   'headless',
   'full-codecs',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 78, active: 78 } },
+  { main: { offers: 75, active: 75 } },
 )
 await checkApplicationSet(
   'pwa',
@@ -327,7 +330,7 @@ await checkApplicationSet(
     return { main: app.main, worker: app.worker }
   },
   {
-    main: { offers: 'none', active: 1 },
+    main: { offers: 'none', active: 'none' },
     worker: { offers: 6, active: 6 },
   },
 )
@@ -363,7 +366,7 @@ await checkApplicationSet(
     return { main: app.main, renderer: app.renderer }
   },
   {
-    main: { offers: 21, active: 21 },
+    main: { offers: 20, active: 20 },
     renderer: { offers: 'none', active: 'none' },
   },
 )
@@ -375,7 +378,7 @@ await checkApplicationSet(
     return { main: app.main, renderer: app.renderer }
   },
   {
-    main: { offers: 78, active: 78 },
+    main: { offers: 75, active: 75 },
     renderer: { offers: 'none', active: 'none' },
   },
 )

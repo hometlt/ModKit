@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx/uvm-writer",
+  "displayName": "UVM export writer",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/model/writer.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/model/writer.js",
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "lifecycleScope": "session",
+    "provides": [
+      {
+        "offerId": "uvm-source",
+        "contract": "common.edit/writer",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "providerId": "org.modkitx/uvm-writer",
+          "fidelityEvidenceId": "uv-materializer-uvm-writer-v1",
+          "formatId": "uvm",
+          "representationId": "source",
+          "mutationMode": "export-only",
+          "minimumRoundTrip": "semantic"
+        }
+      }
+    ]
+  }
+}

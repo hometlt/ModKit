@@ -18,9 +18,12 @@
   "dependencies": {
     "@modkitx/extension-manager": "workspace:*",
     "@modkitx-x3/core": "workspace:*",
+    "@modkitx-x3/code": "workspace:*",
     "@modkitx-x3/host": "workspace:*",
+    "@modkitx-x3/scene": "workspace:*",
     "@modkitx-x3/sdk": "workspace:*",
-    "@modkitx-x3/ui": "workspace:*"
+    "@modkitx-x3/ui": "workspace:*",
+    "@modkitx-x3/uv": "workspace:*"
   },
   "devDependencies": {
     "electron": "^43.4.0"

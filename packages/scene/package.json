@@ -1,0 +1,37 @@
+{
+  "name": "@modkitx-x3/scene",
+  "version": "1.0.0",
+  "description": "Built-in Modkit scene rendering and 3D relation-graph module.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": "./src/index.js",
+    "./module": {
+      "types": "./src/module.d.ts",
+      "default": "./src/module.js"
+    },
+    "./render/browser": "./src/render/browser.js",
+    "./render/headless": "./src/render/headless.js",
+    "./output/png": "./src/output/png.js",
+    "./relations": "./src/relations/index.js",
+    "./relations/three": "./src/relations/three-graph-renderer.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "contributions",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@modkitx-x3/host": "workspace:*",
+    "@modkitx-x3/sdk": "workspace:*",
+    "three": "^0.180.0"
+  },
+  "sideEffects": false
+}

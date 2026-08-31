@@ -18,6 +18,7 @@ import { build } from 'esbuild'
 import { describe, expect, it } from 'vitest'
 import { buildInventory, createHostContributionContractRegistry } from '@modkitx-x3/host'
 import { loadExtensionDirectory } from '@modkitx-x3/host/node'
+import { uvModule } from '@modkitx-x3/uv/module'
 
 const repoRoot = resolve(import.meta.dirname, '..', '..')
 
@@ -40,6 +41,9 @@ const IMAGE_CODECS = [
   'extensions/common/images/src/ktx2/codec.js',
 ]
 
+const reachesUvImplementation = (path: string): boolean =>
+  path.includes('packages/uv/') || path.includes('uv-materializer')
+
 const graphOf = async (entry: string): Promise<readonly string[]> => {
   const result = await build({
     absWorkingDir: repoRoot,
@@ -60,7 +64,7 @@ describe('the UVM materializer is the only writer, and no codec is a second one'
     for (const codec of MODEL_CODECS) {
       const inputs = await graphOf(codec)
       expect(
-        inputs.some(path => path.includes('uv-materializer')),
+        inputs.some(reachesUvImplementation),
         `${codec} must not import the materializer`,
       ).toBe(false)
       // and no codec carries a UVM writer of its own under a different name
@@ -72,9 +76,9 @@ describe('the UVM materializer is the only writer, and no codec is a second one'
   }, 120_000)
 
   it('the materializer reaches no native codec and no platform package', async () => {
-    const inputs = await graphOf('extensions/common/uv-materializer/src/materializer.js')
+    const inputs = await graphOf('packages/uv/src/model/materializer.js')
     // it is the whole point that this module is self-contained: one file, no dependencies at all
-    expect(inputs).toEqual(['extensions/common/uv-materializer/src/materializer.js'])
+    expect(inputs).toEqual(['packages/uv/src/model/materializer.js'])
   }, 60_000)
 
   it('the same boundary holds for the texture materializer (block 12, slice 12-1)', async () => {
@@ -86,7 +90,7 @@ describe('the UVM materializer is the only writer, and no codec is a second one'
     for (const codec of IMAGE_CODECS) {
       const inputs = await graphOf(codec)
       expect(
-        inputs.some(path => path.includes('uv-materializer')),
+        inputs.some(reachesUvImplementation),
         `${codec} must not import the texture materializer`,
       ).toBe(false)
       expect(
@@ -94,8 +98,8 @@ describe('the UVM materializer is the only writer, and no codec is a second one'
         `${codec} must not carry a second UVT writer`,
       ).toBe(false)
     }
-    const inputs = await graphOf('extensions/common/uv-materializer/src/texture-materializer.js')
-    expect(inputs).toEqual(['extensions/common/uv-materializer/src/texture-materializer.js'])
+    const inputs = await graphOf('packages/uv/src/texture/materializer.js')
+    expect(inputs).toEqual(['packages/uv/src/texture/materializer.js'])
   }, 120_000)
 
   it('no minimal-closure profile carries the writer', () => {
@@ -125,16 +129,16 @@ describe('the UVM materializer is the only writer, and no codec is a second one'
     }
   })
 
-  it('the UVM reader and the UVM writer are separate contributions of separate extensions', async () => {
-    const [models, materializer] = await Promise.all([
-      loadExtensionDirectory(join(repoRoot, 'extensions', 'common', 'models')),
-      loadExtensionDirectory(join(repoRoot, 'extensions', 'common', 'uv-materializer')),
-    ])
+  it('the UVM reader extension and the built-in UV writer remain separate owners', async () => {
+    const models = await loadExtensionDirectory(join(repoRoot, 'extensions', 'common', 'models'))
     const inventory = await buildInventory(
-      [models, materializer].map(input => ({
-        ...input,
-        execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
-      })),
+      [
+        {
+          ...models,
+          execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
+        },
+        uvModule.input,
+      ],
       createHostContributionContractRegistry(),
     )
     const byExtension = new Map(
@@ -146,7 +150,7 @@ describe('the UVM materializer is the only writer, and no codec is a second one'
     // the reader stays where it was; the writer and the materializer service live elsewhere
     expect(byExtension.get('models')).toContain('org.modkitx/model-uvm')
     expect(byExtension.get('models')).not.toContain('org.modkitx/uvm-writer')
-    expect(byExtension.get('uv-materializer')).toEqual([
+    expect(byExtension.get('uv')).toEqual([
       'org.modkitx/uv-model-materializer-contract',
       'org.modkitx/uv-texture-materializer-contract',
       'org.modkitx/uvm-materializer',

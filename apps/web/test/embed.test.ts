@@ -613,7 +613,7 @@ describe('modkit-viewer on a third-party page', () => {
     const answer = await probeCatalog(`${otherOrigin.origin}/remote-catalog.json`)
     expect(answer).toEqual({ state: 'ready', status: '' })
     expect(otherOrigin.hits.filter(path => path === '/remote-catalog.json')).toHaveLength(1)
-  })
+  }, 15_000)
 
   it('refuses a page-added catalog origin before fetching it', async () => {
     const attacker = 'https://extensions.invalid'

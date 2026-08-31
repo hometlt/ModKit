@@ -2634,7 +2634,7 @@
       "releaseTrack": "multiverse-priority",
       "origin": "legacy",
       "obligation": "legacy-required",
-      "owner": "extensions/common/uv-materializer",
+      "owner": "packages/uv",
       "plannedBlock": 11,
       "migrationState": "implemented",
       "supportState": "supported",

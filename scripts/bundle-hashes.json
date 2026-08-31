@@ -25,7 +25,7 @@
   "packages/vfs/dist/providers/http/index.js": "98cf71830f828d7676c18b7250988e02b7c7c42f98232d51bc46d1296f802b58",
   "packages/vfs/dist/providers/browser-file/index.js": "0d7f929bcfb87d1a0ec04a6815759f95872bf810cee7eaac8c33048478941da4",
   "packages/vfs/dist/providers/rapid/index.js": "10059f7209819acfba37a9c9f857782ed4e8457c578821796a55c6b4b334f867",
-  "packages/host/dist/index.js": "9437f167911d586b016c4cf6865cf4ac870044f2068063a5d873697c99aa6b65",
+  "packages/host/dist/index.js": "72395fb56cdebd4c8921f25c959ec2a47a7021e50a0f0c482fba91d033bee6e0",
   "packages/host/dist/node/index.js": "170140c75faa7b405c6ff9ae860438d88ef31cbb75598cd79fe77aec9ed00233",
   "packages/host/dist/browser/index.js": "8ff2380e99487a59a7dde0d30bcf0c09cc944278084a0ff92cb568ad3d27ed93",
   "packages/host/dist/execution/index.js": "c30c389928a8b38914b5d578f05d94daca1d835f0ac2d0ecac09ac5ca3c17f54",
@@ -39,11 +39,11 @@
   "packages/host/dist/maps/index.js": "5936a925bb9c3cf0bf6e5f4ed16032d76645066097bbd8f230b7ce8f0b1cf5b5",
   "packages/host/dist/node/worker-bootstrap.js": "8c0fae250763cca0678cd42fb1dedd671c00304ca8f292daad36229e4d458ae1",
   "packages/host/dist/browser/worker-entry.js": "a50a25da240bbebbacbffbb5e45eb426ed1aefa02cf6472c8542f13e2ba943e7",
-  "packages/ui/dist/index.js": "01c3e766051905d8298e395d39da771ae5d5f9a0910e6ad01fb59af3942217c4",
+  "packages/ui/dist/index.js": "9e2b304f97c8df3ae7fbafbe97cce298017ba8aab65580be4533e1eefe4a68b1",
   "packages/ui/dist/viewer/index.js": "7fb7ed9b180935b9d43c5891082c7eb9d488e5a00c323dddc1cce9f8bea73fe5",
   "packages/ui/dist/world/index.js": "c3ab0a5f6723d0d382d35468ee2860ae27f16d1d71e3301ff98d275ed91e373c",
   "packages/ui/dist/composition/index.js": "387461a908affbc2ab66bb848a79eaf78cd1fca3994bac66298f4e29d7bdd7f6",
-  "packages/ui/dist/localization/index.js": "ce4109eb14a947d0ae89c4e921c879c97211e4be69f6de430c958ee58432c26f",
+  "packages/ui/dist/localization/index.js": "5e9b896416b77db52da3139d2043a840045aa17ae789f1c5d44a021a387d9446",
   "packages/ui/dist/code/index.js": "fdaed1f31501d12908f1e1224c786562bacd03fe34dee93476df4aa7563ba4c3",
   "packages/ui/dist/text-virtual/index.js": "f5b5b4c39570824711323d98ae3fb1292c9b4827d00b405a3dcf07df5f51f688",
   "packages/ui/dist/hex/index.js": "67e90c48512e88f4e794d6a2358ccc8b1783d15afea1d6893ab9d51b70074ef5",
@@ -72,5 +72,5 @@
   "packages/ui/dist/explorer/index.js": "b734e4f9df8d20966c1b5beb8cb680c345488c0681b11cd4aa54603272c62670",
   "packages/ui/dist/hex-editor/index.js": "ada3428c4459f03515ddafb9b6754dc389fad1a7214467e6c2d651db13a95f8c",
   "packages/ui/dist/media/encoded.js": "8ca2b8d5766aaed002079f9fa014b3add300755ab0740af81f8108bcdd2955c8",
-  "apps/cli/dist/main.js": "26ed244d3c90ecb29480749265d401c0d1a0fd633c412ac19e04e0c0f3414ae5"
+  "apps/cli/dist/main.js": "24f386fd545afcfcdbf4647c95679def6558a4909a03458a09ce89610ab1988a"
 }

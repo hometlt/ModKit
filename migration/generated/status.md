@@ -52,7 +52,7 @@ Ledger распределяет ровно **258 VS Code + 8 CLI = 266** legacy-
 
 | Поверхность    | Legacy | X3 сейчас |
 | -------------- | ------ | --------- |
-| commands       | 64     | 28        |
+| commands       | 64     | 31        |
 | custom editors | 11     | 1         |
 | languages      | 8      | 0         |
 | views          | 6      | 2         |
@@ -186,7 +186,7 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | Preset                   | Входит с release | Статус      | Семейств | Планируемых | Минимальный closure |
 | ------------------------ | ---------------- | ----------- | -------- | ----------- | ------------------- |
 | Common/Documents         | `mk3-ga`         | `available` | 2        | 0           | да                  |
-| Universal Asset Explorer | `mk3-ga`         | `available` | 11       | 0           | нет                 |
+| Universal Asset Explorer | `mk3-ga`         | `available` | 9        | 0           | нет                 |
 | Headless Mod CI          | `mk3-ga`         | `available` | 6        | 0           | да                  |
 
 ## 9. Матрица проекций

@@ -6,7 +6,7 @@
     "structured-text": ["data"],
     "documents": ["documents"],
     "media": ["images", "vector", "audio", "video"],
-    "models-and-archives": ["models", "rendering-3d", "archives"],
+    "models-and-archives": ["models", "archives"],
     "full-codecs": [
       "data",
       "documents",
@@ -15,11 +15,9 @@
       "audio",
       "video",
       "models",
-      "rendering-3d",
-      "archives",
-      "uv-materializer"
+      "archives"
     ],
-    "editor-and-documents": ["documents", "ui-monaco"]
+    "editor-and-documents": ["documents"]
   },
   "releaseSet": "full-codecs"
 }

@@ -34,7 +34,16 @@ describe('Electron host-owned subject services', () => {
     const services = await createElectronSubjectServices([], {
       onDiagnostic: diagnostic => void backendDiagnostics.push(diagnostic),
     })
-    expect(services.application.main.inventory.extensions).toHaveLength(1)
+    expect(
+      services.application.main.inventory.extensions.map(
+        extension => `${extension.manifest.publisher}/${extension.manifest.id}`,
+      ),
+    ).toEqual([
+      'org.modkitx/code',
+      'org.modkitx/core-native-text',
+      'org.modkitx/scene',
+      'org.modkitx/uv',
+    ])
     expect(services.supportedExtensions).toEqual(['json', 'jsonc', 'txt'])
     expect(services.executionProfiles).toEqual(['trusted-in-process', 'worker-brokered'])
     expect(services.application.workers.profile.realmId).toBe(ELECTRON_WORKER_REALM)

@@ -26,7 +26,9 @@ import { readFile, readdir, stat } from 'node:fs/promises'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { basename, isAbsolute, join, relative, resolve } from 'node:path'
 import type { Diagnostic } from '@modkitx-x3/core'
+import { sceneModule } from '@modkitx-x3/scene/module'
 import type { PermissionGrant, ResourceBudget } from '@modkitx-x3/sdk'
+import { uvModule } from '@modkitx-x3/uv/module'
 import type { MapPreviewResourcePlanResolver } from '@modkitx-x3/host/maps'
 import type { UiLocalizer } from '@modkitx-x3/ui/localization'
 import {
@@ -39,6 +41,7 @@ import {
   serviceProviderFidelityEvidenceRecord,
   createSubjectEditing,
   exposeSubjectRpc,
+  linkedExtensionInputs,
   type ExtensionInput,
   type HostComposition,
   type OpenedSubject,
@@ -57,6 +60,8 @@ import {
 } from '@modkitx-x3/host/node'
 
 import { STAGE_ORDER } from './view-policy.js'
+
+const VSCODE_BUILTIN_MODULES = /* @__PURE__ */ linkedExtensionInputs([sceneModule, uvModule])
 
 import {
   createBridge,
@@ -313,7 +318,7 @@ export async function createVsCodeSubjectHost(
   const bundled = await loadExtensionRoots(catalogRoots, { origin: 'bundled' })
   const installed = await loadExtensionRoots(staticRequests, {
     origin: 'installed',
-    claimed: bundled.coordinates,
+    claimed: [...VSCODE_BUILTIN_MODULES.coordinates, ...bundled.coordinates],
   })
   /*
    * Managed roots are a separate final group: a package may never shadow the build, workspace or
@@ -322,9 +327,14 @@ export async function createVsCodeSubjectHost(
    */
   const managed = await loadExtensionRoots(uniqueManagedRequests, {
     origin: 'installed',
-    claimed: [...bundled.coordinates, ...installed.coordinates],
+    claimed: [
+      ...VSCODE_BUILTIN_MODULES.coordinates,
+      ...bundled.coordinates,
+      ...installed.coordinates,
+    ],
   })
   const extensionInputs: readonly ExtensionInput[] = [
+    ...VSCODE_BUILTIN_MODULES.inputs,
     ...bundled.inputs,
     ...installed.inputs,
     ...managed.inputs,
@@ -337,6 +347,7 @@ export async function createVsCodeSubjectHost(
     topology,
     realms: { host: VSCODE_DESKTOP_EXTENSION_REALM, workers: VSCODE_DESKTOP_WORKER_REALM },
     extensions: extensionInputs,
+    linkedModules: VSCODE_BUILTIN_MODULES.modules,
     policy: VSCODE_WORKER_POLICY,
     disabledExtensions: switchedOffExtensions.ids,
     disabledContributions: switchedOff.ids,

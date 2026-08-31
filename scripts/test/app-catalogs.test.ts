@@ -40,6 +40,11 @@ function fixtureRoot() {
     join(root, 'packages', 'ui', 'contributions'),
     { recursive: true },
   )
+  cpSync(
+    join(repoRoot, 'packages', 'code', 'contributions'),
+    join(root, 'packages', 'code', 'contributions'),
+    { recursive: true },
+  )
   return root
 }
 
@@ -67,7 +72,7 @@ describe('deterministic Electron app catalog emission', () => {
       'utf8',
     )
     expect(presentation).toContain("contributionId: 'org.modkitx.ui/image-stage'")
-    expect(presentation).toContain("extensionId: 'org.modkitx/ui-monaco'")
+    expect(presentation).toContain("extensionId: 'org.modkitx/code'")
     expect(presentation).toContain('priority: 360')
 
     for (const name of ['bundled-catalog.cjs', 'viewer-catalog.d.ts', 'viewer-catalog.js']) {
