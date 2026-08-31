@@ -115,7 +115,7 @@ import {
 } from './session-recovery.js'
 import { applyAppearance, createWebSettingsStore, EXTENSIONS_READ_ONLY_REASON } from './settings.js'
 import { createWebPreviewFallback, createWebPreviewStages, stageIdOf } from './views.js'
-import { createWebLocalizer } from './localization.js'
+import { createWebLocalizer, loadWebLocalizationCatalogs } from './localization.js'
 
 /** Served resources the app offers as a starting point when no folder can be granted. */
 const SAMPLES: readonly { readonly path: string; readonly labelKey: UiMessageKey }[] =
@@ -243,15 +243,16 @@ async function boot(): Promise<void> {
   let settingsDocument = (await settingsStore.read()).document
   const baseUrl = new URL('./', document.baseURI)
   const pageUrl = new URL(window.location.href)
-  const localizer = createWebLocalizer(pageUrl.searchParams.get('lang') ?? navigator.languages)
-  const locale = localizer.locale
-  const t = localizer.text
+  const requestedLocale = pageUrl.searchParams.get('lang') ?? navigator.languages
+  let localizer = createWebLocalizer(requestedLocale)
+  let locale = localizer.locale
+  let t = localizer.text
   document.documentElement.lang = locale
   document.title = t('app.title')
   const booting = document.querySelector('.booting')
   if (booting !== null) setViewerText(booting, t('app.starting'))
   const capability = describeFileCapability(window)
-  const capabilityNotice = t(
+  let capabilityNotice = t(
     capability.directories
       ? 'web.capability.folder'
       : capability.filePicker
@@ -409,6 +410,37 @@ async function boot(): Promise<void> {
       console.info(`[worker] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`)
     },
   })
+
+  /*
+   * The host inventory above is the exact inventory built from bundled, downloaded and
+   * user-granted roots. Localization is data-only and is loaded from that inventory through the
+   * Extension Manager browser VFS before the workbench or settings view is mounted. The extension
+   * picker itself had to exist earlier to recover granted roots, but it is still detached; hand it
+   * the final localizer and rerender it before any user can see the provisional built-in copy.
+   */
+  const loadedLocalization = await loadWebLocalizationCatalogs({
+    inventory: services.main.inventory,
+    baseUrl,
+    loadedExtensionRoots,
+    fetch: (url, init) => fetch(url, init),
+  })
+  for (const diagnostic of loadedLocalization.diagnostics) {
+    bootDiagnostics.push(`${diagnostic.code}: ${diagnostic.message}`)
+  }
+  localizer = createWebLocalizer(requestedLocale, loadedLocalization.catalogs)
+  locale = localizer.locale
+  t = localizer.text
+  capabilityNotice = t(
+    capability.directories
+      ? 'web.capability.folder'
+      : capability.filePicker
+        ? 'web.capability.file'
+        : 'web.capability.input',
+  )
+  document.documentElement.lang = locale
+  document.title = t('app.title')
+  if (booting !== null) setViewerText(booting, t('app.starting'))
+  extensionsUi.setLocalizer(localizer)
   window.addEventListener(
     'pagehide',
     () => void Promise.all([services.dispose(), managedRuntime.dispose()]),

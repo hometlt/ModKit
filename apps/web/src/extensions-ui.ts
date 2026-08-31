@@ -249,6 +249,12 @@ export interface ExtensionsUiOptions {
 
 export interface ExtensionsUi {
   readonly root: HTMLElement
+  /**
+   * Replace the provisional built-in localizer after data-only language packs have been read.
+   * The panel is constructed early so it can discover user-granted roots, but the shell does not
+   * attach it to the visible settings view until this handoff has happened.
+   */
+  setLocalizer(localizer: UiLocalizer): void
   /** Re-reads the stored folders and re-hashes every file. Never trusts a cached digest. */
   reload(): Promise<void>
   /** The last load, for a composition root that wants to hand it to `createWebSubjectServices`. */
@@ -287,8 +293,8 @@ export function mountExtensionsUi(
   const root = documentRef.createElement('section')
   root.className = 'web-extensions-view'
   const newId = options.newId ?? defaultId
-  const localizer = options.localizer ?? createWebLocalizer(globalThis.navigator?.languages)
-  const copy = extensionCopy(localizer)
+  let localizer = options.localizer ?? createWebLocalizer(globalThis.navigator?.languages)
+  let copy = extensionCopy(localizer)
 
   let stored: readonly StoredUserExtension[] = []
   let loaded: LoadedUserExtensionRoots = {
@@ -759,6 +765,11 @@ export function mountExtensionsUi(
   render()
   return {
     root,
+    setLocalizer(nextLocalizer) {
+      localizer = nextLocalizer
+      copy = extensionCopy(nextLocalizer)
+      render()
+    },
     reload,
     current: () => loaded,
   }

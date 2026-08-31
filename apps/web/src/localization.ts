@@ -2,9 +2,24 @@ import {
   createUiLocalizer,
   parseUiCatalogDocument,
   resolveUiLocale,
+  UI_MESSAGES,
   type UiCatalogDocument,
   type UiLocalizer,
 } from '@modkitx-x3/ui/localization'
+import {
+  loadLocalizationCatalogs,
+  type Inventory,
+  type LoadedLocalizationCatalogs,
+} from '@modkitx-x3/host'
+import { createBrowserExtensionVfs } from '@modkitx/extension-manager/browser'
+import type { RandomAccessSource, VfsMount, VfsNode, VfsOpenOptions } from '@modkitx-x3/vfs'
+
+import {
+  isUserExtensionUrl,
+  NO_USER_EXTENSION_ROOTS,
+  USER_EXTENSION_ARTIFACT_ORIGIN,
+  type LoadedUserExtensionRoots,
+} from './extension-roots.js'
 
 const EN = parseUiCatalogDocument(
   {
@@ -473,6 +488,277 @@ const RU = parseUiCatalogDocument(
 )
 
 export const WEB_UI_CATALOGS = Object.freeze([EN, RU])
+
+const WEB_ENGLISH_FALLBACK = Object.freeze({
+  ...UI_MESSAGES.en,
+  ...EN.messages,
+})
+
+/**
+ * Product-owned message roots that a data-only language pack may translate. A catalog can also
+ * publish the exact prefix derived from its own namespace, which lets an extension translate its
+ * own UI without gaining authority over another extension's messages.
+ */
+export const WEB_LOCALIZATION_TRANSLATABLE_PREFIXES: readonly string[] = Object.freeze(
+  [...new Set(Object.keys(WEB_ENGLISH_FALLBACK).map(key => `${key.split('.')[0]}.`))].sort(),
+)
+
+interface WebCatalogFetchHeaders {
+  get(name: string): string | null
+}
+
+interface WebCatalogFetchResponse {
+  readonly ok: boolean
+  readonly status: number
+  readonly headers: WebCatalogFetchHeaders
+  readonly url?: string
+  readonly redirected?: boolean
+  arrayBuffer(): Promise<ArrayBuffer>
+}
+
+type WebCatalogFetch = (
+  url: string,
+  init?: {
+    readonly method?: string
+    readonly headers?: Readonly<Record<string, string>>
+    readonly redirect?: 'manual'
+    readonly signal?: AbortSignal
+  },
+) => Promise<WebCatalogFetchResponse>
+
+export interface LoadWebLocalizationCatalogsOptions {
+  /** Exact inventory produced by the same composed inputs the PWA gives its host. */
+  readonly inventory: Inventory
+  /** Page base URL; ordinary bundled catalog resources are confined to this origin by default. */
+  readonly baseUrl: string | URL
+  /** Combined managed + user roots whose synthetic URLs are served from granted/stored bytes. */
+  readonly loadedExtensionRoots?: LoadedUserExtensionRoots
+  /** Injectable page fetch for tests and embedded hosts. */
+  readonly fetch?: WebCatalogFetch
+  /** Additional product-configured artifact origins; none are inferred from extension manifests. */
+  readonly allowedOrigins?: readonly string[]
+  readonly signal?: AbortSignal
+}
+
+const emptyHeaders: WebCatalogFetchHeaders = Object.freeze({ get: () => null })
+
+function byteHeaders(length: number): WebCatalogFetchHeaders {
+  return Object.freeze({
+    get(name: string): string | null {
+      switch (name.toLowerCase()) {
+        case 'accept-ranges':
+          return 'bytes'
+        case 'content-length':
+          return String(length)
+        default:
+          return null
+      }
+    },
+  })
+}
+
+function arrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(bytes.byteLength)
+  copy.set(bytes)
+  return copy.buffer
+}
+
+/**
+ * The synthetic folder source is deliberately a tiny fetch surface and does not implement HTTP
+ * HEAD/ranges. Adapt it here, under the localization byte ceiling, so the shared HTTP VFS still
+ * gets its normal bounded random-access contract. Bytes are cached only for this one catalog-load
+ * pass and are still checked against the inventory's per-file SHA-256 by the host loader.
+ */
+function syntheticCatalogFetch(roots: LoadedUserExtensionRoots): WebCatalogFetch {
+  const cache = new Map<string, Promise<Uint8Array | undefined>>()
+  const bytesFor = (url: string, signal?: AbortSignal): Promise<Uint8Array | undefined> => {
+    let pending = cache.get(url)
+    if (pending === undefined) {
+      pending = roots
+        .serve(url, signal === undefined ? undefined : { signal })
+        .then(async value => (value.ok ? new Uint8Array(await value.arrayBuffer()) : undefined))
+      cache.set(url, pending)
+    }
+    return pending
+  }
+  return async (url, init) => {
+    init?.signal?.throwIfAborted()
+    const bytes = await bytesFor(url, init?.signal)
+    if (bytes === undefined) {
+      return Object.freeze({
+        ok: false,
+        status: 404,
+        headers: emptyHeaders,
+        url,
+        arrayBuffer: async () => new ArrayBuffer(0),
+      })
+    }
+    const headers = byteHeaders(bytes.byteLength)
+    if (init?.method === 'HEAD') {
+      return Object.freeze({
+        ok: true,
+        status: 200,
+        headers,
+        url,
+        arrayBuffer: async () => new ArrayBuffer(0),
+      })
+    }
+    const range = init?.headers?.['Range'] ?? init?.headers?.['range']
+    const match = range?.match(/^bytes=(\d+)-(\d+)$/u)
+    if (match !== undefined && match !== null) {
+      const start = Number(match[1])
+      const end = Number(match[2])
+      if (
+        !Number.isSafeInteger(start) ||
+        !Number.isSafeInteger(end) ||
+        start < 0 ||
+        end < start ||
+        end >= bytes.byteLength
+      ) {
+        return Object.freeze({
+          ok: false,
+          status: 416,
+          headers,
+          url,
+          arrayBuffer: async () => new ArrayBuffer(0),
+        })
+      }
+      const selected = bytes.slice(start, end + 1)
+      return Object.freeze({
+        ok: true,
+        status: 206,
+        headers: byteHeaders(selected.byteLength),
+        url,
+        arrayBuffer: async () => arrayBuffer(selected),
+      })
+    }
+    return Object.freeze({
+      ok: true,
+      status: 200,
+      headers,
+      url,
+      arrayBuffer: async () => arrayBuffer(bytes),
+    })
+  }
+}
+
+function containedCatalogUrl(rootUri: string, path: string): string {
+  const root = new URL(rootUri)
+  if (!root.href.endsWith('/') || root.search !== '' || root.hash !== '') {
+    throw new TypeError('localization artifact root must be a query-free directory URL')
+  }
+  const target = new URL(path, root)
+  if (
+    target.origin !== root.origin ||
+    !target.pathname.startsWith(root.pathname) ||
+    target.username !== root.username ||
+    target.password !== root.password
+  ) {
+    throw new TypeError(`localization resource escapes artifact root: ${path}`)
+  }
+  return target.href
+}
+
+/**
+ * HTTP VFS mounts represent one URL, while inventory artifact roots represent directories. This
+ * narrow adapter resolves a requested child under that directory and then opens the exact URL
+ * through the Extension Manager's browser VFS. It adds no filesystem or direct-fetch bypass.
+ */
+function directoryCatalogVfs(vfs: {
+  openMount(uri: string, options?: VfsOpenOptions): Promise<VfsMount>
+}): { openMount(uri: string, options?: VfsOpenOptions): Promise<VfsMount> } {
+  return {
+    async openMount(rootUri, options) {
+      const children = new Map<string, VfsMount>()
+      let disposed = false
+      const child = async (path: string): Promise<VfsMount> => {
+        if (disposed) throw new Error(`localization artifact mount is disposed: ${rootUri}`)
+        let mount = children.get(path)
+        if (mount === undefined) {
+          mount = await vfs.openMount(containedCatalogUrl(rootUri, path), options)
+          children.set(path, mount)
+        }
+        return mount
+      }
+      const mount: VfsMount = {
+        id: rootUri,
+        rootUri,
+        revision: `provider-token:web-localization-${encodeURIComponent(rootUri)}`,
+        async stat(path, signal): Promise<VfsNode | undefined> {
+          const exact = await child(path)
+          const node = await exact.stat('', signal)
+          return node === undefined
+            ? undefined
+            : Object.freeze({ ...node, path, name: path.split('/').at(-1) ?? path })
+        },
+        async *list(): AsyncIterable<VfsNode> {
+          throw new Error('localization artifact mounts do not allow directory enumeration')
+        },
+        async open(path, signal): Promise<RandomAccessSource> {
+          return (await child(path)).open('', signal)
+        },
+        async dispose(): Promise<void> {
+          if (disposed) return
+          disposed = true
+          await Promise.all([...children.values()].map(async value => value.dispose()))
+          children.clear()
+        },
+      }
+      return mount
+    },
+  }
+}
+
+function namespaceMessagePrefix(namespace: string): string {
+  const tail = namespace.split(/[./]/u).at(-1) ?? namespace
+  const owner = tail.replace(/-(?:app|ui|localization|messages)$/u, '') || tail
+  return `${owner}.`
+}
+
+/**
+ * Load every enabled localization contribution in the PWA's composed inventory. English and
+ * Russian stay embedded in the UI and therefore remain available if VFS, policy, integrity or
+ * JSON validation refuses every external catalog.
+ */
+export async function loadWebLocalizationCatalogs(
+  options: LoadWebLocalizationCatalogsOptions,
+): Promise<LoadedLocalizationCatalogs<UiCatalogDocument>> {
+  const roots = options.loadedExtensionRoots ?? NO_USER_EXTENSION_ROOTS
+  const pageFetch = options.fetch ?? (globalThis.fetch.bind(globalThis) as WebCatalogFetch)
+  const syntheticFetch = syntheticCatalogFetch(roots)
+  const routedFetch: WebCatalogFetch = (url, init) =>
+    isUserExtensionUrl(url) ? syntheticFetch(url, init) : pageFetch(url, init)
+  const baseOrigin = new URL(options.baseUrl).origin
+  const allowedOrigins = Object.freeze(
+    [
+      ...new Set([
+        baseOrigin,
+        new URL(USER_EXTENSION_ARTIFACT_ORIGIN).origin,
+        ...(options.allowedOrigins ?? []),
+      ]),
+    ].sort(),
+  )
+  const created = createBrowserExtensionVfs({
+    fetch: routedFetch,
+    allowedOrigins,
+  })
+  try {
+    return await loadLocalizationCatalogs(options.inventory, {
+      vfs: directoryCatalogVfs(created.vfs),
+      parseCatalog: parseUiCatalogDocument,
+      fallbackCatalog: WEB_ENGLISH_FALLBACK,
+      authorizeMessagePrefixes: request => {
+        const owned = namespaceMessagePrefix(request.catalogNamespace)
+        return request.requestedMessagePrefixes.filter(
+          prefix => prefix === owned || WEB_LOCALIZATION_TRANSLATABLE_PREFIXES.includes(prefix),
+        )
+      },
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
+    })
+  } finally {
+    await created.vfs.dispose()
+  }
+}
 
 export function createWebLocalizer(
   requested: string | readonly string[] | undefined,

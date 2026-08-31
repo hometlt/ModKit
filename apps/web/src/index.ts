@@ -13,7 +13,10 @@ import { createWebLocalizer } from './localization.js'
 export {
   createWebLocalizer,
   createWebLocalizerFromCatalogLoader,
+  loadWebLocalizationCatalogs,
+  WEB_LOCALIZATION_TRANSLATABLE_PREFIXES,
   WEB_UI_CATALOGS,
+  type LoadWebLocalizationCatalogsOptions,
   type WebLocalizationCatalogLoader,
 } from './localization.js'
 export {
