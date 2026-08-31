@@ -2133,17 +2133,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       configuredDisabledContributions(configuration.readDisabledContributions()).ids,
     )
     const choices = host.contributions
-      .filter(
-        contribution =>
-          contribution.id !== undefined &&
-          contribution.contract === 'org.modkitx/codec-contribution' &&
-          disabled.has(contribution.id) === enabled,
-      )
-      .map(contribution => ({
-        label: contribution.displayName,
-        description: contribution.id,
-        id: contribution.id as string,
-      }))
+      .flatMap(contribution => {
+        const id = contribution.id
+        return id === undefined ||
+          contribution.contract !== 'org.modkitx/codec-contribution' ||
+          disabled.has(id) !== enabled
+          ? []
+          : [{ label: contribution.displayName, description: id, id }]
+      })
       .sort((left, right) => left.label.localeCompare(right.label))
     const picked = await vscode.window.showQuickPick(choices, {
       title: `${localizer.text(
