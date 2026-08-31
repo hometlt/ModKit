@@ -214,7 +214,10 @@ describe('localization contributions through the host VFS boundary', () => {
     )
     const allowed = await loadLocalizationCatalogs(inventory, {
       ...parserOptions(allowedVfs),
-      authorizeMessagePrefixes: request => request.requestedMessagePrefixes,
+      authorizeMessagePrefixes: request => {
+        expect(request.catalogNamespace).toBe('org.example.pack')
+        return request.requestedMessagePrefixes
+      },
     })
     expect(allowed.diagnostics).toEqual([])
     expect(allowed.catalogs).toHaveLength(1)

@@ -58,6 +58,8 @@ export interface LocalizationMessagePrefixAuthorizationRequest {
   readonly contributionId: string
   readonly catalogPath: string
   readonly locale: string
+  /** Namespace read as an own JSON data property before the catalog parser is invoked. */
+  readonly catalogNamespace: string
   /** Prefixes requested by the inert contribution manifest, never grants by themselves. */
   readonly requestedMessagePrefixes: readonly string[]
 }
@@ -197,9 +199,11 @@ async function authorizedPrefixes(
   authorizer: LocalizationMessagePrefixAuthorizer | undefined,
 ): Promise<readonly string[]> {
   const requested = Object.freeze([...candidate.resource.messagePrefixes])
+  const namespace = catalogNamespace(document)
+  if (namespace === undefined) {
+    throw new TypeError('localization catalog namespace must be a string data property')
+  }
   if (authorizer === undefined) {
-    const namespace = catalogNamespace(document)
-    if (namespace === undefined) return Object.freeze([])
     const owned = namespaceOwnedMessagePrefix(namespace)
     return Object.freeze(requested.filter(prefix => prefix === owned))
   }
@@ -210,6 +214,7 @@ async function authorizedPrefixes(
       contributionId,
       catalogPath: candidate.resource.path,
       locale: candidate.resource.locale,
+      catalogNamespace: namespace,
       requestedMessagePrefixes: requested,
     }),
   )
