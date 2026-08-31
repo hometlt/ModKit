@@ -15,7 +15,7 @@ import * as m4a from './m4a/codec.js'
 import * as wav from './wav/codec.js'
 
 export const audio = defineLinkedExtension({
-  source: 'linked:extensions/common/audio',
+  source: 'linked:extensions/audio',
   packageJson,
   contributions: [
     { path: 'contributions/codec-aac.json', manifest: aacManifest },

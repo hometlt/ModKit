@@ -1,6 +1,6 @@
 /**
  * Block 11 slice 11A.2 — Markdown is not ported again; it already lives in
- * `extensions/common/documents`. What the slice owes it is three closures:
+ * `extensions/documents`. What the slice owes it is three closures:
  *
  *  - every alias the legacy route answered for (`.md`, `.markdown`, `.mdown`, `.mkd`) is detected
  *    by bounded structure plus the alias, not by extension alone;
@@ -26,15 +26,7 @@ import {
 } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const nativeModule = join(
-  repoRoot,
-  'extensions',
-  'common',
-  'documents',
-  'src',
-  'markdown',
-  'codec.js',
-)
+const nativeModule = join(repoRoot, 'extensions', 'documents', 'src', 'markdown', 'codec.js')
 const budget: ResourceBudget = {
   maxInputBytes: 10_000_000n,
   maxDepth: 16,
@@ -129,7 +121,7 @@ describe('11A common/documents markdown', () => {
   it('answers for every legacy alias through structure plus the alias, never the extension alone', async () => {
     const manifest = JSON.parse(
       await readFile(
-        join(repoRoot, 'extensions', 'common', 'documents', 'contributions', 'codec-markdown.json'),
+        join(repoRoot, 'extensions', 'documents', 'contributions', 'codec-markdown.json'),
         'utf8',
       ),
     ) as {
@@ -164,7 +156,7 @@ describe('11A common/documents markdown', () => {
 
     const manifest = JSON.parse(
       await readFile(
-        join(repoRoot, 'extensions', 'common', 'documents', 'contributions', 'codec-markdown.json'),
+        join(repoRoot, 'extensions', 'documents', 'contributions', 'codec-markdown.json'),
         'utf8',
       ),
     ) as { spec: { operations: readonly { id: string; mutatesSource: boolean }[] } }

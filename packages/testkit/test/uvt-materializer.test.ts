@@ -149,12 +149,12 @@ async function decodedImage(
 const FAMILIES = [
   {
     format: 'bmp',
-    codec: 'extensions/common/images/src/bmp/codec.js',
+    codec: 'extensions/images/src/bmp/codec.js',
     fixture: join(syntheticDir, 'minimal.bmp'),
   },
   {
     format: 'tga',
-    codec: 'extensions/common/images/src/tga/codec.js',
+    codec: 'extensions/images/src/tga/codec.js',
     fixture: join(syntheticDir, 'minimal.tga'),
   },
 ] as const

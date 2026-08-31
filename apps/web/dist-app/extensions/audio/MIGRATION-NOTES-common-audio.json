@@ -4,13 +4,13 @@
   "source": {
     "repository": "modkitx",
     "manifests": [
-      "extensions/common/audio/codecs/aac/codec.manifest.json",
-      "extensions/common/audio/codecs/flac/codec.manifest.json",
-      "extensions/common/audio/codecs/m4a/codec.manifest.json",
-      "extensions/common/audio/codecs/mp3/codec.manifest.json",
-      "extensions/common/audio/codecs/ogg/codec.manifest.json",
-      "extensions/common/audio/codecs/opus/codec.manifest.json",
-      "extensions/common/audio/codecs/wav/codec.manifest.json"
+      "extensions/audio/codecs/aac/codec.manifest.json",
+      "extensions/audio/codecs/flac/codec.manifest.json",
+      "extensions/audio/codecs/m4a/codec.manifest.json",
+      "extensions/audio/codecs/mp3/codec.manifest.json",
+      "extensions/audio/codecs/ogg/codec.manifest.json",
+      "extensions/audio/codecs/opus/codec.manifest.json",
+      "extensions/audio/codecs/wav/codec.manifest.json"
     ]
   },
   "verdict": "mechanical",

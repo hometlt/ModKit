@@ -78,7 +78,7 @@ function fixture() {
   if (images === undefined) throw new Error('the fixture requires the images extension family')
   json(join(root, 'config', 'build-composition.json'), {
     schemaVersion: 1,
-    bundledBaseRoots: ['extensions/common'],
+    bundledBaseRoots: ['extensions'],
     extensionSets: { release: ['images'] },
     releaseSet: 'release',
   })
@@ -103,7 +103,7 @@ function fixture() {
     roots: [
       {
         name: 'images',
-        directory: 'common/images',
+        directory: 'images',
         declared: true,
         coordinate: 'org.modkitx/images',
         contributions: [...images.contributions].sort(),
@@ -120,18 +120,11 @@ function fixture() {
     'MIT License\n\nPermission is hereby granted for this fixture.\n',
   )
 
-  extension(
-    root,
-    'extensions/common/images',
-    'modkit-extension-x3-images',
-    'org.modkitx',
-    'images',
-    'MIT',
-  )
+  extension(root, 'extensions/images', 'modkit-extension-x3-images', 'org.modkitx', 'images', 'MIT')
   extension(root, 'external/alpha', 'fixture-alpha', 'example.test', 'alpha', 'MIT')
   const catalogPath = join(root, 'apps', 'vscode', 'generated', 'bundled-catalog.json')
   const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'))
-  catalog.roots[0].digest = canonicalExtensionDigest(root, 'extensions/common/images')
+  catalog.roots[0].digest = canonicalExtensionDigest(root, 'extensions/images')
   json(catalogPath, catalog)
   for (const app of [
     ['automation-host', '@modkitx-x3/automation-host'],
@@ -244,29 +237,29 @@ describe('focused local RC artifacts', () => {
 
   it('fails closed on missing package licenses', () => {
     const { parent, root } = fixture()
-    const packagePath = join(root, 'extensions', 'common', 'images', 'package.json')
+    const packagePath = join(root, 'extensions', 'images', 'package.json')
     const metadata = JSON.parse(readFileSync(packagePath, 'utf8')) as Record<string, unknown>
     delete metadata.license
     metadata.private = true
     json(packagePath, metadata)
     const catalogPath = join(root, 'apps', 'vscode', 'generated', 'bundled-catalog.json')
     const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'))
-    catalog.roots[0].digest = canonicalExtensionDigest(root, 'extensions/common/images')
+    catalog.roots[0].digest = canonicalExtensionDigest(root, 'extensions/images')
     json(catalogPath, catalog)
     expect(() => buildRc({ repoRoot: root, outDir: join(parent, 'missing-license') })).toThrow(
-      /release component has no declared license: extensions\/common\/images\/package.json/u,
+      /release component has no declared license: extensions\/images\/package.json/u,
     )
   })
 
   it('fails closed on unknown first-party license declarations', () => {
     const { parent, root } = fixture()
-    const packagePath = join(root, 'extensions', 'common', 'images', 'package.json')
+    const packagePath = join(root, 'extensions', 'images', 'package.json')
     const metadata = JSON.parse(readFileSync(packagePath, 'utf8')) as Record<string, unknown>
     metadata.license = 'LicenseRef-Unknown'
     json(packagePath, metadata)
     const catalogPath = join(root, 'apps', 'vscode', 'generated', 'bundled-catalog.json')
     const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'))
-    catalog.roots[0].digest = canonicalExtensionDigest(root, 'extensions/common/images')
+    catalog.roots[0].digest = canonicalExtensionDigest(root, 'extensions/images')
     json(catalogPath, catalog)
     expect(() => buildRc({ repoRoot: root, outDir: join(parent, 'unknown-license') })).toThrow(
       /unsupported first-party license LicenseRef-Unknown/u,
@@ -280,7 +273,7 @@ describe('focused local RC artifacts', () => {
     catalog.roots[0].digest = 'sha256:stale'
     json(catalogPath, catalog)
     expect(() => buildRc({ repoRoot: root, outDir: join(parent, 'stale-catalog') })).toThrow(
-      /generated extension catalog digest is stale for extensions\/common\/images/u,
+      /generated extension catalog digest is stale for extensions\/images/u,
     )
   })
 

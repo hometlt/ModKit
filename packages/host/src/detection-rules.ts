@@ -109,7 +109,7 @@ export const DETECTION_UNTIE_RULES: readonly DetectionUntieRule[] = Object.freez
   Object.freeze({
     id: 'a-foreign-format-scores-zero-not-low',
     rule: 'Bytes that positively declare a *different* format are a refusal, not a weak match: an ODP renamed to `.odt` scores zero rather than a hedged number, so it can never win by being the only candidate left.',
-    enforcedBy: 'extensions/common/documents/src/odf/package.js and its peers',
+    enforcedBy: 'extensions/documents/src/odf/package.js and its peers',
   }),
   Object.freeze({
     id: 'a-declaration-scopes-a-generic',

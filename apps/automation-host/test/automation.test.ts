@@ -67,7 +67,7 @@ describe('automation open path (S7)', () => {
   it('an automation step opens a subject through the worker realm: portable variant, worker-brokered', async () => {
     const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
     const host = await createAutomationHost([], {
-      extensionRoots: [join(repositoryRoot, 'extensions', 'common', 'images')],
+      extensionRoots: [join(repositoryRoot, 'extensions', 'images')],
     })
     expect(host.subjects.inventory).toBe(host.composition.inventory)
     expect(host.subjects.target).toBe(host.workers.target)
@@ -112,7 +112,7 @@ describe('automation open path (S7)', () => {
   it('keeps a disabled configured contribution inventoried but removes it from resolution', async () => {
     const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
     const host = await createAutomationHost([], {
-      extensionRoots: [join(repositoryRoot, 'extensions', 'common', 'images')],
+      extensionRoots: [join(repositoryRoot, 'extensions', 'images')],
       disabledContributions: ['org.modkitx/image-png'],
     })
     expect(host.describeHost().contributions).toContain('org.modkitx/image-png')

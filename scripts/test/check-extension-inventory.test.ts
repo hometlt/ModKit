@@ -39,7 +39,7 @@ describe('extension inventory gate (MK3/27 §0.2/§5.1, 24 §8 data-only read)',
   it('discovers nested authored roots and ignores nested package directories without modkit', () => {
     const root = mkdtempSync(join(tmpdir(), 'x3-extension-inventory-nested-'))
     temporaryRoots.push(root)
-    const group = join(root, 'extensions', 'common', 'data')
+    const group = join(root, 'extensions', 'data')
     mkdirSync(group, { recursive: true })
     writeFileSync(
       join(group, 'package.json'),
@@ -61,13 +61,13 @@ describe('extension inventory gate (MK3/27 §0.2/§5.1, 24 §8 data-only read)',
     temporaryRoots.push(root)
     cpSync(
       join(fixturesRoot, 'broken', 'extensions', 'common', 'broken'),
-      join(root, 'extensions', 'common', 'data', 'text', 'broken'),
+      join(root, 'extensions', 'data', 'text', 'broken'),
       { recursive: true },
     )
 
     const { status, stderr } = runGate(['--root', root])
     expect(status).toBe(1)
-    expect(stderr).toContain('extensions/common/data/text/broken')
+    expect(stderr).toContain('extensions/data/text/broken')
     expect(stderr).toContain('x3.sdk/pattern-without-matches')
   })
 

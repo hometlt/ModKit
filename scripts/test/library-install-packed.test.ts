@@ -46,7 +46,7 @@ describe('createModkit as a packed foreign-project dependency', () => {
       const tarballs = [
         ...['core', 'sdk', 'vfs', 'host'].map(name => pack(join(repoRoot, 'packages', name))),
         pack(join(repoRoot, 'packages', 'codec-kit')),
-        pack(join(repoRoot, 'extensions', 'common', 'images')),
+        pack(join(repoRoot, 'extensions', 'images')),
       ]
       const consumer = join(temporaryRoot, 'consumer')
       mkdirSync(consumer, { recursive: true })

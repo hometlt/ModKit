@@ -44,7 +44,7 @@ import { createBridge } from '../src/bridge.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
 /** The directory the first-party catalog lives in; discovery scans its children, not itself. */
-const commonExtensions = join(repositoryRoot, 'extensions', 'common')
+const commonExtensions = join(repositoryRoot, 'extensions')
 const PNG_CODEC = 'org.modkitx/image-png'
 
 const extensionFolders = ((): { readonly ok: string; readonly junk: string } => {

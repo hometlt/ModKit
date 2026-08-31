@@ -73,7 +73,7 @@ export async function openImageCodec(
   signal?: AbortSignal,
 ) {
   const module = (await import(
-    pathToFileURL(join(repoRoot, 'extensions', 'common', 'images', 'src', entrypoint)).href
+    pathToFileURL(join(repoRoot, 'extensions', 'images', 'src', entrypoint)).href
   )) as { createCodec(context: unknown): { open: unknown } }
   const instance = module.createCodec({}) as {
     open(

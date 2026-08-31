@@ -1305,7 +1305,7 @@ export function catalogCandidates(
   repositoryRoot?: string,
 ): readonly string[] {
   /*
-   * Bases, not catalogs: the generated catalog stores `common/images`, so each candidate is the
+   * Bases, not catalogs: the generated catalog stores `images`, so each candidate is the
    * directory that `extensions/` prefix is joined onto.
    *
    * A checkout's own tree comes before the packaged location because it is the one whose roots can

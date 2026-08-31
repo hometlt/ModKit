@@ -17,10 +17,10 @@ import { createModkit, type Modkit } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { images } = (await import(
-  pathToFileURL(join(repoRoot, 'extensions', 'common', 'images', 'src', 'linked.js')).href
+  pathToFileURL(join(repoRoot, 'extensions', 'images', 'src', 'linked.js')).href
 )) as { readonly images: LinkedExtension }
 const pngFixture = join(repoRoot, 'apps', 'web', 'public', 'favicon-32.png')
-const audioDir = join(repoRoot, 'extensions', 'common', 'audio')
+const audioDir = join(repoRoot, 'extensions', 'audio')
 
 const scratch = mkdtempSync(join(tmpdir(), 'x3-linked-'))
 mkdirSync(join(scratch, 'writable'), { recursive: true })

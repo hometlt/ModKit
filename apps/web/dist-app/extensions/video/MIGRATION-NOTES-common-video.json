@@ -4,12 +4,12 @@
   "source": {
     "repository": "modkitx",
     "manifests": [
-      "extensions/common/video/codecs/avi/codec.manifest.json",
-      "extensions/common/video/codecs/mp4/codec.manifest.json",
-      "extensions/common/video/codecs/mpeg/codec.manifest.json",
-      "extensions/common/video/codecs/ogv/codec.manifest.json",
-      "extensions/common/video/codecs/webm/codec.manifest.json",
-      "extensions/common/video/codecs/wmv/codec.manifest.json"
+      "extensions/video/codecs/avi/codec.manifest.json",
+      "extensions/video/codecs/mp4/codec.manifest.json",
+      "extensions/video/codecs/mpeg/codec.manifest.json",
+      "extensions/video/codecs/ogv/codec.manifest.json",
+      "extensions/video/codecs/webm/codec.manifest.json",
+      "extensions/video/codecs/wmv/codec.manifest.json"
     ]
   },
   "verdict": "mechanical",

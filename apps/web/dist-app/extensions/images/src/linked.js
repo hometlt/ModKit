@@ -49,7 +49,7 @@ import * as webp from './webp/codec.js'
 import * as pngWriter from './writers/png-encoder.js'
 
 export const images = defineLinkedExtension({
-  source: 'linked:extensions/common/images',
+  source: 'linked:extensions/images',
   packageJson,
   contributions: [
     { path: 'contributions/codec-ani.json', manifest: aniManifest },

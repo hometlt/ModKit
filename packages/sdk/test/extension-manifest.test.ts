@@ -8,7 +8,7 @@ import {
 } from '@modkitx-x3/sdk'
 
 // Provenance fixture (PORTED.md): converted from modkitx
-// extensions/common/images/extension.json@8a21060f — legacy `contributes.codecs` list and
+// extensions/images/extension.json@8a21060f — legacy `contributes.codecs` list and
 // display metadata dropped; discovery becomes an explicit contributionManifests pattern.
 const convertedImagesPackageJson = {
   name: '@modkitx-x3-fixture/images',

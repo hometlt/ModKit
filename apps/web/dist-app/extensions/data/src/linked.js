@@ -43,7 +43,7 @@ import * as xmlWriter from './editing/xml-writer.js'
 import * as yamlWriter from './editing/yaml-writer.js'
 
 export const data = defineLinkedExtension({
-  source: 'linked:extensions/common/data',
+  source: 'linked:extensions/data',
   packageJson,
   contributions: [
     { path: 'contributions/codec-csv.json', manifest: codecCsvManifest },

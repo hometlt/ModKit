@@ -47,7 +47,7 @@ const extensionNameByFormat: Readonly<Record<string, string>> = Object.freeze({
   toml: 'common-data',
 })
 const nativeTextRoot = join(repositoryRoot, 'packages', 'host', 'native-text')
-const commonDataRoot = join(repositoryRoot, 'extensions', 'common', 'data')
+const commonDataRoot = join(repositoryRoot, 'extensions', 'data')
 const textExtensionRoots = Object.freeze([nativeTextRoot, commonDataRoot])
 const extensionRootFor = (format: string): string => {
   const extension = extensionNameByFormat[format]

@@ -3,13 +3,13 @@
   "schemaVersion": 2,
   "minimumTotal": 53,
   "families": {
-    "common/archives": 13,
-    "common/audio": 4,
-    "common/documents": 4,
-    "common/images": 20,
-    "common/models": 3,
+    "archives": 13,
+    "audio": 4,
+    "documents": 4,
+    "images": 20,
+    "models": 3,
     "core/native-text": 3,
-    "common/vector": 2,
-    "common/video": 4
+    "vector": 2,
+    "video": 4
   }
 }

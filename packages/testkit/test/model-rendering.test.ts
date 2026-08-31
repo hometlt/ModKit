@@ -119,7 +119,7 @@ describe('decoded model to headless PNG vertical', () => {
   it.each([
     {
       format: 'glb',
-      codec: join(repoRoot, 'extensions', 'common', 'models', 'src', 'gltf', 'codec.js'),
+      codec: join(repoRoot, 'extensions', 'models', 'src', 'gltf', 'codec.js'),
       bytes: glbFixture,
       primitiveId: 'mesh-0-primitive-0',
       digest: 'c63d264e1bf0670f4b3f54707f3428818af9864e54c6eea60de5f9935d2bf218',

@@ -37,8 +37,8 @@ const context: ContributionContext = {
   },
 }
 const CODECS = {
-  obj: join(repoRoot, 'extensions', 'common', 'models', 'src', 'obj', 'codec.js'),
-  uvm: join(repoRoot, 'extensions', 'common', 'models', 'src', 'uvm', 'codec.js'),
+  obj: join(repoRoot, 'extensions', 'models', 'src', 'obj', 'codec.js'),
+  uvm: join(repoRoot, 'extensions', 'models', 'src', 'uvm', 'codec.js'),
 } as const
 
 function inputFor(name: string, bytes: Uint8Array): AssetInput {

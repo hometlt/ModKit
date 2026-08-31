@@ -41,8 +41,8 @@ import {
 } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const documentsDir = join(repoRoot, 'extensions', 'common', 'documents')
-const archivesDir = join(repoRoot, 'extensions', 'common', 'archives')
+const documentsDir = join(repoRoot, 'extensions', 'documents')
+const archivesDir = join(repoRoot, 'extensions', 'archives')
 
 const HOST = 'org.example.app/host'
 const WORKERS = 'org.example.app/workers'
@@ -436,7 +436,7 @@ describe('F3 raw writer — a format-blind editor saves through the coordinator'
 
   /*
    * Block 11 slice 11A.2. Markdown is not ported again — it already lives in
-   * `extensions/common/documents`. What the slice owes it is an edit transaction on the existing
+   * `extensions/documents`. What the slice owes it is an edit transaction on the existing
    * seam: the format-blind editor authors a range edit, the coordinator commits it, and the
    * markdown codec opens the result. The codec itself stays read-only throughout.
    */

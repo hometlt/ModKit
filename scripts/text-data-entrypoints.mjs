@@ -42,7 +42,7 @@ export function discoverTextDataEntrypoints(repoRoot, requestedFormatIds) {
   const found = new Map()
   const roots = [
     join(repoRoot, 'packages', 'host', 'native-text'),
-    join(repoRoot, 'extensions', 'common'),
+    join(repoRoot, 'extensions'),
   ].filter(existsSync)
   for (const manifestPath of roots.flatMap(contributionFiles)) {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))

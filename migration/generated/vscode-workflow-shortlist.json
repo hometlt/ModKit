@@ -4,10 +4,10 @@
   "generator": "scripts/migration/emit-vscode-workflow-ledger.mjs",
   "inputs": {
     "sourceInventorySha256": "efc7c81a2686d55e40734ac4cf1b3bc0bf0de5a9d33b0609291ec1c6480a11cd",
-    "decisionsSha256": "75a99425efd1a2d7ff476c56b8f334d9ee840696c5543ded0121fe250befc30d",
+    "decisionsSha256": "26d02eeacc475f22553509e6ab28c736bb94eb32ed0bb9d0dcafd08bcb5e4638",
     "vscodeManifestSha256": "f1dd64576003079dce93d214fd422996552a8bc4601cfbcbfa662e6368c49038",
     "vscodeExtensionSourceSha256": "10fc0d5da6680fde404904adaa8a16f3e59d0720b5599d82d11cffb3b050d995",
-    "vscodeCatalogSha256": "05d86cee1fde214f5d8dfcf942c713cf477d19e6d84274f8444cb1c29c3db0b4",
+    "vscodeCatalogSha256": "3ba11c6a1e8b95e83d69319814f4d07a34a78a66260c7379e8817d23ab27ff7c",
     "vscodePublicationInventorySha256": "15a59d6ff3932cf1d43eb7ae05b8117c4a4ed60828d11acaefabdd2fc09ff901",
     "sharedCommandTargetsSha256": "90b0fa05560139670ebb3050207428349f118f8b4cc8cbde956ebaf30b27d09a"
   },

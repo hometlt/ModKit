@@ -962,7 +962,7 @@
         "disposition": "already-equivalent",
         "migrationState": "equivalent-better",
         "releaseTrack": "mk3-priority",
-        "owner": "apps/cli and extensions/common/images",
+        "owner": "apps/cli and extensions/images",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/tools/ga-priority",
         "reason": "The shared CLI performs positive PNG conversion and exports deterministic rgba8 bytes through subject.convert."

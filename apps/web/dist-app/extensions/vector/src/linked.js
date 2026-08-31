@@ -9,7 +9,7 @@ import * as svg from './svg/codec.js'
 import * as wmf from './wmf/codec.js'
 
 export const vector = defineLinkedExtension({
-  source: 'linked:extensions/common/vector',
+  source: 'linked:extensions/vector',
   packageJson,
   contributions: [
     { path: 'contributions/codec-emf.json', manifest: emfManifest },

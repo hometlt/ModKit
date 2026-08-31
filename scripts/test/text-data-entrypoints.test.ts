@@ -14,7 +14,7 @@ afterEach(() => {
 })
 
 function contribution(root: string, packageName: string, kind: 'codec' | 'provider') {
-  const extension = join(root, 'extensions', 'common', 'data', packageName)
+  const extension = join(root, 'extensions', 'data', packageName)
   const contributions = join(extension, 'contributions')
   const implementation = join(extension, 'src', 'moved-family')
   mkdirSync(contributions, { recursive: true })
@@ -44,8 +44,8 @@ describe('text-data contribution entrypoint discovery', () => {
     contribution(root, 'original-name', 'codec')
     contribution(root, 'original-name', 'provider')
     renameSync(
-      join(root, 'extensions', 'common', 'data', 'original-name'),
-      join(root, 'extensions', 'common', 'data', 'renamed-extension'),
+      join(root, 'extensions', 'data', 'original-name'),
+      join(root, 'extensions', 'data', 'renamed-extension'),
     )
 
     const result = discoverTextDataEntrypoints(root, ['json'])

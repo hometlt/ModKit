@@ -32,7 +32,7 @@ import {
 } from '../src/extensions-page.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
-const imagesExtension = join(repositoryRoot, 'extensions', 'common', 'images')
+const imagesExtension = join(repositoryRoot, 'extensions', 'images')
 const PNG_CODEC = 'org.modkitx/image-png'
 
 /** The two directories the "connect a folder" flow is verified against, built by the fixture script. */

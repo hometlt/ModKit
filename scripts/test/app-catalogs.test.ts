@@ -26,9 +26,9 @@ afterEach(() => {
 function fixtureRoot() {
   const root = mkdtempSync(join(tmpdir(), 'x3-app-catalogs-'))
   temporaryRoots.push(root)
-  const common = join(repoRoot, 'extensions', 'common')
+  const common = join(repoRoot, 'extensions')
   for (const { directory: source, relativePath } of authoredExtensionRootsRelativeTo(common)) {
-    const destination = join(root, 'extensions', 'common', ...relativePath.split('/'))
+    const destination = join(root, 'extensions', ...relativePath.split('/'))
     mkdirSync(destination, { recursive: true })
     cpSync(join(source, 'package.json'), join(destination, 'package.json'))
     if (existsSync(join(source, 'contributions'))) {
@@ -61,9 +61,9 @@ describe('deterministic Electron app catalog emission', () => {
 
     const generated = join(root, 'apps', 'electron', 'generated')
     const bundled = readFileSync(join(generated, 'bundled-catalog.cjs'), 'utf8')
-    expect(bundled).toContain("  'common/archives',")
-    expect(bundled).toContain("  'common/data',")
-    expect(bundled).toContain("  'common/video',")
+    expect(bundled).toContain("  'archives',")
+    expect(bundled).toContain("  'data',")
+    expect(bundled).toContain("  'video',")
     expect(bundled).not.toContain('ui-monaco')
     expect(bundled).not.toContain('ui-graph-3d')
 
@@ -157,7 +157,7 @@ describe('deterministic Electron app catalog emission', () => {
 
   it('finds a codec root below grouping directories but ignores grouping package.json files', () => {
     const root = fixtureRoot()
-    const common = join(root, 'extensions', 'common')
+    const common = join(root, 'extensions')
     const group = join(common, 'group')
     mkdirSync(group, { recursive: true })
     writeFileSync(
@@ -173,8 +173,8 @@ describe('deterministic Electron app catalog emission', () => {
       join(root, 'apps', 'electron', 'generated', 'bundled-catalog.cjs'),
       'utf8',
     )
-    expect(bundled).toContain("  'common/group/data',")
-    expect(bundled).not.toContain("  'common/data',")
-    expect(bundled).not.toContain("  'common/data/group',")
+    expect(bundled).toContain("  'group/data',")
+    expect(bundled).not.toContain("  'data',")
+    expect(bundled).not.toContain("  'data/group',")
   })
 })

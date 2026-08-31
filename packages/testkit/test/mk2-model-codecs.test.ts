@@ -14,7 +14,7 @@ import {
 } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const modelRoot = join(repoRoot, 'extensions', 'common', 'models')
+const modelRoot = join(repoRoot, 'extensions', 'models')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 const formats = ['obj', 'ply', 'stl', 'dae', 'gltf', 'uvm'] as const
 type Format = (typeof formats)[number]

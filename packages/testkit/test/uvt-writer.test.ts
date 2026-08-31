@@ -132,7 +132,7 @@ async function decodedBmp(): Promise<{
   dispose(): Promise<void>
 }> {
   const module = (await import(
-    pathToFileURL(join(repoRoot, 'extensions', 'common', 'images', 'src', 'bmp', 'codec.js')).href
+    pathToFileURL(join(repoRoot, 'extensions', 'images', 'src', 'bmp', 'codec.js')).href
   )) as { createCodec(context: ContributionContext): Codec }
   const bytes = new Uint8Array(await readFile(join(fixtures, 'minimal.bmp')))
   const session = await module
@@ -294,8 +294,7 @@ describe('12-2 UVT export writes through the host coordinator and reopens', () =
      * the sidecar worth having: the two agree, or one of them is wrong.
      */
     const ktx2 = (await import(
-      pathToFileURL(join(repoRoot, 'extensions', 'common', 'images', 'src', 'ktx2', 'codec.js'))
-        .href
+      pathToFileURL(join(repoRoot, 'extensions', 'images', 'src', 'ktx2', 'codec.js')).href
     )) as { createCodec(context: ContributionContext): Codec }
     const reopened = await ktx2
       .createCodec(context)

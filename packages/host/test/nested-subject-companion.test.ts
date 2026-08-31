@@ -56,7 +56,7 @@ import {
 } from '../src/input-resolution.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const archiveExtension = join(repoRoot, 'extensions', 'common', 'archives')
+const archiveExtension = join(repoRoot, 'extensions', 'archives')
 const nestedExtension = join(import.meta.dirname, 'fixtures', 'companion-namespace-extension')
 
 const budget: ResourceBudget = {

@@ -671,7 +671,7 @@ describe('node worker backend — verified multi-file loading through module hoo
 
 describe('node worker backend — a real bundled extension codec runs in the worker', () => {
   it('text-csv: inventoried through loadExtensionDirectory, its multi-file entrypoint and workspace dependencies load, probe detects CSV', async () => {
-    const extensionDir = fileURLToPath(new URL('../../../extensions/common/data/', import.meta.url))
+    const extensionDir = fileURLToPath(new URL('../../../extensions/data/', import.meta.url))
     const loaded = await loadExtensionDirectory(extensionDir)
     const artifact = loaded.artifact
     expect(artifact.fileDigests).toBeDefined()
@@ -716,7 +716,7 @@ describe('node worker backend — a real bundled extension codec runs in the wor
 
 describe('node worker backend — a real codec opens a session with a host-resolved provider', () => {
   it('text-csv open(): contracts.resolve crosses to the host and the provider data source runs on the host', async () => {
-    const extensionDir = fileURLToPath(new URL('../../../extensions/common/data/', import.meta.url))
+    const extensionDir = fileURLToPath(new URL('../../../extensions/data/', import.meta.url))
     const loaded = await loadExtensionDirectory(extensionDir)
     const artifact = loaded.artifact
     // the provider runs on the host, in-process (as the trusted-in-process path activates it)
@@ -832,7 +832,7 @@ describe('node worker backend — a real codec opens a session with a host-resol
 
 describe('node worker backend — provider in one worker, codec in another, the host bridges them (S1b product path)', () => {
   it('text-csv: the provider leases in worker B and its codec in worker A crosses both boundaries', async () => {
-    const extensionDir = fileURLToPath(new URL('../../../extensions/common/data/', import.meta.url))
+    const extensionDir = fileURLToPath(new URL('../../../extensions/data/', import.meta.url))
     const loaded = await loadExtensionDirectory(extensionDir)
     const artifact = loaded.artifact
     const definition = JSON.parse(

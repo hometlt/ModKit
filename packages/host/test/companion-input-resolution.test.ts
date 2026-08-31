@@ -894,7 +894,7 @@ describe('companion input resolution — expected traits', () => {
      * step-1 budget explicitly rules out. A requirement that constrains `states` is therefore
      * refused rather than accepted; see the assertion at the end of this test.
      */
-    const input = await loadExtensionDirectory(join(repoRoot, 'extensions', 'common', 'images'))
+    const input = await loadExtensionDirectory(join(repoRoot, 'extensions', 'images'))
     const inventory = await buildInventory(
       [{ ...input, execution: { origin: 'bundled', allowTrustedInProcess: true } }],
       createHostContributionContractRegistry(),

@@ -11,7 +11,7 @@ import {
 } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const imagesRoot = join(repoRoot, 'extensions', 'common', 'images')
+const imagesRoot = join(repoRoot, 'extensions', 'images')
 const fixtures = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 const budget: ResourceBudget = {
   maxInputBytes: 1_000_000n,

@@ -1,5 +1,5 @@
 /**
- * Opens every independent `extensions/common/text-*` format through its real codec and provider.
+ * Opens every independent text-data format under `extensions/data` through its real codec and provider.
  *
  * Nothing here re-parses anything: the extension's own `createCodec` is called with a minimal
  * context, the provider is resolved through `context.contracts.resolve`, and the resulting session

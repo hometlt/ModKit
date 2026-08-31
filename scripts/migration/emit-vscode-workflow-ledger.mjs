@@ -866,9 +866,7 @@ if (ownerBlockerById.size !== 0) {
 
 const packagingBoundary = decisions.packagingBoundary ?? {}
 const cataloguedCoreRoots = (vscodeCatalog.roots ?? []).filter(
-  root =>
-    typeof root?.directory === 'string' &&
-    (root.directory.startsWith('common/') || root.directory === 'ps1'),
+  root => typeof root?.directory === 'string' && root.directory.length > 0,
 ).length
 if (
   publicationInventory.schemaVersion !== 1 ||

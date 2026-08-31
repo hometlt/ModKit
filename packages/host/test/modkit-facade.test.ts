@@ -13,7 +13,7 @@ import type { AssetEditPlan, EditSession, CommitCoordinator } from '@modkitx-x3/
 import { createModkit, type Modkit } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const imagesDir = join(repoRoot, 'extensions', 'common', 'images')
+const imagesDir = join(repoRoot, 'extensions', 'images')
 const pngFixture = join(repoRoot, 'apps', 'web', 'public', 'favicon-32.png')
 
 const scratch = mkdtempSync(join(tmpdir(), 'x3-modkit-facade-'))

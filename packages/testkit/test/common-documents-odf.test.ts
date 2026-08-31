@@ -1,5 +1,5 @@
 /**
- * Block 11 slice 11B — the OpenDocument quartet in `extensions/common/documents`.
+ * Block 11 slice 11B — the OpenDocument quartet in `extensions/documents`.
  *
  * ODT, ODS and ODP were relocated out of the `mk2/uncommon-documents` staging area and ODG is new
  * (`origin: owner-addition`). All four share one private package reader, so the suite is built the
@@ -44,7 +44,7 @@ import {
 } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const extensionRoot = join(repoRoot, 'extensions', 'common', 'documents')
+const extensionRoot = join(repoRoot, 'extensions', 'documents')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 
 const FORMATS = ['odt', 'ods', 'odp', 'odg'] as const

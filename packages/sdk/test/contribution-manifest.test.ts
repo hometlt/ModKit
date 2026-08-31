@@ -69,7 +69,7 @@ const greeterContribution: ContributionManifestV1Wire = {
 }
 
 // Provenance fixture (PORTED.md): converted from modkitx
-// extensions/common/images/codecs/dds/codec.manifest.json@8a21060f — v1 kind/capabilities/
+// extensions/images/codecs/dds/codec.manifest.json@8a21060f — v1 kind/capabilities/
 // entrypoints-map become contract + spec + single-entrypoint runtime variants; the
 // legacy `capabilities` verbs are dropped (final vocabulary MK3/02 §1).
 const convertedDds: ContributionManifestV1Wire = {

@@ -113,7 +113,7 @@
     },
     {
       "package": "@modkitx/archives-processing",
-      "owner": "extensions/common/archives",
+      "owner": "extensions/archives",
       "state": "ported",
       "note": "archive codecs are contributions, never platform code (2.3 rule 3)"
     },
@@ -125,7 +125,7 @@
     },
     {
       "package": "@modkitx/audio-processing",
-      "owner": "extensions/common/audio",
+      "owner": "extensions/audio",
       "state": "ported"
     },
     {
@@ -141,13 +141,13 @@
     },
     {
       "package": "@modkitx/data-processing",
-      "owner": "extensions/common/data",
+      "owner": "extensions/data",
       "state": "ported",
       "note": "plus native Core JSON and the text-ini/text-toml/text-yaml families; one legacy package fanned out to the delimited and structured-text implementations"
     },
     {
       "package": "@modkitx/documents-processing",
-      "owner": "extensions/common/documents",
+      "owner": "extensions/documents",
       "state": "ported"
     },
     {
@@ -175,7 +175,7 @@
     },
     {
       "package": "@modkitx/image-processing",
-      "owner": "extensions/common/images",
+      "owner": "extensions/images",
       "state": "ported"
     },
     {
@@ -216,7 +216,7 @@
     },
     {
       "package": "@modkitx/models-processing",
-      "owner": "extensions/common/models",
+      "owner": "extensions/models",
       "state": "ported",
       "note": "plus blizzard/models and ea/models; the neutral part is the model facet contracts in sdk"
     },
@@ -282,7 +282,7 @@
     },
     {
       "package": "@modkitx/vector-processing",
-      "owner": "extensions/common/vector",
+      "owner": "extensions/vector",
       "state": "ported"
     },
     {
@@ -292,7 +292,7 @@
     },
     {
       "package": "@modkitx/video-processing",
-      "owner": "extensions/common/video",
+      "owner": "extensions/video",
       "state": "ported"
     },
     {
@@ -314,7 +314,7 @@
     },
     {
       "package": "@modkitx/xml",
-      "owner": "extensions/common/data",
+      "owner": "extensions/data",
       "state": "demoted",
       "note": "owner decision 2026-08-24: demoted from the package catalog to the common data extension. Shared codec helpers may live in optional codec-kit, while the user-visible XML implementation and ownership stay in common/data."
     }

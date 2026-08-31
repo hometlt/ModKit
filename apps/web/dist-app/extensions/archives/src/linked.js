@@ -31,7 +31,7 @@ import * as xz from './xz/codec.js'
 import * as zstd from './zstd/codec.js'
 
 export const archives = defineLinkedExtension({
-  source: 'linked:extensions/common/archives',
+  source: 'linked:extensions/archives',
   packageJson,
   contributions: [
     { path: 'contributions/codec-7z.json', manifest: sevenZipManifest },

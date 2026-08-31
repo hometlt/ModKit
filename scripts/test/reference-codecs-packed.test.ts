@@ -146,13 +146,13 @@ describe('packed reference codec boundaries', () => {
       )
       const support = pack(join(repoRoot, 'packages', 'codec-kit'))
       const extensionDirectories = [
-        join(repoRoot, 'extensions', 'common', 'archives'),
-        join(repoRoot, 'extensions', 'common', 'audio'),
-        join(repoRoot, 'extensions', 'common', 'images'),
-        join(repoRoot, 'extensions', 'common', 'vector'),
-        join(repoRoot, 'extensions', 'common', 'models'),
-        join(repoRoot, 'extensions', 'common', 'video'),
-        join(repoRoot, 'extensions', 'common', 'documents'),
+        join(repoRoot, 'extensions', 'archives'),
+        join(repoRoot, 'extensions', 'audio'),
+        join(repoRoot, 'extensions', 'images'),
+        join(repoRoot, 'extensions', 'vector'),
+        join(repoRoot, 'extensions', 'models'),
+        join(repoRoot, 'extensions', 'video'),
+        join(repoRoot, 'extensions', 'documents'),
       ]
       const extensions = extensionDirectories.map(pack)
       const consumer = join(temporaryRoot, 'consumer')

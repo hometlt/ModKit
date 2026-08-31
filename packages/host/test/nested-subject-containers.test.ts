@@ -24,7 +24,7 @@ import { createNamespaceCompanionOrigin } from '../src/namespace-origin.js'
 import { COMPANION_BUDGET_EXCEEDED, createCompanionInputResolver } from '../src/input-resolution.js'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const archiveExtension = join(repoRoot, 'extensions', 'common', 'archives')
+const archiveExtension = join(repoRoot, 'extensions', 'archives')
 const nestedExtension = join(import.meta.dirname, 'fixtures', 'companion-namespace-extension')
 const target = { environment: 'node', operatingSystem: 'windows', architecture: 'x64' } as const
 const grant = { id: 'generic-nested-containers', classes: ['read-source'] } as const

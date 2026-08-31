@@ -47,9 +47,9 @@ declare global {
 }
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const imagesDir = join(repoRoot, 'extensions', 'common', 'images')
-const archivesDir = join(repoRoot, 'extensions', 'common', 'archives')
-const modelsDir = join(repoRoot, 'extensions', 'common', 'models')
+const imagesDir = join(repoRoot, 'extensions', 'images')
+const archivesDir = join(repoRoot, 'extensions', 'archives')
+const modelsDir = join(repoRoot, 'extensions', 'models')
 const hostileProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-extension')
 const grantsProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-grants-extension')
 const ambiguousProbeDir = join(import.meta.dirname, 'fixtures', 'subject-open-ambiguous-extension')

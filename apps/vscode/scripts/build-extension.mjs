@@ -167,7 +167,7 @@ async function buildInto(output, syncManifest) {
    * The catalog is *named* by `generated/bundled-catalog.json` and not copied here, and the
    * distinction is deliberate.
    *
-   * Copying the roots in looked right and was not: an extension root under `extensions/common`
+   * Copying the roots in looked right and was not: an extension root under `extensions`
    * reaches its SDK through `node_modules/@modkitx-x3`, a workspace link, and a copy without it is
    * a directory that looks like an extension and cannot run. The first build that did this turned
    * every bundled codec off — PNG, ANI and ASTC all fell back to hex in the smoke — which is a

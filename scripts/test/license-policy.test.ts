@@ -19,10 +19,10 @@ describe('root license policy', () => {
       licensePolicyViolations([
         'packages/example/LICENSE',
         'packages/example/MIT.txt',
-        'extensions/common/images/NOTICE.md',
+        'extensions/images/NOTICE.md',
       ]),
     ).toEqual([
-      'extensions/common/images/NOTICE.md',
+      'extensions/images/NOTICE.md',
       'packages/example/LICENSE',
       'packages/example/MIT.txt',
     ])

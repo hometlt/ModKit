@@ -132,7 +132,7 @@ test('projects extension and contribution subjects grouped by exact manifest con
 })
 
 test('projects a real common extension root and contribution manifest', async () => {
-  const root = resolve(import.meta.dirname, '../../../extensions/common/models')
+  const root = resolve(import.meta.dirname, '../../../extensions/models')
   const packageJson = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'))
   const gltf = JSON.parse(await readFile(resolve(root, 'contributions/codec-gltf.json'), 'utf8'))
   const projection = projectExtensionSubjects({

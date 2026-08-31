@@ -17,7 +17,7 @@ activate, say plainly that it holds none of its 18 roots, and open everything as
 
 ## Why the obvious fix is not one
 
-Copying `extensions/common/*` into `dist-app/extensions/` was tried in 13C and reverted in the same
+Copying `extensions/*` into `dist-app/extensions/` was tried in 13C and reverted in the same
 slice. An extension root reaches the SDK through `node_modules/@modkitx-x3`, a pnpm workspace link;
 a copy without it is a directory that satisfies `looksLikeExtensionDirectory` and cannot load. The
 build that did this turned every bundled codec off — PNG, ANI and ASTC all fell back to hex — while

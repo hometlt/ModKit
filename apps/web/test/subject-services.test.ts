@@ -35,14 +35,12 @@ import {
 import { createSingleFileAccess } from '../src/files.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
-const dataRequire = createRequire(
-  join(repositoryRoot, 'extensions', 'common', 'data', 'package.json'),
-)
+const dataRequire = createRequire(join(repositoryRoot, 'extensions', 'data', 'package.json'))
 const ORIGIN = 'https://pwa.example/app/'
 const catalog: WebExtensionCatalog = WEB_EXTENSION_CATALOG
 const sha256 = (bytes: Uint8Array) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`
 
-/** Serves `extensions/<name>/…` requests from `extensions/common/<name>/…` on disk. */
+/** Serves `extensions/<name>/…` requests from the matching root under `extensions/` on disk. */
 function diskOrigin() {
   const fetched: string[] = []
   return {
@@ -52,8 +50,7 @@ function diskOrigin() {
       const relative = url.startsWith(`${ORIGIN}extensions/`)
         ? url.slice(`${ORIGIN}extensions/`.length)
         : undefined
-      const path =
-        relative === undefined ? undefined : join(repositoryRoot, 'extensions', 'common', relative)
+      const path = relative === undefined ? undefined : join(repositoryRoot, 'extensions', relative)
       const ok = path !== undefined && existsSync(path)
       return {
         ok,

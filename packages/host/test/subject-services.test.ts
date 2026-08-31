@@ -29,7 +29,7 @@ import {
 } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const imagesDir = join(repoRoot, 'extensions', 'common', 'images')
+const imagesDir = join(repoRoot, 'extensions', 'images')
 const png = join(repoRoot, 'apps', 'web', 'public', 'favicon-32.png')
 
 const HOST = 'org.example.app/host'

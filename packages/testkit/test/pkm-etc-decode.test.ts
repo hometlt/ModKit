@@ -85,14 +85,14 @@ function inputFor(source: ArtifactByteSource): AssetInput {
 
 async function codec() {
   const module = (await import(
-    pathToFileURL(join(repoRoot, 'extensions', 'common', 'images', 'src', 'pkm', 'codec.js')).href
+    pathToFileURL(join(repoRoot, 'extensions', 'images', 'src', 'pkm', 'codec.js')).href
   )) as { createCodec(context: unknown): { open: unknown } }
   return module.createCodec({})
 }
 
 async function decodeModule() {
   return (await import(
-    pathToFileURL(join(repoRoot, 'extensions', 'common', 'images', 'src', 'pkm', 'etc.js')).href
+    pathToFileURL(join(repoRoot, 'extensions', 'images', 'src', 'pkm', 'etc.js')).href
   )) as {
     decodeEtcRgba(
       payload: Uint8Array,

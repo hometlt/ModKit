@@ -54,7 +54,7 @@ const quiet = args.includes('--quiet')
 /**
  * Scan roots and how deep a package directory sits under each: `packages/<pkg>` and
  * `apps/<app>` are one level; `examples/<ext>` one level; `extensions/<group>/<ext>` two
- * (`common/images`). Only platform packages/apps must use the lab scope.
+ * (`images`). Only platform packages/apps must use the lab scope.
  */
 const SCAN_ROOTS = [
   { name: 'packages', packageDepth: 1, requireLabScope: true },

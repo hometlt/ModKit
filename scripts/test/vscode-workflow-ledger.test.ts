@@ -616,7 +616,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
 
   it('derives the zero packaged-codec boundary from the publication inventory', () => {
     const brokenInventory = JSON.parse(readFileSync(publicationInventory, 'utf8'))
-    brokenInventory.packagedCodecRoots.push('extensions/common/images')
+    brokenInventory.packagedCodecRoots.push('extensions/images')
     const inventoryPath = tempPath('publication-artifact.v1.json')
     writeFileSync(inventoryPath, JSON.stringify(brokenInventory))
 

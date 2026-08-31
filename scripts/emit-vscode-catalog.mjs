@@ -7,7 +7,7 @@
  * with per-file digests, because it fetches its artifacts over HTTP and has to attest them. VS Code
  * was the exception: it *discovered* its catalog at activation by reading directories — first
  * `<extension>/extensions`, then `<extension>/dist-app/extensions`, then, in a checkout, the
- * repository's own `extensions/common`.
+ * repository's own `extensions` directory.
  *
  * Discovery made two things true that should not have been:
  *
@@ -17,7 +17,7 @@
  *     and opened every asset as hex — a working product, seemingly, that could read nothing. The
  *     block-9 smoke receipt recorded exactly this as its sixth defect.
  *  2. **What the build contained was whatever the disk happened to hold.** Adding a directory under
- *     `extensions/common` changed the product with no diff anywhere near the product, and removing
+ *     `extensions` changed the product with no diff anywhere near the product, and removing
  *     one changed it back just as quietly.
  *
  * So the composition becomes a committed artifact and the drift becomes a check, which is the same
@@ -60,12 +60,9 @@ const check = process.argv.includes('--check')
 /**
  * The catalog directory the VS Code build ships from.
  *
- * `extensions/common` and nothing else, which is what it composes today. Whether the `ea/` catalogs
- * belong in the shipped profile is a §4.2 composition decision for the owner — the smoke adds them
- * through the product's own `modkit.extensions` setting, and the block-9 receipt names the
- * question — and when that decision is made it is made by editing this constant.
+ * The direct extension roots under `extensions`, which is what the core product composes today.
  */
-const CATALOG_DIRECTORIES = Object.freeze([Object.freeze(['common'])])
+const CATALOG_DIRECTORIES = Object.freeze([Object.freeze([])])
 
 /**
  * One canonical host artifact identity per extension root.

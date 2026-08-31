@@ -26,7 +26,7 @@ import { runMinimalHost } from '@modkitx-x3/testkit'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(here, '..', '..', '..')
-const modelsDir = join(repoRoot, 'extensions', 'common', 'models')
+const modelsDir = join(repoRoot, 'extensions', 'models')
 const uvmEntrypoint = join(modelsDir, 'src', 'uvm', 'codec.js')
 const m3UvmFixture = join(here, 'fixtures', 'uvm', 'm3-native-triangle.uvm.glb.b64')
 
@@ -628,6 +628,6 @@ describe('UVM convergence through A-2 inventory and A-3 sessions', () => {
     )
     expect(inputs.some(path => path.includes('/obj/'))).toBe(false)
     expect(inputs.some(path => path.includes('/gltf/'))).toBe(false)
-    expect(inputs).toContain('extensions/common/models/src/uvm/codec.js')
+    expect(inputs).toContain('extensions/models/src/uvm/codec.js')
   })
 })

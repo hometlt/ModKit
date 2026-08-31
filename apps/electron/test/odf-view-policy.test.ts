@@ -90,9 +90,9 @@ let shared: Promise<ElectronSubjectServices> | undefined
 /** One composition for the whole suite: documents, delimited text and vector, nothing else. */
 function subjects(): Promise<ElectronSubjectServices> {
   shared ??= createElectronSubjectServices([
-    join(extensionsRoot, 'common', 'documents'),
-    join(extensionsRoot, 'common', 'data'),
-    join(extensionsRoot, 'common', 'vector'),
+    join(extensionsRoot, 'documents'),
+    join(extensionsRoot, 'data'),
+    join(extensionsRoot, 'vector'),
   ])
   return shared
 }

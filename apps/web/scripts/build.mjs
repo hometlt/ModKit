@@ -29,7 +29,7 @@ import {
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
 const repoRoot = resolve(appRoot, '..', '..')
-const dataRequire = createRequire(join(repoRoot, 'extensions', 'common', 'data', 'package.json'))
+const dataRequire = createRequire(join(repoRoot, 'extensions', 'data', 'package.json'))
 const dependencyRoot = name => dirname(dirname(dataRequire.resolve(name)))
 const outIndex = process.argv.indexOf('--out')
 const requestedOut = outIndex === -1 ? undefined : process.argv[outIndex + 1]

@@ -101,7 +101,7 @@ const bootstrap = ${JSON.stringify(join(scratch, 'worker-bootstrap.js'))}
 
 async function main() {
   const modkit = await createModkit({
-    extensions: [path.join(repo, 'extensions', 'common', 'images')],
+    extensions: [path.join(repo, 'extensions', 'images')],
     roots: [path.join(repo, 'apps', 'web', 'public')],
     ${withBootstrap ? 'bootstrapUrl: pathToFileURL(bootstrap),' : ''}
   })

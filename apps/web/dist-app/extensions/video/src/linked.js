@@ -15,7 +15,7 @@ import * as ogv from './ogv/codec.js'
 import * as wmv from './wmv/codec.js'
 
 export const video = defineLinkedExtension({
-  source: 'linked:extensions/common/video',
+  source: 'linked:extensions/video',
   packageJson,
   contributions: [
     { path: 'contributions/codec-avi.json', manifest: aviManifest },

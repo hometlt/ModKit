@@ -16,7 +16,7 @@ describe('manifest-driven web extension discovery', () => {
   it('finds nested extension roots and ignores ordinary nested packages', () => {
     const root = mkdtempSync(join(tmpdir(), 'x3-web-catalog-nested-'))
     temporaryRoots.push(root)
-    const common = join(root, 'extensions', 'common')
+    const common = join(root, 'extensions')
     const group = join(common, 'data')
     mkdirSync(group, { recursive: true })
     writeFileSync(
@@ -24,7 +24,7 @@ describe('manifest-driven web extension discovery', () => {
       `${JSON.stringify({ name: 'grouping-only', private: true }, undefined, 2)}\n`,
       'utf8',
     )
-    cpSync(join(repoRoot, 'extensions', 'common', 'images'), join(group, 'images'), {
+    cpSync(join(repoRoot, 'extensions', 'images'), join(group, 'images'), {
       recursive: true,
       filter: source => !source.includes(`${join('images', 'node_modules')}`),
     })
@@ -33,7 +33,7 @@ describe('manifest-driven web extension discovery', () => {
     expect(selection.included).toHaveLength(1)
     expect(selection.included[0]).toMatchObject({
       name: 'images',
-      relativePath: 'common/data/images',
+      relativePath: 'data/images',
     })
     expect(selection.excluded).toEqual([])
   })

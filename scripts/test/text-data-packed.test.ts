@@ -104,7 +104,7 @@ describe('packed common data extension boundary', () => {
         pack(join(repoRoot, 'packages', name)),
       )
       const codecKit = pack(join(repoRoot, 'packages', 'codec-kit'))
-      const extension = pack(join(repoRoot, 'extensions', 'common', 'data'))
+      const extension = pack(join(repoRoot, 'extensions', 'data'))
 
       const platformOnly = consumer('platform-only')
       const platformInstall = sh('npm', ['install', ...npmFlags, ...platform], platformOnly)

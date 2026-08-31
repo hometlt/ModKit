@@ -44,7 +44,7 @@ import {
 } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const imagesDir = join(repoRoot, 'extensions', 'common', 'images')
+const imagesDir = join(repoRoot, 'extensions', 'images')
 const writerFixtureDir = join(import.meta.dirname, 'fixtures', 'writer-extension')
 const favicon = join(repoRoot, 'apps', 'web', 'public', 'favicon-32.png')
 

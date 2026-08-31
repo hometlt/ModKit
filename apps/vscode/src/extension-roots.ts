@@ -4,7 +4,7 @@
  * Three sources, kept apart because they carry different trust:
  *
  *  - the **first-party catalog** that ships beside the extension (or, in a checkout, the lab's
- *    `extensions/common`). Loaded as `bundled` but *without* `allowTrustedInProcess`: the VS Code
+ *    `extensions`). Loaded as `bundled` but *without* `allowTrustedInProcess`: the VS Code
  *    extension host is a Node process shared with every other installed extension, so nothing here
  *    is admitted to it. Codecs resolve for the `node-worker` realm and run there.
  *  - the **workspace folders**, scanned one level deep. A workspace that carries its own codec
@@ -71,7 +71,7 @@ export function looksLikeExtensionDirectory(path: string, probe: DirectoryProbe)
 /** One root of the generated catalog: what the build says it ships, and where it lives. */
 export interface BundledCatalogRoot {
   readonly name: string
-  /** Path under `extensions/`, e.g. `common/images`. */
+  /** Path under `extensions/`, e.g. `images`. */
   readonly directory: string
   /** False when the product ships it and `READY_APP_EXTENSIONS` does not list it. */
   readonly declared: boolean
@@ -106,8 +106,7 @@ export function resolveBundledCatalog(
     const found: string[] = []
     const missing: string[] = []
     for (const root of catalog) {
-      // The catalog stores `common/images`; a packaged build flattens to `<base>/common/images`
-      // exactly as it was copied, so one join serves both layouts.
+      // The catalog stores paths such as `images`, so one join serves checkout and package layouts.
       const path = probe.join(candidate, ...root.directory.split('/'))
       if (looksLikeExtensionDirectory(path, probe)) found.push(path)
       else missing.push(root.name)

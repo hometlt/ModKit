@@ -1,7 +1,7 @@
 {
   "$schema": "../packages/extension-manager/schemas/modkit.composition.schema.json",
   "schemaVersion": 1,
-  "bundledBaseRoots": ["extensions/common"],
+  "bundledBaseRoots": ["extensions"],
   "extensionSets": {
     "structured-text": ["data"],
     "documents": ["documents"],

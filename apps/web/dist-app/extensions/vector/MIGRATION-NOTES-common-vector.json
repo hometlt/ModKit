@@ -4,9 +4,9 @@
   "source": {
     "repository": "modkitx",
     "manifests": [
-      "extensions/common/vector/codecs/emf/codec.manifest.json",
-      "extensions/common/vector/codecs/svg/codec.manifest.json",
-      "extensions/common/vector/codecs/wmf/codec.manifest.json"
+      "extensions/vector/codecs/emf/codec.manifest.json",
+      "extensions/vector/codecs/svg/codec.manifest.json",
+      "extensions/vector/codecs/wmf/codec.manifest.json"
     ]
   },
   "verdict": "mechanical",

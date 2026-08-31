@@ -36,7 +36,7 @@ import {
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
 const subject = join(repositoryRoot, 'apps', 'web', 'public', 'favicon-32.png')
-const images = join(repositoryRoot, 'extensions', 'common', 'images')
+const images = join(repositoryRoot, 'extensions', 'images')
 const cli = join(repositoryRoot, 'apps', 'cli', 'dist', 'main.js')
 const matrix = JSON.parse(
   readFileSync(join(import.meta.dirname, 'product-ga-app-matrix.json'), 'utf8'),

@@ -127,7 +127,7 @@ async function openJsonDescriptor(): Promise<Record<string, unknown>> {
 }
 
 async function openGltfDescriptor(): Promise<Record<string, unknown>> {
-  const roots = await loadExtensionRoots([join(repositoryRoot, 'extensions', 'common', 'models')], {
+  const roots = await loadExtensionRoots([join(repositoryRoot, 'extensions', 'models')], {
     origin: 'bundled',
   })
   expect(roots.failures).toEqual([])

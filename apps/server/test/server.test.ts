@@ -107,7 +107,7 @@ describe('server open path (S7)', () => {
   it('opens a subject for a client through the worker realm: portable variant, worker-brokered', async () => {
     const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
     const app = await createServerApp([], {
-      extensionRoots: [join(repositoryRoot, 'extensions', 'common', 'images')],
+      extensionRoots: [join(repositoryRoot, 'extensions', 'images')],
     })
     expect(app.subjects.inventory).toBe(app.composition.inventory)
     expect(app.subjects.target).toBe(app.workers.target)
@@ -140,7 +140,7 @@ describe('server open path (S7)', () => {
   it('keeps a disabled configured contribution inventoried but removes it from resolution', async () => {
     const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
     const app = await createServerApp([], {
-      extensionRoots: [join(repositoryRoot, 'extensions', 'common', 'images')],
+      extensionRoots: [join(repositoryRoot, 'extensions', 'images')],
       disabledContributions: ['org.modkitx/image-png'],
     })
     expect(app.composition.inventory.extensions).toHaveLength(2)

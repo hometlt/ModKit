@@ -93,21 +93,21 @@ function inputFor(name: string, bytes: Uint8Array): AssetInput {
 const modelFixtures = [
   {
     format: 'obj',
-    codec: join(repoRoot, 'extensions', 'common', 'models', 'src', 'obj', 'codec.js'),
+    codec: join(repoRoot, 'extensions', 'models', 'src', 'obj', 'codec.js'),
     sample: 'minimal.obj',
     primitiveId: 'primitive-0',
     viewProjection: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
   },
   {
     format: 'ply',
-    codec: join(repoRoot, 'extensions', 'common', 'models', 'src', 'ply', 'codec.js'),
+    codec: join(repoRoot, 'extensions', 'models', 'src', 'ply', 'codec.js'),
     sample: 'minimal.ply',
     primitiveId: 'primitive-0',
     viewProjection: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
   },
   {
     format: 'stl',
-    codec: join(repoRoot, 'extensions', 'common', 'models', 'src', 'stl', 'codec.js'),
+    codec: join(repoRoot, 'extensions', 'models', 'src', 'stl', 'codec.js'),
     sample: 'minimal.stl',
     primitiveId: 'primitive-0',
     viewProjection: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],

@@ -19,7 +19,7 @@ import { loadMixedVisualStage } from '@modkitx-x3/ui/composition'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const { createCodec: createGltfCodec } = (await import(
-  pathToFileURL(join(repoRoot, 'extensions', 'common', 'models', 'src', 'gltf', 'codec.js')).href
+  pathToFileURL(join(repoRoot, 'extensions', 'models', 'src', 'gltf', 'codec.js')).href
 )) as { createCodec(context: ContributionContext): Codec }
 const modelFixture = join(import.meta.dirname, 'fixtures', 'mk2-synthetic', 'minimal.gltf')
 const worldRevision = revisionId('content-hash.sha256:neutral-world')

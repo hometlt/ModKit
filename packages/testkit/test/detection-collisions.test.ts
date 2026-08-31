@@ -31,11 +31,7 @@ const budget: ResourceBudget = {
   maxScalarBytes: 20_000_000,
   maxDiagnostics: 200,
 }
-const roots = [
-  ['common', 'data'],
-  ['common', 'archives'],
-  ['common', 'documents'],
-] as const
+const roots = [['data'], ['archives'], ['documents']] as const
 const executionBackends = createExecutionBackendRegistry([
   linkedInProcessBackend(NATIVE_TEXT_MODULES),
 ])

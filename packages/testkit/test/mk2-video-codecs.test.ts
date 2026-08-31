@@ -14,7 +14,7 @@ import {
 } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const videoRoot = join(repoRoot, 'extensions', 'common', 'video')
+const videoRoot = join(repoRoot, 'extensions', 'video')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 const formats = ['avi', 'wmv'] as const
 type Format = (typeof formats)[number]

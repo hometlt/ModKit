@@ -42,7 +42,7 @@ import {
 } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const archivesDir = join(repoRoot, 'extensions', 'common', 'archives')
+const archivesDir = join(repoRoot, 'extensions', 'archives')
 
 const HOST = 'org.example.app/host'
 const WORKERS = 'org.example.app/workers'

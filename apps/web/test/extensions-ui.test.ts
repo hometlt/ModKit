@@ -111,7 +111,7 @@ function directoryHandle(
   return { ...base, queryPermission: async () => permission }
 }
 
-const imagesRoot = join(repositoryRoot, 'extensions', 'common', 'images')
+const imagesRoot = join(repositoryRoot, 'extensions', 'images')
 
 // ---------------------------------------------------------------------------------------------
 

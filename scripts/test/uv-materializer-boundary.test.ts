@@ -24,21 +24,21 @@ const repoRoot = resolve(import.meta.dirname, '..', '..')
 
 /** Every entrypoint that reads a native model and publishes a live projection. */
 const MODEL_CODECS = [
-  'extensions/common/models/src/gltf/codec.js',
-  'extensions/common/models/src/obj/codec.js',
-  'extensions/common/models/src/uvm/codec.js',
-  'extensions/common/models/src/dae/codec.js',
-  'extensions/common/models/src/ply/codec.js',
-  'extensions/common/models/src/stl/codec.js',
+  'extensions/models/src/gltf/codec.js',
+  'extensions/models/src/obj/codec.js',
+  'extensions/models/src/uvm/codec.js',
+  'extensions/models/src/dae/codec.js',
+  'extensions/models/src/ply/codec.js',
+  'extensions/models/src/stl/codec.js',
 ]
 
 /** The image codecs whose decoded regions the UVT materializer consumes, and the KTX2 reader. */
 const IMAGE_CODECS = [
-  'extensions/common/images/src/bmp/codec.js',
-  'extensions/common/images/src/tga/codec.js',
-  'extensions/common/images/src/png/codec.js',
-  'extensions/common/images/src/dds/codec.js',
-  'extensions/common/images/src/ktx2/codec.js',
+  'extensions/images/src/bmp/codec.js',
+  'extensions/images/src/tga/codec.js',
+  'extensions/images/src/png/codec.js',
+  'extensions/images/src/dds/codec.js',
+  'extensions/images/src/ktx2/codec.js',
 ]
 
 const reachesUvImplementation = (path: string): boolean =>
@@ -130,7 +130,7 @@ describe('the UVM materializer is the only writer, and no codec is a second one'
   })
 
   it('the UVM reader extension and the built-in UV writer remain separate owners', async () => {
-    const models = await loadExtensionDirectory(join(repoRoot, 'extensions', 'common', 'models'))
+    const models = await loadExtensionDirectory(join(repoRoot, 'extensions', 'models'))
     const inventory = await buildInventory(
       [
         {

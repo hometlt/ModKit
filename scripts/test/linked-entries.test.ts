@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { authoredExtensionRootsRelativeTo } from '../lib/authored-extension-roots.mjs'
 
 const repoRoot = resolve(import.meta.dirname, '..', '..')
-const commonRoot = join(repoRoot, 'extensions', 'common')
+const commonRoot = join(repoRoot, 'extensions')
 
 describe('hand-authored linked extension entries', () => {
   const extensions = authoredExtensionRootsRelativeTo(commonRoot)

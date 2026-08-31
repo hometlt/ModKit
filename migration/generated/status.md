@@ -136,7 +136,7 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | Возможность                                           | migrationState | evidence | Владелец                             |
 | ----------------------------------------------------- | -------------- | -------- | ------------------------------------ |
-| `uv/uvw/world-materialization`                        | `missing`      | E2       | `extensions/common/models`           |
+| `uv/uvw/world-materialization`                        | `missing`      | E2       | `extensions/models`                  |
 | `uv/uvd/definitions`                                  | `missing`      | E1       | `packages/sdk`                       |
 | `vertical/warzone-2100/deterministic-playable-subset` | `missing`      | E0       | `extensions/opensource/warzone-2100` |
 

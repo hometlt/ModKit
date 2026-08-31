@@ -243,44 +243,44 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/sdk
 
-  extensions/common/archives:
+  extensions/archives:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../../packages/codec-kit
+        version: link:../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
-        version: link:../../../packages/host
+        version: link:../../packages/host
       '@modkitx-x3/sdk':
         specifier: workspace:*
-        version: link:../../../packages/sdk
+        version: link:../../packages/sdk
 
-  extensions/common/audio:
+  extensions/audio:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../../packages/codec-kit
+        version: link:../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
-        version: link:../../../packages/host
+        version: link:../../packages/host
       '@modkitx-x3/sdk':
         specifier: workspace:*
-        version: link:../../../packages/sdk
+        version: link:../../packages/sdk
 
-  extensions/common/data:
+  extensions/data:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../../packages/codec-kit
+        version: link:../../packages/codec-kit
       '@modkitx-x3/core':
         specifier: workspace:*
-        version: link:../../../packages/core
+        version: link:../../packages/core
       '@modkitx-x3/host':
         specifier: workspace:*
-        version: link:../../../packages/host
+        version: link:../../packages/host
       '@modkitx-x3/sdk':
         specifier: workspace:*
-        version: link:../../../packages/sdk
+        version: link:../../packages/sdk
       '@rgrove/parse-xml':
         specifier: ^4.2.3
         version: 4.2.3
@@ -291,65 +291,65 @@ importers:
         specifier: ^2.9.0
         version: 2.9.0
 
-  extensions/common/documents:
+  extensions/documents:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../../packages/codec-kit
+        version: link:../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
-        version: link:../../../packages/host
+        version: link:../../packages/host
       '@modkitx-x3/sdk':
         specifier: workspace:*
-        version: link:../../../packages/sdk
+        version: link:../../packages/sdk
 
-  extensions/common/images:
+  extensions/images:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../../packages/codec-kit
+        version: link:../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
-        version: link:../../../packages/host
+        version: link:../../packages/host
       '@modkitx-x3/sdk':
         specifier: workspace:*
-        version: link:../../../packages/sdk
+        version: link:../../packages/sdk
 
-  extensions/common/models:
+  extensions/models:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../../packages/codec-kit
+        version: link:../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
-        version: link:../../../packages/host
+        version: link:../../packages/host
       '@modkitx-x3/sdk':
         specifier: workspace:*
-        version: link:../../../packages/sdk
+        version: link:../../packages/sdk
 
-  extensions/common/vector:
+  extensions/vector:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../../packages/codec-kit
+        version: link:../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
-        version: link:../../../packages/host
+        version: link:../../packages/host
       '@modkitx-x3/sdk':
         specifier: workspace:*
-        version: link:../../../packages/sdk
+        version: link:../../packages/sdk
 
-  extensions/common/video:
+  extensions/video:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../../packages/codec-kit
+        version: link:../../packages/codec-kit
       '@modkitx-x3/host':
         specifier: workspace:*
-        version: link:../../../packages/host
+        version: link:../../packages/host
       '@modkitx-x3/sdk':
         specifier: workspace:*
-        version: link:../../../packages/sdk
+        version: link:../../packages/sdk
 
   packages/code:
     dependencies:

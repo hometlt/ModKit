@@ -12,7 +12,7 @@ import {
 } from '@modkitx-x3/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const modulePath = join(repoRoot, 'extensions', 'common', 'documents', 'src', 'rtf', 'codec.js')
+const modulePath = join(repoRoot, 'extensions', 'documents', 'src', 'rtf', 'codec.js')
 const budget: ResourceBudget = {
   maxInputBytes: 10_000_000n,
   maxDepth: 32,

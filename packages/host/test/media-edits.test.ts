@@ -47,8 +47,8 @@ import {
 } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const imagesDir = join(repoRoot, 'extensions', 'common', 'images')
-const audioDir = join(repoRoot, 'extensions', 'common', 'audio')
+const imagesDir = join(repoRoot, 'extensions', 'images')
+const audioDir = join(repoRoot, 'extensions', 'audio')
 /** The only real JPEG in the repository (a theme preview); the PNG is the app favicon. */
 const jpegFixture = join(repoRoot, 'assets', 'themes', 'nexus-forge', 'preview-web.jpg')
 const pngFixture = join(repoRoot, 'apps', 'web', 'public', 'favicon-32.png')

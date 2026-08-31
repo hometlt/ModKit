@@ -33,18 +33,18 @@ import { loadSubjectCardSections } from '@modkitx-x3/ui'
 const here = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(here, '..', '..', '..')
 const codecRoots = Object.freeze({
-  zip: join(repoRoot, 'extensions', 'common', 'archives'),
-  mp3: join(repoRoot, 'extensions', 'common', 'audio'),
-  ogg: join(repoRoot, 'extensions', 'common', 'audio'),
-  png: join(repoRoot, 'extensions', 'common', 'images'),
-  jpeg: join(repoRoot, 'extensions', 'common', 'images'),
-  svg: join(repoRoot, 'extensions', 'common', 'vector'),
-  obj: join(repoRoot, 'extensions', 'common', 'models'),
-  gltf: join(repoRoot, 'extensions', 'common', 'models'),
-  mp4: join(repoRoot, 'extensions', 'common', 'video'),
-  webm: join(repoRoot, 'extensions', 'common', 'video'),
-  markdown: join(repoRoot, 'extensions', 'common', 'documents'),
-  rtf: join(repoRoot, 'extensions', 'common', 'documents'),
+  zip: join(repoRoot, 'extensions', 'archives'),
+  mp3: join(repoRoot, 'extensions', 'audio'),
+  ogg: join(repoRoot, 'extensions', 'audio'),
+  png: join(repoRoot, 'extensions', 'images'),
+  jpeg: join(repoRoot, 'extensions', 'images'),
+  svg: join(repoRoot, 'extensions', 'vector'),
+  obj: join(repoRoot, 'extensions', 'models'),
+  gltf: join(repoRoot, 'extensions', 'models'),
+  mp4: join(repoRoot, 'extensions', 'video'),
+  webm: join(repoRoot, 'extensions', 'video'),
+  markdown: join(repoRoot, 'extensions', 'documents'),
+  rtf: join(repoRoot, 'extensions', 'documents'),
 })
 
 const budget: ResourceBudget = {

@@ -42,7 +42,7 @@ afterAll(async () => {
  * extension. Only `text-json` loads, which keeps the composition to one codec.
  */
 function catalogProbe(names: readonly string[]): DirectoryProbe {
-  const common = join(repositoryRoot, 'extensions', 'common')
+  const common = join(repositoryRoot, 'extensions')
   return {
     readDirectory: path => (path === 'catalog' ? names : undefined),
     isFile: path => existsSync(path),

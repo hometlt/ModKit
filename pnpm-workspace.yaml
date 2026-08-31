@@ -17,14 +17,14 @@ packages:
   - 'apps/*'
   # Optional reference extensions are workspace-linked for conformance tests only. They are not
   # dependencies of core/sdk/vfs/host and therefore do not enter the bootstrap import closure.
-  - 'extensions/common/archives'
-  - 'extensions/common/audio'
-  - 'extensions/common/images'
-  - 'extensions/common/vector'
-  - 'extensions/common/models'
-  - 'extensions/common/video'
-  - 'extensions/common/data'
-  - 'extensions/common/documents'
+  - 'extensions/archives'
+  - 'extensions/audio'
+  - 'extensions/images'
+  - 'extensions/vector'
+  - 'extensions/models'
+  - 'extensions/video'
+  - 'extensions/data'
+  - 'extensions/documents'
   - 'examples/extensions/counter-runtime'
   - 'examples/extensions/software-renderer'
 # esbuild works through its platform binary package (@esbuild/win32-x64); its postinstall is only a

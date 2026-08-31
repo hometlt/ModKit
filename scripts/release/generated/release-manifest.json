@@ -6,8 +6,8 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:a0416ac0b2f5ee1def424cdd66281b46bac3c9f39ffd41353f221d2221679fee",
-      "size": 63432704
+      "sha256": "sha256:f1b494d157e899c7fc1c3d0f9251d89cc45b1919b9028a2dcb4aa5ac09db0116",
+      "size": 63432192
     },
     {
       "catalog": [
@@ -29,8 +29,8 @@
             "org.modkitx/zstd"
           ],
           "coordinate": "org.modkitx/archives",
-          "root": "extensions/common/archives",
-          "sourceDigest": "sha256:f2d4a21ba9468c7828eaee1663ad8532c338aad5958c3e0fe20b47f38079efa6"
+          "root": "extensions/archives",
+          "sourceDigest": "sha256:da6a60fb9daf01b570f35b3642f19476cfbc9a8731925e3fa3fae002a6abb46d"
         },
         {
           "contributions": [
@@ -42,8 +42,8 @@
             "org.modkitx/wav"
           ],
           "coordinate": "org.modkitx/audio",
-          "root": "extensions/common/audio",
-          "sourceDigest": "sha256:d1ddae73f90fcb0b51cee5985e4f92855a9f9bc68dac28c9f65bf16315f5cdab"
+          "root": "extensions/audio",
+          "sourceDigest": "sha256:1abe77e5f842a25068f7be19b86522e15764e0d9bbac4cd24accdf5722ab9b85"
         },
         {
           "contributions": [
@@ -72,8 +72,8 @@
             "org.modkitx/yaml-syntax-default"
           ],
           "coordinate": "org.modkitx/data",
-          "root": "extensions/common/data",
-          "sourceDigest": "sha256:7e011f2d0904ef63697f9af4b7d0498414af2b709d1d3a1a457a581a0cebe767"
+          "root": "extensions/data",
+          "sourceDigest": "sha256:4b3562033f198fca289fe0f6dab6dbd38e47eb7ee368e2a3301bc1fa27766abf"
         },
         {
           "contributions": [
@@ -85,8 +85,8 @@
             "org.modkitx/odt"
           ],
           "coordinate": "org.modkitx/documents",
-          "root": "extensions/common/documents",
-          "sourceDigest": "sha256:c73afd8d299a711b465cc74ebacaae1e20cfb3f38bfa1835a2e21cc00b760b8e"
+          "root": "extensions/documents",
+          "sourceDigest": "sha256:04d9f9729477fc6e14cc10c12c70ced7c79ddd39fcc1d25711412f05d6659a15"
         },
         {
           "contributions": [
@@ -115,8 +115,8 @@
             "org.modkitx/webp"
           ],
           "coordinate": "org.modkitx/images",
-          "root": "extensions/common/images",
-          "sourceDigest": "sha256:ab7de5ab022073abf6b55eb83931809cb38447526cac71fddea9dc6354814196"
+          "root": "extensions/images",
+          "sourceDigest": "sha256:7fd990b5fb805eba8113a8ac460776d3af030d0516f0915389016f1ec2de1dc2"
         },
         {
           "contributions": [
@@ -128,8 +128,8 @@
             "org.modkitx/stl"
           ],
           "coordinate": "org.modkitx/models",
-          "root": "extensions/common/models",
-          "sourceDigest": "sha256:1f440ed060165fe5309ff23937060d05a265753669ec5ca81a97c1ecdb4419b0"
+          "root": "extensions/models",
+          "sourceDigest": "sha256:ca62968a0ea68b179bcc4d9f7e7f3e36cf2e082293ba9f38cd3b09e7f215cc1e"
         },
         {
           "contributions": [
@@ -138,8 +138,8 @@
             "org.modkitx/wmf"
           ],
           "coordinate": "org.modkitx/vector",
-          "root": "extensions/common/vector",
-          "sourceDigest": "sha256:cbf58d572426b37728b0f00f4e71847323c98b1712d9e24a12611560b34cb024"
+          "root": "extensions/vector",
+          "sourceDigest": "sha256:b0d3782a1b731e8aac86ac654d03cd410c4a058d26a3c86469e28af3b7302971"
         },
         {
           "contributions": [
@@ -151,15 +151,15 @@
             "org.modkitx/wmv"
           ],
           "coordinate": "org.modkitx/video",
-          "root": "extensions/common/video",
-          "sourceDigest": "sha256:8572b81e40cf60a6f34dafccb6dc1cbe3a616c28665ab7670a346c379ffce81c"
+          "root": "extensions/video",
+          "sourceDigest": "sha256:617d061b0d48a246e8fe0257aeaf4e71749c0c7d72a2a7d479b378751f198015"
         }
       ],
       "file": "artifacts/modkitx-common.tar",
       "id": "common",
       "kind": "common-extension-bundle",
-      "sha256": "sha256:eab700b595132dda3ae4e9f600506da86a3e62360c9013fd1cfa5032dd4d17fc",
-      "size": 1426432
+      "sha256": "sha256:923da9375baccdbf1cca6433a8c98ac844b4dcf25c110ffca2ce59e6028c760b",
+      "size": 1425920
     }
   ],
   "composition": {
@@ -169,19 +169,19 @@
     "catalogSources": [
       {
         "path": "apps/electron/generated/bundled-catalog.cjs",
-        "sha256": "sha256:77cdc5ace61faa87b1f9d5a2b595fecaf49369f9cccea27a425eb39ebe7d81a5"
+        "sha256": "sha256:32601bcb1af566ebdd2a07ac73b66583c7a5181c84bf234269d52fb8934546f9"
       },
       {
         "path": "apps/vscode/generated/bundled-catalog.json",
-        "sha256": "sha256:05d86cee1fde214f5d8dfcf942c713cf477d19e6d84274f8444cb1c29c3db0b4"
+        "sha256": "sha256:3ba11c6a1e8b95e83d69319814f4d07a34a78a66260c7379e8817d23ab27ff7c"
       },
       {
         "path": "apps/web/generated/extension-catalog.js",
-        "sha256": "sha256:70dbb77eae300badb2dcc95db2b501831a80fb8abed536fddbbfd40c7db504f9"
+        "sha256": "sha256:11a6d1dad845a85d4482d3dbf581f9a10f07850c8b2e20d0741f9be6ae6f3d37"
       },
       {
         "path": "config/build-composition.json",
-        "sha256": "sha256:1f7b6f6ea77805af53a7453151f3e08dfae4e91377beb3ed66c4dc3813e7c3c2"
+        "sha256": "sha256:9c2e21885a37a38502b15f96a0d10af0e681c754be62f22d44ac9c62ef858de9"
       },
       {
         "path": "scripts/app-extension-sets.mjs",
@@ -189,19 +189,19 @@
       },
       {
         "path": "scripts/bundle-hashes.json",
-        "sha256": "sha256:c528b45e30473764e4e7f648e5b8262720b9c7aae07236be29135dd2c173c6c5"
+        "sha256": "sha256:f1701f71af83287074287323bfcb8e01b16fdb029dbb4878d6206f1d97c64de0"
       }
     ],
     "closure": "mk3-ga",
     "commonExtensionRoots": [
-      "extensions/common/archives",
-      "extensions/common/audio",
-      "extensions/common/data",
-      "extensions/common/documents",
-      "extensions/common/images",
-      "extensions/common/models",
-      "extensions/common/vector",
-      "extensions/common/video"
+      "extensions/archives",
+      "extensions/audio",
+      "extensions/data",
+      "extensions/documents",
+      "extensions/images",
+      "extensions/models",
+      "extensions/vector",
+      "extensions/video"
     ],
     "externalExtensions": [],
     "source": "config/build-composition.json"

@@ -2,7 +2,7 @@
  * The private OpenDocument package reader.
  *
  * One reader, four codec contributions (ODT, ODS, ODP, ODG) — and deliberately *not* a platform
- * package: nothing outside `extensions/common/documents` imports this module, and the extension's
+ * package: nothing outside `extensions/documents` imports this module, and the extension's
  * `exports` map publishes only `formats/<name>/codec.js`, so the reader cannot become a second
  * archive platform by accident (plan block 11, slice 11B item 4).
  *

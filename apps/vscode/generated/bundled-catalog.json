@@ -7,7 +7,7 @@
   "roots": [
     {
       "name": "archives",
-      "directory": "common/archives",
+      "directory": "archives",
       "declared": true,
       "coordinate": "org.modkitx/archives",
       "contributions": [
@@ -26,11 +26,11 @@
         "org.modkitx/xz",
         "org.modkitx/zstd"
       ],
-      "digest": "sha256:f2d4a21ba9468c7828eaee1663ad8532c338aad5958c3e0fe20b47f38079efa6"
+      "digest": "sha256:da6a60fb9daf01b570f35b3642f19476cfbc9a8731925e3fa3fae002a6abb46d"
     },
     {
       "name": "audio",
-      "directory": "common/audio",
+      "directory": "audio",
       "declared": true,
       "coordinate": "org.modkitx/audio",
       "contributions": [
@@ -41,11 +41,11 @@
         "org.modkitx/m4a",
         "org.modkitx/wav"
       ],
-      "digest": "sha256:d1ddae73f90fcb0b51cee5985e4f92855a9f9bc68dac28c9f65bf16315f5cdab"
+      "digest": "sha256:1abe77e5f842a25068f7be19b86522e15764e0d9bbac4cd24accdf5722ab9b85"
     },
     {
       "name": "data",
-      "directory": "common/data",
+      "directory": "data",
       "declared": true,
       "coordinate": "org.modkitx/data",
       "contributions": [
@@ -73,11 +73,11 @@
         "org.modkitx/yaml-syntax-contract",
         "org.modkitx/yaml-syntax-default"
       ],
-      "digest": "sha256:7e011f2d0904ef63697f9af4b7d0498414af2b709d1d3a1a457a581a0cebe767"
+      "digest": "sha256:4b3562033f198fca289fe0f6dab6dbd38e47eb7ee368e2a3301bc1fa27766abf"
     },
     {
       "name": "documents",
-      "directory": "common/documents",
+      "directory": "documents",
       "declared": true,
       "coordinate": "org.modkitx/documents",
       "contributions": [
@@ -88,11 +88,11 @@
         "org.modkitx/ods",
         "org.modkitx/odt"
       ],
-      "digest": "sha256:c73afd8d299a711b465cc74ebacaae1e20cfb3f38bfa1835a2e21cc00b760b8e"
+      "digest": "sha256:04d9f9729477fc6e14cc10c12c70ced7c79ddd39fcc1d25711412f05d6659a15"
     },
     {
       "name": "images",
-      "directory": "common/images",
+      "directory": "images",
       "declared": true,
       "coordinate": "org.modkitx/images",
       "contributions": [
@@ -120,11 +120,11 @@
         "org.modkitx/tiff",
         "org.modkitx/webp"
       ],
-      "digest": "sha256:ab7de5ab022073abf6b55eb83931809cb38447526cac71fddea9dc6354814196"
+      "digest": "sha256:7fd990b5fb805eba8113a8ac460776d3af030d0516f0915389016f1ec2de1dc2"
     },
     {
       "name": "models",
-      "directory": "common/models",
+      "directory": "models",
       "declared": true,
       "coordinate": "org.modkitx/models",
       "contributions": [
@@ -135,19 +135,19 @@
         "org.modkitx/ply",
         "org.modkitx/stl"
       ],
-      "digest": "sha256:1f440ed060165fe5309ff23937060d05a265753669ec5ca81a97c1ecdb4419b0"
+      "digest": "sha256:ca62968a0ea68b179bcc4d9f7e7f3e36cf2e082293ba9f38cd3b09e7f215cc1e"
     },
     {
       "name": "vector",
-      "directory": "common/vector",
+      "directory": "vector",
       "declared": true,
       "coordinate": "org.modkitx/vector",
       "contributions": ["org.modkitx/emf", "org.modkitx/vector-svg", "org.modkitx/wmf"],
-      "digest": "sha256:cbf58d572426b37728b0f00f4e71847323c98b1712d9e24a12611560b34cb024"
+      "digest": "sha256:b0d3782a1b731e8aac86ac654d03cd410c4a058d26a3c86469e28af3b7302971"
     },
     {
       "name": "video",
-      "directory": "common/video",
+      "directory": "video",
       "declared": true,
       "coordinate": "org.modkitx/video",
       "contributions": [
@@ -158,7 +158,7 @@
         "org.modkitx/video-webm",
         "org.modkitx/wmv"
       ],
-      "digest": "sha256:8572b81e40cf60a6f34dafccb6dc1cbe3a616c28665ab7670a346c379ffce81c"
+      "digest": "sha256:617d061b0d48a246e8fe0257aeaf4e71749c0c7d72a2a7d479b378751f198015"
     }
   ]
 }

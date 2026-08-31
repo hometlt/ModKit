@@ -15,7 +15,7 @@ import * as odt from './odt/codec.js'
 import * as rtf from './rtf/codec.js'
 
 export const documents = defineLinkedExtension({
-  source: 'linked:extensions/common/documents',
+  source: 'linked:extensions/documents',
   packageJson,
   contributions: [
     { path: 'contributions/codec-markdown.json', manifest: markdownManifest },

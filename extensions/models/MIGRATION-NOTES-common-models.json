@@ -1,0 +1,128 @@
+{
+  "$comment": "Historical migration notes for the common model family. DAE, PLY and STL moved into the product package; GLB/glTF, OBJ and UVM are superseded by richer native MK3 contributions in the same package. This file is inert and outside the loader manifest glob.",
+  "schemaVersion": 1,
+  "source": {
+    "repository": "modkitx",
+    "manifests": [
+      "extensions/models/codecs/dae/codec.manifest.json",
+      "extensions/models/codecs/glb/codec.manifest.json",
+      "extensions/models/codecs/gltf/codec.manifest.json",
+      "extensions/models/codecs/obj/codec.manifest.json",
+      "extensions/models/codecs/ply/codec.manifest.json",
+      "extensions/models/codecs/stl/codec.manifest.json",
+      "extensions/models/codecs/uvm/codec.manifest.json"
+    ]
+  },
+  "verdict": "needs-new-contract",
+  "codecs": {
+    "org.modkitx/dae": {
+      "verdict": "mechanical",
+      "lostPlanes": [],
+      "contractGaps": [],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.model/geometry-metadata",
+        "variants:pair"
+      ],
+      "droppedOperations": ["model.read", "model.render"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/glb": {
+      "verdict": "mechanical",
+      "lostPlanes": [],
+      "contractGaps": [],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.model/geometry-metadata",
+        "variants:pair"
+      ],
+      "droppedOperations": ["model.read", "model.render"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/gltf": {
+      "verdict": "mechanical",
+      "lostPlanes": [],
+      "contractGaps": [],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.model/geometry-metadata",
+        "variants:pair"
+      ],
+      "droppedOperations": ["model.read", "model.render"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/obj": {
+      "verdict": "needs-new-contract",
+      "lostPlanes": [],
+      "contractGaps": [
+        "capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract"
+      ],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.model/geometry-metadata",
+        "variants:pair"
+      ],
+      "droppedOperations": ["model.export", "model.read", "model.render", "model.write"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/ply": {
+      "verdict": "mechanical",
+      "lostPlanes": [],
+      "contractGaps": [],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.model/geometry-metadata",
+        "variants:pair"
+      ],
+      "droppedOperations": ["model.read", "model.render"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/stl": {
+      "verdict": "mechanical",
+      "lostPlanes": [],
+      "contractGaps": [],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.model/geometry-metadata",
+        "variants:pair"
+      ],
+      "droppedOperations": ["model.read", "model.render"],
+      "needsSignatures": false,
+      "portState": "ported"
+    },
+    "org.modkitx/uvm": {
+      "verdict": "needs-new-contract",
+      "lostPlanes": [],
+      "contractGaps": [
+        "capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract"
+      ],
+      "renames": [],
+      "converterDefaults": [
+        "operations:inspection-triple",
+        "probe:bytes-4096",
+        "representation:common.model/geometry-metadata",
+        "variants:pair"
+      ],
+      "droppedOperations": ["model.export", "model.read", "model.render", "model.write"],
+      "needsSignatures": false,
+      "portState": "ported"
+    }
+  }
+}

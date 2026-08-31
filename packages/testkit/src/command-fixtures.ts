@@ -195,9 +195,9 @@ export function stageCommandFixtures(
 
 /** Common extension roots used by the image, ZIP and nested model fixtures. */
 export const COMMAND_FIXTURE_EXTENSIONS: readonly (readonly string[])[] = Object.freeze([
-  Object.freeze(['common', 'images']),
-  Object.freeze(['common', 'archives']),
-  Object.freeze(['common', 'models']),
+  Object.freeze(['images']),
+  Object.freeze(['archives']),
+  Object.freeze(['models']),
 ])
 
 /** One fixture's verdict, in the shape every host reports so a receipt can hold all three. */

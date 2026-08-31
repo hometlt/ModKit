@@ -61,7 +61,7 @@ afterAll(async () => {
 
 /** A tiny first-party catalog presented as if it shipped beside the extension. */
 function catalogProbe(names: readonly string[]): DirectoryProbe {
-  const common = join(repositoryRoot, 'extensions', 'common')
+  const common = join(repositoryRoot, 'extensions')
   const roots: Readonly<Record<string, string>> = {
     archives: join(common, 'archives'),
     'plain-text': join(common, 'data', 'plain-text'),

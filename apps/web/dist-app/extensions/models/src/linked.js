@@ -15,7 +15,7 @@ import * as ply from './ply/codec.js'
 import * as stl from './stl/codec.js'
 
 export const models = defineLinkedExtension({
-  source: 'linked:extensions/common/models',
+  source: 'linked:extensions/models',
   packageJson,
   contributions: [
     { path: 'contributions/codec-dae.json', manifest: daeManifest },

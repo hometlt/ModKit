@@ -65,14 +65,7 @@ function sortKeys(value) {
 /** Product codec extensions, split into vendored (catalogued) and excluded. */
 export function selectWebExtensions(root) {
   const extensionsRoot = join(root, 'extensions')
-  const roots = authoredExtensionRootsRelativeTo(join(extensionsRoot, 'common')).map(entry => ({
-    ...entry,
-    relativePath: `common/${entry.relativePath}`,
-  }))
-  const ps1Root = join(extensionsRoot, 'ps1')
-  if (existsSync(join(ps1Root, 'package.json'))) {
-    roots.push({ directory: ps1Root, relativePath: 'ps1' })
-  }
+  const roots = authoredExtensionRootsRelativeTo(extensionsRoot)
   const included = []
   const excluded = []
   for (const { directory: dir, relativePath } of roots) {

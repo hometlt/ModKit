@@ -97,7 +97,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn:
       - 'format/odt/open-inspect'
@@ -169,7 +169,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'extensions/common/data'
+    owner: 'extensions/data'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds: []
@@ -361,7 +361,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'extensions/common/data'
+    owner: 'extensions/data'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds: []
@@ -417,14 +417,14 @@ capabilities:
     closedBy:
       commits: []
       tests:
-        - 'extensions/common/data/contributions/writer-toml.json'
+        - 'extensions/data/contributions/writer-toml.json'
       reports: []
   - capabilityId: 'addition/text-tsv/open-edit'
     userScenario: 'Открыть «Табличный TSV» через общий text-data контракт, отредактировать и сохранить его без форматной ветки в приложении.'
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'extensions/common/data'
+    owner: 'extensions/data'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds: []
@@ -483,7 +483,7 @@ capabilities:
       commits:
         - '05912d0'
       tests:
-        - 'extensions/common/data/contributions/writer-delimited.json'
+        - 'extensions/data/contributions/writer-delimited.json'
         - 'packages/testkit/test/text-data.test.ts'
       reports:
         - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-11-slice-11a'
@@ -492,7 +492,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'extensions/common/data'
+    owner: 'extensions/data'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds: []
@@ -548,14 +548,14 @@ capabilities:
     closedBy:
       commits: []
       tests:
-        - 'extensions/common/data/contributions/writer-xml.json'
+        - 'extensions/data/contributions/writer-xml.json'
       reports: []
   - capabilityId: 'addition/text-yaml/open-edit'
     userScenario: 'Открыть «YAML-документ» через общий text-data контракт, отредактировать и сохранить его без форматной ветки в приложении.'
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'extensions/common/data'
+    owner: 'extensions/data'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds: []
@@ -611,7 +611,7 @@ capabilities:
     closedBy:
       commits: []
       tests:
-        - 'extensions/common/data/contributions/writer-yaml.json'
+        - 'extensions/data/contributions/writer-yaml.json'
       reports: []
   - capabilityId: 'block9/archive-entry-as-subject'
     userScenario: 'Открыть запись архива как самостоятельный субъект.'
@@ -756,7 +756,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/data'
+    owner: 'extensions/data'
     plannedBlock: 11
     dependsOn:
       - 'format/csv/open-inspect'
@@ -822,7 +822,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn:
       - 'format/astc/open-inspect'
@@ -874,8 +874,8 @@ capabilities:
       nativeExport: 'none'
       operations:
         inspect: 'scripts/test/parity-coverage.test.ts'
-        validate: 'extensions/common/images/test/astc-ordinary-ldr.test.ts'
-        read: 'extensions/common/images/test/astc-ordinary-ldr.test.ts'
+        validate: 'extensions/images/test/astc-ordinary-ldr.test.ts'
+        read: 'extensions/images/test/astc-ordinary-ldr.test.ts'
         materialize: null
     knownLoss:
       - 'СУЖЕННЫЙ SCOPE (§0.2): PKM декодирует ETC1/ETC2 и unsigned EAC_R11/RG11; ASTC декодирует 2D LDR void-extent и пять независимо закреплённых single-partition block modes 0x42/0x163/0x243/0x452/0x7cd (binary/trit/quint, infill, single/dual plane); ANI через общий ICO/CUR DIB-путь декодирует первый кадр с AND-маской. Все три публикуют raster-image-source под maxScalarBytes и имеют operation-level доказательства.'
@@ -891,10 +891,10 @@ capabilities:
         - '59a6214'
         - '0d7a858'
       tests:
-        - 'extensions/common/images/test/ani-raster-decode.test.ts'
-        - 'extensions/common/images/test/astc-ordinary-ldr.test.ts'
-        - 'extensions/common/images/test/astc-void-extent.test.ts'
-        - 'extensions/common/images/test/eac-r11-decode.test.ts'
+        - 'extensions/images/test/ani-raster-decode.test.ts'
+        - 'extensions/images/test/astc-ordinary-ldr.test.ts'
+        - 'extensions/images/test/astc-void-extent.test.ts'
+        - 'extensions/images/test/eac-r11-decode.test.ts'
         - 'packages/testkit/test/mk2-image-codecs.test.ts'
         - 'packages/testkit/test/pkm-etc-decode.test.ts'
       reports:
@@ -2110,7 +2110,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/archives'
+    owner: 'extensions/archives'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -2175,7 +2175,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/audio'
+    owner: 'extensions/audio'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -2419,7 +2419,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -2479,7 +2479,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -2527,7 +2527,7 @@ capabilities:
       operations:
         inspect: 'scripts/test/parity-coverage.test.ts'
         validate: null
-        read: 'extensions/common/images/test/ani-raster-decode.test.ts'
+        read: 'extensions/images/test/ani-raster-decode.test.ts'
         materialize: null
     knownLoss:
       - 'первый CUR/DIB кадр декодируется с точной AND-маской; временная шкала и последующие кадры остаются структурными данными, потому что admitted timeline-source отсутствует'
@@ -2539,14 +2539,14 @@ capabilities:
     closedBy:
       commits: []
       tests:
-        - 'extensions/common/images/test/ani-raster-decode.test.ts'
+        - 'extensions/images/test/ani-raster-decode.test.ts'
       reports: []
   - capabilityId: 'format/astc/open-inspect'
     userScenario: 'Открыть «ASTC Texture» в MK3 и выполнить image.compressed.read, image.inspect, image.read без потери семантики legacy-маршрута.'
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -2593,8 +2593,8 @@ capabilities:
       nativeExport: 'none'
       operations:
         inspect: 'scripts/test/parity-coverage.test.ts'
-        validate: 'extensions/common/images/test/astc-ordinary-ldr.test.ts'
-        read: 'extensions/common/images/test/astc-ordinary-ldr.test.ts'
+        validate: 'extensions/images/test/astc-ordinary-ldr.test.ts'
+        read: 'extensions/images/test/astc-ordinary-ldr.test.ts'
         materialize: null
     knownLoss:
       - 'operation dropped at port: image.compressed-read'
@@ -2607,15 +2607,15 @@ capabilities:
     closedBy:
       commits: []
       tests:
-        - 'extensions/common/images/test/astc-ordinary-ldr.test.ts'
-        - 'extensions/common/images/test/astc-void-extent.test.ts'
+        - 'extensions/images/test/astc-ordinary-ldr.test.ts'
+        - 'extensions/images/test/astc-void-extent.test.ts'
       reports: []
   - capabilityId: 'format/avi/open-inspect'
     userScenario: 'Открыть «Audio Video Interleave» в MK3 и выполнить video.export, video.inspect без потери семантики legacy-маршрута.'
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/video'
+    owner: 'extensions/video'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -2681,7 +2681,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -2746,7 +2746,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -2942,7 +2942,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -3118,7 +3118,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -3246,7 +3246,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/archives'
+    owner: 'extensions/archives'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -3376,7 +3376,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/archives'
+    owner: 'extensions/archives'
     plannedBlock: 12
     dependsOn:
       - 'format/7z/open-inspect'
@@ -3442,7 +3442,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/archives'
+    owner: 'extensions/archives'
     plannedBlock: 12
     dependsOn:
       - 'format/7z/open-inspect'
@@ -3567,7 +3567,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -3883,7 +3883,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/data'
+    owner: 'extensions/data'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -4014,7 +4014,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -4083,7 +4083,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/models'
+    owner: 'extensions/models'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -4150,7 +4150,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -4684,7 +4684,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/archives'
+    owner: 'extensions/archives'
     plannedBlock: 12
     dependsOn:
       - 'format/7z/open-inspect'
@@ -4748,7 +4748,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -4808,7 +4808,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -5160,7 +5160,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/vector'
+    owner: 'extensions/vector'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -5474,7 +5474,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -5541,7 +5541,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -5662,7 +5662,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/audio'
+    owner: 'extensions/audio'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -5981,7 +5981,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -6049,7 +6049,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/models'
+    owner: 'extensions/models'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -6120,7 +6120,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/models'
+    owner: 'extensions/models'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -6251,7 +6251,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/archives'
+    owner: 'extensions/archives'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -6437,7 +6437,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -6687,7 +6687,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -6756,7 +6756,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/archives'
+    owner: 'extensions/archives'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -6824,7 +6824,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -6894,7 +6894,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -6964,7 +6964,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -7034,7 +7034,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/archives'
+    owner: 'extensions/archives'
     plannedBlock: 12
     dependsOn:
       - 'format/7z/open-inspect'
@@ -7179,7 +7179,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/audio'
+    owner: 'extensions/audio'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -7245,7 +7245,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -7315,7 +7315,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -7431,7 +7431,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/audio'
+    owner: 'extensions/audio'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -7504,7 +7504,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/video'
+    owner: 'extensions/video'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -7574,7 +7574,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/video'
+    owner: 'extensions/video'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -7765,7 +7765,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/models'
+    owner: 'extensions/models'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -7835,7 +7835,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -7913,7 +7913,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -7992,7 +7992,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -8067,7 +8067,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/audio'
+    owner: 'extensions/audio'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -8136,7 +8136,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/video'
+    owner: 'extensions/video'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -8202,7 +8202,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/audio'
+    owner: 'extensions/audio'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -8271,7 +8271,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -8338,7 +8338,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -8408,7 +8408,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -8468,7 +8468,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/archives'
+    owner: 'extensions/archives'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -8598,7 +8598,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -8645,8 +8645,8 @@ capabilities:
       nativeExport: 'none'
       operations:
         inspect: 'scripts/test/parity-coverage.test.ts'
-        validate: 'extensions/common/images/test/eac-r11-decode.test.ts'
-        read: 'extensions/common/images/test/eac-r11-decode.test.ts'
+        validate: 'extensions/images/test/eac-r11-decode.test.ts'
+        read: 'extensions/images/test/eac-r11-decode.test.ts'
         materialize: null
     knownLoss:
       - 'operation dropped at port: image.compressed-read'
@@ -8659,7 +8659,7 @@ capabilities:
     closedBy:
       commits: []
       tests:
-        - 'extensions/common/images/test/eac-r11-decode.test.ts'
+        - 'extensions/images/test/eac-r11-decode.test.ts'
         - 'packages/testkit/test/pkm-etc-decode.test.ts'
       reports: []
   - capabilityId: 'format/ply/open-inspect'
@@ -8667,7 +8667,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/models'
+    owner: 'extensions/models'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -8734,7 +8734,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -8806,7 +8806,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -9058,7 +9058,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -9118,7 +9118,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -9306,7 +9306,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/archives'
+    owner: 'extensions/archives'
     plannedBlock: 12
     dependsOn:
       - 'format/7z/open-inspect'
@@ -9970,7 +9970,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -10025,7 +10025,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: 'org.modkitx/document-rtf в extensions/common/documents: тот же view.inspect/asset.validate/export.raw и тот же tree-data-source, плюс детекция заголовка любой мажорной версии RTF, которую legacy-маршрут принимал, а прежний MK3-маршрут — нет'
+    replacementWorkflow: 'org.modkitx/document-rtf в extensions/documents: тот же view.inspect/asset.validate/export.raw и тот же tree-data-source, плюс детекция заголовка любой мажорной версии RTF, которую legacy-маршрут принимал, а прежний MK3-маршрут — нет'
     closedBy:
       commits: []
       tests:
@@ -11783,7 +11783,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/models'
+    owner: 'extensions/models'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -11910,7 +11910,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/vector'
+    owner: 'extensions/vector'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -12097,7 +12097,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/archives'
+    owner: 'extensions/archives'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -12227,7 +12227,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -12296,7 +12296,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -13221,7 +13221,7 @@ capabilities:
     releaseTrack: 'multiverse-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/models'
+    owner: 'extensions/models'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -13291,7 +13291,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -14188,7 +14188,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/audio'
+    owner: 'extensions/audio'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -14315,7 +14315,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/video'
+    owner: 'extensions/video'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -14385,7 +14385,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/images'
+    owner: 'extensions/images'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -14581,7 +14581,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/vector'
+    owner: 'extensions/vector'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -14647,7 +14647,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/video'
+    owner: 'extensions/video'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -14949,7 +14949,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/documents'
+    owner: 'extensions/documents'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:
@@ -15009,7 +15009,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/archives'
+    owner: 'extensions/archives'
     plannedBlock: 12
     dependsOn:
       - 'format/7z/open-inspect'
@@ -15075,7 +15075,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/archives'
+    owner: 'extensions/archives'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:
@@ -15149,7 +15149,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/archives'
+    owner: 'extensions/archives'
     plannedBlock: 12
     dependsOn:
       - 'format/7z/open-inspect'
@@ -17828,7 +17828,7 @@ capabilities:
     fixtures:
       - 'extensions/blizzard/models/test/fixtures/artifact1.m3'
       - 'extensions/opensource/warzone-2100/test/fixtures/simple.pie'
-      - 'extensions/common/documents/test/fixtures/minimal.odt'
+      - 'extensions/documents/test/fixtures/minimal.odt'
     corpusDescriptors: []
     projection:
       plane: 'ui'
@@ -18841,7 +18841,7 @@ capabilities:
     releaseTrack: 'multiverse-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/models'
+    owner: 'extensions/models'
     plannedBlock: 11
     dependsOn:
       - 'uv/projection-abi/receipts'
@@ -18907,7 +18907,7 @@ capabilities:
     releaseTrack: 'multiverse-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/models'
+    owner: 'extensions/models'
     plannedBlock: 11
     dependsOn:
       - 'uv/uvm/live-projection'
@@ -19049,7 +19049,7 @@ capabilities:
     releaseTrack: 'multiverse-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/models'
+    owner: 'extensions/models'
     plannedBlock: 22
     dependsOn:
       - 'uv/projection-abi/receipts'

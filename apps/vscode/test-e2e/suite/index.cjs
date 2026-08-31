@@ -1157,7 +1157,7 @@ async function runScenarios(env) {
    * It opened `minimal.ani` and `minimal.astc` and asserted each reached an Image stage — which is
    * a claim about the ANI and ASTC *decoders*, asked through a screen-scrape of a webview. Those
    * decoders have their own suites, in-process, against the same fixtures:
-   * `extensions/common/images/test/ani-raster-decode.test.ts` and `astc-void-extent.test.ts`, with
+   * `extensions/images/test/ani-raster-decode.test.ts` and `astc-void-extent.test.ts`, with
    * the parity ratchet recording both as poorer → richer. Asking the same question twice, once
    * weakly, is not extra assurance — it is a second thing to keep working.
    *

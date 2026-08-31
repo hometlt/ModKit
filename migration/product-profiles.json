@@ -86,7 +86,7 @@
       },
       {
         "id": "linked-extension",
-        "entry": "extensions/common/images/src/linked.js",
+        "entry": "extensions/images/src/linked.js",
         "budgetBytes": null,
         "forbids": "user interface vocabulary"
       },

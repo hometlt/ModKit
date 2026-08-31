@@ -4,13 +4,13 @@
   "source": {
     "repository": "modkitx",
     "manifests": [
-      "extensions/common/models/codecs/dae/codec.manifest.json",
-      "extensions/common/models/codecs/glb/codec.manifest.json",
-      "extensions/common/models/codecs/gltf/codec.manifest.json",
-      "extensions/common/models/codecs/obj/codec.manifest.json",
-      "extensions/common/models/codecs/ply/codec.manifest.json",
-      "extensions/common/models/codecs/stl/codec.manifest.json",
-      "extensions/common/models/codecs/uvm/codec.manifest.json"
+      "extensions/models/codecs/dae/codec.manifest.json",
+      "extensions/models/codecs/glb/codec.manifest.json",
+      "extensions/models/codecs/gltf/codec.manifest.json",
+      "extensions/models/codecs/obj/codec.manifest.json",
+      "extensions/models/codecs/ply/codec.manifest.json",
+      "extensions/models/codecs/stl/codec.manifest.json",
+      "extensions/models/codecs/uvm/codec.manifest.json"
     ]
   },
   "verdict": "needs-new-contract",

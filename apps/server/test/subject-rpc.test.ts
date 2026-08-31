@@ -23,9 +23,7 @@ afterEach(async () => {
 })
 
 async function serverAndClient(roots: readonly string[]): Promise<SubjectRpcClient> {
-  const images = await loadExtensionDirectory(
-    join(repositoryRoot, 'extensions', 'common', 'images'),
-  )
+  const images = await loadExtensionDirectory(join(repositoryRoot, 'extensions', 'images'))
   const app = await createServerApp([
     { ...images, execution: { origin: 'installed', allowTrustedInProcess: false } },
   ])
