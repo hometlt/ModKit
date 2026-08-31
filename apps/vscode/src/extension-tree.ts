@@ -12,7 +12,7 @@ import type { ContributionRow } from './contributions.js'
 export const OPEN_EXTENSION_COMMAND = 'modkit.extensions.openExtension'
 export const OPEN_CONTRIBUTION_COMMAND = 'modkit.extensions.openContribution'
 
-export type ExtensionGroup = 'available' | 'installed' | 'enabled' | 'updates' | 'problems'
+export type ExtensionGroup = 'installed' | 'available' | 'problems'
 
 export interface ExtensionProblemNode {
   readonly kind: 'problem'
@@ -111,7 +111,7 @@ function entryNode(
   })
 }
 
-/** Build the five root groups from one manager snapshot and one composed inventory. */
+/** Build the three root groups from one manager snapshot and one composed inventory. */
 export function createExtensionTree(
   options: CreateExtensionTreeOptions,
 ): readonly ExtensionGroupNode[] {
@@ -134,15 +134,6 @@ export function createExtensionTree(
   return Object.freeze([
     Object.freeze({
       kind: 'group',
-      group: 'available',
-      label: localizer.text('extensions.group.available'),
-      entries: nodes(
-        'available',
-        entries.filter(entry => entry.installedVersion === undefined),
-      ),
-    }),
-    Object.freeze({
-      kind: 'group',
       group: 'installed',
       label: localizer.text('extensions.group.installed'),
       entries: nodes(
@@ -152,20 +143,11 @@ export function createExtensionTree(
     }),
     Object.freeze({
       kind: 'group',
-      group: 'enabled',
-      label: localizer.text('extensions.group.enabled'),
+      group: 'available',
+      label: localizer.text('extensions.group.available'),
       entries: nodes(
-        'enabled',
-        entries.filter(entry => entry.enabled),
-      ),
-    }),
-    Object.freeze({
-      kind: 'group',
-      group: 'updates',
-      label: localizer.text('extensions.group.updates'),
-      entries: nodes(
-        'updates',
-        entries.filter(entry => entry.updateAvailable),
+        'available',
+        entries.filter(entry => entry.installedVersion === undefined),
       ),
     }),
     Object.freeze({

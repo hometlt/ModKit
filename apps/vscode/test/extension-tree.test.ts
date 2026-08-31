@@ -190,6 +190,16 @@ describe('VS Code extension contribution tree', () => {
     expect(extensionTreeChildren(required(entry, 'available entry is missing'), [])).toEqual([])
   })
 
+  it('shows only installed, available, and problems roots in that order', () => {
+    const groups = model()
+
+    expect(groups.map(group => group.group)).toEqual(['installed', 'available', 'problems'])
+    expect(groups[0]?.entries?.map(node => node.entry.id)).toEqual([
+      installed.id,
+      disabledExtension.id,
+    ])
+  })
+
   it('localizes group and contribution contract labels without replacing exact identities', () => {
     const localized = createExtensionTree({
       entries: [installed],
@@ -199,10 +209,8 @@ describe('VS Code extension contribution tree', () => {
       localizer: createUiLocalizer('ru'),
     })
     expect(localized.map(group => group.label)).toEqual([
-      'Доступные',
       'Установленные',
-      'Включённые',
-      'Обновления',
+      'Доступные',
       'Проблемы',
     ])
     const installedGroup = required(
