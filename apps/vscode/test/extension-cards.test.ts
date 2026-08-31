@@ -76,6 +76,7 @@ describe('extension subject card catalog', () => {
     ])
     const bundle = await extensionCardBundle(entry, contribution.id)
     expect(bundle.extension.linkable).toBe(true)
+    expect(bundle.extension.codecs).toEqual({ ids: [contribution.id], enabled: true })
     expect(bundle.extension).not.toHaveProperty('root')
     expect(bundle.documents).toHaveLength(2)
     const active = bundle.documents.find(

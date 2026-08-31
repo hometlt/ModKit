@@ -72,6 +72,11 @@
         "title": "%command.disableExtension%"
       },
       {
+        "command": "modkit.extensions.disableAllCodecs",
+        "title": "%command.disableAllCodecs%",
+        "icon": "$(circle-slash)"
+      },
+      {
         "command": "modkit.extensions.disableContribution",
         "title": "%command.disableCodec%",
         "icon": "$(circle-slash)"
@@ -81,6 +86,11 @@
         "title": "%command.enableExtension%"
       },
       {
+        "command": "modkit.extensions.enableAllCodecs",
+        "title": "%command.enableAllCodecs%",
+        "icon": "$(check)"
+      },
+      {
         "command": "modkit.extensions.enableContribution",
         "title": "%command.enableCodec%",
         "icon": "$(check)"
@@ -88,6 +98,11 @@
       {
         "command": "modkit.extensions.install",
         "title": "%command.installExtension%"
+      },
+      {
+        "command": "modkit.extensions.installAll",
+        "title": "%command.installAllExtensions%",
+        "icon": "$(cloud-download)"
       },
       {
         "command": "modkit.extensions.openContribution",
@@ -237,8 +252,18 @@
     "menus": {
       "view/item/context": [
         {
+          "command": "modkit.extensions.disableAllCodecs",
+          "when": "view == modkit.extensions && viewItem =~ /^modkitExtension\\.installed\\..*\\.codecs\\.enabled$/",
+          "group": "inline@1"
+        },
+        {
           "command": "modkit.extensions.disableContribution",
           "when": "view == modkit.extensions && viewItem == modkitContribution.codec.enabled",
+          "group": "inline@1"
+        },
+        {
+          "command": "modkit.extensions.enableAllCodecs",
+          "when": "view == modkit.extensions && viewItem =~ /^modkitExtension\\.installed\\..*\\.codecs\\.disabled$/",
           "group": "inline@1"
         },
         {
@@ -247,13 +272,18 @@
           "group": "inline@1"
         },
         {
+          "command": "modkit.extensions.installAll",
+          "when": "view == modkit.extensions && viewItem == modkitExtensionGroup.available",
+          "group": "inline@1"
+        },
+        {
           "command": "modkit.extensions.remove",
-          "when": "view == modkit.extensions && (viewItem == modkitExtension.installed.mutable || viewItem == modkitExtension.installed.mutable.update)",
+          "when": "view == modkit.extensions && viewItem =~ /^modkitExtension\\.installed\\.mutable(?:\\.update)?(?:\\.codecs\\.(?:enabled|disabled))?$/",
           "group": "inline@2"
         },
         {
           "command": "modkit.extensions.update",
-          "when": "view == modkit.extensions && viewItem == modkitExtension.installed.mutable.update",
+          "when": "view == modkit.extensions && viewItem =~ /^modkitExtension\\.installed\\.mutable\\.update(?:\\.|$)/",
           "group": "inline@1"
         }
       ]
@@ -286,10 +316,13 @@
     "onCommand:modkit.explainResolution",
     "onCommand:modkit.exportDiagnostics",
     "onCommand:modkit.extensions.disable",
+    "onCommand:modkit.extensions.disableAllCodecs",
     "onCommand:modkit.extensions.disableContribution",
     "onCommand:modkit.extensions.enable",
+    "onCommand:modkit.extensions.enableAllCodecs",
     "onCommand:modkit.extensions.enableContribution",
     "onCommand:modkit.extensions.install",
+    "onCommand:modkit.extensions.installAll",
     "onCommand:modkit.extensions.openContribution",
     "onCommand:modkit.extensions.openExtension",
     "onCommand:modkit.extensions.refresh",

@@ -60,11 +60,13 @@ import {
   configuredDisabledExtensions,
   describeConfiguredExtensions,
   withContributionDisabled,
+  withContributionsDisabled,
   withExtensionRoot,
 } from './extension-roots.js'
 import {
   createExtensionTree,
   extensionActionContextValue,
+  extensionGroupActionContextValue,
   extensionTreeChildren,
   OPEN_CONTRIBUTION_COMMAND,
   OPEN_EXTENSION_COMMAND,
@@ -297,6 +299,7 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
           : vscode.TreeItemCollapsibleState.Collapsed,
       )
       item.iconPath = new vscode.ThemeIcon(node.group === 'problems' ? 'warning' : 'extensions')
+      item.contextValue = extensionGroupActionContextValue(node)
       return item
     }
     if (node.kind === 'problem') {
@@ -948,6 +951,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     })
   }
 
+  const writeConfiguration = async (
+    key: 'extensions' | 'disabledExtensions' | 'disabledContributions',
+    value: readonly unknown[],
+    promptForReload: boolean,
+  ): Promise<void> => {
+    await vscode.workspace.getConfiguration('modkit').update(key, [...value], configurationTarget)
+    log(`modkit.${key} written (${configurationScope}): ${JSON.stringify(value)}`)
+    if (promptForReload) {
+      askToReload(
+        `${localizer.text('extensions.status.configurationUpdated')} ${localizer.text(
+          'extensions.state.afterReload',
+        )}`,
+      )
+    }
+  }
+
   const configuration: VsCodeConfigurationPort = {
     scope: configurationScope,
     readExtensions: () => vscode.workspace.getConfiguration('modkit').get('extensions'),
@@ -956,13 +975,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     readDisabledExtensions: () =>
       vscode.workspace.getConfiguration('modkit').get('disabledExtensions'),
     async write(key, value) {
-      await vscode.workspace.getConfiguration('modkit').update(key, [...value], configurationTarget)
-      log(`modkit.${key} written (${configurationScope}): ${JSON.stringify(value)}`)
-      askToReload(
-        `${localizer.text('extensions.status.configurationUpdated')} ${localizer.text(
-          'extensions.state.afterReload',
-        )}`,
-      )
+      await writeConfiguration(key, value, true)
     },
     async pickFolder() {
       const picked = await vscode.window.showOpenDialog({
@@ -2170,6 +2183,39 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     await configuration.write('disabledContributions', next)
   }
 
+  const setExtensionCodecContributionsEnabled = async (
+    argument: unknown,
+    enabled: boolean,
+  ): Promise<void> => {
+    const extensionId = managerEntryId(argument)
+    if (extensionId === undefined) return
+    const ids = host.contributions.flatMap(contribution =>
+      contribution.extension === extensionId &&
+      contribution.contract === 'org.modkitx/codec-contribution' &&
+      contribution.id !== undefined
+        ? [contribution.id]
+        : [],
+    )
+    if (ids.length === 0) {
+      void vscode.window.showInformationMessage(
+        `Modkit: ${extensionId} — ${localizer.text('common.none')}`,
+      )
+      return
+    }
+    const { next, changed } = withContributionsDisabled(
+      configuration.readDisabledContributions(),
+      ids,
+      !enabled,
+    )
+    if (!changed) {
+      void vscode.window.showInformationMessage(
+        `${extensionId}: ${localizer.text(enabled ? 'common.enabled' : 'common.disabled')}`,
+      )
+      return
+    }
+    await configuration.write('disabledContributions', next)
+  }
+
   const openExtensionCard = async (argument: unknown): Promise<void> => {
     if (typeof argument !== 'object' || argument === null) return
     const value = argument as {
@@ -2266,6 +2312,73 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     }
   }
 
+  const installAllAvailable = async (): Promise<void> => {
+    const available = (await extensionManager.snapshot()).entries.filter(
+      entry => entry.installedVersion === undefined,
+    )
+    const managed = available.filter(entry => !entry.source.startsWith('local:'))
+    const local = available.flatMap(entry => {
+      const root = linkableExtensionRoots.get(entry.id)
+      return root === undefined ? [] : [{ id: entry.id, root }]
+    })
+    const total = managed.length + local.length
+    if (total === 0) {
+      void vscode.window.showInformationMessage(
+        `Modkit: ${localizer.text('extensions.action.installAll')} — ${localizer.text('common.none')}`,
+      )
+      return
+    }
+
+    const install = localizer.text('common.install')
+    const confirmed = await vscode.window.showWarningMessage(
+      localizer.text('vscode.extensions.installAllConfirm', { count: total }),
+      { modal: true },
+      install,
+    )
+    if (confirmed !== install) return
+
+    let completed = 0
+    try {
+      if (managed.length > 0) {
+        await extensionManager.executeBatch(
+          managed.map(entry => ({ kind: 'install' as const, id: entry.id })),
+        )
+        completed += managed.length
+      }
+      const rawConfigured = configuration.readExtensions()
+      let configured: readonly unknown[] = Array.isArray(rawConfigured) ? rawConfigured : []
+      let linked = false
+      for (const entry of local) {
+        const result = withExtensionRoot(configured, resolve(entry.root), {
+          caseSensitive: process.platform !== 'win32' && process.platform !== 'darwin',
+        })
+        configured = result.next
+        linked ||= result.added
+        if (result.added) completed += 1
+      }
+      if (linked) {
+        await writeConfiguration('extensions', configured, false)
+      }
+      if (completed === 0) {
+        void vscode.window.showInformationMessage(
+          `Modkit: ${localizer.text('extensions.action.installAll')} — ${localizer.text('common.none')}`,
+        )
+        return
+      }
+      const message = localizer.text('vscode.extensions.installedAll', { count: completed })
+      log(`[extensions] ${message}`)
+      askToReload(message)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      log(`[extensions] install-all failed: ${message}`)
+      if (completed > 0) {
+        askToReload(localizer.text('vscode.extensions.installAllPartial', { message }))
+      } else {
+        void vscode.window.showErrorMessage(`Modkit: ${message}`)
+      }
+    }
+  }
+
   context.subscriptions.push(
     /*
      * Focuses the native view container rather than opening a panel of its own. What this command
@@ -2311,6 +2424,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         )
       }
     }),
+
+    vscode.commands.registerCommand('modkit.extensions.installAll', () => installAllAvailable()),
 
     vscode.commands.registerCommand('modkit.extensions.update', async (argument: unknown) => {
       const id =
@@ -2358,6 +2473,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
     vscode.commands.registerCommand('modkit.extensions.disableContribution', (argument: unknown) =>
       setCodecContributionEnabled(argument, false),
+    ),
+
+    vscode.commands.registerCommand('modkit.extensions.enableAllCodecs', (argument: unknown) =>
+      setExtensionCodecContributionsEnabled(argument, true),
+    ),
+
+    vscode.commands.registerCommand('modkit.extensions.disableAllCodecs', (argument: unknown) =>
+      setExtensionCodecContributionsEnabled(argument, false),
     ),
 
     vscode.commands.registerCommand('modkit.extensions.enable', async (argument: unknown) => {

@@ -125,6 +125,7 @@ export type ShellRequest =
    */
   | { readonly op: 'settings' }
   | { readonly op: 'set-contribution'; readonly id: string; readonly enabled: boolean }
+  | { readonly op: 'set-contributions'; readonly ids: readonly string[]; readonly enabled: boolean }
   | { readonly op: 'set-extension-coordinate'; readonly id: string; readonly enabled: boolean }
   | { readonly op: 'set-managed-package'; readonly id: string; readonly enabled: boolean }
   | { readonly op: 'link-extension'; readonly id: string }

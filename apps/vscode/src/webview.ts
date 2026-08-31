@@ -592,6 +592,11 @@ async function mountExtensionSubjectCard(
   const configure = async (
     request:
       | { readonly op: 'set-contribution'; readonly id: string; readonly enabled: boolean }
+      | {
+          readonly op: 'set-contributions'
+          readonly ids: readonly string[]
+          readonly enabled: boolean
+        }
       | { readonly op: 'set-extension-coordinate'; readonly id: string; readonly enabled: boolean }
       | { readonly op: 'set-managed-package'; readonly id: string; readonly enabled: boolean }
       | { readonly op: 'link-extension'; readonly id: string },
@@ -600,57 +605,86 @@ async function mountExtensionSubjectCard(
     status.textContent = localizer.text('extensions.status.configurationUpdated')
   }
 
-  const actionButton = (active: ExtensionSubjectCardWireDocument): HTMLButtonElement => {
+  const button = (label: string, run: () => void): HTMLButtonElement => {
     const button = document.createElement('button')
     button.type = 'button'
     button.dataset['mkPart'] = 'settings.add'
+    button.textContent = label
+    button.addEventListener('click', run)
+    return button
+  }
+
+  const actionButtons = (
+    active: ExtensionSubjectCardWireDocument,
+  ): readonly HTMLButtonElement[] => {
     const subject = active.subject
     if (
       bundle.extension.managedPackageId !== undefined &&
       bundle.extension.managedPackageEnabled === false
     ) {
       const packageId = bundle.extension.managedPackageId
-      button.textContent = localizer.text('extensions.action.enablePackage')
-      button.addEventListener('click', () => {
-        void configure({
-          op: 'set-managed-package',
-          id: packageId,
-          enabled: true,
-        })
-      })
-      return button
+      return [
+        button(localizer.text('extensions.action.enablePackage'), () => {
+          void configure({ op: 'set-managed-package', id: packageId, enabled: true })
+        }),
+      ]
     }
     if (!bundle.extension.installed && bundle.extension.linkable) {
-      button.textContent = localizer.text('extensions.action.linkExtension')
-      button.addEventListener('click', () => {
-        void configure({ op: 'link-extension', id: bundle.extension.id })
-      })
-      return button
+      return [
+        button(localizer.text('extensions.action.linkExtension'), () => {
+          void configure({ op: 'link-extension', id: bundle.extension.id })
+        }),
+      ]
     }
     if (subject.kind === 'org.modkitx/contribution') {
-      button.textContent = localizer.text(
-        subject.enabled
-          ? 'extensions.action.disableContribution'
-          : 'extensions.action.enableContribution',
-      )
-      button.addEventListener('click', () => {
-        void configure({ op: 'set-contribution', id: subject.id, enabled: !subject.enabled })
-      })
-      return button
+      return [
+        button(
+          localizer.text(
+            subject.enabled
+              ? 'extensions.action.disableContribution'
+              : 'extensions.action.enableContribution',
+          ),
+          () => {
+            void configure({ op: 'set-contribution', id: subject.id, enabled: !subject.enabled })
+          },
+        ),
+      ]
     }
-    button.textContent = localizer.text(
-      bundle.extension.enabled
-        ? 'extensions.action.disableExtension'
-        : 'extensions.action.enableExtension',
-    )
-    button.addEventListener('click', () => {
-      void configure({
-        op: 'set-extension-coordinate',
-        id: bundle.extension.id,
-        enabled: !bundle.extension.enabled,
-      })
-    })
-    return button
+    const actions = [
+      button(
+        localizer.text(
+          bundle.extension.enabled
+            ? 'extensions.action.disableExtension'
+            : 'extensions.action.enableExtension',
+        ),
+        () => {
+          void configure({
+            op: 'set-extension-coordinate',
+            id: bundle.extension.id,
+            enabled: !bundle.extension.enabled,
+          })
+        },
+      ),
+    ]
+    if (bundle.extension.codecs.ids.length > 0) {
+      actions.push(
+        button(
+          localizer.text(
+            bundle.extension.codecs.enabled
+              ? 'extensions.action.disableAllCodecs'
+              : 'extensions.action.enableAllCodecs',
+          ),
+          () => {
+            void configure({
+              op: 'set-contributions',
+              ids: bundle.extension.codecs.ids,
+              enabled: !bundle.extension.codecs.enabled,
+            })
+          },
+        ),
+      )
+    }
+    return actions
   }
 
   const render = async (subjectId: string): Promise<void> => {
@@ -662,7 +696,7 @@ async function mountExtensionSubjectCard(
       localizer,
     })
     card?.destroy()
-    toolbar.replaceChildren(actionButton(active), status)
+    toolbar.replaceChildren(...actionButtons(active), status)
     const navigate = (ref: CardRef): void => {
       if (ref.href !== undefined && documents.has(ref.href)) {
         void render(ref.href)

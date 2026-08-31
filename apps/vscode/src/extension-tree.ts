@@ -33,6 +33,7 @@ export interface ExtensionEntryNode {
   readonly group: ExtensionGroup
   readonly entry: ExtensionManagerEntry
   readonly contributions: readonly ContributionRow[]
+  readonly configuredDisabledContributionIds: ReadonlySet<string>
 }
 
 /** A visual grouping only. It is deliberately not a card subject. */
@@ -89,8 +90,25 @@ export function extensionActionContextValue(node: ExtensionEntryNode | Contribut
     entry.source === 'configured' ||
     entry.source.startsWith('local:') ||
     entry.source.startsWith('managed:')
-  if (immutable) return 'modkitExtension.installed.immutable'
-  return `modkitExtension.installed.mutable${entry.updateAvailable ? '.update' : ''}`
+  const base = immutable
+    ? 'modkitExtension.installed.immutable'
+    : `modkitExtension.installed.mutable${entry.updateAvailable ? '.update' : ''}`
+  const codecIds = node.contributions.flatMap(contribution =>
+    contribution.contract === 'org.modkitx/codec-contribution' && contribution.id !== undefined
+      ? [contribution.id]
+      : [],
+  )
+  if (codecIds.length === 0) return base
+  const everyCodecEnabled = codecIds.every(id => !node.configuredDisabledContributionIds.has(id))
+  return `${base}.codecs.${everyCodecEnabled ? 'enabled' : 'disabled'}`
+}
+
+/** Context value for commands attached to a root group rather than a package row. */
+export function extensionGroupActionContextValue(node: ExtensionGroupNode): string {
+  if (node.group === 'available' && (node.entries?.length ?? 0) === 0) {
+    return 'modkitExtensionGroup.available.empty'
+  }
+  return `modkitExtensionGroup.${node.group}`
 }
 
 export interface CreateExtensionTreeOptions {
@@ -120,6 +138,7 @@ function entryNode(
   group: ExtensionGroup,
   entry: ExtensionManagerEntry,
   contributionsByExtension: ReadonlyMap<string, readonly ContributionRow[]>,
+  configuredDisabledContributionIds: ReadonlySet<string>,
 ): ExtensionEntryNode {
   /*
    * This join is intentionally exact. A manager row may name a distribution package that owns
@@ -133,6 +152,7 @@ function entryNode(
     group,
     entry,
     contributions: contributionsByExtension.get(entry.id) ?? Object.freeze([]),
+    configuredDisabledContributionIds,
   })
 }
 
@@ -152,8 +172,13 @@ export function createExtensionTree(
       ([extension, rows]) => [extension, Object.freeze([...rows])] as const,
     ),
   )
+  const configuredDisabledContributionIds = new Set(options.configuredDisabledContributionIds)
   const nodes = (group: ExtensionGroup, entries: readonly ExtensionManagerEntry[]) =>
-    Object.freeze(entries.map(entry => entryNode(group, entry, frozenContributions)))
+    Object.freeze(
+      entries.map(entry =>
+        entryNode(group, entry, frozenContributions, configuredDisabledContributionIds),
+      ),
+    )
 
   const entries = options.entries
   return Object.freeze([

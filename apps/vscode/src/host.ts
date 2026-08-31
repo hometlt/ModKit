@@ -83,6 +83,7 @@ import {
   discoverWorkspaceRoots,
   resolveBundledCatalog,
   withContributionDisabled,
+  withContributionsDisabled,
   withExtensionDisabled,
   withExtensionEnabled,
   withExtensionRoot,
@@ -978,6 +979,31 @@ function serveVsCode(
             ? `${request.id} is now ${request.enabled ? 'enabled' : 'disabled'} in ` +
                 `modkit.disabledContributions (${configuration.scope}). ${applies}`
             : `${request.id} was already ${request.enabled ? 'enabled' : 'disabled'}.`,
+        )
+      }
+      case 'set-contributions': {
+        if (configuration === undefined) return answer(false, CANNOT_CONFIGURE)
+        if (
+          !Array.isArray(request.ids) ||
+          request.ids.length === 0 ||
+          request.ids.length > 4096 ||
+          request.ids.some(id => typeof id !== 'string' || id.trim().length === 0)
+        ) {
+          return answer(false, 'The codec selection is empty or invalid, so nothing was written.')
+        }
+        const { next, changed } = withContributionsDisabled(
+          configuration.readDisabledContributions(),
+          request.ids,
+          !request.enabled,
+        )
+        if (changed) await configuration.write('disabledContributions', next)
+        return answer(
+          changed,
+          changed
+            ? `${request.ids.length} contributions are now ` +
+                `${request.enabled ? 'enabled' : 'disabled'} in modkit.disabledContributions ` +
+                `(${configuration.scope}). ${applies}`
+            : `The selected contributions were already ${request.enabled ? 'enabled' : 'disabled'}.`,
         )
       }
       case 'set-extension-coordinate': {

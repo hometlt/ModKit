@@ -43,7 +43,7 @@ describe('generated VS Code contributions', () => {
       authorityDocument.fileSystemSchemes.length
     const result = run()
 
-    expect(expectedActivationEventCount).toBe(32)
+    expect(expectedActivationEventCount).toBe(35)
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
     expect(result.stdout).toContain(`${expectedActivationEventCount} activation events`)
@@ -61,9 +61,13 @@ describe('generated VS Code contributions', () => {
     expect(commands.get('modkit.extensions.disableContribution')?.icon).toBe('$(circle-slash)')
     expect(commands.get('modkit.extensions.update')?.icon).toBe('$(sync)')
     expect(commands.get('modkit.extensions.remove')?.icon).toBe('$(trash)')
+    expect(commands.get('modkit.extensions.installAll')?.icon).toBe('$(cloud-download)')
     expect(inline.map(item => item.command)).toEqual([
+      'modkit.extensions.disableAllCodecs',
       'modkit.extensions.disableContribution',
+      'modkit.extensions.enableAllCodecs',
       'modkit.extensions.enableContribution',
+      'modkit.extensions.installAll',
       'modkit.extensions.remove',
       'modkit.extensions.update',
     ])
@@ -78,13 +82,28 @@ describe('generated VS Code contributions', () => {
       group: 'inline@1',
     })
     expect(inline).toContainEqual({
+      command: 'modkit.extensions.disableAllCodecs',
+      when: 'view == modkit.extensions && viewItem =~ /^modkitExtension\\.installed\\..*\\.codecs\\.enabled$/',
+      group: 'inline@1',
+    })
+    expect(inline).toContainEqual({
+      command: 'modkit.extensions.enableAllCodecs',
+      when: 'view == modkit.extensions && viewItem =~ /^modkitExtension\\.installed\\..*\\.codecs\\.disabled$/',
+      group: 'inline@1',
+    })
+    expect(inline).toContainEqual({
+      command: 'modkit.extensions.installAll',
+      when: 'view == modkit.extensions && viewItem == modkitExtensionGroup.available',
+      group: 'inline@1',
+    })
+    expect(inline).toContainEqual({
       command: 'modkit.extensions.update',
-      when: 'view == modkit.extensions && viewItem == modkitExtension.installed.mutable.update',
+      when: 'view == modkit.extensions && viewItem =~ /^modkitExtension\\.installed\\.mutable\\.update(?:\\.|$)/',
       group: 'inline@1',
     })
     expect(inline).toContainEqual({
       command: 'modkit.extensions.remove',
-      when: 'view == modkit.extensions && (viewItem == modkitExtension.installed.mutable || viewItem == modkitExtension.installed.mutable.update)',
+      when: 'view == modkit.extensions && viewItem =~ /^modkitExtension\\.installed\\.mutable(?:\\.update)?(?:\\.codecs\\.(?:enabled|disabled))?$/',
       group: 'inline@2',
     })
   })

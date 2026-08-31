@@ -6,6 +6,7 @@ import type { ContributionRow } from '../src/contributions.js'
 import {
   createExtensionTree,
   extensionActionContextValue,
+  extensionGroupActionContextValue,
   extensionTreeChildren,
   type ContributionContractNode,
   type ContributionNode,
@@ -120,8 +121,11 @@ describe('VS Code extension contribution tree', () => {
       'org.example/model-b',
     ]) as readonly ContributionNode[]
 
-    expect(extensionActionContextValue(installedEntry)).toBe('modkitExtension.installed.immutable')
+    expect(extensionActionContextValue(installedEntry)).toBe(
+      'modkitExtension.installed.immutable.codecs.disabled',
+    )
     expect(extensionActionContextValue(availableEntry)).toBe('modkitExtension.available')
+    expect(extensionGroupActionContextValue(availableGroup)).toBe('modkitExtensionGroup.available')
     expect(codecs.map(extensionActionContextValue)).toEqual([
       'modkitContribution.codec.enabled',
       'modkitContribution.codec.disabled',
@@ -135,7 +139,24 @@ describe('VS Code extension contribution tree', () => {
           updateAvailable: true,
         },
       }),
-    ).toBe('modkitExtension.installed.mutable.update')
+    ).toBe('modkitExtension.installed.mutable.update.codecs.disabled')
+  })
+
+  it('offers one inverse action when every codec in an extension is disabled', () => {
+    const [installedGroup] = createExtensionTree({
+      entries: [installed],
+      contributions,
+      configuredDisabledContributionIds: [
+        'org.example/model-a',
+        'org.example/model-b',
+        'org.example/model-v2',
+      ],
+      problems: [],
+    })
+    const entry = required(installedGroup?.entries?.[0], 'installed entry is missing')
+    expect(extensionActionContextValue(entry)).toBe(
+      'modkitExtension.installed.immutable.codecs.disabled',
+    )
   })
 
   it('nests real contributions under their exact owner extension and contract pair', () => {
@@ -241,6 +262,22 @@ describe('VS Code extension contribution tree', () => {
       installed.id,
       disabledExtension.id,
     ])
+  })
+
+  it('does not offer install-all for an empty available group', () => {
+    const groups = createExtensionTree({
+      entries: [installed],
+      contributions,
+      configuredDisabledContributionIds: [],
+      problems: [],
+    })
+    const availableGroup = required(
+      groups.find(group => group.group === 'available'),
+      'available group is missing',
+    )
+    expect(extensionGroupActionContextValue(availableGroup)).toBe(
+      'modkitExtensionGroup.available.empty',
+    )
   })
 
   it('localizes group and contribution contract labels without replacing exact identities', () => {

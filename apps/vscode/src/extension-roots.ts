@@ -403,6 +403,24 @@ export function withContributionDisabled(
   return { next: Object.freeze(next), changed: true }
 }
 
+/** Switch a bounded set of contributions with one configuration write. */
+export function withContributionsDisabled(
+  value: unknown,
+  ids: readonly string[],
+  disabled: boolean,
+): { readonly next: readonly string[]; readonly changed: boolean } {
+  const current = configuredDisabledContributions(value).ids
+  const selected = new Set(ids.filter(id => id.trim().length > 0))
+  if (selected.size === 0) return { next: current, changed: false }
+  const next = disabled
+    ? [...new Set([...current, ...selected])].sort()
+    : current.filter(id => !selected.has(id))
+  return {
+    next: Object.freeze(next),
+    changed: next.length !== current.length || next.some((id, index) => id !== current[index]),
+  }
+}
+
 /** Toggle one extension coordinate while preserving every contribution's own switch. */
 export function withExtensionDisabled(
   value: unknown,

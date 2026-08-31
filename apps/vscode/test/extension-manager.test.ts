@@ -353,6 +353,23 @@ describe('VS Code extension manager state', () => {
     })
   })
 
+  it('installs an explicit batch sequentially and refreshes the tree once', async () => {
+    const state = fixture()
+    const changed = vi.fn()
+    state.controller.onDidChange(changed)
+
+    const snapshot = await state.controller.executeBatch([
+      { kind: 'install', id: 'example/new-pack' },
+    ])
+
+    expect(state.acquisitions()).toBe(1)
+    expect(changed).toHaveBeenCalledTimes(1)
+    expect(snapshot.entries.find(entry => entry.id === 'example/new-pack')).toMatchObject({
+      installedVersion: '1.0.0',
+      enabled: true,
+    })
+  })
+
   it('updates manager state without writing configuration and preserves package enablement', async () => {
     const state = fixture()
     const snapshot = await state.controller.execute({ kind: 'update', id: alphaV2.id })

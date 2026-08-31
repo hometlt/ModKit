@@ -27,6 +27,10 @@ export interface ExtensionCardBundle {
     readonly linkable: boolean
     readonly managedPackageId?: string
     readonly managedPackageEnabled?: boolean
+    readonly codecs: {
+      readonly ids: readonly string[]
+      readonly enabled: boolean
+    }
   }
 }
 
@@ -174,6 +178,9 @@ export async function extensionCardBundle(
   const documents = await Promise.all(
     entry.projection.records.map(record => extensionSubjectRecordToWire(record)),
   )
+  const codecs = entry.projection.contributions.filter(
+    contribution => contribution.contract.id === 'org.modkitx/codec-contribution',
+  )
   return Object.freeze({
     activeSubjectId: active.subjectId,
     documents: Object.freeze(documents),
@@ -182,6 +189,10 @@ export async function extensionCardBundle(
       installed: entry.installed,
       enabled: entry.projection.extension.enabled,
       linkable: !entry.installed && entry.root !== undefined,
+      codecs: Object.freeze({
+        ids: Object.freeze(codecs.map(codec => codec.id)),
+        enabled: codecs.length > 0 && codecs.every(codec => codec.enabled),
+      }),
       ...(entry.managedPackageId === undefined
         ? {}
         : {

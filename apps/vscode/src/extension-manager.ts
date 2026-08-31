@@ -195,7 +195,7 @@ export class ExtensionManagerController {
     for (const listener of this.listeners) listener()
   }
 
-  async execute(command: ExtensionManagerCommand): Promise<ExtensionManagerSnapshot> {
+  private async apply(command: ExtensionManagerCommand): Promise<void> {
     switch (command.kind) {
       case 'install':
         await this.client.install(command.id, command.version)
@@ -213,7 +213,23 @@ export class ExtensionManagerController {
         await this.client.refresh()
         break
     }
+  }
+
+  async execute(command: ExtensionManagerCommand): Promise<ExtensionManagerSnapshot> {
+    await this.apply(command)
     this.invalidate()
+    return this.snapshot()
+  }
+
+  /** Execute a user-requested batch sequentially and publish one final tree refresh. */
+  async executeBatch(
+    commands: readonly ExtensionManagerCommand[],
+  ): Promise<ExtensionManagerSnapshot> {
+    try {
+      for (const command of commands) await this.apply(command)
+    } finally {
+      this.invalidate()
+    }
     return this.snapshot()
   }
 }

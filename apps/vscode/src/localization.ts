@@ -52,6 +52,10 @@ const EN_MESSAGES = Object.freeze({
   'vscode.extensions.removeConfirm': 'Remove {id} from this Modkit installation?',
   'vscode.extensions.catalogRefreshed': 'Extension catalog refreshed',
   'vscode.extensions.installed': '{id} installed',
+  'vscode.extensions.installAllConfirm': 'Install all {count} available Modkit extensions?',
+  'vscode.extensions.installedAll': 'Installed {count} available Modkit extensions.',
+  'vscode.extensions.installAllPartial':
+    'Some extensions were installed, but the operation did not finish: {message}',
   'vscode.extensions.updated': '{id} updated',
   'vscode.extensions.removed': '{id} removed',
 
@@ -330,6 +334,10 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.extensions.removeConfirm': 'Удалить {id} из этой установки Modkit?',
   'vscode.extensions.catalogRefreshed': 'Каталог расширений обновлён',
   'vscode.extensions.installed': 'Расширение {id} установлено',
+  'vscode.extensions.installAllConfirm': 'Установить все доступные расширения Modkit ({count})?',
+  'vscode.extensions.installedAll': 'Установлены все доступные расширения Modkit ({count}).',
+  'vscode.extensions.installAllPartial':
+    'Часть расширений установлена, но операция не завершилась: {message}',
   'vscode.extensions.updated': 'Расширение {id} обновлено',
   'vscode.extensions.removed': 'Расширение {id} удалено',
 

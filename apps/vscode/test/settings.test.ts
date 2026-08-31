@@ -30,6 +30,7 @@ import {
   configuredDisabledExtensions,
   describeConfiguredExtensions,
   withContributionDisabled,
+  withContributionsDisabled,
   withExtensionDisabled,
   withExtensionEnabled,
   withExtensionRoot,
@@ -121,6 +122,17 @@ describe('rewriting modkit.disabledContributions', () => {
     expect(withContributionDisabled(['a', 'b'], 'a', false).next).toEqual(['b'])
     expect(withContributionDisabled(['a'], 'a', true).changed).toBe(false)
     expect(withContributionDisabled(undefined, 'a', false).changed).toBe(false)
+  })
+
+  it('switches all codec ids from one extension with one normalized update', () => {
+    expect(withContributionsDisabled(['other', 'codec-b'], ['codec-a', 'codec-b'], true)).toEqual({
+      next: ['codec-a', 'codec-b', 'other'],
+      changed: true,
+    })
+    expect(
+      withContributionsDisabled(['codec-a', 'codec-b', 'other'], ['codec-a', 'codec-b'], false),
+    ).toEqual({ next: ['other'], changed: true })
+    expect(withContributionsDisabled(['other'], [], true).changed).toBe(false)
   })
 })
 
@@ -271,6 +283,57 @@ describe('the webview asks, the extension side writes', () => {
         enabled: true,
       })) as { view: ShellSettingsView }
       expect(restored.view.disabledContributions).toEqual([])
+    } finally {
+      await served.close()
+    }
+  }, 60_000)
+
+  it('switches every codec in an extension through one settings write', async () => {
+    const configuration = fakeConfiguration({ extensions: [], disabled: ['unrelated'] })
+    const served = await servedHost({ configuration })
+    try {
+      const disabled = (await served.ask({
+        op: 'set-contributions',
+        ids: [PNG_CODEC, 'org.example/second-codec'],
+        enabled: false,
+      })) as { changed: boolean; view: ShellSettingsView }
+      expect(disabled.changed).toBe(true)
+      expect(configuration.writes).toEqual([
+        {
+          key: 'disabledContributions',
+          value: [PNG_CODEC, 'org.example/second-codec', 'unrelated'].sort(),
+        },
+      ])
+      expect(disabled.view.disabledContributions).toEqual(
+        [PNG_CODEC, 'org.example/second-codec', 'unrelated'].sort(),
+      )
+
+      await served.ask({
+        op: 'set-contributions',
+        ids: [PNG_CODEC, 'org.example/second-codec'],
+        enabled: true,
+      })
+      expect(configuration.writes.at(-1)).toEqual({
+        key: 'disabledContributions',
+        value: ['unrelated'],
+      })
+    } finally {
+      await served.close()
+    }
+  }, 60_000)
+
+  it('refuses an empty bulk codec request without touching settings', async () => {
+    const configuration = fakeConfiguration({ extensions: [], disabled: [] })
+    const served = await servedHost({ configuration })
+    try {
+      const answer = (await served.ask({
+        op: 'set-contributions',
+        ids: [],
+        enabled: false,
+      })) as { changed: boolean; message: string }
+      expect(answer.changed).toBe(false)
+      expect(answer.message).toContain('empty or invalid')
+      expect(configuration.writes).toEqual([])
     } finally {
       await served.close()
     }
