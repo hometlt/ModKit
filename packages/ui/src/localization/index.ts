@@ -1476,7 +1476,7 @@ export function contributionContractKind(
   if (name === 'editor-contribution') return 'editors'
   if (name === 'service-provider-contribution' || name === 'service-contribution') return 'services'
   if (name === 'viewer-contribution') return 'viewers'
-  if (name.includes('language')) return 'languages'
+  if (name.includes('language') || name.includes('localization')) return 'languages'
   if (name.includes('renderer')) return 'renderers'
   if (name.includes('runtime')) return 'runtimes'
   if (name.includes('command')) return 'commands'

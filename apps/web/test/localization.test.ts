@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseUiCatalogDocument } from '@modkitx-x3/ui/localization'
 
-import { createWebLocalizer, WEB_UI_CATALOGS } from '../src/localization.js'
+import {
+  createWebLocalizer,
+  createWebLocalizerFromCatalogLoader,
+  WEB_UI_CATALOGS,
+} from '../src/localization.js'
 
 describe('Web UI localization', () => {
   afterEach(() => vi.unstubAllGlobals())
@@ -46,7 +50,7 @@ describe('Web UI localization', () => {
     ).toBe('mission.SC2Map — кодек не найден (unknown-format); показаны исходные байты.')
   })
 
-  it('accepts a data-only third-language catalog without changing the Web UI model', () => {
+  it('loads a data-only third language through the Extension Manager/VFS boundary', async () => {
     const english = WEB_UI_CATALOGS[0]
     if (english === undefined) throw new Error('missing English Web catalog')
     const french = parseUiCatalogDocument(
@@ -63,7 +67,9 @@ describe('Web UI localization', () => {
         fallbackCatalog: english.messages,
       },
     )
-    const localizer = createWebLocalizer('fr-FR', [french])
+    const loadCatalogs = vi.fn(async () => ({ catalogs: [french] }))
+    const localizer = await createWebLocalizerFromCatalogLoader('fr-FR', loadCatalogs)
+    expect(loadCatalogs).toHaveBeenCalledOnce()
     expect(localizer.locale).toBe('fr')
     expect(localizer.text('web.extensions.cardFailed', { reason: 'fixture' })).toBe(
       'Impossible d’ouvrir la fiche d’extension : fixture',

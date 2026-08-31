@@ -3,7 +3,11 @@ import { resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseUiCatalogDocument } from '@modkitx-x3/ui/localization'
 
-import { createElectronLocalizer, ELECTRON_UI_CATALOGS } from '../src/localization.js'
+import {
+  createElectronLocalizer,
+  createElectronLocalizerFromCatalogLoader,
+  ELECTRON_UI_CATALOGS,
+} from '../src/localization.js'
 
 describe('Electron UI localization', () => {
   afterEach(() => vi.unstubAllGlobals())
@@ -96,7 +100,7 @@ describe('Electron UI localization', () => {
     expect(renderer).not.toContain('[title="Commit the edited pixels"]')
   })
 
-  it('accepts a data-only third-language catalog without adding locale branches', () => {
+  it('loads a third language through the Extension Manager/VFS boundary', async () => {
     const english = ELECTRON_UI_CATALOGS[0]
     if (english === undefined) throw new Error('missing English Electron catalog')
     const french = parseUiCatalogDocument(
@@ -113,7 +117,9 @@ describe('Electron UI localization', () => {
         fallbackCatalog: english.messages,
       },
     )
-    const localizer = createElectronLocalizer('fr-FR', [french])
+    const loadCatalogs = vi.fn(async () => ({ catalogs: [french] }))
+    const localizer = await createElectronLocalizerFromCatalogLoader('fr-FR', loadCatalogs)
+    expect(loadCatalogs).toHaveBeenCalledOnce()
     expect(localizer.locale).toBe('fr')
     expect(localizer.text('electron.extensions.back')).toBe('Retour aux extensions')
     expect(localizer.text('electron.extensions.loadingCard')).toBe('Loading subject card…')

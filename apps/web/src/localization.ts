@@ -484,3 +484,23 @@ export function createWebLocalizer(
   })
   return createUiLocalizer(locale, { catalogs: [...WEB_UI_CATALOGS, ...catalogs] })
 }
+
+/**
+ * Narrow app boundary for Extension Manager/VFS catalog loading.
+ *
+ * The manager remains responsible for trust, VFS confinement, size limits and validation; the
+ * Web app consumes only catalogs. This structural result accepts `loadLocalizationCatalogs(...)`
+ * without coupling presentation code to a host implementation.
+ */
+export type WebLocalizationCatalogLoader = () => Promise<{
+  readonly catalogs: readonly UiCatalogDocument[]
+}>
+
+export async function createWebLocalizerFromCatalogLoader(
+  requested: string | readonly string[] | undefined,
+  loadCatalogs: WebLocalizationCatalogLoader,
+  catalogs: readonly UiCatalogDocument[] = [],
+): Promise<UiLocalizer> {
+  const loaded = await loadCatalogs()
+  return createWebLocalizer(requested, [...catalogs, ...loaded.catalogs])
+}

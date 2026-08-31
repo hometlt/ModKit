@@ -61,7 +61,12 @@ export {
   type PrepareElectronMapPreviewRequest,
 } from './map-preview.js'
 
-export { createElectronLocalizer } from './localization.js'
+export {
+  createElectronLocalizer,
+  createElectronLocalizerFromCatalogLoader,
+  ELECTRON_UI_CATALOGS,
+  type ElectronLocalizationCatalogLoader,
+} from './localization.js'
 
 export {
   createElectronExtensionManagerBackend,

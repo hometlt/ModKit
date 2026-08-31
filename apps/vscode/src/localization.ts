@@ -592,3 +592,17 @@ export function createVscodeLocalizer(
     fallbackLocale: 'en',
   })
 }
+
+/** Validated Extension Manager/VFS catalogs, supplied without importing host code in the UI. */
+export type VscodeLocalizationCatalogLoader = () => Promise<{
+  readonly catalogs: readonly UiCatalogDocument[]
+}>
+
+export async function createVscodeLocalizerFromCatalogLoader(
+  requested: string | readonly string[] | undefined,
+  loadCatalogs: VscodeLocalizationCatalogLoader,
+  catalogs: readonly UiCatalogDocument[] = [],
+): Promise<UiLocalizer> {
+  const loaded = await loadCatalogs()
+  return createVscodeLocalizer(requested, [...catalogs, ...loaded.catalogs])
+}

@@ -416,3 +416,17 @@ export function createElectronLocalizer(
   })
   return createUiLocalizer(locale, { catalogs: [...ELECTRON_UI_CATALOGS, ...catalogs] })
 }
+
+/** Validated Extension Manager/VFS catalogs, supplied without importing host code in the UI. */
+export type ElectronLocalizationCatalogLoader = () => Promise<{
+  readonly catalogs: readonly UiCatalogDocument[]
+}>
+
+export async function createElectronLocalizerFromCatalogLoader(
+  requested: string | readonly string[] | undefined,
+  loadCatalogs: ElectronLocalizationCatalogLoader,
+  catalogs: readonly UiCatalogDocument[] = [],
+): Promise<UiLocalizer> {
+  const loaded = await loadCatalogs()
+  return createElectronLocalizer(requested, [...catalogs, ...loaded.catalogs])
+}

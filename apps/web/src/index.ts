@@ -11,6 +11,12 @@ import { createWorkbench, type Workbench } from '@modkitx-x3/ui/workbench'
 import type { UiLocalizer } from '@modkitx-x3/ui/localization'
 import { createWebLocalizer } from './localization.js'
 export {
+  createWebLocalizer,
+  createWebLocalizerFromCatalogLoader,
+  WEB_UI_CATALOGS,
+  type WebLocalizationCatalogLoader,
+} from './localization.js'
+export {
   createBrowserFileHandleSource,
   createHttpRangeSource,
   openOpfsSource,

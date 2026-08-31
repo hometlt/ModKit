@@ -66,6 +66,7 @@ const contributions: readonly ContributionRow[] = Object.freeze([
   contribution('org.example/model-b', 'Model B', 'org.modkitx/codec-contribution'),
   contribution('org.example/model-v2', 'Model v2', 'org.modkitx/codec-contribution', 2),
   contribution('org.example/model-language', 'Model language', 'org.modkitx/language-provider'),
+  contribution('org.example/russian-ui', 'Russian UI', 'org.modkitx/localization-contribution', 1),
   contribution('org.example/audio-codec', 'Audio codec', 'org.modkitx/codec-contribution', 1, {
     extension: disabledExtension.id,
   }),
@@ -110,6 +111,7 @@ describe('VS Code extension contribution tree', () => {
       'Invalid Contributions',
       'Codec Contributions',
       'Codec Contributions',
+      'Language Contributions',
       'Language Contributions',
     ])
     expect(
@@ -217,6 +219,7 @@ describe('VS Code extension contribution tree', () => {
       'Ошибочные возможности',
       'Кодеки',
       'Кодеки',
+      'Языки',
       'Языки',
     ])
     expect(contracts[1]).toMatchObject({

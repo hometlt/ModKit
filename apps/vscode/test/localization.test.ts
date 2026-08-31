@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { parseUiCatalogDocument } from '@modkitx-x3/ui/localization'
 
-import { createVscodeLocalizer, VSCODE_UI_CATALOGS } from '../src/localization.js'
+import {
+  createVscodeLocalizer,
+  createVscodeLocalizerFromCatalogLoader,
+  VSCODE_UI_CATALOGS,
+} from '../src/localization.js'
 
 describe('VS Code UI localization', () => {
   it('keeps the English and Russian application catalogs in exact key parity', () => {
@@ -39,7 +43,7 @@ describe('VS Code UI localization', () => {
     ).toBe('StarCraft II запущена с картой mission.SC2Map.')
   })
 
-  it('accepts a data-only third-language catalog without changing the VS Code adapter', () => {
+  it('loads a third language through the Extension Manager/VFS boundary', async () => {
     const english = VSCODE_UI_CATALOGS[0]
     if (english === undefined) throw new Error('missing English VS Code catalog')
     const french = parseUiCatalogDocument(
@@ -56,7 +60,9 @@ describe('VS Code UI localization', () => {
         fallbackCatalog: english.messages,
       },
     )
-    const localizer = createVscodeLocalizer('fr-FR', [french])
+    const loadCatalogs = vi.fn(async () => ({ catalogs: [french] }))
+    const localizer = await createVscodeLocalizerFromCatalogLoader('fr-FR', loadCatalogs)
+    expect(loadCatalogs).toHaveBeenCalledOnce()
     expect(localizer.locale).toBe('fr')
     expect(localizer.text('vscode.runtime.action.pause')).toBe('Pause du runtime')
     expect(localizer.text('vscode.runtime.action.continue')).toBe('Continue to tick or limit')
