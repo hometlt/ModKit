@@ -26,6 +26,21 @@ export type JsonSchema = Readonly<Record<string, unknown>>
 
 export type HostId = string
 
+/** One inert UI message catalog resource owned by an extension artifact. */
+export interface LocalizationCatalogResourceV1Wire {
+  /** BCP-47 locale declared by the catalog document. */
+  readonly locale: string
+  /** Confined, portable POSIX-relative path to a JSON catalog inside the extension artifact. */
+  readonly path: string
+  /** Requested message-key privileges; the host remains the authority that grants them. */
+  readonly messagePrefixes: readonly string[]
+}
+
+/** Data-only localization contribution. It never declares a runtime variant or executable code. */
+export interface LocalizationContributionSpecV1Wire {
+  readonly catalogs: readonly LocalizationCatalogResourceV1Wire[]
+}
+
 export interface ContributionSpecIdPlane {
   readonly contract: string
   readonly trait: string

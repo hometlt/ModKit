@@ -19,6 +19,7 @@ import {
   codecContributionSpecV1Schema,
   editorContributionSpecV1Schema,
   knowledgePackSpecV1Schema,
+  localizationContributionSpecV1Schema,
   serviceProviderContributionSpecV1Schema,
   contractDefinitionSpecV1Schema,
   traitDefinitionSpecV1Schema,
@@ -31,6 +32,7 @@ import type {
   CodecContributionSpecV1Wire,
   ServiceProviderContributionSpecV1Wire,
   ViewerContributionSpecV1Wire,
+  LocalizationContributionSpecV1Wire,
 } from './contribution-spec-types.js'
 import {
   createSpecSchemaRegistry,
@@ -74,6 +76,9 @@ export const CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT: ContractId = contractId(
 export const KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT: ContractId = contractId(
   'org.modkitx/knowledge-pack',
 )
+export const LOCALIZATION_CONTRIBUTION_CONTRACT: ContractId = contractId(
+  'org.modkitx/localization-contribution',
+)
 
 export const TRAIT_DEFINITION_FACT: ContractId = contractId(
   'org.modkitx.inventory/trait-definition',
@@ -85,6 +90,9 @@ export const EDITOR_CONTRIBUTION_FACT: ContractId = contractId(
   'org.modkitx.inventory/editor-contribution',
 )
 export const KNOWLEDGE_PACK_FACT: ContractId = contractId('org.modkitx.inventory/knowledge-pack')
+export const LOCALIZATION_CONTRIBUTION_FACT: ContractId = contractId(
+  'org.modkitx.inventory/localization-contribution',
+)
 
 export type ContributionModuleAbiDeclaration = SpecModuleAbiDeclaration
 
@@ -875,6 +883,31 @@ export const validateKnowledgePackSemantics: SpecSemanticValidator = manifest =>
   return diagnostics
 }
 
+/** Cross-resource checks that keep catalog discovery portable and deterministic. */
+export const validateLocalizationContributionSemantics: SpecSemanticValidator = manifest => {
+  const spec = manifest.spec as unknown as LocalizationContributionSpecV1Wire
+  const diagnostics = duplicateFieldDiagnostics(
+    spec.catalogs.map(catalog => catalog.path.toLowerCase()),
+    ['spec', 'catalogs'],
+    'localization catalog path',
+  )
+  spec.catalogs.forEach((catalog, index) => {
+    try {
+      Intl.getCanonicalLocales(catalog.locale)
+    } catch {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/invalid-localization-locale',
+          `localization catalog locale ${catalog.locale} is not a valid BCP-47 language tag`,
+          ['spec', 'catalogs', index, 'locale'],
+        ),
+      )
+    }
+  })
+  return diagnostics
+}
+
 function key(contract: ContractId, major: number): string {
   return `${contract}@${major}`
 }
@@ -1141,6 +1174,17 @@ export const A1_SPEC_SCHEMA_ENTRIES: readonly SpecSchemaEntry[] = [
       mode: 'data-only',
       project: dataOnlyProjector(KNOWLEDGE_PACK_FACT),
       conformanceProfile: 'org.modkitx/knowledge-pack-v1',
+    },
+  },
+  {
+    contract: LOCALIZATION_CONTRIBUTION_CONTRACT,
+    major: 1,
+    schema: localizationContributionSpecV1Schema,
+    validateSemantics: validateLocalizationContributionSemantics,
+    registration: {
+      mode: 'data-only',
+      project: dataOnlyProjector(LOCALIZATION_CONTRIBUTION_FACT),
+      conformanceProfile: 'org.modkitx/localization-contribution-v1',
     },
   },
 ] as const

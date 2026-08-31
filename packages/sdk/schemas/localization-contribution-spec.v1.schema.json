@@ -1,0 +1,48 @@
+{
+  "$id": "https://schemas.modkitx.org/x3/localization-contribution-spec.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "catalogs": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "locale": {
+            "maxLength": 64,
+            "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$",
+            "type": "string"
+          },
+          "messagePrefixes": {
+            "items": {
+              "maxLength": 256,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "path": {
+            "maxLength": 1024,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "locale",
+          "path",
+          "messagePrefixes"
+        ],
+        "type": "object"
+      },
+      "maxItems": 256,
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "catalogs"
+  ],
+  "type": "object"
+}

@@ -824,6 +824,48 @@ export const knowledgePackSpecV1Schema = {
   },
 } as const
 
+const localizationCatalogResourceV1Schema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['locale', 'path', 'messagePrefixes'],
+  properties: {
+    locale: localeTag,
+    path: {
+      type: 'string',
+      maxLength: 1024,
+      pattern: '^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$',
+    },
+    messagePrefixes: {
+      type: 'array',
+      minItems: 1,
+      maxItems: 64,
+      uniqueItems: true,
+      items: {
+        type: 'string',
+        maxLength: 256,
+        pattern: '^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$',
+      },
+    },
+  },
+} as const
+
+/** Data-only references to extension-owned UI catalogs; catalog bytes are loaded by the host. */
+export const localizationContributionSpecV1Schema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.modkitx.org/x3/localization-contribution-spec.v1.schema.json',
+  type: 'object',
+  additionalProperties: false,
+  required: ['catalogs'],
+  properties: {
+    catalogs: {
+      type: 'array',
+      minItems: 1,
+      maxItems: 256,
+      items: localizationCatalogResourceV1Schema,
+    },
+  },
+} as const
+
 export const traitDefinitionSpecV1Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   $id: 'https://schemas.modkitx.org/x3/trait-definition-spec.v1.schema.json',
@@ -1080,6 +1122,7 @@ deepFreeze(serviceProviderContributionSpecV1Schema)
 deepFreeze(viewerContributionSpecV1Schema)
 deepFreeze(editorContributionSpecV1Schema)
 deepFreeze(knowledgePackSpecV1Schema)
+deepFreeze(localizationContributionSpecV1Schema)
 deepFreeze(traitDefinitionSpecV1Schema)
 deepFreeze(serviceContractDefinitionSpecV1Schema)
 deepFreeze(dataSourceMethodSurfaceV1Schema)

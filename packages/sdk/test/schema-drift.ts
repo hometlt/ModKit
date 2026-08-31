@@ -24,6 +24,7 @@ import type {
   dataSourceSurfaceV1Schema,
   editorContributionSpecV1Schema,
   knowledgePackSpecV1Schema,
+  localizationContributionSpecV1Schema,
   serviceProviderContributionSpecV1Schema,
   traitDefinitionSpecV1Schema,
   viewerContributionSpecV1Schema,
@@ -39,6 +40,7 @@ import type {
   CodecContributionSpecV1Wire,
   ServiceProviderContributionSpecV1Wire,
   ViewerContributionSpecV1Wire,
+  LocalizationContributionSpecV1Wire,
 } from '../src/manifest/contribution-spec-types.js'
 import type { DataSourceContributionSpecV1 } from '../src/asset-capabilities/data-sources.js'
 import type { AnyDescriptorWire, JsonValue } from '../src/asset-capabilities/types.js'
@@ -142,6 +144,12 @@ export type KnowledgePackSpecDriftGate = Expect<
       typeof knowledgePackSpecV1Schema,
       { deserialize: [{ pattern: { title: 'JsonValue' }; output: DeepMutable<JsonValue> }] }
     >
+  >
+>
+export type LocalizationContributionSpecDriftGate = Expect<
+  Equal<
+    DeepMutable<LocalizationContributionSpecV1Wire>,
+    FromSchema<typeof localizationContributionSpecV1Schema>
   >
 >
 export type DataSourceContributionSpecDriftGate = Expect<

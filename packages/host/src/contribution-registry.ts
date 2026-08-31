@@ -8,6 +8,7 @@ import {
   EDITOR_CONTRIBUTION_CONTRACT,
   EDITOR_CONTRIBUTION_FACT,
   KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
+  LOCALIZATION_CONTRIBUTION_CONTRACT,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
   TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
   VIEWER_CONTRIBUTION_CONTRACT,
@@ -157,10 +158,12 @@ function builtins(): readonly ContributionContractRegistration[] {
   const trait = entry(TRAIT_DEFINITION_CONTRIBUTION_CONTRACT)
   const definition = entry(CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT)
   const knowledge = entry(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT)
+  const localization = entry(LOCALIZATION_CONTRIBUTION_CONTRACT)
   if (
     trait.registration === undefined ||
     definition.registration === undefined ||
-    knowledge.registration === undefined
+    knowledge.registration === undefined ||
+    localization.registration === undefined
   ) {
     throw new TypeError('A-1 definition registrations are missing')
   }
@@ -228,6 +231,14 @@ function builtins(): readonly ContributionContractRegistration[] {
       project: knowledge.registration.project,
       validateSemantics: knowledge.validateSemantics,
       conformanceProfile: knowledge.registration.conformanceProfile,
+    },
+    {
+      contract: { id: localization.contract, major: localization.major },
+      schema: localization.schema,
+      mode: 'data-only',
+      project: localization.registration.project,
+      validateSemantics: localization.validateSemantics,
+      conformanceProfile: localization.registration.conformanceProfile,
     },
   ]
 }

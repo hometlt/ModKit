@@ -3,6 +3,8 @@ import {
   A1_SPEC_SCHEMA_ENTRIES,
   CODEC_CONTRIBUTION_CONTRACT,
   KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
+  LOCALIZATION_CONTRIBUTION_CONTRACT,
+  LOCALIZATION_CONTRIBUTION_FACT,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
   VIEWER_CONTRIBUTION_CONTRACT,
   createContributionContractRegistry,
@@ -14,6 +16,7 @@ import {
   type ContributionContractRegistration,
   type ContributionManifestV1Wire,
   type DataSourceContributionSpecV1,
+  type LocalizationContributionSpecV1Wire,
   type PrecompiledSchemaValidator,
   type ServiceProviderContributionSpecV1Wire,
   type SpecSchemaEntry,
@@ -161,7 +164,7 @@ describe('A-1 contribution spec schemas', () => {
 
   it('validates data-source inventory records outside the executable contribution registry', async () => {
     expect(await validateWithSchema(dataSourceContributionSpecV1Schema, dataSourceSpec)).toEqual([])
-    expect(A1_SPEC_SCHEMA_ENTRIES).toHaveLength(7)
+    expect(A1_SPEC_SCHEMA_ENTRIES).toHaveLength(8)
   })
 
   it.each([
@@ -356,6 +359,85 @@ describe('A-1 contribution spec schemas', () => {
     expect(oversizedCoordinates.diagnostics.map(item => item.code)).toContain('x3.sdk/invalid-spec')
     expect(oversizedCoordinates.diagnostics.map(item => item.code)).not.toContain(
       'x3.sdk/semantic-validator-failed',
+    )
+  })
+
+  it('validates and projects confined localization catalog resources as data-only inventory', async () => {
+    const localizationSpec: LocalizationContributionSpecV1Wire = {
+      catalogs: [
+        {
+          locale: 'en',
+          path: 'localization/messages.en.json',
+          messagePrefixes: ['org-example.'],
+        },
+        {
+          locale: 'ru',
+          path: 'localization/messages.ru.json',
+          messagePrefixes: ['org-example.'],
+        },
+      ],
+    }
+    const valid = await validateContributionManifest(
+      manifest(LOCALIZATION_CONTRIBUTION_CONTRACT, 'org.example/localization', localizationSpec),
+      registry,
+    )
+    expect(valid.specState, JSON.stringify(valid.diagnostics)).toBe('validated')
+    expect(valid.inventoryEligible).toBe(true)
+    expect(valid.activationEligible).toBe(false)
+    const registration = registry.getEntry(LOCALIZATION_CONTRIBUTION_CONTRACT, 1)?.registration
+    expect(registration?.mode).toBe('data-only')
+    if (registration === undefined || valid.manifest === undefined) {
+      throw new Error('localization registration or normalized manifest is missing')
+    }
+    const projected = registration.project(valid.manifest, {
+      ownerExtensionId: 'org.example/localization-pack' as never,
+      extensionVersion: '1.0.0',
+      inventoryRecordId: 'fixture:localization',
+      manifestDigest: 'sha256:manifest',
+      artifactDigest: 'sha256:artifact',
+      artifactRoot: 'file:///fixture/localization/',
+      manifestPath: 'contributions/localization.json',
+    })
+    expect(projected).toHaveLength(1)
+    expect(projected[0]?.contract).toEqual({ id: LOCALIZATION_CONTRIBUTION_FACT, major: 1 })
+    expect(projected[0]?.value).toEqual(localizationSpec)
+
+    const traversal = await validateContributionManifest(
+      manifest(LOCALIZATION_CONTRIBUTION_CONTRACT, 'org.example/localization-traversal', {
+        catalogs: [
+          { locale: 'en', path: '../messages.en.json', messagePrefixes: ['org-example.'] },
+        ],
+      }),
+      registry,
+    )
+    expect(traversal.specState).toBe('invalid')
+    expect(traversal.diagnostics.map(item => item.code)).toContain('x3.sdk/invalid-spec')
+
+    const duplicatePath = await validateContributionManifest(
+      manifest(LOCALIZATION_CONTRIBUTION_CONTRACT, 'org.example/localization-duplicate', {
+        catalogs: [
+          localizationSpec.catalogs[0],
+          { ...localizationSpec.catalogs[0], locale: 'ru', path: 'LOCALIZATION/MESSAGES.EN.json' },
+        ],
+      }),
+      registry,
+    )
+    expect(duplicatePath.specState).toBe('invalid')
+    expect(duplicatePath.diagnostics.map(item => item.code)).toContain(
+      'x3.sdk/duplicate-semantic-id',
+    )
+
+    const malformedLocale = await validateContributionManifest(
+      manifest(LOCALIZATION_CONTRIBUTION_CONTRACT, 'org.example/localization-locale', {
+        catalogs: [
+          { locale: 'en-a', path: 'localization/messages.json', messagePrefixes: ['org-example.'] },
+        ],
+      }),
+      registry,
+    )
+    expect(malformedLocale.specState).toBe('invalid')
+    expect(malformedLocale.diagnostics.map(item => item.code)).toContain(
+      'x3.sdk/invalid-localization-locale',
     )
   })
 
