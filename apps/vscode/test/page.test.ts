@@ -23,6 +23,7 @@ const webview: WebviewLike = {
 }
 
 const bootstrap: PageBootstrap = {
+  localizationCatalogs: [],
   locale: 'en',
   extensionHost: {
     realmId: 'org.modkitx.app.vscode/desktop-extension',

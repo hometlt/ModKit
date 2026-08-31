@@ -16,7 +16,7 @@
  */
 
 /** The two things this module needs from `vscode.Webview`. */
-import type { UiLocale, UiLocalizer } from '@modkitx-x3/ui/localization'
+import type { UiCatalogDocument, UiLocale, UiLocalizer } from '@modkitx-x3/ui/localization'
 
 import { createVscodeLocalizer } from './localization.js'
 
@@ -31,6 +31,8 @@ export interface WebviewLike {
 export interface PageBootstrap {
   /** Locale resolved by the extension host from VS Code's UI language. */
   readonly locale: UiLocale
+  /** Validated, function-free catalogs loaded by the extension host through Extension Manager VFS. */
+  readonly localizationCatalogs: readonly UiCatalogDocument[]
   readonly extensionHost: { readonly realmId: string; readonly facilities: readonly string[] }
   readonly webview: { readonly realmId: string; readonly facilities: readonly string[] }
   readonly topologyId: string

@@ -67,6 +67,10 @@ export {
   ELECTRON_UI_CATALOGS,
   type ElectronLocalizationCatalogLoader,
 } from './localization.js'
+export {
+  loadElectronLocalization,
+  type ElectronLocalizationSnapshot,
+} from './localization-loader.js'
 
 export {
   createElectronExtensionManagerBackend,

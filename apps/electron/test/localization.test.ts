@@ -2,12 +2,14 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseUiCatalogDocument } from '@modkitx-x3/ui/localization'
+import type { Inventory } from '@modkitx-x3/host'
 
 import {
   createElectronLocalizer,
   createElectronLocalizerFromCatalogLoader,
   ELECTRON_UI_CATALOGS,
 } from '../src/localization.js'
+import { loadElectronLocalization } from '../src/localization-loader.js'
 
 describe('Electron UI localization', () => {
   afterEach(() => vi.unstubAllGlobals())
@@ -123,5 +125,24 @@ describe('Electron UI localization', () => {
     expect(localizer.locale).toBe('fr')
     expect(localizer.text('electron.extensions.back')).toBe('Retour aux extensions')
     expect(localizer.text('electron.extensions.loadingCard')).toBe('Loading subject card…')
+  })
+
+  it('keeps built-in Russian active when the composed inventory has no language pack', async () => {
+    const inventory: Inventory = Object.freeze({
+      extensions: Object.freeze([]),
+      diagnostics: Object.freeze([]),
+    })
+    const loaded = await loadElectronLocalization(inventory, 'ru-RU')
+    expect(loaded.catalogs).toEqual([])
+    expect(loaded.diagnostics).toEqual([])
+    expect(loaded.localizer.text('electron.menu.openFile')).toBe('Открыть файл…')
+  })
+
+  it('loads catalogs in main and sends only the validated documents to the renderer', () => {
+    const main = readFileSync(resolve(import.meta.dirname, '../electron/main.cjs'), 'utf8')
+    const renderer = readFileSync(resolve(import.meta.dirname, '../src/renderer.ts'), 'utf8')
+    expect(main).toContain('loadElectronLocalization(')
+    expect(main).toContain('localizationCatalogs,')
+    expect(renderer).toContain('profile.localizationCatalogs')
   })
 })

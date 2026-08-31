@@ -34,7 +34,7 @@ import {
   type SettingsStore,
 } from '@modkitx-x3/ui'
 import { applyDensity, applyTheme } from '@modkitx-x3/ui/tokens'
-import type { UiLocalizer } from '@modkitx-x3/ui/localization'
+import type { UiCatalogDocument, UiLocalizer } from '@modkitx-x3/ui/localization'
 import type { OperationSession } from '@modkitx-x3/sdk'
 
 import { createPreviewFallback } from '../generated/viewer-catalog.js'
@@ -75,6 +75,8 @@ interface HostBridge {
   profile(): Promise<{
     readonly renderer: { readonly realmId: string; readonly facilities: readonly string[] }
     readonly supportedExtensions: readonly string[]
+    /** Validated in main through Extension Manager VFS; contains no functions or host authority. */
+    readonly localizationCatalogs: readonly UiCatalogDocument[]
   }>
   initialFile(): Promise<{
     readonly present: boolean
@@ -296,8 +298,6 @@ async function boot(): Promise<void> {
   // Bound locally: the narrowing above does not reach the nested helpers declared later.
   const bridge = broker
   const extensions = extensionsBridge
-  const localizer = createElectronLocalizer(globalThis.navigator?.languages)
-  document.documentElement.lang = localizer.locale
   const appThemes = readAppThemeChoices(document)
   const { port: subjectPort, session: subjectSession } = await acquireSubjectPort(subjects)
   const subjectClient = await connectElectronSubjectClient({
@@ -307,6 +307,11 @@ async function boot(): Promise<void> {
       console.warn(`[subject-rpc] ${diagnostic.code}: ${diagnostic.message}`),
   })
   const profile = await host.profile()
+  const localizer = createElectronLocalizer(
+    globalThis.navigator?.languages,
+    profile.localizationCatalogs,
+  )
+  document.documentElement.lang = localizer.locale
 
   const shell = document.createElement('div')
   shell.className = 'modkit-shell'

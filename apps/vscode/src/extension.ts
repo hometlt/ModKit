@@ -18,11 +18,19 @@ import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
 import type { CatalogSource, ExtensionManagerEntry } from '@modkitx/extension-manager'
 import {
+  createNodeExtensionVfs,
   createNodeExtensionManager,
   discoverLocalExtensionCandidates,
   type LocalExtensionCandidate,
 } from '@modkitx/extension-manager/node'
-import { type UiLocale, type UiLocalizer, type UiMessageKey } from '@modkitx-x3/ui/localization'
+import {
+  parseUiCatalogDocument,
+  UI_MESSAGES,
+  type UiCatalogDocument,
+  type UiLocale,
+  type UiLocalizer,
+  type UiMessageKey,
+} from '@modkitx-x3/ui/localization'
 
 import type { CloseAnswer, WebviewChannel } from './bridge.js'
 import {
@@ -35,6 +43,7 @@ import {
 import {
   commandSubjectsFrom,
   createSubjectCommandRuntime,
+  loadLocalizationCatalogs,
   type CommandResult,
 } from '@modkitx-x3/host'
 import { createLanguageWorkspace, languageProviderRoutes } from '@modkitx-x3/host/language'
@@ -85,7 +94,7 @@ import { describeDegradation, describeFacilities, type FacilityReport } from './
 import { pageHtml, refusalHtml, type WebviewLike } from './page.js'
 import BUNDLED_CATALOG from '../generated/bundled-catalog.json' with { type: 'json' }
 import { describeOpenTarget } from './uri.js'
-import { createVscodeLocalizer } from './localization.js'
+import { createVscodeLocalizer, VSCODE_UI_CATALOGS } from './localization.js'
 import {
   createLanguageSessionController,
   LANGUAGE_TOKEN_MODIFIERS,
@@ -200,6 +209,7 @@ interface PanelPageOptions {
   readonly host: VsCodeSubjectHost
   readonly session: string
   readonly locale: UiLocale
+  readonly localizationCatalogs: readonly UiCatalogDocument[]
   readonly openPath?: string
   readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
 }
@@ -224,6 +234,7 @@ function panelHtml(options: PanelPageOptions): string {
      */
     bootstrap: {
       locale: options.locale,
+      localizationCatalogs: options.localizationCatalogs,
       extensionHost: {
         realmId: options.host.services.host.profile.realmId,
         facilities: options.host.services.host.profile.facilities,
@@ -614,7 +625,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const output = vscode.window.createOutputChannel('Modkit MK3')
   context.subscriptions.push(output)
   const journal = createDiagnosticJournal()
-  const localizer = createVscodeLocalizer(vscode.env.language)
+  let localizer = createVscodeLocalizer(vscode.env.language)
   const log = (line: string): void => {
     journal.append(line)
     output.appendLine(line)
@@ -717,6 +728,43 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     onDiagnostic: diagnostic =>
       log(`[worker] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`),
   })
+  let localizationCatalogs: readonly UiCatalogDocument[] = Object.freeze([])
+  const localizationVfs = createNodeExtensionVfs(managerSecurity.vfsOptions).vfs
+  try {
+    const englishAppCatalog = VSCODE_UI_CATALOGS[0]
+    if (englishAppCatalog === undefined) throw new TypeError('VS Code English catalog is missing')
+    const fallbackCatalog = Object.freeze({
+      ...UI_MESSAGES.en,
+      ...englishAppCatalog.messages,
+    })
+    const allowedRoots = Object.freeze(
+      [...new Set(Object.keys(fallbackCatalog).map(key => `${key.split('.')[0]}.`))].sort(),
+    )
+    const loaded = await loadLocalizationCatalogs(host.services.host.inventory, {
+      vfs: localizationVfs,
+      parseCatalog: parseUiCatalogDocument,
+      fallbackCatalog,
+      authorizeMessagePrefixes: request => {
+        const tail = request.catalogNamespace.split(/[./]/u).at(-1) ?? request.catalogNamespace
+        const owner = tail.replace(/-(?:app|ui|localization|messages)$/u, '') || tail
+        const ownedPrefix = `${owner}.`
+        return request.requestedMessagePrefixes.filter(
+          prefix => prefix === ownedPrefix || allowedRoots.some(root => prefix.startsWith(root)),
+        )
+      },
+    })
+    localizationCatalogs = loaded.catalogs
+    localizer = createVscodeLocalizer(vscode.env.language, localizationCatalogs)
+    for (const item of loaded.diagnostics) {
+      log(`[localization] ${item.severity} ${item.code}: ${item.message}`)
+    }
+  } catch (error) {
+    log(
+      `[localization] external catalogs unavailable; built-in English/Russian remain active: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  } finally {
+    await localizationVfs.dispose()
+  }
   const mapPreviewResourcePlanResolver = createNodeMapPreviewResourcePlanResolver({
     subjects: host.services,
   })
@@ -1743,6 +1791,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       host,
       session,
       locale: localizer.locale,
+      localizationCatalogs,
       ...(openPath === undefined ? {} : { openPath }),
       ...(extensionCard === undefined ? {} : { extensionCard }),
     })

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { parseUiCatalogDocument } from '@modkitx-x3/ui/localization'
 
@@ -66,5 +68,13 @@ describe('VS Code UI localization', () => {
     expect(localizer.locale).toBe('fr')
     expect(localizer.text('vscode.runtime.action.pause')).toBe('Pause du runtime')
     expect(localizer.text('vscode.runtime.action.continue')).toBe('Continue to tick or limit')
+  })
+
+  it('loads catalogs in the extension host and forwards them into the webview snapshot', () => {
+    const extension = readFileSync(resolve(import.meta.dirname, '../src/extension.ts'), 'utf8')
+    const webview = readFileSync(resolve(import.meta.dirname, '../src/webview.ts'), 'utf8')
+    expect(extension).toContain('loadLocalizationCatalogs(host.services.host.inventory')
+    expect(extension).toContain('localizationCatalogs,')
+    expect(webview).toContain('snapshot.localizationCatalogs')
   })
 })

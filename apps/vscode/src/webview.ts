@@ -23,7 +23,7 @@ import {
   type PreviewResolver,
 } from '@modkitx-x3/ui/explorer'
 import { createWorkbench } from '@modkitx-x3/ui/workbench'
-import type { UiLocale, UiLocalizer } from '@modkitx-x3/ui/localization'
+import type { UiCatalogDocument, UiLocale, UiLocalizer } from '@modkitx-x3/ui/localization'
 import {
   createSubjectCard,
   loadSubjectCardSections,
@@ -53,6 +53,7 @@ interface RealmSnapshot {
 
 interface Bootstrap {
   readonly locale: UiLocale
+  readonly localizationCatalogs: readonly UiCatalogDocument[]
   readonly extensionHost: RealmSnapshot
   readonly webview: RealmSnapshot
   readonly topologyId: string
@@ -114,7 +115,10 @@ function baseName(path: string): string {
 
 const bootstrap = (globalThis as { __MODKIT_BOOTSTRAP__?: Bootstrap }).__MODKIT_BOOTSTRAP__
 const acquire = (globalThis as { acquireVsCodeApi?: () => VsCodeWebviewApi }).acquireVsCodeApi
-const pageLocalizer = createVscodeLocalizer(bootstrap?.locale ?? document.documentElement.lang)
+const pageLocalizer = createVscodeLocalizer(
+  bootstrap?.locale ?? document.documentElement.lang,
+  bootstrap?.localizationCatalogs,
+)
 
 const root = document.querySelector('#root')
 if (root === null) throw new Error('missing #root')
@@ -141,7 +145,7 @@ async function mount(
   snapshot: Bootstrap,
   api: VsCodeWebviewApi,
 ): Promise<void> {
-  const localizer = createVscodeLocalizer(snapshot.locale)
+  const localizer = createVscodeLocalizer(snapshot.locale, snapshot.localizationCatalogs)
   // ---------------------------------------------------------------- transport
   const channel: WebviewChannel = {
     post: message => {

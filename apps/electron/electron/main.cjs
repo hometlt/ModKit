@@ -133,6 +133,7 @@ async function createWindow() {
     parseElectronMapPreviewSelectionRequest,
     prepareElectronMapPreview,
     createElectronLocalizer,
+    loadElectronLocalization,
     resolveElectronPresentationPlan,
     createGrantedRoots,
     exposeElectronSubjectRpc,
@@ -151,8 +152,6 @@ async function createWindow() {
     createElectronExtensionManagerBackend,
     readElectronManagedExtensionState,
   } = await root
-  const localizer = createElectronLocalizer(app.getLocale())
-
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
   const BUNDLED_ROOTS = BUNDLED_EXTENSION_DIRECTORIES.map(directory =>
     path.join(repositoryRoot, 'extensions', directory),
@@ -187,18 +186,19 @@ async function createWindow() {
     }
     return Object.freeze({ ...parsed })
   })()
+  const extensionVfsOptions = {
+    ...(extensionAllowedOrigins.length === 0 ? {} : { allowedOrigins: extensionAllowedOrigins }),
+    ...(process.env.MODKIT_RAPID_POOL_ROOT
+      ? { rapidPoolRoot: process.env.MODKIT_RAPID_POOL_ROOT }
+      : {}),
+  }
   const extensionManager = createElectronExtensionManagerBackend({
     registry: extensionRegistry,
     baseDirectory: repositoryRoot,
     // Empty by default for local development; release builds inject reviewed Ed25519 public keys.
     trustedPublicKeys: extensionTrustedPublicKeys,
     fetch: globalThis.fetch,
-    vfsOptions: {
-      ...(extensionAllowedOrigins.length === 0 ? {} : { allowedOrigins: extensionAllowedOrigins }),
-      ...(process.env.MODKIT_RAPID_POOL_ROOT
-        ? { rapidPoolRoot: process.env.MODKIT_RAPID_POOL_ROOT }
-        : {}),
-    },
+    vfsOptions: extensionVfsOptions,
     storeRoot: path.join(app.getPath('userData'), 'managed-extensions'),
   })
 
@@ -313,13 +313,38 @@ async function createWindow() {
     const mapPreviewResourcePlanResolver = createNodeMapPreviewResourcePlanResolver({
       subjects: services,
     })
+    let localization
+    try {
+      localization = await loadElectronLocalization(
+        application.main.inventory,
+        app.getLocale(),
+        extensionVfsOptions,
+      )
+      for (const item of localization.diagnostics) {
+        console.log(`[localization] ${item.severity} ${item.code}: ${item.message}`)
+      }
+    } catch (error) {
+      console.log(
+        `[localization] external catalogs unavailable; built-in English/Russian remain active: ${String(error)}`,
+      )
+      localization = {
+        catalogs: Object.freeze([]),
+        diagnostics: Object.freeze([]),
+        localizer: createElectronLocalizer(app.getLocale()),
+      }
+    }
     console.log(
       `[main] composed ${application.topology.topologyId}: ` +
         `main ${application.main.profile.facilities.length} facilities, ` +
         `renderer ${application.renderer.profile.facilities.length} facilities, ` +
         `codecs run in ${application.workers.profile.realmId} (${services.executionProfiles.join('/')})`,
     )
-    return { services, mapPreviewResourcePlanResolver, configuration: effectiveConfiguration }
+    return {
+      services,
+      mapPreviewResourcePlanResolver,
+      configuration: effectiveConfiguration,
+      localization,
+    }
   }
 
   /*
@@ -334,7 +359,10 @@ async function createWindow() {
     services: subjectServices,
     mapPreviewResourcePlanResolver,
     configuration: extensionConfiguration,
+    localization,
   } = await composeFromSettings()
+  let localizer = localization.localizer
+  let localizationCatalogs = localization.catalogs
 
   const window = new BrowserWindow({
     width: 1180,
@@ -391,6 +419,8 @@ async function createWindow() {
       mainFacilityCount: composed.main.profile.facilities.length,
       extensions: composed.renderer.inventory.extensions.length,
       diagnostics: composed.renderer.inventory.diagnostics.length,
+      // Validated, function-free JSON only; renderer never receives VFS or inventory authority.
+      localizationCatalogs,
       supportedExtensions: subjectServices.supportedExtensions,
       // OPUS-UX-01 vocabulary: which boundary codecs get — worker threads of main (SB-1), never the renderer
       execution: {
@@ -1144,6 +1174,9 @@ async function createWindow() {
       subjectServices = composedNow.services
       mapPreviewResourcePlanResolver = composedNow.mapPreviewResourcePlanResolver
       extensionConfiguration = composedNow.configuration
+      localization = composedNow.localization
+      localizer = localization.localizer
+      localizationCatalogs = localization.catalogs
     })
     reloading = next.catch(() => undefined)
     await next
