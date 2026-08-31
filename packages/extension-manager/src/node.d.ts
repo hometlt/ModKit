@@ -219,6 +219,8 @@ export interface NodeCatalogSourceOptions {
   readonly source: string
   readonly baseDirectory?: string
   readonly trustedPublicKeys?: NodeTrustedPublicKeys
+  /** Reject cached and refreshed catalogs unless their Ed25519 signature verifies against a trusted key. */
+  readonly requireSignature?: boolean
   readonly fetch?: typeof globalThis.fetch
   /** HTTP(S) catalog origins allowed for the initial request and every redirect hop. */
   readonly allowedOrigins?: readonly string[]
@@ -263,6 +265,8 @@ export interface CreateNodeExtensionManagerOptions {
   readonly catalog?: string
   readonly baseDirectory?: string
   readonly trustedPublicKeys?: NodeTrustedPublicKeys
+  /** Forwarded to the default Node catalog source; ignored when catalogSource is injected. */
+  readonly requireSignature?: boolean
   readonly fetch?: typeof globalThis.fetch
   readonly vfs?: VirtualFileSystem | { readonly vfs: VirtualFileSystem }
   readonly vfsOptions?: NodeExtensionVfsOptions

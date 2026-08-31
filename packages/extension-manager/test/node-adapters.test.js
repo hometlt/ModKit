@@ -41,6 +41,21 @@ function signedCatalog(catalog, privateKey, keyId) {
   }
 }
 
+function portableRepository(expectedIds) {
+  return Buffer.from(
+    JSON.stringify({
+      schemaVersion: 1,
+      extensions: expectedIds.map(id => ({
+        id,
+        files: {
+          'package.json': Buffer.from(packageJson(id)).toString('base64'),
+          'src/index.js': Buffer.from('export const ready = true\n').toString('base64'),
+        },
+      })),
+    }),
+  )
+}
+
 function catalogPackage(source, extensions, options = {}) {
   const { presentation, ...catalogOptions } = options
   return {
@@ -318,6 +333,130 @@ test('cached catalog is ignored after the configured registry source changes', a
   const second = createNodeExtensionManager({ root: privateState, catalog: secondPath })
   assert.deepEqual(await second.snapshot(), { entries: [] })
   await second.dispose()
+})
+
+test('strict signed local catalog persists lifecycle state across manager recreation', async t => {
+  const fixture = await temporaryDirectory(t)
+  const catalogRoot = join(fixture, 'catalog')
+  const privateState = join(fixture, 'private')
+  const catalogPath = join(catalogRoot, 'offline-catalog.json')
+  const bundlePath = join(catalogRoot, 'toolkit.bundle.json')
+  const expectedIds = ['example.publisher/codec']
+  const bundle = portableRepository(expectedIds)
+  const integrity = `sha256:${createHash('sha256').update(bundle).digest('hex')}`
+  const { privateKey, publicKey } = generateKeyPairSync('ed25519')
+  const keyId = 'modkit.offline-test'
+  const catalog = signedCatalog(
+    catalogPackage(
+      {
+        kind: 'bundle',
+        uri: './toolkit.bundle.json',
+        integrity,
+        bytes: bundle.byteLength,
+        trust: { mode: 'signed' },
+      },
+      expectedIds,
+    ),
+    privateKey,
+    keyId,
+  )
+  const options = {
+    root: privateState,
+    catalog: catalogPath,
+    trustedPublicKeys: { [keyId]: publicKey.export({ format: 'pem', type: 'spki' }) },
+    requireSignature: true,
+  }
+  await mkdir(catalogRoot, { recursive: true })
+  await writeFile(bundlePath, bundle)
+  await writeFile(catalogPath, JSON.stringify(catalog))
+
+  const first = createNodeExtensionManager(options)
+  await first.refresh()
+  assert.equal((await first.snapshot()).entries[0].trusted, true)
+  await first.install('example.publisher/toolkit')
+  await first.setEnabled('example.publisher/toolkit', false)
+  await first.dispose()
+
+  const reopened = createNodeExtensionManager(options)
+  const disabled = (await reopened.snapshot()).entries[0]
+  assert.equal(disabled.installedVersion, '1.0.0')
+  assert.equal(disabled.enabled, false)
+  assert.deepEqual(await reopened.installedRoots(), [])
+  await reopened.setEnabled('example.publisher/toolkit', true)
+  assert.equal((await reopened.installedRoots()).length, 1)
+  await reopened.remove('example.publisher/toolkit')
+  await reopened.dispose()
+
+  const reinstalled = createNodeExtensionManager(options)
+  assert.equal((await reinstalled.snapshot()).entries[0].installedVersion, undefined)
+  await reinstalled.install('example.publisher/toolkit')
+  assert.equal((await reinstalled.installedRoots()).length, 1)
+  await reinstalled.dispose()
+})
+
+test('strict signature policy never caches rejected refreshes or disturbs an active package', async t => {
+  const fixture = await temporaryDirectory(t)
+  const catalogRoot = join(fixture, 'catalog')
+  const privateState = join(fixture, 'private')
+  const catalogPath = join(catalogRoot, 'offline-catalog.json')
+  const bundlePath = join(catalogRoot, 'toolkit.bundle.json')
+  const expectedIds = ['example.publisher/codec']
+  const bundle = portableRepository(expectedIds)
+  const integrity = `sha256:${createHash('sha256').update(bundle).digest('hex')}`
+  const unsigned = catalogPackage(
+    {
+      kind: 'bundle',
+      uri: './toolkit.bundle.json',
+      integrity,
+      bytes: bundle.byteLength,
+      trust: { mode: 'signed' },
+    },
+    expectedIds,
+  )
+  const { privateKey, publicKey } = generateKeyPairSync('ed25519')
+  const keyId = 'modkit.offline-test'
+  const signed = signedCatalog(unsigned, privateKey, keyId)
+  const options = {
+    root: privateState,
+    catalog: catalogPath,
+    trustedPublicKeys: { [keyId]: publicKey.export({ format: 'pem', type: 'spki' }) },
+    requireSignature: true,
+  }
+  await mkdir(catalogRoot, { recursive: true })
+  await writeFile(bundlePath, bundle)
+  await writeFile(catalogPath, JSON.stringify(unsigned))
+
+  const manager = createNodeExtensionManager(options)
+  await assert.rejects(manager.refresh(), { code: 'extension-manager/catalog-signature-required' })
+  const cachePath = join(privateState, 'catalog.v1.json')
+  assert.equal(existsSync(cachePath), false)
+
+  await writeFile(catalogPath, JSON.stringify(signed))
+  await manager.refresh()
+  await manager.install('example.publisher/toolkit')
+  const cachedBefore = await readFile(cachePath, 'utf8')
+  assert.equal((await manager.installedRoots()).length, 1)
+
+  const invalid = structuredClone(signed)
+  invalid.signature.value = 'AA=='
+  await writeFile(catalogPath, JSON.stringify(invalid))
+  await assert.rejects(manager.refresh(), { code: 'extension-manager/catalog-signature-required' })
+  assert.equal(await readFile(cachePath, 'utf8'), cachedBefore)
+  assert.equal((await manager.snapshot()).entries[0].installedVersion, '1.0.0')
+  assert.equal((await manager.installedRoots()).length, 1)
+  await manager.dispose()
+
+  // A previously written or manually damaged cache is also fail-closed on a fresh process. The
+  // package bytes remain intact; only the untrusted catalog view is refused.
+  const invalidState = JSON.parse(cachedBefore)
+  invalidState.catalog = invalid
+  await writeFile(cachePath, JSON.stringify(invalidState))
+  const reopened = createNodeExtensionManager(options)
+  await assert.rejects(reopened.snapshot(), {
+    code: 'extension-manager/catalog-signature-required',
+  })
+  assert.equal((await reopened.artifactStore.list()).length, 1)
+  await reopened.dispose()
 })
 
 test('signed HTTP catalog and portable repository materialize without network on cached reopen', async t => {

@@ -527,21 +527,41 @@ function validateCatalogState(value) {
   })
 }
 
+function signatureRequirement(value) {
+  if (value === undefined) return false
+  if (typeof value !== 'boolean') {
+    fail('extension-manager/options-invalid', 'requireSignature must be boolean', {
+      requireSignature: value,
+    })
+  }
+  return value
+}
+
 /** Cached reads never contact the catalog. Only refresh performs file or HTTP acquisition. */
 export function createNodeCatalogSource(options = {}) {
   const root = privateRoot(options.root)
   const source = catalogLocation(options.source, options.baseDirectory)
   const trustedPublicKeys = options.trustedPublicKeys ?? {}
+  const requireSignature = signatureRequirement(options.requireSignature)
   const maxBytes = positiveSafeInteger(options.maxBytes, 8 * 1024 * 1024, 'maxBytes')
   const fetchImpl = options.fetch ?? globalThis.fetch
   const write = serialized()
 
-  const resultOf = state =>
-    Object.freeze({
+  const resultOf = state => {
+    const signatureVerified = verifyExtensionCatalogSignature(state.catalog, trustedPublicKeys)
+    if (requireSignature && !signatureVerified) {
+      fail(
+        'extension-manager/catalog-signature-required',
+        'catalog requires a verified Ed25519 signature from a trusted key',
+        { source: state.source },
+      )
+    }
+    return Object.freeze({
       catalog: state.catalog,
       source: state.source,
-      signatureVerified: verifyExtensionCatalogSignature(state.catalog, trustedPublicKeys),
+      signatureVerified,
     })
+  }
 
   return Object.freeze({
     async cached() {
@@ -566,8 +586,12 @@ export function createNodeCatalogSource(options = {}) {
         }
         const catalog = parseExtensionCatalog(jsonBytes(bytes, 'catalog'))
         const state = Object.freeze({ schemaVersion: 1, source, catalog })
+        // In strict production mode, an unsigned or untrusted catalog must never enter the
+        // durable cache. This check deliberately precedes atomicJson so a failed refresh leaves
+        // the last known-good catalog and installed package state untouched.
+        const result = resultOf(state)
         await atomicJson(root, CATALOG_STATE, state)
-        return resultOf(state)
+        return result
       })
     },
   })
@@ -1430,6 +1454,9 @@ export function createNodeExtensionManager(options = {}) {
       ...(options.trustedPublicKeys === undefined
         ? {}
         : { trustedPublicKeys: options.trustedPublicKeys }),
+      ...(options.requireSignature === undefined
+        ? {}
+        : { requireSignature: options.requireSignature }),
       ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
       allowedOrigins: options.vfsOptions?.allowedOrigins ?? [],
       ...(options.maxCatalogBytes === undefined ? {} : { maxBytes: options.maxCatalogBytes }),
