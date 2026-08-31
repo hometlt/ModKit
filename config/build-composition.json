@@ -1,18 +1,14 @@
 {
   "$schema": "../packages/extension-manager/schemas/modkit.composition.schema.json",
   "schemaVersion": 1,
-  "bundledBaseRoots": ["extensions/common", "extensions/ps1"],
+  "bundledBaseRoots": ["extensions/common"],
   "extensionSets": {
-    "structured-text": ["text-delimited", "text-ini", "text-xml", "text-yaml", "text-toml"],
+    "structured-text": ["data"],
     "documents": ["documents"],
     "media": ["images", "vector", "audio", "video"],
     "models-and-archives": ["models", "rendering-3d", "archives"],
     "full-codecs": [
-      "text-delimited",
-      "text-ini",
-      "text-xml",
-      "text-yaml",
-      "text-toml",
+      "data",
       "documents",
       "images",
       "vector",
@@ -21,7 +17,6 @@
       "models",
       "rendering-3d",
       "archives",
-      "ps1",
       "uv-materializer"
     ],
     "editor-and-documents": ["documents", "ui-monaco"]

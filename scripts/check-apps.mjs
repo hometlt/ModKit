@@ -281,7 +281,7 @@ await checkApplicationSet(
   'headless',
   'full-codecs',
   async extensions => ({ main: (await createAutomationHost(extensions)).composition }),
-  { main: { offers: 80, active: 80 } },
+  { main: { offers: 78, active: 78 } },
 )
 await checkApplicationSet(
   'pwa',
@@ -375,7 +375,7 @@ await checkApplicationSet(
     return { main: app.main, renderer: app.renderer }
   },
   {
-    main: { offers: 80, active: 80 },
+    main: { offers: 78, active: 78 },
     renderer: { offers: 'none', active: 'none' },
   },
 )

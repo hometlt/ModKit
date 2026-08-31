@@ -18,8 +18,8 @@ const groups = readdirSync(resolve(root, 'extensions'), { withFileTypes: true })
   .filter(entry => entry.isDirectory())
   .map(entry => entry.name)
   .sort()
-if (JSON.stringify(groups) !== JSON.stringify(['common', 'ps1'])) {
-  throw new Error(`core extension groups must be common and ps1 only; found ${groups.join(', ')}`)
+if (JSON.stringify(groups) !== JSON.stringify(['common'])) {
+  throw new Error(`core extension groups must contain common only; found ${groups.join(', ')}`)
 }
 console.log(
   `owner receipts checked: ${receipt.owners.length}; core extension groups: ${groups.join(', ')}`,

@@ -4,10 +4,10 @@
   "generator": "scripts/migration/emit-vscode-workflow-ledger.mjs",
   "inputs": {
     "sourceInventorySha256": "efc7c81a2686d55e40734ac4cf1b3bc0bf0de5a9d33b0609291ec1c6480a11cd",
-    "decisionsSha256": "8699e6201892d363a716530839b3cc2cf8a1f0a1e8852c4627a12fd765fc0322",
+    "decisionsSha256": "ebc1d2d21b79a2b98c337d48983dfc19da140f383a391fb94c5056859062b4ab",
     "vscodeManifestSha256": "9f777fee88701fb5dd36f77f632beb0497b041d5cf55333c051b3d533570c738",
     "vscodeExtensionSourceSha256": "79762e89cd662eda33821ba13a088c3c1bd68b729555168401f696a93ceb2a00",
-    "vscodeCatalogSha256": "30fdb94d9d2805643d897f6560d18723d934caf8b94d083a99a077e1d58c43cd",
+    "vscodeCatalogSha256": "9a675e50209132b6ff743c8c70b1fdaed3d3bc29f888960905e3a64abb9bfc2e",
     "vscodePublicationInventorySha256": "15a59d6ff3932cf1d43eb7ae05b8117c4a4ed60828d11acaefabdd2fc09ff901",
     "sharedCommandTargetsSha256": "90b0fa05560139670ebb3050207428349f118f8b4cc8cbde956ebaf30b27d09a"
   },
@@ -562,11 +562,11 @@
   "packagingBoundary": {
     "state": "already-equivalent",
     "ownerBlockerId": null,
-    "cataloguedCommonRoots": 16,
+    "cataloguedCommonRoots": 11,
     "packagedCodecRoots": 0,
     "deterministicShellArtifact": true,
     "provenVsixCodecArtifact": false,
-    "reason": "The accepted B plus C topology keeps the deterministic VSIX as a 16-root common shell; plain text and JSON are native Core capabilities, while publisher codecs install separately through extension management.",
+    "reason": "The accepted B plus C topology keeps the deterministic VSIX as an 11-root common shell; six structured-text codecs share the data extension, plain text and JSON are native Core capabilities, and publisher codecs install separately through extension management.",
     "publicationArtifactKind": "deterministic-shell",
     "publicationShellEntryCount": 5
   },

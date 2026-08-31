@@ -74,6 +74,12 @@ const resolvedProductPath = value => {
       portable.slice('extensions/opensource/warzone-2100/'.length),
     )
   }
+  if (portable.startsWith('extensions/ps1/')) {
+    return path.join(
+      externalRepositoryRoot(repoRoot, 'other'),
+      portable.slice('extensions/'.length),
+    )
+  }
   return path.join(repoRoot, value)
 }
 
@@ -334,6 +340,7 @@ function deriveX3Facts() {
   const external = [
     ['blizzard', externalRepositoryRoot(repoRoot, 'blizzard')],
     ['warzone', externalRepositoryRoot(repoRoot, 'warzone')],
+    ['other', externalRepositoryRoot(repoRoot, 'other')],
   ].flatMap(([repository, root]) =>
     execFileSync('git', ['-C', root, 'ls-files', 'contributions/*.json', '*/contributions/*.json'])
       .toString('utf8')

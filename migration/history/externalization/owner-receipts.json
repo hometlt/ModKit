@@ -3,7 +3,7 @@
   "schemaVersion": 1,
   "owners": [
     { "repository": "modkit-extensions-ea", "commit": "b5b4da8" },
-    { "repository": "modkit-extensions-other", "commit": "e5b0133" },
+    { "repository": "modkit-extensions-other", "commit": "c0492b3" },
     { "repository": "modkit-extensions-blizzard", "commit": "a1b308e" },
     { "repository": "modkit-extensions-warzone", "commit": "cdadbf4" },
     { "repository": "modkit-extensions-spring", "commit": "397784f" }

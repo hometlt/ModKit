@@ -71,46 +71,19 @@ function textFiles(directory: string): string[] {
   return files
 }
 
-const groups = [
-  {
-    directory: 'text-csv',
-    packageName: 'modkit-extension-x3-text-delimited',
-    formats: ['csv', 'tsv'],
-    dependencies: ['@modkitx-x3/codec-kit'],
-    samples: [
-      ['csv', 'common.text-data/csv-syntax', 'csv-rfc4180', 'x,y\n1,2\n'],
-      ['tsv', 'common.text-data/tsv-syntax', 'tsv-iana', 'x\ty\n1\t2\n'],
-    ],
-  },
-  {
-    directory: 'text-ini',
-    packageName: 'modkit-extension-x3-text-ini',
-    formats: ['ini'],
-    dependencies: ['@modkitx-x3/codec-kit'],
-    samples: [['ini', 'common.text-data/ini-syntax', 'ini-basic', '[x]\ny=1\n']],
-  },
-  {
-    directory: 'text-xml',
-    packageName: 'modkit-extension-x3-text-xml',
-    formats: ['xml'],
-    dependencies: ['@modkitx-x3/codec-kit', '@rgrove/parse-xml'],
-    samples: [['xml', 'common.text-data/xml-syntax', 'xml-1.0', '<x/>']],
-  },
-  {
-    directory: 'text-yaml',
-    packageName: 'modkit-extension-x3-text-yaml',
-    formats: ['yaml'],
-    dependencies: ['@modkitx-x3/codec-kit', 'yaml'],
-    samples: [['yaml', 'common.text-data/yaml-syntax', 'yaml-1.2-core', 'x: 1\n']],
-  },
-  {
-    directory: 'text-toml',
-    packageName: 'modkit-extension-x3-text-toml',
-    formats: ['toml'],
-    dependencies: ['@modkitx-x3/codec-kit', 'smol-toml'],
-    samples: [['toml', 'common.text-data/toml-syntax', 'toml-1.0', 'x = 1\n']],
-  },
-] as const
+const dataExtension = {
+  packageName: 'modkit-extension-x3-data',
+  formats: ['csv', 'tsv', 'ini', 'toml', 'xml', 'yaml'],
+  dependencies: ['@modkitx-x3/codec-kit', '@rgrove/parse-xml', 'smol-toml', 'yaml'],
+  samples: [
+    ['csv', 'common.text-data/csv-syntax', 'csv-rfc4180', 'x,y\n1,2\n'],
+    ['tsv', 'common.text-data/tsv-syntax', 'tsv-iana', 'x\ty\n1\t2\n'],
+    ['ini', 'common.text-data/ini-syntax', 'ini-basic', '[x]\ny=1\n'],
+    ['toml', 'common.text-data/toml-syntax', 'toml-1.0', 'x = 1\n'],
+    ['xml', 'common.text-data/xml-syntax', 'xml-1.0', '<x/>'],
+    ['yaml', 'common.text-data/yaml-syntax', 'yaml-1.2-core', 'x: 1\n'],
+  ],
+} as const
 
 const parserPackages = ['jsonc-parser', '@rgrove/parse-xml', 'yaml', 'smol-toml'] as const
 const npmFlags = ['--no-audit', '--no-fund', '--install-links=false']
@@ -122,21 +95,16 @@ const budget = {
   maxDiagnostics: 100,
 }
 
-describe('13B packed text extension boundaries', () => {
+describe('packed common data extension boundary', () => {
   it(
-    'installs every format family independently with only its own parser dependency',
+    'installs one extension and exposes every structured-text codec and parser dependency',
     { timeout: 600_000 },
     async () => {
       const platform = ['core', 'sdk', 'vfs', 'host'].map(name =>
         pack(join(repoRoot, 'packages', name)),
       )
       const codecKit = pack(join(repoRoot, 'packages', 'codec-kit'))
-      const tarballs = new Map(
-        groups.map(group => [
-          group.packageName,
-          pack(join(repoRoot, 'extensions', 'common', 'data', group.directory)),
-        ]),
-      )
+      const extension = pack(join(repoRoot, 'extensions', 'common', 'data'))
 
       const platformOnly = consumer('platform-only')
       const platformInstall = sh('npm', ['install', ...npmFlags, ...platform], platformOnly)
@@ -172,74 +140,62 @@ describe('13B packed text extension boundaries', () => {
         for (const needle of forbidden) expect(combined, `${name}: ${needle}`).not.toContain(needle)
       }
 
-      for (const group of groups) {
-        const external = consumer(group.directory)
-        const extension = tarballs.get(group.packageName)
-        if (extension === undefined) throw new Error(`missing tarball for ${group.packageName}`)
-        const install = sh(
-          'npm',
-          ['install', ...npmFlags, ...platform, codecKit, extension],
+      const external = consumer('data')
+      const install = sh(
+        'npm',
+        ['install', ...npmFlags, ...platform, codecKit, extension],
+        external,
+      )
+      expect(install.status, install.stderr).toBe(0)
+      const externalRequire = createRequire(join(external, 'package.json'))
+      const publicEntry = (await import(
+        pathToFileURL(externalRequire.resolve(dataExtension.packageName)).href
+      )) as { contributionManifests: readonly string[] }
+      expect(publicEntry.contributionManifests).toEqual(['./contributions/*.json'])
+      const formatCatalog = (await import(
+        pathToFileURL(externalRequire.resolve(`${dataExtension.packageName}/formats`)).href
+      )) as { TEXT_FORMATS: readonly string[] }
+      expect(formatCatalog.TEXT_FORMATS).toEqual(dataExtension.formats)
+
+      for (const [format, contract, dialect, text] of dataExtension.samples) {
+        const providerModule = (await import(
+          pathToFileURL(
+            externalRequire.resolve(`${dataExtension.packageName}/formats/${format}/provider`),
+          ).href
+        )) as {
+          createProvider(selection: { contract: string }): Promise<{
+            readonly value: { parse(request: unknown): Promise<{ state: string }> }
+            release(): Promise<void>
+          }>
+        }
+        const providerLease = await providerModule.createProvider({ contract })
+        try {
+          expect(
+            await providerLease.value.parse({ input: { text }, dialect, budget }),
+            contract,
+          ).toMatchObject({ state: 'ok' })
+        } finally {
+          await providerLease.release()
+        }
+      }
+
+      const installed = JSON.parse(
+        readFileSync(externalRequire.resolve(`${dataExtension.packageName}/package.json`), 'utf8'),
+      ) as { dependencies: Record<string, string> }
+      expect(Object.keys(installed.dependencies).sort()).toEqual(
+        [...dataExtension.dependencies].sort(),
+      )
+      for (const parser of parserPackages.filter(parser => parser !== 'jsonc-parser')) {
+        const parserPackageJson = join(
           external,
+          'node_modules',
+          ...parser.split('/'),
+          'package.json',
         )
-        expect(install.status, install.stderr).toBe(0)
-        const externalRequire = createRequire(join(external, 'package.json'))
-        const publicEntry = (await import(
-          pathToFileURL(externalRequire.resolve(group.packageName)).href
-        )) as { contributionManifests: readonly string[] }
-        expect(publicEntry.contributionManifests).toEqual(['./contributions/*.json'])
-        const formatCatalog = (await import(
-          pathToFileURL(externalRequire.resolve(`${group.packageName}/formats`)).href
-        )) as { TEXT_FORMATS: readonly string[] }
-        expect(formatCatalog.TEXT_FORMATS).toEqual(group.formats)
-
-        for (const [format, contract, dialect, text] of group.samples) {
-          const providerModule = (await import(
-            pathToFileURL(
-              externalRequire.resolve(`${group.packageName}/formats/${format}/provider`),
-            ).href
-          )) as {
-            createProvider(selection: { contract: string }): Promise<{
-              readonly value: { parse(request: unknown): Promise<{ state: string }> }
-              release(): Promise<void>
-            }>
-          }
-          const providerLease = await providerModule.createProvider({ contract })
-          try {
-            expect(
-              await providerLease.value.parse({ input: { text }, dialect, budget }),
-              contract,
-            ).toMatchObject({ state: 'ok' })
-          } finally {
-            await providerLease.release()
-          }
-        }
-
-        const installed = JSON.parse(
-          readFileSync(externalRequire.resolve(`${group.packageName}/package.json`), 'utf8'),
-        ) as { dependencies: Record<string, string> }
-        expect(Object.keys(installed.dependencies).sort()).toEqual([...group.dependencies].sort())
-        const extensionSource = textFiles(
-          join(external, 'node_modules', ...group.packageName.split('/')),
-        )
-          .map(file => readFileSync(file, 'utf8'))
-          .join('\n')
-        for (const parser of parserPackages) {
-          const parserPackageJson = join(
-            external,
-            'node_modules',
-            ...parser.split('/'),
-            'package.json',
-          )
-          if (group.dependencies.includes(parser as never)) {
-            expect(existsSync(parserPackageJson), `${group.packageName} omitted ${parser}`).toBe(
-              true,
-            )
-          } else {
-            // jsonc-parser is installed transitively by the host's mandatory native JSON support;
-            // isolation means an independent extension neither declares nor imports it.
-            expect(extensionSource, `${group.packageName} imported ${parser}`).not.toContain(parser)
-          }
-        }
+        expect(
+          existsSync(parserPackageJson),
+          `${dataExtension.packageName} omitted ${parser}`,
+        ).toBe(true)
       }
     },
   )

@@ -155,6 +155,9 @@ export const WEB_WORKER_MODULE_MAP: Readonly<Record<string, string>> = Object.fr
   '@modkitx-x3/codec-kit/text': 'vendor/codec-kit/text/index.js',
   '@modkitx-x3/core': 'vendor/core/index.js',
   '@modkitx-x3/sdk': 'vendor/sdk/index.js',
+  '@rgrove/parse-xml': 'vendor/parse-xml/index.js',
+  'smol-toml': 'vendor/smol-toml/index.js',
+  yaml: 'vendor/yaml/index.js',
 })
 
 /** The published worker entry as the build serves it. */

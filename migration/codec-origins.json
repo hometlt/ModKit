@@ -24,25 +24,25 @@
       "currentPath": "extensions/common/audio/src/ogg/codec.js"
     },
     {
-      "family": "common/data/text-csv",
+      "family": "common/data",
       "codec": "csv",
       "origin": "authored",
       "formerPath": "extensions/common/data/text-delimited/src/formats/csv/codec.js",
-      "currentPath": "extensions/common/data/text-csv/src/csv/codec.js"
+      "currentPath": "extensions/common/data/src/csv/codec.js"
     },
     {
-      "family": "common/data/text-csv",
+      "family": "common/data",
       "codec": "tsv",
       "origin": "authored",
       "formerPath": "extensions/common/data/text-delimited/src/formats/tsv/codec.js",
-      "currentPath": "extensions/common/data/text-csv/src/tsv/codec.js"
+      "currentPath": "extensions/common/data/src/tsv/codec.js"
     },
     {
-      "family": "common/data/text-ini",
+      "family": "common/data",
       "codec": "ini",
       "origin": "authored",
       "formerPath": "extensions/common/data/text-ini/src/formats/ini/codec.js",
-      "currentPath": "extensions/common/data/text-ini/src/ini/codec.js"
+      "currentPath": "extensions/common/data/src/ini/codec.js"
     },
     {
       "family": "core/native-text",
@@ -66,25 +66,25 @@
       "currentPath": "packages/host/native-text/plain/txt/codec.js"
     },
     {
-      "family": "common/data/text-toml",
+      "family": "common/data",
       "codec": "toml",
       "origin": "authored",
       "formerPath": "extensions/common/data/text-toml/src/formats/toml/codec.js",
-      "currentPath": "extensions/common/data/text-toml/src/toml/codec.js"
+      "currentPath": "extensions/common/data/src/toml/codec.js"
     },
     {
-      "family": "common/data/text-xml",
+      "family": "common/data",
       "codec": "xml",
       "origin": "authored",
       "formerPath": "extensions/common/data/text-xml/src/formats/xml/codec.js",
-      "currentPath": "extensions/common/data/text-xml/src/xml/codec.js"
+      "currentPath": "extensions/common/data/src/xml/codec.js"
     },
     {
-      "family": "common/data/text-yaml",
+      "family": "common/data",
       "codec": "yaml",
       "origin": "authored",
       "formerPath": "extensions/common/data/text-yaml/src/formats/yaml/codec.js",
-      "currentPath": "extensions/common/data/text-yaml/src/yaml/codec.js"
+      "currentPath": "extensions/common/data/src/yaml/codec.js"
     },
     {
       "family": "common/documents",

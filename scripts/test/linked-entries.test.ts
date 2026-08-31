@@ -8,10 +8,7 @@ const repoRoot = resolve(import.meta.dirname, '..', '..')
 const commonRoot = join(repoRoot, 'extensions', 'common')
 
 describe('hand-authored linked extension entries', () => {
-  const extensions = [
-    ...authoredExtensionRootsRelativeTo(commonRoot),
-    { directory: join(repoRoot, 'extensions', 'ps1'), relativePath: 'ps1' },
-  ]
+  const extensions = authoredExtensionRootsRelativeTo(commonRoot)
     .filter(({ directory }) => existsSync(join(directory, 'contributions')))
     .sort((left, right) => left.relativePath.localeCompare(right.relativePath))
 

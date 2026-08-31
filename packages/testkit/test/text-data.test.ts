@@ -39,26 +39,20 @@ const repositoryRoot = join(here, '..', '..', '..')
 const extensionNameByFormat: Readonly<Record<string, string>> = Object.freeze({
   json: 'core-native',
   jsonc: 'core-native',
-  csv: 'text-csv',
-  tsv: 'text-csv',
-  ini: 'text-ini',
-  xml: 'text-xml',
-  yaml: 'text-yaml',
-  toml: 'text-toml',
+  csv: 'common-data',
+  tsv: 'common-data',
+  ini: 'common-data',
+  xml: 'common-data',
+  yaml: 'common-data',
+  toml: 'common-data',
 })
 const nativeTextRoot = join(repositoryRoot, 'packages', 'host', 'native-text')
-const textExtensionRoots = Object.freeze([
-  nativeTextRoot,
-  ...[...new Set(Object.values(extensionNameByFormat))]
-    .filter(name => name !== 'core-native')
-    .map(name => join(repositoryRoot, 'extensions', 'common', 'data', name)),
-])
+const commonDataRoot = join(repositoryRoot, 'extensions', 'common', 'data')
+const textExtensionRoots = Object.freeze([nativeTextRoot, commonDataRoot])
 const extensionRootFor = (format: string): string => {
   const extension = extensionNameByFormat[format]
   if (extension === undefined) throw new TypeError(`unknown text format ${format}`)
-  return extension === 'core-native'
-    ? nativeTextRoot
-    : join(repositoryRoot, 'extensions', 'common', 'data', extension)
+  return extension === 'core-native' ? nativeTextRoot : commonDataRoot
 }
 const alternateXmlRoot = join(
   here,

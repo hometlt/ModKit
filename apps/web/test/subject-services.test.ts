@@ -7,6 +7,7 @@
  */
 import { createHash, webcrypto } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { MessageChannel } from 'node:worker_threads'
@@ -34,6 +35,9 @@ import {
 import { createSingleFileAccess } from '../src/files.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
+const dataRequire = createRequire(
+  join(repositoryRoot, 'extensions', 'common', 'data', 'package.json'),
+)
 const ORIGIN = 'https://pwa.example/app/'
 const catalog: WebExtensionCatalog = WEB_EXTENSION_CATALOG
 const sha256 = (bytes: Uint8Array) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`
@@ -125,6 +129,25 @@ const nodeModuleMap = {
     .href,
   '@modkitx-x3/sdk': pathToFileURL(join(repositoryRoot, 'packages', 'sdk', 'dist', 'index.js'))
     .href,
+  '@rgrove/parse-xml': pathToFileURL(dataRequire.resolve('@rgrove/parse-xml')).href,
+  'smol-toml': pathToFileURL(dataRequire.resolve('smol-toml')).href,
+  yaml: pathToFileURL(dataRequire.resolve('yaml')).href,
+}
+
+function textSource(name: string, text: string): ArtifactByteSource {
+  const bytes = new TextEncoder().encode(text)
+  return {
+    kind: 'bytes',
+    ref: { id: `memory://web/${name}`, uri: `memory://web/${name}` },
+    revision: revisionId(`content-hash.sha256:${createHash('sha256').update(bytes).digest('hex')}`),
+    size: BigInt(bytes.byteLength),
+    async read(offset, length) {
+      return bytes.slice(Number(offset), Number(offset) + length)
+    },
+    async *stream() {
+      yield bytes
+    },
+  }
 }
 
 function fileSource(path: string, name: string): ArtifactByteSource {
@@ -322,6 +345,47 @@ describe('PWA product path — catalog → composition → worker-brokered open'
       message: expect.stringMatching(/not authorized/u),
     })
   }, 30_000)
+
+  it('opens all six codecs from the combined data extension in the browser worker topology', async () => {
+    const services = await createWebSubjectServices({
+      baseUrl: ORIGIN,
+      catalog,
+      identity,
+      probe,
+      dom: {
+        fetch: diskOrigin().fetch,
+        subtle: webcrypto.subtle as never,
+        Blob: FakeBlob as never,
+        objectUrls,
+        Worker: FakeWorker,
+        MessageChannel: MessageChannel as never,
+      },
+      moduleMap: nodeModuleMap,
+    })
+    const samples = [
+      ['sample.csv', 'x,y\n1,2\n', 'org.modkitx/text-csv'],
+      ['sample.tsv', 'x\ty\n1\t2\n', 'org.modkitx/text-tsv'],
+      ['sample.ini', '[x]\ny=1\n', 'org.modkitx/text-ini'],
+      ['sample.toml', 'x = 1\n', 'org.modkitx/text-toml'],
+      ['sample.xml', '<x value="1"/>', 'org.modkitx/text-xml'],
+      ['sample.yaml', 'x: 1\n', 'org.modkitx/text-yaml'],
+    ] as const
+    for (const [path, text, codecId] of samples) {
+      const result = await services.open({
+        source: textSource(path, text),
+        path,
+        intent: 'full',
+        grant: { id: 'pwa-data-open', classes: ['read-source'] },
+        budget,
+      })
+      expect(result.state, path).toBe('opened')
+      if (result.state !== 'opened') throw new Error(`${path}: ${result.reason}`)
+      expect(result.selected.contributionId).toBe(codecId)
+      expect(await result.session.operations().invoke('parse', {})).toMatchObject({ state: 'ok' })
+      await result.session.dispose()
+    }
+    await services.dispose()
+  }, 60_000)
 
   it('a served artifact that drifted from the attestation is refused at load, not silently run', async () => {
     const site = diskOrigin()

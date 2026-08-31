@@ -22,14 +22,7 @@
       "status": "available",
       "hosts": ["cli", "electron", "pwa", "vscode"],
       "minimalClosure": true,
-      "extensionFamilies": [
-        "documents",
-        "text-delimited",
-        "text-ini",
-        "text-toml",
-        "text-xml",
-        "text-yaml"
-      ],
+      "extensionFamilies": ["data", "documents"],
       "plannedFamilies": [],
       "serviceProviders": [],
       "note": "Opt-in preset плана slice 11B: minimal и plain-text не должны тянуть ZIP, XML или UI, поэтому editor и renderer сюда не входят. ODT/ODS/ODP/ODG приехали слайсом 11B внутри семейства documents вместе с приватным ODF package reader — отдельного ZIP-семейства профиль по-прежнему не тянет."
@@ -49,11 +42,7 @@
         "images",
         "models",
         "rendering-3d",
-        "text-delimited",
-        "text-ini",
-        "text-toml",
-        "text-xml",
-        "text-yaml",
+        "data",
         "ui-monaco",
         "vector",
         "video"
@@ -69,18 +58,7 @@
       "status": "available",
       "hosts": ["automation-host", "cli", "server"],
       "minimalClosure": true,
-      "extensionFamilies": [
-        "archives",
-        "containers",
-        "documents",
-        "images",
-        "models",
-        "text-delimited",
-        "text-ini",
-        "text-toml",
-        "text-xml",
-        "text-yaml"
-      ],
+      "extensionFamilies": ["archives", "containers", "documents", "images", "models", "data"],
       "plannedFamilies": [],
       "serviceProviders": [],
       "note": "Batch inspect/convert/validate с machine-readable выводом: ни editor, ни renderer, ни UI-вокабуляр в граф не попадают (см. reference profile headless-host). Статус available означает доступный состав, а не готовность Product GA: read-only MCP и три inspection skill отслеживаются отдельными partial registry gaps."

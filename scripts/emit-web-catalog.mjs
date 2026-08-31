@@ -2,8 +2,8 @@
 /**
  * Web/PWA extension catalog (S6): the browser has no filesystem to inventory, so the build attests
  * the bundled extensions once and the page composes from the attestation. For every bundled codec
- * extension whose runtime dependencies are covered by the worker vendor bundles (today: only
- * `@modkitx-x3/codec-kit`), this script runs the *same* loader the Node hosts use
+ * extension whose runtime dependencies are covered by the worker vendor bundles, this script
+ * runs the *same* loader the Node hosts use
  * (`loadExtensionDirectory` from the built host) and serializes its `ExtensionInput` — files,
  * pre-read contribution documents and their digests, the artifact digest and the per-file
  * digests — into `apps/web/generated/extension-catalog.js`, with the artifact root as a path
@@ -37,6 +37,9 @@ export const WEB_WORKER_VENDORED = Object.freeze([
   '@modkitx-x3/codec-kit',
   '@modkitx-x3/core',
   '@modkitx-x3/sdk',
+  '@rgrove/parse-xml',
+  'smol-toml',
+  'yaml',
 ])
 
 function json(path) {

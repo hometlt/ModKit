@@ -85,7 +85,7 @@ import {
   throwIfAborted,
   validateSubjectDescriptorV2,
   webExtensionSubjectCardBundle
-} from "./chunks/chunk-IKNQI6PK.js";
+} from "./chunks/chunk-FT3RKDJJ.js";
 import "./chunks/chunk-HVXSZ42C.js";
 
 // packages/ui/dist/settings/index.js

@@ -1,7 +1,7 @@
 {
   "$comment": "Core-only legacy-port counts. Publisher-owned port receipts live in their extension repositories; the pre-externalization aggregate is archived under migration/history/externalization.",
   "schemaVersion": 2,
-  "minimumTotal": 55,
+  "minimumTotal": 53,
   "families": {
     "common/archives": 13,
     "common/audio": 4,
@@ -10,7 +10,6 @@
     "common/models": 3,
     "core/native-text": 3,
     "common/vector": 2,
-    "common/video": 4,
-    "ps1": 2
+    "common/video": 4
   }
 }

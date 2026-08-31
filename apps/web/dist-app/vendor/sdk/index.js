@@ -154,8 +154,9 @@ import {
   writerOfferV1Schema,
   writerRequirementV1Schema,
   writerSelectionKey
-} from "../../chunks/chunk-RSMXYLAO.js";
+} from "../../chunks/chunk-R2Q24OJL.js";
 import "../../chunks/chunk-GZ3IOGQJ.js";
+import "../../chunks/chunk-XNBPKNUQ.js";
 export {
   A1_SPEC_SCHEMA_ENTRIES,
   ADMITTED_DATA_SOURCE_CONTRACTS,

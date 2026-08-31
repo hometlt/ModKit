@@ -2,20 +2,7 @@
 // Build-time attestation of the bundled extensions the PWA serves under `extensions/<name>/`;
 // the browser worker backend re-verifies every file's bytes against `fileDigests` at load.
 export const WEB_EXTENSION_CATALOG = Object.freeze({
-  excluded: [
-    {
-      name: 'text-toml',
-      reason: 'runtime dependencies not vendored for the worker: smol-toml',
-    },
-    {
-      name: 'text-xml',
-      reason: 'runtime dependencies not vendored for the worker: @rgrove/parse-xml',
-    },
-    {
-      name: 'text-yaml',
-      reason: 'runtime dependencies not vendored for the worker: yaml',
-    },
-  ],
+  excluded: [],
   extensions: [
     {
       artifact: {
@@ -3092,30 +3079,70 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:7b1359a891dd7811e4af034d3f85d1e1e6441e5b2a51f3d47762132631a081f0',
+        artifactDigest: 'sha256:7e011f2d0904ef63697f9af4b7d0498414af2b709d1d3a1a457a581a0cebe767',
         fileDigests: {
-          'README.md': 'sha256:32b16af9cd40d5a69ccc3a44c7d74e40703c44ff0ac7f61a8f1289f093506a0d',
+          'README.md': 'sha256:96b749c43f62ad801f0aeb648aaa173263c721a114e99ad2bc1cbe4b7b3694d7',
           'contributions/codec-csv.json':
             'sha256:e822428283b261aff304e476b7941ad4118565da7e78d4298ab24e8c5ba10fbc',
+          'contributions/codec-ini.json':
+            'sha256:2465934ced06e0f664774977a3fe02e63ff0e484f74362f4671b7d3492880a7e',
+          'contributions/codec-toml.json':
+            'sha256:09b3541b324bc414a4da560fd98b0062a5aa30dae6859c373e319f750f354fca',
           'contributions/codec-tsv.json':
             'sha256:6a58d5a73fd73c61884ba4f01ca6391e37f069a27ed8cc1848d046f2a9ff61d0',
+          'contributions/codec-xml.json':
+            'sha256:b159fd8077b7571e36c93c8fcf3f2f55335b87d265a444fdbbb38d9ccad6b585',
+          'contributions/codec-yaml.json':
+            'sha256:deea0b7f7ad8f3cfd5b3eb278f1efc66e86f28672a12593aa01dfd242d8c7154',
           'contributions/contract-csv-syntax.json':
             'sha256:7073ab778c132e4a14e89c08bfe29289c81bac1c6d30f9e44ef0a70431e6beb8',
+          'contributions/contract-ini-syntax.json':
+            'sha256:aafe6ff6e6465a0ac49865cd594ff360ed796e29dc803668bfd8f83cdd0f9973',
+          'contributions/contract-toml-syntax.json':
+            'sha256:0b8247c1fe27c895109d656cd7183aaa0e96dfdc7b6d107be2a42ec8c51a01ac',
           'contributions/contract-tsv-syntax.json':
             'sha256:2f4bd11489e72d4ba207b6a79dd7680651b2ff93f25b8acde057ce5ccbf0976c',
+          'contributions/contract-xml-syntax.json':
+            'sha256:906775c495e00939c5de181bec26c452cc594b993b33c8c96b6c54918b387ed8',
+          'contributions/contract-yaml-syntax.json':
+            'sha256:406bc0bafccd7c4cd3cfc0640ab1c8f26b9b8b9b5be20f96ca568c64695a5ebe',
           'contributions/provider-csv-default.json':
             'sha256:51dce1699a464ede2fe08da370490985c2c6f97d1162aee16c2767e875f87ede',
+          'contributions/provider-ini-default.json':
+            'sha256:c22f937193bdc58dccd9c3b0d81f3889df396d0bd57e74b31a77223f4296bff7',
+          'contributions/provider-toml-default.json':
+            'sha256:0d8eb8a6bc43c4026e52a19b04f95bf3caa5afc74417c478a9a0a96c675110b6',
           'contributions/provider-tsv-default.json':
             'sha256:5520bc14a0ff8d688706a5821cef953670e5936827138dc75d21829d28e81c8c',
+          'contributions/provider-xml-default.json':
+            'sha256:e954c3e693eaa9d9ef11125c1985453ad2c6e978c85741bbf6001eb8170bf237',
+          'contributions/provider-yaml-default.json':
+            'sha256:b8c00fdd7f27f0db8b9adefd4da85ff8f4fd904370588a150066b4c396d60fd7',
           'contributions/writer-delimited.json':
-            'sha256:21e1441bcc2c6e5b81ad048edfafb8bc3ec77551fe183a0d03de96c28f6833ad',
-          'package.json': 'sha256:fb543020c508921a5680b9ffcab17d068c3852f0780643d2445f07c611493300',
+            'sha256:c978d01538ec5023f817ef0519e7c05164ffb71012a5b31f563d625ef88cc496',
+          'contributions/writer-ini.json':
+            'sha256:4191c66e32047263e953c3b064a1a509ccc59c57ddba27f64d31e7eed7150347',
+          'contributions/writer-toml.json':
+            'sha256:e1d552ab6ef123b64009922e3112210d341c0149c92845d58c34673794de1169',
+          'contributions/writer-xml.json':
+            'sha256:1bedf31ef237675eec0c448b2d0f045d3fca91324f2ddae674610d4c73e25c50',
+          'contributions/writer-yaml.json':
+            'sha256:3b5348d5fb3a346272cfa9c406a22b3db8de6c343f0c2979be2a9c4c7b2a2fcd',
+          'package.json': 'sha256:0acbc300da938e4d268959b61bb0c030bc989109e2c9a20e357b08e8e2c0c198',
           'src/csv/codec.js':
             'sha256:96a13181712645f9e74bb51dc549a3af2df36bd1e6218d3c1954e370d25abed5',
           'src/csv/provider.js':
             'sha256:c585721ed101f9e919c840e6434c439954d47da639397b132861ca4f6f9388d6',
-          'src/editing/text-writer.js':
+          'src/editing/delimited-writer.js':
             'sha256:dce962c640c433456183054d03940ab874d4970da6cf41a1fae289269873d561',
+          'src/editing/ini-writer.js':
+            'sha256:2c0fe6dd7b60302cc6ba2e91d995a257e875b81a6af1bda8d23869ead9d7a56c',
+          'src/editing/toml-writer.js':
+            'sha256:b255a85aab0d21b7c41448de3d8248e60247cd23beb8dcb986e5fa8012f15c19',
+          'src/editing/xml-writer.js':
+            'sha256:1069d1fba36cd823c7345472491676e2a5e477f137614fb63686f74c844bbe87',
+          'src/editing/yaml-writer.js':
+            'sha256:571ec6b48c2e8228fe4ef12af7c1e39053ef61b565bbe3d36ddf9e931143ecc7',
           'src/families/delimited/codec.js':
             'sha256:8ce0696b57a7094d17468051804a030296494d4d9af15380b8a6d706252a8e42',
           'src/families/delimited/detect.js':
@@ -3135,34 +3162,71 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/families/delimited/provider.js':
             'sha256:3aad857e5b32b3823fbbc674daf201c8628a5fdb33192853b742ad1478096287',
           'src/formats.js':
-            'sha256:9cd30c3d83e23764bed3378f2ff03b7e5843c5af3a88b4cd31c89daa7757857d',
+            'sha256:d6f7fb9793cd63475e20149a5e360a364a73cc8a1701a3faa7cedaaba61888d8',
           'src/index.js': 'sha256:4d3c1f65a922238a9b5cd20832700b890e95abd3e1485f07bd472d9a074227d2',
+          'src/ini/codec.js':
+            'sha256:bc28ceb31c5dd6606d6fe302cf8ffa0b42bcd85ed4f9ca9c95d9a60120e5cef8',
+          'src/ini/definition.js':
+            'sha256:818494714eab867402779285234d227938d606a8737e50d4318ee6aa0cff6c45',
+          'src/ini/provider.js':
+            'sha256:90b04036cffdcb990e1f90e09882377d206081ba02e45cea85e93545422599da',
           'src/linked.js':
-            'sha256:94da1f34a1d0dc98ea8e8f1d6546d4f0a137ff59987528c74c8cd445da426ae1',
+            'sha256:243d460b7dc4a3a4fa800061ca0ce19184fadf47d188be16dc4582906aca4450',
+          'src/toml/codec.js':
+            'sha256:5fe38de0be1eb447d7c9c6c28bc6362a43043661423870160b2bd2d91e062eff',
+          'src/toml/definition.js':
+            'sha256:020e2de4184b4c9c0fb6f062842b1b6457a02f1d878a0249b0ba24be9a19b1d5',
+          'src/toml/provider.js':
+            'sha256:7d2578a2e6191ad6c2d75bcd093e5d21c6a6b185037e82121a15b48496653f38',
           'src/tsv/codec.js':
             'sha256:b0af8e1d4a7981475ef0976233d8cc0dca51b6554fba7aead564f6c93dc55cc0',
           'src/tsv/provider.js':
             'sha256:aa4f33eb98f57ace139d6cddf04efefe42c51f6ab60f8f5c62016748c926313c',
+          'src/xml/codec.js':
+            'sha256:3d76a2e4b33121ed7b99457706f1c7acbbd32787656258bbdd11615f59719093',
+          'src/xml/definition.js':
+            'sha256:28d3024779cc2be0c1dbc0716eb075f4bb96bde31d4bc6b535d55ad2acfcfac0',
+          'src/xml/provider.js':
+            'sha256:23e597e1eb6e0ebe8357e1b72d6cd90664fd4b762dadcd05a7056d08c2715bd4',
+          'src/yaml/codec.js':
+            'sha256:582f4011f8bc63a77e06ec4d40eb5acac87f182274945d5d09f7cb5b2b0890fc',
+          'src/yaml/definition.js':
+            'sha256:c5771cd7f73aff7de4cfae0ecb88a0a3276ed6ece5b55bba52089a31e5a06269',
+          'src/yaml/provider.js':
+            'sha256:63fb2f8afafedc6dabd12221c4a0f3084a49d5c0250205f39108388433b4db69',
           'test/fixtures/csv-rfc4180-parity.json':
             'sha256:518c4096fdf96326de1c0a83acab3674a66a2ccfa7f9b7279760e97fbb712ef5',
+          'test/fixtures/ini-structured-parity.json':
+            'sha256:205a176ec39d8c1adeebd8f9419ff9c9b8e2e2d45f4387541adc7e96c2090df9',
         },
         inventoryRecordId:
-          'artifact:sha256:7b1359a891dd7811e4af034d3f85d1e1e6441e5b2a51f3d47762132631a081f0',
+          'artifact:sha256:7e011f2d0904ef63697f9af4b7d0498414af2b709d1d3a1a457a581a0cebe767',
       },
-      artifactRoot: 'extensions/text-delimited/',
+      artifactRoot: 'extensions/data/',
       containers: {
         packageJson: {
           dependencies: {
             '@modkitx-x3/codec-kit': 'workspace:*',
+            '@rgrove/parse-xml': '^4.2.3',
+            'smol-toml': '^1.8.0',
+            yaml: '^2.9.0',
           },
-          description: 'Independent MK3 CSV and TSV codecs and syntax providers.',
+          description: 'Common MK3 structured-text codecs and syntax providers.',
           exports: {
             '.': './src/index.js',
             './formats': './src/formats.js',
             './formats/csv/codec': './src/families/delimited/entrypoints/csv-codec.js',
             './formats/csv/provider': './src/families/delimited/entrypoints/csv-provider.js',
+            './formats/ini/codec': './src/ini/codec.js',
+            './formats/ini/provider': './src/ini/provider.js',
+            './formats/toml/codec': './src/toml/codec.js',
+            './formats/toml/provider': './src/toml/provider.js',
             './formats/tsv/codec': './src/families/delimited/entrypoints/tsv-codec.js',
             './formats/tsv/provider': './src/families/delimited/entrypoints/tsv-provider.js',
+            './formats/xml/codec': './src/xml/codec.js',
+            './formats/xml/provider': './src/xml/provider.js',
+            './formats/yaml/codec': './src/yaml/codec.js',
+            './formats/yaml/provider': './src/yaml/provider.js',
             './linked': './src/linked.js',
             './package.json': './package.json',
           },
@@ -3170,11 +3234,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           license: 'MIT',
           modkit: {
             contributionManifests: ['./contributions/*.json'],
-            id: 'text-delimited',
+            id: 'data',
             publisher: 'org.modkitx',
             schemaVersion: 1,
           },
-          name: 'modkit-extension-x3-text-delimited',
+          name: 'modkit-extension-x3-data',
           peerDependencies: {
             '@modkitx-x3/core': 'workspace:*',
             '@modkitx-x3/host': 'workspace:*',
@@ -3201,28 +3265,92 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'sha256:e822428283b261aff304e476b7941ad4118565da7e78d4298ab24e8c5ba10fbc',
         ],
         [
+          'contributions/codec-ini.json',
+          'sha256:2465934ced06e0f664774977a3fe02e63ff0e484f74362f4671b7d3492880a7e',
+        ],
+        [
+          'contributions/codec-toml.json',
+          'sha256:09b3541b324bc414a4da560fd98b0062a5aa30dae6859c373e319f750f354fca',
+        ],
+        [
           'contributions/codec-tsv.json',
           'sha256:6a58d5a73fd73c61884ba4f01ca6391e37f069a27ed8cc1848d046f2a9ff61d0',
+        ],
+        [
+          'contributions/codec-xml.json',
+          'sha256:b159fd8077b7571e36c93c8fcf3f2f55335b87d265a444fdbbb38d9ccad6b585',
+        ],
+        [
+          'contributions/codec-yaml.json',
+          'sha256:deea0b7f7ad8f3cfd5b3eb278f1efc66e86f28672a12593aa01dfd242d8c7154',
         ],
         [
           'contributions/contract-csv-syntax.json',
           'sha256:7073ab778c132e4a14e89c08bfe29289c81bac1c6d30f9e44ef0a70431e6beb8',
         ],
         [
+          'contributions/contract-ini-syntax.json',
+          'sha256:aafe6ff6e6465a0ac49865cd594ff360ed796e29dc803668bfd8f83cdd0f9973',
+        ],
+        [
+          'contributions/contract-toml-syntax.json',
+          'sha256:0b8247c1fe27c895109d656cd7183aaa0e96dfdc7b6d107be2a42ec8c51a01ac',
+        ],
+        [
           'contributions/contract-tsv-syntax.json',
           'sha256:2f4bd11489e72d4ba207b6a79dd7680651b2ff93f25b8acde057ce5ccbf0976c',
+        ],
+        [
+          'contributions/contract-xml-syntax.json',
+          'sha256:906775c495e00939c5de181bec26c452cc594b993b33c8c96b6c54918b387ed8',
+        ],
+        [
+          'contributions/contract-yaml-syntax.json',
+          'sha256:406bc0bafccd7c4cd3cfc0640ab1c8f26b9b8b9b5be20f96ca568c64695a5ebe',
         ],
         [
           'contributions/provider-csv-default.json',
           'sha256:51dce1699a464ede2fe08da370490985c2c6f97d1162aee16c2767e875f87ede',
         ],
         [
+          'contributions/provider-ini-default.json',
+          'sha256:c22f937193bdc58dccd9c3b0d81f3889df396d0bd57e74b31a77223f4296bff7',
+        ],
+        [
+          'contributions/provider-toml-default.json',
+          'sha256:0d8eb8a6bc43c4026e52a19b04f95bf3caa5afc74417c478a9a0a96c675110b6',
+        ],
+        [
           'contributions/provider-tsv-default.json',
           'sha256:5520bc14a0ff8d688706a5821cef953670e5936827138dc75d21829d28e81c8c',
         ],
         [
+          'contributions/provider-xml-default.json',
+          'sha256:e954c3e693eaa9d9ef11125c1985453ad2c6e978c85741bbf6001eb8170bf237',
+        ],
+        [
+          'contributions/provider-yaml-default.json',
+          'sha256:b8c00fdd7f27f0db8b9adefd4da85ff8f4fd904370588a150066b4c396d60fd7',
+        ],
+        [
           'contributions/writer-delimited.json',
-          'sha256:21e1441bcc2c6e5b81ad048edfafb8bc3ec77551fe183a0d03de96c28f6833ad',
+          'sha256:c978d01538ec5023f817ef0519e7c05164ffb71012a5b31f563d625ef88cc496',
+        ],
+        [
+          'contributions/writer-ini.json',
+          'sha256:4191c66e32047263e953c3b064a1a509ccc59c57ddba27f64d31e7eed7150347',
+        ],
+        [
+          'contributions/writer-toml.json',
+          'sha256:e1d552ab6ef123b64009922e3112210d341c0149c92845d58c34673794de1169',
+        ],
+        [
+          'contributions/writer-xml.json',
+          'sha256:1bedf31ef237675eec0c448b2d0f045d3fca91324f2ddae674610d4c73e25c50',
+        ],
+        [
+          'contributions/writer-yaml.json',
+          'sha256:3b5348d5fb3a346272cfa9c406a22b3db8de6c343f0c2979be2a9c4c7b2a2fcd',
         ],
       ],
       documents: [
@@ -3395,6 +3523,326 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           },
         ],
         [
+          'contributions/codec-ini.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'INI text data',
+            id: 'org.modkitx/text-ini',
+            runtimeVariants: [
+              {
+                entrypoint: './src/ini/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/ini/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored'],
+              budgets: {
+                maxDepth: 256,
+                maxDiagnostics: 10000,
+                maxInputBytes: '1073741824',
+                maxNodes: 1000000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'ini',
+                  label: 'INI',
+                  mediaType: 'text/plain',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['ini', 'cfg', 'conf'],
+                mediaTypes: ['text/plain'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'search',
+                  id: 'asset.search',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'parse',
+                  id: 'data.parse',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'serialize',
+                  id: 'data.serialize',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 8192,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 8192,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/text-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.text-data/ini-document',
+                  id: 'syntax-document',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              requires: [
+                {
+                  contract: 'common.text-data/ini-syntax',
+                  major: 1,
+                  range: '^1.0.0',
+                },
+              ],
+              roles: ['semantic'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.text',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.binary',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+              ],
+            },
+          },
+        ],
+        [
+          'contributions/codec-toml.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'TOML text data',
+            id: 'org.modkitx/text-toml',
+            runtimeVariants: [
+              {
+                entrypoint: './src/toml/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/toml/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored'],
+              budgets: {
+                maxDepth: 256,
+                maxDiagnostics: 10000,
+                maxInputBytes: '1073741824',
+                maxNodes: 1000000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'toml',
+                  label: 'TOML',
+                  mediaType: 'application/toml',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['toml'],
+                mediaTypes: ['application/toml'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'search',
+                  id: 'asset.search',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'parse',
+                  id: 'data.parse',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'serialize',
+                  id: 'data.serialize',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 8192,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 8192,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/text-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.text-data/toml-document',
+                  id: 'syntax-document',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              requires: [
+                {
+                  contract: 'common.text-data/toml-syntax',
+                  major: 1,
+                  range: '^1.0.0',
+                },
+              ],
+              roles: ['semantic'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.text',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.binary',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+              ],
+            },
+          },
+        ],
+        [
           'contributions/codec-tsv.json',
           {
             contract: {
@@ -3562,6 +4010,326 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           },
         ],
         [
+          'contributions/codec-xml.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'XML text data',
+            id: 'org.modkitx/text-xml',
+            runtimeVariants: [
+              {
+                entrypoint: './src/xml/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/xml/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored'],
+              budgets: {
+                maxDepth: 256,
+                maxDiagnostics: 10000,
+                maxInputBytes: '1073741824',
+                maxNodes: 1000000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'xml',
+                  label: 'XML',
+                  mediaType: 'application/xml',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['xml'],
+                mediaTypes: ['application/xml'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'search',
+                  id: 'asset.search',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'parse',
+                  id: 'data.parse',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'serialize',
+                  id: 'data.serialize',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 8192,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 8192,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/text-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.text-data/xml-document',
+                  id: 'syntax-document',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              requires: [
+                {
+                  contract: 'common.text-data/xml-syntax',
+                  major: 1,
+                  range: '^1.0.0',
+                },
+              ],
+              roles: ['semantic'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.text',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.binary',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+              ],
+            },
+          },
+        ],
+        [
+          'contributions/codec-yaml.json',
+          {
+            contract: {
+              id: 'org.modkitx/codec-contribution',
+              major: 1,
+            },
+            displayName: 'YAML text data',
+            id: 'org.modkitx/text-yaml',
+            runtimeVariants: [
+              {
+                entrypoint: './src/yaml/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/yaml/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored'],
+              budgets: {
+                maxDepth: 256,
+                maxDiagnostics: 10000,
+                maxInputBytes: '1073741824',
+                maxNodes: 1000000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'yaml',
+                  label: 'YAML',
+                  mediaType: 'application/yaml',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['yaml', 'yml'],
+                mediaTypes: ['application/yaml'],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'search',
+                  id: 'asset.search',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'parse',
+                  id: 'data.parse',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'serialize',
+                  id: 'data.serialize',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 8192,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 8192,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/text-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.text-data/yaml-document',
+                  id: 'syntax-document',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              requires: [
+                {
+                  contract: 'common.text-data/yaml-syntax',
+                  major: 1,
+                  range: '^1.0.0',
+                },
+              ],
+              roles: ['semantic'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.text',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'content.binary',
+                  presence: 'will-expose',
+                  representation: 'source',
+                },
+              ],
+            },
+          },
+        ],
+        [
           'contributions/contract-csv-syntax.json',
           {
             contract: {
@@ -3594,6 +4362,126 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                     kind: 'lease',
                     result: {
                       contract: 'common.view/table-data-source',
+                      major: 1,
+                    },
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                    wrapper: 'lease',
+                  },
+                  parse: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                  serialize: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        [
+          'contributions/contract-ini-syntax.json',
+          {
+            contract: {
+              id: 'org.modkitx/contract-definition',
+              major: 1,
+            },
+            displayName: 'INI syntax service contract',
+            id: 'org.modkitx/ini-syntax-contract',
+            schemaVersion: 1,
+            spec: {
+              conformanceProfile: 'common.text-data/ini-syntax-v1',
+              contract: 'common.text-data/ini-syntax',
+              kind: 'service',
+              major: 1,
+              matching: {
+                major: 1,
+                profile: 'org.modkitx/facetless-matcher',
+              },
+              offerFacet: {
+                presence: 'forbidden',
+              },
+              requestFacet: {
+                presence: 'forbidden',
+              },
+              schemaVersion: 1,
+              surface: {
+                fields: ['contract'],
+                methods: {
+                  dataSource: {
+                    kind: 'lease',
+                    result: {
+                      contract: 'common.view/tree-data-source',
+                      major: 1,
+                    },
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                    wrapper: 'lease',
+                  },
+                  parse: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                  serialize: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        [
+          'contributions/contract-toml-syntax.json',
+          {
+            contract: {
+              id: 'org.modkitx/contract-definition',
+              major: 1,
+            },
+            displayName: 'TOML syntax service contract',
+            id: 'org.modkitx/toml-syntax-contract',
+            schemaVersion: 1,
+            spec: {
+              conformanceProfile: 'common.text-data/toml-syntax-v1',
+              contract: 'common.text-data/toml-syntax',
+              kind: 'service',
+              major: 1,
+              matching: {
+                major: 1,
+                profile: 'org.modkitx/facetless-matcher',
+              },
+              offerFacet: {
+                presence: 'forbidden',
+              },
+              requestFacet: {
+                presence: 'forbidden',
+              },
+              schemaVersion: 1,
+              surface: {
+                fields: ['contract'],
+                methods: {
+                  dataSource: {
+                    kind: 'lease',
+                    result: {
+                      contract: 'common.view/tree-data-source',
                       major: 1,
                     },
                     signal: {
@@ -3682,6 +4570,126 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           },
         ],
         [
+          'contributions/contract-xml-syntax.json',
+          {
+            contract: {
+              id: 'org.modkitx/contract-definition',
+              major: 1,
+            },
+            displayName: 'XML syntax service contract',
+            id: 'org.modkitx/xml-syntax-contract',
+            schemaVersion: 1,
+            spec: {
+              conformanceProfile: 'common.text-data/xml-syntax-v1',
+              contract: 'common.text-data/xml-syntax',
+              kind: 'service',
+              major: 1,
+              matching: {
+                major: 1,
+                profile: 'org.modkitx/facetless-matcher',
+              },
+              offerFacet: {
+                presence: 'forbidden',
+              },
+              requestFacet: {
+                presence: 'forbidden',
+              },
+              schemaVersion: 1,
+              surface: {
+                fields: ['contract'],
+                methods: {
+                  dataSource: {
+                    kind: 'lease',
+                    result: {
+                      contract: 'common.view/tree-data-source',
+                      major: 1,
+                    },
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                    wrapper: 'lease',
+                  },
+                  parse: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                  serialize: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        [
+          'contributions/contract-yaml-syntax.json',
+          {
+            contract: {
+              id: 'org.modkitx/contract-definition',
+              major: 1,
+            },
+            displayName: 'YAML syntax service contract',
+            id: 'org.modkitx/yaml-syntax-contract',
+            schemaVersion: 1,
+            spec: {
+              conformanceProfile: 'common.text-data/yaml-syntax-v1',
+              contract: 'common.text-data/yaml-syntax',
+              kind: 'service',
+              major: 1,
+              matching: {
+                major: 1,
+                profile: 'org.modkitx/facetless-matcher',
+              },
+              offerFacet: {
+                presence: 'forbidden',
+              },
+              requestFacet: {
+                presence: 'forbidden',
+              },
+              schemaVersion: 1,
+              surface: {
+                fields: ['contract'],
+                methods: {
+                  dataSource: {
+                    kind: 'lease',
+                    result: {
+                      contract: 'common.view/tree-data-source',
+                      major: 1,
+                    },
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                    wrapper: 'lease',
+                  },
+                  parse: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                  serialize: {
+                    kind: 'value',
+                    signal: {
+                      arg: 0,
+                      key: 'signal',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        [
           'contributions/provider-csv-default.json',
           {
             contract: {
@@ -3725,6 +4733,106 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                   contract: 'common.text-data/csv-syntax',
                   major: 1,
                   offerId: 'csv-syntax-default-v1',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
+        [
+          'contributions/provider-ini-default.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'ini syntax provider',
+            id: 'org.modkitx/ini-syntax-default',
+            runtimeVariants: [
+              {
+                entrypoint: './src/ini/provider.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/ini/provider.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              outputs: [
+                {
+                  id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'runtime',
+                },
+              ],
+              provides: [
+                {
+                  contract: 'common.text-data/ini-syntax',
+                  major: 1,
+                  offerId: 'ini-syntax-default-v1',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
+        [
+          'contributions/provider-toml-default.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'toml syntax provider',
+            id: 'org.modkitx/toml-syntax-default',
+            runtimeVariants: [
+              {
+                entrypoint: './src/toml/provider.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/toml/provider.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              outputs: [
+                {
+                  id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'runtime',
+                },
+              ],
+              provides: [
+                {
+                  contract: 'common.text-data/toml-syntax',
+                  major: 1,
+                  offerId: 'toml-syntax-default-v1',
                   version: '1.0.0',
                 },
               ],
@@ -3782,6 +4890,106 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           },
         ],
         [
+          'contributions/provider-xml-default.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'xml syntax provider',
+            id: 'org.modkitx/xml-syntax-default',
+            runtimeVariants: [
+              {
+                entrypoint: './src/xml/provider.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/xml/provider.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              outputs: [
+                {
+                  id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'runtime',
+                },
+              ],
+              provides: [
+                {
+                  contract: 'common.text-data/xml-syntax',
+                  major: 1,
+                  offerId: 'xml-syntax-default-v1',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
+        [
+          'contributions/provider-yaml-default.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'yaml syntax provider',
+            id: 'org.modkitx/yaml-syntax-default',
+            runtimeVariants: [
+              {
+                entrypoint: './src/yaml/provider.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/yaml/provider.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              outputs: [
+                {
+                  id: 'structure.hierarchy',
+                  presence: 'will-expose',
+                  representation: 'runtime',
+                },
+              ],
+              provides: [
+                {
+                  contract: 'common.text-data/yaml-syntax',
+                  major: 1,
+                  offerId: 'yaml-syntax-default-v1',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
+        [
           'contributions/writer-delimited.json',
           {
             contract: {
@@ -3792,7 +5000,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             id: 'org.modkitx/text-delimited-writer',
             runtimeVariants: [
               {
-                entrypoint: './src/editing/text-writer.js',
+                entrypoint: './src/editing/delimited-writer.js',
                 executionProfile: 'worker-brokered',
                 requestedPermissionClasses: [],
                 target: {
@@ -3837,405 +5045,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             },
           },
         ],
-      ],
-      files: [
-        'README.md',
-        'contributions/codec-csv.json',
-        'contributions/codec-tsv.json',
-        'contributions/contract-csv-syntax.json',
-        'contributions/contract-tsv-syntax.json',
-        'contributions/provider-csv-default.json',
-        'contributions/provider-tsv-default.json',
-        'contributions/writer-delimited.json',
-        'package.json',
-        'src/csv/codec.js',
-        'src/csv/provider.js',
-        'src/editing/text-writer.js',
-        'src/families/delimited/codec.js',
-        'src/families/delimited/detect.js',
-        'src/families/delimited/entrypoints/csv-codec.js',
-        'src/families/delimited/entrypoints/csv-provider.js',
-        'src/families/delimited/entrypoints/tsv-codec.js',
-        'src/families/delimited/entrypoints/tsv-provider.js',
-        'src/families/delimited/profiles/csv.js',
-        'src/families/delimited/profiles/tsv.js',
-        'src/families/delimited/provider.js',
-        'src/formats.js',
-        'src/index.js',
-        'src/linked.js',
-        'src/tsv/codec.js',
-        'src/tsv/provider.js',
-        'test/fixtures/csv-rfc4180-parity.json',
-      ],
-      name: 'text-delimited',
-      source: 'extensions/common/data/text-csv',
-    },
-    {
-      artifact: {
-        artifactDigest: 'sha256:3e50a3d8ebb2ddbbe7d79f31f0f3c394f8b3c8afd7d045d8fd45417fe4160c52',
-        fileDigests: {
-          'README.md': 'sha256:9519219eb63529bab5e470614ac5a8c5506507cb35e567d4686f73c13023e546',
-          'contributions/codec-ini.json':
-            'sha256:2465934ced06e0f664774977a3fe02e63ff0e484f74362f4671b7d3492880a7e',
-          'contributions/contract-ini-syntax.json':
-            'sha256:aafe6ff6e6465a0ac49865cd594ff360ed796e29dc803668bfd8f83cdd0f9973',
-          'contributions/provider-ini-default.json':
-            'sha256:c22f937193bdc58dccd9c3b0d81f3889df396d0bd57e74b31a77223f4296bff7',
-          'contributions/writer-ini.json':
-            'sha256:d278dfffae415d855276a46335e7668f6ecdf465cc4c3e73b672dc39850abfaf',
-          'package.json': 'sha256:6ce63996e1e5040151e881996d5def7228072dc6319c8374abaaedc14c94896c',
-          'src/editing/text-writer.js':
-            'sha256:2c0fe6dd7b60302cc6ba2e91d995a257e875b81a6af1bda8d23869ead9d7a56c',
-          'src/formats.js':
-            'sha256:a4d3cbdd7e162f66732f3c2dc857e4538c5f2a9794a610d144a1baaf6b6da75f',
-          'src/index.js': 'sha256:4490f78940b58ce6125c3f02a429c6e502a4f8cbb6ebbb01d0693fb06eed5b04',
-          'src/ini/codec.js':
-            'sha256:bc28ceb31c5dd6606d6fe302cf8ffa0b42bcd85ed4f9ca9c95d9a60120e5cef8',
-          'src/ini/definition.js':
-            'sha256:818494714eab867402779285234d227938d606a8737e50d4318ee6aa0cff6c45',
-          'src/ini/provider.js':
-            'sha256:90b04036cffdcb990e1f90e09882377d206081ba02e45cea85e93545422599da',
-          'src/linked.js':
-            'sha256:16ac97135e2a005c455352a1d572a0a4c7f450ec4aa330659637382e111fc517',
-          'test/fixtures/ini-structured-parity.json':
-            'sha256:205a176ec39d8c1adeebd8f9419ff9c9b8e2e2d45f4387541adc7e96c2090df9',
-        },
-        inventoryRecordId:
-          'artifact:sha256:3e50a3d8ebb2ddbbe7d79f31f0f3c394f8b3c8afd7d045d8fd45417fe4160c52',
-      },
-      artifactRoot: 'extensions/text-ini/',
-      containers: {
-        packageJson: {
-          dependencies: {
-            '@modkitx-x3/codec-kit': 'workspace:*',
-          },
-          description: 'Independent dependency-free MK3 INI codec and syntax provider.',
-          exports: {
-            '.': './src/index.js',
-            './formats': './src/formats.js',
-            './formats/ini/codec': './src/ini/codec.js',
-            './formats/ini/provider': './src/ini/provider.js',
-            './linked': './src/linked.js',
-            './package.json': './package.json',
-          },
-          files: ['contributions', 'src', 'README.md'],
-          license: 'MIT',
-          modkit: {
-            contributionManifests: ['./contributions/*.json'],
-            id: 'text-ini',
-            publisher: 'org.modkitx',
-            schemaVersion: 1,
-          },
-          name: 'modkit-extension-x3-text-ini',
-          peerDependencies: {
-            '@modkitx-x3/core': 'workspace:*',
-            '@modkitx-x3/host': 'workspace:*',
-            '@modkitx-x3/sdk': 'workspace:*',
-          },
-          peerDependenciesMeta: {
-            '@modkitx-x3/core': {
-              optional: true,
-            },
-            '@modkitx-x3/host': {
-              optional: true,
-            },
-            '@modkitx-x3/sdk': {
-              optional: true,
-            },
-          },
-          type: 'module',
-          version: '1.0.0',
-        },
-      },
-      documentDigests: [
-        [
-          'contributions/codec-ini.json',
-          'sha256:2465934ced06e0f664774977a3fe02e63ff0e484f74362f4671b7d3492880a7e',
-        ],
-        [
-          'contributions/contract-ini-syntax.json',
-          'sha256:aafe6ff6e6465a0ac49865cd594ff360ed796e29dc803668bfd8f83cdd0f9973',
-        ],
-        [
-          'contributions/provider-ini-default.json',
-          'sha256:c22f937193bdc58dccd9c3b0d81f3889df396d0bd57e74b31a77223f4296bff7',
-        ],
-        [
-          'contributions/writer-ini.json',
-          'sha256:d278dfffae415d855276a46335e7668f6ecdf465cc4c3e73b672dc39850abfaf',
-        ],
-      ],
-      documents: [
-        [
-          'contributions/codec-ini.json',
-          {
-            contract: {
-              id: 'org.modkitx/codec-contribution',
-              major: 1,
-            },
-            displayName: 'INI text data',
-            id: 'org.modkitx/text-ini',
-            runtimeVariants: [
-              {
-                entrypoint: './src/ini/codec.js',
-                executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['node'],
-                },
-                variantId: 'trusted-node',
-              },
-              {
-                entrypoint: './src/ini/codec.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              artifactStages: ['authored'],
-              budgets: {
-                maxDepth: 256,
-                maxDiagnostics: 10000,
-                maxInputBytes: '1073741824',
-                maxNodes: 1000000,
-                maxScalarBytes: 104857600,
-              },
-              formatRefs: [
-                {
-                  formatId: 'ini',
-                  label: 'INI',
-                  mediaType: 'text/plain',
-                },
-              ],
-              implementationTier: {
-                claimed: 1,
-              },
-              match: {
-                extensions: ['ini', 'cfg', 'conf'],
-                mediaTypes: ['text/plain'],
-              },
-              openIntents: ['probe', 'inspect', 'full', 'stream', 'export'],
-              operations: [
-                {
-                  handlerId: 'inspect',
-                  id: 'view.inspect',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'validate',
-                  id: 'asset.validate',
-                  mutatesSource: false,
-                  outputKinds: ['none'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'search',
-                  id: 'asset.search',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'export-raw',
-                  id: 'export.raw',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'parse',
-                  id: 'data.parse',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'serialize',
-                  id: 'data.serialize',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-              ],
-              probe: {
-                kind: 'bytes',
-                maxBytes: 8192,
-                ranges: [
-                  {
-                    from: 'start',
-                    length: 8192,
-                  },
-                ],
-              },
-              publishesDataSources: [
-                {
-                  contract: 'common.view/tree-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/text-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/byte-range-source',
-                  major: 1,
-                },
-              ],
-              representations: [
-                {
-                  contract: 'common.text-data/ini-document',
-                  id: 'syntax-document',
-                  lossy: false,
-                  major: 1,
-                  stage: 'authored',
-                },
-              ],
-              requires: [
-                {
-                  contract: 'common.text-data/ini-syntax',
-                  major: 1,
-                  range: '^1.0.0',
-                },
-              ],
-              roles: ['semantic'],
-              sourceTopology: 'single',
-              traitDeclarations: [
-                {
-                  id: 'structure.hierarchy',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-                {
-                  id: 'content.text',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-                {
-                  id: 'content.binary',
-                  presence: 'will-expose',
-                  representation: 'source',
-                },
-              ],
-            },
-          },
-        ],
-        [
-          'contributions/contract-ini-syntax.json',
-          {
-            contract: {
-              id: 'org.modkitx/contract-definition',
-              major: 1,
-            },
-            displayName: 'INI syntax service contract',
-            id: 'org.modkitx/ini-syntax-contract',
-            schemaVersion: 1,
-            spec: {
-              conformanceProfile: 'common.text-data/ini-syntax-v1',
-              contract: 'common.text-data/ini-syntax',
-              kind: 'service',
-              major: 1,
-              matching: {
-                major: 1,
-                profile: 'org.modkitx/facetless-matcher',
-              },
-              offerFacet: {
-                presence: 'forbidden',
-              },
-              requestFacet: {
-                presence: 'forbidden',
-              },
-              schemaVersion: 1,
-              surface: {
-                fields: ['contract'],
-                methods: {
-                  dataSource: {
-                    kind: 'lease',
-                    result: {
-                      contract: 'common.view/tree-data-source',
-                      major: 1,
-                    },
-                    signal: {
-                      arg: 0,
-                      key: 'signal',
-                    },
-                    wrapper: 'lease',
-                  },
-                  parse: {
-                    kind: 'value',
-                    signal: {
-                      arg: 0,
-                      key: 'signal',
-                    },
-                  },
-                  serialize: {
-                    kind: 'value',
-                    signal: {
-                      arg: 0,
-                      key: 'signal',
-                    },
-                  },
-                },
-              },
-            },
-          },
-        ],
-        [
-          'contributions/provider-ini-default.json',
-          {
-            contract: {
-              id: 'org.modkitx/service-provider-contribution',
-              major: 1,
-            },
-            displayName: 'ini syntax provider',
-            id: 'org.modkitx/ini-syntax-default',
-            runtimeVariants: [
-              {
-                entrypoint: './src/ini/provider.js',
-                executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: [],
-                target: {
-                  environments: ['node'],
-                },
-                variantId: 'trusted-node',
-              },
-              {
-                entrypoint: './src/ini/provider.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: [],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              lifecycleScope: 'session',
-              outputs: [
-                {
-                  id: 'structure.hierarchy',
-                  presence: 'will-expose',
-                  representation: 'runtime',
-                },
-              ],
-              provides: [
-                {
-                  contract: 'common.text-data/ini-syntax',
-                  major: 1,
-                  offerId: 'ini-syntax-default-v1',
-                  version: '1.0.0',
-                },
-              ],
-            },
-          },
-        ],
         [
           'contributions/writer-ini.json',
           {
@@ -4247,7 +5056,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             id: 'org.modkitx/text-ini-writer',
             runtimeVariants: [
               {
-                entrypoint: './src/editing/text-writer.js',
+                entrypoint: './src/editing/ini-writer.js',
                 executionProfile: 'worker-brokered',
                 requestedPermissionClasses: [],
                 target: {
@@ -4278,25 +5087,197 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             },
           },
         ],
+        [
+          'contributions/writer-toml.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'TOML text writer',
+            id: 'org.modkitx/text-toml-writer',
+            runtimeVariants: [
+              {
+                entrypoint: './src/editing/toml-writer.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              provides: [
+                {
+                  contract: 'common.edit/writer',
+                  facet: {
+                    fidelityEvidenceId: 'text-toml-text-writer-v1',
+                    formatId: 'toml',
+                    minimumRoundTrip: 'byte-identical',
+                    mutationMode: 'mutate',
+                    providerId: 'org.modkitx/text-toml-writer',
+                    representationId: 'source',
+                  },
+                  major: 1,
+                  offerId: 'toml-source',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
+        [
+          'contributions/writer-xml.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'XML text writer',
+            id: 'org.modkitx/text-xml-writer',
+            runtimeVariants: [
+              {
+                entrypoint: './src/editing/xml-writer.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              provides: [
+                {
+                  contract: 'common.edit/writer',
+                  facet: {
+                    fidelityEvidenceId: 'text-xml-text-writer-v1',
+                    formatId: 'xml',
+                    minimumRoundTrip: 'byte-identical',
+                    mutationMode: 'mutate',
+                    providerId: 'org.modkitx/text-xml-writer',
+                    representationId: 'source',
+                  },
+                  major: 1,
+                  offerId: 'xml-source',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
+        [
+          'contributions/writer-yaml.json',
+          {
+            contract: {
+              id: 'org.modkitx/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'YAML text writer',
+            id: 'org.modkitx/text-yaml-writer',
+            runtimeVariants: [
+              {
+                entrypoint: './src/editing/yaml-writer.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              provides: [
+                {
+                  contract: 'common.edit/writer',
+                  facet: {
+                    fidelityEvidenceId: 'text-yaml-text-writer-v1',
+                    formatId: 'yaml',
+                    minimumRoundTrip: 'byte-identical',
+                    mutationMode: 'mutate',
+                    providerId: 'org.modkitx/text-yaml-writer',
+                    representationId: 'source',
+                  },
+                  major: 1,
+                  offerId: 'yaml-source',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
       ],
       files: [
         'README.md',
+        'contributions/codec-csv.json',
         'contributions/codec-ini.json',
+        'contributions/codec-toml.json',
+        'contributions/codec-tsv.json',
+        'contributions/codec-xml.json',
+        'contributions/codec-yaml.json',
+        'contributions/contract-csv-syntax.json',
         'contributions/contract-ini-syntax.json',
+        'contributions/contract-toml-syntax.json',
+        'contributions/contract-tsv-syntax.json',
+        'contributions/contract-xml-syntax.json',
+        'contributions/contract-yaml-syntax.json',
+        'contributions/provider-csv-default.json',
         'contributions/provider-ini-default.json',
+        'contributions/provider-toml-default.json',
+        'contributions/provider-tsv-default.json',
+        'contributions/provider-xml-default.json',
+        'contributions/provider-yaml-default.json',
+        'contributions/writer-delimited.json',
         'contributions/writer-ini.json',
+        'contributions/writer-toml.json',
+        'contributions/writer-xml.json',
+        'contributions/writer-yaml.json',
         'package.json',
-        'src/editing/text-writer.js',
+        'src/csv/codec.js',
+        'src/csv/provider.js',
+        'src/editing/delimited-writer.js',
+        'src/editing/ini-writer.js',
+        'src/editing/toml-writer.js',
+        'src/editing/xml-writer.js',
+        'src/editing/yaml-writer.js',
+        'src/families/delimited/codec.js',
+        'src/families/delimited/detect.js',
+        'src/families/delimited/entrypoints/csv-codec.js',
+        'src/families/delimited/entrypoints/csv-provider.js',
+        'src/families/delimited/entrypoints/tsv-codec.js',
+        'src/families/delimited/entrypoints/tsv-provider.js',
+        'src/families/delimited/profiles/csv.js',
+        'src/families/delimited/profiles/tsv.js',
+        'src/families/delimited/provider.js',
         'src/formats.js',
         'src/index.js',
         'src/ini/codec.js',
         'src/ini/definition.js',
         'src/ini/provider.js',
         'src/linked.js',
+        'src/toml/codec.js',
+        'src/toml/definition.js',
+        'src/toml/provider.js',
+        'src/tsv/codec.js',
+        'src/tsv/provider.js',
+        'src/xml/codec.js',
+        'src/xml/definition.js',
+        'src/xml/provider.js',
+        'src/yaml/codec.js',
+        'src/yaml/definition.js',
+        'src/yaml/provider.js',
+        'test/fixtures/csv-rfc4180-parity.json',
         'test/fixtures/ini-structured-parity.json',
       ],
-      name: 'text-ini',
-      source: 'extensions/common/data/text-ini',
+      name: 'data',
+      source: 'extensions/common/data',
     },
     {
       artifact: {
@@ -11087,343 +12068,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       ],
       name: 'video',
       source: 'extensions/common/video',
-    },
-    {
-      artifact: {
-        artifactDigest: 'sha256:88688928d87699f08384cb9eda916b862e8f36e812fb475a8324a8f78c5acb3c',
-        fileDigests: {
-          'README.md': 'sha256:7422973629ab0f7ae9992e7cad2056568cdf769f6bda8790ce877411d302b760',
-          'contributions/codec-ps1-cue-bin.json':
-            'sha256:556e3e8fd00069b9964e1f6374e3b02ffa249ff83dbfb7fe2079a415444592c0',
-          'contributions/codec-ps1-xa.json':
-            'sha256:3599c99c7413e2088ec83e06b042bec0eb38d9e8da134e8c80cc222d9f8d7396',
-          'package.json': 'sha256:5f43de2a6c57512fd5f3acc1015832c31fca97270aff74daf68a40cc7d6d5516',
-          'src/linked.js':
-            'sha256:ab2830cf4340130d1af7d7b136bb2282fc86ec623c65d33519ae70c98f99aef5',
-          'src/ps1-cue-bin/codec.js':
-            'sha256:8e7a5e98f76f882380d9ccc750d786a059819b657b09967213e69a76bd5354f0',
-          'src/ps1-xa/codec.js':
-            'sha256:8448cf49288b23c781bbc6ce0b3abcddf063084a8dff1de5447ffb8044ee19af',
-        },
-        inventoryRecordId:
-          'artifact:sha256:88688928d87699f08384cb9eda916b862e8f36e812fb475a8324a8f78c5acb3c',
-      },
-      artifactRoot: 'extensions/ps1/',
-      containers: {
-        packageJson: {
-          dependencies: {
-            '@modkitx-x3/codec-kit': 'workspace:*',
-          },
-          description: 'Product-owned PlayStation container codecs for MK3.',
-          exports: {
-            './linked': './src/linked.js',
-            './package.json': './package.json',
-          },
-          files: ['contributions', 'src', 'README.md'],
-          license: 'MIT',
-          modkit: {
-            contributionManifests: ['./contributions/*.json'],
-            id: 'ps1',
-            publisher: 'org.modkitx',
-            schemaVersion: 1,
-          },
-          name: 'modkit-extension-x3-ps1',
-          peerDependencies: {
-            '@modkitx-x3/host': 'workspace:*',
-          },
-          peerDependenciesMeta: {
-            '@modkitx-x3/host': {
-              optional: true,
-            },
-          },
-          type: 'module',
-          version: '1.0.0',
-        },
-      },
-      documentDigests: [
-        [
-          'contributions/codec-ps1-cue-bin.json',
-          'sha256:556e3e8fd00069b9964e1f6374e3b02ffa249ff83dbfb7fe2079a415444592c0',
-        ],
-        [
-          'contributions/codec-ps1-xa.json',
-          'sha256:3599c99c7413e2088ec83e06b042bec0eb38d9e8da134e8c80cc222d9f8d7396',
-        ],
-      ],
-      documents: [
-        [
-          'contributions/codec-ps1-cue-bin.json',
-          {
-            contract: {
-              id: 'org.modkitx/codec-contribution',
-              major: 1,
-            },
-            displayName: 'PlayStation CUE/BIN disc image',
-            id: 'org.modkitx/ps1-cue-bin',
-            limitations: [
-              'The CUE is the candidate and its exact FILE name is refined into one required host-resolved BIN companion; the portable codec never resolves filesystem paths.',
-              'The bounded subset supports one BINARY FILE, a zero first INDEX 01, increasing tracks with one physical sector size, and AUDIO, MODE1/2048, MODE1/2352, MODE2/2048, or MODE2/2352 tracks.',
-              'Raw and cooked tracks plus the first ISO 9660 data-track namespace are extractable; raw-sector EDC/ECC validation, Joliet, Rock Ridge, UDF, multi-extent files, pregap materialization, and writing are not implemented.',
-              'The companion is materialized under maxScalarBytes as well as maxInputBytes; larger full-disc images require a future leased random-access companion lifecycle.',
-            ],
-            runtimeVariants: [
-              {
-                entrypoint: './src/ps1-cue-bin/codec.js',
-                executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['node'],
-                },
-                variantId: 'trusted-node',
-              },
-              {
-                entrypoint: './src/ps1-cue-bin/codec.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              artifactStages: ['authored', 'compiled'],
-              budgets: {
-                maxDepth: 64,
-                maxDiagnostics: 1000,
-                maxInputBytes: '1073741824',
-                maxNodes: 100000,
-                maxScalarBytes: 104857600,
-              },
-              companions: [
-                {
-                  id: 'disc-payload',
-                  patterns: ['*.bin', '*.BIN'],
-                  required: true,
-                  role: 'disc-payload',
-                  searchScopes: ['sibling-directory', 'enclosing-container'],
-                },
-              ],
-              formatRefs: [
-                {
-                  formatId: 'ps1-cue-bin',
-                  label: 'PlayStation CUE/BIN disc image',
-                },
-              ],
-              implementationTier: {
-                claimed: 1,
-              },
-              match: {
-                extensions: ['cue'],
-              },
-              openIntents: ['probe', 'inspect', 'full', 'export'],
-              operations: [
-                {
-                  handlerId: 'inspect',
-                  id: 'view.inspect',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'validate',
-                  id: 'asset.validate',
-                  mutatesSource: false,
-                  outputKinds: ['none'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'export-raw',
-                  id: 'export.raw',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'extract-entry',
-                  id: 'container.extract',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-              ],
-              probe: {
-                kind: 'bytes',
-                maxBytes: 4096,
-                ranges: [
-                  {
-                    from: 'start',
-                    length: 4096,
-                  },
-                ],
-              },
-              publishesDataSources: [
-                {
-                  contract: 'common.view/namespace-entry-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/tree-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/byte-range-source',
-                  major: 1,
-                },
-              ],
-              representations: [
-                {
-                  contract: 'common.archive/entry-namespace',
-                  id: 'archive-namespace',
-                  lossy: false,
-                  major: 1,
-                  stage: 'authored',
-                },
-              ],
-              roles: ['container'],
-              sourceTopology: 'bundle',
-            },
-            status: 'partial',
-          },
-        ],
-        [
-          'contributions/codec-ps1-xa.json',
-          {
-            contract: {
-              id: 'org.modkitx/codec-contribution',
-              major: 1,
-            },
-            displayName: 'PlayStation XA indexed stream',
-            id: 'org.modkitx/ps1-xa',
-            limitations: [
-              'The XA payload has no self-contained Westwood file index; without a sibling FAT, the portable codec exposes validated 2336-byte CD-XA sectors with anonymous names.',
-              'Audio, video, and data payload decoding, full 2352-byte raw sectors, writing, and FAT-derived file boundaries are not implemented.',
-            ],
-            runtimeVariants: [
-              {
-                entrypoint: './src/ps1-xa/codec.js',
-                executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['node'],
-                },
-                variantId: 'trusted-node',
-              },
-              {
-                entrypoint: './src/ps1-xa/codec.js',
-                executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
-                target: {
-                  environments: ['browser-worker', 'node-worker'],
-                },
-                variantId: 'portable',
-              },
-            ],
-            schemaVersion: 1,
-            spec: {
-              artifactStages: ['authored', 'compiled'],
-              budgets: {
-                maxDepth: 64,
-                maxDiagnostics: 1000,
-                maxInputBytes: '1073741824',
-                maxNodes: 100000,
-                maxScalarBytes: 104857600,
-              },
-              formatRefs: [
-                {
-                  formatId: 'ps1-xa',
-                  label: 'PlayStation XA indexed stream',
-                },
-              ],
-              implementationTier: {
-                claimed: 1,
-              },
-              match: {
-                extensions: ['xa'],
-              },
-              openIntents: ['probe', 'inspect', 'full', 'export'],
-              operations: [
-                {
-                  handlerId: 'inspect',
-                  id: 'view.inspect',
-                  mutatesSource: false,
-                  outputKinds: ['json'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'validate',
-                  id: 'asset.validate',
-                  mutatesSource: false,
-                  outputKinds: ['none'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'export-raw',
-                  id: 'export.raw',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-                {
-                  handlerId: 'extract-entry',
-                  id: 'container.extract',
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
-                },
-              ],
-              probe: {
-                kind: 'bytes',
-                maxBytes: 4096,
-                ranges: [
-                  {
-                    from: 'start',
-                    length: 4096,
-                  },
-                ],
-              },
-              publishesDataSources: [
-                {
-                  contract: 'common.view/namespace-entry-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/tree-data-source',
-                  major: 1,
-                },
-                {
-                  contract: 'common.view/byte-range-source',
-                  major: 1,
-                },
-              ],
-              representations: [
-                {
-                  contract: 'common.archive/entry-namespace',
-                  id: 'archive-namespace',
-                  lossy: false,
-                  major: 1,
-                  stage: 'authored',
-                },
-              ],
-              roles: ['container'],
-              sourceTopology: 'single',
-            },
-            status: 'supported',
-          },
-        ],
-      ],
-      files: [
-        'README.md',
-        'contributions/codec-ps1-cue-bin.json',
-        'contributions/codec-ps1-xa.json',
-        'package.json',
-        'src/linked.js',
-        'src/ps1-cue-bin/codec.js',
-        'src/ps1-xa/codec.js',
-      ],
-      name: 'ps1',
-      source: 'extensions/ps1',
     },
   ],
   schemaVersion: 1,

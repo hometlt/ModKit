@@ -32,7 +32,7 @@ const budget: ResourceBudget = {
   maxDiagnostics: 200,
 }
 const roots = [
-  ['common', 'data', 'text-xml'],
+  ['common', 'data'],
   ['common', 'archives'],
   ['common', 'documents'],
 ] as const

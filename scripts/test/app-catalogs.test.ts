@@ -57,7 +57,7 @@ describe('deterministic Electron app catalog emission', () => {
     const generated = join(root, 'apps', 'electron', 'generated')
     const bundled = readFileSync(join(generated, 'bundled-catalog.cjs'), 'utf8')
     expect(bundled).toContain("  'common/archives',")
-    expect(bundled).toContain("  'common/data/text-csv',")
+    expect(bundled).toContain("  'common/data',")
     expect(bundled).toContain("  'common/video',")
     expect(bundled).not.toContain('ui-monaco')
     expect(bundled).not.toContain('ui-graph-3d')
@@ -153,14 +153,14 @@ describe('deterministic Electron app catalog emission', () => {
   it('finds a codec root below grouping directories but ignores grouping package.json files', () => {
     const root = fixtureRoot()
     const common = join(root, 'extensions', 'common')
-    const group = join(common, 'data', 'group')
+    const group = join(common, 'group')
     mkdirSync(group, { recursive: true })
     writeFileSync(
       join(group, 'package.json'),
       `${JSON.stringify({ name: 'grouping-only', private: true }, undefined, 2)}\n`,
       'utf8',
     )
-    renameSync(join(common, 'data', 'text-csv'), join(group, 'text-csv'))
+    renameSync(join(common, 'data'), join(group, 'data'))
 
     const emitted = run(root)
     expect(emitted.status, emitted.stderr).toBe(0)
@@ -168,8 +168,8 @@ describe('deterministic Electron app catalog emission', () => {
       join(root, 'apps', 'electron', 'generated', 'bundled-catalog.cjs'),
       'utf8',
     )
-    expect(bundled).toContain("  'common/data/group/text-csv',")
-    expect(bundled).not.toContain("  'common/data/text-csv',")
+    expect(bundled).toContain("  'common/group/data',")
+    expect(bundled).not.toContain("  'common/data',")
     expect(bundled).not.toContain("  'common/data/group',")
   })
 })

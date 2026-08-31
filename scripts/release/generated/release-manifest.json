@@ -6,8 +6,8 @@
       "file": "artifacts/modkitx-platform.tar",
       "id": "platform",
       "kind": "application-and-package-bundle",
-      "sha256": "sha256:3f37cb458699285b48a24b19ce25917e6dfd90feeb8c85cc0df2f32691fc88ef",
-      "size": 50258944
+      "sha256": "sha256:bb4b394f30083772e99b4ce81bc84ed664a9ea398871a8716472ab5e455ceedc",
+      "size": 49001984
     },
     {
       "catalog": [
@@ -49,59 +49,31 @@
           "contributions": [
             "org.modkitx/csv-syntax-contract",
             "org.modkitx/csv-syntax-default",
-            "org.modkitx/text-csv",
-            "org.modkitx/text-delimited-writer",
-            "org.modkitx/text-tsv",
-            "org.modkitx/tsv-syntax-contract",
-            "org.modkitx/tsv-syntax-default"
-          ],
-          "coordinate": "org.modkitx/text-delimited",
-          "root": "extensions/common/data/text-csv",
-          "sourceDigest": "sha256:7b1359a891dd7811e4af034d3f85d1e1e6441e5b2a51f3d47762132631a081f0"
-        },
-        {
-          "contributions": [
             "org.modkitx/ini-syntax-contract",
             "org.modkitx/ini-syntax-default",
+            "org.modkitx/text-csv",
+            "org.modkitx/text-delimited-writer",
             "org.modkitx/text-ini",
-            "org.modkitx/text-ini-writer"
-          ],
-          "coordinate": "org.modkitx/text-ini",
-          "root": "extensions/common/data/text-ini",
-          "sourceDigest": "sha256:3e50a3d8ebb2ddbbe7d79f31f0f3c394f8b3c8afd7d045d8fd45417fe4160c52"
-        },
-        {
-          "contributions": [
+            "org.modkitx/text-ini-writer",
             "org.modkitx/text-toml",
             "org.modkitx/text-toml-writer",
-            "org.modkitx/toml-syntax-contract",
-            "org.modkitx/toml-syntax-default"
-          ],
-          "coordinate": "org.modkitx/text-toml",
-          "root": "extensions/common/data/text-toml",
-          "sourceDigest": "sha256:6838ecb3a924d444d264bb6688bdee98f633f3f680aad42d85c86dfdc3a25e03"
-        },
-        {
-          "contributions": [
+            "org.modkitx/text-tsv",
             "org.modkitx/text-xml",
             "org.modkitx/text-xml-writer",
-            "org.modkitx/xml-syntax-contract",
-            "org.modkitx/xml-syntax-default"
-          ],
-          "coordinate": "org.modkitx/text-xml",
-          "root": "extensions/common/data/text-xml",
-          "sourceDigest": "sha256:8f44e8371eb198c54c0927c63010d76bf30714d6d52a7dba96cbb87c511c5cf0"
-        },
-        {
-          "contributions": [
             "org.modkitx/text-yaml",
             "org.modkitx/text-yaml-writer",
+            "org.modkitx/toml-syntax-contract",
+            "org.modkitx/toml-syntax-default",
+            "org.modkitx/tsv-syntax-contract",
+            "org.modkitx/tsv-syntax-default",
+            "org.modkitx/xml-syntax-contract",
+            "org.modkitx/xml-syntax-default",
             "org.modkitx/yaml-syntax-contract",
             "org.modkitx/yaml-syntax-default"
           ],
-          "coordinate": "org.modkitx/text-yaml",
-          "root": "extensions/common/data/text-yaml",
-          "sourceDigest": "sha256:4e053aee7a7ef5896d4c607c42fd242f834005afc573a35dec2ebdc7ae1a7c65"
+          "coordinate": "org.modkitx/data",
+          "root": "extensions/common/data",
+          "sourceDigest": "sha256:7e011f2d0904ef63697f9af4b7d0498414af2b709d1d3a1a457a581a0cebe767"
         },
         {
           "contributions": [
@@ -203,22 +175,13 @@
           "coordinate": "org.modkitx/video",
           "root": "extensions/common/video",
           "sourceDigest": "sha256:8572b81e40cf60a6f34dafccb6dc1cbe3a616c28665ab7670a346c379ffce81c"
-        },
-        {
-          "contributions": [
-            "org.modkitx/ps1-cue-bin",
-            "org.modkitx/ps1-xa"
-          ],
-          "coordinate": "org.modkitx/ps1",
-          "root": "extensions/ps1",
-          "sourceDigest": "sha256:88688928d87699f08384cb9eda916b862e8f36e812fb475a8324a8f78c5acb3c"
         }
       ],
       "file": "artifacts/modkitx-common.tar",
       "id": "common",
       "kind": "common-extension-bundle",
-      "sha256": "sha256:cf7ee4422cde0b6fc74eb02c9d31f13546b382e37e0c12a85612255ce5b56728",
-      "size": 1615872
+      "sha256": "sha256:365c60599f13f27b135b4948b9b861606cf58c1c984c0ee345f97368ecbd1b4e",
+      "size": 1540096
     }
   ],
   "composition": {
@@ -228,19 +191,19 @@
     "catalogSources": [
       {
         "path": "apps/electron/generated/bundled-catalog.cjs",
-        "sha256": "sha256:38c1581f082e5838521b8373a5b47ec99337e976e3cad704c668b186f80ec4b4"
+        "sha256": "sha256:77cdc5ace61faa87b1f9d5a2b595fecaf49369f9cccea27a425eb39ebe7d81a5"
       },
       {
         "path": "apps/vscode/generated/bundled-catalog.json",
-        "sha256": "sha256:30fdb94d9d2805643d897f6560d18723d934caf8b94d083a99a077e1d58c43cd"
+        "sha256": "sha256:9a675e50209132b6ff743c8c70b1fdaed3d3bc29f888960905e3a64abb9bfc2e"
       },
       {
         "path": "apps/web/generated/extension-catalog.js",
-        "sha256": "sha256:3adbd594dc6933290e75041823c4de49ed43cf3a2f4a74c072d083d710e01964"
+        "sha256": "sha256:70dbb77eae300badb2dcc95db2b501831a80fb8abed536fddbbfd40c7db504f9"
       },
       {
         "path": "config/build-composition.json",
-        "sha256": "sha256:045e19f65426526f9a53748007325d0b7330d7697c31d2ee419c4e5245552101"
+        "sha256": "sha256:ef8e00c525690e9ad9ed5600cc1b1af2a177fd47ac24467aacc6732ba7b3d773"
       },
       {
         "path": "scripts/app-extension-sets.mjs",
@@ -255,26 +218,21 @@
     "commonExtensionRoots": [
       "extensions/common/archives",
       "extensions/common/audio",
-      "extensions/common/data/text-csv",
-      "extensions/common/data/text-ini",
-      "extensions/common/data/text-toml",
-      "extensions/common/data/text-xml",
-      "extensions/common/data/text-yaml",
+      "extensions/common/data",
       "extensions/common/documents",
       "extensions/common/images",
       "extensions/common/models",
       "extensions/common/rendering/rendering-3d",
       "extensions/common/uv-materializer",
       "extensions/common/vector",
-      "extensions/common/video",
-      "extensions/ps1"
+      "extensions/common/video"
     ],
     "externalExtensions": [],
     "source": "config/build-composition.json"
   },
   "licenseNotices": {
     "file": "LICENSE-NOTICES.txt",
-    "sha256": "sha256:5513ee3f74d4f3ef04ed60c72e1013b000a1f26d184177692396b73b6680025e"
+    "sha256": "sha256:44c46061eba12c5b8105fa276a9bca82e8f8e58e440854f9be445edfac1c4c97"
   },
   "release": {
     "authenticode": false,
@@ -295,7 +253,7 @@
   "sbom": {
     "file": "sbom.cdx.json",
     "format": "CycloneDX-1.5",
-    "sha256": "sha256:8b698f909eb6247e887d759469a6e390a80feb5f4528d97d313e44d2bd34e94a"
+    "sha256": "sha256:c904fcb7dad5bb3253c70576fb77844e3dabbfb433118c57df58d49539f4c3d8"
   },
   "schemaVersion": "release-manifest-1",
   "signing": {

@@ -620,11 +620,11 @@
   "packagingBoundary": {
     "state": "already-equivalent",
     "ownerBlockerId": null,
-    "cataloguedCommonRoots": 16,
+    "cataloguedCommonRoots": 11,
     "packagedCodecRoots": 0,
     "deterministicShellArtifact": true,
     "provenVsixCodecArtifact": false,
-    "reason": "The accepted B plus C topology keeps the deterministic VSIX as a 16-root common shell; plain text and JSON are native Core capabilities, while publisher codecs install separately through extension management."
+    "reason": "The accepted B plus C topology keeps the deterministic VSIX as an 11-root common shell; six structured-text codecs share the data extension, plain text and JSON are native Core capabilities, and publisher codecs install separately through extension management."
   },
   "workflows": [
     {

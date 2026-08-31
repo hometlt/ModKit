@@ -45,7 +45,7 @@ import {
 } from '@modkitx-x3/host/node'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const extensionDir = (name: string) => join(repoRoot, 'extensions', 'common', 'data', name)
+const dataExtensionDir = join(repoRoot, 'extensions', 'common', 'data')
 
 const HOST = 'org.example.app/host'
 const WORKERS = 'org.example.app/workers'
@@ -106,7 +106,7 @@ const services = () =>
     createNodeSubjectServices({
       topology,
       realms: { host: HOST, workers: WORKERS },
-      extensions: [await linked(extensionDir('text-ini')), await linked(extensionDir('text-csv'))],
+      extensions: [await linked(dataExtensionDir)],
       policy,
     }))())
 
@@ -372,13 +372,13 @@ describe('A6 — text writers resolve by facet and save through the host coordin
     expect((lease.value as Writer).offer.providerId).toBe('org.modkitx/text-delimited-writer')
     await lease.release()
 
-    // toml is a text format of this lab, but no extension loaded here owns it
+    // RTF is not part of the common data extension loaded by this lab.
     await expect(
       port.port.resolve({
         contract: 'common.edit/writer',
         major: 1,
         facet: {
-          formatId: 'toml',
+          formatId: 'rtf',
           representationId: 'source',
           mutationMode: 'mutate',
           minimumRoundTrip: 'byte-identical',

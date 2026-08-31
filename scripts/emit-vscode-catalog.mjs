@@ -65,7 +65,7 @@ const check = process.argv.includes('--check')
  * through the product's own `modkit.extensions` setting, and the block-9 receipt names the
  * question — and when that decision is made it is made by editing this constant.
  */
-const CATALOG_DIRECTORIES = Object.freeze([Object.freeze(['common']), Object.freeze(['ps1'])])
+const CATALOG_DIRECTORIES = Object.freeze([Object.freeze(['common'])])
 
 /**
  * One canonical host artifact identity per extension root.
@@ -82,10 +82,7 @@ const declaredByRelativePath = new Map(
 )
 const roots = CATALOG_DIRECTORIES.flatMap(path => {
   const catalogRoot = join(repoRoot, 'extensions', ...path)
-  const discovered =
-    path.length === 1 && path[0] === 'ps1'
-      ? [{ directory: catalogRoot, relativePath: '' }]
-      : authoredExtensionRootsRelativeTo(catalogRoot)
+  const discovered = authoredExtensionRootsRelativeTo(catalogRoot)
   return discovered.map(({ directory: absolute, relativePath }) => {
     const physicalPath = [...path, ...(relativePath === '' ? [] : relativePath.split('/'))].join(
       '/',

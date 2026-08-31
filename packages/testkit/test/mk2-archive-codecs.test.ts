@@ -14,7 +14,6 @@ import {
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 const archiveRoot = join(repoRoot, 'extensions', 'common', 'archives')
-const ps1Root = join(repoRoot, 'extensions', 'ps1')
 const fixtureRoot = join(import.meta.dirname, 'fixtures', 'mk2-synthetic')
 
 const cases = Object.freeze([
@@ -23,7 +22,6 @@ const cases = Object.freeze([
   { format: 'lzma', fixture: 'minimal.lzma', entryId: 'payload', extracted: 'payload' },
   { format: 'dmg', fixture: 'minimal.dmg', entryId: 'data-fork', extracted: 'disk' },
   { format: '7z', fixture: 'minimal.7z', entryId: 'file-0', extracted: 'payload' },
-  { format: 'ps1-xa', fixture: 'minimal.xa', entryId: 'sector-0', extracted: 'source' },
 ] as const)
 
 type Case = (typeof cases)[number]
@@ -99,14 +97,7 @@ function inputFor(source: ArtifactByteSource): AssetInput {
 
 async function codecFor(testCase: Case): Promise<Codec> {
   const module = (await import(
-    pathToFileURL(
-      join(
-        testCase.format === 'ps1-xa' ? ps1Root : archiveRoot,
-        'src',
-        testCase.format,
-        'codec.js',
-      ),
-    ).href
+    pathToFileURL(join(archiveRoot, 'src', testCase.format, 'codec.js')).href
   )) as { createCodec(context: ContributionContext): Codec }
   return module.createCodec(context)
 }
@@ -141,8 +132,7 @@ describe('ported MK2 archive subset codecs', () => {
       throw new Error(`${testCase.format} extraction did not return bytes`)
     }
     let expected: Uint8Array
-    if (testCase.extracted === 'source') expected = bytes
-    else if (testCase.extracted === 'disk') {
+    if (testCase.extracted === 'disk') {
       expected = new Uint8Array(512)
       expected.set(new TextEncoder().encode('hello\n'))
     } else expected = new TextEncoder().encode('hello\n')
@@ -166,8 +156,7 @@ describe('ported MK2 archive subset codecs', () => {
   it.each(cases)('$format enforces node and scalar budgets', async testCase => {
     const bytes = await fixture(testCase)
     await expect(open(testCase, bytes, { ...budget, maxNodes: 0 })).rejects.toThrow(/maxNodes/u)
-    const maxScalarBytes = testCase.format === 'ps1-xa' ? 2335 : 5
-    await expect(open(testCase, bytes, { ...budget, maxScalarBytes })).rejects.toThrow(
+    await expect(open(testCase, bytes, { ...budget, maxScalarBytes: 5 })).rejects.toThrow(
       /maxScalarBytes/u,
     )
   })

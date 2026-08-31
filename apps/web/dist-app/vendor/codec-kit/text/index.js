@@ -2,15 +2,16 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../chunks/chunk-FLBNYQSC.js";
+} from "../../../chunks/chunk-RXEZEO4D.js";
 import {
   revisionId
-} from "../../../chunks/chunk-RSMXYLAO.js";
+} from "../../../chunks/chunk-R2Q24OJL.js";
 import {
   diagnostic,
   throwIfAborted,
   uint64
 } from "../../../chunks/chunk-GZ3IOGQJ.js";
+import "../../../chunks/chunk-XNBPKNUQ.js";
 
 // packages/codec-kit/src/text/codec-runtime.js
 var BASE_OPERATIONS = Object.freeze([

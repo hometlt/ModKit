@@ -593,12 +593,13 @@ export function buildLicenseDocuments({ repoRoot, artifacts, releaseVersion }) {
     }
     components.set(ref, component)
     const dependsOn = []
+    const dependencySourceRoot = packageIndex.get(metadata.name) ?? seed.sourceRoot
     for (const dependency of dependencyNames(metadata)) {
       let packagePath
       const workspaceRoot = packageIndex.get(dependency)
       if (workspaceRoot !== undefined) packagePath = join(workspaceRoot, 'package.json')
-      else if (seed.sourceRoot !== undefined) {
-        packagePath = nearestPackageJson(dependency, seed.sourceRoot, repoRoot)
+      else if (dependencySourceRoot !== undefined) {
+        packagePath = nearestPackageJson(dependency, dependencySourceRoot, repoRoot)
       }
       if (packagePath === undefined) {
         const optional =

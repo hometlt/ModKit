@@ -291,6 +291,13 @@ License document: licenses/MIT.txt
 
 ---
 
+modkit-extension-x3-data@1.0.0
+License: MIT
+Metadata: apps/web/dist-app/extensions/data/package.json
+License document: licenses/MIT.txt
+
+---
+
 modkit-extension-x3-documents@1.0.0
 License: MIT
 Metadata: apps/web/dist-app/extensions/documents/package.json
@@ -312,51 +319,9 @@ License document: licenses/MIT.txt
 
 ---
 
-modkit-extension-x3-ps1@1.0.0
-License: MIT
-Metadata: apps/web/dist-app/extensions/ps1/package.json
-License document: licenses/MIT.txt
-
----
-
 modkit-extension-x3-rendering-3d@1.0.0
 License: MIT
 Metadata: extensions/common/rendering/rendering-3d/package.json
-License document: licenses/MIT.txt
-
----
-
-modkit-extension-x3-text-delimited@1.0.0
-License: MIT
-Metadata: apps/web/dist-app/extensions/text-delimited/package.json
-License document: licenses/MIT.txt
-
----
-
-modkit-extension-x3-text-ini@1.0.0
-License: MIT
-Metadata: apps/web/dist-app/extensions/text-ini/package.json
-License document: licenses/MIT.txt
-
----
-
-modkit-extension-x3-text-toml@1.0.0
-License: MIT
-Metadata: extensions/common/data/text-toml/package.json
-License document: licenses/MIT.txt
-
----
-
-modkit-extension-x3-text-xml@1.0.0
-License: MIT
-Metadata: extensions/common/data/text-xml/package.json
-License document: licenses/MIT.txt
-
----
-
-modkit-extension-x3-text-yaml@1.0.0
-License: MIT
-Metadata: extensions/common/data/text-yaml/package.json
 License document: licenses/MIT.txt
 
 ---

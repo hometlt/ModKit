@@ -2,7 +2,7 @@ import {
   AUXILIARY_DATA_SOURCE_SURFACES,
   STANDARD_DATA_SOURCE_SURFACES,
   STANDARD_EDITING_SURFACES
-} from "./chunks/chunk-RSMXYLAO.js";
+} from "./chunks/chunk-R2Q24OJL.js";
 import {
   ModkitError,
   OperationCancelledError,
@@ -10,6 +10,7 @@ import {
   isQualifiedId,
   isSegment
 } from "./chunks/chunk-GZ3IOGQJ.js";
+import "./chunks/chunk-XNBPKNUQ.js";
 
 // packages/host/dist/browser/worker-entry.js
 var CAPABILITY_RPC_DOMAIN = "x3.host/rpc";

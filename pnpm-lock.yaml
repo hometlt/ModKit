@@ -222,86 +222,26 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/sdk
 
-  extensions/common/data/text-csv:
+  extensions/common/data:
     dependencies:
       '@modkitx-x3/codec-kit':
         specifier: workspace:*
-        version: link:../../../../packages/codec-kit
+        version: link:../../../packages/codec-kit
       '@modkitx-x3/core':
         specifier: workspace:*
-        version: link:../../../../packages/core
+        version: link:../../../packages/core
       '@modkitx-x3/host':
         specifier: workspace:*
-        version: link:../../../../packages/host
+        version: link:../../../packages/host
       '@modkitx-x3/sdk':
         specifier: workspace:*
-        version: link:../../../../packages/sdk
-
-  extensions/common/data/text-ini:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../../packages/codec-kit
-      '@modkitx-x3/core':
-        specifier: workspace:*
-        version: link:../../../../packages/core
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../../../packages/sdk
-
-  extensions/common/data/text-toml:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../../packages/codec-kit
-      '@modkitx-x3/core':
-        specifier: workspace:*
-        version: link:../../../../packages/core
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../../../packages/sdk
-      smol-toml:
-        specifier: ^1.8.0
-        version: 1.8.0
-
-  extensions/common/data/text-xml:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../../packages/codec-kit
-      '@modkitx-x3/core':
-        specifier: workspace:*
-        version: link:../../../../packages/core
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../../../packages/sdk
+        version: link:../../../packages/sdk
       '@rgrove/parse-xml':
         specifier: ^4.2.3
         version: 4.2.3
-
-  extensions/common/data/text-yaml:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../../../packages/codec-kit
-      '@modkitx-x3/core':
-        specifier: workspace:*
-        version: link:../../../../packages/core
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../../../packages/host
-      '@modkitx-x3/sdk':
-        specifier: workspace:*
-        version: link:../../../../packages/sdk
+      smol-toml:
+        specifier: ^1.8.0
+        version: 1.8.0
       yaml:
         specifier: ^2.9.0
         version: 2.9.0
@@ -392,15 +332,6 @@ importers:
       '@modkitx-x3/sdk':
         specifier: workspace:*
         version: link:../../../packages/sdk
-
-  extensions/ps1:
-    dependencies:
-      '@modkitx-x3/codec-kit':
-        specifier: workspace:*
-        version: link:../../packages/codec-kit
-      '@modkitx-x3/host':
-        specifier: workspace:*
-        version: link:../../packages/host
 
   packages/codec-kit:
     dependencies:

@@ -15,6 +15,7 @@
  */
 import { build } from 'esbuild'
 import { createServer } from 'node:http'
+import { createRequire } from 'node:module'
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, extname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -28,6 +29,8 @@ import {
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
 const repoRoot = resolve(appRoot, '..', '..')
+const dataRequire = createRequire(join(repoRoot, 'extensions', 'common', 'data', 'package.json'))
+const dependencyRoot = name => dirname(dirname(dataRequire.resolve(name)))
 const outIndex = process.argv.indexOf('--out')
 const requestedOut = outIndex === -1 ? undefined : process.argv[outIndex + 1]
 if (outIndex !== -1 && (requestedOut === undefined || requestedOut.startsWith('--'))) {
@@ -125,6 +128,9 @@ await build({
     ),
     'vendor/core/index': join(repoRoot, 'packages', 'core', 'dist', 'index.js'),
     'vendor/sdk/index': join(repoRoot, 'packages', 'sdk', 'dist', 'index.js'),
+    'vendor/parse-xml/index': join(dependencyRoot('@rgrove/parse-xml'), 'dist', 'browser.js'),
+    'vendor/smol-toml/index': join(dependencyRoot('smol-toml'), 'dist', 'index.js'),
+    'vendor/yaml/index': join(dependencyRoot('yaml'), 'browser', 'index.js'),
   },
   outdir: dist,
   bundle: true,

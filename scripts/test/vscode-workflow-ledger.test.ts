@@ -430,7 +430,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
     expect(ledger.packagingBoundary).toMatchObject({
       state: 'already-equivalent',
       ownerBlockerId: null,
-      cataloguedCommonRoots: 16,
+      cataloguedCommonRoots: 11,
       packagedCodecRoots: 0,
       deterministicShellArtifact: true,
       provenVsixCodecArtifact: false,

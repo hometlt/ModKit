@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "org.modkitx/service-provider-contribution",
+    "major": 1
+  },
+  "id": "org.modkitx/toml-syntax-default",
+  "displayName": "toml syntax provider",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/toml/provider.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/toml/provider.js",
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "toml-syntax-default-v1",
+        "contract": "common.text-data/toml-syntax",
+        "major": 1,
+        "version": "1.0.0"
+      }
+    ],
+    "lifecycleScope": "session",
+    "outputs": [
+      {
+        "id": "structure.hierarchy",
+        "representation": "runtime",
+        "presence": "will-expose"
+      }
+    ]
+  }
+}

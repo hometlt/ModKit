@@ -169,7 +169,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'extensions/common/data/text-ini'
+    owner: 'extensions/common/data'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds: []
@@ -361,7 +361,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'extensions/common/data/text-toml'
+    owner: 'extensions/common/data'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds: []
@@ -417,14 +417,14 @@ capabilities:
     closedBy:
       commits: []
       tests:
-        - 'extensions/common/data/text-toml/contributions/writer-toml.json'
+        - 'extensions/common/data/contributions/writer-toml.json'
       reports: []
   - capabilityId: 'addition/text-tsv/open-edit'
     userScenario: 'Открыть «Табличный TSV» через общий text-data контракт, отредактировать и сохранить его без форматной ветки в приложении.'
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'extensions/common/data/text-csv'
+    owner: 'extensions/common/data'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds: []
@@ -483,7 +483,7 @@ capabilities:
       commits:
         - '05912d0'
       tests:
-        - 'extensions/common/data/text-csv/contributions/writer-delimited.json'
+        - 'extensions/common/data/contributions/writer-delimited.json'
         - 'packages/testkit/test/text-data.test.ts'
       reports:
         - 'docs/MK3/plans/PLAN_MODKIT_MK3_FINAL_RU.md#блок-11-slice-11a'
@@ -492,7 +492,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'extensions/common/data/text-xml'
+    owner: 'extensions/common/data'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds: []
@@ -548,14 +548,14 @@ capabilities:
     closedBy:
       commits: []
       tests:
-        - 'extensions/common/data/text-xml/contributions/writer-xml.json'
+        - 'extensions/common/data/contributions/writer-xml.json'
       reports: []
   - capabilityId: 'addition/text-yaml/open-edit'
     userScenario: 'Открыть «YAML-документ» через общий text-data контракт, отредактировать и сохранить его без форматной ветки в приложении.'
     releaseTrack: 'mk3-priority'
     origin: 'owner-addition'
     obligation: 'focused-required-addition'
-    owner: 'extensions/common/data/text-yaml'
+    owner: 'extensions/common/data'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds: []
@@ -611,7 +611,7 @@ capabilities:
     closedBy:
       commits: []
       tests:
-        - 'extensions/common/data/text-yaml/contributions/writer-yaml.json'
+        - 'extensions/common/data/contributions/writer-yaml.json'
       reports: []
   - capabilityId: 'block9/archive-entry-as-subject'
     userScenario: 'Открыть запись архива как самостоятельный субъект.'
@@ -756,7 +756,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/data/text-csv'
+    owner: 'extensions/common/data'
     plannedBlock: 11
     dependsOn:
       - 'format/csv/open-inspect'
@@ -3883,7 +3883,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/data/text-csv'
+    owner: 'extensions/common/data'
     plannedBlock: 11
     dependsOn: []
     sourceUnitIds:

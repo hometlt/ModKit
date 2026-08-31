@@ -133,7 +133,7 @@
     },
     {
       "package": "@modkitx/data-processing",
-      "owner": "extensions/common/data/text-csv",
+      "owner": "extensions/common/data",
       "state": "ported",
       "note": "plus native Core JSON and the text-ini/text-toml/text-yaml families; one legacy package fanned out to the delimited and structured-text implementations"
     },
@@ -306,9 +306,9 @@
     },
     {
       "package": "@modkitx/xml",
-      "owner": "extensions/common/data/text-xml",
+      "owner": "extensions/common/data",
       "state": "demoted",
-      "note": "owner decision 2026-08-24: demoted from the package catalog to the XML extension family. Shared codec helpers may live in optional codec-kit, while the user-visible XML implementation and ownership stay in common/data/text-xml."
+      "note": "owner decision 2026-08-24: demoted from the package catalog to the common data extension. Shared codec helpers may live in optional codec-kit, while the user-visible XML implementation and ownership stay in common/data."
     }
   ],
   "decisions": [
