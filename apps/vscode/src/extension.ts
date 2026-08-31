@@ -59,10 +59,12 @@ import {
   configuredDisabledContributions,
   configuredDisabledExtensions,
   describeConfiguredExtensions,
+  withContributionDisabled,
   withExtensionRoot,
 } from './extension-roots.js'
 import {
   createExtensionTree,
+  extensionActionContextValue,
   extensionTreeChildren,
   OPEN_CONTRIBUTION_COMMAND,
   OPEN_EXTENSION_COMMAND,
@@ -262,9 +264,8 @@ function panelHtml(options: PanelPageOptions): string {
 /**
  * Native extension-manager surface.
  *
- * The four groups intentionally overlap: an enabled extension is installed too, while an update
- * is both installed and available. The labels answer the user's four separate questions without
- * making them infer state from one overloaded icon.
+ * Installed packages own their contributions. Availability is a separate catalogue question, and
+ * problems remain visible without repeating installed packages in state-specific root groups.
  */
 class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.Disposable {
   private readonly changed = new vscode.EventEmitter<ExtensionNode | undefined>()
@@ -291,7 +292,7 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
       const count = node.entries?.length ?? node.problems?.length ?? 0
       const item = new vscode.TreeItem(
         `${node.label} (${count})`,
-        node.group === 'updates' && count > 0
+        node.group === 'installed' && count > 0
           ? vscode.TreeItemCollapsibleState.Expanded
           : vscode.TreeItemCollapsibleState.Collapsed,
       )
@@ -343,10 +344,7 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
         `${node.pendingReload ? ` · ${this.localizer.text('extensions.state.afterReload')}` : ''}\n` +
         this.localizer.text('extensions.tooltip.origin', { origin: contribution.origin })
       item.iconPath = new vscode.ThemeIcon(node.enabled ? 'pass-filled' : 'circle-slash')
-      item.contextValue =
-        contribution.id === undefined
-          ? 'modkitContribution.invalid'
-          : `modkitContribution.${node.configuredDisabled ? 'disabled' : 'enabled'}`
+      item.contextValue = extensionActionContextValue(node)
       if (contribution.id !== undefined) {
         item.command = {
           command: OPEN_CONTRIBUTION_COMMAND,
@@ -383,32 +381,13 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
           : 'extensions.tooltip.unverifiedPublisher',
       )
     item.iconPath = new vscode.ThemeIcon(
-      node.group === 'updates'
-        ? 'cloud-download'
-        : node.group === 'available'
-          ? 'cloud-download'
-          : entry.enabled
-            ? 'extensions'
-            : 'circle-slash',
+      node.group === 'available' ? 'cloud-download' : entry.enabled ? 'extensions' : 'circle-slash',
     )
-    item.contextValue =
-      entry.installedVersion === undefined
-        ? 'modkitExtension.available'
-        : entry.updateAvailable
-          ? `modkitExtension.installed.${entry.enabled ? 'enabled' : 'disabled'}.update`
-          : `modkitExtension.installed.${entry.enabled ? 'enabled' : 'disabled'}`
-    if (node.group === 'updates') {
-      item.command = {
-        command: 'modkit.extensions.update',
-        title: this.localizer.text('extensions.action.updateExtension'),
-        arguments: [entry.id],
-      }
-    } else {
-      item.command = {
-        command: OPEN_EXTENSION_COMMAND,
-        title: this.localizer.text('extensions.action.openExtensionCard'),
-        arguments: [{ kind: 'extension', id: entry.id } as const],
-      }
+    item.contextValue = extensionActionContextValue(node)
+    item.command = {
+      command: OPEN_EXTENSION_COMMAND,
+      title: this.localizer.text('extensions.action.openExtensionCard'),
+      arguments: [{ kind: 'extension', id: entry.id } as const],
     }
     return item
   }
@@ -2137,6 +2116,63 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     return typeof id === 'string' && id.length > 0 ? id : undefined
   }
 
+  const contributionEntryId = (argument: unknown): string | undefined => {
+    if (typeof argument === 'string' && argument.length > 0) return argument
+    if (typeof argument !== 'object' || argument === null) return undefined
+    if ('contribution' in argument) {
+      const contribution = (argument as { readonly contribution?: { readonly id?: unknown } })
+        .contribution
+      if (typeof contribution?.id === 'string') return contribution.id
+    }
+    const id = (argument as { readonly id?: unknown }).id
+    return typeof id === 'string' && id.length > 0 ? id : undefined
+  }
+
+  const pickCodecContribution = async (enabled: boolean): Promise<string | undefined> => {
+    const disabled = new Set(
+      configuredDisabledContributions(configuration.readDisabledContributions()).ids,
+    )
+    const choices = host.contributions
+      .filter(
+        contribution =>
+          contribution.id !== undefined &&
+          contribution.contract === 'org.modkitx/codec-contribution' &&
+          disabled.has(contribution.id) === enabled,
+      )
+      .map(contribution => ({
+        label: contribution.displayName,
+        description: contribution.id,
+        id: contribution.id as string,
+      }))
+      .sort((left, right) => left.label.localeCompare(right.label))
+    const picked = await vscode.window.showQuickPick(choices, {
+      title: `${localizer.text(
+        enabled ? 'extensions.action.enableContribution' : 'extensions.action.disableContribution',
+      )}…`,
+    })
+    return picked?.id
+  }
+
+  const setCodecContributionEnabled = async (
+    argument: unknown,
+    enabled: boolean,
+  ): Promise<void> => {
+    const id = contributionEntryId(argument) ?? (await pickCodecContribution(enabled))
+    if (id === undefined) return
+    const { next, changed } = withContributionDisabled(
+      configuration.readDisabledContributions(),
+      id,
+      !enabled,
+    )
+    if (!changed) {
+      void vscode.window.showInformationMessage(
+        `${id}: ${localizer.text(enabled ? 'common.enabled' : 'common.disabled')}`,
+      )
+      return
+    }
+    await configuration.write('disabledContributions', next)
+  }
+
   const openExtensionCard = async (argument: unknown): Promise<void> => {
     if (typeof argument !== 'object' || argument === null) return
     const value = argument as {
@@ -2318,6 +2354,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         )
       }
     }),
+
+    vscode.commands.registerCommand('modkit.extensions.enableContribution', (argument: unknown) =>
+      setCodecContributionEnabled(argument, true),
+    ),
+
+    vscode.commands.registerCommand('modkit.extensions.disableContribution', (argument: unknown) =>
+      setCodecContributionEnabled(argument, false),
+    ),
 
     vscode.commands.registerCommand('modkit.extensions.enable', async (argument: unknown) => {
       const id =

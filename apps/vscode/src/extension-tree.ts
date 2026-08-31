@@ -68,6 +68,31 @@ export type ExtensionNode =
   | ContributionNode
   | ExtensionProblemNode
 
+/** Context value consumed by VS Code's inline `view/item/context` actions. */
+export function extensionActionContextValue(node: ExtensionEntryNode | ContributionNode): string {
+  if (node.kind === 'contribution') {
+    if (node.contribution.id === undefined) return 'modkitContribution.invalid'
+    if (
+      node.group === 'installed' &&
+      node.contribution.contract === 'org.modkitx/codec-contribution'
+    ) {
+      return `modkitContribution.codec.${node.configuredDisabled ? 'disabled' : 'enabled'}`
+    }
+    return `modkitContribution.${node.configuredDisabled ? 'disabled' : 'enabled'}`
+  }
+
+  const { entry } = node
+  if (entry.installedVersion === undefined) return 'modkitExtension.available'
+  const immutable =
+    entry.source === 'bundled' ||
+    entry.source === 'workspace' ||
+    entry.source === 'configured' ||
+    entry.source.startsWith('local:') ||
+    entry.source.startsWith('managed:')
+  if (immutable) return 'modkitExtension.installed.immutable'
+  return `modkitExtension.installed.mutable${entry.updateAvailable ? '.update' : ''}`
+}
+
 export interface CreateExtensionTreeOptions {
   readonly entries: readonly ExtensionManagerEntry[]
   readonly contributions: readonly ContributionRow[]

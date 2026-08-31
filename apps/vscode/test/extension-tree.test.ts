@@ -5,8 +5,10 @@ import { createUiLocalizer } from '@modkitx-x3/ui/localization'
 import type { ContributionRow } from '../src/contributions.js'
 import {
   createExtensionTree,
+  extensionActionContextValue,
   extensionTreeChildren,
   type ContributionContractNode,
+  type ContributionNode,
   type ExtensionEntryNode,
 } from '../src/extension-tree.js'
 
@@ -95,6 +97,47 @@ function model() {
 }
 
 describe('VS Code extension contribution tree', () => {
+  it('exposes hover actions only for installed codecs and mutable packages', () => {
+    const installedGroup = required(
+      model().find(group => group.group === 'installed'),
+      'installed group is missing',
+    )
+    const availableGroup = required(
+      model().find(group => group.group === 'available'),
+      'available group is missing',
+    )
+    const installedEntry = required(
+      installedGroup.entries?.find(node => node.entry.id === installed.id),
+      'installed entry is missing',
+    )
+    const availableEntry = required(availableGroup.entries?.[0], 'available entry is missing')
+    const codecContract = (
+      extensionTreeChildren(installedEntry, [
+        'org.example/model-b',
+      ]) as readonly ContributionContractNode[]
+    ).find(node => node.contract === 'org.modkitx/codec-contribution' && node.contractMajor === 1)
+    const codecs = extensionTreeChildren(required(codecContract, 'codec contract is missing'), [
+      'org.example/model-b',
+    ]) as readonly ContributionNode[]
+
+    expect(extensionActionContextValue(installedEntry)).toBe('modkitExtension.installed.immutable')
+    expect(extensionActionContextValue(availableEntry)).toBe('modkitExtension.available')
+    expect(codecs.map(extensionActionContextValue)).toEqual([
+      'modkitContribution.codec.enabled',
+      'modkitContribution.codec.disabled',
+    ])
+    expect(
+      extensionActionContextValue({
+        ...installedEntry,
+        entry: {
+          ...installedEntry.entry,
+          source: 'https://registry.example/modkit.tgz',
+          updateAvailable: true,
+        },
+      }),
+    ).toBe('modkitExtension.installed.mutable.update')
+  })
+
   it('nests real contributions under their exact owner extension and contract pair', () => {
     const installedGroup = required(
       model().find(group => group.group === 'installed'),
@@ -208,11 +251,7 @@ describe('VS Code extension contribution tree', () => {
       problems: [],
       localizer: createUiLocalizer('ru'),
     })
-    expect(localized.map(group => group.label)).toEqual([
-      'Установленные',
-      'Доступные',
-      'Проблемы',
-    ])
+    expect(localized.map(group => group.label)).toEqual(['Установленные', 'Доступные', 'Проблемы'])
     const installedGroup = required(
       localized.find(group => group.group === 'installed'),
       'installed group is missing',
