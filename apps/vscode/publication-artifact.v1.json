@@ -1,5 +1,5 @@
 {
-  "$comment": "Exact top-level inventory of the deterministic VS Code publication artifact. The build checks every fresh output against this list; named catalog roots are not packaged codec roots.",
+  "$comment": "Exact top-level inventory of the deterministic VS Code publication artifact. The build checks every fresh output against this list; listed extensions roots are exact and their physical production dependency closure lives under extensions/node_modules.",
   "schemaVersion": 1,
   "artifactKind": "deterministic-shell",
   "shellEntries": [
@@ -9,5 +9,14 @@
     "webview.js",
     "worker-bootstrap.js"
   ],
-  "packagedCodecRoots": []
+  "packagedCodecRoots": [
+    "extensions/archives",
+    "extensions/audio",
+    "extensions/data",
+    "extensions/documents",
+    "extensions/images",
+    "extensions/models",
+    "extensions/vector",
+    "extensions/video"
+  ]
 }

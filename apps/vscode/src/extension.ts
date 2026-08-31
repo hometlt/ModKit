@@ -40,6 +40,11 @@ import {
 
 import type { CloseAnswer, WebviewChannel } from './bridge.js'
 import {
+  createA7AcceptanceReceipt,
+  createModkitAcceptanceReceipt,
+  type ModkitAcceptanceReceipt,
+} from './acceptance.js'
+import {
   containerUriPath,
   CONTAINER_SCHEME,
   parseContainerUriPath,
@@ -233,6 +238,7 @@ interface PanelPageOptions {
   readonly session: string
   readonly locale: UiLocale
   readonly localizationCatalogs: readonly UiCatalogDocument[]
+  readonly acceptance: ModkitAcceptanceReceipt
   readonly openPath?: string
   readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
 }
@@ -273,6 +279,7 @@ function panelHtml(options: PanelPageOptions): string {
       supportedExtensions: options.host.supportedExtensions,
       extensions: options.host.extensions,
       diagnostics: options.host.services.host.inventory.diagnostics.length,
+      acceptance: options.acceptance,
       ...(options.openPath === undefined ? {} : { openPath: options.openPath }),
       ...(options.extensionCard === undefined ? {} : { extensionCard: options.extensionCard }),
     },
@@ -804,6 +811,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     onDiagnostic: diagnostic =>
       log(`[worker] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`),
   })
+  const acceptance = createModkitAcceptanceReceipt(
+    createA7AcceptanceReceipt(BUNDLED_CATALOG.roots, {
+      roots: host.extensions.bundled,
+      contributions: host.contributions,
+      loadErrors: host.bundledLoadErrors,
+    }),
+  )
   let localizationCatalogs: readonly UiCatalogDocument[] = Object.freeze([])
   const localizationVfs = createNodeExtensionVfs(managerSecurity.vfsOptions).vfs
   try {
@@ -2047,6 +2061,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       session,
       locale: localizer.locale,
       localizationCatalogs,
+      acceptance,
       ...(openPath === undefined ? {} : { openPath }),
       ...(displayedExtensionCard === undefined ? {} : { extensionCard: displayedExtensionCard }),
     })

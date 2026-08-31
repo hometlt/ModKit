@@ -95,7 +95,7 @@ const receipt = {
     retained: keepProfile,
   },
   package: {
-    command: 'pnpm --dir <app> run package:vsix -- --out <artifact>',
+    command: 'pnpm --dir <app> package:vsix -- --out <artifact>',
     launcher: null,
     invokedFromCleanTemp: suppliedVsix === undefined,
     attempted: false,
@@ -250,7 +250,7 @@ function packageVsix() {
   if (suppliedVsix !== undefined) return
   receipt.package.attempted = true
   const result = runPnpm(
-    ['--dir', appRoot, 'run', 'package:vsix', '--', '--out', artifactPath],
+    ['--dir', appRoot, 'package:vsix', '--', '--out', artifactPath],
     // The product command owns its staging directory; invoking it from another clean temp proves
     // that it does not inherit cwd files or require a monorepo-positioned staging package.
     { cwd: scratch },

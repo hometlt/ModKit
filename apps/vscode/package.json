@@ -24,6 +24,7 @@
     "ext:build": "node scripts/build-extension.mjs",
     "prepack": "pnpm ext:build",
     "vscode:prepublish": "pnpm ext:build",
+    "package:vsix": "node scripts/package-vsix.mjs",
     "smoke:vscode": "node test-e2e/run-smoke.mjs",
     "smoke:vscode:lifecycle": "node test-e2e/run-lifecycle-smoke.mjs",
     "test:e2e:installed": "node test-e2e/run-installed-acceptance.mjs",
@@ -39,6 +40,7 @@
     "@modkit/uv": "workspace:*"
   },
   "devDependencies": {
+    "@vscode/vsce": "3.9.2",
     "@types/vscode": "^1.125.0",
     "@vscode/test-electron": "^3.1.0"
   },
@@ -46,7 +48,7 @@
   "description": "%extension.description%",
   "publisher": "modkit",
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.125.0"
   },
   "main": "./dist-app/extension.cjs",
   "categories": [

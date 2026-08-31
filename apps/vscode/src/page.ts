@@ -18,6 +18,7 @@
 /** The two things this module needs from `vscode.Webview`. */
 import type { UiCatalogDocument, UiLocale, UiLocalizer } from '@modkit/ui/localization'
 
+import type { ModkitAcceptanceReceipt } from './acceptance.js'
 import { createVscodeLocalizer } from './localization.js'
 
 export interface WebviewLike {
@@ -42,6 +43,8 @@ export interface PageBootstrap {
   readonly supportedExtensions: readonly string[]
   readonly extensions: unknown
   readonly diagnostics: number
+  /** Path-free, immutable installed-product receipt exposed by the page under a stable name. */
+  readonly acceptance: ModkitAcceptanceReceipt
   readonly openPath?: string
   /** Function-free extension/contribution subject cards for the generic subject-card renderer. */
   readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle

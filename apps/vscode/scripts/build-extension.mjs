@@ -17,14 +17,18 @@ import { build } from 'esbuild'
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { builtinModules } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -33,6 +37,9 @@ const appRoot = resolve(here, '..')
 const repoRoot = resolve(appRoot, '..', '..')
 const publicationInventoryPath = join(appRoot, 'publication-artifact.v1.json')
 const publicationInventory = JSON.parse(readFileSync(publicationInventoryPath, 'utf8'))
+const bundledCatalog = JSON.parse(
+  readFileSync(join(appRoot, 'generated', 'bundled-catalog.json'), 'utf8'),
+)
 
 if (
   publicationInventory.schemaVersion !== 1 ||
@@ -62,13 +69,293 @@ function assertPublicationArtifact(output) {
   ) {
     throw new TypeError('VS Code publication artifact entries must be unique non-empty strings')
   }
-  const expectedEntries = [...shellEntries, ...packagedCodecRoots].sort()
+  const rootDirectories = new Map()
+  for (const root of packagedCodecRoots) {
+    const segments = root.split('/')
+    if (
+      segments.length !== 2 ||
+      segments[0] !== 'extensions' ||
+      segments.some(segment => segment.length === 0 || segment === '.' || segment === '..')
+    ) {
+      throw new TypeError(
+        `VS Code packaged codec root must be an extensions/<root> path, found ${root}`,
+      )
+    }
+    rootDirectories.set(root, segments[1])
+  }
+  const expectedEntries = [
+    ...new Set([...shellEntries, ...rootDirectories.keys()].map(entry => entry.split('/')[0])),
+  ].sort()
   const actualEntries = readdirSync(output).sort()
   if (JSON.stringify(actualEntries) !== JSON.stringify(expectedEntries)) {
     throw new Error(
       `VS Code publication artifact inventory drifted: expected ${expectedEntries.join(', ')}, found ${actualEntries.join(', ')}`,
     )
   }
+  const extensionDirectory = join(output, 'extensions')
+  const actualRoots = readdirSync(extensionDirectory, { withFileTypes: true })
+    .filter(entry => entry.isDirectory() && entry.name !== 'node_modules')
+    .map(entry => entry.name)
+    .sort()
+  const expectedRoots = [...rootDirectories.values()].sort()
+  if (JSON.stringify(actualRoots) !== JSON.stringify(expectedRoots)) {
+    throw new Error(
+      `VS Code packaged codec root inventory drifted: expected ${expectedRoots.join(', ')}, found ${actualRoots.join(', ')}`,
+    )
+  }
+  for (const root of rootDirectories.keys()) {
+    const path = join(output, ...root.split('/'))
+    if (!existsSync(path) || !statSync(path).isDirectory()) {
+      throw new Error(`VS Code packaged codec root is missing: ${root}`)
+    }
+  }
+}
+
+function packageSegments(name) {
+  const segments = name.split('/')
+  if (
+    (name.startsWith('@') && segments.length !== 2) ||
+    (!name.startsWith('@') && segments.length !== 1) ||
+    segments.some(segment => segment.length === 0 || segment === '.' || segment === '..')
+  ) {
+    throw new TypeError(`invalid package name in production closure: ${name}`)
+  }
+  return segments
+}
+
+function packageNameFromSpecifier(specifier) {
+  if (specifier.startsWith('@'))
+    return packageSegments(specifier.split('/').slice(0, 2).join('/')).join('/')
+  return packageSegments(specifier.split('/')[0]).join('/')
+}
+
+function copyPhysicalTree(source, destination) {
+  const stat = lstatSync(source)
+  if (stat.isSymbolicLink()) {
+    throw new Error(`production package input must not be a symlink or junction: ${source}`)
+  }
+  if (stat.isDirectory()) {
+    mkdirSync(destination, { recursive: true })
+    for (const entry of readdirSync(source).sort()) {
+      if (entry === 'node_modules') continue
+      copyPhysicalTree(join(source, entry), join(destination, entry))
+    }
+    return
+  }
+  if (!stat.isFile()) throw new Error(`unsupported production package entry: ${source}`)
+  cpSync(source, destination)
+}
+
+function copyWorkspacePackage(source, destination, manifest) {
+  copyPhysicalTree(join(source, 'package.json'), join(destination, 'package.json'))
+  if (!Array.isArray(manifest.files)) {
+    throw new Error(`workspace production package has no files whitelist: ${manifest.name}`)
+  }
+  for (const entry of manifest.files) {
+    if (
+      typeof entry !== 'string' ||
+      entry.length === 0 ||
+      entry.includes('*') ||
+      entry.includes('/') ||
+      entry.includes('\\') ||
+      entry === '.' ||
+      entry === '..'
+    ) {
+      throw new Error(
+        `workspace production files whitelist has an unsupported entry: ${manifest.name}/${entry}`,
+      )
+    }
+    const input = join(source, entry)
+    if (!existsSync(input)) {
+      throw new Error(
+        `workspace production files whitelist entry is missing: ${manifest.name}/${entry}`,
+      )
+    }
+    copyPhysicalTree(input, join(destination, entry))
+  }
+}
+
+function isWorkspacePackage(path) {
+  const workspacePackages = join(repoRoot, 'packages')
+  return (
+    path === workspacePackages ||
+    path.startsWith(`${workspacePackages}\\`) ||
+    path.startsWith(`${workspacePackages}/`)
+  )
+}
+
+function physicalDependencyDirectory(owner, dependency) {
+  const segments = packageSegments(dependency)
+  let current = realpathSync(owner)
+  while (true) {
+    const candidate = join(current, 'node_modules', ...segments)
+    if (existsSync(candidate)) return realpathSync(candidate)
+    const parent = dirname(current)
+    if (parent === current) break
+    current = parent
+  }
+  throw new Error(`cannot resolve production dependency ${dependency} from ${owner}`)
+}
+
+function runtimeDependencies(manifest) {
+  return [
+    ...new Set([
+      ...Object.keys(manifest.dependencies ?? {}),
+      ...Object.keys(manifest.optionalDependencies ?? {}),
+      // An optional peer is optional for an installer, not proof that code never imports it. The
+      // Common roots use @modkit/codec-kit's optional peers directly, so a bundled closure must
+      // carry every declared peer and fail at build time if the physical package is unavailable.
+      ...Object.keys(manifest.peerDependencies ?? {}),
+    ]),
+  ].sort()
+}
+
+function assertNoLinks(path) {
+  const stat = lstatSync(path)
+  if (stat.isSymbolicLink())
+    throw new Error(`production output contains a symlink or junction: ${path}`)
+  if (!stat.isDirectory()) return
+  for (const entry of readdirSync(path)) assertNoLinks(join(path, entry))
+}
+
+function allFiles(path) {
+  const files = []
+  for (const entry of readdirSync(path, { withFileTypes: true })) {
+    const absolute = join(path, entry.name)
+    if (entry.isDirectory()) files.push(...allFiles(absolute))
+    else if (entry.isFile()) files.push(absolute)
+  }
+  return files
+}
+
+function assertRuntimeImportsResolve(extensionsOutput) {
+  for (const dependency of ['@modkit/core', '@modkit/host', '@modkit/sdk', '@modkit/vfs']) {
+    const path = join(extensionsOutput, 'node_modules', ...packageSegments(dependency))
+    if (!existsSync(join(path, 'package.json'))) {
+      throw new Error(`production closure is missing required ${dependency}`)
+    }
+  }
+  const builtins = new Set([...builtinModules, ...builtinModules.map(name => `node:${name}`)])
+  const bareImports = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\()(['"])([^'"./][^'"]*)\1/gu
+  const roots = readdirSync(extensionsOutput, { withFileTypes: true })
+    .filter(entry => entry.isDirectory() && entry.name !== 'node_modules')
+    .map(entry => join(extensionsOutput, entry.name))
+  // Third-party packages are copied from their published pnpm-store payloads; scan the code we
+  // control, where the closure is responsible for every workspace peer and direct bare import.
+  const workspaceClosure = join(extensionsOutput, 'node_modules', '@modkit')
+  for (const file of [...roots, workspaceClosure]
+    .flatMap(allFiles)
+    .filter(path => path.endsWith('.js'))) {
+    const source = readFileSync(file, 'utf8')
+    for (const match of source.matchAll(bareImports)) {
+      const specifier = match[2]
+      // Comments and diagnostics can contain prose such as “import …”; only Node package-shaped
+      // specifiers participate in this closure check.
+      if (!/^(?:@[-a-zA-Z0-9_.]+\/)?[-a-zA-Z0-9_.]+(?:\/[-a-zA-Z0-9_.]+)*$/u.test(specifier))
+        continue
+      if (builtins.has(specifier)) continue
+      const dependency = packageNameFromSpecifier(specifier)
+      try {
+        physicalDependencyDirectory(dirname(file), dependency)
+      } catch (error) {
+        throw new Error(
+          `production bare import ${specifier} from ${file} cannot resolve in staged closure: ${String(error)}`,
+        )
+      }
+    }
+  }
+}
+
+/**
+ * Copy the eight generated Common roots and the exact runtime package closure they need.
+ *
+ * This intentionally does not copy any source `node_modules` directory. pnpm represents most
+ * dependencies there as junctions, which are neither portable in a VSIX nor a production closure.
+ * Instead each declared runtime dependency is resolved to its physical package and copied once to
+ * the shared `extensions/node_modules` lookup point. A root can therefore resolve `@modkit/*` as a
+ * normal Node package without a checkout, a workspace link, a junction, or an absolute path.
+ */
+function copyBundledCodecRoots(output) {
+  if (
+    bundledCatalog.schemaVersion !== 1 ||
+    !Array.isArray(bundledCatalog.roots) ||
+    bundledCatalog.rootCount !== bundledCatalog.roots.length ||
+    bundledCatalog.rootCount !== 8
+  ) {
+    throw new TypeError('VS Code bundled catalog must name exactly eight generated Common roots')
+  }
+  const roots = [...bundledCatalog.roots].sort((left, right) =>
+    left.directory.localeCompare(right.directory),
+  )
+  const rootDirectories = roots.map(root => root.directory)
+  if (
+    rootDirectories.some(
+      (directory, index) =>
+        typeof directory !== 'string' ||
+        directory.length === 0 ||
+        directory.includes('/') ||
+        directory.includes('\\') ||
+        (index > 0 && directory === rootDirectories[index - 1]),
+    )
+  ) {
+    throw new TypeError('VS Code bundled catalog root directories must be unique direct children')
+  }
+
+  const extensionsOutput = join(output, 'extensions')
+  const dependenciesOutput = join(extensionsOutput, 'node_modules')
+  mkdirSync(dependenciesOutput, { recursive: true })
+  const copiedPackages = new Map()
+
+  const copyDependency = (owner, dependency) => {
+    const source = physicalDependencyDirectory(owner, dependency)
+    const manifestPath = join(source, 'package.json')
+    if (!existsSync(manifestPath)) {
+      throw new Error(`production dependency ${dependency} has no package.json at ${source}`)
+    }
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    if (manifest.name !== dependency) {
+      throw new Error(
+        `production dependency identity drift: expected ${dependency}, found ${manifest.name}`,
+      )
+    }
+    const previous = copiedPackages.get(dependency)
+    if (previous !== undefined) {
+      if (previous.source !== source || previous.version !== manifest.version) {
+        throw new Error(
+          `production dependency version conflict for ${dependency}: ` +
+            `${previous.version} at ${previous.source}, ${manifest.version} at ${source}`,
+        )
+      }
+      return
+    }
+    copiedPackages.set(dependency, { source, version: manifest.version })
+    const destination = join(dependenciesOutput, ...packageSegments(dependency))
+    if (isWorkspacePackage(source)) copyWorkspacePackage(source, destination, manifest)
+    else copyPhysicalTree(source, destination)
+    for (const nested of runtimeDependencies(manifest)) copyDependency(source, nested)
+  }
+
+  for (const root of roots) {
+    const source = join(repoRoot, 'extensions', root.directory)
+    if (!existsSync(join(source, 'package.json'))) {
+      throw new Error(`generated bundled root is missing from the repository: ${root.directory}`)
+    }
+    const manifest = JSON.parse(readFileSync(join(source, 'package.json'), 'utf8'))
+    copyWorkspacePackage(source, join(extensionsOutput, root.directory), manifest)
+    for (const dependency of runtimeDependencies(manifest)) copyDependency(source, dependency)
+  }
+
+  const actualRoots = readdirSync(extensionsOutput, { withFileTypes: true })
+    .filter(entry => entry.isDirectory() && entry.name !== 'node_modules')
+    .map(entry => entry.name)
+    .sort()
+  if (JSON.stringify(actualRoots) !== JSON.stringify(rootDirectories)) {
+    throw new Error(
+      `bundled codec root drift: expected ${rootDirectories.join(', ')}, found ${actualRoots.join(', ')}`,
+    )
+  }
+  assertNoLinks(extensionsOutput)
+  assertRuntimeImportsResolve(extensionsOutput)
 }
 
 /*
@@ -89,6 +376,9 @@ const dist = outFlag > 0 ? resolve(process.argv[outFlag + 1]) : generated
 
 async function buildInto(output, syncManifest) {
   mkdirSync(output, { recursive: true })
+  // The closure is a complete generated subtree. Remove only that owned subtree before copying so
+  // a root's production files whitelist cannot leave stale tests or migration notes in dist-app.
+  rmSync(join(output, 'extensions'), { recursive: true, force: true })
 
   await build({
     entryPoints: [join(appRoot, 'src', 'extension.ts')],
@@ -162,23 +452,7 @@ async function buildInto(output, syncManifest) {
   // Shell chrome only: the shipped stylesheet has no layout for the `workbench` parts on purpose, so
   // the host places them. Everything else the page draws comes from `modkit-ui.css`.
   cpSync(join(appRoot, 'app.css'), join(output, 'app.css'))
-
-  /*
-   * The catalog is *named* by `generated/bundled-catalog.json` and not copied here, and the
-   * distinction is deliberate.
-   *
-   * Copying the roots in looked right and was not: an extension root under `extensions`
-   * reaches its SDK through `node_modules/@modkit`, a workspace link, and a copy without it is
-   * a directory that looks like an extension and cannot run. The first build that did this turned
-   * every bundled codec off — PNG, ANI and ASTC all fell back to hex in the smoke — which is a
-   * worse failure than the one it was meant to fix, because the artifact looks complete.
-   *
-   * So what this slice fixes is the *silence*, not the packaging: the host now resolves the named
-   * catalog and reports any root it cannot find, and activation fails loudly instead of composing
-   * an empty inventory (block-9 receipt, defect 6). Making a packaged build carry runnable roots
-   * needs a dependency decision — vendored `@modkit` per root, or codecs bundled the way the
-   * PWA bundles its worker — and that belongs to whoever takes VS Code packaging (13D/14).
-   */
+  copyBundledCodecRoots(output)
 
   // ---------------------------------------------------------------- manifest
   // Only the real output owns the manifest: a check build must not write the package it is checking.
@@ -226,11 +500,31 @@ async function buildInto(output, syncManifest) {
 }
 
 function differingFiles(left, right) {
-  const names = [...new Set([...readdirSync(left), ...readdirSync(right)])].sort()
+  const paths = directory => {
+    const entries = []
+    for (const entry of readdirSync(directory, { withFileTypes: true }).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    )) {
+      const absolute = join(directory, entry.name)
+      if (entry.isSymbolicLink())
+        throw new Error(`generated output contains a symlink or junction: ${absolute}`)
+      entries.push(entry.name)
+      if (entry.isDirectory()) {
+        for (const child of paths(absolute)) entries.push(join(entry.name, child))
+      }
+    }
+    return entries
+  }
+  const names = [...new Set([...paths(left), ...paths(right)])].sort()
   return names.filter(name => {
-    const leftBytes = existsSync(join(left, name)) ? readFileSync(join(left, name)) : undefined
-    const rightBytes = existsSync(join(right, name)) ? readFileSync(join(right, name)) : undefined
-    return leftBytes === undefined || rightBytes === undefined || !leftBytes.equals(rightBytes)
+    const leftPath = join(left, name)
+    const rightPath = join(right, name)
+    if (!existsSync(leftPath) || !existsSync(rightPath)) return true
+    const leftStat = statSync(leftPath)
+    const rightStat = statSync(rightPath)
+    if (leftStat.isDirectory() || rightStat.isDirectory())
+      return leftStat.isDirectory() !== rightStat.isDirectory()
+    return !readFileSync(leftPath).equals(readFileSync(rightPath))
   })
 }
 

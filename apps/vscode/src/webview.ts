@@ -37,6 +37,11 @@ import {
 } from '@modkit/extension-manager'
 
 import { createBridge, type ShellEntry, type WebviewChannel } from './bridge.js'
+import {
+  exposeModkitAcceptance,
+  withSubjectAcceptance,
+  type ModkitAcceptanceReceipt,
+} from './acceptance.js'
 import { probeWebviewFacilities } from './facilities.js'
 import { createWebviewEditorPorts, type WebviewEditorPorts } from './editor-ports.js'
 import { reopenCommittedEntry } from './edit-reopen.js'
@@ -73,6 +78,7 @@ interface Bootstrap {
     readonly problems: readonly string[]
   }
   readonly diagnostics: number
+  readonly acceptance: ModkitAcceptanceReceipt
   /** Opened straight away when the panel was raised from a file (the custom editor). */
   readonly openPath?: string
   readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
@@ -115,6 +121,7 @@ function baseName(path: string): string {
 
 const bootstrap = (globalThis as { __MODKIT_BOOTSTRAP__?: Bootstrap }).__MODKIT_BOOTSTRAP__
 const acquire = (globalThis as { acquireVsCodeApi?: () => VsCodeWebviewApi }).acquireVsCodeApi
+if (bootstrap !== undefined) exposeModkitAcceptance(globalThis, bootstrap.acceptance)
 const pageLocalizer = createVscodeLocalizer(
   bootstrap?.locale ?? document.documentElement.lang,
   bootstrap?.localizationCatalogs,
@@ -362,6 +369,13 @@ async function mount(
         descriptor: opened.descriptor,
         planActive: result.session.presentation?.activeStage,
       })
+      exposeModkitAcceptance(
+        globalThis,
+        withSubjectAcceptance(snapshot.acceptance, {
+          selected: opened.selected,
+          descriptor: opened.descriptor,
+        }),
+      )
       return {
         descriptor: async () => opened.descriptor,
         dataSource: (contract, major) => result.session.dataSource(contract, major),

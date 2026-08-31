@@ -33,3 +33,6 @@ packages:
 allowBuilds:
   esbuild: false
   electron: true
+  # The local VSIX flow packages unsigned artifacts; neither signing helper is allowed to run.
+  '@vscode/vsce-sign': false
+  keytar: false

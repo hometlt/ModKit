@@ -134,6 +134,13 @@ const MAXIMUM_LIVE_EDITING_ARMS = 256
 // ---------------------------------------------------------------------------------------------
 // composition
 
+/** Bundled-only failures retained for A7; unlike the public receipt these may still name a path. */
+export interface VsCodeBundledLoadError {
+  readonly code: string
+  readonly message: string
+  readonly root?: string
+}
+
 /** What loaded from where, and what did not. The output channel and the webview both show it. */
 export interface VsCodeExtensionReport {
   /** Coordinates of the first-party catalog that shipped with this build. */
@@ -158,6 +165,8 @@ export interface VsCodeSubjectHost {
   /** The bridge realm's composition, for the snapshot the page is allowed to see. */
   readonly webview: HostComposition
   readonly extensions: VsCodeExtensionReport
+  /** Errors from the generated bundled catalog only, before receipt path redaction. */
+  readonly bundledLoadErrors: readonly VsCodeBundledLoadError[]
   readonly supportedExtensions: readonly string[]
   /**
    * Every contribution the inventory holds, with the switch the running composition put it in.
@@ -364,6 +373,31 @@ export async function createVsCodeSubjectHost(
     ...(options.bootstrapUrl === undefined ? {} : { bootstrapUrl: options.bootstrapUrl }),
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
   })
+  const bundledCoordinates = new Set(bundled.coordinates)
+  const bundledLoadErrors: readonly VsCodeBundledLoadError[] = Object.freeze([
+    ...bundled.failures,
+    ...catalogProblems.map(message => ({
+      code: 'x3.app/vscode-bundled-catalog-incomplete',
+      message,
+    })),
+    ...services.host.inventory.extensions
+      .filter(extension => {
+        const coordinate = `${extension.manifest.publisher}/${extension.manifest.id}`
+        return extension.origin === 'bundled' && bundledCoordinates.has(coordinate)
+      })
+      .flatMap(extension => {
+        const coordinate = `${extension.manifest.publisher}/${extension.manifest.id}`
+        return extension.contributions.flatMap(contribution =>
+          contribution.diagnostics
+            .filter(diagnostic => diagnostic.severity === 'error')
+            .map(diagnostic => ({
+              code: diagnostic.code,
+              message: diagnostic.message,
+              root: coordinate,
+            })),
+        )
+      }),
+  ])
   // The bridge realm, composed only so the page can be told what its own realm holds. It shares
   // the topology, so `apps:check`'s claim — the webview holds no extension-host facility — is a
   // statement about the very object the running product hands the page.
@@ -403,6 +437,7 @@ export async function createVsCodeSubjectHost(
     services,
     webview,
     extensions,
+    bundledLoadErrors,
     contributions,
     supportedExtensions: services.supportedExtensions,
     containers: (container: VsCodeContainerOptions) =>
@@ -1392,10 +1427,10 @@ export function catalogCandidates(
    * Bases, not catalogs: the generated catalog stores `images`, so each candidate is the
    * directory that `extensions/` prefix is joined onto.
    *
-   * A checkout's own tree comes before the packaged location because it is the one whose roots can
-   * actually run — an extension root reaches its SDK through a `node_modules` workspace link that
-   * only exists there. `existsSync` keeps the ordering safe for a real package, where no repository
-   * sits above the extension and only the packaged candidate survives.
+   * A checkout's own tree stays before the packaged location for development fidelity. A production
+   * VSIX instead carries the same generated roots under `dist-app/extensions` together with their
+   * physical `node_modules` closure, so it can run with no checkout or workspace links. `existsSync`
+   * keeps the ordering safe for a real package, where only the packaged candidate normally survives.
    */
   const candidates = [join(extensionRoot, 'extensions')]
   if (repositoryRoot !== undefined) candidates.push(join(repositoryRoot, 'extensions'))

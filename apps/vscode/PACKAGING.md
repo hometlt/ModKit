@@ -1,86 +1,72 @@
-# Packaging the VS Code extension — a named plan for block 14
+# Packaging the VS Code extension
 
-## The debt, precisely
+## Official command
 
-`ext:build` produces `dist-app/` — the extension entry, the webview bundle and the worker bootstrap
-— and that is everything a packaged `.vsix` would carry. It carries **no extension roots**, so
-outside a checkout the host resolves its generated catalog against a directory that is not there.
+Run the pinned local packager through the app script:
 
-Slice 13C fixed the half that was dangerous. The catalog is now committed data
-(`generated/bundled-catalog.json`), the host resolves it rather than scanning, and a root that is
-named and missing is reported into the Extensions view, the output channel and the extension's own
-`activate()` return — the smoke's activation scenario fails on it. A packaged build that carries no
-codecs can no longer look like a healthy product.
+```powershell
+pnpm --filter @modkit/modkit-vscode package:vsix -- --out C:\drop\modkit-vscode.vsix
+```
 
-It fixed the half that was _dangerous_, not the half that is _missing_. A `.vsix` built today would
-activate, say plainly that it holds none of its 18 roots, and open everything as hex.
+The command refuses to overwrite an existing artifact. It builds into a new staging directory
+beside the requested output, validates the candidate VSIX, and atomically renames the verified
+candidate into place. A failed build or validation does not leave a partial official artifact.
 
-## Why the obvious fix is not one
+## Release manifest
 
-Copying `extensions/*` into `dist-app/extensions/` was tried in 13C and reverted in the same
-slice. An extension root reaches the SDK through `node_modules/@modkit`, a pnpm workspace link;
-a copy without it is a directory that satisfies `looksLikeExtensionDirectory` and cannot load. The
-build that did this turned every bundled codec off — PNG, ANI and ASTC all fell back to hex — while
-producing an artifact that looked complete. That is a worse failure than the one it was fixing, and
-it is why the roots are named and not copied.
+The workspace manifest remains `@modkit/modkit-vscode` for monorepo ownership. Packaging writes a
+release-only manifest in staging with the valid extension identity `modkit.modkit-vscode`, removes
+workspace dependencies and lifecycle hooks, and includes only `dist-app`, localization catalogs,
+and media. `@vscode/vsce` is an exact local development dependency; no global packager is used.
 
-## Three routes, with their costs
+The staged manifest is never edited by hand and never runs a `workspace:*` prepublish. The source
+engine floor matches the VS Code API types used to compile the extension.
 
-### A. Vendor the SDK per root
+## Bundled Common roots
 
-Copy each root plus a real `node_modules/@modkit/{sdk,core}` into `dist-app/extensions/`.
+`generated/bundled-catalog.json` is the authority for the eight roots shipped by this app:
 
-- **Cost:** the SDK is duplicated 18 times unless the copy is deduplicated into one shared
-  `node_modules` at the `extensions/` level and each root's link recreated as a junction — which is
-  platform-specific behaviour inside a `.vsix`, where symlinks are not reliably preserved.
-- **Size:** SDK dist is ~4.6 MB; naive duplication is ~80 MB of extension.
-- **Risk:** the thing that breaks is silent (a root that fails to load), which is exactly the failure
-  mode the catalog check now catches — so at least it fails loudly.
-- **Verdict:** workable, ugly, and the least new machinery.
+- `archives`
+- `audio`
+- `data`
+- `documents`
+- `images`
+- `models`
+- `vector`
+- `video`
 
-### B. Bundle each root's codecs
+They are copied to `dist-app/extensions/<root>`. Their shared physical runtime closure is copied to
+`dist-app/extensions/node_modules`, where normal Node package lookup reaches it without a Git
+checkout, pnpm workspace link, junction, or absolute repository path.
 
-Run esbuild over every contribution entry the way the PWA already bundles its worker, emitting
-self-contained modules with no `node_modules` at all.
+The build does not copy source `node_modules`. It resolves declared dependencies, optional
+dependencies, and peers to physical packages, rejects name/version conflicts, copies workspace
+packages through their production `files` whitelist, and copies already-published external package
+payloads without their nested `node_modules`. At minimum the closure must contain
+`@modkit/codec-kit`, `@modkit/core`, `@modkit/host`, `@modkit/sdk`, and `@modkit/vfs`.
 
-- **Cost:** the contribution manifests point at source paths (`src/ani/codec.js`); bundling means
-  rewriting those paths in the emitted manifests, so the build gains a manifest transform and the
-  emitted catalog has to record the rewritten identity. Digests change shape.
-- **Benefit:** it is what the PWA does, so the mechanism exists and is proven — `apps/web/scripts/build.mjs`
-  is the template, and the worker bootstrap already loads bundled modules in this host.
-- **Risk:** a bundled codec is no longer byte-identical to the checkout's, so `dist-app:check`'s
-  determinism claim needs to cover the transform too.
-- **Verdict:** the right long-term answer, and the most work.
+Before a build succeeds it recursively rejects links, verifies the exact root set, and checks every
+bare JavaScript import in the root/closure tree for a resolvable physical package. The final VSIX
+gate checks the unscoped release identity, all eight root manifests, and the required `@modkit`
+package manifests.
 
-### C. Ship the catalog as a separate artifact
+## Determinism and installed acceptance
 
-Publish extension roots as their own installable bundle (a folder the user points `modkit.extensions`
-at), leaving the `.vsix` with no bundled catalog at all.
+`pnpm --filter @modkit/modkit-vscode dist-app:check` compares two clean recursive builds with the
+generated `dist-app`; files, directories, and bytes must match. `vsce` records ZIP timestamps, so
+separately produced VSIX files are not claimed to be byte-reproducible. Acceptance records one
+artifact's SHA-256 and reuses that exact file for installation and both application generations.
 
-- **Cost:** the product's out-of-the-box experience becomes "install a second thing", which is a
-  product decision, not a packaging one.
-- **Benefit:** no duplication, no transform, and the mechanism already exists — this is exactly what
-  the smoke does today with the `ea/` roots through `modkit.extensions`.
-- **Risk:** it makes the §4.2 preset question explicit rather than answering it, which may be a
-  feature: `Common/Documents`, `SC2 Mod Studio` and the rest are compositions, and a catalog artifact
-  per preset is a coherent shape.
-- **Verdict:** cheapest, and it changes what the product _is_ — so it is the owner's call, not the
-  build's.
+The permanent external acceptance is:
 
-## Recommendation
+```powershell
+pnpm --filter @modkit/modkit-vscode test:e2e:installed -- `
+  --artifact-out C:\drop\modkit-vscode.vsix `
+  --receipt C:\drop\installed-acceptance.json `
+  --screenshot C:\drop\installed-dds.png
+```
 
-**B for the bundled `common` catalog, C for everything else.** The roots the product claims to ship
-should be inside the `.vsix` and self-contained; publisher-specific catalogs are
-already opt-in through a setting and match C's shape without any new mechanism. A is the fallback if
-the manifest transform in B turns out to be worse than the duplication it avoids.
-
-None of this is decided here. What block 13 leaves behind is: the composition is data, the drift is
-checked, and the failure is loud.
-
-## Related
-
-- `generated/bundled-catalog.json` — what this build says it ships.
-- `scripts/emit-vscode-catalog.mjs` — how that is derived, and the `--check` that guards it.
-- `scripts/build-extension.mjs` — the comment at the copy site explaining why nothing is copied.
-- `reports/vscode-smoke/receipt.json` — `activation.details.missingCatalogRoots`, empty in a checkout
-  and the thing that will be non-empty in the first packaged build.
+It uses isolated user/extension stores in the ordinary installed VS Code, never an Extension
+Development Host. It installs the VSIX through the VS Code CLI, selects `Modkit Asset Preview`
+through **Reopen Editor With**, checks the A7 runtime inventory and a non-empty DDS raster/metadata
+view, fully exits VS Code, and repeats with the same profile and artifact.

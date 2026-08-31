@@ -15,6 +15,11 @@ import {
   type WebviewLike,
 } from '../src/page.js'
 import { VIEWER_CSP } from '@modkit/ui'
+import {
+  createA7AcceptanceReceipt,
+  createModkitAcceptanceReceipt,
+  withSubjectAcceptance,
+} from '../src/acceptance.js'
 import { createVscodeLocalizer } from '../src/localization.js'
 
 const webview: WebviewLike = {
@@ -37,6 +42,9 @@ const bootstrap: PageBootstrap = {
   supportedExtensions: ['json'],
   extensions: { bundled: [], installed: [], failures: [], problems: [] },
   diagnostics: 0,
+  acceptance: createModkitAcceptanceReceipt(
+    createA7AcceptanceReceipt([], { roots: [], contributions: [], loadErrors: [] }),
+  ),
 }
 
 describe('webview content-security policy', () => {
@@ -123,6 +131,26 @@ describe('webview page', () => {
     expect(match).not.toBeNull()
     const parsed: unknown = JSON.parse(match?.[1]?.replaceAll('\\u003c', '<') ?? 'null')
     expect(parsed).toEqual(bootstrap)
+  })
+
+  it('serializes the acceptance snapshot without an absolute subject path or URI', () => {
+    const acceptance = withSubjectAcceptance(bootstrap.acceptance, {
+      selected: { contributionId: 'modkit/dds', variantId: 'default', confidence: 1 },
+      descriptor: {
+        subjectUri: 'file:///C:/private/fixture.dds',
+        identity: {
+          codecId: 'modkit/dds',
+          formatId: 'dds',
+          sourcePath: 'C:\\private\\fixture.dds',
+        },
+      },
+    })
+    const parsed = JSON.parse(serializeBootstrap({ ...bootstrap, acceptance })) as PageBootstrap
+    const publicReceipt = JSON.stringify(parsed.acceptance)
+
+    expect(publicReceipt).not.toContain('fixture.dds')
+    expect(publicReceipt).not.toContain('subjectUri')
+    expect(publicReceipt).toContain('<redacted:absolute-location>')
   })
 
   it('hands the page no path when the panel was not raised from a file', () => {
