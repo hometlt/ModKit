@@ -200,6 +200,8 @@ function factValue(value: JsonValue): string {
 
 const EXTENSION_SUBJECT_KIND = 'modkit/extension'
 const CONTRIBUTION_SUBJECT_KIND = 'modkit/contribution'
+const VENDOR_SUBJECT_KIND = 'modkit/vendor'
+const GAME_SUBJECT_KIND = 'modkit/game'
 
 /**
  * Presentation labels for Modkit's own extension-subject projection.
@@ -250,7 +252,27 @@ const CONTRIBUTION_FACT_MESSAGE_KEYS: Readonly<Record<string, UiMessageKey>> = O
   'runtime-variants': 'card.contribution.fact.runtimeVariants',
   spec: 'card.contribution.fact.specification',
 })
+const REPOSITORY_SUBJECT_GROUP_MESSAGE_KEYS: Readonly<Record<string, UiMessageKey>> = Object.freeze(
+  {
+    overview: 'card.repository.group.overview',
+    resources: 'card.repository.group.resources',
+    'extension-requirements': 'card.repository.group.extensions',
+    'capability-requirements': 'card.repository.group.capabilities',
+  },
+)
+const REPOSITORY_SUBJECT_FACT_MESSAGE_KEYS: Readonly<Record<string, UiMessageKey>> = Object.freeze({
+  id: 'card.repository.fact.id',
+  'display-name': 'card.repository.fact.displayName',
+  description: 'card.extension.fact.description',
+  vendor: 'card.repository.fact.vendor',
+  'game-count': 'card.repository.fact.gameCount',
+  'extension-count': 'card.repository.fact.extensionCount',
+})
 const NO_FACT_MESSAGE_KEYS: Readonly<Record<string, UiMessageKey>> = Object.freeze({})
+
+function isRepositorySubjectKind(kind: string): boolean {
+  return kind === VENDOR_SUBJECT_KIND || kind === GAME_SUBJECT_KIND
+}
 
 function systemSubjectLabel(
   localizer: UiLocalizer,
@@ -259,7 +281,11 @@ function systemSubjectLabel(
   id: string,
   fallback: string,
 ): string {
-  if (subjectKind !== EXTENSION_SUBJECT_KIND && subjectKind !== CONTRIBUTION_SUBJECT_KIND) {
+  if (
+    subjectKind !== EXTENSION_SUBJECT_KIND &&
+    subjectKind !== CONTRIBUTION_SUBJECT_KIND &&
+    !isRepositorySubjectKind(subjectKind)
+  ) {
     return fallback
   }
   const key = keys[id]
@@ -273,13 +299,35 @@ function factField(fact: SubjectFact, subjectKind: string, localizer: UiLocalize
       ? EXTENSION_FACT_MESSAGE_KEYS
       : subjectKind === CONTRIBUTION_SUBJECT_KIND
         ? CONTRIBUTION_FACT_MESSAGE_KEYS
-        : NO_FACT_MESSAGE_KEYS
+        : isRepositorySubjectKind(subjectKind)
+          ? REPOSITORY_SUBJECT_FACT_MESSAGE_KEYS
+          : NO_FACT_MESSAGE_KEYS
   return {
     name: systemSubjectLabel(localizer, subjectKind, keys, fact.id, fact.label),
     value: factValue(fact.value),
     ...(provenance.length === 0 ? {} : { badge: provenance[0] }),
     ...(provenance.length <= 1 ? {} : { title: provenance.join(' · ') }),
     ...(fact.knowledgeTarget === undefined ? {} : { knowledgeTarget: fact.knowledgeTarget }),
+  }
+}
+
+function repositoryResourceRef(value: JsonValue): CardRef | undefined {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const label = Object.getOwnPropertyDescriptor(value, 'label')?.value as unknown
+  const url = Object.getOwnPropertyDescriptor(value, 'url')?.value as unknown
+  if (typeof label !== 'string' || typeof url !== 'string') return undefined
+  try {
+    const parsed = new URL(url)
+    if (
+      (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') ||
+      parsed.username !== '' ||
+      parsed.password !== ''
+    ) {
+      return undefined
+    }
+    return { label, href: parsed.href }
+  } catch {
+    return undefined
   }
 }
 
@@ -354,10 +402,28 @@ export async function loadSubjectCardSections(
     // Extension-owned contributions are navigable subjects, not opaque JSON fields. Their
     // canonical links come from the relation page below; suppress the duplicate fact projection.
     if (summary.identity.kind === EXTENSION_SUBJECT_KIND && group.id === 'contributions') continue
+    if (isRepositorySubjectKind(summary.identity.kind) && group.id === 'resources') {
+      const links = page.items
+        .map(item => repositoryResourceRef(item.value))
+        .filter((item): item is CardRef => item !== undefined)
+      if (links.length === page.items.length) {
+        sections.push({
+          kind: 'links',
+          id: group.id,
+          title: localizer.text('card.repository.group.resources'),
+          links,
+          expanded: true,
+        })
+        continue
+      }
+    }
+    const groupKeys = isRepositorySubjectKind(summary.identity.kind)
+      ? REPOSITORY_SUBJECT_GROUP_MESSAGE_KEYS
+      : EXTENSION_GROUP_MESSAGE_KEYS
     const groupLabel = systemSubjectLabel(
       localizer,
       summary.identity.kind,
-      EXTENSION_GROUP_MESSAGE_KEYS,
+      groupKeys,
       group.id,
       group.label,
     )

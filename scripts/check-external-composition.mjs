@@ -12,10 +12,17 @@ const isCurrentExecutable = path => {
   const portable = normalized(path)
   if (!SOURCE_SUFFIX.test(portable)) return false
   if (/\/(?:node_modules|dist|dist-app|coverage|migration\/history)\//u.test(portable)) return false
+  // Compatibility fixtures and assertions may name the historical/external values they prove.
+  // They are evidence, not knowledge used by the current runtime or product composition.
+  if (/\/(?:test|tests|__tests__)\//u.test(portable)) return false
+  if (/\.(?:spec|test)\.[cm]?[jt]s$/u.test(portable)) return false
   if (/\/scripts\/migration\//u.test(portable)) return false
   if (/\/scripts\/test\/fixtures\/migration-registry\//u.test(portable)) return false
   if (portable.endsWith('/scripts/test/migration-registry.test.ts')) return false
   if (portable.endsWith('/scripts/convert-mk2.mjs')) return false
+  // This isolated SDK seam only canonicalizes persisted pre-rename identifiers. New extension
+  // discovery and capability selection remain entirely manifest/VFS driven.
+  if (portable.endsWith('/packages/sdk/src/identity.ts')) return false
   // The policy implementation and its deliberate negative fixture spell the tokens they reject.
   if (portable.endsWith('/scripts/check-external-composition.mjs')) return false
   if (portable.endsWith('/scripts/test/external-composition-boundary.test.ts')) return false

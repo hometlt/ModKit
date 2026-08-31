@@ -6,10 +6,12 @@ import type { ContributionRow } from '../src/contributions.js'
 import {
   createExtensionTree,
   extensionActionContextValue,
+  extensionComponentActionContextValue,
   extensionEntryDisplayName,
   extensionGroupActionContextValue,
   extensionTreeChildren,
   type ExtensionComponentNode,
+  type ExtensionSectionNode,
   type ContributionContractNode,
   type ContributionNode,
   type ExtensionEntryNode,
@@ -130,25 +132,31 @@ describe('VS Code extension contribution tree', () => {
       'installed group is missing',
     )
     const [vendor] = extensionTreeChildren(installedGroup, []) as readonly ExtensionVendorNode[]
-    const components = extensionTreeChildren(
+    const sections = extensionTreeChildren(
       required(vendor, 'vendor is missing'),
+      [],
+    ) as readonly ExtensionSectionNode[]
+    const games = extensionTreeChildren(
+      required(sections[0], 'games section is missing'),
+      [],
+    ) as readonly ExtensionComponentNode[]
+    const components = extensionTreeChildren(
+      required(sections[1], 'components section is missing'),
       [],
     ) as readonly ExtensionComponentNode[]
 
     expect(vendor).toMatchObject({ kind: 'vendor', id: 'example', label: 'Example Studios' })
-    expect(components.map(component => component.label)).toEqual([
-      'Example Game',
-      'Shared Components',
-    ])
-    const gameEntry = components[0]?.entries[0]
+    expect(sections.map(section => section.label)).toEqual(['Games', 'Components'])
+    expect(games.map(component => component.label)).toEqual(['Example Game'])
+    const gameEntry = games[0]?.entries[0]
     expect(extensionEntryDisplayName(required(gameEntry, 'game entry is missing').entry)).toBe(
       'Game Tools',
     )
     expect(gameEntry?.pendingReload).toBe(true)
-    expect(components[1]?.entries[0]?.entry.id).toBe(sharedPackage.id)
+    expect(components[0]?.entries[0]?.entry.id).toBe(sharedPackage.id)
   })
 
-  it('falls back to publisher and Shared Components when presentation metadata is absent', () => {
+  it('falls back to publisher and Components when presentation metadata is absent', () => {
     const installedGroup = required(
       model().find(group => group.group === 'installed'),
       'installed group is missing',
@@ -158,13 +166,17 @@ describe('VS Code extension contribution tree', () => {
       [],
     ) as readonly ExtensionVendorNode[]
     const vendor = required(maybeVendor, 'vendor is missing')
-    const [component] = extensionTreeChildren(vendor, []) as readonly ExtensionComponentNode[]
+    const sections = extensionTreeChildren(vendor, []) as readonly ExtensionSectionNode[]
+    const [component] = extensionTreeChildren(
+      required(sections[1], 'components section is missing'),
+      [],
+    ) as readonly ExtensionComponentNode[]
 
     expect(vendor.label).toBe('Example')
     expect(component).toMatchObject({
       kind: 'component',
       component: 'shared',
-      label: 'Shared Components',
+      label: 'Components',
     })
   })
 
@@ -210,6 +222,70 @@ describe('VS Code extension contribution tree', () => {
         },
       }),
     ).toBe('modkitExtension.installed.mutable.update.codecs.disabled')
+  })
+
+  it('uses install, complete, and remove contexts for game state without offering install for immutable support', () => {
+    const localGame = Object.freeze({
+      ...installed,
+      id: 'example/local-game',
+      presentation: {
+        vendor: { id: 'example', displayName: 'Example Studios' },
+        games: [{ id: 'example/game', displayName: 'Example Game' }],
+      },
+    })
+    const remoteGame = Object.freeze({
+      ...available,
+      id: 'example/remote-game',
+      presentation: localGame.presentation,
+    })
+    const groups = createExtensionTree({
+      entries: [localGame, remoteGame],
+      contributions: [],
+      configuredDisabledContributionIds: [],
+      problems: [],
+    })
+    const installedVendor = required(
+      extensionTreeChildren(required(groups[0], 'installed group'), [])[0] as ExtensionVendorNode,
+      'installed vendor is missing',
+    )
+    const installedSections = extensionTreeChildren(
+      installedVendor,
+      [],
+    ) as readonly ExtensionSectionNode[]
+    const installedGame = required(
+      (
+        extensionTreeChildren(
+          required(installedSections[0], 'games section'),
+          [],
+        ) as readonly ExtensionComponentNode[]
+      )[0],
+      'installed game is missing',
+    )
+
+    expect(extensionComponentActionContextValue(installedGame)).toBe(
+      'modkitExtensionComponent.game.partial',
+    )
+
+    const immutableOnly = createExtensionTree({
+      entries: [localGame],
+      contributions: [],
+      configuredDisabledContributionIds: [],
+      problems: [],
+    })
+    const vendor = extensionTreeChildren(
+      required(immutableOnly[0], 'installed group'),
+      [],
+    )[0] as ExtensionVendorNode
+    const sections = extensionTreeChildren(vendor, []) as readonly ExtensionSectionNode[]
+    const game = (
+      extensionTreeChildren(
+        required(sections[0], 'games section'),
+        [],
+      ) as readonly ExtensionComponentNode[]
+    )[0]
+    expect(extensionComponentActionContextValue(required(game, 'game is missing'))).toBe(
+      'modkitExtensionComponent.game.installed.immutable',
+    )
   })
 
   it('offers one inverse action when every codec in an extension is disabled', () => {

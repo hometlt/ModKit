@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkit.dev/schemas/modkit.game-subject.v1.schema.json",
+  "title": "Modkit game subject profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "vendorId", "displayName", "description"],
+  "properties": {
+    "$schema": { "type": "string", "maxLength": 2048 },
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "game" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*/[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+      "maxLength": 257
+    },
+    "vendorId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+      "maxLength": 128
+    },
+    "displayName": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "description": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "officialSite": { "$ref": "#/$defs/httpUrl" },
+    "resources": {
+      "type": "array",
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/resource" }
+    },
+    "extensionRequirements": {
+      "type": "array",
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/extensionRequirement" }
+    },
+    "capabilityRequirements": {
+      "type": "array",
+      "maxItems": 128,
+      "items": { "$ref": "#/$defs/capabilityRequirement" }
+    }
+  },
+  "$defs": {
+    "coordinate": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*/[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+      "maxLength": 257
+    },
+    "httpUrl": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048,
+      "pattern": "^https?://[^\\s]+$"
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "url"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 96
+        },
+        "label": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "url": { "$ref": "#/$defs/httpUrl" },
+        "kind": {
+          "enum": ["official", "modding", "documentation", "community", "source"]
+        }
+      }
+    },
+    "extensionRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "importance"],
+      "properties": {
+        "id": { "$ref": "#/$defs/coordinate" },
+        "importance": { "enum": ["required", "recommended"] }
+      }
+    },
+    "capabilityRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "displayName", "importance"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+          "maxLength": 128
+        },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "importance": { "enum": ["required", "recommended"] },
+        "contributionIds": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/coordinate" }
+        }
+      }
+    }
+  }
+}

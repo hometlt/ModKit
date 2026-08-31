@@ -67,6 +67,12 @@ const candidate: LocalExtensionCandidate = {
   },
 }
 
+function withoutRoot(value: LocalExtensionCandidate): LocalExtensionCandidate {
+  const copy = { ...value }
+  Reflect.deleteProperty(copy, 'root')
+  return copy
+}
+
 describe('extension subject card catalog', () => {
   it('builds navigable extension and contribution cards from an inert local candidate', async () => {
     const catalog = createExtensionCardCatalog({
@@ -135,7 +141,7 @@ describe('extension subject card catalog', () => {
   })
 
   it('opens an explicitly declared HTTP(S) source only through a host-owned URL target', async () => {
-    const { root: _root, ...remoteCandidate } = candidate
+    const remoteCandidate = withoutRoot(candidate)
     const catalog = createExtensionCardCatalog({
       inventory: { extensions: [], diagnostics: [] },
       localCandidates: [

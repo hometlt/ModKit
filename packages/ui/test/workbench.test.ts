@@ -5,10 +5,15 @@ import { createWorkbench } from '../src/workbench/index.js'
 class FakeElement {
   readonly children: FakeElement[] = []
   readonly attributes = new Map<string, string>()
-  readonly classList = { add: (_name: string): void => undefined }
+  readonly classList = {
+    add(name: string): void {
+      void name
+    },
+  }
   className = ''
   textContent = ''
   title = ''
+  removed = false
 
   append(...children: FakeElement[]): void {
     this.children.push(...children)
@@ -18,7 +23,9 @@ class FakeElement {
     this.children.splice(0, this.children.length, ...children)
   }
 
-  remove(): void {}
+  remove(): void {
+    this.removed = true
+  }
 
   setAttribute(name: string, value: string): void {
     this.attributes.set(name, value)

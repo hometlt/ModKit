@@ -537,13 +537,15 @@ export function createExtensionsSettingsGroups(
     }
 
     const actions = element(host, 'div', { part: 'settings.adder' })
-    addEnablementIcon(
-      actions,
-      wire.subject.kind === 'modkit/contribution'
-        ? wire.subject.effectiveEnabled === true
-        : wire.subject.enabled,
-      wire.subject.displayName,
-    )
+    if (wire.subject.kind === 'modkit/contribution' || wire.subject.kind === 'modkit/extension') {
+      addEnablementIcon(
+        actions,
+        wire.subject.kind === 'modkit/contribution'
+          ? wire.subject.effectiveEnabled === true
+          : wire.subject.enabled === true,
+        wire.subject.displayName,
+      )
+    }
     const back = element(actions, 'button', {
       part: 'settings.add',
       text: copy.back,
@@ -568,7 +570,7 @@ export function createExtensionsSettingsGroups(
       toggle.addEventListener('click', () =>
         mutateContribution(wire.subject.id, !wire.subject.enabled),
       )
-    } else {
+    } else if (wire.subject.kind === 'modkit/extension') {
       const toggle = element(actions, 'button', {
         part: 'settings.add',
         text: wire.subject.enabled ? copy.disableExtension : copy.enableExtension,

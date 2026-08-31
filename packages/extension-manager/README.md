@@ -158,6 +158,33 @@ VFS mount. Absolute, drive, UNC, backslash, NUL and traversal paths are refused.
 only absolute HTTP(S) URLs. No filesystem handle, function or live capability crosses a manager,
 Webview, worker or RPC boundary.
 
+## Vendor and game subjects
+
+A repository may keep its human-facing vendor and game descriptions outside individual extensions:
+
+```json
+{
+  "schemaVersion": 1,
+  "subjects": {
+    "vendors": ["subjects/vendors/example.json"],
+    "games": ["subjects/games/example-game.json"]
+  },
+  "extensions": []
+}
+```
+
+These paths are confined to the repository VFS mount. `loadRepositorySubjectProfiles(...)` reads
+only the enumerated bounded JSON files; it never imports an extension module. Vendor profiles own
+the public description and official site. Game profiles own modding links plus required or
+recommended extension and contribution ids. `projectVendorGameSubjects(...)` joins those ids to
+the ordinary extension/contribution subjects and creates navigable Vendor and Game cards without
+putting any game-specific table in Core. `subjectRecordToWire(...)` transports all four subject
+kinds through the same function-free Webview/RPC document.
+
+Local applications can show these cards for both selected and merely available repositories. A
+remote registry that does not distribute the profile documents must report that rich card data is
+unavailable; it must not invent descriptions or requirements from a package name.
+
 ## Localization contributions
 
 `modkit/localization-contribution@1` is a data-only contribution. Its manifest points to

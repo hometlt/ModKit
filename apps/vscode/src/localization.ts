@@ -64,11 +64,15 @@ const EN_MESSAGES = Object.freeze({
     'Support for {game} was not installed; completed changes were rolled back.',
   'vscode.extensions.gameSupportPartial':
     'Support for {game} was only partly changed. Review the Extensions problems and reload state.',
+  'vscode.extensions.removeGameSupportConfirm':
+    'Remove {count} package(s) used only by {game}? Shared packages will be kept.',
+  'vscode.extensions.gameSupportRemoved': 'Support used only by {game} was removed.',
   'vscode.extensions.installAllPartial':
     'Some extensions were installed, but the operation did not finish: {message}',
   'vscode.extensions.updated': '{id} updated',
   'vscode.extensions.removed': '{id} removed',
-  'vscode.extensions.sharedComponents': 'Shared Components',
+  'vscode.extensions.games': 'Games',
+  'vscode.extensions.components': 'Components',
   'vscode.extensions.resourceNotGranted':
     'This extension card does not grant that source or license resource.',
   'vscode.extensions.sourceOpened': 'Extension source opened.',
@@ -363,11 +367,15 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
     'Поддержка игры {game} не установлена; выполненные изменения отменены.',
   'vscode.extensions.gameSupportPartial':
     'Поддержка игры {game} изменена не полностью. Проверьте проблемы расширений и состояние после перезагрузки.',
+  'vscode.extensions.removeGameSupportConfirm':
+    'Удалить пакеты, используемые только игрой {game} ({count})? Общие пакеты останутся.',
+  'vscode.extensions.gameSupportRemoved': 'Поддержка, используемая только игрой {game}, удалена.',
   'vscode.extensions.installAllPartial':
     'Часть расширений установлена, но операция не завершилась: {message}',
   'vscode.extensions.updated': 'Расширение {id} обновлено',
   'vscode.extensions.removed': 'Расширение {id} удалено',
-  'vscode.extensions.sharedComponents': 'Общие компоненты',
+  'vscode.extensions.games': 'Игры',
+  'vscode.extensions.components': 'Компоненты',
   'vscode.extensions.resourceNotGranted':
     'Эта карточка расширения не даёт доступа к такому источнику или файлу лицензии.',
   'vscode.extensions.sourceOpened': 'Источник расширения открыт.',

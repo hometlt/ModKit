@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkit.dev/schemas/modkit.vendor-subject.v1.schema.json",
+  "title": "Modkit vendor subject profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "id", "displayName", "description"],
+  "properties": {
+    "$schema": { "type": "string", "maxLength": 2048 },
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "vendor" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+      "maxLength": 128
+    },
+    "displayName": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "description": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "officialSite": { "$ref": "#/$defs/httpUrl" },
+    "resources": {
+      "type": "array",
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/resource" }
+    }
+  },
+  "$defs": {
+    "httpUrl": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048,
+      "pattern": "^https?://[^\\s]+$"
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "url"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 96
+        },
+        "label": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "url": { "$ref": "#/$defs/httpUrl" },
+        "kind": {
+          "enum": ["official", "modding", "documentation", "community", "source"]
+        }
+      }
+    }
+  }
+}

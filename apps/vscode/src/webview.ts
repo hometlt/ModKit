@@ -686,6 +686,7 @@ async function mountExtensionSubjectCard(
     active: ExtensionSubjectCardWireDocument,
   ): readonly HTMLButtonElement[] => {
     const subject = active.subject
+    if (subject.kind === 'modkit/vendor' || subject.kind === 'modkit/game') return []
     if (
       bundle.extension.managedPackageId !== undefined &&
       bundle.extension.managedPackageEnabled === false

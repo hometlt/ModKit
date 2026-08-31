@@ -192,4 +192,73 @@ describe('subject-card knowledge projection', () => {
       description: 'Readable summary.',
     })
   })
+
+  it('renders safe repository game resources as localized links', async () => {
+    const source: SubjectFactsSource = {
+      async summary() {
+        return {
+          snapshotId: 'game-profile',
+          identity: {
+            subjectId: 'game-profile',
+            kind: 'modkit/game',
+            label: 'Example Game',
+            origins: [],
+          },
+          groupCount: 2,
+          relationCount: 0,
+        }
+      },
+      async groups() {
+        return {
+          items: [
+            { id: 'overview', label: 'Overview', factCount: 1 },
+            { id: 'resources', label: 'Resources', factCount: 1 },
+          ],
+        }
+      },
+      async facts(groupId) {
+        return groupId === 'overview'
+          ? {
+              items: [
+                {
+                  id: 'description',
+                  label: 'Description',
+                  value: 'A repository-owned game profile.',
+                  provenance: [],
+                },
+              ],
+            }
+          : {
+              items: [
+                {
+                  id: 'resource.official-site',
+                  label: 'Official site',
+                  value: {
+                    id: 'official-site',
+                    label: 'Official site',
+                    url: 'https://game.example/',
+                  },
+                  provenance: [],
+                },
+              ],
+            }
+      },
+      async relations() {
+        return { items: [] }
+      },
+    }
+
+    const russian = await loadSubjectCardSections(source, { localizer: createUiLocalizer('ru') })
+    expect(russian[0]).toMatchObject({
+      kind: 'header',
+      description: 'A repository-owned game profile.',
+    })
+    expect(
+      russian.find(section => linkSection(section) && section.id === 'resources'),
+    ).toMatchObject({
+      kind: 'links',
+      title: 'Ресурсы',
+      links: [{ label: 'Official site', href: 'https://game.example/' }],
+    })
+  })
 })

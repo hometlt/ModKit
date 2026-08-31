@@ -1,8 +1,11 @@
 import { VirtualFileSystem, collectStream, normalizeVfsPath } from '@modkit/vfs'
 
 import { ExtensionManagerError, normalizeRepositoryManifest } from './schema.js'
+import { normalizeGameSubjectProfile, normalizeVendorSubjectProfile } from './subject-profiles.js'
 
 const decoder = new TextDecoder('utf-8', { fatal: true })
+const MAXIMUM_SUBJECT_PROFILE_BYTES = 256 * 1024
+const MAXIMUM_SUBJECT_PROFILES_BYTES = 4 * 1024 * 1024
 
 export function createExtensionVfs(providers) {
   const vfs = new VirtualFileSystem()
@@ -58,4 +61,66 @@ export async function openRepositorySource(vfs, source, signal) {
     await mount.dispose()
     throw error
   }
+}
+
+/**
+ * Load only the explicitly enumerated, confined data profiles from an already opened repository.
+ * The caller retains ownership of the mount; no extension module is imported or evaluated.
+ */
+export async function loadRepositorySubjectProfiles(mount, manifest, signal) {
+  const normalizedManifest = normalizeRepositoryManifest(manifest)
+  const vendors = []
+  const games = []
+  const paths = [
+    ...(normalizedManifest.subjects?.vendors ?? []).map(path => ({ kind: 'vendor', path })),
+    ...(normalizedManifest.subjects?.games ?? []).map(path => ({ kind: 'game', path })),
+  ]
+  let totalBytes = 0
+  for (const entry of paths) {
+    signal?.throwIfAborted()
+    const document = await readMountJson(mount, entry.path, signal)
+    if (document.bytes.byteLength > MAXIMUM_SUBJECT_PROFILE_BYTES) {
+      throw new ExtensionManagerError(
+        'extension-manager/subject-profile-too-large',
+        `repository subject profile «${entry.path}» exceeds the byte limit`,
+        {
+          path: entry.path,
+          bytes: document.bytes.byteLength,
+          limit: MAXIMUM_SUBJECT_PROFILE_BYTES,
+        },
+      )
+    }
+    totalBytes += document.bytes.byteLength
+    if (totalBytes > MAXIMUM_SUBJECT_PROFILES_BYTES) {
+      throw new ExtensionManagerError(
+        'extension-manager/subject-profiles-too-large',
+        'repository subject profiles exceed the total byte limit',
+        { bytes: totalBytes, limit: MAXIMUM_SUBJECT_PROFILES_BYTES },
+      )
+    }
+    const profile =
+      entry.kind === 'vendor'
+        ? normalizeVendorSubjectProfile(document.value)
+        : normalizeGameSubjectProfile(document.value)
+    ;(entry.kind === 'vendor' ? vendors : games).push(profile)
+  }
+  const duplicate = (profiles, label) => {
+    const seen = new Set()
+    for (const profile of profiles) {
+      if (seen.has(profile.id)) {
+        throw new ExtensionManagerError(
+          'extension-manager/subject-profile-duplicate',
+          `${label} subject profile «${profile.id}» is duplicated`,
+          { id: profile.id },
+        )
+      }
+      seen.add(profile.id)
+    }
+  }
+  duplicate(vendors, 'vendor')
+  duplicate(games, 'game')
+  return Object.freeze({
+    vendors: Object.freeze(vendors),
+    games: Object.freeze(games),
+  })
 }

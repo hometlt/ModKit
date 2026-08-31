@@ -14,6 +14,59 @@ import type { SourceRef, SubjectRef } from '@modkit/sdk/subjects'
 
 export const EXTENSION_SUBJECT_KIND: 'modkit/extension'
 export const CONTRIBUTION_SUBJECT_KIND: 'modkit/contribution'
+export const VENDOR_SUBJECT_KIND: 'modkit/vendor'
+export const GAME_SUBJECT_KIND: 'modkit/game'
+
+export type RepositorySubjectResourceKind =
+  'official' | 'modding' | 'documentation' | 'community' | 'source'
+
+export interface RepositorySubjectResource {
+  readonly id: string
+  readonly label: string
+  /** Validated absolute HTTP(S) URL without embedded credentials. */
+  readonly url: string
+  readonly kind?: RepositorySubjectResourceKind
+}
+
+export interface VendorSubjectProfile {
+  readonly $schema?: string
+  readonly schemaVersion: 1
+  readonly kind: 'vendor'
+  readonly id: string
+  readonly displayName: string
+  readonly description: string
+  readonly officialSite?: string
+  readonly resources: readonly RepositorySubjectResource[]
+}
+
+export interface GameExtensionRequirement {
+  readonly id: string
+  readonly importance: 'required' | 'recommended'
+}
+
+export interface GameCapabilityRequirement {
+  readonly id: string
+  readonly displayName: string
+  readonly importance: 'required' | 'recommended'
+  readonly contributionIds: readonly string[]
+}
+
+export interface GameSubjectProfile {
+  readonly $schema?: string
+  readonly schemaVersion: 1
+  readonly kind: 'game'
+  readonly id: string
+  readonly vendorId: string
+  readonly displayName: string
+  readonly description: string
+  readonly officialSite?: string
+  readonly resources: readonly RepositorySubjectResource[]
+  readonly extensionRequirements: readonly GameExtensionRequirement[]
+  readonly capabilityRequirements: readonly GameCapabilityRequirement[]
+}
+
+export function normalizeVendorSubjectProfile(value: unknown): VendorSubjectProfile
+export function normalizeGameSubjectProfile(value: unknown): GameSubjectProfile
 
 export interface ExtensionSubjectProjectionMetadata {
   readonly displayName?: string
@@ -100,11 +153,15 @@ export interface ExtensionSubjectCardWireGroup extends SubjectFactGroup {
 export interface ExtensionSubjectCardWireDocument {
   readonly schemaVersion: 1
   readonly subject: {
-    readonly kind: typeof EXTENSION_SUBJECT_KIND | typeof CONTRIBUTION_SUBJECT_KIND
+    readonly kind:
+      | typeof EXTENSION_SUBJECT_KIND
+      | typeof CONTRIBUTION_SUBJECT_KIND
+      | typeof VENDOR_SUBJECT_KIND
+      | typeof GAME_SUBJECT_KIND
     readonly subjectId: string
     readonly id: string
     readonly displayName: string
-    readonly enabled: boolean
+    readonly enabled?: boolean
     readonly version?: string
     readonly extensionId?: string
     readonly contract?: ContractRefWire
@@ -112,6 +169,8 @@ export interface ExtensionSubjectCardWireDocument {
     readonly effectiveEnabled?: boolean
     readonly presentation?: ExtensionPresentation
     readonly contributions?: readonly ExtensionContributionCardLink[]
+    readonly profile?: VendorSubjectProfile | GameSubjectProfile
+    readonly resources?: readonly RepositorySubjectResource[]
   }
   readonly summary: SubjectFactsSummary
   readonly groups: readonly ExtensionSubjectCardWireGroup[]
@@ -129,6 +188,64 @@ export function projectExtensionSubjects(
 /** Materializes one projected card as function-free JSON for Webview, worker and RPC boundaries. */
 export function extensionSubjectRecordToWire(
   record: ExtensionSubjectRecord | ContributionSubjectRecord,
+  signal?: AbortSignal,
+): Promise<ExtensionSubjectCardWireDocument>
+
+export interface RepositorySubjectRecord<
+  Kind extends typeof VENDOR_SUBJECT_KIND | typeof GAME_SUBJECT_KIND,
+  Profile extends VendorSubjectProfile | GameSubjectProfile,
+> {
+  readonly kind: Kind
+  readonly ref: SubjectRef
+  readonly subjectId: string
+  readonly id: string
+  readonly displayName: string
+  readonly profile: Profile
+  readonly resources: readonly RepositorySubjectResource[]
+  readonly facts: SubjectFactsSource
+}
+
+export type VendorSubjectRecord = RepositorySubjectRecord<
+  typeof VENDOR_SUBJECT_KIND,
+  VendorSubjectProfile
+>
+export type GameSubjectRecord = RepositorySubjectRecord<
+  typeof GAME_SUBJECT_KIND,
+  GameSubjectProfile
+>
+
+export interface VendorGameRelatedSubjectRecord {
+  readonly kind: string
+  readonly subjectId: string
+  readonly id: string
+  readonly displayName: string
+  readonly presentation?: ExtensionPresentation
+}
+
+export interface VendorGameSubjectProjectionInput {
+  readonly vendors: readonly unknown[]
+  readonly games: readonly unknown[]
+  readonly records?: readonly VendorGameRelatedSubjectRecord[]
+  readonly source?: SourceRef
+  readonly workspace?: string
+}
+
+export interface VendorGameSubjectProjection {
+  readonly vendors: readonly VendorSubjectRecord[]
+  readonly games: readonly GameSubjectRecord[]
+  readonly records: readonly (VendorSubjectRecord | GameSubjectRecord)[]
+  vendor(id: string): VendorSubjectRecord | undefined
+  game(id: string): GameSubjectRecord | undefined
+  subject(subjectId: string): VendorSubjectRecord | GameSubjectRecord | undefined
+}
+
+export function projectVendorGameSubjects(
+  input: VendorGameSubjectProjectionInput,
+): VendorGameSubjectProjection
+
+export function subjectRecordToWire(
+  record:
+    ExtensionSubjectRecord | ContributionSubjectRecord | VendorSubjectRecord | GameSubjectRecord,
   signal?: AbortSignal,
 ): Promise<ExtensionSubjectCardWireDocument>
 
@@ -164,6 +281,22 @@ export interface ExtensionWorkspaceConfiguration {
     readonly source: string
     readonly strip?: number
   }[]
+}
+
+export interface RepositorySubjectProfilePaths {
+  readonly vendors: readonly string[]
+  readonly games: readonly string[]
+}
+
+export interface ExtensionRepositoryManifest {
+  readonly schemaVersion: 1
+  readonly extensions: readonly {
+    readonly id?: string
+    readonly path?: string
+    readonly files?: Readonly<Record<string, string>>
+    readonly enabled: boolean
+  }[]
+  readonly subjects?: RepositorySubjectProfilePaths
 }
 
 export class ExtensionManagerError extends Error {
@@ -440,7 +573,7 @@ export function createExtensionManagerClient(
 ): GameSupportExtensionManagerClient
 
 export function normalizeWorkspaceConfiguration(value: unknown): ExtensionWorkspaceConfiguration
-export function normalizeRepositoryManifest(value: unknown): unknown
+export function normalizeRepositoryManifest(value: unknown): ExtensionRepositoryManifest
 export function normalizeExtensionLock(value: unknown): unknown
 export function createExtensionVfs(providers: readonly VfsProvider[]): {
   readonly vfs: VirtualFileSystem
@@ -456,6 +589,14 @@ export function readMountJson(
   path?: string,
   signal?: AbortSignal,
 ): Promise<{ bytes: Uint8Array; value: unknown }>
+export function loadRepositorySubjectProfiles(
+  mount: VfsMount,
+  manifest: unknown,
+  signal?: AbortSignal,
+): Promise<{
+  readonly vendors: readonly VendorSubjectProfile[]
+  readonly games: readonly GameSubjectProfile[]
+}>
 export function openRepositorySource(
   vfs: VirtualFileSystem,
   source: ExtensionSourceDescriptor,

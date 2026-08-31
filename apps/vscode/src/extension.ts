@@ -18,6 +18,12 @@ import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
 import type { CatalogSource, ExtensionManagerEntry } from '@modkit/extension-manager'
 import {
+  loadRepositorySubjectProfiles,
+  openRepositorySource,
+  projectVendorGameSubjects,
+  subjectRecordToWire,
+} from '@modkit/extension-manager'
+import {
   createNodeExtensionVfs,
   createNodeExtensionManager,
   discoverLocalExtensionCandidates,
@@ -56,6 +62,7 @@ import {
   extensionCardBundle,
   extensionCardIconTarget,
   extensionCardResourceTargets,
+  type ExtensionCardBundle,
 } from './extension-cards.js'
 import { openVsCodeExtensionCardResource } from './extension-card-resource-actions.js'
 import {
@@ -69,11 +76,15 @@ import {
 import {
   createExtensionTree,
   extensionActionContextValue,
+  extensionComponentActionContextValue,
+  extensionEntryIsMutable,
   extensionEntryDisplayName,
   extensionGroupActionContextValue,
   extensionTreeChildren,
   OPEN_CONTRIBUTION_COMMAND,
   OPEN_EXTENSION_COMMAND,
+  OPEN_GAME_COMMAND,
+  OPEN_VENDOR_COMMAND,
   type ExtensionComponentNode,
   type ExtensionNode,
 } from './extension-tree.js'
@@ -286,6 +297,7 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
     private readonly availableContributions: readonly import('./contributions.js').ContributionRow[],
     private readonly localizer: UiLocalizer,
     private readonly iconPathForEntry?: (entry: ExtensionManagerEntry) => string | undefined,
+    private readonly gameIconPath?: string,
   ) {
     this.subscription = manager.onDidChange(() => this.changed.fire(undefined))
   }
@@ -309,14 +321,29 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
       return item
     }
     if (node.kind === 'vendor') {
-      const count = node.components.reduce(
-        (total, component) => total + component.entries.length,
+      const count = node.sections.reduce(
+        (total, section) =>
+          total +
+          section.components.reduce((inner, component) => inner + component.entries.length, 0),
         0,
       )
       const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Collapsed)
       item.description = `${count}`
       item.tooltip = node.label
       item.iconPath = new vscode.ThemeIcon('organization')
+      item.command = {
+        command: OPEN_VENDOR_COMMAND,
+        title: this.localizer.text('extensions.action.openExtensionCard'),
+        arguments: [{ kind: 'vendor', id: node.id } as const],
+      }
+      return item
+    }
+    if (node.kind === 'section') {
+      const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Collapsed)
+      item.description = `${node.components.length}`
+      item.tooltip = node.label
+      item.iconPath = new vscode.ThemeIcon(node.section === 'games' ? 'game' : 'references')
+      item.contextValue = `modkitExtensionSection.${node.section}`
       return item
     }
     if (node.kind === 'component') {
@@ -324,20 +351,20 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
       item.description = `${node.entries.length}`
       item.tooltip =
         node.component === 'shared'
-          ? this.localizer.text('vscode.extensions.sharedComponents')
+          ? this.localizer.text('vscode.extensions.components')
           : (node.id ?? node.label)
-      const gameIcon =
-        node.component === 'game'
-          ? node.entries.map(entry => this.iconPathForEntry?.(entry.entry)).find(Boolean)
-          : undefined
       item.iconPath =
-        gameIcon === undefined
+        node.component !== 'game' || this.gameIconPath === undefined
           ? new vscode.ThemeIcon(node.component === 'shared' ? 'references' : 'symbol-event')
-          : vscode.Uri.file(gameIcon)
-      item.contextValue =
-        node.component === 'game'
-          ? 'modkitExtensionComponent.game'
-          : 'modkitExtensionComponent.shared'
+          : vscode.Uri.file(this.gameIconPath)
+      item.contextValue = extensionComponentActionContextValue(node)
+      if (node.component === 'game' && node.id !== undefined) {
+        item.command = {
+          command: OPEN_GAME_COMMAND,
+          title: this.localizer.text('extensions.action.openExtensionCard'),
+          arguments: [{ kind: 'game', id: node.id } as const],
+        }
+      }
       return item
     }
     if (node.kind === 'problem') {
@@ -674,9 +701,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   // carries its own copy of the catalog and the checkout guess simply does not exist.
   const repositoryRoot = resolve(extensionRoot, '..', '..')
   let localExtensionCandidates: readonly LocalExtensionCandidate[] = Object.freeze([])
+  let localExtensionRepositories: readonly import('@modkit/extension-manager/node').LocalExtensionRepositoryCandidate[] =
+    Object.freeze([])
   try {
     const discovered = await discoverLocalExtensionCandidates({ workspaceRoot: repositoryRoot })
     localExtensionCandidates = discovered.extensions
+    localExtensionRepositories = discovered.repositories
     log(
       `[extensions] local workspace catalog: ${discovered.repositories.length} repositories, ` +
         `${discovered.extensions.length} extensions, ${discovered.diagnostics.length} diagnostics`,
@@ -1145,6 +1175,68 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         : ([[candidate.id, candidate.root]] as const),
     ),
   )
+  const repositorySubjectProfiles: { vendors: unknown[]; games: unknown[] } = {
+    vendors: [],
+    games: [],
+  }
+  const subjectProfileVfs = createNodeExtensionVfs(managerSecurity.vfsOptions).vfs
+  for (const repository of localExtensionRepositories) {
+    // Profiles describe Available as well as Installed rows. A workspace profile may intentionally
+    // leave a repository's codecs unselected, but its inert vendor/game JSON still has to power
+    // the catalog cards and the install decision.
+    if (!repository.enabled) continue
+    try {
+      const opened = (await openRepositorySource(subjectProfileVfs, {
+        id: repository.sourceId,
+        uri: repository.uri,
+        enabled: repository.enabled,
+      })) as {
+        readonly mount: Parameters<typeof loadRepositorySubjectProfiles>[0]
+        readonly manifest: unknown
+      }
+      try {
+        const profiles = await loadRepositorySubjectProfiles(opened.mount, opened.manifest)
+        repositorySubjectProfiles.vendors.push(...profiles.vendors)
+        repositorySubjectProfiles.games.push(...profiles.games)
+      } finally {
+        await opened.mount.dispose()
+      }
+    } catch (error) {
+      log(
+        `[repository-subject] ${repository.sourceId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      )
+    }
+  }
+  const uniqueProfile = (
+    profiles: readonly unknown[],
+    kind: 'vendor' | 'game',
+  ): readonly unknown[] => {
+    const byId = new Map<string, unknown>()
+    for (const profile of profiles) {
+      const id =
+        profile !== null &&
+        typeof profile === 'object' &&
+        typeof (profile as { id?: unknown }).id === 'string'
+          ? (profile as { readonly id: string }).id
+          : undefined
+      if (id === undefined) continue
+      if (byId.has(id)) {
+        log(`[repository-subject] duplicate ${kind} profile ignored: ${id}`)
+        continue
+      }
+      byId.set(id, profile)
+    }
+    return [...byId.values()]
+  }
+  const repositorySubjects = projectVendorGameSubjects({
+    vendors: uniqueProfile(repositorySubjectProfiles.vendors, 'vendor'),
+    games: uniqueProfile(repositorySubjectProfiles.games, 'game'),
+    records: [...extensionCards().values()].flatMap(entry => entry.projection.records),
+    source: { id: 'modkit-repository:local-subject-profiles' },
+    workspace: repositoryRoot,
+  })
   const extensionIconPaths = new Map(
     [...extensionCards().entries()].flatMap(([id, entry]) => {
       const icon = extensionCardIconTarget(entry)
@@ -1177,6 +1269,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     availableContributions,
     localizer,
     entry => extensionIconPaths.get(entry.id),
+    join(extensionRoot, 'media', 'game.svg'),
   )
   context.subscriptions.push(extensionsView)
   context.subscriptions.push(
@@ -2352,6 +2445,61 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     })
   }
 
+  const openRepositorySubjectCard = async (
+    kind: 'vendor' | 'game',
+    argument: unknown,
+  ): Promise<void> => {
+    if (argument === null || typeof argument !== 'object') return
+    const value = argument as { readonly id?: unknown }
+    if (typeof value.id !== 'string') return
+    const subject =
+      kind === 'vendor' ? repositorySubjects.vendor(value.id) : repositorySubjects.game(value.id)
+    if (subject === undefined) {
+      void vscode.window.showWarningMessage(
+        localizer.text('vscode.extensions.noCardData', { id: value.id }),
+      )
+      return
+    }
+    const records = [
+      ...repositorySubjects.records,
+      ...[...extensionCards().values()].flatMap(entry => entry.projection.records),
+    ]
+    const bySubjectId = new Map(records.map(record => [record.subjectId, record]))
+    const documents = await Promise.all(
+      [...bySubjectId.values()].map(record => subjectRecordToWire(record)),
+    )
+    const bundle: ExtensionCardBundle = Object.freeze({
+      activeSubjectId: subject.subjectId,
+      documents: Object.freeze(documents),
+      // The existing neutral card renderer accepts any subject wire. These inert values suppress
+      // extension controls; vendor/game cards are information and safe links, not extensions.
+      extension: Object.freeze({
+        id: subject.id,
+        installed: true,
+        enabled: true,
+        linkable: false,
+        subjectId: subject.subjectId,
+        resources: Object.freeze([]),
+        codecs: Object.freeze({ ids: Object.freeze([]), enabled: false }),
+      }),
+    })
+    const active = bundle.documents.find(
+      document => document.subject.subjectId === bundle.activeSubjectId,
+    )
+    const panel = vscode.window.createWebviewPanel(
+      'modkit.repositorySubjectCard',
+      active?.subject.displayName ?? subject.displayName,
+      vscode.ViewColumn.Active,
+      { ...webviewOptions(), retainContextWhenHidden: true },
+    )
+    const served = attach(panel.webview, undefined, undefined, bundle)
+    panel.onDidDispose(() => {
+      live.delete(served)
+      liveSubjects.delete(served)
+      void served.close('the repository subject card was closed')
+    })
+  }
+
   const pickManagerEntry = async (
     title: string,
     accept: (entry: ExtensionManagerEntry) => boolean,
@@ -2548,6 +2696,54 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     }
   }
 
+  const removeGameSupport = async (argument: unknown): Promise<void> => {
+    const component = argument as Partial<ExtensionComponentNode> | undefined
+    if (component?.kind !== 'component' || component.component !== 'game' || !component.id) return
+    const gameId = component.id
+    const gameLabel = component.label ?? gameId
+    const snapshot = await extensionManager.snapshot()
+    const candidates = snapshot.entries.filter(entry => {
+      const games = entry.presentation?.games ?? []
+      const gameIds = new Set(games.map(game => game.id))
+      // A package shared by another game must never be removed from this game action.
+      return (
+        entry.installedVersion !== undefined &&
+        gameIds.size === 1 &&
+        gameIds.has(gameId) &&
+        extensionEntryIsMutable(entry)
+      )
+    })
+    if (candidates.length === 0) {
+      void vscode.window.showInformationMessage(
+        `Modkit: ${localizer.text('vscode.extensions.gameSupportReady', { game: gameLabel })}`,
+      )
+      return
+    }
+    const remove = localizer.text('common.remove')
+    const details = candidates.map(entry => `− ${extensionEntryDisplayName(entry)}`).join('\n')
+    const confirmed = await vscode.window.showWarningMessage(
+      `${localizer.text('vscode.extensions.removeGameSupportConfirm', {
+        game: gameLabel,
+        count: candidates.length,
+      })}\n\n${details}`,
+      { modal: true },
+      remove,
+    )
+    if (confirmed !== remove) return
+    try {
+      await extensionManager.executeBatch(
+        candidates.map(entry => ({ kind: 'remove' as const, id: entry.id })),
+      )
+      const message = localizer.text('vscode.extensions.gameSupportRemoved', { game: gameLabel })
+      log(`[extensions] ${message}`)
+      askToReload(message)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      log(`[extensions] game-support removal failed: ${message}`)
+      void vscode.window.showErrorMessage(`Modkit: ${message}`)
+    }
+  }
+
   context.subscriptions.push(
     /*
      * Focuses the native view container rather than opening a panel of its own. What this command
@@ -2579,6 +2775,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       })
     }),
 
+    vscode.commands.registerCommand(OPEN_VENDOR_COMMAND, (argument: unknown) => {
+      void openRepositorySubjectCard('vendor', argument).catch(error => {
+        const message = error instanceof Error ? error.message : String(error)
+        log(`[repository-subject] vendor card failed: ${message}`)
+        void vscode.window.showErrorMessage(`Modkit: ${message}`)
+      })
+    }),
+
+    vscode.commands.registerCommand(OPEN_GAME_COMMAND, (argument: unknown) => {
+      void openRepositorySubjectCard('game', argument).catch(error => {
+        const message = error instanceof Error ? error.message : String(error)
+        log(`[repository-subject] game card failed: ${message}`)
+        void vscode.window.showErrorMessage(`Modkit: ${message}`)
+      })
+    }),
+
     vscode.commands.registerCommand('modkit.extensions.install', async (argument: unknown) => {
       const id =
         managerEntryId(argument) ??
@@ -2597,6 +2809,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     vscode.commands.registerCommand('modkit.extensions.installAll', () => installAllAvailable()),
 
     vscode.commands.registerCommand('modkit.extensions.installGameSupport', installGameSupport),
+
+    vscode.commands.registerCommand('modkit.extensions.completeGameSupport', installGameSupport),
+
+    vscode.commands.registerCommand('modkit.extensions.removeGameSupport', removeGameSupport),
 
     vscode.commands.registerCommand('modkit.extensions.update', async (argument: unknown) => {
       const id =

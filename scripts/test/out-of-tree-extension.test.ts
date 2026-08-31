@@ -4,8 +4,10 @@
  * The fixture is never copied into this workspace. The test scaffolds it under the system temp
  * directory, packs the five public ABI packages, installs only those tarballs into the foreign
  * project, bundles the codec from the public package names, packs the extension, and admits the
- * extracted immutable artifact through the local extension store. Electron and VS Code consume
- * that installed artifact; the PWA consumes the same bytes through its persisted-folder API.
+ * extracted immutable artifact through the local extension store. A real Extension Manager then
+ * installs the linked development release, proves disable/enable root gating, and supplies the
+ * active root consumed by Electron and VS Code; the PWA consumes the same release bytes through
+ * its persisted-folder API.
  *
  * This is deliberately an application-conformance test under scripts/test rather than another
  * app-specific fixture. A green result must not require editing packages/** or apps/** to teach a
@@ -29,6 +31,7 @@ import { fileURLToPath } from 'node:url'
 import { build, type Metafile, type Plugin } from 'esbuild'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ModkitError } from '@modkit/core'
+import { createNodeExtensionManager } from '@modkit/extension-manager/node'
 import {
   createLocalExtensionArtifactStore,
   loadExtensionDirectory,
@@ -84,6 +87,7 @@ const extractedRoot = join(temporaryRoot, 'extracted')
 const fixturePath = join(sourceRoot, 'fixtures', `example.${formatId}`)
 
 let installed: InstalledExtensionArtifact
+let managedExtensionRoot = ''
 let tarballDigest = ''
 let artifactDigest = ''
 let buildMetafile: Metafile
@@ -432,6 +436,78 @@ beforeAll(async () => {
     artifactDigest,
   )
   expect(existsSync(join(installed.artifactRoot, 'node_modules'))).toBe(false)
+
+  const developmentRepositoryRoot = dirname(releaseRoot)
+  writeFileSync(
+    join(developmentRepositoryRoot, 'modkit.repository.json'),
+    `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        extensions: [{ id: coordinate, path: basename(releaseRoot) }],
+      },
+      null,
+      2,
+    )}\n`,
+    'utf8',
+  )
+  const managerCatalogRoot = join(temporaryRoot, 'manager-catalog')
+  const managerCatalogPath = join(managerCatalogRoot, 'catalog.json')
+  mkdirSync(managerCatalogRoot, { recursive: true })
+  writeFileSync(
+    managerCatalogPath,
+    `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        registryId: 'modkit/out-of-tree-test',
+        generatedAt: '2026-08-31T00:00:00.000Z',
+        packages: [
+          {
+            id: coordinate,
+            publisher: 'org.example',
+            displayName: 'Outside demo',
+            summary: 'Application activation conformance fixture.',
+            versions: [
+              {
+                version: '1.0.0',
+                channel: 'stable',
+                source: {
+                  kind: 'repository',
+                  uri: relative(managerCatalogRoot, developmentRepositoryRoot).replaceAll(
+                    '\\',
+                    '/',
+                  ),
+                  trust: { mode: 'local-user' },
+                },
+                extensions: [coordinate],
+              },
+            ],
+          },
+        ],
+      },
+      null,
+      2,
+    )}\n`,
+    'utf8',
+  )
+  const manager = createNodeExtensionManager({
+    root: join(temporaryRoot, 'manager-state'),
+    catalog: managerCatalogPath,
+  })
+  await manager.refresh()
+  await manager.install(coordinate)
+  expect((await manager.snapshot()).entries[0]).toMatchObject({
+    id: coordinate,
+    installedVersion: '1.0.0',
+    enabled: true,
+  })
+  await manager.setEnabled(coordinate, false)
+  expect(await manager.installedRoots()).toEqual([])
+  await manager.setEnabled(coordinate, true)
+  const managedRoots = await manager.installedRoots()
+  expect(managedRoots.map(root => root.expectedId)).toEqual([coordinate])
+  managedExtensionRoot = managedRoots[0]?.root ?? ''
+  expect(resolve(managedExtensionRoot)).toBe(resolve(releaseRoot))
+  await manager.dispose()
 }, 360_000)
 
 describe('Block 20 out-of-tree extension', () => {
@@ -439,6 +515,7 @@ describe('Block 20 out-of-tree extension', () => {
     assertOutsideRepository(sourceRoot)
     assertOutsideRepository(releaseRoot)
     assertOutsideRepository(installed.artifactRoot)
+    assertOutsideRepository(managedExtensionRoot)
     expect(tarballDigest).toMatch(/^sha256:[0-9a-f]{64}$/u)
     expect(artifactDigest).toMatch(/^sha256:[0-9a-f]{64}$/u)
     expect(Object.keys(buildMetafile.outputs)).toHaveLength(1)
@@ -449,7 +526,7 @@ describe('Block 20 out-of-tree extension', () => {
     { timeout: 120_000 },
     async () => {
       const services = await createElectronSubjectServices([], {
-        userRoots: [{ root: installed.artifactRoot, expectedId: coordinate }],
+        userRoots: [{ root: managedExtensionRoot, expectedId: coordinate }],
       })
       expect(services.extensions).toMatchObject({ installed: [coordinate], failures: [] })
       const inventory = services.application.main.inventory.extensions.find(
@@ -497,7 +574,7 @@ describe('Block 20 out-of-tree extension', () => {
     async () => {
       const host = await createVsCodeSubjectHost({
         catalogCandidates: [],
-        configuredExtensions: [{ path: installed.artifactRoot, id: coordinate }],
+        configuredExtensions: [{ path: managedExtensionRoot, id: coordinate }],
       })
       expect(host.extensions.installed).toEqual([coordinate])
       expect(host.extensions.failures).toEqual([])
@@ -528,7 +605,7 @@ describe('Block 20 out-of-tree extension', () => {
     { timeout: 120_000 },
     async () => {
       spawned.splice(0)
-      const files = treeFromDisk(installed.artifactRoot)
+      const files = treeFromDisk(managedExtensionRoot)
       const handle = directoryHandle('outside-demo', files)
       const extensionStore = createMemoryExtensionStore()
       await extensionStore.add({

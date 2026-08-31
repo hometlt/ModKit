@@ -332,7 +332,7 @@ function migratePublisherIdPair(state, record, path) {
 function migrateExtensionSettings(state, document) {
   if (!Array.isArray(document.extensions)) return
   const idTargets = new Map()
-  for (const [index, item] of document.extensions.entries()) {
+  for (const item of document.extensions) {
     if (!isRecord(item) || typeof item.id !== 'string') continue
     const target = normalizeIdentifier(item.id, { family: 'qualified' }).value
     const originals = idTargets.get(target) ?? new Set()

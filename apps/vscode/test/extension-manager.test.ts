@@ -225,6 +225,11 @@ function fixture() {
         updateAvailable: false,
         source: 'workspace',
         trusted: false,
+        presentation: {
+          displayName: 'Local StarCraft II Data',
+          vendor: { id: 'blizzard', displayName: 'Blizzard Entertainment' },
+          games: [{ id: 'blizzard/starcraft-2', displayName: 'StarCraft II' }],
+        },
       },
     },
   ])
@@ -402,6 +407,26 @@ describe('VS Code extension manager state', () => {
     expect(state.packages().some(item => item.id === 'example/new-pack')).toBe(true)
     expect(state.controller.pendingReloadIds()).toEqual(['example/new-pack'])
     expect(changed).toHaveBeenCalledTimes(1)
+  })
+
+  it('recognizes a locally supplied installed game without requiring a catalog package', async () => {
+    const state = fixture()
+
+    const plan = await state.controller.planGameSupport('blizzard/starcraft-2')
+
+    expect(plan.targets).toEqual([
+      expect.objectContaining({
+        packageId: 'example/workspace-codec',
+        installedVersion: 'local',
+        enabled: true,
+      }),
+    ])
+    expect(plan.actions).toEqual([])
+    expect(plan.ready).toBe(true)
+    await expect(state.controller.applyGameSupport(plan)).resolves.toMatchObject({
+      status: 'applied',
+      applied: [],
+    })
   })
 
   it('updates manager state without writing configuration and preserves package enablement', async () => {

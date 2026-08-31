@@ -1,9 +1,12 @@
 import { nestedSubject, rootSubject, serializeSubjectRef } from '@modkit/sdk/subjects'
 
 import { ExtensionManagerError } from './schema.js'
+import { normalizeGameSubjectProfile, normalizeVendorSubjectProfile } from './subject-profiles.js'
 
 export const EXTENSION_SUBJECT_KIND = 'modkit/extension'
 export const CONTRIBUTION_SUBJECT_KIND = 'modkit/contribution'
+export const VENDOR_SUBJECT_KIND = 'modkit/vendor'
+export const GAME_SUBJECT_KIND = 'modkit/game'
 
 function fail(message, context = {}) {
   throw new ExtensionManagerError('extension-manager/subject-projection-invalid', message, context)
@@ -208,9 +211,9 @@ async function collectPages(openPage, signal) {
 }
 
 /** Creates a function-free JSON document suitable for Webview, worker and RPC boundaries. */
-export async function extensionSubjectRecordToWire(record, signal) {
+export async function subjectRecordToWire(record, signal) {
   if (record === null || typeof record !== 'object' || record.facts === undefined) {
-    fail('extension subject record must provide facts')
+    fail('subject record must provide facts')
   }
   const summary = await record.facts.summary(signal)
   const groups = await collectPages(
@@ -234,7 +237,7 @@ export async function extensionSubjectRecordToWire(record, signal) {
     subjectId: record.subjectId,
     id: record.id,
     displayName: record.displayName,
-    enabled: record.enabled,
+    ...('enabled' in record ? { enabled: record.enabled } : {}),
     ...('version' in record ? { version: record.version } : {}),
     ...('extensionId' in record ? { extensionId: record.extensionId } : {}),
     ...('contract' in record ? { contract: record.contract, contractKey: record.contractKey } : {}),
@@ -243,6 +246,8 @@ export async function extensionSubjectRecordToWire(record, signal) {
       ? { presentation: record.presentation }
       : {}),
     ...('contributions' in record ? { contributions: record.contributions } : {}),
+    ...('profile' in record ? { profile: record.profile } : {}),
+    ...('resources' in record ? { resources: record.resources } : {}),
   }
   return snapshotJson(
     {
@@ -254,6 +259,11 @@ export async function extensionSubjectRecordToWire(record, signal) {
     },
     'extension subject card wire document',
   )
+}
+
+/** Backward-compatible name retained for extension/contribution callers. */
+export async function extensionSubjectRecordToWire(record, signal) {
+  return subjectRecordToWire(record, signal)
 }
 
 /** Restores the neutral facts ABI from an inert card document received across a process boundary. */
@@ -606,6 +616,277 @@ export function projectExtensionSubjects(input) {
     contributions: Object.freeze(contributions),
     contractGroups: Object.freeze(contractGroups),
     records,
+    subject(subjectId) {
+      return recordsBySubjectId.get(subjectId)
+    },
+  })
+}
+
+function uniqueProfiles(values, normalize, label) {
+  if (!Array.isArray(values)) fail(`${label} must be a list`)
+  const seen = new Set()
+  return values.map((value, index) => {
+    const profile = normalize(value)
+    if (seen.has(profile.id)) fail(`${label}[${index}] duplicates «${profile.id}»`)
+    seen.add(profile.id)
+    return profile
+  })
+}
+
+function presentedVendorId(record) {
+  return typeof record?.presentation?.vendor?.id === 'string'
+    ? record.presentation.vendor.id
+    : undefined
+}
+
+function presentedGameIds(record) {
+  return Array.isArray(record?.presentation?.games)
+    ? record.presentation.games
+        .map(game => (typeof game?.id === 'string' ? game.id : undefined))
+        .filter(Boolean)
+    : []
+}
+
+function appendRelation(target, role, record) {
+  if (record === undefined) return
+  const key = `${role}\u0000${record.subjectId}`
+  if (target.keys.has(key)) return
+  target.keys.add(key)
+  target.items.push(relation(role, record))
+}
+
+function resourceFacts(profile, provenance) {
+  const resources = [
+    ...(profile.officialSite === undefined
+      ? []
+      : [
+          Object.freeze({ id: 'official-site', label: 'Official site', url: profile.officialSite }),
+        ]),
+    ...profile.resources,
+  ]
+  return Object.freeze({
+    resources: Object.freeze(resources),
+    facts: Object.freeze(
+      resources.map(resource =>
+        fact(`resource.${resource.id}`, resource.label, resource, provenance),
+      ),
+    ),
+  })
+}
+
+function sectionsFactsSource(record, sections, relations, origin) {
+  return factsSource({
+    snapshotId: `repository-subjects@1#${record.kind}/${record.id}`,
+    subjectId: record.subjectId,
+    label: record.displayName,
+    kind: record.kind,
+    groups: Object.freeze(sections.map(section => group(section.id, section.label, section.items))),
+    facts: Object.freeze(
+      sections.map(section => Object.freeze({ groupId: section.id, items: section.items })),
+    ),
+    relations: Object.freeze(relations),
+    origin,
+  })
+}
+
+/**
+ * Project repository-owned vendor and game profiles into the same neutral subject ABI as
+ * extensions. Concrete game knowledge stays in repository JSON; the core only joins declared ids.
+ */
+export function projectVendorGameSubjects(input) {
+  if (input === null || typeof input !== 'object' || Array.isArray(input)) {
+    fail('vendor/game subject projection input must be an object')
+  }
+  const vendors = uniqueProfiles(input.vendors, normalizeVendorSubjectProfile, 'vendors')
+  const games = uniqueProfiles(input.games, normalizeGameSubjectProfile, 'games')
+  const vendorProfiles = new Map(vendors.map(profile => [profile.id, profile]))
+  for (const game of games) {
+    if (!vendorProfiles.has(game.vendorId)) {
+      fail(`game «${game.id}» references missing vendor «${game.vendorId}»`, {
+        gameId: game.id,
+        vendorId: game.vendorId,
+      })
+    }
+  }
+
+  const relatedRecords = input.records === undefined ? [] : input.records
+  if (!Array.isArray(relatedRecords)) fail('records must be a list')
+  const relatedByKey = new Map()
+  for (const [index, record] of relatedRecords.entries()) {
+    if (record === null || typeof record !== 'object' || Array.isArray(record)) {
+      fail(`records[${index}] must be a subject record`)
+    }
+    const id = requiredText(record.id, `records[${index}].id`)
+    requiredText(record.subjectId, `records[${index}].subjectId`)
+    requiredText(record.kind, `records[${index}].kind`)
+    requiredText(record.displayName, `records[${index}].displayName`)
+    const key = `${record.kind}\u0000${id}`
+    if (relatedByKey.has(key)) fail(`records duplicate ${record.kind} id «${id}»`)
+    relatedByKey.set(key, record)
+  }
+
+  const source =
+    input.source === undefined
+      ? Object.freeze({ id: 'modkit-repository:subjects' })
+      : snapshotJson(input.source, 'source')
+  const workspace = optionalText(input.workspace, 'workspace')
+  const owner = rootSubject(source, workspace)
+  const origin = Object.freeze([Object.freeze({ label: 'repository subject profile' })])
+  const vendorRecords = vendors.map(profile => {
+    const ref = nestedSubject(owner, VENDOR_SUBJECT_KIND, profile.id)
+    return {
+      kind: VENDOR_SUBJECT_KIND,
+      ref,
+      subjectId: serializeSubjectRef(ref),
+      id: profile.id,
+      displayName: profile.displayName,
+      profile,
+    }
+  })
+  const gameRecords = games.map(profile => {
+    const ref = nestedSubject(owner, GAME_SUBJECT_KIND, profile.id)
+    return {
+      kind: GAME_SUBJECT_KIND,
+      ref,
+      subjectId: serializeSubjectRef(ref),
+      id: profile.id,
+      displayName: profile.displayName,
+      profile,
+    }
+  })
+  const vendorById = new Map(vendorRecords.map(record => [record.id, record]))
+  const gameById = new Map(gameRecords.map(record => [record.id, record]))
+
+  for (const record of vendorRecords) {
+    const profile = record.profile
+    const resources = resourceFacts(profile, origin)
+    const related = { keys: new Set(), items: [] }
+    const vendorGames = gameRecords
+      .filter(game => game.profile.vendorId === profile.id)
+      .sort((left, right) => compareText(left.displayName, right.displayName))
+    for (const game of vendorGames) appendRelation(related, 'offers-game', game)
+    const vendorExtensions = relatedRecords
+      .filter(
+        item => item.kind === EXTENSION_SUBJECT_KIND && presentedVendorId(item) === profile.id,
+      )
+      .sort(compareContribution)
+    for (const extension of vendorExtensions) {
+      appendRelation(
+        related,
+        presentedGameIds(extension).length === 0 ? 'provides-component' : 'provides-extension',
+        extension,
+      )
+    }
+    const overview = Object.freeze([
+      fact('id', 'Vendor ID', profile.id, origin),
+      fact('display-name', 'Display name', profile.displayName, origin),
+      fact('description', 'Description', profile.description, origin),
+      fact('game-count', 'Games', vendorGames.length, origin),
+      fact('extension-count', 'Extensions and components', vendorExtensions.length, origin),
+    ])
+    const sections = [
+      Object.freeze({ id: 'overview', label: 'Overview', items: overview }),
+      ...(resources.facts.length === 0
+        ? []
+        : [Object.freeze({ id: 'resources', label: 'Resources', items: resources.facts })]),
+    ]
+    record.resources = resources.resources
+    record.facts = sectionsFactsSource(record, sections, related.items, origin)
+    Object.freeze(record)
+  }
+
+  for (const record of gameRecords) {
+    const profile = record.profile
+    const resources = resourceFacts(profile, origin)
+    const related = { keys: new Set(), items: [] }
+    appendRelation(related, 'belongs-to-vendor', vendorById.get(profile.vendorId))
+    for (const extension of relatedRecords.filter(
+      item => item.kind === EXTENSION_SUBJECT_KIND && presentedGameIds(item).includes(profile.id),
+    )) {
+      appendRelation(related, 'supported-by', extension)
+    }
+    for (const requirement of profile.extensionRequirements) {
+      appendRelation(
+        related,
+        requirement.importance === 'required' ? 'requires-extension' : 'recommends-extension',
+        relatedByKey.get(`${EXTENSION_SUBJECT_KIND}\u0000${requirement.id}`),
+      )
+    }
+    for (const capability of profile.capabilityRequirements) {
+      for (const contributionId of capability.contributionIds) {
+        appendRelation(
+          related,
+          capability.importance === 'required' ? 'requires-capability' : 'recommends-capability',
+          relatedByKey.get(`${CONTRIBUTION_SUBJECT_KIND}\u0000${contributionId}`),
+        )
+      }
+    }
+    const overview = Object.freeze([
+      fact('id', 'Game ID', profile.id, origin),
+      fact('display-name', 'Display name', profile.displayName, origin),
+      fact('description', 'Description', profile.description, origin),
+      fact('vendor', 'Vendor', vendorById.get(profile.vendorId).displayName, origin),
+    ])
+    const extensionRequirements = Object.freeze(
+      profile.extensionRequirements.map(requirement =>
+        fact(`extension.${requirement.id}`, requirement.id, requirement.importance, origin),
+      ),
+    )
+    const capabilityRequirements = Object.freeze(
+      profile.capabilityRequirements.map(requirement =>
+        fact(
+          `capability.${requirement.id}`,
+          requirement.displayName,
+          Object.freeze({
+            id: requirement.id,
+            importance: requirement.importance,
+            contributionIds: requirement.contributionIds,
+          }),
+          origin,
+        ),
+      ),
+    )
+    const sections = [
+      Object.freeze({ id: 'overview', label: 'Overview', items: overview }),
+      ...(resources.facts.length === 0
+        ? []
+        : [Object.freeze({ id: 'resources', label: 'Resources', items: resources.facts })]),
+      ...(extensionRequirements.length === 0
+        ? []
+        : [
+            Object.freeze({
+              id: 'extension-requirements',
+              label: 'Extensions',
+              items: extensionRequirements,
+            }),
+          ]),
+      ...(capabilityRequirements.length === 0
+        ? []
+        : [
+            Object.freeze({
+              id: 'capability-requirements',
+              label: 'Capabilities',
+              items: capabilityRequirements,
+            }),
+          ]),
+    ]
+    record.resources = resources.resources
+    record.facts = sectionsFactsSource(record, sections, related.items, origin)
+    Object.freeze(record)
+  }
+
+  const records = Object.freeze([...vendorRecords, ...gameRecords])
+  const recordsBySubjectId = new Map(records.map(record => [record.subjectId, record]))
+  return Object.freeze({
+    vendors: Object.freeze(vendorRecords),
+    games: Object.freeze(gameRecords),
+    records,
+    vendor(id) {
+      return vendorById.get(id)
+    },
+    game(id) {
+      return gameById.get(id)
+    },
     subject(subjectId) {
       return recordsBySubjectId.get(subjectId)
     },

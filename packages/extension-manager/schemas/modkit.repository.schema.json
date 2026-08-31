@@ -30,6 +30,27 @@
           }
         }
       }
+    },
+    "subjects": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "vendors": { "$ref": "#/$defs/subjectProfilePaths" },
+        "games": { "$ref": "#/$defs/subjectProfilePaths" }
+      }
+    }
+  },
+  "$defs": {
+    "subjectProfilePaths": {
+      "type": "array",
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512,
+        "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*\\.json$"
+      }
     }
   }
 }

@@ -1,40 +1,10 @@
-/** Verify user-facing metadata and replaceable vendor placeholder icons. */
+/** Verify user-facing metadata using the generic workspace and repository manifests. */
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const workspace = path.resolve(import.meta.dirname, '..', '..')
-const groups = [
-  [
-    'modkit-core',
-    'assets/icons/modkit-placeholder.svg',
-    { id: 'modkit', displayName: 'Modkit' },
-    'extensions',
-  ],
-  [
-    'modkit-extensions-blizzard',
-    'assets/icons/blizzard-starcraft2-placeholder.svg',
-    { id: 'blizzard', displayName: 'Blizzard' },
-    '.',
-  ],
-  [
-    'modkit-extensions-ea',
-    'assets/icons/ea-placeholder.svg',
-    { id: 'ea', displayName: 'Electronic Arts' },
-    '.',
-  ],
-  [
-    'modkit-extensions-spring',
-    'assets/icons/spring-placeholder.svg',
-    { id: 'spring', displayName: 'Spring' },
-    '.',
-  ],
-  [
-    'modkit-extensions-warzone',
-    'assets/icons/warzone-2100-placeholder.svg',
-    { id: 'wz2100project', displayName: 'WZ2100Project' },
-    '.',
-  ],
-]
+const coreRoot = fileURLToPath(new URL('..', import.meta.url))
+const workspaceRoot = path.dirname(coreRoot)
 
 const errors = []
 const readJson = file => {
@@ -53,6 +23,28 @@ const walk = dir =>
     return entry.isDirectory() ? walk(file) : [file]
   })
 
+const repositoryRoots = () => {
+  const roots = [{ id: 'core', root: coreRoot, repository: null }]
+  const workspaceFile = path.join(workspaceRoot, 'modkit.workspace.json')
+  if (!fs.existsSync(workspaceFile)) return roots
+  const workspace = readJson(workspaceFile)
+  for (const source of workspace?.sources ?? []) {
+    if (typeof source?.uri !== 'string' || /^[a-z][a-z\d+.-]*:/iu.test(source.uri)) continue
+    const configured =
+      typeof source.environment === 'string' && process.env[source.environment]?.trim()
+        ? process.env[source.environment]
+        : source.uri
+    const root = path.resolve(workspaceRoot, configured)
+    const repositoryFile = path.join(root, 'modkit.repository.json')
+    if (!fs.existsSync(repositoryFile)) {
+      errors.push(`${source.id ?? source.uri}: missing modkit.repository.json at ${root}`)
+      continue
+    }
+    roots.push({ id: source.id ?? source.uri, root, repository: readJson(repositoryFile) })
+  }
+  return roots
+}
+
 const confinedPath = (root, value) => {
   if (typeof value !== 'string' || !value.trim() || value.includes('\\')) return false
   const resolvedRoot = path.resolve(root)
@@ -60,30 +52,69 @@ const confinedPath = (root, value) => {
   return resolved === resolvedRoot || resolved.startsWith(`${resolvedRoot}${path.sep}`)
 }
 
-for (const [group, icon, expectedVendor, scanRoot] of groups) {
-  const root = path.join(workspace, group)
-  if (!fs.existsSync(path.join(root, icon))) errors.push(`${group}: missing ${icon}`)
-  for (const file of walk(path.join(root, scanRoot)).filter(
-    file => path.basename(file) === 'package.json',
-  )) {
-    if (
-      file.includes(`${path.sep}test${path.sep}fixtures${path.sep}`) ||
-      file.includes(`${path.sep}scripts${path.sep}test${path.sep}fixtures${path.sep}`)
-    )
+const subjectFiles = (root, repository, kind) =>
+  (repository?.subjects?.[kind] ?? [])
+    .filter(value => typeof value === 'string')
+    .map(value => path.resolve(root, value))
+
+let checkedPackages = 0
+let checkedRepositories = 0
+for (const source of repositoryRoots()) {
+  const { root, repository } = source
+  checkedRepositories += 1
+  const vendors = new Map(
+    subjectFiles(root, repository, 'vendors')
+      .map(file => readJson(file))
+      .filter(value => value?.kind === 'vendor')
+      .map(value => [value.id, value]),
+  )
+  const games = new Map(
+    subjectFiles(root, repository, 'games')
+      .map(file => readJson(file))
+      .filter(value => value?.kind === 'game')
+      .map(value => [value.id, value]),
+  )
+  const packageFiles = repository
+    ? (repository.extensions ?? []).map(extension =>
+        path.join(root, extension.path, 'package.json'),
+      )
+    : walk(path.join(root, 'extensions')).filter(file => path.basename(file) === 'package.json')
+
+  const repositoryExtensionIds = new Set(
+    (repository?.extensions ?? []).map(extension => extension.id),
+  )
+  for (const game of games.values()) {
+    if (!vendors.has(game.vendorId))
+      errors.push(`${source.id}: game ${game.id} references missing vendor ${game.vendorId}`)
+    for (const requirement of game.extensionRequirements ?? []) {
+      if (!repositoryExtensionIds.has(requirement.id))
+        errors.push(`${source.id}: game ${game.id} references missing extension ${requirement.id}`)
+    }
+  }
+
+  for (const file of packageFiles) {
+    if (!fs.existsSync(file)) {
+      errors.push(`${source.id}: missing extension package ${file}`)
       continue
+    }
     const manifest = readJson(file)
     if (!manifest?.modkit) continue
+    checkedPackages += 1
     if (typeof manifest.description !== 'string' || !manifest.description.trim())
       errors.push(`${file}: package description is required`)
     const presentation = manifest.modkit.presentation
     if (!presentation || typeof presentation !== 'object') {
       errors.push(`${file}: modkit.presentation is required`)
     } else {
-      if (
-        presentation.vendor?.id !== expectedVendor.id ||
-        presentation.vendor?.displayName !== expectedVendor.displayName
-      ) {
-        errors.push(`${file}: presentation.vendor must identify ${expectedVendor.displayName}`)
+      const publisher = manifest.modkit.publisher
+      if (presentation.vendor?.id !== publisher)
+        errors.push(`${file}: presentation.vendor.id must match modkit.publisher`)
+      const vendor = vendors.get(publisher)
+      if (vendor && presentation.vendor?.displayName !== vendor.displayName)
+        errors.push(`${file}: presentation.vendor.displayName must match vendor subject`)
+      for (const game of presentation.games ?? []) {
+        if (repository && !games.has(game.id))
+          errors.push(`${file}: presentation references missing game subject ${game.id}`)
       }
       for (const field of [
         ...(presentation.icon === undefined ? [] : [presentation.icon]),
@@ -113,4 +144,8 @@ for (const [group, icon, expectedVendor, scanRoot] of groups) {
 if (errors.length) {
   console.error(errors.join('\n'))
   process.exitCode = 1
-} else console.log(`extension presentation: clean (${groups.length} groups checked)`)
+} else {
+  console.log(
+    `extension presentation: clean (${checkedPackages} packages in ${checkedRepositories} repositories)`,
+  )
+}

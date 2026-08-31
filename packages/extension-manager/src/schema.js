@@ -2,6 +2,8 @@ import { normalizeModkitIdentifier, normalizeModkitSourceIdentifier } from '@mod
 
 const SOURCE_ID = /^[a-z0-9][a-z0-9._-]*$/i
 const EXTENSION_ID = /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/i
+const REPOSITORY_JSON_PATH =
+  /^(?:\.\/)?(?![A-Za-z]:)(?!\\)(?!.*\\)(?!.*\u0000)(?!\.{1,2}(?:\/|$))(?!.*\/\.{1,2}(?:\/|$))[^/]+(?:\/[^/]+)*\.json$/u
 
 export class ExtensionManagerError extends Error {
   constructor(code, message, context = {}, cause) {
@@ -37,6 +39,31 @@ function optionalText(value, label) {
 function stringList(value, label) {
   if (!Array.isArray(value)) fail('extension-manager/schema-invalid', `${label} must be a list`)
   return Object.freeze(value.map((item, index) => text(item, `${label}[${index}]`)))
+}
+
+function repositorySubjectPaths(value, label) {
+  if (value === undefined) return Object.freeze([])
+  const paths = stringList(value, label)
+  if (paths.length > 64) {
+    fail('extension-manager/schema-invalid', `${label} must not contain more than 64 paths`)
+  }
+  const seen = new Set()
+  return Object.freeze(
+    paths.map((path, index) => {
+      if (path.length > 512 || !REPOSITORY_JSON_PATH.test(path)) {
+        fail(
+          'extension-manager/schema-invalid',
+          `${label}[${index}] must be a confined repository-relative JSON path`,
+        )
+      }
+      const normalized = path.startsWith('./') ? path.slice(2) : path
+      if (seen.has(normalized)) {
+        fail('extension-manager/schema-invalid', `${label} contains duplicate «${normalized}»`)
+      }
+      seen.add(normalized)
+      return normalized
+    }),
+  )
 }
 
 export function normalizeWorkspaceConfiguration(value) {
@@ -183,9 +210,17 @@ export function normalizeRepositoryManifest(value) {
       enabled: entry.enabled !== false,
     })
   })
+  let subjects
+  if (input.subjects !== undefined) {
+    const rawSubjects = object(input.subjects, 'repository subjects')
+    const vendors = repositorySubjectPaths(rawSubjects.vendors, 'subjects.vendors')
+    const games = repositorySubjectPaths(rawSubjects.games, 'subjects.games')
+    subjects = Object.freeze({ vendors, games })
+  }
   return Object.freeze({
     schemaVersion: 1,
     extensions: Object.freeze(extensions),
+    ...(subjects === undefined ? {} : { subjects }),
   })
 }
 

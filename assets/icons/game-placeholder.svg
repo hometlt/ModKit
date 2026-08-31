@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Game placeholder icon">
+  <title>Game placeholder icon</title>
+  <rect width="64" height="64" rx="14" fill="#172033"/>
+  <circle cx="32" cy="32" r="21" fill="#2c4f70" stroke="#73d2de" stroke-width="3"/>
+  <path d="M12 32h40M32 11c7 7 10 14 10 21S39 46 32 53M32 11c-7 7-10 14-10 21s3 14 10 21" fill="none" stroke="#e6f7ff" stroke-width="3" stroke-linecap="round"/>
+</svg>

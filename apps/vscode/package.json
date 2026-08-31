@@ -70,6 +70,11 @@
         "title": "%command.exportDiagnostics%"
       },
       {
+        "command": "modkit.extensions.completeGameSupport",
+        "title": "%command.completeGameSupport%",
+        "icon": "$(tools)"
+      },
+      {
         "command": "modkit.extensions.disable",
         "title": "%command.disableExtension%"
       },
@@ -126,6 +131,11 @@
       {
         "command": "modkit.extensions.remove",
         "title": "%command.removeExtension%",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "modkit.extensions.removeGameSupport",
+        "title": "%command.removeGameSupport%",
         "icon": "$(trash)"
       },
       {
@@ -259,6 +269,11 @@
     "menus": {
       "view/item/context": [
         {
+          "command": "modkit.extensions.completeGameSupport",
+          "when": "view == modkit.extensions && viewItem == modkitExtensionComponent.game.partial",
+          "group": "inline@1"
+        },
+        {
           "command": "modkit.extensions.disableAllCodecs",
           "when": "view == modkit.extensions && viewItem =~ /^modkitExtension\\.installed\\..*\\.codecs\\.enabled$/",
           "group": "inline@1"
@@ -279,19 +294,29 @@
           "group": "inline@1"
         },
         {
+          "command": "modkit.extensions.install",
+          "when": "view == modkit.extensions && viewItem == modkitExtension.available",
+          "group": "inline@1"
+        },
+        {
           "command": "modkit.extensions.installAll",
           "when": "view == modkit.extensions && viewItem == modkitExtensionGroup.available",
           "group": "inline@1"
         },
         {
           "command": "modkit.extensions.installGameSupport",
-          "when": "view == modkit.extensions && viewItem == modkitExtensionComponent.game",
+          "when": "view == modkit.extensions && viewItem == modkitExtensionComponent.game.available",
           "group": "inline@1"
         },
         {
           "command": "modkit.extensions.remove",
           "when": "view == modkit.extensions && viewItem =~ /^modkitExtension\\.installed\\.mutable(?:\\.update)?(?:\\.codecs\\.(?:enabled|disabled))?$/",
           "group": "inline@2"
+        },
+        {
+          "command": "modkit.extensions.removeGameSupport",
+          "when": "view == modkit.extensions && viewItem == modkitExtensionComponent.game.installed.mutable",
+          "group": "inline@1"
         },
         {
           "command": "modkit.extensions.update",
@@ -327,6 +352,7 @@
     "onCommand:modkit.browseContainer",
     "onCommand:modkit.explainResolution",
     "onCommand:modkit.exportDiagnostics",
+    "onCommand:modkit.extensions.completeGameSupport",
     "onCommand:modkit.extensions.disable",
     "onCommand:modkit.extensions.disableAllCodecs",
     "onCommand:modkit.extensions.disableContribution",
@@ -340,6 +366,7 @@
     "onCommand:modkit.extensions.openExtension",
     "onCommand:modkit.extensions.refresh",
     "onCommand:modkit.extensions.remove",
+    "onCommand:modkit.extensions.removeGameSupport",
     "onCommand:modkit.extensions.update",
     "onCommand:modkit.game.launchActiveMap",
     "onCommand:modkit.materializeContainerEntry",

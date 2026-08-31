@@ -48,6 +48,11 @@
       "icon": "$(cloud-download)"
     },
     {
+      "command": "modkit.extensions.completeGameSupport",
+      "title": "%command.completeGameSupport%",
+      "icon": "$(tools)"
+    },
+    {
       "command": "modkit.extensions.openContribution",
       "title": "%command.openContributionCard%"
     },
@@ -62,6 +67,11 @@
     {
       "command": "modkit.extensions.remove",
       "title": "%command.removeExtension%",
+      "icon": "$(trash)"
+    },
+    {
+      "command": "modkit.extensions.removeGameSupport",
+      "title": "%command.removeGameSupport%",
       "icon": "$(trash)"
     },
     {
@@ -254,7 +264,22 @@
       },
       {
         "command": "modkit.extensions.installGameSupport",
-        "when": "view == modkit.extensions && viewItem == modkitExtensionComponent.game",
+        "when": "view == modkit.extensions && viewItem == modkitExtensionComponent.game.available",
+        "group": "inline@1"
+      },
+      {
+        "command": "modkit.extensions.completeGameSupport",
+        "when": "view == modkit.extensions && viewItem == modkitExtensionComponent.game.partial",
+        "group": "inline@1"
+      },
+      {
+        "command": "modkit.extensions.removeGameSupport",
+        "when": "view == modkit.extensions && viewItem == modkitExtensionComponent.game.installed.mutable",
+        "group": "inline@1"
+      },
+      {
+        "command": "modkit.extensions.install",
+        "when": "view == modkit.extensions && viewItem == modkitExtension.available",
         "group": "inline@1"
       },
       {

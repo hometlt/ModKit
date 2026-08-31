@@ -1,13 +1,13 @@
 import { isAbsolute, resolve } from 'node:path'
 
 import type {
-  ExtensionManagerClient,
   ExtensionManagerEntry,
   ExtensionManagerSnapshot,
   GameSupportExtensionManagerClient,
   GameSupportApplyResult,
   GameSupportPlan,
 } from '@modkit/extension-manager'
+import { createGameSupportPlan, gameSupportPlansEqual } from '@modkit/extension-manager'
 import type { NodeExtensionManager } from '@modkit/extension-manager/node'
 
 import type { ManagedExtensionRootRequest } from './extension-roots.js'
@@ -107,6 +107,57 @@ export function createVsCodeExtensionManagerClient(
   const staticPackage = (id: string): StaticExtensionPackage | undefined =>
     staticPackages().find(entry => entry.entry.id === id)
 
+  /**
+   * A build/workspace/settings row can declare support for a game even though it does not exist
+   * in the mutable package catalogue. Keep that fact in game plans: otherwise a locally supplied
+   * game looks unavailable simply because there is nothing to download.
+   */
+  const mergedSnapshot = async (): Promise<ExtensionManagerSnapshot> => {
+    const shared = await options.client.snapshot()
+    const rows = new Map(staticPackages().map(item => [item.entry.id, item.entry]))
+    for (const entry of shared.entries) {
+      if (rows.has(entry.id) && entry.installedVersion === undefined) continue
+      rows.set(entry.id, entry)
+    }
+    return Object.freeze({
+      entries: Object.freeze(
+        [...rows.values()].sort((left, right) => left.id.localeCompare(right.id)),
+      ),
+    })
+  }
+
+  const staticOnlyIds = async (): Promise<ReadonlySet<string>> => {
+    const shared = await options.client.snapshot()
+    const managed = new Set(
+      shared.entries.filter(entry => entry.installedVersion !== undefined).map(entry => entry.id),
+    )
+    return new Set(
+      staticPackages()
+        .map(item => item.entry.id)
+        .filter(id => !managed.has(id)),
+    )
+  }
+
+  const planForMergedSnapshot = async (gameId: string): Promise<GameSupportPlan> => {
+    const plan = createGameSupportPlan(await mergedSnapshot(), gameId)
+    const immutable = await staticOnlyIds()
+    const blocked = plan.actions
+      .filter(action => immutable.has(action.packageId))
+      .map(action =>
+        Object.freeze({
+          packageId: action.packageId,
+          code: 'modkit/vscode-static-package-immutable',
+          message: `${action.packageId} is supplied by the build, workspace or settings and cannot be changed here.`,
+        }),
+      )
+    if (blocked.length === 0) return plan
+    return Object.freeze({
+      ...plan,
+      blocked: Object.freeze([...plan.blocked, ...blocked]),
+      ready: false,
+    })
+  }
+
   const requireManagedWhenStatic = async (id: string): Promise<void> => {
     if (staticPackage(id) === undefined) return
     const managed = (await options.client.snapshot()).entries.find(
@@ -123,17 +174,7 @@ export function createVsCodeExtensionManagerClient(
     async snapshot() {
       // An installed manager row wins and owns its enablement. An available-but-not-installed
       // catalog row must not hide an immutable build/workspace/manual package with the same id.
-      const shared = await options.client.snapshot()
-      const rows = new Map(staticPackages().map(item => [item.entry.id, item.entry]))
-      for (const entry of shared.entries) {
-        if (rows.has(entry.id) && entry.installedVersion === undefined) continue
-        rows.set(entry.id, entry)
-      }
-      return Object.freeze({
-        entries: Object.freeze(
-          [...rows.values()].sort((left, right) => left.id.localeCompare(right.id)),
-        ),
-      })
+      return mergedSnapshot()
     },
 
     refresh: () => options.client.refresh(),
@@ -158,8 +199,40 @@ export function createVsCodeExtensionManagerClient(
       await options.client.setEnabled(id, enabled)
     },
 
-    planGameSupport: gameId => options.client.planGameSupport(gameId),
-    applyGameSupport: plan => options.client.applyGameSupport(plan),
+    planGameSupport: planForMergedSnapshot,
+
+    async applyGameSupport(plan) {
+      const gameId = plan.game.id
+      const current = await planForMergedSnapshot(gameId)
+      if (!gameSupportPlansEqual(plan, current)) {
+        throw new Error('game support plan no longer matches the current Modkit installation')
+      }
+      if (!current.ready) {
+        throw new Error('game support plan contains packages that cannot be changed here')
+      }
+
+      // A game supplied entirely by the build/workspace is already active. There is no catalogue
+      // plan to delegate, but returning a normal no-op result keeps every shell on one contract.
+      const sharedSnapshot = await options.client.snapshot()
+      const sharedMatches = sharedSnapshot.entries.some(entry =>
+        entry.presentation?.games?.some(game => game.id === gameId),
+      )
+      if (!sharedMatches) {
+        return Object.freeze({
+          schemaVersion: 1 as const,
+          game: current.game,
+          status: 'applied' as const,
+          applied: Object.freeze([]),
+          rollback: Object.freeze([]),
+        })
+      }
+
+      // The shared manager verifies plans against its own catalogue snapshot. Static targets do
+      // not need an action, so delegate the equivalent mutable-only plan rather than weakening
+      // its stale-plan or trust checks.
+      const sharedPlan = createGameSupportPlan(sharedSnapshot, gameId)
+      return options.client.applyGameSupport(sharedPlan)
+    },
   }
   return Object.freeze(client)
 }

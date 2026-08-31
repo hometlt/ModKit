@@ -11,6 +11,9 @@ import type { ContributionRow } from './contributions.js'
 
 export const OPEN_EXTENSION_COMMAND = 'modkit.extensions.openExtension'
 export const OPEN_CONTRIBUTION_COMMAND = 'modkit.extensions.openContribution'
+/** Subject-card hooks; the subject service resolves the vendor/game data supplied by extensions. */
+export const OPEN_VENDOR_COMMAND = 'modkit.extensions.openVendor'
+export const OPEN_GAME_COMMAND = 'modkit.extensions.openGame'
 
 export type ExtensionGroup = 'installed' | 'available' | 'problems'
 
@@ -31,16 +34,25 @@ export interface ExtensionGroupNode {
   readonly problems?: readonly ExtensionProblemNode[]
 }
 
-/** A publisher/vendor branch. It is presentation only and never a card subject. */
+/** A publisher/vendor subject, with Games and Components as its two presentation sections. */
 export interface ExtensionVendorNode {
   readonly kind: 'vendor'
   readonly group: Exclude<ExtensionGroup, 'problems'>
   readonly id: string
   readonly label: string
+  readonly sections: readonly ExtensionSectionNode[]
+}
+
+/** The two fixed, human-readable branches below every vendor. */
+export interface ExtensionSectionNode {
+  readonly kind: 'section'
+  readonly group: Exclude<ExtensionGroup, 'problems'>
+  readonly section: 'games' | 'components'
+  readonly label: string
   readonly components: readonly ExtensionComponentNode[]
 }
 
-/** A game-specific branch, or the vendor's cross-game/shared components. */
+/** A game subject, or the vendor's cross-game components. */
 export interface ExtensionComponentNode {
   readonly kind: 'component'
   readonly group: Exclude<ExtensionGroup, 'problems'>
@@ -48,6 +60,10 @@ export interface ExtensionComponentNode {
   readonly id?: string
   readonly label: string
   readonly entries: readonly ExtensionEntryNode[]
+  /** State across every package that declares this game, not only this root group. */
+  readonly availability: 'available' | 'partial' | 'installed'
+  /** True only where every installed package can be changed by the package manager. */
+  readonly mutable: boolean
 }
 
 export interface ExtensionEntryNode {
@@ -89,11 +105,30 @@ export interface ContributionNode {
 export type ExtensionNode =
   | ExtensionGroupNode
   | ExtensionVendorNode
+  | ExtensionSectionNode
   | ExtensionComponentNode
   | ExtensionEntryNode
   | ContributionContractNode
   | ContributionNode
   | ExtensionProblemNode
+
+export function extensionEntryIsMutable(entry: ExtensionManagerEntry): boolean {
+  return !(
+    entry.source === 'bundled' ||
+    entry.source === 'workspace' ||
+    entry.source === 'configured' ||
+    entry.source.startsWith('local:') ||
+    entry.source.startsWith('managed:')
+  )
+}
+
+/** Context values encode action state, while the UI uses icons/tooltips instead of repeated text. */
+export function extensionComponentActionContextValue(node: ExtensionComponentNode): string {
+  if (node.component === 'shared') return `modkitExtensionComponent.components.${node.group}`
+  if (node.availability === 'available') return 'modkitExtensionComponent.game.available'
+  if (node.availability === 'partial') return 'modkitExtensionComponent.game.partial'
+  return `modkitExtensionComponent.game.installed.${node.mutable ? 'mutable' : 'immutable'}`
+}
 
 /** Context value consumed by VS Code's inline `view/item/context` actions. */
 export function extensionActionContextValue(node: ExtensionEntryNode | ContributionNode): string {
@@ -107,12 +142,7 @@ export function extensionActionContextValue(node: ExtensionEntryNode | Contribut
 
   const { entry } = node
   if (entry.installedVersion === undefined) return 'modkitExtension.available'
-  const immutable =
-    entry.source === 'bundled' ||
-    entry.source === 'workspace' ||
-    entry.source === 'configured' ||
-    entry.source.startsWith('local:') ||
-    entry.source.startsWith('managed:')
+  const immutable = !extensionEntryIsMutable(entry)
   const base = immutable
     ? 'modkitExtension.installed.immutable'
     : `modkitExtension.installed.mutable${entry.updateAvailable ? '.update' : ''}`
@@ -196,12 +226,19 @@ interface ComponentIdentity {
   readonly label: string
 }
 
-const SHARED_COMPONENTS_LABEL = 'Shared Components'
-const SHARED_COMPONENTS_KEY = 'vscode.extensions.sharedComponents'
+const COMPONENTS_LABEL = 'Components'
+const COMPONENTS_KEY = 'vscode.extensions.components'
+const GAMES_LABEL = 'Games'
+const GAMES_KEY = 'vscode.extensions.games'
 
 function sharedComponentsLabel(localizer: UiLocalizer): string {
-  const translated = localizer.text(SHARED_COMPONENTS_KEY)
-  return translated === SHARED_COMPONENTS_KEY ? SHARED_COMPONENTS_LABEL : translated
+  const translated = localizer.text(COMPONENTS_KEY)
+  return translated === COMPONENTS_KEY ? COMPONENTS_LABEL : translated
+}
+
+function gamesLabel(localizer: UiLocalizer): string {
+  const translated = localizer.text(GAMES_KEY)
+  return translated === GAMES_KEY ? GAMES_LABEL : translated
 }
 
 function componentIdentities(
@@ -286,6 +323,7 @@ function compareEntryNodes(left: ExtensionEntryNode, right: ExtensionEntryNode):
 function vendorNodes(
   group: Exclude<ExtensionGroup, 'problems'>,
   entries: readonly ExtensionEntryNode[],
+  allEntries: readonly ExtensionManagerEntry[],
   localizer: UiLocalizer,
 ): readonly ExtensionVendorNode[] {
   const vendors = new Map<string, MutableVendor>()
@@ -315,24 +353,51 @@ function vendorNodes(
           group,
           id: vendor.identity.id,
           label: vendor.identity.label,
-          components: Object.freeze(
-            [...vendor.components.values()]
-              .sort((left, right) => {
-                if (left.identity.component !== right.identity.component) {
-                  return left.identity.component === 'game' ? -1 : 1
-                }
-                return compareUtf8(left.identity.label, right.identity.label)
+          sections: Object.freeze(
+            (['games', 'components'] as const).map(section => {
+              const componentKind = section === 'games' ? 'game' : 'shared'
+              const components = [...vendor.components.values()]
+                .filter(component => component.identity.component === componentKind)
+                .sort((left, right) => compareUtf8(left.identity.label, right.identity.label))
+                .map(component => {
+                  const matching =
+                    component.identity.component === 'game' && component.identity.id !== undefined
+                      ? allEntries.filter(entry =>
+                          componentIdentities(entry, '').some(
+                            identity =>
+                              identity.component === 'game' &&
+                              identity.id === component.identity.id,
+                          ),
+                        )
+                      : component.entries.map(item => item.entry)
+                  const installed = matching.filter(entry => entry.installedVersion !== undefined)
+                  const availability =
+                    installed.length === 0
+                      ? 'available'
+                      : installed.length === matching.length &&
+                          installed.every(entry => entry.enabled)
+                        ? 'installed'
+                        : 'partial'
+                  return Object.freeze({
+                    kind: 'component' as const,
+                    group,
+                    component: component.identity.component,
+                    ...(component.identity.id === undefined ? {} : { id: component.identity.id }),
+                    label: component.identity.label,
+                    entries: Object.freeze([...component.entries].sort(compareEntryNodes)),
+                    availability,
+                    mutable: installed.length > 0 && installed.every(extensionEntryIsMutable),
+                  })
+                })
+              return Object.freeze({
+                kind: 'section' as const,
+                group,
+                section,
+                label:
+                  section === 'games' ? gamesLabel(localizer) : sharedComponentsLabel(localizer),
+                components: Object.freeze(components),
               })
-              .map(component =>
-                Object.freeze({
-                  kind: 'component' as const,
-                  group,
-                  component: component.identity.component,
-                  ...(component.identity.id === undefined ? {} : { id: component.identity.id }),
-                  label: component.identity.label,
-                  entries: Object.freeze([...component.entries].sort(compareEntryNodes)),
-                }),
-              ),
+            }),
           ),
         }),
       ),
@@ -385,14 +450,14 @@ export function createExtensionTree(
       group: 'installed',
       label: localizer.text('extensions.group.installed'),
       entries: installed,
-      vendors: vendorNodes('installed', installed, localizer),
+      vendors: vendorNodes('installed', installed, entries, localizer),
     }),
     Object.freeze({
       kind: 'group',
       group: 'available',
       label: localizer.text('extensions.group.available'),
       entries: available,
-      vendors: vendorNodes('available', available, localizer),
+      vendors: vendorNodes('available', available, entries, localizer),
     }),
     Object.freeze({
       kind: 'group',
@@ -448,7 +513,8 @@ export function extensionTreeChildren(
 ): readonly ExtensionNode[] {
   if (node.kind === 'group')
     return node.group === 'problems' ? (node.problems ?? []) : (node.vendors ?? node.entries ?? [])
-  if (node.kind === 'vendor') return node.components
+  if (node.kind === 'vendor') return node.sections
+  if (node.kind === 'section') return node.components
   if (node.kind === 'component') return node.entries
   if (node.kind === 'entry') {
     if (node.contributions.length === 0) return []
