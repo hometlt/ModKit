@@ -29,6 +29,7 @@
   "command.refreshRelations": "Modkit: Refresh Active Relations",
   "command.removeExtension": "Modkit: Remove Extension…",
   "command.removeGameSupport": "Remove This Game Support",
+  "command.removeVendorSupport": "Remove This Vendor",
   "command.runCommand": "Modkit: Run Command…",
   "command.searchContainer": "Modkit: Search Container…",
   "command.selectGameInstallation": "Modkit: Select Game Installation…",

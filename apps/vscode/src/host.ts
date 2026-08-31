@@ -448,6 +448,18 @@ export interface VsCodeServeOptions {
   /** Host-owned package ids accepted from extension cards, plus their manager mutation port. */
   readonly managedPackageIds?: ReadonlySet<string>
   readonly setManagedPackageEnabled?: (id: string, enabled: boolean) => Promise<void>
+  readonly removeManagedPackage?: (id: string) => Promise<void>
+  /** Exact repository subject/action tuple granted to this one card webview. */
+  readonly repositorySubject?: {
+    readonly kind: 'vendor' | 'game'
+    readonly id: string
+    readonly actions: readonly ('install' | 'remove')[]
+  }
+  readonly manageRepositorySubject?: (request: {
+    readonly kind: 'vendor' | 'game'
+    readonly id: string
+    readonly action: 'install' | 'remove'
+  }) => Promise<void>
   /** The grant every open runs under. Defaults to `read-source` only. */
   readonly grant?: PermissionGrant
   readonly budget?: ResourceBudget
@@ -1066,6 +1078,34 @@ function serveVsCode(
           `${request.id} is now ${request.enabled ? 'enabled' : 'disabled'} in the extension ` +
             `manager. ${applies}`,
         )
+      }
+      case 'remove-managed-package': {
+        if (
+          options.removeManagedPackage === undefined ||
+          options.managedPackageIds?.has(request.id) !== true
+        ) {
+          return answer(false, `${request.id} is not a removable managed extension package.`)
+        }
+        await options.removeManagedPackage(request.id)
+        return answer(true, `${request.id} was removed from the extension manager. ${applies}`)
+      }
+      case 'manage-repository-subject': {
+        const granted = options.repositorySubject
+        if (
+          granted === undefined ||
+          options.manageRepositorySubject === undefined ||
+          request.kind !== granted.kind ||
+          request.id !== granted.id ||
+          !granted.actions.includes(request.action)
+        ) {
+          return answer(false, 'This repository subject card does not grant that package action.')
+        }
+        await options.manageRepositorySubject({
+          kind: request.kind,
+          id: request.id,
+          action: request.action,
+        })
+        return answer(true, `${request.action} was requested for ${request.id}. ${applies}`)
       }
       case 'link-extension': {
         if (configuration === undefined) return answer(false, CANNOT_CONFIGURE)

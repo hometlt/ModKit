@@ -261,4 +261,58 @@ describe('subject-card knowledge projection', () => {
       links: [{ label: 'Official site', href: 'https://game.example/' }],
     })
   })
+
+  it('projects a vendor offering as a two-column row with a navigable subject name', async () => {
+    const source: SubjectFactsSource = {
+      async summary() {
+        return {
+          snapshotId: 'vendor-profile',
+          identity: {
+            subjectId: 'vendor-profile',
+            kind: 'modkit/vendor',
+            label: 'Example Vendor',
+            origins: [],
+          },
+          groupCount: 1,
+          relationCount: 0,
+        }
+      },
+      async groups() {
+        return { items: [{ id: 'offerings', label: 'Games and components', factCount: 1 }] }
+      },
+      async facts() {
+        return {
+          items: [
+            {
+              id: 'game.example',
+              label: 'Example Game',
+              value: {
+                subjectId: 'modkit-subject://game/example',
+                description: 'A short game description.',
+                kind: 'game',
+              },
+              provenance: [],
+            },
+          ],
+        }
+      },
+      async relations() {
+        return { items: [] }
+      },
+    }
+
+    const sections = await loadSubjectCardSections(source, { localizer: createUiLocalizer('ru') })
+    expect(sections.find(section => section.kind === 'fields')).toMatchObject({
+      kind: 'fields',
+      id: 'offerings',
+      title: 'Игры и компоненты',
+      fields: [
+        {
+          name: 'Example Game',
+          value: 'A short game description.',
+          ref: { label: 'Example Game', href: 'modkit-subject://game/example' },
+        },
+      ],
+    })
+  })
 })

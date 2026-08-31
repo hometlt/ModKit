@@ -128,7 +128,14 @@ export type ShellRequest =
   | { readonly op: 'set-contributions'; readonly ids: readonly string[]; readonly enabled: boolean }
   | { readonly op: 'set-extension-coordinate'; readonly id: string; readonly enabled: boolean }
   | { readonly op: 'set-managed-package'; readonly id: string; readonly enabled: boolean }
+  | { readonly op: 'remove-managed-package'; readonly id: string }
   | { readonly op: 'link-extension'; readonly id: string }
+  | {
+      readonly op: 'manage-repository-subject'
+      readonly kind: 'vendor' | 'game'
+      readonly id: string
+      readonly action: 'install' | 'remove'
+    }
   /**
    * Opens a resource registered for an extension card by the extension host.
    *

@@ -55,6 +55,13 @@ export interface ExtensionCardCatalogEntry {
 export interface ExtensionCardBundle {
   readonly activeSubjectId: string
   readonly documents: readonly ExtensionSubjectCardWireDocument[]
+  /** Host-authorized actions for an inert repository vendor/game subject card. */
+  readonly repositorySubject?: {
+    readonly kind: 'vendor' | 'game'
+    readonly id: string
+    readonly label: string
+    readonly actions: readonly ('install' | 'remove')[]
+  }
   readonly extension: {
     readonly id: string
     readonly installed: boolean

@@ -86,6 +86,11 @@
       "icon": "$(trash)"
     },
     {
+      "command": "modkit.extensions.removeVendorSupport",
+      "title": "%command.removeVendorSupport%",
+      "icon": "$(trash)"
+    },
+    {
       "command": "modkit.extensions.update",
       "title": "%command.updateExtension%",
       "icon": "$(sync)"
@@ -263,6 +268,11 @@
       {
         "command": "modkit.extensions.removeGameSupport",
         "when": "view == modkit.extensions && viewItem == modkitExtensionComponent.game.installed.mutable",
+        "group": "inline@1"
+      },
+      {
+        "command": "modkit.extensions.removeVendorSupport",
+        "when": "view == modkit.extensions && viewItem == modkitExtensionVendor.installed.mutable",
         "group": "inline@1"
       },
       {

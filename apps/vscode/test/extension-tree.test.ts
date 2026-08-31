@@ -10,6 +10,7 @@ import {
   extensionEntryDisplayName,
   extensionGroupActionContextValue,
   extensionTreeChildren,
+  extensionVendorActionContextValue,
   type ExtensionComponentNode,
   type ExtensionSectionNode,
   type ContributionContractNode,
@@ -143,7 +144,7 @@ describe('VS Code extension contribution tree', () => {
     const components = extensionTreeChildren(
       required(sections[1], 'components section is missing'),
       [],
-    ) as readonly ExtensionComponentNode[]
+    ) as readonly ExtensionEntryNode[]
 
     expect(vendor).toMatchObject({ kind: 'vendor', id: 'example', label: 'Example Studios' })
     expect(sections.map(section => section.label)).toEqual(['Games', 'Components'])
@@ -153,10 +154,10 @@ describe('VS Code extension contribution tree', () => {
       'Game Tools',
     )
     expect(gameEntry?.pendingReload).toBe(true)
-    expect(components[0]?.entries[0]?.entry.id).toBe(sharedPackage.id)
+    expect(components[0]?.entry.id).toBe(sharedPackage.id)
   })
 
-  it('falls back to publisher and Components when presentation metadata is absent', () => {
+  it('shows extensions directly below a vendor when that vendor declares no games', () => {
     const installedGroup = required(
       model().find(group => group.group === 'installed'),
       'installed group is missing',
@@ -166,18 +167,11 @@ describe('VS Code extension contribution tree', () => {
       [],
     ) as readonly ExtensionVendorNode[]
     const vendor = required(maybeVendor, 'vendor is missing')
-    const sections = extensionTreeChildren(vendor, []) as readonly ExtensionSectionNode[]
-    const [component] = extensionTreeChildren(
-      required(sections[1], 'components section is missing'),
-      [],
-    ) as readonly ExtensionComponentNode[]
+    const directEntries = extensionTreeChildren(vendor, []) as readonly ExtensionEntryNode[]
 
     expect(vendor.label).toBe('Example')
-    expect(component).toMatchObject({
-      kind: 'component',
-      component: 'shared',
-      label: 'Components',
-    })
+    expect(directEntries.map(entry => entry.entry.id)).toEqual([disabledExtension.id, installed.id])
+    expect(directEntries.every(entry => entry.kind === 'entry')).toBe(true)
   })
 
   it('exposes hover actions only for installed codecs and mutable packages', () => {
@@ -222,6 +216,16 @@ describe('VS Code extension contribution tree', () => {
         },
       }),
     ).toBe('modkitExtension.installed.mutable.update.codecs.disabled')
+    expect(
+      extensionVendorActionContextValue({
+        kind: 'vendor',
+        group: 'installed',
+        id: 'example',
+        label: 'Example',
+        sections: [],
+        mutable: true,
+      }),
+    ).toBe('modkitExtensionVendor.installed.mutable')
   })
 
   it('uses install, complete, and remove contexts for game state without offering install for immutable support', () => {
@@ -285,6 +289,40 @@ describe('VS Code extension contribution tree', () => {
     )[0]
     expect(extensionComponentActionContextValue(required(game, 'game is missing'))).toBe(
       'modkitExtensionComponent.game.installed.immutable',
+    )
+  })
+
+  it('offers grouped removal for a game root explicitly linked in user settings', () => {
+    const configuredGame = Object.freeze({
+      ...installed,
+      id: 'example/configured-game',
+      source: 'configured',
+      presentation: {
+        vendor: { id: 'example', displayName: 'Example Studios' },
+        games: [{ id: 'example/game', displayName: 'Example Game' }],
+      },
+    })
+    const groups = createExtensionTree({
+      entries: [configuredGame],
+      contributions: [],
+      configuredDisabledContributionIds: [],
+      problems: [],
+    })
+    const vendor = extensionTreeChildren(
+      required(groups[0], 'installed group'),
+      [],
+    )[0] as ExtensionVendorNode
+    const sections = extensionTreeChildren(vendor, []) as readonly ExtensionSectionNode[]
+    const game = extensionTreeChildren(
+      required(sections[0], 'games section'),
+      [],
+    )[0] as ExtensionComponentNode
+
+    expect(extensionVendorActionContextValue(vendor)).toBe(
+      'modkitExtensionVendor.installed.mutable',
+    )
+    expect(extensionComponentActionContextValue(game)).toBe(
+      'modkitExtensionComponent.game.installed.mutable',
     )
   })
 

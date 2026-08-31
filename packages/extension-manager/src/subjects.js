@@ -506,6 +506,7 @@ export function projectExtensionSubjects(input) {
     version,
     enabled: extensionEnabled,
     manifest: extensionInput,
+    ...(description === undefined ? {} : { description }),
     ...(Object.keys(presentation).length === 0 ? {} : { presentation }),
   }
 
@@ -784,8 +785,45 @@ export function projectVendorGameSubjects(input) {
       fact('game-count', 'Games', vendorGames.length, origin),
       fact('extension-count', 'Extensions and components', vendorExtensions.length, origin),
     ])
+    const offerings = Object.freeze([
+      ...vendorGames.map(game =>
+        fact(
+          `game.${game.id}`,
+          game.displayName,
+          Object.freeze({
+            subjectId: game.subjectId,
+            description: game.profile.description,
+            kind: 'game',
+          }),
+          origin,
+        ),
+      ),
+      ...vendorExtensions
+        .filter(extension => presentedGameIds(extension).length === 0)
+        .map(extension =>
+          fact(
+            `component.${extension.id}`,
+            extension.displayName,
+            Object.freeze({
+              subjectId: extension.subjectId,
+              description: extension.description ?? extension.displayName,
+              kind: 'component',
+            }),
+            origin,
+          ),
+        ),
+    ])
     const sections = [
       Object.freeze({ id: 'overview', label: 'Overview', items: overview }),
+      ...(offerings.length === 0
+        ? []
+        : [
+            Object.freeze({
+              id: 'offerings',
+              label: 'Games and components',
+              items: offerings,
+            }),
+          ]),
       ...(resources.facts.length === 0
         ? []
         : [Object.freeze({ id: 'resources', label: 'Resources', items: resources.facts })]),

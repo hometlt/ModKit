@@ -223,6 +223,17 @@ async function servedHost(options: {
   readonly linkableExtensionRoots?: ReadonlyMap<string, string>
   readonly managedPackageIds?: ReadonlySet<string>
   readonly setManagedPackageEnabled?: (id: string, enabled: boolean) => Promise<void>
+  readonly removeManagedPackage?: (id: string) => Promise<void>
+  readonly repositorySubject?: {
+    readonly kind: 'vendor' | 'game'
+    readonly id: string
+    readonly actions: readonly ('install' | 'remove')[]
+  }
+  readonly manageRepositorySubject?: (request: {
+    readonly kind: 'vendor' | 'game'
+    readonly id: string
+    readonly action: 'install' | 'remove'
+  }) => Promise<void>
   readonly extensionCardResources?: ReadonlyMap<string, readonly ExtensionCardResourceTarget[]>
   readonly openExtensionCardResource?: (resource: ExtensionCardResourceTarget) => Promise<void>
 }): Promise<{
@@ -253,6 +264,15 @@ async function servedHost(options: {
     ...(options.setManagedPackageEnabled === undefined
       ? {}
       : { setManagedPackageEnabled: options.setManagedPackageEnabled }),
+    ...(options.removeManagedPackage === undefined
+      ? {}
+      : { removeManagedPackage: options.removeManagedPackage }),
+    ...(options.repositorySubject === undefined
+      ? {}
+      : { repositorySubject: options.repositorySubject }),
+    ...(options.manageRepositorySubject === undefined
+      ? {}
+      : { manageRepositorySubject: options.manageRepositorySubject }),
     ...(options.extensionCardResources === undefined
       ? {}
       : { extensionCardResources: options.extensionCardResources }),
@@ -431,6 +451,63 @@ describe('the webview asks, the extension side writes', () => {
       })) as { changed: boolean }
       expect(enabled.changed).toBe(true)
       expect(calls).toEqual([{ id: 'org.example/package', enabled: true }])
+    } finally {
+      await served.close()
+    }
+  }, 60_000)
+
+  it('removes only a host-owned managed package id from a component card', async () => {
+    const removed: string[] = []
+    const served = await servedHost({
+      managedPackageIds: new Set(['org.example/package']),
+      removeManagedPackage: async id => {
+        removed.push(id)
+      },
+    })
+    try {
+      const refused = (await served.ask({
+        op: 'remove-managed-package',
+        id: 'org.example/not-owned',
+      })) as { changed: boolean }
+      expect(refused.changed).toBe(false)
+
+      const accepted = (await served.ask({
+        op: 'remove-managed-package',
+        id: 'org.example/package',
+      })) as { changed: boolean }
+      expect(accepted.changed).toBe(true)
+      expect(removed).toEqual(['org.example/package'])
+    } finally {
+      await served.close()
+    }
+  }, 60_000)
+
+  it('accepts only the exact action granted to one repository subject card', async () => {
+    const calls: { kind: 'vendor' | 'game'; id: string; action: 'install' | 'remove' }[] = []
+    const served = await servedHost({
+      repositorySubject: { kind: 'vendor', id: 'example', actions: ['remove'] },
+      manageRepositorySubject: async request => {
+        calls.push(request)
+      },
+    })
+    try {
+      const refused = (await served.ask({
+        op: 'manage-repository-subject',
+        kind: 'vendor',
+        id: 'example',
+        action: 'install',
+      })) as { changed: boolean }
+      expect(refused.changed).toBe(false)
+      expect(calls).toEqual([])
+
+      const accepted = (await served.ask({
+        op: 'manage-repository-subject',
+        kind: 'vendor',
+        id: 'example',
+        action: 'remove',
+      })) as { changed: boolean }
+      expect(accepted.changed).toBe(true)
+      expect(calls).toEqual([{ kind: 'vendor', id: 'example', action: 'remove' }])
     } finally {
       await served.close()
     }

@@ -29,6 +29,7 @@
   "command.refreshRelations": "Modkit: Обновить связи активного субъекта",
   "command.removeExtension": "Modkit: Удалить расширение…",
   "command.removeGameSupport": "Удалить поддержку этой игры",
+  "command.removeVendorSupport": "Удалить этого вендора",
   "command.runCommand": "Modkit: Выполнить команду…",
   "command.searchContainer": "Modkit: Искать в контейнере…",
   "command.selectGameInstallation": "Modkit: Выбрать установку игры…",

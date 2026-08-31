@@ -615,7 +615,14 @@ async function mountExtensionSubjectCard(
         }
       | { readonly op: 'set-extension-coordinate'; readonly id: string; readonly enabled: boolean }
       | { readonly op: 'set-managed-package'; readonly id: string; readonly enabled: boolean }
-      | { readonly op: 'link-extension'; readonly id: string },
+      | { readonly op: 'remove-managed-package'; readonly id: string }
+      | { readonly op: 'link-extension'; readonly id: string }
+      | {
+          readonly op: 'manage-repository-subject'
+          readonly kind: 'vendor' | 'game'
+          readonly id: string
+          readonly action: 'install' | 'remove'
+        },
   ): Promise<void> => {
     await bridge.request(request)
     status.textContent = localizer.text('extensions.status.configurationUpdated')
@@ -686,7 +693,26 @@ async function mountExtensionSubjectCard(
     active: ExtensionSubjectCardWireDocument,
   ): readonly HTMLButtonElement[] => {
     const subject = active.subject
-    if (subject.kind === 'modkit/vendor' || subject.kind === 'modkit/game') return []
+    if (subject.kind === 'modkit/vendor' || subject.kind === 'modkit/game') {
+      const control = bundle.repositorySubject
+      if (
+        control === undefined ||
+        control.id !== subject.id ||
+        control.kind !== (subject.kind === 'modkit/vendor' ? 'vendor' : 'game')
+      ) {
+        return []
+      }
+      return control.actions.map(action =>
+        button(localizer.text(action === 'install' ? 'common.install' : 'common.remove'), () => {
+          void configure({
+            op: 'manage-repository-subject',
+            kind: control.kind,
+            id: control.id,
+            action,
+          })
+        }),
+      )
+    }
     if (
       bundle.extension.managedPackageId !== undefined &&
       bundle.extension.managedPackageEnabled === false
@@ -700,7 +726,7 @@ async function mountExtensionSubjectCard(
     }
     if (!bundle.extension.installed && bundle.extension.linkable) {
       return [
-        button(localizer.text('extensions.action.linkExtension'), () => {
+        button(localizer.text('common.install'), () => {
           void configure({ op: 'link-extension', id: bundle.extension.id })
         }),
       ]
@@ -735,6 +761,14 @@ async function mountExtensionSubjectCard(
         },
       ),
     ]
+    if (bundle.extension.managedPackageId !== undefined) {
+      const packageId = bundle.extension.managedPackageId
+      actions.push(
+        button(localizer.text('common.remove'), () => {
+          void configure({ op: 'remove-managed-package', id: packageId })
+        }),
+      )
+    }
     if (bundle.extension.codecs.ids.length > 0) {
       actions.push(
         button(

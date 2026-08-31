@@ -139,6 +139,11 @@
         "icon": "$(trash)"
       },
       {
+        "command": "modkit.extensions.removeVendorSupport",
+        "title": "%command.removeVendorSupport%",
+        "icon": "$(trash)"
+      },
+      {
         "command": "modkit.extensions.update",
         "title": "%command.updateExtension%",
         "icon": "$(sync)"
@@ -319,6 +324,11 @@
           "group": "inline@1"
         },
         {
+          "command": "modkit.extensions.removeVendorSupport",
+          "when": "view == modkit.extensions && viewItem == modkitExtensionVendor.installed.mutable",
+          "group": "inline@1"
+        },
+        {
           "command": "modkit.extensions.update",
           "when": "view == modkit.extensions && viewItem =~ /^modkitExtension\\.installed\\.mutable\\.update(?:\\.|$)/",
           "group": "inline@1"
@@ -367,6 +377,7 @@
     "onCommand:modkit.extensions.refresh",
     "onCommand:modkit.extensions.remove",
     "onCommand:modkit.extensions.removeGameSupport",
+    "onCommand:modkit.extensions.removeVendorSupport",
     "onCommand:modkit.extensions.update",
     "onCommand:modkit.game.launchActiveMap",
     "onCommand:modkit.materializeContainerEntry",

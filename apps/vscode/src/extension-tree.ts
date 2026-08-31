@@ -41,6 +41,8 @@ export interface ExtensionVendorNode {
   readonly id: string
   readonly label: string
   readonly sections: readonly ExtensionSectionNode[]
+  /** At least one installed package can be removed or one configured root can be unlinked. */
+  readonly mutable: boolean
 }
 
 /** The two fixed, human-readable branches below every vendor. */
@@ -62,7 +64,7 @@ export interface ExtensionComponentNode {
   readonly entries: readonly ExtensionEntryNode[]
   /** State across every package that declares this game, not only this root group. */
   readonly availability: 'available' | 'partial' | 'installed'
-  /** True only where every installed package can be changed by the package manager. */
+  /** True when at least one installed package can be removed or configured root can be unlinked. */
   readonly mutable: boolean
 }
 
@@ -122,12 +124,23 @@ export function extensionEntryIsMutable(entry: ExtensionManagerEntry): boolean {
   )
 }
 
+/** A grouped game/vendor action may also unlink a root explicitly owned by user settings. */
+export function extensionEntrySupportsGroupedRemoval(entry: ExtensionManagerEntry): boolean {
+  return extensionEntryIsMutable(entry) || entry.source === 'configured'
+}
+
 /** Context values encode action state, while the UI uses icons/tooltips instead of repeated text. */
 export function extensionComponentActionContextValue(node: ExtensionComponentNode): string {
   if (node.component === 'shared') return `modkitExtensionComponent.components.${node.group}`
   if (node.availability === 'available') return 'modkitExtensionComponent.game.available'
   if (node.availability === 'partial') return 'modkitExtensionComponent.game.partial'
   return `modkitExtensionComponent.game.installed.${node.mutable ? 'mutable' : 'immutable'}`
+}
+
+/** Context value for vendor-level install state actions. */
+export function extensionVendorActionContextValue(node: ExtensionVendorNode): string {
+  if (node.group === 'available') return 'modkitExtensionVendor.available'
+  return `modkitExtensionVendor.installed.${node.mutable ? 'mutable' : 'immutable'}`
 }
 
 /** Context value consumed by VS Code's inline `view/item/context` actions. */
@@ -347,60 +360,64 @@ function vendorNodes(
         const label = compareUtf8(left.identity.label, right.identity.label)
         return label === 0 ? compareUtf8(left.identity.id, right.identity.id) : label
       })
-      .map(vendor =>
-        Object.freeze({
+      .map(vendor => {
+        const sections = (['games', 'components'] as const)
+          .map(section => {
+            const componentKind = section === 'games' ? 'game' : 'shared'
+            const components = [...vendor.components.values()]
+              .filter(component => component.identity.component === componentKind)
+              .sort((left, right) => compareUtf8(left.identity.label, right.identity.label))
+              .map(component => {
+                const matching =
+                  component.identity.component === 'game' && component.identity.id !== undefined
+                    ? allEntries.filter(entry =>
+                        componentIdentities(entry, '').some(
+                          identity =>
+                            identity.component === 'game' && identity.id === component.identity.id,
+                        ),
+                      )
+                    : component.entries.map(item => item.entry)
+                const installed = matching.filter(entry => entry.installedVersion !== undefined)
+                const availability =
+                  installed.length === 0
+                    ? 'available'
+                    : installed.length === matching.length &&
+                        installed.every(entry => entry.enabled)
+                      ? 'installed'
+                      : 'partial'
+                return Object.freeze({
+                  kind: 'component' as const,
+                  group,
+                  component: component.identity.component,
+                  ...(component.identity.id === undefined ? {} : { id: component.identity.id }),
+                  label: component.identity.label,
+                  entries: Object.freeze([...component.entries].sort(compareEntryNodes)),
+                  availability,
+                  mutable: installed.some(extensionEntrySupportsGroupedRemoval),
+                })
+              })
+            return Object.freeze({
+              kind: 'section' as const,
+              group,
+              section,
+              label: section === 'games' ? gamesLabel(localizer) : sharedComponentsLabel(localizer),
+              components: Object.freeze(components),
+            })
+          })
+          .filter(section => section.components.length > 0)
+        const installedForVendor = allEntries.filter(
+          entry =>
+            entry.installedVersion !== undefined && vendorIdentity(entry).id === vendor.identity.id,
+        )
+        return Object.freeze({
           kind: 'vendor' as const,
           group,
           id: vendor.identity.id,
           label: vendor.identity.label,
-          sections: Object.freeze(
-            (['games', 'components'] as const).map(section => {
-              const componentKind = section === 'games' ? 'game' : 'shared'
-              const components = [...vendor.components.values()]
-                .filter(component => component.identity.component === componentKind)
-                .sort((left, right) => compareUtf8(left.identity.label, right.identity.label))
-                .map(component => {
-                  const matching =
-                    component.identity.component === 'game' && component.identity.id !== undefined
-                      ? allEntries.filter(entry =>
-                          componentIdentities(entry, '').some(
-                            identity =>
-                              identity.component === 'game' &&
-                              identity.id === component.identity.id,
-                          ),
-                        )
-                      : component.entries.map(item => item.entry)
-                  const installed = matching.filter(entry => entry.installedVersion !== undefined)
-                  const availability =
-                    installed.length === 0
-                      ? 'available'
-                      : installed.length === matching.length &&
-                          installed.every(entry => entry.enabled)
-                        ? 'installed'
-                        : 'partial'
-                  return Object.freeze({
-                    kind: 'component' as const,
-                    group,
-                    component: component.identity.component,
-                    ...(component.identity.id === undefined ? {} : { id: component.identity.id }),
-                    label: component.identity.label,
-                    entries: Object.freeze([...component.entries].sort(compareEntryNodes)),
-                    availability,
-                    mutable: installed.length > 0 && installed.every(extensionEntryIsMutable),
-                  })
-                })
-              return Object.freeze({
-                kind: 'section' as const,
-                group,
-                section,
-                label:
-                  section === 'games' ? gamesLabel(localizer) : sharedComponentsLabel(localizer),
-                components: Object.freeze(components),
-              })
-            }),
-          ),
-        }),
-      ),
+          sections: Object.freeze(sections),
+          mutable: installedForVendor.some(extensionEntrySupportsGroupedRemoval),
+        })
+      }),
   )
 }
 
@@ -513,8 +530,25 @@ export function extensionTreeChildren(
 ): readonly ExtensionNode[] {
   if (node.kind === 'group')
     return node.group === 'problems' ? (node.problems ?? []) : (node.vendors ?? node.entries ?? [])
-  if (node.kind === 'vendor') return node.sections
-  if (node.kind === 'section') return node.components
+  if (node.kind === 'vendor') {
+    const games = node.sections.find(section => section.section === 'games')
+    // A vendor without games is already a useful grouping. Do not repeat a synthetic
+    // Vendor → Components → Components chain; show its extension rows directly.
+    if (games === undefined || games.components.length === 0) {
+      return Object.freeze(
+        node.sections
+          .filter(section => section.section === 'components')
+          .flatMap(section => section.components.flatMap(component => component.entries)),
+      )
+    }
+    return node.sections
+  }
+  if (node.kind === 'section') {
+    if (node.section === 'components') {
+      return Object.freeze(node.components.flatMap(component => component.entries))
+    }
+    return node.components
+  }
   if (node.kind === 'component') return node.entries
   if (node.kind === 'entry') {
     if (node.contributions.length === 0) return []

@@ -58,6 +58,8 @@ export interface CardStat {
 export interface CardField {
   readonly name: string
   readonly value: string
+  /** Optional subject link rendered in the left/name column of the two-column table. */
+  readonly ref?: CardRef
   /** Rendered as a chip after the value: the origin subject, a unit, a schema hint. */
   readonly badge?: string
   readonly title?: string
@@ -256,6 +258,7 @@ const REPOSITORY_SUBJECT_GROUP_MESSAGE_KEYS: Readonly<Record<string, UiMessageKe
   {
     overview: 'card.repository.group.overview',
     resources: 'card.repository.group.resources',
+    offerings: 'card.repository.group.offerings',
     'extension-requirements': 'card.repository.group.extensions',
     'capability-requirements': 'card.repository.group.capabilities',
   },
@@ -328,6 +331,19 @@ function repositoryResourceRef(value: JsonValue): CardRef | undefined {
     return { label, href: parsed.href }
   } catch {
     return undefined
+  }
+}
+
+function repositorySubjectTableField(fact: SubjectFact): CardField | undefined {
+  const value = fact.value
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const subjectId = Object.getOwnPropertyDescriptor(value, 'subjectId')?.value as unknown
+  const description = Object.getOwnPropertyDescriptor(value, 'description')?.value as unknown
+  if (typeof subjectId !== 'string' || typeof description !== 'string') return undefined
+  return {
+    name: fact.label,
+    value: description,
+    ref: { label: fact.label, href: subjectId },
   }
 }
 
@@ -412,6 +428,21 @@ export async function loadSubjectCardSections(
           id: group.id,
           title: localizer.text('card.repository.group.resources'),
           links,
+          expanded: true,
+        })
+        continue
+      }
+    }
+    if (summary.identity.kind === VENDOR_SUBJECT_KIND && group.id === 'offerings') {
+      const fields = page.items
+        .map(repositorySubjectTableField)
+        .filter((item): item is CardField => item !== undefined)
+      if (fields.length === page.items.length) {
+        sections.push({
+          kind: 'fields',
+          id: group.id,
+          title: localizer.text('card.repository.group.offerings'),
+          fields,
           expanded: true,
         })
         continue
@@ -593,6 +624,7 @@ function renderFields(
   host: HTMLElement,
   fields: readonly CardField[],
   inspectKnowledge?: (target: KnowledgeTarget | undefined) => void,
+  onNavigate?: (ref: CardRef) => void,
 ): void {
   const list = document.createElement('div')
   list.className = 'modkit-card__fields'
@@ -604,8 +636,11 @@ function renderFields(
     setPart(row, 'card.field')
     row.tabIndex = 0
     if (field.title !== undefined) row.title = field.title
-    const name = document.createElement('span')
-    name.textContent = safeViewerText(field.name, 128)
+    const name =
+      field.ref === undefined
+        ? document.createElement('span')
+        : ref(document, field.ref, onNavigate)
+    if (field.ref === undefined) name.textContent = safeViewerText(field.name, 128)
     setPart(name, 'card.field-name')
     const value = document.createElement('span')
     value.textContent = safeViewerText(field.value, 2048)
@@ -737,6 +772,7 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
               panel,
               section.fields,
               options.knowledge === undefined ? undefined : inspectKnowledge,
+              options.onNavigate,
             )
             return
           case 'links': {

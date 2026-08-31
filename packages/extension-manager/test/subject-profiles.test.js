@@ -119,14 +119,43 @@ test('loads repository JSON profiles through VFS and projects navigable subject 
     })
     const profiles = await loadRepositorySubjectProfiles(repository.mount, repository.manifest)
     const extensions = extensionProjection()
+    const sharedComponent = projectExtensionSubjects({
+      extension: {
+        schemaVersion: 1,
+        publisher: 'example.vendor',
+        id: 'shared',
+        version: '1.0.0',
+        license: 'MIT',
+        contributionManifests: [],
+        presentation: {
+          displayName: 'Shared Component',
+          description: 'Formats shared across games.',
+          vendor: { id: 'example.vendor', displayName: 'Example Vendor' },
+        },
+      },
+      contributions: [],
+    })
     const projected = projectVendorGameSubjects({
       ...profiles,
-      records: extensions.records,
+      records: [...extensions.records, ...sharedComponent.records],
       source: { id: 'modkit-repository:example' },
     })
 
     assert.equal(projected.vendor('example.vendor').kind, VENDOR_SUBJECT_KIND)
     assert.equal(projected.game('example.vendor/example-game').kind, GAME_SUBJECT_KIND)
+    const vendorWire = JSON.parse(
+      JSON.stringify(await subjectRecordToWire(projected.vendor('example.vendor'))),
+    )
+    const offerings = vendorWire.groups.find(group => group.id === 'offerings')
+    assert.deepEqual(
+      offerings.facts.map(item => [item.label, item.value.description]),
+      [
+        ['Example Game', game.description],
+        ['Shared Component', 'Formats shared across games.'],
+      ],
+    )
+    assert.equal(offerings.facts[0].value.subjectId, projected.game(game.id).subjectId)
+    assert.equal(offerings.facts[1].value.subjectId, sharedComponent.extension.subjectId)
     const gameWire = JSON.parse(
       JSON.stringify(await subjectRecordToWire(projected.game('example.vendor/example-game'))),
     )

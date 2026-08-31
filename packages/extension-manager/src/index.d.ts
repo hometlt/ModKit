@@ -105,6 +105,7 @@ export interface ExtensionSubjectRecord {
   readonly subjectId: string
   readonly id: string
   readonly displayName: string
+  readonly description?: string
   readonly version: string
   readonly enabled: boolean
   readonly manifest: ExtensionManifest

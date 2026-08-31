@@ -65,8 +65,11 @@ const EN_MESSAGES = Object.freeze({
   'vscode.extensions.gameSupportPartial':
     'Support for {game} was only partly changed. Review the Extensions problems and reload state.',
   'vscode.extensions.removeGameSupportConfirm':
-    'Remove {count} package(s) used only by {game}? Shared packages will be kept.',
-  'vscode.extensions.gameSupportRemoved': 'Support used only by {game} was removed.',
+    'Remove {count} installed package(s) that provide {game}? Packages shared with other games will remove that support too.',
+  'vscode.extensions.gameSupportRemoved': 'Installed support for {game} was removed.',
+  'vscode.extensions.removeVendorSupportConfirm':
+    'Remove {count} installed package(s) from {vendor}?',
+  'vscode.extensions.vendorSupportRemoved': 'Installed packages from {vendor} were removed.',
   'vscode.extensions.installAllPartial':
     'Some extensions were installed, but the operation did not finish: {message}',
   'vscode.extensions.updated': '{id} updated',
@@ -368,8 +371,11 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.extensions.gameSupportPartial':
     'Поддержка игры {game} изменена не полностью. Проверьте проблемы расширений и состояние после перезагрузки.',
   'vscode.extensions.removeGameSupportConfirm':
-    'Удалить пакеты, используемые только игрой {game} ({count})? Общие пакеты останутся.',
-  'vscode.extensions.gameSupportRemoved': 'Поддержка, используемая только игрой {game}, удалена.',
+    'Удалить установленные пакеты, предоставляющие поддержку игры {game} ({count})? Общие пакеты также удалят поддержку других игр.',
+  'vscode.extensions.gameSupportRemoved': 'Установленная поддержка игры {game} удалена.',
+  'vscode.extensions.removeVendorSupportConfirm':
+    'Удалить установленные пакеты вендора {vendor} ({count})?',
+  'vscode.extensions.vendorSupportRemoved': 'Пакеты вендора {vendor} удалены.',
   'vscode.extensions.installAllPartial':
     'Часть расширений установлена, но операция не завершилась: {message}',
   'vscode.extensions.updated': 'Расширение {id} обновлено',

@@ -78,15 +78,18 @@ import {
   extensionActionContextValue,
   extensionComponentActionContextValue,
   extensionEntryIsMutable,
+  extensionEntrySupportsGroupedRemoval,
   extensionEntryDisplayName,
   extensionGroupActionContextValue,
   extensionTreeChildren,
+  extensionVendorActionContextValue,
   OPEN_CONTRIBUTION_COMMAND,
   OPEN_EXTENSION_COMMAND,
   OPEN_GAME_COMMAND,
   OPEN_VENDOR_COMMAND,
   type ExtensionComponentNode,
   type ExtensionNode,
+  type ExtensionVendorNode,
 } from './extension-tree.js'
 import {
   createVsCodeExtensionManagerClient,
@@ -331,6 +334,7 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
       item.description = `${count}`
       item.tooltip = node.label
       item.iconPath = new vscode.ThemeIcon('organization')
+      item.contextValue = extensionVendorActionContextValue(node)
       item.command = {
         command: OPEN_VENDOR_COMMAND,
         title: this.localizer.text('extensions.action.openExtensionCard'),
@@ -340,7 +344,11 @@ class ExtensionsView implements vscode.TreeDataProvider<ExtensionNode>, vscode.D
     }
     if (node.kind === 'section') {
       const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Collapsed)
-      item.description = `${node.components.length}`
+      item.description = `${
+        node.section === 'components'
+          ? node.components.reduce((count, component) => count + component.entries.length, 0)
+          : node.components.length
+      }`
       item.tooltip = node.label
       item.iconPath = new vscode.ThemeIcon(node.section === 'games' ? 'game' : 'references')
       item.contextValue = `modkitExtensionSection.${node.section}`
@@ -1086,15 +1094,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const staticManagerPackages = (): readonly StaticExtensionPackage[] => {
     const configured = describeConfiguredExtensions(configuration.readExtensions())
     const disabledExtensions = new Set(disabledExtensionIds())
-    const configuredById = new Map(
-      configured.flatMap(entry => (entry.id === undefined ? [] : [[entry.id, entry] as const])),
+    const pathKey = (path: string): string => {
+      const absolute = resolve(path)
+      return process.platform === 'win32' || process.platform === 'darwin'
+        ? absolute.toLowerCase()
+        : absolute
+    }
+    const localByRoot = new Map(
+      localExtensionCandidates.flatMap(candidate =>
+        candidate.root === undefined ? [] : [[pathKey(candidate.root), candidate] as const],
+      ),
     )
+    const configuredCoordinates = configured.flatMap(entry => {
+      const id = entry.id ?? localByRoot.get(pathKey(entry.path))?.id
+      return id === undefined ? [] : ([[id, entry]] as const)
+    })
+    const configuredById = new Map(configuredCoordinates)
     const localById = new Map(localExtensionCandidates.map(candidate => [candidate.id, candidate]))
     const coordinates = [
       ...new Set([
         ...host.extensions.bundled,
         ...host.extensions.installed,
-        ...configured.flatMap(entry => (entry.id === undefined ? [] : [entry.id])),
+        ...configuredCoordinates.map(([id]) => id),
       ]),
     ]
     const available = localExtensionCandidates.map(candidate =>
@@ -1175,6 +1196,35 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         : ([[candidate.id, candidate.root]] as const),
     ),
   )
+  const localConfiguredEntries = () => {
+    const configured = describeConfiguredExtensions(configuration.readExtensions())
+    const pathKey = (path: string): string => {
+      const absolute = resolve(path)
+      return process.platform === 'win32' || process.platform === 'darwin'
+        ? absolute.toLowerCase()
+        : absolute
+    }
+    const byRoot = new Map(
+      localExtensionCandidates.flatMap(candidate =>
+        candidate.root === undefined ? [] : [[pathKey(candidate.root), candidate] as const],
+      ),
+    )
+    const byId = new Map(localExtensionCandidates.map(candidate => [candidate.id, candidate]))
+    return configured.flatMap(entry => {
+      const candidate =
+        (entry.id === undefined ? undefined : byId.get(entry.id)) ?? byRoot.get(pathKey(entry.path))
+      return candidate === undefined ? [] : [{ index: entry.index, candidate }]
+    })
+  }
+  const removeConfiguredEntries = async (indices: ReadonlySet<number>): Promise<number> => {
+    if (indices.size === 0) return 0
+    const raw = configuration.readExtensions()
+    if (!Array.isArray(raw)) return 0
+    const next = raw.filter((_entry, index) => !indices.has(index))
+    if (next.length === raw.length) return 0
+    await writeConfiguration('extensions', next, false)
+    return raw.length - next.length
+  }
   const repositorySubjectProfiles: { vendors: unknown[]; games: unknown[] } = {
     vendors: [],
     games: [],
@@ -1923,6 +1973,42 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           }),
         )
       },
+      removeManagedPackage: async id => {
+        await extensionManager.execute({ kind: 'remove', id })
+        log(`[extensions] ${id} removed from extension card`)
+        askToReload(localizer.text('vscode.extensions.removed', { id }))
+      },
+      ...(extensionCard?.repositorySubject === undefined
+        ? {}
+        : {
+            repositorySubject: extensionCard.repositorySubject,
+            manageRepositorySubject: async (request: {
+              readonly kind: 'vendor' | 'game'
+              readonly id: string
+              readonly action: 'install' | 'remove'
+            }) => {
+              if (request.kind === 'vendor') {
+                if (request.action !== 'remove') return
+                await vscode.commands.executeCommand('modkit.extensions.removeVendorSupport', {
+                  kind: 'vendor',
+                  id: request.id,
+                  label: extensionCard.repositorySubject?.label ?? request.id,
+                })
+                return
+              }
+              await vscode.commands.executeCommand(
+                request.action === 'install'
+                  ? 'modkit.extensions.installGameSupport'
+                  : 'modkit.extensions.removeGameSupport',
+                {
+                  kind: 'component',
+                  component: 'game',
+                  id: request.id,
+                  label: extensionCard.repositorySubject?.label ?? request.id,
+                },
+              )
+            },
+          }),
       confirmClose,
       configuration,
       mapPreviewResourcePlanResolver,
@@ -2468,9 +2554,59 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     const documents = await Promise.all(
       [...bySubjectId.values()].map(record => subjectRecordToWire(record)),
     )
+    const managerSnapshot = await extensionManager.snapshot()
+    const removableInstalled = managerSnapshot.entries.filter(
+      entry => entry.installedVersion !== undefined && extensionEntrySupportsGroupedRemoval(entry),
+    )
+    const actions: ('install' | 'remove')[] = []
+    if (kind === 'vendor') {
+      if (removableInstalled.some(entry => entry.presentation?.vendor?.id === subject.id)) {
+        actions.push('remove')
+      }
+    } else {
+      try {
+        const plan = await extensionManager.planGameSupport(subject.id)
+        const locallyInstallable = plan.targets.some(
+          target =>
+            target.installedVersion === undefined && linkableExtensionRoots.has(target.packageId),
+        )
+        const localIds = new Set(
+          plan.targets
+            .filter(
+              target =>
+                target.installedVersion === undefined &&
+                linkableExtensionRoots.has(target.packageId),
+            )
+            .map(target => target.packageId),
+        )
+        const managerReady =
+          plan.actions.some(action => !localIds.has(action.packageId)) &&
+          plan.blocked.every(blocked => localIds.has(blocked.packageId))
+        if (locallyInstallable || managerReady) actions.push('install')
+      } catch (error) {
+        log(
+          `[repository-subject] no install plan for ${subject.id}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        )
+      }
+      if (
+        removableInstalled.some(entry =>
+          entry.presentation?.games?.some(game => game.id === subject.id),
+        )
+      ) {
+        actions.push('remove')
+      }
+    }
     const bundle: ExtensionCardBundle = Object.freeze({
       activeSubjectId: subject.subjectId,
       documents: Object.freeze(documents),
+      repositorySubject: Object.freeze({
+        kind,
+        id: subject.id,
+        label: subject.displayName,
+        actions: Object.freeze(actions),
+      }),
       // The existing neutral card renderer accepts any subject wire. These inert values suppress
       // extension controls; vendor/game cards are information and safe links, not extensions.
       extension: Object.freeze({
@@ -2636,8 +2772,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         )
         return
       }
-      if (!plan.ready) {
-        const reasons = plan.blocked.map(item => item.message).join('\n')
+      const localTargets = plan.targets.filter(
+        target =>
+          target.installedVersion === undefined && linkableExtensionRoots.has(target.packageId),
+      )
+      const localIds = new Set(localTargets.map(target => target.packageId))
+      const remainingBlocked = plan.blocked.filter(item => !localIds.has(item.packageId))
+      if (remainingBlocked.length > 0) {
+        const reasons = remainingBlocked.map(item => item.message).join('\n')
         void vscode.window.showErrorMessage(
           `Modkit: ${localizer.text('vscode.extensions.gameSupportBlocked', {
             game: componentLabel,
@@ -2646,7 +2788,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         )
         return
       }
-      if (plan.actions.length === 0) {
+      const managerActions = plan.actions.filter(action => !localIds.has(action.packageId))
+      if (managerActions.length === 0 && localTargets.length === 0) {
         void vscode.window.showInformationMessage(
           `Modkit: ${localizer.text('vscode.extensions.gameSupportReady', {
             game: componentLabel,
@@ -2654,26 +2797,77 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         )
         return
       }
-      const details = plan.actions
-        .map(action => {
+      const details = [
+        ...localTargets.map(target => `+ ${target.displayName}`),
+        ...managerActions.map(action => {
           const target = plan.targets.find(item => item.packageId === action.packageId)
           return `${action.kind === 'install' ? '+' : action.kind === 'enable' ? '✓' : '↻'} ${
             target?.displayName ?? action.packageId
           }`
-        })
-        .join('\n')
+        }),
+      ].join('\n')
       const install = localizer.text('common.install')
       const confirmed = await vscode.window.showWarningMessage(
         `${localizer.text('vscode.extensions.gameSupportConfirm', {
           game: plan.game.displayName,
-          count: plan.actions.length,
+          count: managerActions.length + localTargets.length,
         })}\n\n${details}`,
         { modal: true },
         install,
       )
       if (confirmed !== install) return
-      const result = await extensionManager.applyGameSupport(plan)
-      if (result.status === 'applied') {
+      if (localTargets.length === 0) {
+        const result = await extensionManager.applyGameSupport(plan)
+        if (result.status === 'applied') {
+          const message = localizer.text('vscode.extensions.gameSupportInstalled', {
+            game: plan.game.displayName,
+          })
+          log(`[extensions] ${message}`)
+          askToReload(message)
+          return
+        }
+        const message = localizer.text(
+          result.status === 'rolled-back'
+            ? 'vscode.extensions.gameSupportRolledBack'
+            : 'vscode.extensions.gameSupportPartial',
+          { game: plan.game.displayName },
+        )
+        log(`[extensions] ${message}`)
+        void vscode.window.showWarningMessage(`Modkit: ${message}`)
+        return
+      }
+      let completed = 0
+      if (managerActions.length > 0) {
+        await extensionManager.executeBatch(
+          managerActions.map(action => {
+            if (action.kind === 'install') {
+              return { kind: 'install' as const, id: action.packageId, version: action.version }
+            }
+            if (action.kind === 'enable') {
+              return { kind: 'set-enabled' as const, id: action.packageId, enabled: true }
+            }
+            return { kind: 'update' as const, id: action.packageId }
+          }),
+        )
+        completed += managerActions.length
+      }
+      if (localTargets.length > 0) {
+        const rawConfigured = configuration.readExtensions()
+        let configured: readonly unknown[] = Array.isArray(rawConfigured) ? rawConfigured : []
+        let linked = false
+        for (const target of localTargets) {
+          const root = linkableExtensionRoots.get(target.packageId)
+          if (root === undefined) continue
+          const result = withExtensionRoot(configured, resolve(root), {
+            caseSensitive: process.platform !== 'win32' && process.platform !== 'darwin',
+          })
+          configured = result.next
+          linked ||= result.added
+          if (result.added) completed += 1
+        }
+        if (linked) await writeConfiguration('extensions', configured, false)
+      }
+      if (completed > 0 || localTargets.length > 0) {
         const message = localizer.text('vscode.extensions.gameSupportInstalled', {
           game: plan.game.displayName,
         })
@@ -2681,14 +2875,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         askToReload(message)
         return
       }
-      const message = localizer.text(
-        result.status === 'rolled-back'
-          ? 'vscode.extensions.gameSupportRolledBack'
-          : 'vscode.extensions.gameSupportPartial',
-        { game: plan.game.displayName },
+      void vscode.window.showInformationMessage(
+        `Modkit: ${localizer.text('vscode.extensions.gameSupportReady', {
+          game: componentLabel,
+        })}`,
       )
-      log(`[extensions] ${message}`)
-      void vscode.window.showWarningMessage(`Modkit: ${message}`)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       log(`[extensions] game-support failed: ${message}`)
@@ -2704,27 +2895,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     const snapshot = await extensionManager.snapshot()
     const candidates = snapshot.entries.filter(entry => {
       const games = entry.presentation?.games ?? []
-      const gameIds = new Set(games.map(game => game.id))
-      // A package shared by another game must never be removed from this game action.
       return (
         entry.installedVersion !== undefined &&
-        gameIds.size === 1 &&
-        gameIds.has(gameId) &&
+        games.some(game => game.id === gameId) &&
         extensionEntryIsMutable(entry)
       )
     })
-    if (candidates.length === 0) {
+    const configured = localConfiguredEntries().filter(({ candidate }) =>
+      candidate.presentation?.games?.some(game => game.id === gameId),
+    )
+    if (candidates.length === 0 && configured.length === 0) {
       void vscode.window.showInformationMessage(
         `Modkit: ${localizer.text('vscode.extensions.gameSupportReady', { game: gameLabel })}`,
       )
       return
     }
     const remove = localizer.text('common.remove')
-    const details = candidates.map(entry => `− ${extensionEntryDisplayName(entry)}`).join('\n')
+    const details = [
+      ...candidates.map(entry => `− ${extensionEntryDisplayName(entry)}`),
+      ...configured.map(({ candidate }) => `− ${candidate.displayName}`),
+    ].join('\n')
     const confirmed = await vscode.window.showWarningMessage(
       `${localizer.text('vscode.extensions.removeGameSupportConfirm', {
         game: gameLabel,
-        count: candidates.length,
+        count: candidates.length + configured.length,
       })}\n\n${details}`,
       { modal: true },
       remove,
@@ -2734,12 +2928,64 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       await extensionManager.executeBatch(
         candidates.map(entry => ({ kind: 'remove' as const, id: entry.id })),
       )
+      await removeConfiguredEntries(new Set(configured.map(entry => entry.index)))
       const message = localizer.text('vscode.extensions.gameSupportRemoved', { game: gameLabel })
       log(`[extensions] ${message}`)
       askToReload(message)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       log(`[extensions] game-support removal failed: ${message}`)
+      void vscode.window.showErrorMessage(`Modkit: ${message}`)
+    }
+  }
+
+  const removeVendorSupport = async (argument: unknown): Promise<void> => {
+    const vendor = argument as Partial<ExtensionVendorNode> | undefined
+    if (vendor?.kind !== 'vendor' || !vendor.id) return
+    const vendorLabel = vendor.label ?? vendor.id
+    const snapshot = await extensionManager.snapshot()
+    const candidates = snapshot.entries.filter(
+      entry =>
+        entry.installedVersion !== undefined &&
+        entry.presentation?.vendor?.id === vendor.id &&
+        extensionEntryIsMutable(entry),
+    )
+    const configured = localConfiguredEntries().filter(
+      ({ candidate }) => candidate.presentation?.vendor?.id === vendor.id,
+    )
+    if (candidates.length === 0 && configured.length === 0) {
+      void vscode.window.showInformationMessage(
+        `Modkit: ${localizer.text('common.none')} — ${vendorLabel}`,
+      )
+      return
+    }
+    const remove = localizer.text('common.remove')
+    const details = [
+      ...candidates.map(entry => `− ${extensionEntryDisplayName(entry)}`),
+      ...configured.map(({ candidate }) => `− ${candidate.displayName}`),
+    ].join('\n')
+    const confirmed = await vscode.window.showWarningMessage(
+      `${localizer.text('vscode.extensions.removeVendorSupportConfirm', {
+        vendor: vendorLabel,
+        count: candidates.length + configured.length,
+      })}\n\n${details}`,
+      { modal: true },
+      remove,
+    )
+    if (confirmed !== remove) return
+    try {
+      await extensionManager.executeBatch(
+        candidates.map(entry => ({ kind: 'remove' as const, id: entry.id })),
+      )
+      await removeConfiguredEntries(new Set(configured.map(entry => entry.index)))
+      const message = localizer.text('vscode.extensions.vendorSupportRemoved', {
+        vendor: vendorLabel,
+      })
+      log(`[extensions] ${message}`)
+      askToReload(message)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      log(`[extensions] vendor removal failed: ${message}`)
       void vscode.window.showErrorMessage(`Modkit: ${message}`)
     }
   }
@@ -2813,6 +3059,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     vscode.commands.registerCommand('modkit.extensions.completeGameSupport', installGameSupport),
 
     vscode.commands.registerCommand('modkit.extensions.removeGameSupport', removeGameSupport),
+
+    vscode.commands.registerCommand('modkit.extensions.removeVendorSupport', removeVendorSupport),
 
     vscode.commands.registerCommand('modkit.extensions.update', async (argument: unknown) => {
       const id =

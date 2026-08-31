@@ -68,6 +68,7 @@ export const CARD_FALLBACK_MESSAGES = {
   'card.repository.fact.vendor': 'Vendor',
   'card.repository.group.capabilities': 'Capabilities',
   'card.repository.group.extensions': 'Extensions',
+  'card.repository.group.offerings': 'Games and components',
   'card.repository.group.overview': 'Overview',
   'card.repository.group.resources': 'Resources',
   'card.sections': '{label} sections',
