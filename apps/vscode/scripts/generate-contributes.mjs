@@ -63,6 +63,7 @@ if (
 }
 const views = sortedGroups(input.views, 'id')
 const viewsContainers = sortedGroups(input.viewsContainers, 'id')
+const menus = sortedGroups(input.menus ?? {}, 'command')
 // The settings schema is authored as one object; only its property order is normalised, because a
 // JSON Schema's own keyword order carries no meaning but its nesting does.
 const configuration = {
@@ -70,7 +71,15 @@ const configuration = {
   properties: sortedKeys(input.configuration.properties),
 }
 
-const document = { commands, configuration, customEditors, languages, views, viewsContainers }
+const document = {
+  commands,
+  configuration,
+  customEditors,
+  languages,
+  menus,
+  views,
+  viewsContainers,
+}
 const rendered = await format(`${JSON.stringify(document, null, 2)}\n`, {
   ...(await resolveConfig(output)),
   filepath: output,
@@ -128,6 +137,7 @@ if (check) {
   console.log(
     `contributes:check: ${commands.length} commands, ${customEditors.length} generic editor, ` +
       `${languages.length} language associations, ` +
+      `${Object.values(menus).flat().length} menu items, ` +
       `${Object.values(views).flat().length} views in ` +
       `${Object.values(viewsContainers).flat().length} container, ` +
       `${Object.keys(configuration.properties).length} setting, ${activationEvents.length} activation events`,

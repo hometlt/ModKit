@@ -72,8 +72,18 @@
         "title": "%command.disableExtension%"
       },
       {
+        "command": "modkit.extensions.disableContribution",
+        "title": "%command.disableCodec%",
+        "icon": "$(circle-slash)"
+      },
+      {
         "command": "modkit.extensions.enable",
         "title": "%command.enableExtension%"
+      },
+      {
+        "command": "modkit.extensions.enableContribution",
+        "title": "%command.enableCodec%",
+        "icon": "$(check)"
       },
       {
         "command": "modkit.extensions.install",
@@ -93,11 +103,13 @@
       },
       {
         "command": "modkit.extensions.remove",
-        "title": "%command.removeExtension%"
+        "title": "%command.removeExtension%",
+        "icon": "$(trash)"
       },
       {
         "command": "modkit.extensions.update",
-        "title": "%command.updateExtension%"
+        "title": "%command.updateExtension%",
+        "icon": "$(sync)"
       },
       {
         "command": "modkit.game.launchActiveMap",
@@ -222,6 +234,30 @@
       }
     ],
     "languages": [],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "modkit.extensions.disableContribution",
+          "when": "view == modkit.extensions && viewItem == modkitContribution.codec.enabled",
+          "group": "inline@1"
+        },
+        {
+          "command": "modkit.extensions.enableContribution",
+          "when": "view == modkit.extensions && viewItem == modkitContribution.codec.disabled",
+          "group": "inline@1"
+        },
+        {
+          "command": "modkit.extensions.remove",
+          "when": "view == modkit.extensions && (viewItem == modkitExtension.installed.mutable || viewItem == modkitExtension.installed.mutable.update)",
+          "group": "inline@2"
+        },
+        {
+          "command": "modkit.extensions.update",
+          "when": "view == modkit.extensions && viewItem == modkitExtension.installed.mutable.update",
+          "group": "inline@1"
+        }
+      ]
+    },
     "views": {
       "modkit": [
         {
@@ -250,7 +286,9 @@
     "onCommand:modkit.explainResolution",
     "onCommand:modkit.exportDiagnostics",
     "onCommand:modkit.extensions.disable",
+    "onCommand:modkit.extensions.disableContribution",
     "onCommand:modkit.extensions.enable",
+    "onCommand:modkit.extensions.enableContribution",
     "onCommand:modkit.extensions.install",
     "onCommand:modkit.extensions.openContribution",
     "onCommand:modkit.extensions.openExtension",

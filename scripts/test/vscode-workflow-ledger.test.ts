@@ -141,7 +141,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       },
       decisionRequired: 0,
       releaseCandidateGaps: 0,
-      currentX3ObservedFacts: 36,
+      currentX3ObservedFacts: 42,
     })
     expect(ledger.counts.byKind).toEqual({
       'cli-command': 5,
@@ -238,18 +238,18 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
     ).toHaveLength(62)
   })
 
-  it('records the factual 64→26, 11→1, 8→0 and 6→2 surface change', () => {
+  it('records the factual 64→28, 11→1, 8→0 and 6→2 surface change', () => {
     const ledger = JSON.parse(readFileSync(committedLedger, 'utf8'))
     expect(ledger.surfaceComparison).toEqual({
       legacyVsCode: { commands: 64, customEditors: 11, languages: 8, views: 6 },
       currentX3VsCode: {
-        commands: 26,
+        commands: 28,
         configurationProperties: 4,
         customEditors: 1,
         fileSystemSchemes: 1,
         keybindings: 0,
         languages: 0,
-        menus: 0,
+        menus: 4,
         runtimeOnlyCommands: 1,
         viewContainers: 1,
         views: 2,
@@ -274,7 +274,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       'Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.',
     )
     expect(status).not.toContain('PWA не заявлен')
-    expect(ledger.currentX3Facts).toHaveLength(36)
+    expect(ledger.currentX3Facts).toHaveLength(42)
     expect(
       ledger.currentX3Facts.every((row: { state: string }) => row.state === 'observed-only'),
     ).toBe(true)
@@ -298,7 +298,19 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         workflowId: 'vscode/source-workspace-lifecycle',
       },
       {
+        key: 'modkit.extensions.disableContribution',
+        kind: 'vscode-command',
+        source: 'contributes.commands[index]',
+        workflowId: 'vscode/source-workspace-lifecycle',
+      },
+      {
         key: 'modkit.extensions.enable',
+        kind: 'vscode-command',
+        source: 'contributes.commands[index]',
+        workflowId: 'vscode/source-workspace-lifecycle',
+      },
+      {
+        key: 'modkit.extensions.enableContribution',
         kind: 'vscode-command',
         source: 'contributes.commands[index]',
         workflowId: 'vscode/source-workspace-lifecycle',
@@ -353,7 +365,9 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.explainResolution',
         'modkit.exportDiagnostics',
         'modkit.extensions.disable',
+        'modkit.extensions.disableContribution',
         'modkit.extensions.enable',
+        'modkit.extensions.enableContribution',
         'modkit.extensions.install',
         'modkit.extensions.openContribution',
         'modkit.extensions.openExtension',
@@ -381,7 +395,9 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.explainResolution',
         'modkit.exportDiagnostics',
         'modkit.extensions.disable',
+        'modkit.extensions.disableContribution',
         'modkit.extensions.enable',
+        'modkit.extensions.enableContribution',
         'modkit.extensions.install',
         'modkit.extensions.openContribution',
         'modkit.extensions.openExtension',
@@ -407,7 +423,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       internalRuntimeCommands: ['modkit.openResource'],
       externalOrBuiltinCommands: [],
       legacyKeybindings: 0,
-      currentX3Menus: 0,
+      currentX3Menus: 4,
       currentX3Keybindings: 0,
     })
     expect(ledger.ownerBlockers).toEqual([])

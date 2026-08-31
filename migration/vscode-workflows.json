@@ -348,9 +348,23 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.extensions.disableContribution",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.disableContribution",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.extensions.enable",
       "kind": "vscode-command",
       "key": "modkit.extensions.enable",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.extensions.enableContribution",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.enableContribution",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
@@ -534,6 +548,34 @@
       "kind": "vscode-filesystem-scheme",
       "key": "modkit-container",
       "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.disableContribution//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitContribution.codec.enabled/inline%401",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.disableContribution//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitContribution.codec.enabled/inline%401",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.enableContribution//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitContribution.codec.disabled/inline%401",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.enableContribution//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitContribution.codec.disabled/inline%401",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.remove//view%20%3D%3D%20modkit.extensions%20%26%26%20(viewItem%20%3D%3D%20modkitExtension.installed.mutable%20%7C%7C%20viewItem%20%3D%3D%20modkitExtension.installed.mutable.update)/inline%402",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.remove//view%20%3D%3D%20modkit.extensions%20%26%26%20(viewItem%20%3D%3D%20modkitExtension.installed.mutable%20%7C%7C%20viewItem%20%3D%3D%20modkitExtension.installed.mutable.update)/inline%402",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.update//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtension.installed.mutable.update/inline%401",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.update//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtension.installed.mutable.update/inline%401",
+      "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {

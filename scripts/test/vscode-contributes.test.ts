@@ -43,10 +43,50 @@ describe('generated VS Code contributions', () => {
       authorityDocument.fileSystemSchemes.length
     const result = run()
 
-    expect(expectedActivationEventCount).toBe(30)
+    expect(expectedActivationEventCount).toBe(32)
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
     expect(result.stdout).toContain(`${expectedActivationEventCount} activation events`)
+  })
+
+  it('pins codec toggles and mutable extension actions to inline tree menus', () => {
+    const contributions = JSON.parse(readFileSync(generated, 'utf8')) as {
+      commands: readonly { command: string; icon?: string }[]
+      menus: Readonly<Record<string, readonly { command: string; when: string; group: string }[]>>
+    }
+    const commands = new Map(contributions.commands.map(command => [command.command, command]))
+    const inline = contributions.menus['view/item/context'] ?? []
+
+    expect(commands.get('modkit.extensions.enableContribution')?.icon).toBe('$(check)')
+    expect(commands.get('modkit.extensions.disableContribution')?.icon).toBe('$(circle-slash)')
+    expect(commands.get('modkit.extensions.update')?.icon).toBe('$(sync)')
+    expect(commands.get('modkit.extensions.remove')?.icon).toBe('$(trash)')
+    expect(inline.map(item => item.command)).toEqual([
+      'modkit.extensions.disableContribution',
+      'modkit.extensions.enableContribution',
+      'modkit.extensions.remove',
+      'modkit.extensions.update',
+    ])
+    expect(inline).toContainEqual({
+      command: 'modkit.extensions.disableContribution',
+      when: 'view == modkit.extensions && viewItem == modkitContribution.codec.enabled',
+      group: 'inline@1',
+    })
+    expect(inline).toContainEqual({
+      command: 'modkit.extensions.enableContribution',
+      when: 'view == modkit.extensions && viewItem == modkitContribution.codec.disabled',
+      group: 'inline@1',
+    })
+    expect(inline).toContainEqual({
+      command: 'modkit.extensions.update',
+      when: 'view == modkit.extensions && viewItem == modkitExtension.installed.mutable.update',
+      group: 'inline@1',
+    })
+    expect(inline).toContainEqual({
+      command: 'modkit.extensions.remove',
+      when: 'view == modkit.extensions && (viewItem == modkitExtension.installed.mutable || viewItem == modkitExtension.installed.mutable.update)',
+      group: 'inline@2',
+    })
   })
 
   it('rejects a package contribution that is absent from the generated authority', () => {
