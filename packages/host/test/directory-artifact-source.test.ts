@@ -45,6 +45,57 @@ describe('bounded filesystem directory artifact source', () => {
     await lease.release()
   })
 
+  it('propagates child file telemetry through directory and path sources', async () => {
+    const directory = await fixture()
+    const reads: unknown[] = []
+    const streams: unknown[] = []
+    const source = await openPathArtifactSource(directory, {
+      maxEntries: 16,
+      maxDepth: 8,
+      onRead: event => {
+        reads.push(event)
+        throw new Error('read observer must be isolated')
+      },
+      onStream: event => {
+        streams.push(event)
+        throw new Error('stream observer must be isolated')
+      },
+    })
+    if (source.kind !== 'namespace') throw new TypeError('expected a namespace source')
+
+    const namespace = await source.openNamespace()
+    const opened = await namespace.value.open('MapScript.galaxy')
+    if (opened.value.kind !== 'bytes') throw new TypeError('expected bytes')
+    expect(new TextDecoder().decode(await opened.value.read(7n, 5))).toBe('bytes')
+    const chunks: Uint8Array[] = []
+    for await (const chunk of opened.value.stream({ offset: 0n, length: 6n })) chunks.push(chunk)
+    expect(new TextDecoder().decode(chunks[0])).toBe('galaxy')
+
+    expect(streams).toEqual([
+      {
+        uri: opened.value.ref.uri,
+        offset: '0',
+        length: '6',
+      },
+    ])
+    expect(reads).toEqual([
+      {
+        uri: opened.value.ref.uri,
+        offset: '7',
+        requestedBytes: 5,
+        bytes: 5,
+      },
+      {
+        uri: opened.value.ref.uri,
+        offset: '0',
+        requestedBytes: 6,
+        bytes: 6,
+      },
+    ])
+    await opened.release()
+    await namespace.release()
+  })
+
   it('fails closed when a listing exceeds its declared entry budget', async () => {
     const source = await openDirectoryArtifactSource(await fixture(), { maxEntries: 1 })
     const lease = await source.openNamespace()

@@ -232,6 +232,48 @@ describe('openFileArtifactSource', () => {
     expect(chunks[0]?.[0]).toBe(bytes[1_000])
   })
 
+  it('attributes read and stream telemetry without letting observers affect successful reads', async () => {
+    const observedReads: unknown[] = []
+    const observedStreams: unknown[] = []
+    const source = await openFileArtifactSource(path, {
+      onRead: event => {
+        observedReads.push(event)
+        throw new Error('read observer must be isolated')
+      },
+      onStream: event => {
+        observedStreams.push(event)
+        throw new Error('stream observer must be isolated')
+      },
+    })
+
+    expect([...(await source.read(12n, 5))]).toEqual([...bytes.slice(12, 17)])
+    const chunks: Uint8Array[] = []
+    for await (const chunk of source.stream({ offset: 20n, length: 8n })) chunks.push(chunk)
+    expect(chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0)).toBe(8)
+
+    expect(observedStreams).toEqual([
+      {
+        uri: source.ref.uri,
+        offset: '20',
+        length: '8',
+      },
+    ])
+    expect(observedReads).toEqual([
+      {
+        uri: source.ref.uri,
+        offset: '12',
+        requestedBytes: 5,
+        bytes: 5,
+      },
+      {
+        uri: source.ref.uri,
+        offset: '20',
+        requestedBytes: 8,
+        bytes: 8,
+      },
+    ])
+  })
+
   it('refuses to read a file whose revision changed while it was open', async () => {
     const source = await openFileArtifactSource(path)
     expect((await source.read(0n, 4)).byteLength).toBe(4)

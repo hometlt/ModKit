@@ -504,6 +504,27 @@ describe('the Explorer can be answered from inside a container', () => {
     expect(containers.held()).toEqual([])
   }, 120_000)
 
+  it('keeps indexing and searching lazy, then attributes the ordinary member extraction', async () => {
+    const { host, workspace, archive } = await stage()
+    const extracted: {
+      readonly container: string
+      readonly entry: string
+      readonly bytes: number
+    }[] = []
+    const containers = host.containers({
+      roots: () => [workspace],
+      onExtract: event => extracted.push(event),
+    })
+    cleanup.push(() => containers.dispose())
+
+    await containers.index(archive)
+    await containers.search(archive, 'hello')
+    expect(extracted).toEqual([])
+
+    const bytes = await containers.read(archive, 'hello.txt')
+    expect(extracted).toEqual([{ container: archive, entry: 'hello.txt', bytes: bytes.byteLength }])
+  }, 120_000)
+
   it('names what it refuses: a missing member, a directory, a file that holds nothing', async () => {
     const { containers, archive, plain } = await registryFor()
     expect(await codeOf(() => containers.stat(archive, 'absent.txt'))).toBe(

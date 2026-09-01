@@ -103,6 +103,12 @@ describe('standard surface registry (NXT-103 → NXT-105 adapter)', () => {
     const namespace = registry.surfaceFor('common.view/namespace-entry-source', 1)
     expect(namespace?.methods['openEntry']).toMatchObject({ kind: 'leased-value' })
     expect(namespace?.methods['search']).toMatchObject({ kind: 'value', optional: true })
+    const writer = registry.surfaceFor('common.edit/writer', 1)
+    expect(writer?.methods['snapshotNativePreservingMpq']).toMatchObject({
+      kind: 'value',
+      optional: true,
+      arity: 1,
+    })
     const session = registry.surfaceFor(ABI_ASSET_SESSION.contract, 1)
     expect(session?.fields).toEqual(['revision'])
     expect(session?.releaseVia).toBe('dispose')
