@@ -68,6 +68,7 @@ const screenshotPath = resolve(
   argument('--screenshot') ?? join(tmpdir(), `modkit-vscode-installed-dds-${process.pid}.png`),
 )
 const workspace = join(scratch, 'workspace')
+const workspaceFile = join(scratch, 'modkit-acceptance.code-workspace')
 const userData = join(scratch, 'user-data')
 const extensionsDir = join(scratch, 'extensions')
 const ddsPath = join(workspace, 'wave1a-minimal.dds')
@@ -264,6 +265,18 @@ copyFileSync(
   ddsPath,
 )
 writeFileSync(corruptDdsPath, Buffer.concat([Buffer.from('DDS ', 'ascii'), Buffer.alloc(16)]))
+/*
+ * The window is opened on an ordinary `.code-workspace`, not on a bare folder.
+ *
+ * Adding a folder to a *folder* window is not an edit: VS Code has to create an untitled workspace
+ * and enter it, and until that transition is confirmed the extension host refuses every further
+ * `updateWorkspaceFolders`. Browsing three archives one after another is exactly that sequence, so
+ * the acceptance uses the workspace shape in which adding a root is an ordinary edit and says so.
+ */
+writeFileSync(
+  workspaceFile,
+  `${JSON.stringify({ folders: [{ path: basename(workspace) }], settings: {} }, null, 2)}\n`,
+)
 
 const startedAt = new Date().toISOString()
 const receipt = {
@@ -2316,7 +2329,7 @@ async function launchGeneration(generation) {
     '--skip-release-notes',
     '--locale=en',
     `--remote-debugging-port=${port}`,
-    workspace,
+    workspaceFile,
     ...(generation === 1 ? [ddsPath] : []),
   ]
   // Intentionally no --extensionDevelopmentPath and no --disable-extensions.
