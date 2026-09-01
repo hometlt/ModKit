@@ -420,12 +420,16 @@ let vscodeCliLauncher
 function resolveVsCodeCliLauncher() {
   if (vscodeCliLauncher !== undefined) return vscodeCliLauncher
   const discoveredCommand = resolveCommand(codeCommand) ?? codeCommand
-  const resolvedCommand =
+  let resolvedCommand =
     process.platform === 'win32' &&
     !/\.(?:cmd|bat|exe)$/iu.test(discoveredCommand) &&
     existsSync(`${discoveredCommand}.cmd`)
       ? `${discoveredCommand}.cmd`
       : discoveredCommand
+  if (process.platform === 'win32' && /(?:^|[\\/])Code\.exe$/iu.test(resolvedCommand)) {
+    const installedCommandShim = resolve(dirname(resolvedCommand), 'bin', 'code.cmd')
+    if (existsSync(installedCommandShim)) resolvedCommand = installedCommandShim
+  }
   if (process.platform === 'win32' && /\.cmd$/iu.test(resolvedCommand)) {
     const script = readFileSync(resolvedCommand, 'utf8')
     const cliMatch = script.match(/"%~dp0\.\.\\([^"\r\n]*resources\\app\\out\\cli\.js)"/iu)
@@ -681,8 +685,8 @@ function assertPackageInstallGate() {
   const artifactMismatches = Array.isArray(gateReceipt.phases)
     ? gateReceipt.phases.filter(
         phase =>
-          typeof gateReceipt.artifactSha256 === 'string' &&
-          gateReceipt.artifactSha256 !== receipt.artifact.sha256,
+          typeof phase?.artifactSha256 === 'string' &&
+          phase.artifactSha256 !== receipt.artifact.sha256,
       )
     : []
   if (gateReceipt.artifactSha256 !== receipt.artifact.sha256 || artifactMismatches.length > 0) {
@@ -812,14 +816,38 @@ async function observeAndSelectArchiveSearch(page, expected) {
       `${expected.caseId} InputBox value ${JSON.stringify(inputValue)} is not its authority query`,
     )
   }
+  await page.keyboard.press('Enter')
   const rows = widget.locator('.quick-input-list .monaco-list-row:visible')
   const row = rows.filter({ hasText: expected.requiredEntry }).first()
   await row.waitFor({ state: 'visible', timeout: 30_000 })
   const rowText = await row.innerText()
-  const pickedLabel = rowText.split(/\r?\n/u)[0]?.trim()
+  /*
+   * The row renders the container entry as its QuickPick label and the member size as a separate
+   * description element. Read the label on its own so the receipt records what the row actually
+   * said instead of echoing the expectation, and keep the description as separate evidence.
+   */
+  const labelNodes = row.locator('.label-name')
+  const descriptionNodes = row.locator('.label-description')
+  let pickedLabel
+  let pickedDescription
+  let pickedLabelSource
+  if ((await labelNodes.count()) > 0) {
+    pickedLabel = (await labelNodes.first().innerText()).trim()
+    pickedDescription =
+      (await descriptionNodes.count()) > 0
+        ? (await descriptionNodes.first().innerText()).trim()
+        : ''
+    pickedLabelSource = 'quick-input-label-element'
+  } else {
+    const collapsed = rowText.replace(/\s+/gu, ' ').trim()
+    pickedDescription = (collapsed.match(/\d[\d,. ]*bytes$/u) ?? [''])[0].trim()
+    pickedLabel = collapsed.slice(0, collapsed.length - pickedDescription.length).trim()
+    pickedLabelSource = 'row-text-minus-description'
+  }
   if (pickedLabel !== expected.requiredEntry) {
     throw new Error(
-      `${expected.caseId} QuickPick row ${JSON.stringify(pickedLabel)} is not its authority entry`,
+      `${expected.caseId} QuickPick label ${JSON.stringify(pickedLabel)} is not its authority entry ` +
+        `(description ${JSON.stringify(pickedDescription)}, row ${JSON.stringify(rowText)})`,
     )
   }
   await row.click()
@@ -827,6 +855,9 @@ async function observeAndSelectArchiveSearch(page, expected) {
     inputBoxObserved: true,
     quickPickObserved: true,
     pickedLabel,
+    pickedDescription,
+    pickedLabelSource,
+    rowText,
   }
 }
 
@@ -2090,9 +2121,6 @@ async function inspectModkitCommands(page) {
 async function reopenWithModkit(page, filePath = ddsPath) {
   await activateEditor(page, filePath)
   try {
-    if (filePath === corruptDdsPath && receipt.install.reopenCommand !== null) {
-      throw new Error('command-palette Reopen With was already exercised for the valid DDS')
-    }
     receipt.install.reopenCommand = await chooseQuickInput(
       page,
       'reopen editor with',
@@ -2106,8 +2134,7 @@ async function reopenWithModkit(page, filePath = ddsPath) {
     const tab = page.locator('.tabs-container .tab:visible').filter({ hasText: file }).last()
     await tab.click({ button: 'right' })
     const menuItem = page
-      .locator('.context-view:visible .action-item:visible')
-      .filter({ hasText: /^Reopen Editor With(?:\.\.\.|…)?$/u })
+      .getByRole('menuitem', { name: /^Reopen Editor With(?:\.\.\.|…)?$/u })
       .last()
     try {
       await menuItem.waitFor({ state: 'visible', timeout: 10_000 })
@@ -2485,9 +2512,14 @@ async function launchGeneration(generation) {
     let message = await observeCorruptInputRefusal(page, port, 5_000)
     let corruptRoute = 'workspace open -> selected installed Modkit editor'
     if (message === undefined) {
-      await reopenWithModkit(page, corruptDdsPath)
-      corruptRoute = 'workspace open -> Reopen Editor With -> Modkit Asset Preview'
-      message = await observeCorruptInputRefusal(page, port, 5_000)
+      await activateEditor(page, corruptDdsPath)
+      await chooseQuickInput(
+        page,
+        'modkit open active file in workbench',
+        /^Modkit: Open Active File in Workbench$/u,
+      )
+      corruptRoute = 'workspace open -> command palette -> Modkit: Open Active File in Workbench'
+      message = await observeCorruptInputRefusal(page, port, 60_000)
     }
     if (message === undefined) {
       const webviewTexts = await webviewValues(
