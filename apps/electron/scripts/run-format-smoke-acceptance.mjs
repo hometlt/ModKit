@@ -92,7 +92,7 @@ if (!usesExplicitAppRoot && !skipBuild) {
   syncElectronFormatSmoke({ repoRoot, appRoot: defaultAppRoot })
   mkdirSync(join(defaultAppRoot, 'dist-app'), { recursive: true })
   copyFileSync(
-    join(defaultAppRoot, 'generated', 'format-smoke.v1.json'),
+    join(defaultAppRoot, 'format-smoke.v1.json'),
     join(defaultAppRoot, 'dist-app', 'format-smoke.v1.json'),
   )
 }

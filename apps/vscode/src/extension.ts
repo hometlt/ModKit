@@ -2464,7 +2464,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     await writePackageGateReceipt(gateReceipt)
   }
   context.subscriptions.push(
-    vscode.commands.registerCommand(PACKAGE_INSTALL_GATE_COMMAND, packageInstallGateReceipt),
+    vscode.commands.registerCommand(
+      '_modkit.acceptance.packageInstallGate',
+      packageInstallGateReceipt,
+    ),
   )
   // Reproject on open so a settings write is reflected even when the user postpones the reload.
   // Inventory stays the activation snapshot; direct enablement is the live preference layered on

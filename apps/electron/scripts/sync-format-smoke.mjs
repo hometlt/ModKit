@@ -17,8 +17,7 @@ const defaultRepoRoot = resolve(defaultAppRoot, '..', '..')
 export const electronFormatSmokeSource = repoRoot =>
   join(repoRoot, 'apps', 'vscode', 'generated', 'format-smoke.v1.json')
 
-export const electronFormatSmokeTarget = appRoot =>
-  join(appRoot, 'generated', 'format-smoke.v1.json')
+export const electronFormatSmokeTarget = appRoot => join(appRoot, 'format-smoke.v1.json')
 
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 
@@ -87,7 +86,7 @@ if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {
       status: check ? 'checked' : 'copied',
       sha256: receipt.sha256,
       bytes: receipt.bytes,
-      target: 'apps/electron/generated/format-smoke.v1.json',
+      target: 'apps/electron/format-smoke.v1.json',
     }),
   )
 }
