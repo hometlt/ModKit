@@ -236,10 +236,12 @@ const passingEvidence = (caseId: (typeof INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS)[
       classification: 'installed-acceptance-native-writer-save-as',
       sourceObservedByCdp: true,
       targetObservedByCdp: true,
+      elapsedScope: 'save-as-through-cdp-reopen',
       sourceUnchanged: true,
       modifiedWriterReceiptSha256:
         'CDE80A9C7FD856D024B1FC3C7E95A8D4CF7922F330150CBE0C47B1D9A265D1AD',
       elapsedMs: 0,
+      saveOperationElapsedMs: 0,
       nativeWriterReceipt: {
         kind: 'mpq-native-export-receipt-v1',
         strategy: 'whole-archive-save-as-fixed-slots',
