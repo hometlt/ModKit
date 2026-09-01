@@ -16,7 +16,7 @@ const requiredCases = [
   ['data-xml', 'document-data', ['xml']],
   ['archive-zip', 'archives', ['zip']],
   ['archive-warzone-wz', 'archives', ['warzone-wz']],
-  ['archive-mpq', 'archives', ['mpq']],
+  ['archive-mpq', 'archives', ['sc2-map']],
   ['casc-dds', 'archives-images', ['casc', 'dds']],
   ['audio-wav', 'audio', ['casc', 'wav']],
   ['audio-ogg', 'audio', ['casc', 'ogg']],

@@ -26,6 +26,7 @@ import {
 } from '../src/index.js'
 import {
   createExtensionOperationLifecycle,
+  disabledContributionCount,
   groupContributionsByContract,
   readExtensionOperationMarker,
   waitForExtensionOperation,
@@ -183,6 +184,29 @@ describe('the settings document carries the disabled set', () => {
       extensions: disabled.extensions,
       disabledContributions: ['org.example/already-off'],
     })
+  })
+})
+
+describe('extension enablement summary', () => {
+  it('counts direct and owner-level disabled contributions', () => {
+    const contribution = (overrides: Partial<ContributionReport>): ContributionReport => ({
+      id: 'org.example/codec',
+      displayName: 'Fixture codec',
+      extension: 'org.example/fixture',
+      origin: 'installed',
+      activationEligible: false,
+      disabled: false,
+      extensionDisabled: false,
+      path: 'fixture.json',
+      ...overrides,
+    })
+    expect(
+      disabledContributionCount([
+        contribution({ disabled: true }),
+        contribution({ extensionDisabled: true }),
+        contribution({}),
+      ]),
+    ).toBe(2)
   })
 })
 

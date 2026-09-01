@@ -5,6 +5,7 @@ import {
   createVsCodeDesktopTopology,
   VSCODE_DESKTOP_EXTENSION_REALM,
   VSCODE_DESKTOP_WORKER_REALM,
+  VSCODE_WORKER_POLICY,
 } from '../src/index.js'
 
 describe('VS Code composition topology', () => {
@@ -36,6 +37,18 @@ describe('VS Code composition topology', () => {
   it('leaves the two-realm application shape the apps gate inspects unchanged', async () => {
     const app = await createVsCodeDesktopApp()
     expect(Object.keys(app).sort()).toEqual(['extensionHost', 'topology', 'webview'])
+  })
+
+  it('keeps the CASC operational worker allowance explicitly bounded', () => {
+    // This is an execution resource ceiling for the already-existing node-worker realm, not a
+    // facility or capability grant. It accommodates the measured SC2 immutable name index while
+    // staying below the platform worker-policy ceiling (4 GiB old / 512 MiB young).
+    expect(VSCODE_WORKER_POLICY.resourceLimits).toMatchObject({
+      maxOldGenerationSizeMb: 896,
+      maxYoungGenerationSizeMb: 112,
+    })
+    expect(VSCODE_WORKER_POLICY.resourceLimits.maxOldGenerationSizeMb).toBeLessThanOrEqual(4096)
+    expect(VSCODE_WORKER_POLICY.resourceLimits.maxYoungGenerationSizeMb).toBeLessThanOrEqual(512)
   })
 
   it('ships only generic static contribution points and no Monaco binding', async () => {

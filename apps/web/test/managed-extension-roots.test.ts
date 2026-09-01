@@ -6,6 +6,7 @@ import { createWebExtensionSubjectCatalog } from '../src/extension-subjects.js'
 import { createWebTopology, WEB_MAIN_REALM } from '../src/index.js'
 import {
   combineLoadedExtensionRoots,
+  isCanonicalBase64,
   loadManagedExtensionRoots,
   MANAGED_EXTENSION_BUNDLE_FAILURE_CODES,
 } from '../src/managed-extension-roots.js'
@@ -188,6 +189,14 @@ class FakeManagedStorage implements BrowserExtensionStorage {
 }
 
 describe('downloaded browser extension roots', () => {
+  it('validates release-sized base64 without a recursive regular expression', () => {
+    const encoded = 'AAAA'.repeat(1_000_000)
+    expect(isCanonicalBase64(encoded)).toBe(true)
+    expect(isCanonicalBase64(`${encoded.slice(0, -1)}!`)).toBe(false)
+    expect(isCanonicalBase64('YQ==')).toBe(true)
+    expect(isCanonicalBase64('A===')).toBe(false)
+  })
+
   it('derives one cross-root module map from a multi-root distribution package', async () => {
     const storage = new FakeManagedStorage(
       [record({ id: 'org.example/toolkit' })],

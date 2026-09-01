@@ -98,16 +98,16 @@
       "stage": "tree",
       "corpus": {
         "kind": "warzone-install-file",
-        "path": "data/base.wz",
-        "bytes": 122957601,
-        "sha256": "f3f131e7cdfb9e550221ca3ad074debf5c946417240799da1a53238804cdd71d"
+        "path": "data/mp.wz",
+        "bytes": 10443521,
+        "sha256": "d698475eaa7b3386c2465e5850e5609b0d524157280c7d659dc5f79cde6e5688"
       },
       "pwa": { "kind": "browser-subset" }
     },
     {
       "id": "archive-mpq",
       "family": "archives",
-      "formatIds": ["mpq"],
+      "formatIds": ["sc2-map"],
       "stage": "tree",
       "corpus": {
         "kind": "sc2-install-file",

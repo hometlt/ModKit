@@ -20,12 +20,18 @@
  *
  * The only thing not exercised is the editor itself; that is what `pnpm smoke:vscode` is for.
  */
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterAll, describe, expect, it } from 'vitest'
-import { isModkitError } from '@modkit/core'
-import { connectSubjectRpc } from '@modkit/host'
+import { afterAll, describe, expect, it, vi } from 'vitest'
+import { CONTAINER_EXTRACT_OPERATION_ID, isModkitError } from '@modkit/core'
+import { connectSubjectRpc, openSubject, type SubjectServices } from '@modkit/host'
+import {
+  revisionId,
+  type AssetSession,
+  type NamespaceEntrySource,
+  type ResourceBudget,
+} from '@modkit/sdk'
 import { proves } from '@modkit/testkit'
 import { createBridge, type WebviewChannel } from '../src/bridge.js'
 import {
@@ -34,7 +40,11 @@ import {
   parseContainerUriText,
   type ContainerNode,
 } from '../src/container-uri.js'
-import { CONTAINER_ENTRY_NOT_FOUND, NOT_A_CONTAINER } from '../src/containers.js'
+import {
+  CONTAINER_ENTRY_NOT_FOUND,
+  createContainerRegistry,
+  NOT_A_CONTAINER,
+} from '../src/containers.js'
 import {
   createVsCodeSubjectHost,
   subjectLabel,
@@ -54,6 +64,14 @@ const syntheticDir = join(
   'mk2-synthetic',
 )
 const cleanup: (() => void | Promise<void>)[] = []
+
+const containerBudget: ResourceBudget = {
+  maxInputBytes: 16_000_000n,
+  maxDepth: 32,
+  maxNodes: 10_000,
+  maxScalarBytes: 16_000_000,
+  maxDiagnostics: 100,
+}
 
 afterAll(async () => {
   for (const step of cleanup.splice(0).reverse()) await step()
@@ -175,6 +193,284 @@ describe('the manifest opens the window for it', () => {
 })
 
 describe('the Explorer can be answered from inside a container', () => {
+  it('opens a granted directory only as a container namespace source', async () => {
+    const workspace = mkdtempSync(join(tmpdir(), 'modkit-vscode-namespace-container-'))
+    cleanup.push(() => rmSync(workspace, { recursive: true, force: true }))
+    writeFileSync(join(workspace, 'Data.000'), 'physical namespace marker')
+
+    const descriptor = {
+      identity: { formatId: 'casc' },
+      dataSources: [{ contract: 'common.view/namespace-entry-source', major: 1 }],
+      operations: [
+        {
+          id: CONTAINER_EXTRACT_OPERATION_ID,
+          handlerId: 'extract',
+          state: 'available',
+          mutatesSource: false,
+        },
+      ],
+    }
+    const listedBytes = new TextEncoder().encode('namespace member')
+    const lateMember = 'mods/core.sc2mod/base.sc2assets/assets/sounds/late.wav'
+    const namespace: NamespaceEntrySource = {
+      async list(_prefix, page) {
+        expect(page.limit).toBeLessThanOrEqual(256)
+        const path = 'member.dds'
+        return {
+          items: [
+            {
+              id: path,
+              path,
+              name: path.split('/').at(-1) ?? path,
+              kind: 'file',
+              size: BigInt(listedBytes.byteLength),
+              revision: revisionId('provider-token:directory-container-member'),
+            },
+          ],
+        }
+      },
+      async openEntry(entryId) {
+        expect([lateMember, 'member.dds']).toContain(entryId)
+        return {
+          value: { id: `fixture:${entryId}`, uri: `fixture:${entryId}` },
+          release: async () => undefined,
+        }
+      },
+    }
+    let disposed = false
+    const session = {
+      revision: revisionId('provider-token:directory-container'),
+      state: () => (disposed ? 'disposed' : 'live'),
+      descriptor: async () => descriptor,
+      dataSource: async () => ({ value: namespace, release: async () => undefined }),
+      operations: () => ({
+        async invoke() {
+          return { state: 'ok', output: { kind: 'bytes', value: listedBytes }, diagnostics: [] }
+        },
+        dispose: async () => undefined,
+      }),
+      events: () => (async function* () {})(),
+      dispose: vi.fn(async () => {
+        disposed = true
+      }),
+    } as unknown as AssetSession
+    const openNamespaceSubject = vi.fn(async (request: Parameters<typeof openSubject>[0]) => {
+      expect(request.source.kind).toBe('namespace')
+      if (request.source.kind !== 'namespace') throw new TypeError('expected namespace source')
+      const lease = await request.source.openNamespace()
+      try {
+        const physical: string[] = []
+        for await (const item of lease.value.list('')) physical.push(item.path)
+        expect(physical).toContain('Data.000')
+      } finally {
+        await lease.release()
+      }
+      return {
+        state: 'opened',
+        session,
+        descriptor,
+        selected: {
+          extensionId: 'fixture/directory-container',
+          contributionId: 'fixture/directory-container',
+          variantId: 'default',
+          offerId: 'fixture',
+          confidence: 1,
+        },
+        candidates: [],
+        diagnostics: [],
+      } as never
+    })
+    const services = {
+      inventory: {},
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      executionBackends: {},
+      executionProfiles: [],
+      supportedExtensions: [],
+      open: async () => {
+        throw new TypeError('the byte-source SubjectServices route must not open a directory')
+      },
+    } as unknown as SubjectServices
+    const containers = createContainerRegistry({
+      services,
+      roots: () => [workspace],
+      grant: { id: 'directory-container-test', classes: ['read-source'] },
+      budget: containerBudget,
+      openNamespaceSubject,
+    })
+    cleanup.push(() => containers.dispose())
+
+    expect((await containers.list(workspace, '')).map(item => item.name)).toEqual(['member.dds'])
+    expect(new TextDecoder().decode(await containers.read(workspace, 'member.dds'))).toBe(
+      'namespace member',
+    )
+    expect(await containers.stat(workspace, lateMember)).toMatchObject({
+      name: 'late.wav',
+      kind: 'file',
+      entryId: lateMember,
+    })
+    expect(new TextDecoder().decode(await containers.read(workspace, lateMember))).toBe(
+      'namespace member',
+    )
+    expect(openNamespaceSubject).toHaveBeenCalledOnce()
+    expect(await containers.release(workspace)).toBe(true)
+    expect(session.dispose).toHaveBeenCalledOnce()
+
+    descriptor.identity.formatId = 'fixture-directory-container'
+    await expect(containers.index(workspace)).rejects.toMatchObject({ code: NOT_A_CONTAINER })
+    expect(openNamespaceSubject).toHaveBeenCalledTimes(2)
+
+    const granted = mkdtempSync(join(tmpdir(), 'modkit-vscode-container-granted-'))
+    const outside = mkdtempSync(join(tmpdir(), 'modkit-vscode-container-outside-'))
+    cleanup.push(() => rmSync(granted, { recursive: true, force: true }))
+    cleanup.push(() => rmSync(outside, { recursive: true, force: true }))
+    const escaped = join(granted, 'casc-install')
+    symlinkSync(outside, escaped, process.platform === 'win32' ? 'junction' : 'dir')
+    const escapedContainers = createContainerRegistry({
+      services,
+      roots: () => [granted],
+      grant: { id: 'directory-container-escape-test', classes: ['read-source'] },
+      budget: containerBudget,
+      openNamespaceSubject,
+    })
+    cleanup.push(() => escapedContainers.dispose())
+    await expect(escapedContainers.index(escaped)).rejects.toThrow(
+      /outside the physically granted roots/u,
+    )
+    expect(openNamespaceSubject).toHaveBeenCalledTimes(2)
+
+    descriptor.identity.formatId = 'casc'
+    const raceRoot = mkdtempSync(join(tmpdir(), 'modkit-vscode-container-race-'))
+    cleanup.push(() => rmSync(raceRoot, { recursive: true, force: true }))
+    writeFileSync(join(raceRoot, 'Data.000'), 'race namespace marker')
+    let rejectFirst: ((reason: Error) => void) | undefined
+    const raceOpen = vi.fn((request: Parameters<typeof openSubject>[0]) => {
+      if (raceOpen.mock.calls.length === 1) {
+        return new Promise<never>((_resolve, reject) => {
+          rejectFirst = reject
+        })
+      }
+      return openNamespaceSubject(request)
+    })
+    const racedContainers = createContainerRegistry({
+      services,
+      roots: () => [raceRoot],
+      grant: { id: 'directory-container-race-test', classes: ['read-source'] },
+      budget: containerBudget,
+      openNamespaceSubject: raceOpen,
+    })
+    cleanup.push(() => racedContainers.dispose())
+    const first = racedContainers.index(raceRoot)
+    await vi.waitFor(() => expect(raceOpen).toHaveBeenCalledOnce())
+    const releasingFirst = racedContainers.release(raceRoot)
+    const second = racedContainers.index(raceRoot)
+    await expect(second).resolves.toMatchObject({ files: expect.any(Map) })
+    rejectFirst?.(new Error('first opening failed after replacement'))
+    await expect(first).rejects.toThrow(/first opening failed after replacement/u)
+    await expect(releasingFirst).resolves.toBe(true)
+    expect(await racedContainers.release(raceRoot)).toBe(true)
+  })
+
+  it('retains a directory parent while an exact late-entry lookup races release', async () => {
+    const workspace = mkdtempSync(join(tmpdir(), 'modkit-vscode-container-open-release-'))
+    cleanup.push(() => rmSync(workspace, { recursive: true, force: true }))
+    writeFileSync(join(workspace, 'Data.000'), 'physical namespace marker')
+    const lateEntry = 'mods/core.sc2mod/base.sc2assets/assets/sounds/late.wav'
+    let continueLookup: (() => void) | undefined
+    let lookupStarted: (() => void) | undefined
+    const lookupReady = new Promise<void>(resolve => {
+      lookupStarted = resolve
+    })
+    const lookupContinue = new Promise<void>(resolve => {
+      continueLookup = resolve
+    })
+    let disposed = false
+    const descriptor = {
+      identity: { formatId: 'casc' },
+      dataSources: [{ contract: 'common.view/namespace-entry-source', major: 1 }],
+      operations: [
+        {
+          id: CONTAINER_EXTRACT_OPERATION_ID,
+          handlerId: 'extract',
+          state: 'available',
+          mutatesSource: false,
+        },
+      ],
+    }
+    const namespace: NamespaceEntrySource = {
+      async list() {
+        return {
+          items: [
+            {
+              id: 'listed.dds',
+              path: 'listed.dds',
+              name: 'listed.dds',
+              kind: 'file',
+              size: 1n,
+              revision: revisionId('provider-token:open-release-listed'),
+            },
+          ],
+        }
+      },
+      async openEntry(entryId) {
+        expect(entryId).toBe(lateEntry)
+        lookupStarted?.()
+        await lookupContinue
+        // `release()` has dropped the registry key, but this in-flight exact lookup still owns a
+        // retainer. A disposed parent here would invalidate the VFS mount before nested open.
+        expect(disposed).toBe(false)
+        throw new Error('late entry is absent')
+      },
+    }
+    const session = {
+      revision: revisionId('provider-token:open-release-parent'),
+      state: () => (disposed ? 'disposed' : 'live'),
+      descriptor: async () => descriptor,
+      dataSource: async () => ({ value: namespace, release: async () => undefined }),
+      operations: () => ({ dispose: async () => undefined }),
+      events: () => (async function* () {})(),
+      dispose: vi.fn(async () => {
+        disposed = true
+      }),
+    } as unknown as AssetSession
+    const containers = createContainerRegistry({
+      services: {
+        inventory: {},
+        target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+        executionBackends: {},
+        executionProfiles: [],
+        supportedExtensions: [],
+      } as unknown as SubjectServices,
+      roots: () => [workspace],
+      grant: { id: 'directory-open-release-test', classes: ['read-source'] },
+      budget: containerBudget,
+      openNamespaceSubject: async () =>
+        ({
+          state: 'opened',
+          session,
+          descriptor,
+          selected: {
+            extensionId: 'fixture/directory-container',
+            contributionId: 'fixture/directory-container',
+            variantId: 'default',
+            offerId: 'fixture',
+            confidence: 1,
+          },
+          candidates: [],
+          diagnostics: [],
+        }) as never,
+    })
+    cleanup.push(() => containers.dispose())
+
+    await containers.index(workspace)
+    const opening = containers.open(containerUriText(workspace, lateEntry))
+    await lookupReady
+    await expect(containers.release(workspace)).resolves.toBe(true)
+    expect(session.dispose).not.toHaveBeenCalled()
+    continueLookup?.()
+    await expect(opening).rejects.toThrow(/late entry is absent|lists no/u)
+    expect(session.dispose).toHaveBeenCalledOnce()
+  })
+
   it('lists a ZIP entry', async () => {
     const { containers, archive } = await registryFor()
     const root = await containers.list(archive, '')
@@ -251,9 +547,12 @@ describe('a member is a subject in its own right', () => {
     const session = answer.session
     expect(session).toBeDefined()
 
-    // the child goes first and the container survives it, still listable
+    // Releasing the registry drops its cache key but the live child retains the parent/session.
+    expect(await containers.release(archive)).toBe(true)
+    expect(session?.state()).toBe('live')
+    await expect(session?.descriptor()).resolves.toMatchObject({ identity: { formatId: 'txt' } })
     await session?.dispose()
-    expect((await containers.list(archive, '')).length).toBe(1)
+    expect(await containers.release(archive)).toBe(false)
     proves({
       capabilityId: 'block9/archive-entry-as-subject',
       operation: 'inspect',

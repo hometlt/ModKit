@@ -17,10 +17,12 @@ import type { AssetEditPlan } from '@modkit/sdk'
 import { createUiLocalizer } from '@modkit/ui/localization'
 
 import {
+  awaitSelfTestProbe,
   base64OfUtf8,
   editOffer,
   editPlanFromOperationOutput,
   editSelfTestLine,
+  isSelfTestEditOutcome,
   invokeRefusalMessage,
   offersEditOperations,
   type EditOperationForm,
@@ -266,5 +268,38 @@ describe('plan adaptation and refusals', () => {
     expect(editSelfTestLine('sample.zip', 'zip-add-entry', 'saved', true)).toBe(
       'selftest: edit-op sample.zip zip-add-entry status="saved" changed=true',
     )
+  })
+
+  it('recognises a remounted localized edit outcome without depending on English chrome', () => {
+    expect(
+      isSelfTestEditOutcome(
+        'Последнее изменение: Установить текст PNG — Сохранено',
+        'Последнее изменение: Задать текст PNG — Сохранено',
+        'Задать текст PNG',
+      ),
+    ).toBe(true)
+    expect(
+      isSelfTestEditOutcome(
+        'Последнее изменение: Задать текст PNG — Сохранено',
+        'Последнее изменение: Задать текст PNG — Сохранено',
+        'Задать текст PNG',
+      ),
+    ).toBe(false)
+    expect(
+      isSelfTestEditOutcome(
+        'Последнее изменение: Задать текст PNG — Сохранено',
+        'Последнее изменение: Задать текст PNG — Сохранено снова',
+        '',
+      ),
+    ).toBe(false)
+  })
+
+  it('reports a late self-test timeout instead of preventing the terminal receipt', async () => {
+    await expect(
+      awaitSelfTestProbe(Promise.resolve('ready'), 'archive stage open', 1),
+    ).resolves.toBe('ready')
+    await expect(
+      awaitSelfTestProbe(new Promise<never>(() => undefined), 'archive stage open', 1),
+    ).rejects.toThrow('self-test probe timed out: archive stage open')
   })
 })

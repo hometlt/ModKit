@@ -22,6 +22,8 @@ import type { ChangeSet } from '@modkit/sdk'
 import { createBridge, type WebviewChannel } from '../src/bridge.js'
 import {
   createVsCodeSubjectHost,
+  VSCODE_MAXIMUM_RANGE_BACKED_SUBJECT_BYTES,
+  VSCODE_MAXIMUM_SUBJECT_BYTES,
   VSCODE_SUBJECT_CONTRIBUTION_ID,
   VSCODE_SUBJECT_SERVICES_URL,
   withinRoots,
@@ -276,6 +278,11 @@ describe('the VS Code subject bridge', () => {
 })
 
 describe('root confinement', () => {
+  it('keeps large range-backed opens separate from in-memory materialization', () => {
+    expect(VSCODE_MAXIMUM_RANGE_BACKED_SUBJECT_BYTES).toBe(256 * 1024 * 1024)
+    expect(VSCODE_MAXIMUM_SUBJECT_BYTES).toBe(64 * 1024 * 1024)
+  })
+
   it('accepts the root itself and anything under it, and nothing beside it', () => {
     const root = join(tmpdir(), 'granted')
     expect(withinRoots([root], root)).toBe(true)

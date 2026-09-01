@@ -22,7 +22,11 @@ import {
   STAGE_ORDER,
   type StageFacts,
 } from '../src/view-policy.js'
-import { indexNamespace, NAMESPACE_MAXIMUM_DEPTH } from '../src/namespace-index.js'
+import {
+  findExactNamespaceFile,
+  indexNamespace,
+  NAMESPACE_MAXIMUM_DEPTH,
+} from '../src/namespace-index.js'
 
 const stage = (id: string, contract: string, trait?: string): StageFacts => ({
   id,
@@ -205,6 +209,32 @@ describe('namespace indexing', () => {
 
   const entry = (path: string, kind: 'file' | 'directory'): NamespaceEntry =>
     ({ id: `id:${path}`, path, name: path.split('/').slice(-1)[0], kind, revision: 'r' }) as never
+
+  it('resolves an exact generated entry through its bounded prefix instead of walking the tree', async () => {
+    const prefixes: string[] = []
+    const wanted = 'campaign/base.sc2assets/assets/textures/alpha2.dds'
+    const found = await findExactNamespaceFile({
+      async list(prefix) {
+        prefixes.push(prefix)
+        return page([entry(wanted, 'file'), entry(`${wanted}.bak`, 'file')])
+      },
+    }, wanted)
+    expect(prefixes).toEqual([wanted])
+    expect(found?.id).toBe(`id:${wanted}`)
+  })
+
+  it('follows only exact-prefix pages when a source does not put the exact entry first', async () => {
+    const wanted = 'components/bodies/cybd_run.pie'
+    const found = await findExactNamespaceFile({
+      async list(prefix, request) {
+        expect(prefix).toBe(wanted)
+        return request.cursor === undefined
+          ? page([entry(`${wanted}.bak`, 'file')], 'next')
+          : page([entry(wanted, 'file')])
+      },
+    }, wanted)
+    expect(found?.path).toBe(wanted)
+  })
 
   it('maps every file entry id to its path, descending into directories', async () => {
     const index = await indexNamespace({

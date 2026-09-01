@@ -68,11 +68,18 @@ describe('installed format-smoke runtime descriptor', () => {
       expect(testCase.source.uri, id).toBe(pathToFileURL(testCase.source.filePath).href)
     }
     expect(openCase('archive-warzone-wz').source.filePath).toBe(
-      join(roots.warzoneInstallRoot, 'data', 'base.wz'),
+      join(roots.warzoneInstallRoot, 'data', 'mp.wz'),
     )
     expect(openCase('archive-mpq').source.filePath).toBe(
       join(roots.sc2InstallRoot, 'Maps', 'ex', 'WTE70_Madlibrarian.SC2Map'),
     )
+    expect(openCase('archive-mpq').selectedRoute).toEqual([
+      {
+        formatId: 'sc2-map',
+        extensionId: 'blizzard/starcraft2',
+        contributionId: 'blizzard/sc2-map',
+      },
+    ])
   })
 
   it('rejects an authority path that escapes its explicit root', () => {

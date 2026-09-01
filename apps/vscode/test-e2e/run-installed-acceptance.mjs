@@ -6,7 +6,7 @@
  * Editor With...", reads the rendered webview over CDP, quits the application, and repeats with the
  * same profile. There is no extensionDevelopmentPath and no Extension Development Host.
  *
- * Build one artifact and exercise it twice:
+ * Build one artifact and exercise it across three full VS Code generations:
  *
  *   pnpm --filter @modkit/modkit-vscode test:e2e:installed -- \
  *     --artifact-out C:/drop/modkit-vscode.vsix \
@@ -27,14 +27,21 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs'
 import { createServer } from 'node:net'
 import { release as osRelease, tmpdir } from 'node:os'
 import { basename, delimiter, dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { chromium } from 'playwright-core'
+
+import {
+  assertFormatSmokeWebviewResult,
+  loadFormatSmokeAuthority,
+  resolveFormatSmokeCases,
+} from './format-smoke-runtime.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
@@ -66,6 +73,15 @@ const extensionsDir = join(scratch, 'extensions')
 const ddsPath = join(workspace, 'wave1a-minimal.dds')
 const packageInstallGateCommand = '_modkit.acceptance.packageInstallGate'
 const packageInstallGateFlag = 'MODKIT_VSCODE_ACCEPTANCE_PACKAGE_GATE'
+const packageInstallGateGenerationFlag = 'MODKIT_VSCODE_ACCEPTANCE_GENERATION'
+const packageInstallGateArtifactFlag = 'MODKIT_VSCODE_ACCEPTANCE_ARTIFACT_SHA256'
+const packageInstallGateContinueFlag = 'MODKIT_VSCODE_ACCEPTANCE_CONTINUE'
+const packageInstallGateDisabledUriFlag = 'MODKIT_VSCODE_ACCEPTANCE_DISABLED_URI'
+const formatSmokeWorkspaceRootFlag = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_WORKSPACE_ROOT'
+const formatSmokeSc2RootFlag = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_SC2_ROOT'
+const formatSmokeWarzoneRootFlag = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_WARZONE_ROOT'
+const formatSmokeStartFlag = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_START'
+const formatSmokeAckFlag = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_ACK'
 const packageInstallGatePath = join(
   userData,
   'User',
@@ -73,12 +89,80 @@ const packageInstallGatePath = join(
   'modkit.modkit-vscode',
   'package-install-gate.json',
 )
+const packageInstallGateContinuePath = join(userData, 'package-install-gate-continue-generation-2')
+const formatSmokeStartPath = join(userData, 'format-smoke-start-generation-3')
+const formatSmokeAckPath = join(userData, 'format-smoke-ack-generation-3.json')
+const disabledRouteUri =
+  argument('--disabled-uri') ?? process.env[packageInstallGateDisabledUriFlag]
+const defaultFormatSmokeWorkspaceRoot = existsSync(join(repoRoot, 'references'))
+  ? repoRoot
+  : existsSync(join(resolve(repoRoot, '..'), 'references'))
+    ? resolve(repoRoot, '..')
+    : repoRoot
+const formatSmokeRoots = Object.freeze({
+  workspaceRoot: resolve(
+    argument('--format-smoke-workspace-root') ?? defaultFormatSmokeWorkspaceRoot,
+  ),
+  sc2InstallRoot: resolve(
+    argument('--format-smoke-sc2-root') ??
+      process.env[formatSmokeSc2RootFlag] ??
+      'C:\\apps\\StarCraft II',
+  ),
+  warzoneInstallRoot: resolve(
+    argument('--format-smoke-warzone-root') ??
+      process.env[formatSmokeWarzoneRootFlag] ??
+      'C:\\Program Files\\WindowsApps\\48148WZ2100Project.Warzone2100forWindows_4.7.0.0_x64__qsk72963svc8a',
+  ),
+})
+let installedExtensionRoot
+let formatSmokeAuthority
+let formatSmokeCases
+let formatSmokeAuthoritySha256
 const builtArtifact = resolve(artifactOut ?? join(scratch, 'artifact', 'modkit-vscode.vsix'))
 const artifactPath = resolve(suppliedVsix ?? builtArtifact)
 const portablePath = (path, fallback = basename(path)) =>
   path.startsWith(scratch)
     ? path.replaceAll(scratch, '<isolated-profile>').replaceAll('\\', '/')
     : fallback
+const portableString = value => {
+  let result = value
+  for (const [actual, label] of [
+    [userData, '<isolated-profile>/user-data'],
+    [extensionsDir, '<isolated-profile>/extensions'],
+    [workspace, '<isolated-profile>/workspace'],
+    [scratch, '<isolated-profile>'],
+    [formatSmokeRoots.workspaceRoot, '<format-smoke-workspace>'],
+    [formatSmokeRoots.sc2InstallRoot, '<sc2-install>'],
+    [formatSmokeRoots.warzoneInstallRoot, '<warzone-install>'],
+    [appRoot, '<app>'],
+    [repoRoot, '<repo>'],
+    [artifactPath, basename(artifactPath)],
+  ]) {
+    const fileUrl = pathToFileURL(actual).href
+    for (const candidate of [
+      actual,
+      actual.replaceAll('\\', '/'),
+      fileUrl,
+      fileUrl.replace(
+        /^file:\/\/\/([A-Z]):/u,
+        (_match, drive) => `file:///${drive.toLowerCase()}:`,
+      ),
+    ]) {
+      result = result.split(candidate).join(label)
+    }
+  }
+  return result
+}
+const portableReceiptValue = value => {
+  if (typeof value === 'string') return portableString(value)
+  if (Array.isArray(value)) return value.map(item => portableReceiptValue(item))
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, portableReceiptValue(item)]),
+    )
+  }
+  return value
+}
 for (const directory of [workspace, userData, extensionsDir, dirname(artifactPath)]) {
   mkdirSync(directory, { recursive: true })
 }
@@ -97,6 +181,7 @@ const receipt = {
     os: { platform: process.platform, architecture: process.arch, release: osRelease() },
     node: process.versions.node,
     vscode: null,
+    vscodeLauncher: null,
   },
   profile: {
     mode: 'isolated-user-data-and-extensions-dir',
@@ -143,9 +228,15 @@ const receipt = {
         },
       ],
       lifecycle: ['available', 'install', 'disable', 'enable', 'uninstall', 'reinstall'],
+      generations: [1, 2, 3],
       restart:
         'same isolated profile preserves installed/enabled state across full process restart',
       typedFailures: true,
+      disabledRoute: {
+        uri: disabledRouteUri === undefined ? '<required>' : '<supplied>',
+        suppression:
+          '__MODKIT_ACCEPTANCE__.packageInstallGate.disabledProbe.diagnostics contains x3.host/candidate-suppressed + x3.host/extension-disabled',
+      },
     },
     runtime: {
       receipt: portablePath(packageInstallGatePath),
@@ -156,9 +247,23 @@ const receipt = {
       },
       received: false,
       verdict: null,
+      phases: [],
+      phaseDetails: [],
       failures: [],
       error: null,
     },
+    verdict: 'fail',
+  },
+  formatSmoke: {
+    kind: 'x3.vscode-installed-format-smoke-receipt',
+    schemaVersion: 1,
+    artifactSha256: null,
+    authoritySha256: null,
+    expectedCases: 14,
+    openedCases: 0,
+    exclusions: [],
+    cases: [],
+    failures: [],
     verdict: 'fail',
   },
   runs: [],
@@ -176,20 +281,6 @@ const receipt = {
 const compact = (value, limit = 2_000) => {
   const text = String(value ?? '').replaceAll(scratch, '<isolated-profile>')
   return text.length > limit ? `${text.slice(0, limit)}...` : text
-}
-
-function run(command, commandArguments, options = {}) {
-  const result = spawnSync(command, commandArguments, {
-    cwd: options.cwd ?? repoRoot,
-    encoding: 'utf8',
-    shell: process.platform === 'win32',
-    windowsHide: true,
-    env: process.env,
-  })
-  return {
-    code: result.status ?? 1,
-    output: `${result.stdout ?? ''}${result.stderr ?? ''}${result.error?.message ?? ''}`,
-  }
 }
 
 function pathEntries() {
@@ -212,6 +303,57 @@ function resolveCommand(command) {
     }
   }
   return undefined
+}
+
+let vscodeCliLauncher
+function resolveVsCodeCliLauncher() {
+  if (vscodeCliLauncher !== undefined) return vscodeCliLauncher
+  const discoveredCommand = resolveCommand(codeCommand) ?? codeCommand
+  const resolvedCommand =
+    process.platform === 'win32' &&
+    !/\.(?:cmd|bat|exe)$/iu.test(discoveredCommand) &&
+    existsSync(`${discoveredCommand}.cmd`)
+      ? `${discoveredCommand}.cmd`
+      : discoveredCommand
+  if (process.platform === 'win32' && /\.cmd$/iu.test(resolvedCommand)) {
+    const script = readFileSync(resolvedCommand, 'utf8')
+    const cliMatch = script.match(/"%~dp0\.\.\\([^"\r\n]*resources\\app\\out\\cli\.js)"/iu)
+    const executable = resolve(dirname(resolvedCommand), '..', 'Code.exe')
+    const cli =
+      cliMatch?.[1] === undefined ? undefined : resolve(dirname(resolvedCommand), '..', cliMatch[1])
+    if (!existsSync(executable) || cli === undefined || !existsSync(cli)) {
+      throw new Error('installed code.cmd does not identify an existing Code.exe CLI runtime')
+    }
+    vscodeCliLauncher = Object.freeze({
+      command: executable,
+      argsPrefix: Object.freeze([cli]),
+      environment: Object.freeze({ ELECTRON_RUN_AS_NODE: '1', VSCODE_DEV: '' }),
+      label: 'Code.exe ELECTRON_RUN_AS_NODE <installed-cli.js>',
+    })
+    return vscodeCliLauncher
+  }
+  vscodeCliLauncher = Object.freeze({
+    command: resolvedCommand,
+    argsPrefix: Object.freeze([]),
+    environment: Object.freeze({}),
+    label: basename(resolvedCommand),
+  })
+  return vscodeCliLauncher
+}
+
+function runCode(commandArguments, options = {}) {
+  const launcher = resolveVsCodeCliLauncher()
+  const result = spawnSync(launcher.command, [...launcher.argsPrefix, ...commandArguments], {
+    cwd: options.cwd ?? repoRoot,
+    encoding: 'utf8',
+    shell: false,
+    windowsHide: true,
+    env: { ...process.env, ...launcher.environment },
+  })
+  return {
+    code: result.status ?? 1,
+    output: `${result.stdout ?? ''}${result.stderr ?? ''}${result.error?.message ?? ''}`,
+  }
 }
 
 function pnpmScriptCandidates(commandPath) {
@@ -361,9 +503,39 @@ function readPackageInstallGateReceipt() {
   }
 }
 
-function assertPackageInstallGate() {
+function capturePackageInstallGateRuntime() {
   const gateReceipt = readPackageInstallGateReceipt()
   receipt.packageInstallGate.runtime.received = gateReceipt !== undefined
+  if (gateReceipt === undefined) return undefined
+  receipt.packageInstallGate.runtime.verdict =
+    typeof gateReceipt.verdict === 'string' ? gateReceipt.verdict : null
+  receipt.packageInstallGate.runtime.phases = Array.isArray(gateReceipt.phases)
+    ? gateReceipt.phases.map(phase => ({
+        generation: Number(phase?.generation),
+        state: String(phase?.state ?? ''),
+        verdict: String(phase?.verdict ?? ''),
+        failures: Array.isArray(phase?.failures)
+          ? phase.failures.map(failure => ({
+              code: String(failure?.code ?? 'x3.acceptance/package-install-gate-unknown'),
+              message: compact(failure?.message ?? ''),
+            }))
+          : [],
+      }))
+    : []
+  receipt.packageInstallGate.runtime.phaseDetails = Array.isArray(gateReceipt.phases)
+    ? portableReceiptValue(gateReceipt.phases)
+    : []
+  receipt.packageInstallGate.runtime.failures = Array.isArray(gateReceipt.failures)
+    ? gateReceipt.failures.map(failure => ({
+        code: String(failure?.code ?? 'x3.acceptance/package-install-gate-unknown'),
+        message: compact(failure?.message ?? ''),
+      }))
+    : []
+  return gateReceipt
+}
+
+function assertPackageInstallGate() {
+  const gateReceipt = capturePackageInstallGateRuntime()
   if (gateReceipt === undefined) {
     const message = `A3/A5 package/install gate produced no runtime receipt: ${receipt.packageInstallGate.runtime.receipt}`
     receipt.packageInstallGate.runtime.failures = [
@@ -375,14 +547,6 @@ function assertPackageInstallGate() {
     receipt.packageInstallGate.runtime.error = message
     throw new Error(message)
   }
-  receipt.packageInstallGate.runtime.verdict =
-    typeof gateReceipt.verdict === 'string' ? gateReceipt.verdict : null
-  receipt.packageInstallGate.runtime.failures = Array.isArray(gateReceipt.failures)
-    ? gateReceipt.failures.map(failure => ({
-        code: String(failure?.code ?? 'x3.acceptance/package-install-gate-unknown'),
-        message: compact(failure?.message ?? ''),
-      }))
-    : []
   if (
     gateReceipt.kind !== 'x3.modkit/vscode-package-install-gate' ||
     gateReceipt.schemaVersion !== 1
@@ -394,6 +558,24 @@ function assertPackageInstallGate() {
         message,
       },
     ]
+    receipt.packageInstallGate.runtime.error = message
+    throw new Error(message)
+  }
+  const phaseGenerations = receipt.packageInstallGate.runtime.phases.map(phase => phase.generation)
+  if (JSON.stringify(phaseGenerations) !== JSON.stringify([1, 2, 3])) {
+    const message = `A3/A5 package/install gate phases are incomplete: ${JSON.stringify(phaseGenerations)}`
+    receipt.packageInstallGate.runtime.error = message
+    throw new Error(message)
+  }
+  const artifactMismatches = Array.isArray(gateReceipt.phases)
+    ? gateReceipt.phases.filter(
+        phase =>
+          typeof gateReceipt.artifactSha256 === 'string' &&
+          gateReceipt.artifactSha256 !== receipt.artifact.sha256,
+      )
+    : []
+  if (gateReceipt.artifactSha256 !== receipt.artifact.sha256 || artifactMismatches.length > 0) {
+    const message = `A3/A5 package/install gate artifact SHA mismatch: ${gateReceipt.artifactSha256} !== ${receipt.artifact.sha256}`
     receipt.packageInstallGate.runtime.error = message
     throw new Error(message)
   }
@@ -409,12 +591,102 @@ function assertPackageInstallGate() {
   receipt.packageInstallGate.verdict = 'pass'
 }
 
+async function waitForPackageInstallGatePhase(generation, states, timeoutMs = 180_000) {
+  const expectedStates = Array.isArray(states) ? states : [states]
+  return await waitFor(
+    () => {
+      const gateReceipt = readPackageInstallGateReceipt()
+      const phase = gateReceipt?.phases?.find?.(
+        item => item?.generation === generation && expectedStates.includes(item?.state),
+      )
+      return phase === undefined ? undefined : phase
+    },
+    { timeoutMs, stepMs: 500 },
+  )
+}
+
+async function waitForFormatSmokeCurrent(operationRevision, timeoutMs = 180_000) {
+  return await waitFor(
+    () => {
+      const phase = readPackageInstallGateReceipt()?.phases?.find?.(item => item?.generation === 3)
+      const current = phase?.formatSmoke?.current
+      return phase?.state === 'awaiting-format-smoke-observation' &&
+        current?.operationRevision === operationRevision
+        ? current
+        : undefined
+    },
+    { timeoutMs, stepMs: 500 },
+  )
+}
+
+function packageGatePhaseFailures(phase) {
+  if (!Array.isArray(phase?.failures)) return 'phase did not publish typed failures'
+  if (phase.failures.length === 0) return 'phase did not pass and published no typed failures'
+  return phase.failures.map(failure => `${failure.code}: ${failure.message}`).join('; ')
+}
+
+function packageGatePhaseSummary(phase, generation) {
+  if (phase === undefined) {
+    return {
+      generation,
+      state: 'missing',
+      verdict: 'fail',
+      changeEventCount: null,
+    }
+  }
+  return {
+    generation: phase.generation,
+    state: phase.state,
+    verdict: phase.verdict,
+    changeEventCount: phase.changeEventCount,
+  }
+}
+
+async function observeDisabledRouteSuppression(port) {
+  if (disabledRouteUri === undefined || disabledRouteUri.trim() === '') {
+    return {
+      attempted: false,
+      observed: false,
+      error: `${packageInstallGateDisabledUriFlag} is not set`,
+    }
+  }
+  const observed = await waitFor(
+    async () => {
+      const values = await webviewValues(
+        port,
+        webviewDocumentExpression(
+          `(_doc, win) => {
+            const diagnostics = win.__MODKIT_ACCEPTANCE__?.packageInstallGate?.disabledProbe?.diagnostics;
+            if (!Array.isArray(diagnostics)) return undefined;
+            const match = diagnostics.find(
+              item =>
+                item?.code === 'x3.host/candidate-suppressed' &&
+                String(item?.message ?? '').includes('x3.host/extension-disabled'),
+            );
+            return match === undefined
+              ? undefined
+              : { code: match.code, message: String(match.message).slice(0, 1000) };
+          }`,
+        ),
+      )
+      return values.find(value => value?.code === 'x3.host/candidate-suppressed')
+    },
+    { timeoutMs: 60_000, stepMs: 500 },
+  )
+  return {
+    attempted: true,
+    observed: observed !== undefined,
+    diagnostic: observed ?? null,
+  }
+}
+
 function installVsix() {
-  const version = run(codeCommand, ['--version'])
+  receipt.environment.vscodeLauncher = resolveVsCodeCliLauncher().label
+  const version = runCode(['--version'])
   if (version.code !== 0) throw new Error(`installed VS Code CLI is unavailable: ${version.output}`)
   receipt.environment.vscode = version.output.split(/\r?\n/u)[0]?.trim() ?? null
   receipt.install.attempted = true
-  const result = run(codeCommand, [
+  const result = runCode([
     '--user-data-dir',
     userData,
     '--extensions-dir',
@@ -435,7 +707,262 @@ function installVsix() {
     version: installed.manifest.version,
     manifest: portablePath(installed.path),
   }
+  installedExtensionRoot = dirname(installed.path)
+  const authorityPath = join(installedExtensionRoot, 'dist-app', 'format-smoke.v1.json')
+  const authorityBytes = readFileSync(authorityPath)
+  formatSmokeAuthoritySha256 = `sha256:${createHash('sha256').update(authorityBytes).digest('hex')}`
+  formatSmokeAuthority = loadFormatSmokeAuthority(authorityPath)
+  formatSmokeCases = resolveFormatSmokeCases(formatSmokeAuthority, formatSmokeRoots)
+  receipt.formatSmoke.artifactSha256 = receipt.artifact.sha256
+  receipt.formatSmoke.authoritySha256 = formatSmokeAuthoritySha256
+  receipt.formatSmoke.exclusions = formatSmokeCases
+    .filter(testCase => testCase.kind === 'excluded')
+    .map(testCase => ({
+      caseId: testCase.id,
+      reason: testCase.reason,
+      authorityMatched: true,
+    }))
 }
+
+const formatSmokeContextLiteral = current =>
+  JSON.stringify({
+    caseId: current.caseId,
+    operationRevision: current.operationRevision,
+    observationToken: current.observationToken,
+  })
+
+const formatSmokeWebviewExpression = (current, body) =>
+  webviewDocumentExpression(`(doc, win) => {
+    const expected = ${formatSmokeContextLiteral(current)};
+    const actual = win.__MODKIT_ACCEPTANCE__?.formatSmoke;
+    if (
+      actual?.caseId !== expected.caseId ||
+      actual?.operationRevision !== expected.operationRevision ||
+      actual?.observationToken !== expected.observationToken ||
+      actual?.readOnly !== true
+    ) return undefined;
+    ${body}
+  }`)
+
+async function formatSmokeValue(port, current, body, timeoutMs = 120_000) {
+  return await waitFor(
+    async () => {
+      const values = await webviewValues(port, formatSmokeWebviewExpression(current, body))
+      return values[0]
+    },
+    { timeoutMs, stepMs: 500 },
+  )
+}
+
+async function formatSmokeWebviewDiagnostics(port) {
+  return await webviewValues(
+    port,
+    webviewDocumentExpression(`(doc, win) => {
+      const acceptance = win.__MODKIT_ACCEPTANCE__;
+      const body = (doc.body?.innerText ?? '').trim();
+      if (acceptance === undefined && body === '') return undefined;
+      return {
+        current: acceptance?.formatSmoke === undefined
+          ? null
+          : {
+              caseId: acceptance.formatSmoke.caseId,
+              operationRevision: acceptance.formatSmoke.operationRevision,
+              readOnly: acceptance.formatSmoke.readOnly,
+            },
+        selectedRoute: Array.isArray(acceptance?.subject?.selectedRoute)
+          ? acceptance.subject.selectedRoute.map(item => ({
+              formatId: item?.formatId,
+              extensionId: item?.extensionId,
+              contributionId: item?.contributionId,
+            }))
+          : null,
+        body: body.slice(-2_000),
+      };
+    }`),
+  )
+}
+
+async function selectFormatSmokeStage(port, current, stage) {
+  const selected = await formatSmokeValue(
+    port,
+    current,
+    `const stage = ${JSON.stringify(stage)};
+     for (const select of doc.querySelectorAll('select')) {
+       const option = Array.from(select.options).find(item => item.value === stage);
+       if (option === undefined) continue;
+       select.value = stage;
+       select.dispatchEvent(new win.Event('change', { bubbles: true }));
+       return { selected: stage };
+     }
+     return undefined;`,
+    60_000,
+  )
+  if (selected?.selected !== stage) {
+    throw new Error(`${current.caseId} did not expose required ${stage} stage`)
+  }
+}
+
+async function observeFormatSmokeCase(port, testCase, current) {
+  const opened = await formatSmokeValue(
+    port,
+    current,
+    `const route = win.__MODKIT_ACCEPTANCE__?.subject?.selectedRoute;
+     if (!Array.isArray(route) || route.length === 0) return undefined;
+     return {
+       selectedRoute: route.map(item => ({
+         formatId: item?.formatId,
+         extensionId: item?.extensionId,
+         contributionId: item?.contributionId,
+       })),
+       readOnly: actual.readOnly,
+     };`,
+  )
+  if (opened === undefined) {
+    const diagnostics = await formatSmokeWebviewDiagnostics(port)
+    throw new Error(
+      `${testCase.id} published no matching installed webview; observed ` +
+        portableString(JSON.stringify(diagnostics)).slice(0, 6_000),
+    )
+  }
+
+  const evidence = {}
+  if (testCase.stage === 'raster') {
+    await selectFormatSmokeStage(port, current, 'image')
+    evidence.raster = await formatSmokeValue(
+      port,
+      current,
+      `const canvas = doc.querySelector('[data-mk-part="image.canvas"]');
+       if (!(canvas instanceof win.HTMLCanvasElement) || canvas.width <= 0 || canvas.height <= 0) return undefined;
+       const pixels = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height).data;
+       if (pixels === undefined) return undefined;
+       let opaquePixels = 0;
+       for (let index = 3; index < pixels.length; index += 4) if (pixels[index] > 0) opaquePixels += 1;
+       return opaquePixels > 0
+         ? { width: canvas.width, height: canvas.height, pixelBytes: pixels.byteLength, opaquePixels }
+         : undefined;`,
+    )
+    await selectFormatSmokeStage(port, current, 'metadata')
+    evidence.metadata = await formatSmokeValue(
+      port,
+      current,
+      `const entryCount = doc.querySelectorAll('[data-mk-part="metadata.row"]').length;
+       return entryCount > 0 ? { entryCount } : undefined;`,
+    )
+  } else if (testCase.stage === 'tree-text') {
+    await selectFormatSmokeStage(port, current, 'tree')
+    evidence.tree = await formatSmokeValue(
+      port,
+      current,
+      `const nodeCount = doc.querySelectorAll('[data-mk-part="tree.item"]').length;
+       return nodeCount > 0 ? { nodeCount } : undefined;`,
+    )
+    await selectFormatSmokeStage(port, current, 'text')
+    evidence.text = await formatSmokeValue(
+      port,
+      current,
+      `const node = doc.querySelector('[data-mk-part="text"], [data-mk-part="virtual-text"]');
+       const characterCount = node?.textContent?.length ?? 0;
+       return characterCount > 0 ? { characterCount } : undefined;`,
+    )
+  } else if (testCase.stage === 'tree') {
+    await selectFormatSmokeStage(port, current, 'archive')
+    evidence.tree = await formatSmokeValue(
+      port,
+      current,
+      `const nodeCount = doc.querySelectorAll('[data-mk-part="namespace.item"]').length;
+       return nodeCount > 0 ? { nodeCount } : undefined;`,
+    )
+  } else if (testCase.stage === 'metadata-tree') {
+    await selectFormatSmokeStage(port, current, 'metadata')
+    evidence.metadata = await formatSmokeValue(
+      port,
+      current,
+      `const entryCount = doc.querySelectorAll('[data-mk-part="metadata.row"]').length;
+       return entryCount > 0 ? { entryCount } : undefined;`,
+    )
+    await selectFormatSmokeStage(port, current, 'tree')
+    evidence.tree = await formatSmokeValue(
+      port,
+      current,
+      `const nodeCount = doc.querySelectorAll('[data-mk-part="tree.item"]').length;
+       return nodeCount > 0 ? { nodeCount } : undefined;`,
+    )
+  } else if (testCase.stage === 'model-or-wireframe') {
+    await selectFormatSmokeStage(port, current, 'model')
+    evidence.model = await formatSmokeValue(
+      port,
+      current,
+      `const canvas = doc.querySelector('[data-mk-part="model.canvas"][data-model-renderer="wireframe"]');
+       if (!(canvas instanceof win.HTMLCanvasElement) || canvas.width <= 0 || canvas.height <= 0) return undefined;
+       const pixels = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height).data;
+       if (pixels === undefined) return undefined;
+       let opaquePixels = 0;
+       for (let index = 3; index < pixels.length; index += 4) if (pixels[index] > 0) opaquePixels += 1;
+       return opaquePixels > 0
+         ? { canvas: { width: canvas.width, height: canvas.height }, renderer: 'wireframe', opaquePixels }
+         : undefined;`,
+    )
+  } else {
+    throw new Error(`${testCase.id} has unsupported stage ${testCase.stage}`)
+  }
+
+  const asserted = assertFormatSmokeWebviewResult(testCase, {
+    caseId: testCase.id,
+    uri: testCase.source.uri,
+    selectedRoute: opened.selectedRoute,
+    ...evidence,
+  })
+  const safeObservation = {
+    caseId: testCase.id,
+    selectedRoute: asserted.selectedRoute,
+    stage: asserted.stage,
+    assertions: asserted.assertions,
+    evidence,
+    readOnly: opened.readOnly === true,
+  }
+  const observationSha256 = `sha256:${createHash('sha256')
+    .update(JSON.stringify(safeObservation))
+    .digest('hex')}`
+  return { safeObservation, observationSha256 }
+}
+
+function writeFormatSmokeAck(current, observation) {
+  const ack = {
+    kind: 'x3.vscode-installed-format-smoke-ack',
+    schemaVersion: 1,
+    artifactSha256: receipt.artifact.sha256,
+    generation: 3,
+    operationRevision: current.operationRevision,
+    caseId: current.caseId,
+    observationToken: current.observationToken,
+    observationSha256: observation.observationSha256,
+    verdict: 'pass',
+    observation: observation.safeObservation,
+  }
+  const temporary = `${formatSmokeAckPath}.${process.pid}.${current.operationRevision}.tmp`
+  writeFileSync(temporary, `${JSON.stringify(ack, null, 2)}\n`)
+  rmSync(formatSmokeAckPath, { force: true })
+  renameSync(temporary, formatSmokeAckPath)
+}
+
+const portableFormatSmokeCase = (testCase, current, observation) => ({
+  caseId: testCase.id,
+  family: testCase.family,
+  stage: testCase.stage,
+  corpus: {
+    kind: testCase.source.kind,
+    bytes: current.corpus.bytes,
+    sha256: current.corpus.sha256,
+    verifiedBeforeOpen: current.corpus.verifiedBeforeOpen === true,
+    readOnly: current.corpus.readOnly === true,
+  },
+  observedRoute: observation.safeObservation.selectedRoute,
+  evidence: observation.safeObservation.evidence,
+  assertions: observation.safeObservation.assertions,
+  operationRevision: current.operationRevision,
+  observationSha256: observation.observationSha256,
+  verdict: 'pass',
+})
 
 function evaluateTarget(webSocketDebuggerUrl, expression, timeoutMs = 10_000) {
   return new Promise(resolvePromise => {
@@ -1034,18 +1561,31 @@ async function launchGeneration(generation) {
     ...(generation === 1 ? [ddsPath] : []),
   ]
   // Intentionally no --extensionDevelopmentPath and no --disable-extensions.
-  const launcher = spawn(codeCommand, launchArguments, {
+  const codeLauncher = resolveVsCodeCliLauncher()
+  const launcher = spawn(codeLauncher.command, [...codeLauncher.argsPrefix, ...launchArguments], {
     cwd: workspace,
     detached: false,
-    shell: process.platform === 'win32',
+    shell: false,
     stdio: 'ignore',
     windowsHide: true,
     env: {
       ...process.env,
+      ...codeLauncher.environment,
       MODKIT_EXTENSION_ALLOWED_ORIGINS: '',
       MODKIT_EXTENSION_RAPID_POOL_ROOT: '',
       MODKIT_EXTENSION_REGISTRY: '',
       [packageInstallGateFlag]: '1',
+      [packageInstallGateGenerationFlag]: String(generation),
+      [packageInstallGateArtifactFlag]: receipt.artifact.sha256 ?? '',
+      [packageInstallGateContinueFlag]: packageInstallGateContinuePath,
+      [formatSmokeWorkspaceRootFlag]: formatSmokeRoots.workspaceRoot,
+      [formatSmokeSc2RootFlag]: formatSmokeRoots.sc2InstallRoot,
+      [formatSmokeWarzoneRootFlag]: formatSmokeRoots.warzoneInstallRoot,
+      [formatSmokeStartFlag]: formatSmokeStartPath,
+      [formatSmokeAckFlag]: formatSmokeAckPath,
+      ...(disabledRouteUri === undefined
+        ? {}
+        : { [packageInstallGateDisabledUriFlag]: disabledRouteUri }),
     },
   })
   launcher.unref()
@@ -1213,6 +1753,104 @@ async function launchGeneration(generation) {
   if (metadata === undefined)
     throw new Error('installed DDS Metadata stage exposed no non-empty format metadata')
 
+  let packageGatePhase
+  let packageGateExternal = null
+  let packageGateExternalFailure
+  if (generation === 2) {
+    const progress =
+      disabledRouteUri === undefined || disabledRouteUri.trim() === ''
+        ? undefined
+        : await waitForPackageInstallGatePhase(generation, ['awaiting-continuation', 'complete'])
+    const awaiting = progress?.state === 'awaiting-continuation' ? progress : undefined
+    packageGateExternal = {
+      awaitingContinuation: awaiting !== undefined,
+      disabledRouteObservation:
+        awaiting === undefined
+          ? {
+              attempted: false,
+              observed: false,
+              error:
+                progress?.state === 'complete'
+                  ? `package gate completed before external observation: ${packageGatePhaseFailures(progress)}`
+                  : `${packageInstallGateDisabledUriFlag} is not set`,
+            }
+          : await observeDisabledRouteSuppression(port),
+      continuationSentinel: portablePath(packageInstallGateContinuePath),
+      continuationWritten: false,
+    }
+    if (!packageGateExternal.disabledRouteObservation.observed) {
+      packageGateExternalFailure =
+        packageGateExternal.disabledRouteObservation.error ??
+        'A3/A5 disabled-route suppression was not externally visible over CDP'
+    }
+    if (packageGateExternalFailure === undefined) {
+      writeFileSync(packageInstallGateContinuePath, `${new Date().toISOString()}\n`)
+      packageGateExternal.continuationWritten = true
+    }
+  }
+  if (generation === 3) {
+    const progress = await waitForPackageInstallGatePhase(generation, [
+      'awaiting-format-smoke-start',
+      'complete',
+    ])
+    if (progress?.state !== 'awaiting-format-smoke-start') {
+      throw new Error(
+        `A8 format smoke did not reach its start barrier: ${packageGatePhaseFailures(progress)}`,
+      )
+    }
+    if (progress.formatSmoke?.authoritySha256 !== formatSmokeAuthoritySha256) {
+      throw new Error('A8 installed authority SHA-256 differs from the harness authority')
+    }
+    writeFileSync(formatSmokeStartPath, `${new Date().toISOString()}\n`)
+    const openCases = formatSmokeCases.filter(testCase => testCase.kind === 'open')
+    for (let index = 0; index < openCases.length; index += 1) {
+      const testCase = openCases[index]
+      const operationRevision = index + 1
+      const current = await waitForFormatSmokeCurrent(operationRevision)
+      if (current === undefined || current.caseId !== testCase.id) {
+        throw new Error(
+          `A8 operation ${operationRevision} expected ${testCase.id}, got ${String(current?.caseId)}`,
+        )
+      }
+      const observation = await observeFormatSmokeCase(port, testCase, current)
+      writeFormatSmokeAck(current, observation)
+      receipt.formatSmoke.cases.push(portableFormatSmokeCase(testCase, current, observation))
+      receipt.formatSmoke.openedCases = receipt.formatSmoke.cases.length
+    }
+  }
+  packageGatePhase = await waitForPackageInstallGatePhase(generation, 'complete')
+
+  if (generation === 3 && packageGatePhase?.verdict === 'pass') {
+    const productSmoke = packageGatePhase.formatSmoke
+    if (
+      productSmoke?.verdict !== 'pass' ||
+      productSmoke?.authoritySha256 !== formatSmokeAuthoritySha256 ||
+      productSmoke?.artifactSha256 !== receipt.artifact.sha256 ||
+      productSmoke?.expectedCases !== 14 ||
+      productSmoke?.openedCases !== 13 ||
+      !Array.isArray(productSmoke?.cases) ||
+      productSmoke.cases.length !== 13 ||
+      !Array.isArray(productSmoke?.failures) ||
+      productSmoke.failures.length !== 0
+    ) {
+      throw new Error('A8 product-side final receipt is incomplete or mismatched')
+    }
+    for (const recorded of receipt.formatSmoke.cases) {
+      const productCase = productSmoke.cases.find(item => item?.caseId === recorded.caseId)
+      if (productCase === undefined) {
+        throw new Error(`A8 product receipt omitted ${recorded.caseId}`)
+      }
+      if (productCase.corpus?.unchangedAfterClose === true) {
+        recorded.corpus.unchangedAfterClose = true
+      }
+    }
+    const mpq = receipt.formatSmoke.cases.find(item => item.caseId === 'archive-mpq')
+    if (mpq?.corpus?.unchangedAfterClose !== true) {
+      throw new Error('A8 archive-mpq did not prove unchanged bytes after read-only close')
+    }
+    receipt.formatSmoke.verdict = 'pass'
+  }
+
   const runReceipt = {
     generation,
     artifactSha256: receipt.artifact.sha256,
@@ -1230,8 +1868,22 @@ async function launchGeneration(generation) {
       metadataExcerpt: compact(metadata, 1_200),
     },
     screenshot: generation === 1 ? portablePath(screenshotPath) : null,
+    packageInstallGate: {
+      phase: packageGatePhaseSummary(packageGatePhase, generation),
+      external: packageGateExternal,
+    },
+    formatSmoke: generation === 3 ? receipt.formatSmoke : null,
   }
   receipt.runs.push(runReceipt)
+
+  if (packageGatePhase?.verdict !== 'pass') {
+    throw new Error(
+      `A3/A5 package gate generation ${generation} failed: ${packageGatePhaseFailures(packageGatePhase)}`,
+    )
+  }
+  if (packageGateExternalFailure !== undefined) {
+    throw new Error(packageGateExternalFailure)
+  }
 
   // Stop the installed workbench deterministically through CDP, then prove the endpoint is gone
   // before the next generation starts. If CDP close wedges, the fallback only targets processes
@@ -1253,6 +1905,7 @@ try {
   await launchGeneration(1)
   receipt.restart.attempted = true
   await launchGeneration(2)
+  await launchGeneration(3)
   receipt.restart.passed = true
   if (receipt.runs.some(runReceipt => runReceipt.artifactSha256 !== receipt.artifact.sha256)) {
     throw new Error('run receipts do not name the one accepted VSIX SHA-256')
@@ -1262,6 +1915,7 @@ try {
 } catch (error) {
   failure = error
   receipt.error = error instanceof Error ? error.message : String(error)
+  capturePackageInstallGateRuntime()
 } finally {
   for (const [port, application] of activeApplications) {
     const teardown = await closeApplication(port, application.generation ?? null)

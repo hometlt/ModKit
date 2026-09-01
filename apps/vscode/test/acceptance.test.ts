@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -10,8 +11,8 @@ import {
   withSubjectAcceptance,
   type BundledAcceptanceRoot,
 } from '../src/acceptance.js'
-import type { BundledCatalogRoot } from '../src/extension-roots.js'
-import { createVsCodeSubjectHost } from '../src/host.js'
+import { resolveBundledCatalog, type BundledCatalogRoot } from '../src/extension-roots.js'
+import { catalogCandidates, createVsCodeSubjectHost } from '../src/host.js'
 
 const repositoryRoot = resolve(fileURLToPath(new URL('../../..', import.meta.url)))
 type GeneratedBundledRoot = BundledAcceptanceRoot & BundledCatalogRoot
@@ -32,6 +33,65 @@ const catalog: readonly BundledAcceptanceRoot[] = Object.freeze([
 ])
 
 describe('VS Code installed-product acceptance receipt', () => {
+  it('resolves all eight installed roots only from the packaged dist-app tree', () => {
+    const installedProfile = mkdtempSync(join(tmpdir(), 'modkit-vscode-installed-layout-'))
+    try {
+      const extensionRoot = join(installedProfile, 'extensions', 'modkit.modkit-vscode-0.1.0')
+      const packagedExtensions = join(extensionRoot, 'dist-app', 'extensions')
+      const conflictingGlobalExtensions = join(installedProfile, 'extensions')
+      const generated = JSON.parse(
+        readFileSync(
+          join(repositoryRoot, 'apps', 'vscode', 'generated', 'bundled-catalog.json'),
+          'utf8',
+        ),
+      ) as { readonly roots: readonly GeneratedBundledRoot[] }
+      for (const root of generated.roots) {
+        const rootPath = join(packagedExtensions, root.directory)
+        mkdirSync(rootPath, { recursive: true })
+        writeFileSync(join(rootPath, 'modkit.extension.json'), '{}')
+      }
+      // This is the parent directory VS Code uses for every installed extension. It must never
+      // become a first-party catalog base merely because an unrelated extension happens to be
+      // named like one Common root.
+      mkdirSync(join(conflictingGlobalExtensions, 'images'), { recursive: true })
+      writeFileSync(join(conflictingGlobalExtensions, 'images', 'modkit.extension.json'), '{}')
+
+      const candidates = catalogCandidates(extensionRoot, installedProfile)
+      expect(candidates).toEqual([packagedExtensions])
+      const resolved = resolveBundledCatalog(generated.roots, candidates, {
+        join,
+        readDirectory: () => undefined,
+        isFile: existsSync,
+        readJson: path => JSON.parse(readFileSync(path, 'utf8')),
+      })
+      expect(resolved.base).toBe(packagedExtensions)
+      expect(resolved.missing).toEqual([])
+      expect(resolved.roots).toEqual(
+        generated.roots.map(root => join(packagedExtensions, root.directory)),
+      )
+    } finally {
+      rmSync(installedProfile, { recursive: true, force: true })
+    }
+  })
+
+  it('admits a checkout catalog candidate only when the workspace markers are present', () => {
+    const root = mkdtempSync(join(tmpdir(), 'modkit-vscode-checkout-marker-'))
+    try {
+      const extensionRoot = join(root, 'apps', 'vscode')
+      const checkoutExtensions = join(root, 'extensions')
+      mkdirSync(checkoutExtensions, { recursive: true })
+      expect(catalogCandidates(extensionRoot, root)).toEqual([])
+
+      writeFileSync(join(root, 'pnpm-workspace.yaml'), 'packages: []\n')
+      writeFileSync(join(root, '.git'), 'gitdir: fixture\n')
+      mkdirSync(extensionRoot, { recursive: true })
+      writeFileSync(join(extensionRoot, 'package.json'), '{}')
+      expect(catalogCandidates(extensionRoot, root)).toEqual([checkoutExtensions])
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   it('reports the generated Common catalog as exact 8 roots / 87 contributions', async () => {
     const generated = JSON.parse(
       readFileSync(

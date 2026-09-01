@@ -33,7 +33,11 @@ const REQUIRED_CASES = Object.freeze([
     family: 'archives',
     formats: Object.freeze(['warzone-wz']),
   }),
-  Object.freeze({ id: 'archive-mpq', family: 'archives', formats: Object.freeze(['mpq']) }),
+  Object.freeze({
+    id: 'archive-mpq',
+    family: 'archives',
+    formats: Object.freeze(['sc2-map']),
+  }),
   Object.freeze({
     id: 'casc-dds',
     family: 'archives-images',
