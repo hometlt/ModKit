@@ -19,11 +19,13 @@ import { createPublicKey } from 'node:crypto'
 import { createRequire } from 'node:module'
 import {
   cpSync,
+  createReadStream,
   existsSync,
   mkdirSync,
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs'
 import { dirname, extname, join, resolve } from 'node:path'
@@ -352,11 +354,51 @@ if (process.argv.includes('--serve')) {
       response.end('not found')
       return
     }
-    response.writeHead(200, {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      response.writeHead(405, { Allow: 'GET, HEAD' })
+      response.end('method not allowed')
+      return
+    }
+    const size = statSync(file).size
+    const commonHeaders = {
       'Content-Type': types[extname(file)] ?? 'application/octet-stream',
+      'Accept-Ranges': 'bytes',
       // A service worker may only claim a scope at or below its own path.
       ...(name === '/service-worker.js' ? { 'Service-Worker-Allowed': '/' } : {}),
-    })
-    response.end(readFileSync(file))
+    }
+    const range = request.headers.range
+    if (range !== undefined) {
+      const match = /^bytes=(\d+)-(\d*)$/u.exec(range)
+      const start = match === null ? Number.NaN : Number(match[1])
+      const requestedEnd = match?.[2] === '' ? size - 1 : Number(match?.[2])
+      const end = Math.min(requestedEnd, size - 1)
+      if (
+        match === null ||
+        !Number.isSafeInteger(start) ||
+        !Number.isSafeInteger(requestedEnd) ||
+        start < 0 ||
+        requestedEnd < start ||
+        start >= size
+      ) {
+        response.writeHead(416, {
+          ...commonHeaders,
+          'Content-Range': `bytes */${size}`,
+          'Content-Length': '0',
+        })
+        response.end()
+        return
+      }
+      response.writeHead(206, {
+        ...commonHeaders,
+        'Content-Range': `bytes ${start}-${end}/${size}`,
+        'Content-Length': String(end - start + 1),
+      })
+      if (request.method === 'HEAD') response.end()
+      else createReadStream(file, { start, end }).pipe(response)
+      return
+    }
+    response.writeHead(200, { ...commonHeaders, 'Content-Length': String(size) })
+    if (request.method === 'HEAD') response.end()
+    else createReadStream(file).pipe(response)
   }).listen(port, () => console.log(`serving http://localhost:${port}`))
 }
