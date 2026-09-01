@@ -174,6 +174,9 @@ describe('13C real-browser viewer host', () => {
         localizer: ru,
         label: 'Fixture',
         sections: [{ kind: 'header', title: 'Fixture' }],
+        // The knowledge status belongs only to cards wired to a knowledge adapter. This case
+        // exercises per-instance localization, not the deferred product knowledge feature.
+        knowledge: {},
       })
       root.append(russian.root, english.root, card.root)
       const result = {

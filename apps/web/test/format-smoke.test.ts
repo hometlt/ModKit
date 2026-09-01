@@ -128,7 +128,7 @@ const corpusUrls = Object.fromEntries(
 )
 
 describe('PWA installed format-family acceptance', () => {
-  it('consumes the exact generated 14-case authority bytes and preserves the one ODT exclusion', async () => {
+  it('consumes the exact generated 14-case authority bytes with a real ODT corpus', async () => {
     const loaded = await loadPwaFormatSmokeAuthority(
       'https://example.invalid/format-smoke.v1.json',
       authoritySha256,
@@ -143,13 +143,13 @@ describe('PWA installed format-family acceptance', () => {
           testCase.runtime.pwa.kind === 'browser-subset' &&
           testCase.corpus.kind !== 'named-exclusion',
       ),
-    ).toHaveLength(9)
+    ).toHaveLength(10)
     expect(
       loaded.authority.cases.filter(
         testCase => testCase.runtime.pwa.kind === 'host-facility-refusal',
       ),
     ).toHaveLength(4)
-    expect(loaded.authority.namedExclusions.map(item => item.id)).toEqual(['document-odt'])
+    expect(loaded.authority.namedExclusions).toEqual([])
   })
 
   it('gets the typed refusal from the page-owned SC2/CASC source-open boundary', async () => {
@@ -182,7 +182,7 @@ describe('PWA installed format-family acceptance', () => {
     ).rejects.toMatchObject({ code: 'x3.host/source-adapter-unavailable' })
   })
 
-  it('records 9 actual opens, 4 actual refusals and ODT as a path-free passing receipt', async () => {
+  it('records 10 actual opens, 4 actual refusals and no exclusions', async () => {
     const hostOnlyRequests: FormatSmokeAuthorityCase[] = []
     const control = createPwaFormatSmokeAcceptance({
       authority,
@@ -196,7 +196,7 @@ describe('PWA installed format-family acceptance', () => {
     const receipt = await control.run(corpusUrls)
 
     expect(receipt.verdict).toBe('pass')
-    expect(receipt.cases.filter(item => item.outcome === 'opened')).toHaveLength(9)
+    expect(receipt.cases.filter(item => item.outcome === 'opened')).toHaveLength(10)
     expect(receipt.cases.filter(item => item.outcome === 'refused')).toHaveLength(4)
     expect(hostOnlyRequests.map(item => item.id)).toEqual([
       'casc-dds',
@@ -215,9 +215,7 @@ describe('PWA installed format-family acceptance', () => {
         requestedFormatId: generated?.route.at(-1)?.formatId,
       })
     }
-    expect(receipt.cases.filter(item => item.outcome === 'excluded')).toEqual([
-      expect.objectContaining({ id: 'document-odt', verdict: 'pass' }),
-    ])
+    expect(receipt.cases.filter(item => item.outcome === 'excluded')).toEqual([])
     const serialized = JSON.stringify(receipt)
     expect(serialized).not.toMatch(/(?:file:|https?:|[A-Z]:[\\/]|\\\\)/u)
     expect(serialized).not.toContain('secret.bin')

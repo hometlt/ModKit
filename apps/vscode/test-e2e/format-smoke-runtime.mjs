@@ -41,7 +41,7 @@ const EXPECTED_CORPUS_KINDS = Object.freeze({
   'image-png': 'workspace-reference',
   'image-tga': 'workspace-reference',
   'image-jpeg': 'workspace-reference',
-  'document-odt': 'named-exclusion',
+  'document-odt': 'workspace-reference',
   'data-xml': 'workspace-reference',
   'archive-zip': 'workspace-reference',
   'archive-warzone-wz': 'warzone-install-file',
@@ -151,7 +151,7 @@ const expectedSha = (value, label) => {
 
 const same = (left, right) => JSON.stringify(left) === JSON.stringify(right)
 
-/** Validate the generated descriptor as the exact Wave 1B authority: 14 cases, one ODT exclusion. */
+/** Validate the generated descriptor as the exact Wave 1C authority: 14 real cases, no exclusion. */
 export function validateFormatSmokeAuthority(value) {
   const authority = object(value, 'format smoke authority')
   if (authority.kind !== 'x3.ga-recovery/format-family-smoke' || authority.schemaVersion !== 1) {
@@ -201,17 +201,9 @@ export function validateFormatSmokeAuthority(value) {
     }
   }
 
-  if (
-    !Array.isArray(authority.namedExclusions) ||
-    authority.namedExclusions.length !== 1 ||
-    authority.namedExclusions[0]?.id !== 'document-odt' ||
-    authority.cases[4].corpus.reason !== authority.namedExclusions[0].reason
-  ) {
-    throw new TypeError(
-      'format smoke authority must contain the one matching document-odt exclusion',
-    )
+  if (!Array.isArray(authority.namedExclusions) || authority.namedExclusions.length !== 0) {
+    throw new TypeError('format smoke authority must contain no named exclusions')
   }
-  nonBlank(authority.namedExclusions[0].reason, 'namedExclusions[0].reason')
   return authority
 }
 

@@ -71,6 +71,7 @@ const workspace = join(scratch, 'workspace')
 const userData = join(scratch, 'user-data')
 const extensionsDir = join(scratch, 'extensions')
 const ddsPath = join(workspace, 'wave1a-minimal.dds')
+const corruptDdsPath = join(workspace, 'wave1c-corrupt.dds')
 const packageInstallGateCommand = '_modkit.acceptance.packageInstallGate'
 const packageInstallGateFlag = 'MODKIT_VSCODE_ACCEPTANCE_PACKAGE_GATE'
 const packageInstallGateGenerationFlag = 'MODKIT_VSCODE_ACCEPTANCE_GENERATION'
@@ -170,6 +171,7 @@ copyFileSync(
   join(repoRoot, 'packages', 'testkit', 'test', 'fixtures', 'mk2-synthetic', 'minimal.dds'),
   ddsPath,
 )
+writeFileSync(corruptDdsPath, Buffer.concat([Buffer.from('DDS ', 'ascii'), Buffer.alloc(16)]))
 
 const startedAt = new Date().toISOString()
 const receipt = {
@@ -264,6 +266,15 @@ const receipt = {
     exclusions: [],
     cases: [],
     failures: [],
+    verdict: 'fail',
+  },
+  corruptInput: {
+    kind: 'x3.vscode-installed-corrupt-input-refusal',
+    schemaVersion: 1,
+    file: basename(corruptDdsPath),
+    expectedStep: 'input-open',
+    code: null,
+    message: null,
     verdict: 'fail',
   },
   runs: [],
@@ -1390,29 +1401,65 @@ async function fillQuickInput(page, query) {
 }
 
 async function chooseQuickInput(page, query, expectedText) {
-  const widget = await fillQuickInput(page, query)
-  const row = widget
-    .locator('.quick-input-list .monaco-list-row:visible')
-    .filter({ hasText: expectedText })
-    .first()
-  await row.waitFor({ state: 'visible', timeout: 20_000 })
-  const selectedText = await row.innerText()
-  await row.click()
-  return selectedText
+  let lastError
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const widget = await fillQuickInput(page, query)
+    const row = widget
+      .locator('.quick-input-list .monaco-list-row:visible')
+      .filter({ hasText: expectedText })
+      .first()
+    try {
+      await row.waitFor({ state: 'visible', timeout: 20_000 })
+      const selectedText = await row.innerText()
+      await row.click()
+      return selectedText
+    } catch (error) {
+      lastError = error
+      await page.keyboard.press('Escape').catch(() => undefined)
+      await page
+        .locator('.monaco-workbench')
+        .click({ position: { x: 8, y: 8 }, timeout: 5_000 })
+        .catch(() => undefined)
+      await page.waitForTimeout(250)
+    }
+  }
+  throw new Error(
+    `quick input exposed no ${String(expectedText)} for ${JSON.stringify(query)}: ${String(lastError)}`,
+  )
 }
 
-async function activateDdsEditor(page) {
-  const file = basename(ddsPath)
+async function activateEditor(page, filePath = ddsPath) {
+  const file = basename(filePath)
   const tabs = page.locator('.tabs-container .tab:visible')
   const tab = tabs.filter({ hasText: file }).last()
   if ((await tab.count()) === 0) {
     const visibleTabs = await tabs.allInnerTexts()
     throw new Error(
-      `DDS editor tab ${JSON.stringify(file)} is not visible; visible tabs: ${JSON.stringify(visibleTabs)}`,
+      `editor tab ${JSON.stringify(file)} is not visible; visible tabs: ${JSON.stringify(visibleTabs)}`,
     )
   }
   await tab.click()
   await page.waitForTimeout(250)
+}
+
+async function openWorkspaceFile(page, filePath) {
+  const file = basename(filePath)
+  await page.keyboard.press('Control+P')
+  const widget = page.locator('.quick-input-widget:visible').last()
+  const input = widget.locator('input:visible').last()
+  await input.waitFor({ state: 'visible', timeout: 5_000 })
+  await input.fill(file)
+  const row = widget
+    .locator('.quick-input-list .monaco-list-row:visible')
+    .filter({ hasText: file })
+    .first()
+  await row.waitFor({ state: 'visible', timeout: 20_000 })
+  await row.click()
+  await page
+    .locator('.tabs-container .tab:visible')
+    .filter({ hasText: file })
+    .last()
+    .waitFor({ state: 'visible', timeout: 20_000 })
 }
 
 async function inspectModkitCommands(page) {
@@ -1432,13 +1479,39 @@ async function inspectModkitCommands(page) {
   return commandTexts
 }
 
-async function reopenWithModkit(page) {
-  await activateDdsEditor(page)
-  receipt.install.reopenCommand = await chooseQuickInput(
-    page,
-    'reopen editor with',
-    /^View: Reopen Editor With(?:\.\.\.|…)?$/u,
-  )
+async function reopenWithModkit(page, filePath = ddsPath) {
+  await activateEditor(page, filePath)
+  try {
+    if (filePath === corruptDdsPath && receipt.install.reopenCommand !== null) {
+      throw new Error('command-palette Reopen With was already exercised for the valid DDS')
+    }
+    receipt.install.reopenCommand = await chooseQuickInput(
+      page,
+      'reopen editor with',
+      /^View: Reopen Editor With(?:\.\.\.|…)?$/u,
+    )
+  } catch (paletteError) {
+    // VS Code can hide the palette command after an editor association changed earlier in the
+    // same session. The editor-tab context menu is the equivalent ordinary user UI route.
+    await page.keyboard.press('Escape').catch(() => undefined)
+    const file = basename(filePath)
+    const tab = page.locator('.tabs-container .tab:visible').filter({ hasText: file }).last()
+    await tab.click({ button: 'right' })
+    const menuItem = page
+      .locator('.context-view:visible .action-item:visible')
+      .filter({ hasText: /^Reopen Editor With(?:\.\.\.|…)?$/u })
+      .last()
+    try {
+      await menuItem.waitFor({ state: 'visible', timeout: 10_000 })
+      receipt.install.reopenCommand = `tab context menu: ${await menuItem.innerText()}`
+      await menuItem.click()
+    } catch (contextMenuError) {
+      throw new Error(
+        `Reopen Editor With was unavailable in both command palette and tab context menu; ` +
+          `palette=${String(paletteError)}; context=${String(contextMenuError)}`,
+      )
+    }
+  }
   const widget = page.locator('.quick-input-widget:visible').last()
   const rows = widget.locator('.quick-input-list .monaco-list-row:visible')
   const option = page.locator(':text-is("Modkit Asset Preview"):visible').last()
@@ -1479,6 +1552,46 @@ async function reopenWithModkit(page) {
     )
   }
   await option.click()
+}
+
+async function observeCorruptInputRefusal(page, port, timeoutMs = 60_000) {
+  const file = basename(corruptDdsPath)
+  const webviewMessage = await waitFor(
+    async () => {
+      const values = await webviewValues(
+        port,
+        webviewDocumentExpression(
+          `doc => {
+            const text = (doc.body?.innerText || '').slice(0, 8000);
+            return text.includes(${JSON.stringify(file)}) &&
+              text.includes('x3.host/subject-input-open-failed') &&
+              text.includes('input-open')
+              ? text
+              : undefined;
+          }`,
+        ),
+      )
+      return values.find(value => typeof value === 'string')
+    },
+    { timeoutMs, stepMs: 500 },
+  )
+  if (webviewMessage !== undefined) return webviewMessage
+
+  await page.keyboard.press('Escape').catch(() => undefined)
+  const panel = page.locator('.markers-panel:visible').last()
+  if ((await panel.count()) === 0) await page.keyboard.press('Control+Shift+M')
+  await panel.waitFor({ state: 'visible', timeout: 20_000 })
+  return waitFor(
+    async () => {
+      const text = await panel.innerText().catch(() => '')
+      return text.includes(file) &&
+        text.includes('x3.host/subject-input-open-failed') &&
+        text.includes('input-open')
+        ? text
+        : undefined
+    },
+    { timeoutMs: 20_000, stepMs: 250 },
+  )
 }
 
 function assertA7(a7) {
@@ -1753,6 +1866,48 @@ async function launchGeneration(generation) {
   if (metadata === undefined)
     throw new Error('installed DDS Metadata stage exposed no non-empty format metadata')
 
+  let corruptInput = null
+  if (generation === 1) {
+    await openWorkspaceFile(page, corruptDdsPath)
+    // The first explicit Reopen With may leave the Modkit custom editor selected for later DDS
+    // files in this isolated profile. Accept that installed-user route when it is already visible;
+    // otherwise exercise Reopen With again before requiring the same typed refusal.
+    let message = await observeCorruptInputRefusal(page, port, 5_000)
+    let corruptRoute = 'workspace open -> selected installed Modkit editor'
+    if (message === undefined) {
+      await reopenWithModkit(page, corruptDdsPath)
+      corruptRoute = 'workspace open -> Reopen Editor With -> Modkit Asset Preview'
+      message = await observeCorruptInputRefusal(page, port, 5_000)
+    }
+    if (message === undefined) {
+      const webviewTexts = await webviewValues(
+        port,
+        webviewDocumentExpression(`doc => (doc.body?.innerText || '').slice(0, 8000)`),
+      ).catch(() => [])
+      const activeTabs = await page
+        .locator('.tabs-container .tab.active:visible')
+        .allInnerTexts()
+        .catch(() => [])
+      await page.screenshot({ path: screenshotPath, fullPage: false }).catch(() => undefined)
+      throw new Error(
+        `C3 corrupt DDS exposed no typed input-open refusal in the installed UI; ` +
+          `active tabs=${JSON.stringify(activeTabs)}; webviews=${JSON.stringify(webviewTexts)}`,
+      )
+    }
+    corruptInput = {
+      file: basename(corruptDdsPath),
+      code: 'x3.host/subject-input-open-failed',
+      missingStep: 'input-open',
+      route: corruptRoute,
+      message: compact(message, 2_000),
+      verdict: 'pass',
+    }
+    Object.assign(receipt.corruptInput, corruptInput)
+    // Restart proof is for the valid DDS raster/metadata canary. Leave that editor active after the
+    // corrupt-input refusal so VS Code restores the intended installed-user surface in generation 2.
+    await activateEditor(page, ddsPath)
+  }
+
   let packageGatePhase
   let packageGateExternal = null
   let packageGateExternalFailure
@@ -1827,9 +1982,9 @@ async function launchGeneration(generation) {
       productSmoke?.authoritySha256 !== formatSmokeAuthoritySha256 ||
       productSmoke?.artifactSha256 !== receipt.artifact.sha256 ||
       productSmoke?.expectedCases !== 14 ||
-      productSmoke?.openedCases !== 13 ||
+      productSmoke?.openedCases !== 14 ||
       !Array.isArray(productSmoke?.cases) ||
-      productSmoke.cases.length !== 13 ||
+      productSmoke.cases.length !== 14 ||
       !Array.isArray(productSmoke?.failures) ||
       productSmoke.failures.length !== 0
     ) {
@@ -1873,6 +2028,7 @@ async function launchGeneration(generation) {
       external: packageGateExternal,
     },
     formatSmoke: generation === 3 ? receipt.formatSmoke : null,
+    corruptInput,
   }
   receipt.runs.push(runReceipt)
 

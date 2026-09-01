@@ -103,8 +103,8 @@ describe('Electron format-smoke acceptance authority', () => {
 
   it('consumes the current generated authority without caching the previous route inventory', () => {
     const summary = summarizeElectronFormatSmokeAuthority(authority)
-    expect(summary.included.map(item => item.id)).toHaveLength(13)
-    expect(summary.excluded.map(item => item.id)).toEqual(['document-odt'])
+    expect(summary.included.map(item => item.id)).toHaveLength(14)
+    expect(summary.excluded.map(item => item.id)).toEqual([])
     expect(summary.packageIds).toEqual(['blizzard/starcraft2-suite', 'wz2100project/warzone-2100'])
     expect(summary.commonRoots.map(item => item.coordinate)).toEqual([
       'modkit/archives',

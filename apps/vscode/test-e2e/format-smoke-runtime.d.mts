@@ -38,7 +38,7 @@ export interface FormatSmokeAuthority {
   readonly kind: 'x3.ga-recovery/format-family-smoke'
   readonly schemaVersion: 1
   cases: [FormatSmokeAuthorityCase, ...FormatSmokeAuthorityCase[]]
-  readonly namedExclusions: readonly { readonly id: 'document-odt'; readonly reason: string }[]
+  readonly namedExclusions: readonly { readonly id: string; readonly reason: string }[]
 }
 
 export interface FormatSmokeRoots {

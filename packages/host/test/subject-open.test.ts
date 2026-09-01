@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { canonicalJsonStringify, traitId } from '@modkit/core'
+import { canonicalJsonStringify, ModkitError, traitId } from '@modkit/core'
 import {
   buildInventory,
   artifactNamespaceSourceFromVfsMount,
@@ -133,6 +133,25 @@ function countingTrustedBackends() {
 }
 
 describe('host-owned subject opening pipeline', () => {
+  it('matches a case-insensitive **/ glob at the subject root', async () => {
+    const result = await openSubject({
+      inventory: await bundledInventory(grantsProbeDir),
+      source: byteSource(new TextEncoder().encode('GRANTS'), 'GrantsRoot'),
+      path: 'GrantsRoot',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'subject-open-root-glob', classes: ['read-source', 'write-source'] },
+      executionBackends: countingTrustedBackends().registry,
+      budget,
+    })
+
+    expect(result.state).toBe('opened')
+    if (result.state === 'opened') {
+      expect(result.selected.contributionId).toBe('org.example/grants-codec')
+      await result.session.dispose()
+    }
+  })
+
   it('selects a portable variant only when its execution backend is present', async () => {
     const inventory = await bundledInventory(imagesDir)
     const bytes = new Uint8Array(await readFile(pngFixture))
@@ -876,6 +895,12 @@ describe('detection-hostile: the bounded data-only signature index (NXT-101B / F
     expect(result.state).toBe('unresolved')
     if (result.state === 'unresolved') {
       expect(result.reason).toBe('input-unresolved')
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: 'x3.host/subject-input-open-failed',
+          message: expect.stringMatching(/^subject input-open failed closed: .+/u),
+        }),
+      )
       const png = result.candidates.find(
         item => item.contributionId === 'modkit/image-png' && item.variantId === 'trusted-node',
       )
@@ -885,6 +910,63 @@ describe('detection-hostile: the bounded data-only signature index (NXT-101B / F
       expect(png?.confidence).toBeGreaterThan(0.9)
       expect(zip?.confidence).toBeLessThan(0.1)
     }
+  })
+
+  it('names input-open when a foreign codec exception has crossed an execution boundary', async () => {
+    const inventory = await bundledInventory(imagesDir)
+    const executionBackends = createExecutionBackendRegistry([
+      {
+        profile: 'trusted-in-process',
+        supports: (_target, variant) => variant.executionProfile === 'trusted-in-process',
+        async activate(context) {
+          const loaded = (await import(context.entrypoint.href)) as Record<string, unknown>
+          const createCodec = loaded['createCodec'] as () => Record<string, unknown>
+          return {
+            module: {
+              ...loaded,
+              createCodec: () => {
+                const codec = createCodec()
+                const open = codec['open'] as (...args: unknown[]) => Promise<unknown>
+                return {
+                  ...codec,
+                  open: async (...args: unknown[]) => {
+                    try {
+                      return await open.apply(codec, args)
+                    } catch (error) {
+                      throw new ModkitError({
+                        code: 'x3.host/rpc-foreign-error',
+                        message: error instanceof Error ? error.message : String(error),
+                      })
+                    }
+                  },
+                }
+              },
+            },
+            release: async () => undefined,
+          }
+        },
+      },
+    ])
+    const corrupt = new Uint8Array(20)
+    corrupt.set(new TextEncoder().encode('DDS '), 0)
+    const result = await openSubject({
+      inventory,
+      source: byteSource(corrupt, 'corrupt.dds'),
+      path: 'corrupt.dds',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'subject-open-foreign-input', classes: ['read-source'] },
+      executionBackends,
+      budget,
+    })
+
+    expect(result.state).toBe('unresolved')
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'x3.host/subject-input-open-failed',
+        message: 'subject input-open failed closed: DDS header is truncated',
+      }),
+    )
   })
 
   it('a magic collision (PNG signature, corrupt body) is probed and rejected honestly — shortlisting is not detection', async () => {
@@ -962,7 +1044,9 @@ describe('detection probes run under the probe grant; the open re-activates unde
   it('a codec requesting write-source probes under read-source only, then opens under a second activation with the full grant', async () => {
     const inventory = await bundledInventory(grantsProbeDir)
     const execution = activationCounter()
-    globalThis.__x3GrantsFixture = undefined
+    // This module may already be cached by the earlier root-glob regression; reset its observable
+    // state explicitly instead of relying on the fixture's module-evaluation initializer.
+    globalThis.__x3GrantsFixture = { createCodecCalls: 0 }
     const result = await openSubject({
       inventory,
       source: byteSource(grantsBytes(), 'demo.grants'),

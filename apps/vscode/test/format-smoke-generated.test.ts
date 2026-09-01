@@ -59,19 +59,21 @@ describe('generated installed format-family smoke', () => {
     }
   })
 
-  it('names the unavailable real corpus instead of silently skipping it', () => {
-    expect(generated.namedExclusions).toEqual([
-      {
-        id: 'document-odt',
-        reason:
-          'No real ODT exists in the owner-declared local corpora on 2026-09-01; synthetic ZIP fixtures are not substituted for A8.',
-      },
-    ])
+  it('requires real corpora for all 14 families without an exclusion', () => {
+    expect(generated.namedExclusions).toEqual([])
     expect(
       generated.cases.filter(
         (entry: { corpus: { kind: string } }) => entry.corpus.kind === 'named-exclusion',
       ),
-    ).toHaveLength(1)
+    ).toHaveLength(0)
+    expect(
+      generated.cases.find((entry: { id: string }) => entry.id === 'document-odt').corpus,
+    ).toEqual({
+      kind: 'workspace-reference',
+      path: 'downloads/file-examples/documents/file-sample_100kB.odt',
+      bytes: 116076,
+      sha256: 'ec78ee3b75df5da1556b0a3e1c3cf81c05f01dcacee057190786545e851f3835',
+    })
   })
 
   it('keeps the installed release at exact 8 Common plus 9 external roots', () => {

@@ -72,16 +72,10 @@ const observation = (
 })
 
 describe('installed format-smoke runtime descriptor', () => {
-  it('resolves the exact 14 generated cases and one named ODT exclusion', () => {
+  it('resolves the exact 14 generated cases with no exclusions', () => {
     expect(cases.map(entry => entry.id)).toEqual(FORMAT_SMOKE_CASE_IDS)
     expect(cases).toHaveLength(14)
-    expect(cases.filter(entry => entry.kind === 'excluded')).toEqual([
-      expect.objectContaining({
-        id: 'document-odt',
-        kind: 'excluded',
-        reason: expect.stringContaining('No real ODT'),
-      }),
-    ])
+    expect(cases.filter(entry => entry.kind === 'excluded')).toEqual([])
   })
 
   it('uses confined file URIs for every loose and installation file', () => {
@@ -90,6 +84,7 @@ describe('installed format-smoke runtime descriptor', () => {
       'image-png',
       'image-tga',
       'image-jpeg',
+      'document-odt',
       'data-xml',
       'archive-zip',
       'archive-warzone-wz',

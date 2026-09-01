@@ -29,7 +29,8 @@
     "artifactStages": ["authored"],
     "openIntents": ["probe", "full"],
     "match": {
-      "extensions": ["grants"]
+      "extensions": ["grants"],
+      "pathGlobs": ["**/GrantsRoot"]
     },
     "probe": {
       "kind": "bytes",

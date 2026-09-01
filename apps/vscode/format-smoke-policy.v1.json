@@ -1,5 +1,5 @@
 {
-  "$comment": "Source policy for the Wave 1B generated format-family smoke. This file names the owner-ratified format ids and reproducible external-corpus locators, never contribution ids. scripts/emit-format-smoke.mjs resolves the contribution route from the exact Common and signed managed-package inventories.",
+  "$comment": "Source policy for the Wave 1C generated format-family smoke. This file names the owner-ratified format ids and reproducible external-corpus locators, never contribution ids. scripts/emit-format-smoke.mjs resolves the contribution route from the exact Common and signed managed-package inventories.",
   "schemaVersion": 1,
   "cases": [
     {
@@ -60,8 +60,10 @@
       "formatIds": ["odt"],
       "stage": "tree-text",
       "corpus": {
-        "kind": "named-exclusion",
-        "reason": "No real ODT exists in the owner-declared local corpora on 2026-09-01; synthetic ZIP fixtures are not substituted for A8."
+        "kind": "workspace-reference",
+        "path": "downloads/file-examples/documents/file-sample_100kB.odt",
+        "bytes": 116076,
+        "sha256": "ec78ee3b75df5da1556b0a3e1c3cf81c05f01dcacee057190786545e851f3835"
       },
       "pwa": { "kind": "browser-subset" }
     },

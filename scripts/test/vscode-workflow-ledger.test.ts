@@ -141,7 +141,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       },
       decisionRequired: 0,
       releaseCandidateGaps: 0,
-      currentX3ObservedFacts: 48,
+      currentX3ObservedFacts: 59,
     })
     expect(ledger.counts.byKind).toEqual({
       'cli-command': 5,
@@ -238,19 +238,19 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
     ).toHaveLength(62)
   })
 
-  it('records the factual 64→31, 11→1, 8→0 and 6→2 surface change', () => {
+  it('records the factual 64→35, 11→1, 8→0 and 6→2 surface change', () => {
     const ledger = JSON.parse(readFileSync(committedLedger, 'utf8'))
     expect(ledger.surfaceComparison).toEqual({
       legacyVsCode: { commands: 64, customEditors: 11, languages: 8, views: 6 },
       currentX3VsCode: {
-        commands: 31,
+        commands: 35,
         configurationProperties: 4,
         customEditors: 1,
         fileSystemSchemes: 1,
         keybindings: 0,
         languages: 0,
-        menus: 7,
-        runtimeOnlyCommands: 1,
+        menus: 12,
+        runtimeOnlyCommands: 3,
         viewContainers: 1,
         views: 2,
       },
@@ -274,7 +274,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       'Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.',
     )
     expect(status).not.toContain('PWA не заявлен')
-    expect(ledger.currentX3Facts).toHaveLength(48)
+    expect(ledger.currentX3Facts).toHaveLength(59)
     expect(
       ledger.currentX3Facts.every((row: { state: string }) => row.state === 'observed-only'),
     ).toBe(true)
@@ -291,6 +291,12 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
           workflowId: row.workflowId,
         })),
     ).toEqual([
+      {
+        key: 'modkit.extensions.completeGameSupport',
+        kind: 'vscode-command',
+        source: 'contributes.commands[index]',
+        workflowId: 'vscode/source-workspace-lifecycle',
+      },
       {
         key: 'modkit.extensions.disable',
         kind: 'vscode-command',
@@ -340,6 +346,12 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         workflowId: 'vscode/source-workspace-lifecycle',
       },
       {
+        key: 'modkit.extensions.installGameSupport',
+        kind: 'vscode-command',
+        source: 'contributes.commands[index]',
+        workflowId: 'vscode/source-workspace-lifecycle',
+      },
+      {
         key: 'modkit.extensions.openContribution',
         kind: 'vscode-command',
         source: 'contributes.commands[index]',
@@ -364,6 +376,18 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         workflowId: 'vscode/source-workspace-lifecycle',
       },
       {
+        key: 'modkit.extensions.removeGameSupport',
+        kind: 'vscode-command',
+        source: 'contributes.commands[index]',
+        workflowId: 'vscode/source-workspace-lifecycle',
+      },
+      {
+        key: 'modkit.extensions.removeVendorSupport',
+        kind: 'vscode-command',
+        source: 'contributes.commands[index]',
+        workflowId: 'vscode/source-workspace-lifecycle',
+      },
+      {
         key: 'modkit.extensions.update',
         kind: 'vscode-command',
         source: 'contributes.commands[index]',
@@ -375,6 +399,18 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         source: 'contributes.configuration.modkit.extensionRegistry',
         workflowId: 'vscode/manifest-settings',
       },
+      {
+        key: 'modkit.extensions.openGame',
+        kind: 'vscode-runtime-only-command',
+        source: 'VS Code runtime registration',
+        workflowId: 'vscode/source-workspace-lifecycle',
+      },
+      {
+        key: 'modkit.extensions.openVendor',
+        kind: 'vscode-runtime-only-command',
+        source: 'VS Code runtime registration',
+        workflowId: 'vscode/source-workspace-lifecycle',
+      },
     ])
     expect(ledger.deadCommandRatchet).toEqual({
       publicContributedCommands: [
@@ -382,6 +418,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.browseContainer',
         'modkit.explainResolution',
         'modkit.exportDiagnostics',
+        'modkit.extensions.completeGameSupport',
         'modkit.extensions.disable',
         'modkit.extensions.disableAllCodecs',
         'modkit.extensions.disableContribution',
@@ -390,10 +427,13 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.extensions.enableContribution',
         'modkit.extensions.install',
         'modkit.extensions.installAll',
+        'modkit.extensions.installGameSupport',
         'modkit.extensions.openContribution',
         'modkit.extensions.openExtension',
         'modkit.extensions.refresh',
         'modkit.extensions.remove',
+        'modkit.extensions.removeGameSupport',
+        'modkit.extensions.removeVendorSupport',
         'modkit.extensions.update',
         'modkit.game.launchActiveMap',
         'modkit.materializeContainerEntry',
@@ -415,6 +455,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.browseContainer',
         'modkit.explainResolution',
         'modkit.exportDiagnostics',
+        'modkit.extensions.completeGameSupport',
         'modkit.extensions.disable',
         'modkit.extensions.disableAllCodecs',
         'modkit.extensions.disableContribution',
@@ -423,10 +464,15 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.extensions.enableContribution',
         'modkit.extensions.install',
         'modkit.extensions.installAll',
+        'modkit.extensions.installGameSupport',
         'modkit.extensions.openContribution',
         'modkit.extensions.openExtension',
+        'modkit.extensions.openGame',
+        'modkit.extensions.openVendor',
         'modkit.extensions.refresh',
         'modkit.extensions.remove',
+        'modkit.extensions.removeGameSupport',
+        'modkit.extensions.removeVendorSupport',
         'modkit.extensions.update',
         'modkit.game.launchActiveMap',
         'modkit.materializeContainerEntry',
@@ -444,10 +490,14 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.showHostProfile',
         'modkit.unloadSource',
       ],
-      internalRuntimeCommands: ['modkit.openResource'],
+      internalRuntimeCommands: [
+        'modkit.extensions.openGame',
+        'modkit.extensions.openVendor',
+        'modkit.openResource',
+      ],
       externalOrBuiltinCommands: [],
       legacyKeybindings: 0,
-      currentX3Menus: 7,
+      currentX3Menus: 12,
       currentX3Keybindings: 0,
     })
     expect(ledger.ownerBlockers).toEqual([])
@@ -455,11 +505,11 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       state: 'already-equivalent',
       ownerBlockerId: null,
       cataloguedCommonRoots: 8,
-      packagedCodecRoots: 0,
+      packagedCodecRoots: 8,
       deterministicShellArtifact: true,
-      provenVsixCodecArtifact: false,
+      provenVsixCodecArtifact: true,
       publicationArtifactKind: 'deterministic-shell',
-      publicationShellEntryCount: 5,
+      publicationShellEntryCount: 6,
     })
   })
 
@@ -614,9 +664,9 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
     expect(result.stderr).toContain('current X3 fact is allocated more than once')
   })
 
-  it('derives the zero packaged-codec boundary from the publication inventory', () => {
+  it('derives the complete packaged-codec boundary from the publication inventory', () => {
     const brokenInventory = JSON.parse(readFileSync(publicationInventory, 'utf8'))
-    brokenInventory.packagedCodecRoots.push('extensions/images')
+    brokenInventory.packagedCodecRoots.pop()
     const inventoryPath = tempPath('publication-artifact.v1.json')
     writeFileSync(inventoryPath, JSON.stringify(brokenInventory))
 
@@ -629,7 +679,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain(
-      'packagingBoundary must record the already-equivalent deterministic shell, 0 packaged codec roots, the accepted B+C topology, and no codec-bearing VSIX',
+      'packagingBoundary must record the accepted deterministic shell with every catalogued Common root in the proven codec-bearing VSIX',
     )
   })
 

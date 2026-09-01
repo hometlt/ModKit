@@ -37,6 +37,8 @@ describe('identity migration mapping', () => {
       'game-id:warzone-2100',
       'vendor-extension:spring-recoil',
       'vendor-extension:warzone-2100',
+      'vendor-contribution:legacy-warzone-2100',
+      'vendor-contribution:intermediate-warzone-2100',
       'vendor-publisher:blizzard',
       'vendor-publisher:ea',
       'builtin-id:slash',
@@ -78,6 +80,14 @@ describe('identity migration mapping', () => {
     expect(normalizeIdentifier('org.modkitx.opensource/warzone-2100')).toMatchObject({
       value: 'wz2100project/warzone-2100',
       rule: 'vendor-extension:warzone-2100',
+    })
+    expect(normalizeIdentifier('org.modkitx.opensource/warzone2100-map-semantic')).toMatchObject({
+      value: 'wz2100project/warzone2100-map-semantic',
+      rule: 'vendor-contribution:legacy-warzone-2100',
+    })
+    expect(normalizeIdentifier('modkit.opensource/warzone2100-data')).toMatchObject({
+      value: 'wz2100project/warzone2100-data',
+      rule: 'vendor-contribution:intermediate-warzone-2100',
     })
     expect(normalizeIdentifier('org.modkitx/starcraft-2')).toMatchObject({
       value: 'blizzard/starcraft-2',

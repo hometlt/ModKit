@@ -1,21 +1,14 @@
 import { defineConfig } from 'vitest/config'
+import { ROOT_TEST_EXCLUDE, ROOT_TEST_INCLUDE } from './vitest.tiers.config.js'
 
 export default defineConfig({
   test: {
-    // Bundle conformance builds in memory and never rewrites dist, so ordinary suites remain safe
-    // to schedule in parallel.
+    // The default remains the complete Vitest inventory. Named tiers provide the ordinary command
+    // surface; two workers avoid the four-worker timeout contention recorded at the 1C baseline.
     fileParallelism: true,
     minWorkers: 1,
-    maxWorkers: 4,
-    include: [
-      'packages/*/test/**/*.test.ts',
-      'apps/*/test/**/*.test.ts',
-      // tooling self-tests (legacy-gate regression suite)
-      'scripts/test/**/*.test.ts',
-      // The core suite owns only core packages, applications, tooling and bundled extensions.
-      // External repositories run their own suites from their resolved workspace composition.
-      'extensions/*/*/test/**/*.test.ts',
-    ],
-    exclude: ['**/node_modules/**', '**/dist/**', 'scripts/test/fixtures/**'],
+    maxWorkers: 2,
+    include: [...ROOT_TEST_INCLUDE],
+    exclude: [...ROOT_TEST_EXCLUDE],
   },
 })

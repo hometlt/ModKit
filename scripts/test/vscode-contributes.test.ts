@@ -43,7 +43,7 @@ describe('generated VS Code contributions', () => {
       authorityDocument.fileSystemSchemes.length
     const result = run()
 
-    expect(expectedActivationEventCount).toBe(35)
+    expect(expectedActivationEventCount).toBe(39)
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
     expect(result.stdout).toContain(`${expectedActivationEventCount} activation events`)
@@ -63,12 +63,17 @@ describe('generated VS Code contributions', () => {
     expect(commands.get('modkit.extensions.remove')?.icon).toBe('$(trash)')
     expect(commands.get('modkit.extensions.installAll')?.icon).toBe('$(cloud-download)')
     expect(inline.map(item => item.command)).toEqual([
+      'modkit.extensions.completeGameSupport',
       'modkit.extensions.disableAllCodecs',
       'modkit.extensions.disableContribution',
       'modkit.extensions.enableAllCodecs',
       'modkit.extensions.enableContribution',
+      'modkit.extensions.install',
       'modkit.extensions.installAll',
+      'modkit.extensions.installGameSupport',
       'modkit.extensions.remove',
+      'modkit.extensions.removeGameSupport',
+      'modkit.extensions.removeVendorSupport',
       'modkit.extensions.update',
     ])
     expect(inline).toContainEqual({

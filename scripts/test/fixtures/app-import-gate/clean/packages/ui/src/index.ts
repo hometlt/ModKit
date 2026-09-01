@@ -1,2 +1,2 @@
-import { deepFreeze } from '@modkitx-x3/core'
+import { deepFreeze } from '@modkit/core'
 export const ok = deepFreeze({})

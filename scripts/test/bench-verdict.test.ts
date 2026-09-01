@@ -1,9 +1,11 @@
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
+import { BENCH_BUNDLE_ENTRIES } from '../bench/bundle-precondition.mjs'
 
 /**
  * Tests for what the bench harness decides (owner instruction, 2026-08-14). The harness is
@@ -16,8 +18,31 @@ import { afterAll, describe, expect, it } from 'vitest'
  */
 
 const scriptsDir = fileURLToPath(new URL('..', import.meta.url))
-const bench = join(scriptsDir, 'bench.mjs')
 const tmp = mkdtempSync(join(tmpdir(), 'x3-bench-verdict-'))
+const fixtureRoot = join(tmp, 'repository')
+
+function installBenchHarness() {
+  const fixtureScriptsDir = join(fixtureRoot, 'scripts')
+  const fixtureBenchDir = join(fixtureScriptsDir, 'bench')
+  mkdirSync(fixtureBenchDir, { recursive: true })
+  copyFileSync(join(scriptsDir, 'bench.mjs'), join(fixtureScriptsDir, 'bench.mjs'))
+  for (const file of ['bundle-precondition.mjs', 'paired.mjs']) {
+    copyFileSync(join(scriptsDir, 'bench', file), join(fixtureBenchDir, file))
+  }
+
+  const hashes: Record<string, string> = {}
+  for (const entry of BENCH_BUNDLE_ENTRIES) {
+    const contents = `// isolated reviewed benchmark bundle: ${entry}\n`
+    const path = join(fixtureRoot, entry)
+    mkdirSync(dirname(path), { recursive: true })
+    writeFileSync(path, contents, 'utf8')
+    hashes[entry] = createHash('sha256').update(contents).digest('hex')
+  }
+  writeFileSync(join(fixtureScriptsDir, 'bundle-hashes.json'), JSON.stringify(hashes), 'utf8')
+  return join(fixtureScriptsDir, 'bench.mjs')
+}
+
+const bench = installBenchHarness()
 
 afterAll(() => rmSync(tmp, { recursive: true, force: true }))
 
@@ -33,7 +58,7 @@ function run(measurements: Record<string, unknown>, label: string, ...flags: str
   const result = spawnSync(
     process.execPath,
     [bench, ...flags, '--samples', samplesFile(measurements, label)],
-    { encoding: 'utf8' },
+    { cwd: fixtureRoot, encoding: 'utf8' },
   )
   return { status: result.status, stdout: result.stdout, stderr: result.stderr }
 }

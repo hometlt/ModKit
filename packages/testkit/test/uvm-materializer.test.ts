@@ -591,8 +591,8 @@ describe('two oracles', () => {
         }
       }
       for (const [extension, schema] of [
-        ['UV_asset', 'https://modkit.org/uvm/1.0/uvm.asset.schema.json'],
-        ['UV_provenance', 'https://modkit.org/uvm/1.0/uvm.provenance.schema.json'],
+        ['UV_asset', 'https://modkitx.org/uvm/1.0/uvm.asset.schema.json'],
+        ['UV_provenance', 'https://modkitx.org/uvm/1.0/uvm.provenance.schema.json'],
       ] as const) {
         const validate = ajv.getSchema(schema)
         expect(validate, schema).toBeDefined()
