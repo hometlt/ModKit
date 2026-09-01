@@ -366,8 +366,9 @@ describe('installed Wave 2A archive acceptance receipt', () => {
     const digestReceipt = passingReceipt()
     const digestTarget = digestReceipt.cases.find(item => item.caseId === 'armod-open')
     if (digestTarget === undefined) throw new TypeError('fixture omitted ARmod detection digest')
-    ;(digestTarget.evidence as { selectedDetection: { artifactDigest: string } }).selectedDetection
-      .artifactDigest = `sha256:${'0'.repeat(64)}`
+    ;(
+      digestTarget.evidence as { selectedDetection: { artifactDigest: string } }
+    ).selectedDetection.artifactDigest = `sha256:${'0'.repeat(64)}`
     expect(() => assertInstalledArchiveAcceptanceReceipt(digestReceipt)).toThrow(
       /metadata-first installed-route telemetry/u,
     )
@@ -388,9 +389,34 @@ describe('installed Wave 2A archive acceptance receipt', () => {
       /external process-tree memory/u,
     )
 
-    evidence.externalProcessTreeMemory.stopAcknowledgement.privateBytes.deltaBytes = 0
-    evidence.externalProcessTreeMemory.stopAcknowledgement.sampleCount = 1
-    expect(() => assertInstalledArchiveAcceptanceReceipt(receipt)).toThrow(
+    const sparseReceipt = passingReceipt()
+    const sparseTarget = sparseReceipt.cases.find(item => item.caseId === 'armod-open')
+    if (sparseTarget === undefined) throw new TypeError('fixture omitted sparse ARmod sample')
+    const sparseStop = (
+      sparseTarget.evidence as {
+        externalProcessTreeMemory: {
+          stopAcknowledgement: {
+            sampleCount: number
+            samples: Array<{ timestampMs: number }>
+            observedCadence: {
+              intervalCount: number
+              minIntervalMs: number
+              maxIntervalMs: number
+              averageIntervalMs: number
+            }
+          }
+        }
+      }
+    ).externalProcessTreeMemory.stopAcknowledgement
+    sparseStop.sampleCount = 2
+    sparseStop.samples = sparseStop.samples.slice(0, 2)
+    sparseStop.observedCadence = {
+      intervalCount: 1,
+      minIntervalMs: 25,
+      maxIntervalMs: 25,
+      averageIntervalMs: 25,
+    }
+    expect(() => assertInstalledArchiveAcceptanceReceipt(sparseReceipt)).toThrow(
       /external process-tree memory/u,
     )
 
@@ -405,6 +431,37 @@ describe('installed Wave 2A archive acceptance receipt', () => {
       }
     ).externalProcessTreeMemory.stopAcknowledgement.observedCadence.averageIntervalMs = 24
     expect(() => assertInstalledArchiveAcceptanceReceipt(cadenceReceipt)).toThrow(
+      /external process-tree memory/u,
+    )
+
+    const slowReceipt = passingReceipt()
+    const slowTarget = slowReceipt.cases.find(item => item.caseId === 'armod-open')
+    if (slowTarget === undefined) throw new TypeError('fixture omitted slow ARmod cadence')
+    const slowStop = (
+      slowTarget.evidence as {
+        externalProcessTreeMemory: {
+          stopAcknowledgement: {
+            samples: Array<{ timestampMs: number }>
+            observedCadence: {
+              intervalCount: number
+              minIntervalMs: number
+              maxIntervalMs: number
+              averageIntervalMs: number
+            }
+          }
+        }
+      }
+    ).externalProcessTreeMemory.stopAcknowledgement
+    slowStop.samples[0]!.timestampMs = 1_000
+    slowStop.samples[1]!.timestampMs = 17_000
+    slowStop.samples[2]!.timestampMs = 33_000
+    slowStop.observedCadence = {
+      intervalCount: 2,
+      minIntervalMs: 16_000,
+      maxIntervalMs: 16_000,
+      averageIntervalMs: 16_000,
+    }
+    expect(() => assertInstalledArchiveAcceptanceReceipt(slowReceipt)).toThrow(
       /external process-tree memory/u,
     )
   })
