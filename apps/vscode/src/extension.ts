@@ -1356,6 +1356,60 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     },
   })
 
+  /*
+   * One container folder joins the window at a time.
+   *
+   * VS Code declares it invalid to call `updateWorkspaceFolders` again before the previous change
+   * has been announced, and answers such a call with `false`. Browsing a second archive in the same
+   * window is an ordinary thing to do, so the mutations are serialized and each one waits for its
+   * announcement — otherwise the second archive is reported as a workspace that refused it.
+   */
+  let workspaceFolderMutation: Promise<unknown> = Promise.resolve()
+  const addContainerWorkspaceFolder = (
+    folder: vscode.Uri,
+    name: string,
+  ): Promise<'added' | 'already-present' | 'rejected'> => {
+    const attempt = async (settleMs: number): Promise<'added' | 'already-present' | 'rejected'> => {
+      const current = vscode.workspace.workspaceFolders ?? []
+      if (current.some(item => item.uri.toString() === folder.toString())) {
+        return 'already-present'
+      }
+      let announce: (() => void) | undefined
+      const announcement = new Promise<void>(resolvePromise => {
+        announce = resolvePromise
+      })
+      const subscription = vscode.workspace.onDidChangeWorkspaceFolders(() => announce?.())
+      let timer: ReturnType<typeof setTimeout> | undefined
+      // A bounded wait: a window that never announces the change must not hold every later browse.
+      const settled = async (limitMs: number): Promise<void> => {
+        await Promise.race([
+          announcement,
+          new Promise<void>(resolvePromise => {
+            timer = setTimeout(resolvePromise, limitMs)
+          }),
+        ])
+      }
+      try {
+        if (!vscode.workspace.updateWorkspaceFolders(current.length, 0, { uri: folder, name })) {
+          // Someone else's folder change may still be in flight; give it its announcement.
+          await settled(settleMs)
+          return 'rejected'
+        }
+        await settled(10_000)
+        return 'added'
+      } finally {
+        if (timer !== undefined) clearTimeout(timer)
+        subscription.dispose()
+      }
+    }
+    const mutation = workspaceFolderMutation.then(async () => {
+      const first = await attempt(2_000)
+      return first === 'rejected' ? await attempt(0) : first
+    })
+    workspaceFolderMutation = mutation.catch(() => undefined)
+    return mutation
+  }
+
   const containerLocation = (uri: vscode.Uri): { container: string; entry: string } => {
     const location = parseContainerUriPath(uri.path)
     if (location === undefined) throw vscode.FileSystemError.FileNotFound(uri)
@@ -6270,16 +6324,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             workspaceEffect: 'already-present' as const,
           })
         }
-        const added = vscode.workspace.updateWorkspaceFolders(existing.length, 0, {
-          uri: folder,
-          name: basename(target.path),
-        })
+        const effect = await addContainerWorkspaceFolder(folder, basename(target.path))
         log(
-          added
-            ? `container added to the workspace: ${basename(target.path)}`
-            : `the workspace refused the container folder for ${basename(target.path)}`,
+          effect === 'rejected'
+            ? `the workspace refused the container folder for ${basename(target.path)}`
+            : `container ${effect} in the workspace: ${basename(target.path)}`,
         )
-        if (!added) {
+        if (effect === 'rejected') {
           void vscode.window.showWarningMessage(
             `Modkit: ${localizer.text('vscode.container.workspaceRejected')}`,
           )
@@ -6288,7 +6339,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           container: target.path,
           folder,
           indexedFiles: index.files.size,
-          workspaceEffect: added ? ('added' as const) : ('rejected' as const),
+          workspaceEffect: effect,
         })
       })(),
     ),
