@@ -503,6 +503,12 @@ describe('VS Code extension manager state', () => {
 
     await state.client.remove(alphaV2.id)
     expect(state.packages().some(item => item.id === alphaV2.id)).toBe(false)
+    const availableAgain = (await state.client.snapshot()).entries.find(
+      item => item.id === alphaV2.id,
+    )
+    expect(availableAgain).toMatchObject({ id: alphaV2.id, trusted: true })
+    expect(availableAgain?.installedVersion).toBeUndefined()
+    expect(availableAgain?.source.startsWith('managed:')).toBe(false)
 
     await state.client.install(alphaV2.id)
     expect(state.packages().find(item => item.id === alphaV2.id)).toMatchObject({

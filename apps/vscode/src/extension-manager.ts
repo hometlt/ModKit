@@ -104,8 +104,10 @@ export function createVsCodeExtensionManagerClient(
   options: CreateVsCodeExtensionManagerClientOptions,
 ): GameSupportExtensionManagerClient {
   const staticPackages = (): readonly StaticExtensionPackage[] => options.staticPackages?.() ?? []
+  const immutableStaticEntry = (entry: ExtensionManagerEntry): boolean =>
+    !entry.source.startsWith('managed:')
   const immutableStaticPackage = (entry: StaticExtensionPackage): boolean =>
-    !entry.entry.source.startsWith('managed:')
+    immutableStaticEntry(entry.entry)
   const staticPackage = (id: string): StaticExtensionPackage | undefined =>
     staticPackages().find(entry => entry.entry.id === id && immutableStaticPackage(entry))
 
@@ -118,7 +120,14 @@ export function createVsCodeExtensionManagerClient(
     const shared = await options.client.snapshot()
     const rows = new Map(staticPackages().map(item => [item.entry.id, item.entry]))
     for (const entry of shared.entries) {
-      if (rows.has(entry.id) && entry.installedVersion === undefined) continue
+      const existing = rows.get(entry.id)
+      if (
+        existing !== undefined &&
+        immutableStaticEntry(existing) &&
+        entry.installedVersion === undefined
+      ) {
+        continue
+      }
       rows.set(entry.id, entry)
     }
     return Object.freeze({
