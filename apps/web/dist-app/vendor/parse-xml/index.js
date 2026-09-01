@@ -1,10 +1,12 @@
 import {
-  __commonJS
+  __commonJS,
+  __toESM
 } from "../../chunks/chunk-CQ52GEHY.js";
 
 // node_modules/.pnpm/@rgrove+parse-xml@4.2.3/node_modules/@rgrove/parse-xml/dist/browser.js
 var require_browser = __commonJS({
   "node_modules/.pnpm/@rgrove+parse-xml@4.2.3/node_modules/@rgrove/parse-xml/dist/browser.js"(exports, module) {
+    "use strict";
     var __defProp = Object.defineProperty;
     var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
     var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -34,7 +36,7 @@ var require_browser = __commonJS({
       XmlNode: () => XmlNode,
       XmlProcessingInstruction: () => XmlProcessingInstruction,
       XmlText: () => XmlText,
-      parseXml: () => parseXml
+      parseXml: () => parseXml2
     });
     module.exports = __toCommonJS(src_exports);
     var emptyString = "";
@@ -1111,12 +1113,18 @@ var require_browser = __commonJS({
       }
       return text;
     }
-    function parseXml(xml, options) {
+    function parseXml2(xml, options) {
       return new Parser(xml, options).document;
     }
   }
 });
-export default require_browser();
+
+// apps/web/src/parse-xml-vendor.mjs
+var import_parse_xml = __toESM(require_browser(), 1);
+var export_parseXml = import_parse_xml.parseXml;
+export {
+  export_parseXml as parseXml
+};
 /*! Bundled license information:
 
 @rgrove/parse-xml/dist/browser.js:

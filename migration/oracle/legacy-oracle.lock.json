@@ -242,7 +242,7 @@
   "inventory": {
     "$comment": "Owned by scripts/migration/emit-inventory.mjs; refreshed by pnpm migration:emit and verified by pnpm migration:check. The legacy hashes above are never recomputed by this generator.",
     "artifact": "migration/generated/source-inventory.json",
-    "artifactSha256": "efc7c81a2686d55e40734ac4cf1b3bc0bf0de5a9d33b0609291ec1c6480a11cd",
+    "artifactSha256": "0447c03c102be0f4b098cfa175a3706fee51c757216f1a42314e7ca7aefeb3bb",
     "sealedState": {
       "legacyHeadCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
       "sealedIndexEntries": 7085,

@@ -4,9 +4,9 @@ import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
 
-// ../modkit-extensions-blizzard/node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js
+// node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js
 var require_ucs2length = __commonJS({
-  "../modkit-extensions-blizzard/node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
+  "node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
     "use strict";
     init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -31,9 +31,9 @@ var require_ucs2length = __commonJS({
   }
 });
 
-// ../modkit-extensions-blizzard/node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js
+// node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js
 var require_fast_deep_equal = __commonJS({
-  "../modkit-extensions-blizzard/node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js"(exports, module) {
+  "node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js"(exports, module) {
     "use strict";
     init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
     module.exports = function equal(a, b) {
@@ -67,9 +67,9 @@ var require_fast_deep_equal = __commonJS({
   }
 });
 
-// ../modkit-extensions-blizzard/node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/equal.js
+// node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/equal.js
 var require_equal = __commonJS({
-  "../modkit-extensions-blizzard/node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/equal.js"(exports) {
+  "node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/equal.js"(exports) {
     "use strict";
     init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
     Object.defineProperty(exports, "__esModule", { value: true });

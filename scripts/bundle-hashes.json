@@ -1,7 +1,7 @@
 {
   "packages/core/dist/index.js": "f2b80777a2666bcbb89a9d78bb3ba480b0520aec9e2375d5d8ad78251e47362c",
   "packages/sdk/dist/index.js": "49cba766ff87577995aa9455a54212d47db950d1ebbf1e4607a97f4dab2fcd51",
-  "packages/sdk/dist/manifest/validators.generated.js": "69b43d240703c0b38630426cb9d69bcdc26b07a1733e9dc00e46fb90e0a54bd5",
+  "packages/sdk/dist/manifest/validators.generated.js": "9cbe3bb966959457163f79a6aac0640b0de55c9947841000b0528e20d3ea28a9",
   "packages/sdk/dist/subjects/index.js": "c49185b3c9ceb8907e7df29c5f7a458e06de7fb1ecdee0b565f9a1339ce2d38e",
   "packages/sdk/dist/authoring/index.js": "e46f315dcd958e36b4eb50a3ab5fe82e2b19c9dae6f9b2827e3d3d53b90dce03",
   "packages/sdk/dist/formats/index.js": "0de709773a2380d09a00bd37bc42b68588437c6c8eae1c1c902320b6304e4055",
@@ -25,8 +25,8 @@
   "packages/vfs/dist/providers/http/index.js": "7f6ea1d0b96d004ba1abb2f1b9501141e74142142f209c5e607b1778c66f0472",
   "packages/vfs/dist/providers/browser-file/index.js": "d5d667a69c24cd4b21e3f0d5525592baa35f9bbbf08e12cbc40d3a230099f176",
   "packages/vfs/dist/providers/rapid/index.js": "1aa6756c0289c6a7155d5585cedac41fa72d09382dc391383310b7c95ad73cd8",
-  "packages/host/dist/index.js": "59a5b7174948e4a243614c74de8f67d8963501737d4af4045811b5dab3368d2a",
-  "packages/host/dist/node/index.js": "4c59a001292f74abb3c866d4137c79f29db5c861c83fd5e17df47c9bdea03187",
+  "packages/host/dist/index.js": "20879ccc50ac31cad76242cc74e0d9a3f6992efe7be7092dbc013b282958bd1c",
+  "packages/host/dist/node/index.js": "dddaf6d3a21bad44deba23477bbd9dd17dfbe8383d8c919d4d6ce508c7268ac7",
   "packages/host/dist/browser/index.js": "a359cff2b774cd73dbee360408df4d86e4e16d3361db25a84dc6d2407f879e4e",
   "packages/host/dist/execution/index.js": "217b7845451b2ab68eda64ea10b6f13fdf2dc2b4ac5ac6707970081b1c780b52",
   "packages/host/dist/language/index.js": "56d3efffa325d728b24bf0f97ce3b611dc700fafe4e7e97de0f0bfed5914bc8d",
@@ -72,5 +72,5 @@
   "packages/ui/dist/explorer/index.js": "d659945fa8ebc9c33da2b00c8f92c7231c7b645bcdbb2276c603a735e814f9f4",
   "packages/ui/dist/hex-editor/index.js": "9a2f1e5803de08aba28e2a1a7f16c62e2740f594d023a9ad533ea0bbd917e234",
   "packages/ui/dist/media/encoded.js": "8ca2b8d5766aaed002079f9fa014b3add300755ab0740af81f8108bcdd2955c8",
-  "apps/cli/dist/main.js": "fd396194c4c31f77f66532ca2e6f362b26788b03b5bb7229aae73eeb3cde8674"
+  "apps/cli/dist/main.js": "34ddd678ebb4c6a36127e4504fbe9984983186794e6c02bd6859f11ed7f20e74"
 }

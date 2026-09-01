@@ -3,12 +3,12 @@
   "schemaVersion": "vscode-workflow-ledger-2",
   "generator": "scripts/migration/emit-vscode-workflow-ledger.mjs",
   "inputs": {
-    "sourceInventorySha256": "efc7c81a2686d55e40734ac4cf1b3bc0bf0de5a9d33b0609291ec1c6480a11cd",
-    "decisionsSha256": "26d02eeacc475f22553509e6ab28c736bb94eb32ed0bb9d0dcafd08bcb5e4638",
-    "vscodeManifestSha256": "f1dd64576003079dce93d214fd422996552a8bc4601cfbcbfa662e6368c49038",
-    "vscodeExtensionSourceSha256": "10fc0d5da6680fde404904adaa8a16f3e59d0720b5599d82d11cffb3b050d995",
-    "vscodeCatalogSha256": "3ba11c6a1e8b95e83d69319814f4d07a34a78a66260c7379e8817d23ab27ff7c",
-    "vscodePublicationInventorySha256": "15a59d6ff3932cf1d43eb7ae05b8117c4a4ed60828d11acaefabdd2fc09ff901",
+    "sourceInventorySha256": "0447c03c102be0f4b098cfa175a3706fee51c757216f1a42314e7ca7aefeb3bb",
+    "decisionsSha256": "07ae30645c246dbdf3fa67642d2269f616cd7121295c55bdf21d2a6c80dcf1a9",
+    "vscodeManifestSha256": "dfc1b14618845591de238ab364b98a31f23b668f83c961d3f659df461e4715c9",
+    "vscodeExtensionSourceSha256": "faf9ea7ae5ad4af8b57cddc8fad663086311aed82f22975f9f9dd7d20614f3ee",
+    "vscodeCatalogSha256": "c54f06dbdbfdae9c1f2e7df46ef7e12da876d4b6a87cf5ba7873f43d596ed3a8",
+    "vscodePublicationInventorySha256": "71fcebddb54e25c665973f1c2bfd5a4d4c3836903148cddc70ad36337826f25c",
     "sharedCommandTargetsSha256": "90b0fa05560139670ebb3050207428349f118f8b4cc8cbde956ebaf30b27d09a"
   },
   "counts": {
@@ -30,19 +30,19 @@
     "byDisposition": { "already-equivalent": 204, "release-candidate": 0, "post-release": 62 },
     "decisionRequired": 0,
     "releaseCandidateGaps": 0,
-    "currentX3ObservedFacts": 48
+    "currentX3ObservedFacts": 59
   },
   "surfaceComparison": {
     "legacyVsCode": { "commands": 64, "customEditors": 11, "languages": 8, "views": 6 },
     "currentX3VsCode": {
-      "commands": 31,
+      "commands": 35,
       "configurationProperties": 4,
       "customEditors": 1,
       "fileSystemSchemes": 1,
       "keybindings": 0,
       "languages": 0,
-      "menus": 7,
-      "runtimeOnlyCommands": 1,
+      "menus": 12,
+      "runtimeOnlyCommands": 3,
       "viewContainers": 1,
       "views": 2
     }
@@ -57,6 +57,10 @@
     {
       "commandId": "modkit.exportDiagnostics",
       "workflowId": "vscode/diagnostics-resolution-logging"
+    },
+    {
+      "commandId": "modkit.extensions.completeGameSupport",
+      "workflowId": "vscode/source-workspace-lifecycle"
     },
     { "commandId": "modkit.extensions.disable", "workflowId": "vscode/source-workspace-lifecycle" },
     {
@@ -81,10 +85,22 @@
       "commandId": "modkit.extensions.installAll",
       "workflowId": "vscode/source-workspace-lifecycle"
     },
+    {
+      "commandId": "modkit.extensions.installGameSupport",
+      "workflowId": "vscode/source-workspace-lifecycle"
+    },
     { "commandId": "modkit.extensions.openContribution", "workflowId": "vscode/views-workbench" },
     { "commandId": "modkit.extensions.openExtension", "workflowId": "vscode/views-workbench" },
     { "commandId": "modkit.extensions.refresh", "workflowId": "vscode/source-workspace-lifecycle" },
     { "commandId": "modkit.extensions.remove", "workflowId": "vscode/source-workspace-lifecycle" },
+    {
+      "commandId": "modkit.extensions.removeGameSupport",
+      "workflowId": "vscode/source-workspace-lifecycle"
+    },
+    {
+      "commandId": "modkit.extensions.removeVendorSupport",
+      "workflowId": "vscode/source-workspace-lifecycle"
+    },
     { "commandId": "modkit.extensions.update", "workflowId": "vscode/source-workspace-lifecycle" },
     {
       "commandId": "modkit.game.launchActiveMap",
@@ -160,245 +176,281 @@
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-command:modkit.extensions.disable",
-      "sourceFactSha256": "17ff514e54edac1b974312609d788244dfa36da60f5717c6e927160763d13deb",
+      "factId": "x3:vscode-command:modkit.extensions.completeGameSupport",
+      "sourceFactSha256": "7a857c97bd5c3acf598d2b27d875793f05c3cf42b1fece16553bcd92f20c8e4d",
       "kind": "vscode-command",
-      "key": "modkit.extensions.disable",
+      "key": "modkit.extensions.completeGameSupport",
       "source": "contributes.commands[4]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-command:modkit.extensions.disableAllCodecs",
-      "sourceFactSha256": "b54efc9c587591242a5ecebb1b0a892765dcae200f5b023549ff44d1bc014ee8",
+      "factId": "x3:vscode-command:modkit.extensions.disable",
+      "sourceFactSha256": "1fe743c730b875c1163fcb3aeb52706cec1f98d9fdf53b4d13460d36a8956177",
       "kind": "vscode-command",
-      "key": "modkit.extensions.disableAllCodecs",
+      "key": "modkit.extensions.disable",
       "source": "contributes.commands[5]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-command:modkit.extensions.disableContribution",
-      "sourceFactSha256": "115ec54dd2ed3773ffca6a4981c05dba894b73128c95c674c5ac97b33412d57d",
+      "factId": "x3:vscode-command:modkit.extensions.disableAllCodecs",
+      "sourceFactSha256": "95463658cc43044b7293f44731139c4288cf7bfaa006bd60eb3f5d8e8290eb8a",
       "kind": "vscode-command",
-      "key": "modkit.extensions.disableContribution",
+      "key": "modkit.extensions.disableAllCodecs",
       "source": "contributes.commands[6]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-command:modkit.extensions.enable",
-      "sourceFactSha256": "64949fd978a8a75c6665b725b4a3d2b45b90c2753a7c025692d12b0d3e3df1cd",
+      "factId": "x3:vscode-command:modkit.extensions.disableContribution",
+      "sourceFactSha256": "7072709643fdc516caea7e07c5132d1c77b50f9ba39419835241f1944e0a27cc",
       "kind": "vscode-command",
-      "key": "modkit.extensions.enable",
+      "key": "modkit.extensions.disableContribution",
       "source": "contributes.commands[7]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-command:modkit.extensions.enableAllCodecs",
-      "sourceFactSha256": "505115c324faceac48d2e39f85d1dc986e3b3537906ca39c09e5d918401a4fe9",
+      "factId": "x3:vscode-command:modkit.extensions.enable",
+      "sourceFactSha256": "7d2e8f73f392ab54b51cff3ae9a8d7b2cd5bf0a4a6146507722082ab467f12e7",
       "kind": "vscode-command",
-      "key": "modkit.extensions.enableAllCodecs",
+      "key": "modkit.extensions.enable",
       "source": "contributes.commands[8]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-command:modkit.extensions.enableContribution",
-      "sourceFactSha256": "4ad21a451e957445f24d0305ada1b9a117d9dd6526fd08a6d6ad66a4c5338da8",
+      "factId": "x3:vscode-command:modkit.extensions.enableAllCodecs",
+      "sourceFactSha256": "c834572c780d94dacfcfd9e77702f632d818ba36bca79c1b8c7155fbf7923082",
       "kind": "vscode-command",
-      "key": "modkit.extensions.enableContribution",
+      "key": "modkit.extensions.enableAllCodecs",
       "source": "contributes.commands[9]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-command:modkit.extensions.install",
-      "sourceFactSha256": "0f50626aeceb3f5f9df775333d39ed2457443e291e083de79821d20b39d9479c",
+      "factId": "x3:vscode-command:modkit.extensions.enableContribution",
+      "sourceFactSha256": "cced7cdab1cc4360a5ff6e5c9ae7360d7cf21a935a28d88df1aca78adc1db6a7",
       "kind": "vscode-command",
-      "key": "modkit.extensions.install",
+      "key": "modkit.extensions.enableContribution",
       "source": "contributes.commands[10]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-command:modkit.extensions.installAll",
-      "sourceFactSha256": "37245394ed044f837b4d85717e79e5daaa702a9c051e883835ff91a57c0795af",
+      "factId": "x3:vscode-command:modkit.extensions.install",
+      "sourceFactSha256": "71fb7542cbf170f98a678aecf8a21f1b51b4aab781afb15df83b0ec1fe7c1d34",
       "kind": "vscode-command",
-      "key": "modkit.extensions.installAll",
+      "key": "modkit.extensions.install",
       "source": "contributes.commands[11]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.extensions.installAll",
+      "sourceFactSha256": "f1fef8bc860e6c0b372d28b6578e39fea27b71ddabb105cc91ea655d67b06c8d",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.installAll",
+      "source": "contributes.commands[12]",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.extensions.installGameSupport",
+      "sourceFactSha256": "94e48c05b75edf2bf5497ea34864cd51d9a51807804f2188fdeaf59e0d3481c8",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.installGameSupport",
+      "source": "contributes.commands[13]",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.extensions.openContribution",
-      "sourceFactSha256": "54e282b82d2e89200c687356b67326191596799948d653b79540fd32f5012c5f",
+      "sourceFactSha256": "032d29259477474554ea1da424caffb366746dc835f12778755962df76ecb758",
       "kind": "vscode-command",
       "key": "modkit.extensions.openContribution",
-      "source": "contributes.commands[12]",
+      "source": "contributes.commands[14]",
       "workflowId": "vscode/views-workbench",
       "state": "observed-only"
     },
     {
       "factId": "x3:vscode-command:modkit.extensions.openExtension",
-      "sourceFactSha256": "9d53968ccfc0bb16e8f03c5a3eccf79b699c9127df910fd8b94c853d07bf6db4",
+      "sourceFactSha256": "dd4d3913f5b0eb4449de41a141ef9f717b46b02b0fed3d5cbd2cfd10893f2aab",
       "kind": "vscode-command",
       "key": "modkit.extensions.openExtension",
-      "source": "contributes.commands[13]",
+      "source": "contributes.commands[15]",
       "workflowId": "vscode/views-workbench",
       "state": "observed-only"
     },
     {
       "factId": "x3:vscode-command:modkit.extensions.refresh",
-      "sourceFactSha256": "3633070371a0fdc58c08f41819ee8b33c694057f8cc9de77de383b35bbd1e9e8",
+      "sourceFactSha256": "8ec33edbaf309ddc3643ef7219251337bc27bce96f205cd10fee27bdca0c53ff",
       "kind": "vscode-command",
       "key": "modkit.extensions.refresh",
-      "source": "contributes.commands[14]",
-      "workflowId": "vscode/source-workspace-lifecycle",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-command:modkit.extensions.remove",
-      "sourceFactSha256": "b5810f400bbe41d65eae6c8672c6253f25f213f6283e569a133b15b08de814ec",
-      "kind": "vscode-command",
-      "key": "modkit.extensions.remove",
-      "source": "contributes.commands[15]",
-      "workflowId": "vscode/source-workspace-lifecycle",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-command:modkit.extensions.update",
-      "sourceFactSha256": "5b046a91ec2baffacc7ab702a7b4018cc340f3a07626154b42809c35fbd85ca6",
-      "kind": "vscode-command",
-      "key": "modkit.extensions.update",
       "source": "contributes.commands[16]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.extensions.remove",
+      "sourceFactSha256": "b070a264d897bca097400fcb71a54060c036881b4f13428eaf8a80d7942c72a1",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.remove",
+      "source": "contributes.commands[17]",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.extensions.removeGameSupport",
+      "sourceFactSha256": "bc15ec8c14387174a3305a12dc1223c933db82a43aed1200ad648ad3b2f8c19d",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.removeGameSupport",
+      "source": "contributes.commands[18]",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.extensions.removeVendorSupport",
+      "sourceFactSha256": "4f52767c2e72f20ee3b210aad60839debeeee587290cfe60d7d53e84583dfb76",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.removeVendorSupport",
+      "source": "contributes.commands[19]",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.extensions.update",
+      "sourceFactSha256": "ad9ed1bdd8c4bc5064509a6add43c3448cbea8277862517dc98adaed02da9f09",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.update",
+      "source": "contributes.commands[20]",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.game.launchActiveMap",
-      "sourceFactSha256": "ca56af7ecbdfdcd0807043bd9d66966fed37ae7bba23a9b5e9c19e7e04f8a72a",
+      "sourceFactSha256": "e1394dfbaf346ecf22ccaffaab9d58cf161d39f0cbe278a8facda1224bfc2083",
       "kind": "vscode-command",
       "key": "modkit.game.launchActiveMap",
-      "source": "contributes.commands[17]",
+      "source": "contributes.commands[21]",
       "workflowId": "vscode/authoring-language-data-launch",
       "state": "observed-only"
     },
     {
       "factId": "x3:vscode-command:modkit.materializeContainerEntry",
-      "sourceFactSha256": "bbde9e1a0390f1707e0ef16a8ff005c82c2a07319d94fc16c729479e5df0014f",
+      "sourceFactSha256": "743e0346e6f4b60fe1be76a1bd5fc19f46ad3e2aeccc2d4d8be5e52e4ca56d79",
       "kind": "vscode-command",
       "key": "modkit.materializeContainerEntry",
-      "source": "contributes.commands[18]",
-      "workflowId": "vscode/container-vfs-cache",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-command:modkit.navigateResource",
-      "sourceFactSha256": "9176529841e82b0ff69f3280ca28ec557018a7436d626d7493414c48d956e1c6",
-      "kind": "vscode-command",
-      "key": "modkit.navigateResource",
-      "source": "contributes.commands[19]",
-      "workflowId": "vscode/navigation-relations-refactors",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-command:modkit.openArchiveEntry",
-      "sourceFactSha256": "01650b85fc5361088ff5fc7b186d576eb274e1a98e03bed978a2041e64162bf4",
-      "kind": "vscode-command",
-      "key": "modkit.openArchiveEntry",
-      "source": "contributes.commands[20]",
-      "workflowId": "vscode/container-vfs-cache",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-command:modkit.openWith",
-      "sourceFactSha256": "c534a1c397349cb2feaf854544947954553d4e0ef8dda99b3e996247f4af6484",
-      "kind": "vscode-command",
-      "key": "modkit.openWith",
-      "source": "contributes.commands[21]",
-      "workflowId": "vscode/shared-command-shell",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-command:modkit.refreshContainer",
-      "sourceFactSha256": "52e53c0ce91a21e06928c66b7df7e8dfd36a409bd10a28d802e7eb04b36ed529",
-      "kind": "vscode-command",
-      "key": "modkit.refreshContainer",
       "source": "contributes.commands[22]",
       "workflowId": "vscode/container-vfs-cache",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-command:modkit.refreshRelations",
-      "sourceFactSha256": "535805e8b1a784d22b7d3be4c04a01cb4f72bd9ca42cb4721072b83dc55e9d2e",
+      "factId": "x3:vscode-command:modkit.navigateResource",
+      "sourceFactSha256": "8f74b36dbc7ff851ec155e22303012ff424b7ddddb4df05da875f0f496b195de",
       "kind": "vscode-command",
-      "key": "modkit.refreshRelations",
+      "key": "modkit.navigateResource",
       "source": "contributes.commands[23]",
       "workflowId": "vscode/navigation-relations-refactors",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-command:modkit.runCommand",
-      "sourceFactSha256": "df42948f011fdf919981ed515e51d15cfa906666fada91734bb5d99ab7e166c2",
+      "factId": "x3:vscode-command:modkit.openArchiveEntry",
+      "sourceFactSha256": "e1bed37ea444a67793dfd6369bc56fd825bc56d3a8b73b52dcadca3bd3aa97b9",
       "kind": "vscode-command",
-      "key": "modkit.runCommand",
+      "key": "modkit.openArchiveEntry",
       "source": "contributes.commands[24]",
+      "workflowId": "vscode/container-vfs-cache",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.openWith",
+      "sourceFactSha256": "2b9e44e2081d48524d5d1930aa6e404c8944804c83687de2057e25af200954ed",
+      "kind": "vscode-command",
+      "key": "modkit.openWith",
+      "source": "contributes.commands[25]",
       "workflowId": "vscode/shared-command-shell",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-command:modkit.runtime.control",
-      "sourceFactSha256": "410dd07bdc0f0f950213222cc123856f635d6cd52deb7d412f582165e3453487",
+      "factId": "x3:vscode-command:modkit.refreshContainer",
+      "sourceFactSha256": "111d5b6f3f57f2d838399cfbc600b36a9081f459e4c8ad544ba3dee6aefbb1c4",
       "kind": "vscode-command",
-      "key": "modkit.runtime.control",
-      "source": "contributes.commands[25]",
-      "workflowId": "vscode/authoring-language-data-launch",
-      "state": "observed-only"
-    },
-    {
-      "factId": "x3:vscode-command:modkit.searchContainer",
-      "sourceFactSha256": "1a208733f96ce89f1f58003b104728ab655039c19cf512664379886745173b7b",
-      "kind": "vscode-command",
-      "key": "modkit.searchContainer",
+      "key": "modkit.refreshContainer",
       "source": "contributes.commands[26]",
       "workflowId": "vscode/container-vfs-cache",
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.refreshRelations",
+      "sourceFactSha256": "385b90d28caf16c7297e5d0f70a99455c4f4eef07ddaf7d373b018c4bfb3f7a2",
+      "kind": "vscode-command",
+      "key": "modkit.refreshRelations",
+      "source": "contributes.commands[27]",
+      "workflowId": "vscode/navigation-relations-refactors",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.runCommand",
+      "sourceFactSha256": "f748bdc6ff012381e83118ab85800bb40ea6676bed2b2ff5142f3a0f8b9e8e64",
+      "kind": "vscode-command",
+      "key": "modkit.runCommand",
+      "source": "contributes.commands[28]",
+      "workflowId": "vscode/shared-command-shell",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.runtime.control",
+      "sourceFactSha256": "296b36b613b17b59d631ab513f5eaa2a9da95571fb7fa69f07c8c838c92024ef",
+      "kind": "vscode-command",
+      "key": "modkit.runtime.control",
+      "source": "contributes.commands[29]",
+      "workflowId": "vscode/authoring-language-data-launch",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.searchContainer",
+      "sourceFactSha256": "78b604507739d65c904be51e804ad285eec4e731b43d5efd9dfcd3c7e43c7383",
+      "kind": "vscode-command",
+      "key": "modkit.searchContainer",
+      "source": "contributes.commands[30]",
+      "workflowId": "vscode/container-vfs-cache",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.selectGameInstallation",
-      "sourceFactSha256": "c424891e08425679c50e89be91fa8a631f7a4b2b6a7d4fa5063a4e8254da377b",
+      "sourceFactSha256": "16bf3efa388e2b0495db9ea977830fdc980b6449f63787fcc8cabbdfcc2e8186",
       "kind": "vscode-command",
       "key": "modkit.selectGameInstallation",
-      "source": "contributes.commands[27]",
+      "source": "contributes.commands[31]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
       "factId": "x3:vscode-command:modkit.showDiagnostics",
-      "sourceFactSha256": "c2a808dcbfc71b3a6b4398fdd5a966f20d1227d6fef0a6490322d17390c3c10c",
+      "sourceFactSha256": "80eadcb68e291e5ee0754b92e5ce1b672b33f8e4b657675155afc04be9831cd0",
       "kind": "vscode-command",
       "key": "modkit.showDiagnostics",
-      "source": "contributes.commands[28]",
+      "source": "contributes.commands[32]",
       "workflowId": "vscode/diagnostics-resolution-logging",
       "state": "observed-only"
     },
     {
       "factId": "x3:vscode-command:modkit.showHostProfile",
-      "sourceFactSha256": "f473d326e1ebc5b16ed5909904ab40459a2afd854414f3b661f431601c8bed0d",
+      "sourceFactSha256": "afb29449820aaaaa57090de269862bfef98d58f39deaf180cd26bd956aee9a61",
       "kind": "vscode-command",
       "key": "modkit.showHostProfile",
-      "source": "contributes.commands[29]",
+      "source": "contributes.commands[33]",
       "workflowId": "vscode/diagnostics-resolution-logging",
       "state": "observed-only"
     },
     {
       "factId": "x3:vscode-command:modkit.unloadSource",
-      "sourceFactSha256": "be45070c75c6985f563bb9bd8a621fdb48609341d35cf3c9057a13c9acfbbb12",
+      "sourceFactSha256": "b0a33092668647394f53dda78e8215fcfae53d3615202c72ee93c529753728f5",
       "kind": "vscode-command",
       "key": "modkit.unloadSource",
-      "source": "contributes.commands[30]",
+      "source": "contributes.commands[34]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
@@ -449,73 +501,136 @@
     },
     {
       "factId": "x3:vscode-filesystem-scheme:modkit-container",
-      "sourceFactSha256": "cc7995e4e9f09c9f2ab6e99f737f0598de6df2f0327cc149d28a28a403d658a0",
+      "sourceFactSha256": "004c7c489556146f1b056489e3bfbaeb36659e564ace16a6f3a2a0a8e501083f",
       "kind": "vscode-filesystem-scheme",
       "key": "modkit-container",
-      "source": "activationEvents[34]",
+      "source": "activationEvents[38]",
       "workflowId": "vscode/manifest-settings",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.disableAllCodecs//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C..*%5C.codecs%5C.enabled%24%2F/inline%401",
-      "sourceFactSha256": "42a1a88ceaf38c8346c2fa34bf7cbe168d608959d6ec569324f7fe3c3036d30e",
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.completeGameSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionComponent.game.partial/inline%401",
+      "sourceFactSha256": "6e3b3f8c2f3999d5baec2b775fb3f71e8a531f488a48e50aea60a811aa7bc562",
       "kind": "vscode-menu-item",
-      "key": "view%2Fitem%2Fcontext/modkit.extensions.disableAllCodecs//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C..*%5C.codecs%5C.enabled%24%2F/inline%401",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.completeGameSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionComponent.game.partial/inline%401",
       "source": "contributes.menus.view/item/context[0]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.disableContribution//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitContribution.codec.enabled/inline%401",
-      "sourceFactSha256": "57ad8b0af46445815ee4a9fd8ffde17793ebc92a9636920f3c93a100e2d96f8e",
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.disableAllCodecs//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C..*%5C.codecs%5C.enabled%24%2F/inline%401",
+      "sourceFactSha256": "b94d85f7bb387800cc257fd7afee580832b3cfb8f84990d0d75f68cc69435698",
       "kind": "vscode-menu-item",
-      "key": "view%2Fitem%2Fcontext/modkit.extensions.disableContribution//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitContribution.codec.enabled/inline%401",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.disableAllCodecs//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C..*%5C.codecs%5C.enabled%24%2F/inline%401",
       "source": "contributes.menus.view/item/context[1]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.enableAllCodecs//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C..*%5C.codecs%5C.disabled%24%2F/inline%401",
-      "sourceFactSha256": "f70b45b74d742a7883c5e9b074b4830547920c998d980446e7642a9878bc8f91",
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.disableContribution//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitContribution.codec.enabled/inline%401",
+      "sourceFactSha256": "a7a789213a45904a335adb05dd056d96dcc1f7962b069bafeaf68e69ed3b2a61",
       "kind": "vscode-menu-item",
-      "key": "view%2Fitem%2Fcontext/modkit.extensions.enableAllCodecs//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C..*%5C.codecs%5C.disabled%24%2F/inline%401",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.disableContribution//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitContribution.codec.enabled/inline%401",
       "source": "contributes.menus.view/item/context[2]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.enableContribution//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitContribution.codec.disabled/inline%401",
-      "sourceFactSha256": "7d5ab121d09dda1b2724c426c981e188a227760b86b6bb2e6e670a346ecf4289",
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.enableAllCodecs//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C..*%5C.codecs%5C.disabled%24%2F/inline%401",
+      "sourceFactSha256": "376629b5452adb770b14f4fbc8f1e318d7d459e1f8fa16f53b9ea4784ea2a360",
       "kind": "vscode-menu-item",
-      "key": "view%2Fitem%2Fcontext/modkit.extensions.enableContribution//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitContribution.codec.disabled/inline%401",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.enableAllCodecs//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C..*%5C.codecs%5C.disabled%24%2F/inline%401",
       "source": "contributes.menus.view/item/context[3]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.installAll//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionGroup.available/inline%401",
-      "sourceFactSha256": "3d5c1d8349ddf74d5238a13e51b43cffce6e43ca69f6a206169aa33d0293722a",
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.enableContribution//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitContribution.codec.disabled/inline%401",
+      "sourceFactSha256": "cf65bde2ec23943558d822176f8bcbc82712a0239fceca916815290a27c87be5",
       "kind": "vscode-menu-item",
-      "key": "view%2Fitem%2Fcontext/modkit.extensions.installAll//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionGroup.available/inline%401",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.enableContribution//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitContribution.codec.disabled/inline%401",
       "source": "contributes.menus.view/item/context[4]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
-      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.remove//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C.mutable(%3F%3A%5C.update)%3F(%3F%3A%5C.codecs%5C.(%3F%3Aenabled%7Cdisabled))%3F%24%2F/inline%402",
-      "sourceFactSha256": "683b0718fb389c7b0ed16db5c3e4a42dfa15ce2697eeb47ed6a0aad27b2765fd",
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.install//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtension.available/inline%401",
+      "sourceFactSha256": "fd3640601bad1c68db8684f91c615f771b52b60281ffde2d32ba278b9388a095",
       "kind": "vscode-menu-item",
-      "key": "view%2Fitem%2Fcontext/modkit.extensions.remove//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C.mutable(%3F%3A%5C.update)%3F(%3F%3A%5C.codecs%5C.(%3F%3Aenabled%7Cdisabled))%3F%24%2F/inline%402",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.install//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtension.available/inline%401",
       "source": "contributes.menus.view/item/context[5]",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.installAll//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionGroup.available/inline%401",
+      "sourceFactSha256": "ac549015e5cbf4868e3892dcefa78d9e377363c564680ee041ec2f1aa1a6309d",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.installAll//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionGroup.available/inline%401",
+      "source": "contributes.menus.view/item/context[6]",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.installGameSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionComponent.game.available/inline%401",
+      "sourceFactSha256": "d19b7d05c69ebf7efdef0fa5193f8758489b01d72c7004d25e9438d556d1ae4d",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.installGameSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionComponent.game.available/inline%401",
+      "source": "contributes.menus.view/item/context[7]",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.remove//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C.mutable(%3F%3A%5C.update)%3F(%3F%3A%5C.codecs%5C.(%3F%3Aenabled%7Cdisabled))%3F%24%2F/inline%402",
+      "sourceFactSha256": "e34530ebd92cd7bf8471048d6a71c99e3158572de6b82d4a2ab4a8993c237143",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.remove//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C.mutable(%3F%3A%5C.update)%3F(%3F%3A%5C.codecs%5C.(%3F%3Aenabled%7Cdisabled))%3F%24%2F/inline%402",
+      "source": "contributes.menus.view/item/context[8]",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.removeGameSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionComponent.game.installed.mutable/inline%401",
+      "sourceFactSha256": "e07da79c424fac9f354b8d571a18325ab13afd87f8a240051ddd4f951f7e514c",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.removeGameSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionComponent.game.installed.mutable/inline%401",
+      "source": "contributes.menus.view/item/context[9]",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.removeVendorSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionVendor.installed.mutable/inline%401",
+      "sourceFactSha256": "11b2815489e8658554208cd107fb878c2e9dcf57f4c2e4094a9816062e2a969a",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.removeVendorSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionVendor.installed.mutable/inline%401",
+      "source": "contributes.menus.view/item/context[10]",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.update//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C.mutable%5C.update(%3F%3A%5C.%7C%24)%2F/inline%401",
-      "sourceFactSha256": "c4e0bacfad0a94b5756facab73bb4948d02590e972b5bca04d58d6b1e0ae5220",
+      "sourceFactSha256": "95dea1ff4d2760f0866a6ba2f2fc5da003c63f9aad3c4f9ced9055803d0f3b49",
       "kind": "vscode-menu-item",
       "key": "view%2Fitem%2Fcontext/modkit.extensions.update//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C.mutable%5C.update(%3F%3A%5C.%7C%24)%2F/inline%401",
-      "source": "contributes.menus.view/item/context[6]",
+      "source": "contributes.menus.view/item/context[11]",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-runtime-only-command:modkit.extensions.openGame",
+      "sourceFactSha256": "7f42cb1cc11e765ac2b82d8685ba69ad78ac38de04225bd308b4a72051e115f2",
+      "kind": "vscode-runtime-only-command",
+      "key": "modkit.extensions.openGame",
+      "source": "VS Code runtime registration",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-runtime-only-command:modkit.extensions.openVendor",
+      "sourceFactSha256": "2bdfb152dcf8b5e142d52e1f19dd7a62a9373b509fca549556b86e85d6d12542",
+      "kind": "vscode-runtime-only-command",
+      "key": "modkit.extensions.openVendor",
+      "source": "VS Code runtime registration",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
@@ -562,6 +677,7 @@
       "modkit.browseContainer",
       "modkit.explainResolution",
       "modkit.exportDiagnostics",
+      "modkit.extensions.completeGameSupport",
       "modkit.extensions.disable",
       "modkit.extensions.disableAllCodecs",
       "modkit.extensions.disableContribution",
@@ -570,10 +686,13 @@
       "modkit.extensions.enableContribution",
       "modkit.extensions.install",
       "modkit.extensions.installAll",
+      "modkit.extensions.installGameSupport",
       "modkit.extensions.openContribution",
       "modkit.extensions.openExtension",
       "modkit.extensions.refresh",
       "modkit.extensions.remove",
+      "modkit.extensions.removeGameSupport",
+      "modkit.extensions.removeVendorSupport",
       "modkit.extensions.update",
       "modkit.game.launchActiveMap",
       "modkit.materializeContainerEntry",
@@ -595,6 +714,7 @@
       "modkit.browseContainer",
       "modkit.explainResolution",
       "modkit.exportDiagnostics",
+      "modkit.extensions.completeGameSupport",
       "modkit.extensions.disable",
       "modkit.extensions.disableAllCodecs",
       "modkit.extensions.disableContribution",
@@ -603,10 +723,15 @@
       "modkit.extensions.enableContribution",
       "modkit.extensions.install",
       "modkit.extensions.installAll",
+      "modkit.extensions.installGameSupport",
       "modkit.extensions.openContribution",
       "modkit.extensions.openExtension",
+      "modkit.extensions.openGame",
+      "modkit.extensions.openVendor",
       "modkit.extensions.refresh",
       "modkit.extensions.remove",
+      "modkit.extensions.removeGameSupport",
+      "modkit.extensions.removeVendorSupport",
       "modkit.extensions.update",
       "modkit.game.launchActiveMap",
       "modkit.materializeContainerEntry",
@@ -624,10 +749,14 @@
       "modkit.showHostProfile",
       "modkit.unloadSource"
     ],
-    "internalRuntimeCommands": ["modkit.openResource"],
+    "internalRuntimeCommands": [
+      "modkit.extensions.openGame",
+      "modkit.extensions.openVendor",
+      "modkit.openResource"
+    ],
     "externalOrBuiltinCommands": [],
     "legacyKeybindings": 0,
-    "currentX3Menus": 7,
+    "currentX3Menus": 12,
     "currentX3Keybindings": 0
   },
   "ownerBlockers": [],
@@ -635,12 +764,12 @@
     "state": "already-equivalent",
     "ownerBlockerId": null,
     "cataloguedCommonRoots": 8,
-    "packagedCodecRoots": 0,
+    "packagedCodecRoots": 8,
     "deterministicShellArtifact": true,
-    "provenVsixCodecArtifact": false,
-    "reason": "The accepted B plus C topology keeps the deterministic VSIX as an 8-root common shell; code, scene and UV are built-in product modules, while publisher codecs install separately through extension management.",
+    "provenVsixCodecArtifact": true,
+    "reason": "The accepted Wave 1A package route keeps the deterministic VSIX shell and embeds all eight catalogued Common codec roots; publisher codecs remain separately managed signed packages.",
     "publicationArtifactKind": "deterministic-shell",
-    "publicationShellEntryCount": 5
+    "publicationShellEntryCount": 6
   },
   "sharedCommandTargets": [
     {
@@ -934,6 +1063,7 @@
       "legacyCountsByKind": { "vscode-command": 13, "vscode-menu-item": 14 },
       "currentX3CommandIds": [
         "modkit.addExtensionFolder",
+        "modkit.extensions.completeGameSupport",
         "modkit.extensions.disable",
         "modkit.extensions.disableAllCodecs",
         "modkit.extensions.disableContribution",
@@ -942,8 +1072,11 @@
         "modkit.extensions.enableContribution",
         "modkit.extensions.install",
         "modkit.extensions.installAll",
+        "modkit.extensions.installGameSupport",
         "modkit.extensions.refresh",
         "modkit.extensions.remove",
+        "modkit.extensions.removeGameSupport",
+        "modkit.extensions.removeVendorSupport",
         "modkit.extensions.update",
         "modkit.selectGameInstallation",
         "modkit.unloadSource"

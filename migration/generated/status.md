@@ -52,7 +52,7 @@ Ledger распределяет ровно **258 VS Code + 8 CLI = 266** legacy-
 
 | Поверхность    | Legacy | X3 сейчас |
 | -------------- | ------ | --------- |
-| commands       | 64     | 31        |
+| commands       | 64     | 35        |
 | custom editors | 11     | 1         |
 | languages      | 8      | 0         |
 | views          | 6      | 2         |
@@ -78,11 +78,11 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | allocation                   | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
-| `absent`                     | 84    | `equivalent-better`    | 23    | E0            | 82    |
-| `covered`                    | 230   | `implemented`          | 223   | E1            | 110   |
-| `not-applicable`             | 1     | `missing`              | 84    | E2            | 76    |
-| `superseded`                 | 13    | `relocated-multiverse` | 1     | E3            | 21    |
-| `superseded-staging-present` | 3     |                        |       | E4            | 42    |
+| `absent`                     | 84    | `equivalent-better`    | 21    | E0            | 82    |
+| `covered`                    | 230   | `implemented`          | 216   | E1            | 111   |
+| `not-applicable`             | 1     | `missing`              | 84    | E2            | 75    |
+| `superseded`                 | 13    | `partial`              | 9     | E3            | 24    |
+| `superseded-staging-present` | 3     | `relocated-multiverse` | 1     | E4            | 39    |
 
 ### 3.3. Доказанные writers
 
@@ -109,26 +109,55 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 | Release              | Всего | Seed | Транзитивных | Нерешённых | Ближайший блок |
 | -------------------- | ----- | ---- | ------------ | ---------- | -------------- |
-| `mk3-ga`             | 140   | 135  | 5            | 0          | —              |
-| `mk3-multiverse-ga`  | 145   | 145  | 0            | 3          | block-22       |
-| `mk3-deferred-games` | 187   | 187  | 0            | 28         | block-16       |
+| `mk3-ga`             | 140   | 135  | 5            | 9          | block-12       |
+| `mk3-multiverse-ga`  | 145   | 145  | 0            | 12         | block-12       |
+| `mk3-deferred-games` | 187   | 187  | 0            | 37         | block-12       |
 
 ### 4.1. Дедлайны `mk3-ga` по planned block
 
 | Planned block | Units | Из них нерешённых |
 | ------------- | ----- | ----------------- |
 | `block-11`    | 14    | 0                 |
-| `block-12`    | 70    | 0                 |
+| `block-12`    | 70    | 1                 |
 | `block-13`    | 1     | 0                 |
-| `block-15`    | 23    | 0                 |
-| `block-17`    | 11    | 0                 |
+| `block-15`    | 23    | 3                 |
+| `block-17`    | 11    | 2                 |
 | `block-19`    | 1     | 0                 |
-| `block-20`    | 16    | 0                 |
+| `block-20`    | 16    | 3                 |
 | `block-21`    | 4     | 0                 |
 
 ## 5. Gap list — что осталось в `mk3-ga`
 
-Строк с нерешённым состоянием: **0** из 140. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
+Строк с нерешённым состоянием: **9** из 140. Список отсортирован по planned block: строка становится просроченной для `pnpm priority:check --phase block-N`, как только её блок пройден.
+
+### Блок 12 — 1 строк
+
+| Возможность                           | migrationState | evidence | Владелец            |
+| ------------------------------------- | -------------- | -------- | ------------------- |
+| `block9/decoded-gpu-texture-payloads` | `partial`      | E1       | `extensions/images` |
+
+### Блок 15 — 3 строк
+
+| Возможность                                     | migrationState | evidence | Владелец                         |
+| ----------------------------------------------- | -------------- | -------- | -------------------------------- |
+| `format/sc2-map/open-inspect`                   | `partial`      | E3       | `extensions/blizzard/starcraft2` |
+| `format/sc2-triggers/open-inspect`              | `partial`      | E1       | `extensions/blizzard/starcraft2` |
+| `vertical/starcraft-2/native-inspect-authoring` | `partial`      | E3       | `extensions/blizzard/starcraft2` |
+
+### Блок 17 — 2 строк
+
+| Возможность                                      | migrationState | evidence | Владелец                             |
+| ------------------------------------------------ | -------------- | -------- | ------------------------------------ |
+| `format/warzone-wz/open-inspect`                 | `partial`      | E1       | `extensions/opensource/warzone-2100` |
+| `vertical/warzone-2100/native-inspect-authoring` | `partial`      | E3       | `extensions/opensource/warzone-2100` |
+
+### Блок 20 — 3 строк
+
+| Возможность                           | migrationState | evidence | Владелец                                   |
+| ------------------------------------- | -------------- | -------- | ------------------------------------------ |
+| `platform/apps/priority-workflows`    | `partial`      | E2       | `apps and migration/product-profiles.json` |
+| `platform/release/migration-zero-gap` | `partial`      | E2       | `scripts/migration`                        |
+| `platform/release/reproducible-rc`    | `partial`      | E2       | `scripts/release`                          |
 
 ## 6. Дополнительные gaps следующих release
 

@@ -2208,7 +2208,7 @@ deepFreeze(subjectDescriptorV2InferenceSchema);
 // packages/sdk/dist/manifest/validate.js
 var platformValidatorsPromise;
 function platformValidators() {
-  platformValidatorsPromise ??= import("./validators.generated-SIVYLDNL.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
+  platformValidatorsPromise ??= import("./validators.generated-5WV6ORZ6.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
   return platformValidatorsPromise;
 }
 function toPath(error) {
@@ -5838,18 +5838,6 @@ function isMixedVisualPresentationSlot(slot) {
 // packages/sdk/dist/asset-capabilities/v1-projection.js
 var V1_PROJECTION_UNAVAILABLE_CODE = "modkit/compat-v1-projection-unavailable";
 
-// packages/sdk/dist/templates/index.js
-var GAME_TEMPLATE_PREVIEW_OPERATION_ID = "view.template";
-var GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION = 1;
-var nonEmpty3 = (value2) => typeof value2 === "string" && value2.trim().length > 0;
-function isGameTemplatePreviewResult(value2) {
-  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
-    return false;
-  const result = value2;
-  const fidelity = result["fidelity"];
-  return result["schemaVersion"] === GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION && result["operationId"] === GAME_TEMPLATE_PREVIEW_OPERATION_ID && nonEmpty3(result["templateKind"]) && nonEmpty3(result["entryUri"]) && (result["rootPath"] === void 0 || typeof result["rootPath"] === "string") && typeof result["resolvedTree"] === "object" && result["resolvedTree"] !== null && Array.isArray(result["displayItems"]) && Array.isArray(result["diagnostics"]) && ["complete", "partial", "capped", "invalid"].includes(String(result["completeness"])) && typeof fidelity === "object" && fidelity !== null && !Array.isArray(fidelity) && fidelity["comparison"] === "semantic" && Array.isArray(fidelity["unsupported"]) && result["provenance"] !== void 0 && result["digest"] !== void 0;
-}
-
 export {
   DOTTED_PATTERN,
   QUALIFIED_PATTERN,
@@ -6011,8 +5999,5 @@ export {
   MIXED_VISUAL_MODEL_BINDING_ID,
   defineMixedVisualWorkspace,
   isMixedVisualPresentationSlot,
-  V1_PROJECTION_UNAVAILABLE_CODE,
-  GAME_TEMPLATE_PREVIEW_OPERATION_ID,
-  GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION,
-  isGameTemplatePreviewResult
+  V1_PROJECTION_UNAVAILABLE_CODE
 };

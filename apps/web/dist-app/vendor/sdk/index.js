@@ -19,8 +19,6 @@ import {
   GAME_INSTALLATION_DISCOVERY_CONTRACT,
   GAME_INSTALLATION_MATCHER_PROFILE,
   GAME_LAUNCH_PLAN_CONTRACT,
-  GAME_TEMPLATE_PREVIEW_OPERATION_ID,
-  GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION,
   HOST_TRANSPORT_KINDS,
   KNOWLEDGE_LOCALE_PATTERN,
   KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
@@ -111,7 +109,6 @@ import {
   hostFacilityId,
   hostRealmCacheKey,
   isAlgorithmQualifiedDigest,
-  isGameTemplatePreviewResult,
   isHostFacilityId,
   isKnowledgeLocaleTag,
   isKnowledgeTarget,
@@ -163,8 +160,13 @@ import {
   writerOfferV1Schema,
   writerRequirementV1Schema,
   writerSelectionKey
-} from "../../chunks/chunk-ZIDZRETG.js";
+} from "../../chunks/chunk-F4XKVL72.js";
 import "../../chunks/chunk-X2ENULEB.js";
+import {
+  GAME_TEMPLATE_PREVIEW_OPERATION_ID,
+  GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION,
+  isGameTemplatePreviewResult
+} from "../../chunks/chunk-YRQVWMJF.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 export {
   A1_SPEC_SCHEMA_ENTRIES,

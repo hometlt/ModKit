@@ -7,7 +7,7 @@ import {
   type ResourceBudget,
 } from '@modkit/sdk'
 
-export const repoRoot = join(import.meta.dirname, '..', '..', '..', '..')
+export const repoRoot = join(import.meta.dirname, '..', '..', '..')
 
 export const imageTestBudget: ResourceBudget = {
   maxInputBytes: 8_000_000n,

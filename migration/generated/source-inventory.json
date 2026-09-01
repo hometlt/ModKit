@@ -9785,10 +9785,7 @@
             }
           ]
         },
-        "formats": {
-          "required": [],
-          "suggested": ["modkit/relic-rgm", "modkit/relic-sga"]
-        },
+        "formats": { "required": [], "suggested": ["modkit/relic-rgm", "modkit/relic-sga"] },
         "features": ["archives", "models"],
         "tested": ["age-of-empires-4"],
         "capabilities": [],
@@ -9824,10 +9821,7 @@
             }
           ]
         },
-        "formats": {
-          "required": ["modkit/age-bar"],
-          "suggested": ["modkit/age-of-mythology-brg"]
-        },
+        "formats": { "required": ["modkit/age-bar"], "suggested": ["modkit/age-of-mythology-brg"] },
         "features": ["archives", "models"],
         "tested": ["age-of-mythology"],
         "capabilities": [],
@@ -10033,10 +10027,7 @@
             }
           ]
         },
-        "formats": {
-          "required": ["modkit/relic-sga"],
-          "suggested": ["modkit/relic-rgm"]
-        },
+        "formats": { "required": ["modkit/relic-sga"], "suggested": ["modkit/relic-rgm"] },
         "features": ["archives", "models"],
         "tested": ["company-of-heroes-2"],
         "capabilities": [],
@@ -10072,10 +10063,7 @@
             }
           ]
         },
-        "formats": {
-          "required": [],
-          "suggested": ["modkit/relic-rgm", "modkit/relic-sga"]
-        },
+        "formats": { "required": [], "suggested": ["modkit/relic-rgm", "modkit/relic-sga"] },
         "features": ["archives", "models"],
         "tested": ["company-of-heroes-3"],
         "capabilities": [],
@@ -10276,10 +10264,7 @@
             }
           ]
         },
-        "formats": {
-          "required": ["modkit/earth-par"],
-          "suggested": ["modkit/earth-res"]
-        },
+        "formats": { "required": ["modkit/earth-par"], "suggested": ["modkit/earth-res"] },
         "features": ["core"],
         "tested": ["earth-2150"],
         "capabilities": [],
@@ -10465,10 +10450,7 @@
             }
           ]
         },
-        "formats": {
-          "required": [],
-          "suggested": ["modkit/age-bar", "modkit/halo-wars-ugx"]
-        },
+        "formats": { "required": [], "suggested": ["modkit/age-bar", "modkit/halo-wars-ugx"] },
         "features": ["archives", "models"],
         "tested": ["halo-wars"],
         "capabilities": [],
@@ -10543,10 +10525,7 @@
             }
           ]
         },
-        "formats": {
-          "required": ["modkit/mix", "modkit/red-alert2-vxl"],
-          "suggested": []
-        },
+        "formats": { "required": ["modkit/mix", "modkit/red-alert2-vxl"], "suggested": [] },
         "features": ["archives", "models"],
         "tested": ["red-alert-2"],
         "capabilities": [],
@@ -10803,10 +10782,7 @@
             }
           ]
         },
-        "formats": {
-          "required": ["modkit/supcom-scm", "modkit/zip"],
-          "suggested": ["modkit/dds"]
-        },
+        "formats": { "required": ["modkit/supcom-scm", "modkit/zip"], "suggested": ["modkit/dds"] },
         "features": ["core", "images", "models"],
         "tested": ["supreme-commander"],
         "capabilities": [],
@@ -15872,7 +15848,7 @@
         "entrySource": "packages/models-processing/src/compat/m3.ts",
         "symbols": [],
         "symbolCount": 0,
-        "unresolvedReexports": ["@modkit/ext-blizzard-starcraft-2/codecs/m3/src/index.js"],
+        "unresolvedReexports": ["@modkitx/ext-blizzard-starcraft-2/codecs/m3/src/index.js"],
         "resolution": "source-parsed"
       }
     },
@@ -15890,7 +15866,7 @@
         "entrySource": "packages/models-processing/src/compat/m3-browser.ts",
         "symbols": [],
         "symbolCount": 0,
-        "unresolvedReexports": ["@modkit/ext-blizzard-starcraft-2/codecs/m3/src/browser.js"],
+        "unresolvedReexports": ["@modkitx/ext-blizzard-starcraft-2/codecs/m3/src/browser.js"],
         "resolution": "source-parsed"
       }
     },
@@ -25061,7 +25037,7 @@
         "name": "multiverse:g0",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm multiverse:world-v0:boundary && pnpm multiverse:validate && pnpm --filter @modkit/ext-blizzard-starcraft-2 typecheck && pnpm --filter @modkit/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0 codecs/sc2-runtime/src/sim/snapshot.spec.ts codecs/sc2-runtime/src/index.spec.ts && pnpm multiverse:world-v0:browser"
+        "command": "pnpm multiverse:world-v0:boundary && pnpm multiverse:validate && pnpm --filter @modkitx/ext-blizzard-starcraft-2 typecheck && pnpm --filter @modkitx/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0 codecs/sc2-runtime/src/sim/snapshot.spec.ts codecs/sc2-runtime/src/index.spec.ts && pnpm multiverse:world-v0:browser"
       }
     },
     {
@@ -25074,7 +25050,7 @@
         "name": "multiverse:p0",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm multiverse:world-v0:boundary && pnpm --filter @modkit/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/linker.spec.ts codecs/sc2-runtime/src/sim/world-v0/world-v0.spec.ts && pnpm multiverse:world-v0:browser"
+        "command": "pnpm multiverse:world-v0:boundary && pnpm --filter @modkitx/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/linker.spec.ts codecs/sc2-runtime/src/sim/world-v0/world-v0.spec.ts && pnpm multiverse:world-v0:browser"
       }
     },
     {
@@ -25087,7 +25063,7 @@
         "name": "multiverse:p1",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/snapshot.spec.ts codecs/sc2-runtime/src/index.spec.ts"
+        "command": "pnpm --filter @modkitx/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/snapshot.spec.ts codecs/sc2-runtime/src/index.spec.ts"
       }
     },
     {
@@ -25100,7 +25076,7 @@
         "name": "multiverse:p2",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/mechanic-composition.spec.ts"
+        "command": "pnpm --filter @modkitx/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/mechanic-composition.spec.ts"
       }
     },
     {
@@ -25113,7 +25089,7 @@
         "name": "multiverse:p3",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/world-v0.spec.ts && pnpm multiverse:world-v0:browser"
+        "command": "pnpm --filter @modkitx/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/world-v0.spec.ts && pnpm multiverse:world-v0:browser"
       }
     },
     {
@@ -25126,7 +25102,7 @@
         "name": "multiverse:p4",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm multiverse:validate && pnpm --filter @modkit/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/neutral-artifact.spec.ts && pnpm multiverse:world-v0:browser"
+        "command": "pnpm multiverse:validate && pnpm --filter @modkitx/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/neutral-artifact.spec.ts && pnpm multiverse:world-v0:browser"
       }
     },
     {
@@ -25139,7 +25115,7 @@
         "name": "multiverse:p5",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/replay-proof.spec.ts && pnpm multiverse:world-v0:browser"
+        "command": "pnpm --filter @modkitx/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/replay-proof.spec.ts && pnpm multiverse:world-v0:browser"
       }
     },
     {
@@ -25152,7 +25128,7 @@
         "name": "multiverse:p6",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/headless-ai-proof.spec.ts && pnpm multiverse:world-v0:browser"
+        "command": "pnpm --filter @modkitx/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/headless-ai-proof.spec.ts && pnpm multiverse:world-v0:browser"
       }
     },
     {
@@ -25204,7 +25180,7 @@
         "name": "multiverse:stage11",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm multiverse:stage10 && pnpm multiverse:stage11:skirmish:check && pnpm --filter @modkit/rts-shared test && pnpm --filter @modkit/rts-client typecheck && pnpm multiverse:stage11:browser"
+        "command": "pnpm multiverse:stage10 && pnpm multiverse:stage11:skirmish:check && pnpm --filter @modkitx/rts-shared test && pnpm --filter @modkitx/rts-client typecheck && pnpm multiverse:stage11:browser"
       }
     },
     {
@@ -25217,7 +25193,7 @@
         "name": "multiverse:stage11:browser",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/rts-client build && tsx scripts/run-browser-harness.ts --harness apps/rts/client/dist/stage11-browser-harness.html --repo-root ."
+        "command": "pnpm --filter @modkitx/rts-client build && tsx scripts/run-browser-harness.ts --harness apps/rts/client/dist/stage11-browser-harness.html --repo-root ."
       }
     },
     {
@@ -25256,7 +25232,7 @@
         "name": "multiverse:stage12",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm multiverse:stage11 && pnpm multiverse:stage12:campaign:check && pnpm --filter @modkit/rts-shared test && pnpm --filter @modkit/rts-client typecheck && pnpm multiverse:stage12:browser"
+        "command": "pnpm multiverse:stage11 && pnpm multiverse:stage12:campaign:check && pnpm --filter @modkitx/rts-shared test && pnpm --filter @modkitx/rts-client typecheck && pnpm multiverse:stage12:browser"
       }
     },
     {
@@ -25269,7 +25245,7 @@
         "name": "multiverse:stage12:browser",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/rts-client build && tsx scripts/run-browser-harness.ts --harness apps/rts/client/dist/stage12-browser-harness.html --repo-root ."
+        "command": "pnpm --filter @modkitx/rts-client build && tsx scripts/run-browser-harness.ts --harness apps/rts/client/dist/stage12-browser-harness.html --repo-root ."
       }
     },
     {
@@ -25308,7 +25284,7 @@
         "name": "multiverse:stage13",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm multiverse:stage12 && pnpm multiverse:stage13:internet:check && pnpm --filter @modkit/rts-shared test && pnpm --filter @modkit/rts-server test && pnpm --filter @modkit/rts-server typecheck"
+        "command": "pnpm multiverse:stage12 && pnpm multiverse:stage13:internet:check && pnpm --filter @modkitx/rts-shared test && pnpm --filter @modkitx/rts-server test && pnpm --filter @modkitx/rts-server typecheck"
       }
     },
     {
@@ -25321,7 +25297,7 @@
         "name": "multiverse:stage13:internet:check",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/rts-shared build && pnpm --filter @modkit/rts-server build && tsx scripts/update-stage13-internet.ts --check"
+        "command": "pnpm --filter @modkitx/rts-shared build && pnpm --filter @modkitx/rts-server build && tsx scripts/update-stage13-internet.ts --check"
       }
     },
     {
@@ -25334,7 +25310,7 @@
         "name": "multiverse:stage13:internet:update",
         "family": "multiverse",
         "role": "release-operation",
-        "command": "pnpm --filter @modkit/rts-shared build && pnpm --filter @modkit/rts-server build && tsx scripts/update-stage13-internet.ts"
+        "command": "pnpm --filter @modkitx/rts-shared build && pnpm --filter @modkitx/rts-server build && tsx scripts/update-stage13-internet.ts"
       }
     },
     {
@@ -25347,7 +25323,7 @@
         "name": "multiverse:stage14",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm multiverse:stage13 && pnpm multiverse:stage14:boundary && pnpm multiverse:stage14:foundation:check && pnpm --filter @modkit/world typecheck && pnpm --filter @modkit/foundation-turn-grid test && pnpm --filter @modkit/foundation-turn-grid typecheck && pnpm multiverse:stage14:browser"
+        "command": "pnpm multiverse:stage13 && pnpm multiverse:stage14:boundary && pnpm multiverse:stage14:foundation:check && pnpm --filter @modkitx/world typecheck && pnpm --filter @modkitx/foundation-turn-grid test && pnpm --filter @modkitx/foundation-turn-grid typecheck && pnpm multiverse:stage14:browser"
       }
     },
     {
@@ -25373,7 +25349,7 @@
         "name": "multiverse:stage14:browser",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/world build && pnpm --filter @modkit/embed exec esbuild ../../foundations/turn-grid/test/browser-harness.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../foundations/turn-grid/dist/browser-harness.js && tsx scripts/run-browser-harness.ts --harness foundations/turn-grid/test/browser-harness.html --repo-root ."
+        "command": "pnpm --filter @modkitx/world build && pnpm --filter @modkitx/embed exec esbuild ../../foundations/turn-grid/test/browser-harness.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../foundations/turn-grid/dist/browser-harness.js && tsx scripts/run-browser-harness.ts --harness foundations/turn-grid/test/browser-harness.html --repo-root ."
       }
     },
     {
@@ -25386,7 +25362,7 @@
         "name": "multiverse:stage14:foundation:check",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/world build && pnpm --filter @modkit/foundation-turn-grid build && tsx scripts/update-stage14-foundation.ts --check"
+        "command": "pnpm --filter @modkitx/world build && pnpm --filter @modkitx/foundation-turn-grid build && tsx scripts/update-stage14-foundation.ts --check"
       }
     },
     {
@@ -25399,7 +25375,7 @@
         "name": "multiverse:stage14:foundation:update",
         "family": "multiverse",
         "role": "release-operation",
-        "command": "pnpm --filter @modkit/world build && pnpm --filter @modkit/foundation-turn-grid build && tsx scripts/update-stage14-foundation.ts"
+        "command": "pnpm --filter @modkitx/world build && pnpm --filter @modkitx/foundation-turn-grid build && tsx scripts/update-stage14-foundation.ts"
       }
     },
     {
@@ -25412,7 +25388,7 @@
         "name": "multiverse:stage15",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm multiverse:stage14 && pnpm multiverse:stage15:agent:check && pnpm --filter @modkit/agent-tools test && pnpm --filter @modkit/agent-tools typecheck && pnpm multiverse:stage15:external && pnpm multiverse:stage15:browser"
+        "command": "pnpm multiverse:stage14 && pnpm multiverse:stage15:agent:check && pnpm --filter @modkitx/agent-tools test && pnpm --filter @modkitx/agent-tools typecheck && pnpm multiverse:stage15:external && pnpm multiverse:stage15:browser"
       }
     },
     {
@@ -25425,7 +25401,7 @@
         "name": "multiverse:stage15:agent:check",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/agent-tools build && tsx scripts/update-stage15-agent.ts --check"
+        "command": "pnpm --filter @modkitx/agent-tools build && tsx scripts/update-stage15-agent.ts --check"
       }
     },
     {
@@ -25451,7 +25427,7 @@
         "name": "multiverse:stage15:agent:update",
         "family": "multiverse",
         "role": "release-operation",
-        "command": "pnpm --filter @modkit/agent-tools build && tsx scripts/update-stage15-agent.ts"
+        "command": "pnpm --filter @modkitx/agent-tools build && tsx scripts/update-stage15-agent.ts"
       }
     },
     {
@@ -25464,7 +25440,7 @@
         "name": "multiverse:stage15:browser",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/agent-tools build && pnpm --filter @modkit/embed exec esbuild ../../scripts/stage15-browser-harness.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../artifacts/multiverse/stage15-browser-harness.js && tsx scripts/run-browser-harness.ts --harness scripts/stage15-browser-harness.html --repo-root ."
+        "command": "pnpm --filter @modkitx/agent-tools build && pnpm --filter @modkitx/embed exec esbuild ../../scripts/stage15-browser-harness.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../artifacts/multiverse/stage15-browser-harness.js && tsx scripts/run-browser-harness.ts --harness scripts/stage15-browser-harness.html --repo-root ."
       }
     },
     {
@@ -25490,7 +25466,7 @@
         "name": "multiverse:stage16",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm multiverse:stage15 && pnpm multiverse:stage16:knowledge:check && pnpm --filter @modkit/knowledge test && pnpm --filter @modkit/knowledge typecheck && pnpm multiverse:stage16:external && pnpm multiverse:stage16:browser"
+        "command": "pnpm multiverse:stage15 && pnpm multiverse:stage16:knowledge:check && pnpm --filter @modkitx/knowledge test && pnpm --filter @modkitx/knowledge typecheck && pnpm multiverse:stage16:external && pnpm multiverse:stage16:browser"
       }
     },
     {
@@ -25503,7 +25479,7 @@
         "name": "multiverse:stage16:browser",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/knowledge build && pnpm --filter @modkit/embed exec esbuild ../../scripts/stage16-browser-harness.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../artifacts/multiverse/stage16-browser-harness.js && tsx scripts/run-browser-harness.ts --harness scripts/stage16-browser-harness.html --repo-root ."
+        "command": "pnpm --filter @modkitx/knowledge build && pnpm --filter @modkitx/embed exec esbuild ../../scripts/stage16-browser-harness.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../artifacts/multiverse/stage16-browser-harness.js && tsx scripts/run-browser-harness.ts --harness scripts/stage16-browser-harness.html --repo-root ."
       }
     },
     {
@@ -25529,7 +25505,7 @@
         "name": "multiverse:stage16:knowledge:check",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/knowledge build && tsx scripts/update-stage16-knowledge.ts --check"
+        "command": "pnpm --filter @modkitx/knowledge build && tsx scripts/update-stage16-knowledge.ts --check"
       }
     },
     {
@@ -25555,7 +25531,7 @@
         "name": "multiverse:stage16:knowledge:update",
         "family": "multiverse",
         "role": "release-operation",
-        "command": "pnpm --filter @modkit/knowledge build && tsx scripts/update-stage16-knowledge.ts"
+        "command": "pnpm --filter @modkitx/knowledge build && tsx scripts/update-stage16-knowledge.ts"
       }
     },
     {
@@ -25568,7 +25544,7 @@
         "name": "multiverse:stage17",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm multiverse:stage16 && pnpm multiverse:stage17:release:check && pnpm multiverse:stage17:soak && pnpm multiverse:stage17:boundary && pnpm multiverse:stage17:packed && pnpm multiverse:stage17:accessibility && pnpm --filter @modkit/rts-shared exec vitest run src/net/fault-network.spec.ts && pnpm typecheck && pnpm test && pnpm multiverse:validate"
+        "command": "pnpm multiverse:stage16 && pnpm multiverse:stage17:release:check && pnpm multiverse:stage17:soak && pnpm multiverse:stage17:boundary && pnpm multiverse:stage17:packed && pnpm multiverse:stage17:accessibility && pnpm --filter @modkitx/rts-shared exec vitest run src/net/fault-network.spec.ts && pnpm typecheck && pnpm test && pnpm multiverse:validate"
       }
     },
     {
@@ -25581,7 +25557,7 @@
         "name": "multiverse:stage17:accessibility",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/embed exec esbuild ../../scripts/stage17-accessibility-browser.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../artifacts/multiverse/stage17-accessibility-browser.js && tsx scripts/run-browser-harness.ts --harness scripts/stage17-accessibility-browser.html --repo-root ."
+        "command": "pnpm --filter @modkitx/embed exec esbuild ../../scripts/stage17-accessibility-browser.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../artifacts/multiverse/stage17-accessibility-browser.js && tsx scripts/run-browser-harness.ts --harness scripts/stage17-accessibility-browser.html --repo-root ."
       }
     },
     {
@@ -25594,7 +25570,7 @@
         "name": "multiverse:stage17:boundary",
         "family": "multiverse",
         "role": "validator",
-        "command": "pnpm --filter @modkit/rts-client build && pnpm --filter @modkit/rts-server build && pnpm --filter @modkit/embed exec esbuild ../../scripts/stage15-browser-harness.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../artifacts/multiverse/stage15-browser-harness.js && pnpm --filter @modkit/embed exec esbuild ../../scripts/stage16-browser-harness.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../artifacts/multiverse/stage16-browser-harness.js && tsx scripts/check-stage17-release-boundaries.ts"
+        "command": "pnpm --filter @modkitx/rts-client build && pnpm --filter @modkitx/rts-server build && pnpm --filter @modkitx/embed exec esbuild ../../scripts/stage15-browser-harness.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../artifacts/multiverse/stage15-browser-harness.js && pnpm --filter @modkitx/embed exec esbuild ../../scripts/stage16-browser-harness.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../artifacts/multiverse/stage16-browser-harness.js && tsx scripts/check-stage17-release-boundaries.ts"
       }
     },
     {
@@ -25607,7 +25583,7 @@
         "name": "multiverse:stage17:packed",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/world build && pnpm --filter @modkit/foundation-turn-grid build && pnpm --filter @modkit/agent-tools build && pnpm --filter @modkit/knowledge build && tsx scripts/test-stage17-packed-release.ts"
+        "command": "pnpm --filter @modkitx/world build && pnpm --filter @modkitx/foundation-turn-grid build && pnpm --filter @modkitx/agent-tools build && pnpm --filter @modkitx/knowledge build && tsx scripts/test-stage17-packed-release.ts"
       }
     },
     {
@@ -25659,7 +25635,7 @@
         "name": "multiverse:stage2",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm multiverse:g0 && pnpm --filter @modkit/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/performance-statistics.spec.ts && node --expose-gc --import tsx scripts/benchmark-sc2-world-v0.ts --samples 1 --scale 50,200 --summary"
+        "command": "pnpm multiverse:g0 && pnpm --filter @modkitx/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/performance-statistics.spec.ts && node --expose-gc --import tsx scripts/benchmark-sc2-world-v0.ts --samples 1 --scale 50,200 --summary"
       }
     },
     {
@@ -25685,7 +25661,7 @@
         "name": "multiverse:stage3",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm multiverse:g0 && pnpm --filter @modkit/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/collision.spec.ts codecs/sc2-runtime/src/sim/terrain.spec.ts codecs/sc2-runtime/src/sim/spatial-map.spec.ts && node --expose-gc --import tsx scripts/benchmark-sc2-world-v0.ts --samples 1 --scale 200,2000 --summary"
+        "command": "pnpm multiverse:g0 && pnpm --filter @modkitx/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/collision.spec.ts codecs/sc2-runtime/src/sim/terrain.spec.ts codecs/sc2-runtime/src/sim/spatial-map.spec.ts && node --expose-gc --import tsx scripts/benchmark-sc2-world-v0.ts --samples 1 --scale 200,2000 --summary"
       }
     },
     {
@@ -25724,7 +25700,7 @@
         "name": "multiverse:stage4",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm multiverse:stage3 && pnpm --filter @modkit/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/presentation-sc2.spec.ts"
+        "command": "pnpm multiverse:stage3 && pnpm --filter @modkitx/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/presentation-sc2.spec.ts"
       }
     },
     {
@@ -25763,7 +25739,7 @@
         "name": "multiverse:stage5",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm multiverse:stage4 && pnpm --filter @modkit/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/resources.spec.ts"
+        "command": "pnpm multiverse:stage4 && pnpm --filter @modkitx/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/world-v0/resources.spec.ts"
       }
     },
     {
@@ -25802,7 +25778,7 @@
         "name": "multiverse:stage6",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm multiverse:stage5 && pnpm --filter @modkit/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/editor-sc2.spec.ts"
+        "command": "pnpm multiverse:stage5 && pnpm --filter @modkitx/ext-blizzard-starcraft-2 exec vitest run codecs/sc2-runtime/src/sim/editor-sc2.spec.ts"
       }
     },
     {
@@ -25958,7 +25934,7 @@
         "name": "multiverse:validate",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/world build && pnpm --filter @modkit/ext-blizzard-starcraft-2 build && pnpm --filter @modkit/assets multiverse:validate && pnpm multiverse:stage3:spatial:check && pnpm multiverse:stage4:presentation:check && pnpm multiverse:stage5:resources:check && pnpm multiverse:stage6:editor:check && pnpm multiverse:stage8:protocol:check && pnpm multiverse:stage9:network:check && pnpm multiverse:stage10:network:check && pnpm multiverse:stage11:skirmish:check && pnpm multiverse:stage12:campaign:check && pnpm multiverse:stage13:internet:check && pnpm multiverse:stage14:foundation:check && pnpm multiverse:stage15:agent:check && pnpm multiverse:stage16:knowledge:check && pnpm multiverse:stage17:release:check"
+        "command": "pnpm --filter @modkitx/world build && pnpm --filter @modkitx/ext-blizzard-starcraft-2 build && pnpm --filter @modkitx/assets multiverse:validate && pnpm multiverse:stage3:spatial:check && pnpm multiverse:stage4:presentation:check && pnpm multiverse:stage5:resources:check && pnpm multiverse:stage6:editor:check && pnpm multiverse:stage8:protocol:check && pnpm multiverse:stage9:network:check && pnpm multiverse:stage10:network:check && pnpm multiverse:stage11:skirmish:check && pnpm multiverse:stage12:campaign:check && pnpm multiverse:stage13:internet:check && pnpm multiverse:stage14:foundation:check && pnpm multiverse:stage15:agent:check && pnpm multiverse:stage16:knowledge:check && pnpm multiverse:stage17:release:check"
       }
     },
     {
@@ -26036,7 +26012,7 @@
         "name": "multiverse:world-v0:browser",
         "family": "multiverse",
         "role": "tool",
-        "command": "pnpm --filter @modkit/embed exec esbuild ../../extensions/blizzard/starcraft-2/codecs/sc2-runtime/src/sim/world-v0/browser-worker.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../extensions/blizzard/starcraft-2/dist/world-v0-browser-worker.js && pnpm --filter @modkit/embed exec esbuild ../../extensions/blizzard/starcraft-2/codecs/sc2-runtime/test/world-v0-browser-harness.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../extensions/blizzard/starcraft-2/dist/world-v0-browser-harness.js && tsx scripts/run-browser-harness.ts --harness extensions/blizzard/starcraft-2/codecs/sc2-runtime/test/world-v0-browser-harness.html --repo-root ."
+        "command": "pnpm --filter @modkitx/embed exec esbuild ../../extensions/blizzard/starcraft-2/codecs/sc2-runtime/src/sim/world-v0/browser-worker.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../extensions/blizzard/starcraft-2/dist/world-v0-browser-worker.js && pnpm --filter @modkitx/embed exec esbuild ../../extensions/blizzard/starcraft-2/codecs/sc2-runtime/test/world-v0-browser-harness.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=../../extensions/blizzard/starcraft-2/dist/world-v0-browser-harness.js && tsx scripts/run-browser-harness.ts --harness extensions/blizzard/starcraft-2/codecs/sc2-runtime/test/world-v0-browser-harness.html --repo-root ."
       }
     },
     {

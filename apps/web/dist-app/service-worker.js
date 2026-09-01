@@ -24,6 +24,7 @@ const SHELL = [
   './app.css',
   './modkit-ui.css',
   './manifest.webmanifest',
+  './format-smoke.v1.json',
   './worker-entry.js',
   './vendor/core/index.js',
   './vendor/sdk/index.js',

@@ -3,12 +3,12 @@
   "schemaVersion": "vscode-workflow-shortlist-1",
   "generator": "scripts/migration/emit-vscode-workflow-ledger.mjs",
   "inputs": {
-    "sourceInventorySha256": "efc7c81a2686d55e40734ac4cf1b3bc0bf0de5a9d33b0609291ec1c6480a11cd",
-    "decisionsSha256": "26d02eeacc475f22553509e6ab28c736bb94eb32ed0bb9d0dcafd08bcb5e4638",
-    "vscodeManifestSha256": "f1dd64576003079dce93d214fd422996552a8bc4601cfbcbfa662e6368c49038",
-    "vscodeExtensionSourceSha256": "10fc0d5da6680fde404904adaa8a16f3e59d0720b5599d82d11cffb3b050d995",
-    "vscodeCatalogSha256": "3ba11c6a1e8b95e83d69319814f4d07a34a78a66260c7379e8817d23ab27ff7c",
-    "vscodePublicationInventorySha256": "15a59d6ff3932cf1d43eb7ae05b8117c4a4ed60828d11acaefabdd2fc09ff901",
+    "sourceInventorySha256": "0447c03c102be0f4b098cfa175a3706fee51c757216f1a42314e7ca7aefeb3bb",
+    "decisionsSha256": "07ae30645c246dbdf3fa67642d2269f616cd7121295c55bdf21d2a6c80dcf1a9",
+    "vscodeManifestSha256": "dfc1b14618845591de238ab364b98a31f23b668f83c961d3f659df461e4715c9",
+    "vscodeExtensionSourceSha256": "faf9ea7ae5ad4af8b57cddc8fad663086311aed82f22975f9f9dd7d20614f3ee",
+    "vscodeCatalogSha256": "c54f06dbdbfdae9c1f2e7df46ef7e12da876d4b6a87cf5ba7873f43d596ed3a8",
+    "vscodePublicationInventorySha256": "71fcebddb54e25c665973f1c2bfd5a4d4c3836903148cddc70ad36337826f25c",
     "sharedCommandTargetsSha256": "90b0fa05560139670ebb3050207428349f118f8b4cc8cbde956ebaf30b27d09a"
   },
   "counts": { "gaps": 0, "facts": 0 },

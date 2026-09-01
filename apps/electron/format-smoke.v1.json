@@ -5,11 +5,11 @@
   "generatedFrom": {
     "policy": {
       "file": "format-smoke-policy.v1.json",
-      "sha256": "sha256:0b8f8c4c0926f8f1e7220ec56ee4fcbf68cf826a924db38eb09933a293fd326c"
+      "sha256": "sha256:4658dd59aea7ec66775359943d328470c10058eeca556640305953bbe216ea66"
     },
     "bundledCatalog": {
       "file": "generated/bundled-catalog.json",
-      "sha256": "sha256:524d203e12786fe041c4a1447ce22e0646e5826fa94b32f8399180fbadd9072d",
+      "sha256": "sha256:c54f06dbdbfdae9c1f2e7df46ef7e12da876d4b6a87cf5ba7873f43d596ed3a8",
       "provenance": "checkout-physical-roots-verified-by-host-artifact-digest",
       "roots": [
         {
@@ -30,7 +30,7 @@
         },
         {
           "coordinate": "modkit/images",
-          "digest": "sha256:77485d8227d0e5bd39284cf673c48b34324fb56d5ab7935d3e944a48acc01a74"
+          "digest": "sha256:76119b45d1ee64f11a9786d1798dccbd2a6cb6b19a472c4c98ac8f779ede61f2"
         },
         {
           "coordinate": "modkit/models",
@@ -47,8 +47,8 @@
       ]
     },
     "offlineRelease": {
-      "descriptorSha256": "sha256:05b804a37bc52ea594e9bbb316494ee9642485e600d0bddae8523e501a74ee96",
-      "catalogSha256": "sha256:1cf95d518a22f21d057e20a2b33bc7f4a4dd040dedf9b4c3291e7271485ee69c",
+      "descriptorSha256": "sha256:00764d13bd19205d4a6595ae1bb6099e8a96bda4f6d0af9d59315fd283c1dfaa",
+      "catalogSha256": "sha256:ee6eb1fc29c09ebc30049b03840c46c68088a78ac218a1f97a6fe3e7d75de368",
       "catalogSignature": {
         "algorithm": "Ed25519",
         "keyId": "modkit.ga-wave1b-2026-09-01",
@@ -231,8 +231,10 @@
       ],
       "stage": "tree-text",
       "corpus": {
-        "kind": "named-exclusion",
-        "reason": "No real ODT exists in the owner-declared local corpora on 2026-09-01; synthetic ZIP fixtures are not substituted for A8."
+        "kind": "workspace-reference",
+        "path": "downloads/file-examples/documents/file-sample_100kB.odt",
+        "bytes": 116076,
+        "sha256": "ec78ee3b75df5da1556b0a3e1c3cf81c05f01dcacee057190786545e851f3835"
       },
       "runtime": {
         "vscode": "open",
@@ -638,10 +640,5 @@
       }
     }
   ],
-  "namedExclusions": [
-    {
-      "id": "document-odt",
-      "reason": "No real ODT exists in the owner-declared local corpora on 2026-09-01; synthetic ZIP fixtures are not substituted for A8."
-    }
-  ]
+  "namedExclusions": []
 }

@@ -1,0 +1,867 @@
+import {
+  createInspectionCodec,
+  createTreeDataSource,
+  editPlanFromInput,
+  simpleLease
+} from "../../../../chunks/chunk-M7TTYWJV.js";
+import "../../../../chunks/chunk-A5MCC45S.js";
+import "../../../../chunks/chunk-VKDDSZCI.js";
+import "../../../../chunks/chunk-F4XKVL72.js";
+import "../../../../chunks/chunk-X2ENULEB.js";
+import "../../../../chunks/chunk-YRQVWMJF.js";
+import "../../../../chunks/chunk-CQ52GEHY.js";
+
+// extensions/archives/src/zip/codec.js
+var ZIP_LOCAL = 67324752;
+var ZIP_CENTRAL = 33639248;
+var ZIP_EOCD = 101010256;
+var ZIP_DESCRIPTOR = 134695760;
+var ZIP64_LOCATOR = 117853008;
+var FLAG_ENCRYPTED = 1;
+var FLAG_COMPRESSION_OPTIONS = 6;
+var FLAG_DESCRIPTOR = 8;
+var FLAG_STRONG_ENCRYPTION = 64;
+var FLAG_UTF8_NAMES = 2048;
+var EXTRA_ZIP64 = 1;
+var EXTRA_UNICODE_PATH = 28789;
+var MAX_U16 = 65535;
+var MAX_U32 = 4294967295;
+var DOS_EPOCH_DATE = 33;
+var STORED = 0;
+var VERSION_STORED = 10;
+var VERSION_MADE_BY = 20;
+var EMPTY = new Uint8Array(0);
+var utf8 = new TextDecoder("utf-8", { fatal: true });
+var legacy = new TextDecoder("latin1");
+var encoder = new TextEncoder();
+function u16(bytes, offset) {
+  if (offset < 0 || offset + 2 > bytes.byteLength) throw new RangeError("truncated ZIP u16");
+  return new DataView(bytes.buffer, bytes.byteOffset + offset, 2).getUint16(0, true);
+}
+function u32(bytes, offset) {
+  if (offset < 0 || offset + 4 > bytes.byteLength) throw new RangeError("truncated ZIP u32");
+  return new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getUint32(0, true);
+}
+var CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let index = 0; index < 256; index += 1) {
+    let value = index;
+    for (let bit = 0; bit < 8; bit += 1) value = value >>> 1 ^ (value & 1 ? 3988292384 : 0);
+    table[index] = value >>> 0;
+  }
+  return table;
+})();
+function compressionName(method) {
+  if (method === 0) return "stored";
+  if (method === 8) return "deflate";
+  if (method === 9) return "deflate64";
+  if (method === 12) return "bzip2";
+  if (method === 14) return "lzma";
+  if (method === 93) return "zstd";
+  if (method === 95) return "xz";
+  return `method ${method}`;
+}
+function dosTimestamp(dosDate, dosTime) {
+  if (dosDate === 0) return void 0;
+  const year = 1980 + (dosDate >> 9 & 127);
+  const month = dosDate >> 5 & 15;
+  const day = dosDate & 31;
+  const hour = dosTime >> 11 & 31;
+  const minute = dosTime >> 5 & 63;
+  const second = (dosTime & 31) * 2;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return void 0;
+  if (hour > 23 || minute > 59 || second > 59) return void 0;
+  return Date.UTC(year, month - 1, day, hour, minute, second);
+}
+function crc32(bytes) {
+  let crc = 4294967295;
+  for (let index = 0; index < bytes.byteLength; index += 1) {
+    crc = crc >>> 8 ^ (CRC_TABLE[(crc ^ (bytes[index] ?? 0)) & 255] ?? 0);
+  }
+  return (crc ^ 4294967295) >>> 0;
+}
+function findEocd(bytes) {
+  const first = Math.max(0, bytes.byteLength - 65557);
+  for (let offset = bytes.byteLength - 22; offset >= first; offset -= 1) {
+    if (u32(bytes, offset) === ZIP_EOCD) return offset;
+  }
+  return -1;
+}
+function safePath(value) {
+  const normalized = value.replaceAll("\\", "/");
+  const parts = normalized.split("/").filter(Boolean);
+  if (value.includes("\0") || normalized.startsWith("/") || /^[a-z]:/iu.test(normalized) || parts.some((part) => part === "." || part === "..")) {
+    throw new TypeError(`unsafe ZIP entry path: ${value}`);
+  }
+  return `${parts.join("/")}${normalized.endsWith("/") && parts.length > 0 ? "/" : ""}`;
+}
+function parseZipArchive(bytes, maxEntries) {
+  const eocd = findEocd(bytes);
+  if (eocd < 0) throw new TypeError("ZIP end-of-central-directory record is missing");
+  if (u16(bytes, eocd + 4) !== 0 || u16(bytes, eocd + 6) !== 0) {
+    throw new TypeError("multi-disk ZIP archives are unsupported");
+  }
+  const count = u16(bytes, eocd + 10);
+  const centralSize = u32(bytes, eocd + 12);
+  const centralOffset = u32(bytes, eocd + 16);
+  if (count === 65535 || centralSize === 4294967295 || centralOffset === 4294967295) {
+    throw new TypeError("ZIP64 requires a dedicated codec profile");
+  }
+  if (count > maxEntries) throw new RangeError("ZIP entry count exceeds maxNodes budget");
+  if (centralOffset + centralSize > eocd) throw new TypeError("ZIP central directory is truncated");
+  const entries = [];
+  let offset = centralOffset;
+  for (let index = 0; index < count; index += 1) {
+    if (offset + 46 > bytes.byteLength || u32(bytes, offset) !== ZIP_CENTRAL) {
+      throw new TypeError(`invalid ZIP central-directory entry ${index}`);
+    }
+    const flags = u16(bytes, offset + 8);
+    const method = u16(bytes, offset + 10);
+    const dosTime = u16(bytes, offset + 12);
+    const dosDate = u16(bytes, offset + 14);
+    const crc = u32(bytes, offset + 16);
+    const compressedSize = u32(bytes, offset + 20);
+    const size = u32(bytes, offset + 24);
+    const nameLength = u16(bytes, offset + 28);
+    const extraLength = u16(bytes, offset + 30);
+    const commentLength = u16(bytes, offset + 32);
+    const localOffset = u32(bytes, offset + 42);
+    const next = offset + 46 + nameLength + extraLength + commentLength;
+    if (next > bytes.byteLength) throw new TypeError("ZIP central-directory name is truncated");
+    const nameBytes = bytes.subarray(offset + 46, offset + 46 + nameLength);
+    const name = safePath(
+      (flags & 2048) !== 0 ? utf8.decode(nameBytes) : legacy.decode(nameBytes)
+    );
+    if (name === "") throw new TypeError("ZIP entries must have non-empty paths");
+    entries.push(
+      Object.freeze({
+        id: `entry-${index}`,
+        name,
+        kind: name.endsWith("/") ? "directory" : "file",
+        flags,
+        method,
+        dosTime,
+        dosDate,
+        crc,
+        compressedSize,
+        size,
+        localOffset,
+        centralOffset: offset,
+        centralLength: next - offset
+      })
+    );
+    offset = next;
+  }
+  if (offset !== centralOffset + centralSize) {
+    throw new TypeError("ZIP central-directory size does not match its entries");
+  }
+  return Object.freeze(entries);
+}
+async function inflateRaw(bytes) {
+  if (typeof DecompressionStream !== "function") {
+    throw new TypeError("deflate extraction is unavailable in this runtime");
+  }
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+async function extractZipArchiveEntry(bytes, entry) {
+  if (entry.kind !== "file") throw new TypeError("directories have no byte payload");
+  if ((entry.flags & FLAG_ENCRYPTED) !== 0)
+    throw new TypeError("encrypted ZIP entries are unsupported");
+  const offset = entry.localOffset;
+  if (offset + 30 > bytes.byteLength || u32(bytes, offset) !== ZIP_LOCAL) {
+    throw new TypeError("ZIP local entry header is invalid");
+  }
+  const dataOffset = offset + 30 + u16(bytes, offset + 26) + u16(bytes, offset + 28);
+  const end = dataOffset + entry.compressedSize;
+  if (end > bytes.byteLength) throw new TypeError("ZIP entry data is truncated");
+  const compressed = bytes.slice(dataOffset, end);
+  const result = entry.method === 0 ? compressed : entry.method === 8 ? await inflateRaw(compressed) : (() => {
+    throw new TypeError(`unsupported ZIP compression method ${entry.method}`);
+  })();
+  if (result.byteLength !== entry.size)
+    throw new TypeError("ZIP entry size does not match metadata");
+  return result;
+}
+function localBlockRange(bytes, entry) {
+  const start = entry.localOffset;
+  if (start + 30 > bytes.byteLength || u32(bytes, start) !== ZIP_LOCAL) {
+    throw new TypeError(`the local header of \xAB${entry.name}\xBB is invalid`);
+  }
+  const nameLength = u16(bytes, start + 26);
+  const extraLength = u16(bytes, start + 28);
+  const dataOffset = start + 30 + nameLength + extraLength;
+  const dataEnd = dataOffset + entry.compressedSize;
+  if (dataEnd > bytes.byteLength) throw new TypeError(`the data of \xAB${entry.name}\xBB is truncated`);
+  return Object.freeze({
+    start,
+    nameLength,
+    extraLength,
+    dataOffset,
+    dataEnd,
+    end: dataEnd + descriptorLength(bytes, entry, dataEnd)
+  });
+}
+function descriptorLength(bytes, entry, dataEnd) {
+  if ((entry.flags & FLAG_DESCRIPTOR) === 0) return 0;
+  const signed = dataEnd + 4 <= bytes.byteLength && u32(bytes, dataEnd) === ZIP_DESCRIPTOR;
+  const at = signed ? dataEnd + 4 : dataEnd;
+  if (at + 12 > bytes.byteLength)
+    throw new TypeError(`the data descriptor of \xAB${entry.name}\xBB is truncated`);
+  if (u32(bytes, at) !== entry.crc || u32(bytes, at + 4) !== entry.compressedSize || u32(bytes, at + 8) !== entry.size) {
+    throw new TypeError(
+      `the data descriptor of \xAB${entry.name}\xBB disagrees with the central directory`
+    );
+  }
+  return (signed ? 4 : 0) + 12;
+}
+function centralFieldsOf(bytes, entry) {
+  const at = entry.centralOffset;
+  const nameAt = at + 46;
+  const extraAt = nameAt + u16(bytes, at + 28);
+  const commentAt = extraAt + u16(bytes, at + 30);
+  return Object.freeze({
+    versionMadeBy: u16(bytes, at + 4),
+    versionNeeded: u16(bytes, at + 6),
+    flags: u16(bytes, at + 8),
+    method: u16(bytes, at + 10),
+    dosTime: u16(bytes, at + 12),
+    dosDate: u16(bytes, at + 14),
+    crc: u32(bytes, at + 16),
+    compressedSize: u32(bytes, at + 20),
+    size: u32(bytes, at + 24),
+    diskStart: u16(bytes, at + 34),
+    internalAttributes: u16(bytes, at + 36),
+    externalAttributes: u32(bytes, at + 38),
+    nameBytes: bytes.subarray(nameAt, extraAt),
+    extraBytes: bytes.subarray(extraAt, commentAt),
+    commentBytes: bytes.subarray(commentAt, at + entry.centralLength)
+  });
+}
+function extraFieldIds(extra) {
+  const ids = [];
+  let cursor = 0;
+  while (cursor + 4 <= extra.byteLength) {
+    ids.push(u16(extra, cursor));
+    cursor += 4 + u16(extra, cursor + 2);
+  }
+  if (cursor !== extra.byteLength) throw new TypeError("a ZIP extra field is malformed");
+  return ids;
+}
+function localHeaderFor(fields) {
+  const header = new Uint8Array(30 + fields.nameBytes.byteLength + fields.extraBytes.byteLength);
+  const view = new DataView(header.buffer);
+  view.setUint32(0, ZIP_LOCAL, true);
+  view.setUint16(4, fields.versionNeeded, true);
+  view.setUint16(6, fields.flags, true);
+  view.setUint16(8, fields.method, true);
+  view.setUint16(10, fields.dosTime, true);
+  view.setUint16(12, fields.dosDate, true);
+  view.setUint32(14, fields.crc, true);
+  view.setUint32(18, fields.compressedSize, true);
+  view.setUint32(22, fields.size, true);
+  view.setUint16(26, fields.nameBytes.byteLength, true);
+  view.setUint16(28, fields.extraBytes.byteLength, true);
+  header.set(fields.nameBytes, 30);
+  header.set(fields.extraBytes, 30 + fields.nameBytes.byteLength);
+  return header;
+}
+function centralRecordFor(fields) {
+  const nameLength = fields.nameBytes.byteLength;
+  const extraLength = fields.extraBytes.byteLength;
+  const commentLength = fields.commentBytes.byteLength;
+  const record = new Uint8Array(46 + nameLength + extraLength + commentLength);
+  const view = new DataView(record.buffer);
+  view.setUint32(0, ZIP_CENTRAL, true);
+  view.setUint16(4, fields.versionMadeBy, true);
+  view.setUint16(6, fields.versionNeeded, true);
+  view.setUint16(8, fields.flags, true);
+  view.setUint16(10, fields.method, true);
+  view.setUint16(12, fields.dosTime, true);
+  view.setUint16(14, fields.dosDate, true);
+  view.setUint32(16, fields.crc, true);
+  view.setUint32(20, fields.compressedSize, true);
+  view.setUint32(24, fields.size, true);
+  view.setUint16(28, nameLength, true);
+  view.setUint16(30, extraLength, true);
+  view.setUint16(32, commentLength, true);
+  view.setUint16(34, fields.diskStart, true);
+  view.setUint16(36, fields.internalAttributes, true);
+  view.setUint32(38, fields.externalAttributes, true);
+  record.set(fields.nameBytes, 46);
+  record.set(fields.extraBytes, 46 + nameLength);
+  record.set(fields.commentBytes, 46 + nameLength + extraLength);
+  return record;
+}
+function encodedName(name) {
+  const nameBytes = encoder.encode(name);
+  if (nameBytes.byteLength === 0) throw new TypeError("a ZIP entry path cannot be empty");
+  if (nameBytes.byteLength > MAX_U16)
+    throw new RangeError(`the ZIP entry path \xAB${name}\xBB is too long`);
+  return nameBytes;
+}
+var needsUtf8Flag = (nameBytes) => nameBytes.some((byte) => byte >= 128);
+function verbatimEntry(bytes, entry, range) {
+  return Object.freeze({
+    name: entry.name,
+    local: Object.freeze([bytes.subarray(range.start, range.end)]),
+    central: bytes.slice(entry.centralOffset, entry.centralOffset + entry.centralLength)
+  });
+}
+function renamedEntry(bytes, entry, range, newName) {
+  const nameBytes = encodedName(newName);
+  const fields = centralFieldsOf(bytes, entry);
+  const localExtra = bytes.subarray(range.start + 30 + range.nameLength, range.dataOffset);
+  if (extraFieldIds(fields.extraBytes).includes(EXTRA_UNICODE_PATH) || extraFieldIds(localExtra).includes(EXTRA_UNICODE_PATH)) {
+    throw new TypeError(
+      `\xAB${entry.name}\xBB carries an Info-ZIP Unicode Path extra field; renaming it would leave stale metadata behind`
+    );
+  }
+  const utf8Needed = needsUtf8Flag(nameBytes);
+  if (utf8Needed && (entry.flags & FLAG_UTF8_NAMES) === 0 && fields.commentBytes.byteLength > 0) {
+    throw new TypeError(
+      `renaming \xAB${entry.name}\xBB to a non-ASCII path would reinterpret its entry comment as UTF-8`
+    );
+  }
+  const flags = utf8Needed ? entry.flags | FLAG_UTF8_NAMES : entry.flags;
+  const header = localHeaderFor({
+    versionNeeded: u16(bytes, range.start + 4),
+    flags,
+    method: u16(bytes, range.start + 8),
+    dosTime: u16(bytes, range.start + 10),
+    dosDate: u16(bytes, range.start + 12),
+    crc: u32(bytes, range.start + 14),
+    compressedSize: u32(bytes, range.start + 18),
+    size: u32(bytes, range.start + 22),
+    nameBytes,
+    extraBytes: localExtra
+  });
+  return Object.freeze({
+    name: newName,
+    local: Object.freeze([header, bytes.subarray(range.dataOffset, range.end)]),
+    central: centralRecordFor({ ...fields, flags, nameBytes })
+  });
+}
+function restoredEntry(bytes, entry, range, data) {
+  const fields = centralFieldsOf(bytes, entry);
+  const flags = entry.flags & ~(FLAG_DESCRIPTOR | FLAG_COMPRESSION_OPTIONS);
+  const crc = crc32(data);
+  const header = localHeaderFor({
+    versionNeeded: u16(bytes, range.start + 4),
+    flags,
+    method: STORED,
+    dosTime: u16(bytes, range.start + 10),
+    dosDate: u16(bytes, range.start + 12),
+    crc,
+    compressedSize: data.byteLength,
+    size: data.byteLength,
+    nameBytes: bytes.subarray(range.start + 30, range.start + 30 + range.nameLength),
+    extraBytes: bytes.subarray(range.start + 30 + range.nameLength, range.dataOffset)
+  });
+  return Object.freeze({
+    name: entry.name,
+    local: Object.freeze([header, data]),
+    central: centralRecordFor({
+      ...fields,
+      flags,
+      method: STORED,
+      crc,
+      compressedSize: data.byteLength,
+      size: data.byteLength
+    })
+  });
+}
+function storedEntry(name, data) {
+  const directory = name.endsWith("/");
+  if (directory && data.byteLength > 0)
+    throw new TypeError(`\xAB${name}\xBB is a directory entry and carries no bytes`);
+  const nameBytes = encodedName(name);
+  const shared = {
+    versionNeeded: VERSION_STORED,
+    flags: needsUtf8Flag(nameBytes) ? FLAG_UTF8_NAMES : 0,
+    method: STORED,
+    dosTime: 0,
+    dosDate: DOS_EPOCH_DATE,
+    crc: directory ? 0 : crc32(data),
+    compressedSize: data.byteLength,
+    size: data.byteLength,
+    nameBytes,
+    extraBytes: EMPTY
+  };
+  return Object.freeze({
+    name,
+    local: Object.freeze([localHeaderFor(shared), data]),
+    central: centralRecordFor({
+      ...shared,
+      versionMadeBy: VERSION_MADE_BY,
+      diskStart: 0,
+      internalAttributes: 0,
+      externalAttributes: directory ? 16 : 0,
+      commentBytes: EMPTY
+    })
+  });
+}
+function assembleArchive(planned, comment, budget) {
+  if (planned.length > MAX_U16) {
+    throw new RangeError("the edited archive would need ZIP64: more than 65535 entries");
+  }
+  if (planned.length > budget.maxNodes) {
+    throw new RangeError("the edited archive exceeds the maxNodes budget");
+  }
+  let localTotal = 0;
+  let centralTotal = 0;
+  for (const item of planned) {
+    for (const part of item.local) localTotal += part.byteLength;
+    centralTotal += item.central.byteLength;
+  }
+  const total = localTotal + centralTotal + 22 + comment.byteLength;
+  if (total > MAX_U32) {
+    throw new RangeError("the edited archive would need ZIP64: more than 4 GiB of output");
+  }
+  if (BigInt(total) > budget.maxInputBytes) {
+    throw new RangeError("the edited archive exceeds the maxInputBytes budget");
+  }
+  const out = new Uint8Array(total);
+  let cursor = 0;
+  for (const item of planned) {
+    new DataView(item.central.buffer, item.central.byteOffset, item.central.byteLength).setUint32(
+      42,
+      cursor,
+      true
+    );
+    for (const part of item.local) {
+      out.set(part, cursor);
+      cursor += part.byteLength;
+    }
+  }
+  const centralStart = cursor;
+  for (const item of planned) {
+    out.set(item.central, cursor);
+    cursor += item.central.byteLength;
+  }
+  const view = new DataView(out.buffer);
+  view.setUint32(cursor, ZIP_EOCD, true);
+  view.setUint16(cursor + 4, 0, true);
+  view.setUint16(cursor + 6, 0, true);
+  view.setUint16(cursor + 8, planned.length, true);
+  view.setUint16(cursor + 10, planned.length, true);
+  view.setUint32(cursor + 12, centralTotal, true);
+  view.setUint32(cursor + 16, centralStart, true);
+  view.setUint16(cursor + 20, comment.byteLength, true);
+  out.set(comment, cursor + 22);
+  return out;
+}
+var refusal = (code, message) => Object.freeze({ code, message });
+var messageOf = (error) => error instanceof Error ? error.message : String(error);
+function archiveEditModel(bytes, entries) {
+  try {
+    const eocd = findEocd(bytes);
+    if (eocd < 0) throw new TypeError("the end-of-central-directory record is missing");
+    const commentLength = u16(bytes, eocd + 20);
+    if (eocd + 22 + commentLength > bytes.byteLength) {
+      throw new TypeError("the archive comment is truncated");
+    }
+    if (eocd >= 20 && u32(bytes, eocd - 20) === ZIP64_LOCATOR) {
+      return refusal(
+        "x3.codec/zip-edit-zip64",
+        "this archive carries a ZIP64 end-of-central-directory locator; editing it needs a dedicated ZIP64 codec profile"
+      );
+    }
+    const ranges = /* @__PURE__ */ new Map();
+    const names = /* @__PURE__ */ new Set();
+    for (const entry of entries) {
+      if ((entry.flags & (FLAG_ENCRYPTED | FLAG_STRONG_ENCRYPTION)) !== 0) {
+        return refusal(
+          "x3.codec/zip-edit-encrypted",
+          `\xAB${entry.name}\xBB is encrypted; this codec never re-assembles an archive it cannot read`
+        );
+      }
+      if (entry.compressedSize === MAX_U32 || entry.size === MAX_U32 || entry.localOffset === MAX_U32) {
+        return refusal(
+          "x3.codec/zip-edit-zip64",
+          `\xAB${entry.name}\xBB stores its size or offset in a ZIP64 extended-information field; editing it needs a dedicated ZIP64 codec profile`
+        );
+      }
+      if (names.has(entry.name)) {
+        return refusal(
+          "x3.codec/zip-edit-layout",
+          `\xAB${entry.name}\xBB appears twice in the central directory; editing by path would be ambiguous`
+        );
+      }
+      names.add(entry.name);
+      const range = localBlockRange(bytes, entry);
+      const fields = centralFieldsOf(bytes, entry);
+      const localExtra = bytes.subarray(range.start + 30 + range.nameLength, range.dataOffset);
+      if (extraFieldIds(fields.extraBytes).includes(EXTRA_ZIP64) || extraFieldIds(localExtra).includes(EXTRA_ZIP64)) {
+        return refusal(
+          "x3.codec/zip-edit-zip64",
+          `\xAB${entry.name}\xBB carries a ZIP64 extended-information extra field; editing it needs a dedicated ZIP64 codec profile`
+        );
+      }
+      ranges.set(entry.id, range);
+    }
+    const centralOffset = u32(bytes, eocd + 16);
+    const centralSize = u32(bytes, eocd + 12);
+    let prefix = centralOffset;
+    for (const entry of entries) prefix = Math.min(prefix, ranges.get(entry.id)?.start ?? 0);
+    if (prefix !== 0) {
+      return refusal(
+        "x3.codec/zip-edit-layout",
+        "this archive has data before its first entry (a self-extracting stub); re-assembling it would invalidate the offsets embedded in that prefix"
+      );
+    }
+    let cursor = 0;
+    let contiguous = true;
+    for (const entry of entries) {
+      const range = ranges.get(entry.id);
+      if (range === void 0) continue;
+      if (range.start !== cursor) contiguous = false;
+      cursor = range.end;
+    }
+    const canonical = contiguous && cursor === centralOffset && centralOffset + centralSize === eocd && eocd + 22 + commentLength === bytes.byteLength;
+    return Object.freeze({
+      ranges,
+      canonical,
+      comment: bytes.slice(eocd + 22, eocd + 22 + commentLength)
+    });
+  } catch (error) {
+    return refusal(
+      "x3.codec/zip-edit-layout",
+      `this archive cannot be re-assembled safely: ${messageOf(error)}`
+    );
+  }
+}
+var PRESERVED_NOTES = Object.freeze([
+  "untouched entries keep their local header, compressed data and central-directory record byte for byte; only the local-header offset inside the central record is rewritten",
+  "compression method, CRC-32, sizes, timestamps, extra fields, entry comments and the archive comment are preserved; nothing is recompressed",
+  "added and replaced entries are stored (method 0) with a freshly computed CRC-32 and the DOS-epoch timestamp"
+]);
+var NON_CANONICAL_NOTE = "this archive is not a canonical ZIP layout (gaps between entries, reordered entries or trailing bytes): re-assembly keeps only what the central directory references";
+function fidelityFor(canonical) {
+  return {
+    roundTrip: "semantic",
+    preservesUnknownData: canonical,
+    notes: canonical ? [...PRESERVED_NOTES] : [...PRESERVED_NOTES, NON_CANONICAL_NOTE]
+  };
+}
+var BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u;
+function decodeBase64(value, limit, label) {
+  if (typeof value !== "string" || !BASE64.test(value)) {
+    throw new TypeError(`${label} must be standard base64 without padding errors or whitespace`);
+  }
+  if (value.length / 4 * 3 > limit) {
+    throw new RangeError(`${label} exceeds the maxScalarBytes budget`);
+  }
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  if (bytes.byteLength > limit) throw new RangeError(`${label} exceeds the maxScalarBytes budget`);
+  return bytes;
+}
+function requireRecord(value, label) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError(`${label} expects an object`);
+  }
+  return value;
+}
+function requireList(value, label) {
+  if (value === void 0) return [];
+  if (!Array.isArray(value)) throw new TypeError(`${label} must be an array`);
+  return value;
+}
+function usable(model) {
+  if ("code" in model) throw new TypeError(model.message);
+  return model;
+}
+var EDIT_STRUCTURE_OPERATION = Object.freeze({
+  id: "edit.structure",
+  handlerId: "edit-structure",
+  mutatesSource: true,
+  requiredPermissions: Object.freeze(["read-source", "write-source"]),
+  outputKinds: Object.freeze(["edit-plan"])
+});
+var EDIT_CONTENT_OPERATION = Object.freeze({
+  id: "edit.content",
+  handlerId: "edit-content",
+  mutatesSource: true,
+  requiredPermissions: Object.freeze(["read-source", "write-source"]),
+  outputKinds: Object.freeze(["edit-plan"])
+});
+function editPlanOutput(input, assembled, model, planId, label) {
+  return {
+    kind: "edit-plan",
+    plan: editPlanFromInput(input, {
+      planId,
+      edits: [{ operation: "replace", payload: { kind: "inline", bytes: assembled }, label }],
+      fidelity: fidelityFor(model.canonical)
+    })
+  };
+}
+function editStructureHandler(bytes, entries, model, budget, input) {
+  return async (value) => {
+    const usableModel = usable(model);
+    const request = requireRecord(value, "edit.structure");
+    const additions = requireList(request.add, "edit.structure add");
+    const removals = requireList(request.remove, "edit.structure remove");
+    const renames = requireList(request.rename, "edit.structure rename");
+    if (additions.length + removals.length + renames.length === 0) {
+      throw new TypeError("edit.structure needs at least one of add, remove or rename");
+    }
+    const byName = new Map(entries.map((entry) => [entry.name, entry]));
+    const removed = /* @__PURE__ */ new Set();
+    for (const item of removals) {
+      const path = safePath(String(item));
+      if (!byName.has(path)) throw new TypeError(`ZIP entry \xAB${path}\xBB was not found`);
+      if (removed.has(path)) throw new TypeError(`\xAB${path}\xBB is removed twice`);
+      removed.add(path);
+    }
+    const renamed = /* @__PURE__ */ new Map();
+    for (const item of renames) {
+      const change = requireRecord(item, "edit.structure rename");
+      const from = safePath(String(change.from ?? ""));
+      const to = safePath(String(change.to ?? ""));
+      const entry = byName.get(from);
+      if (entry === void 0) throw new TypeError(`ZIP entry \xAB${from}\xBB was not found`);
+      if (removed.has(from)) throw new TypeError(`\xAB${from}\xBB is both removed and renamed`);
+      if (renamed.has(from)) throw new TypeError(`\xAB${from}\xBB is renamed twice`);
+      if (to === "") throw new TypeError("a rename target cannot be empty");
+      if (entry.name.endsWith("/") !== to.endsWith("/")) {
+        throw new TypeError(
+          `renaming \xAB${from}\xBB to \xAB${to}\xBB would change it between file and directory`
+        );
+      }
+      renamed.set(from, to);
+    }
+    const added = [];
+    for (const item of additions) {
+      const change = requireRecord(item, "edit.structure add");
+      const path = safePath(String(change.path ?? ""));
+      if (path === "") throw new TypeError("an added entry needs a path");
+      added.push({
+        path,
+        bytes: decodeBase64(change.bytes, budget.maxScalarBytes, `add \xAB${path}\xBB`)
+      });
+    }
+    const planned = [];
+    const finalNames = /* @__PURE__ */ new Set();
+    const claim = (name) => {
+      if (finalNames.has(name)) throw new TypeError(`\xAB${name}\xBB would appear twice in the archive`);
+      finalNames.add(name);
+    };
+    for (const entry of entries) {
+      if (removed.has(entry.name)) continue;
+      const range = usableModel.ranges.get(entry.id);
+      if (range === void 0) throw new TypeError(`\xAB${entry.name}\xBB has no readable local block`);
+      const to = renamed.get(entry.name);
+      claim(to ?? entry.name);
+      planned.push(
+        to === void 0 ? verbatimEntry(bytes, entry, range) : renamedEntry(bytes, entry, range, to)
+      );
+    }
+    for (const item of added) {
+      claim(item.path);
+      planned.push(storedEntry(item.path, item.bytes));
+    }
+    if (planned.length === 0) throw new TypeError("edit.structure would leave an empty archive");
+    const assembled = assembleArchive(planned, usableModel.comment, budget);
+    return editPlanOutput(
+      input,
+      assembled,
+      usableModel,
+      `zip-edit-structure:+${added.length}-${removed.size}~${renamed.size}`,
+      `add ${added.length}, remove ${removed.size}, rename ${renamed.size}`
+    );
+  };
+}
+function editContentHandler(bytes, entries, model, budget, input) {
+  return async (value) => {
+    const usableModel = usable(model);
+    const request = requireRecord(value, "edit.content");
+    const path = safePath(String(request.path ?? ""));
+    const target = entries.find((entry) => entry.name === path);
+    if (target === void 0) throw new TypeError(`ZIP entry \xAB${path}\xBB was not found`);
+    if (target.kind !== "file") throw new TypeError(`\xAB${path}\xBB is a directory entry, not content`);
+    const data = decodeBase64(
+      request.bytes,
+      budget.maxScalarBytes,
+      `edit.content bytes for \xAB${path}\xBB`
+    );
+    const planned = entries.map((entry) => {
+      const range = usableModel.ranges.get(entry.id);
+      if (range === void 0) throw new TypeError(`\xAB${entry.name}\xBB has no readable local block`);
+      return entry.id === target.id ? restoredEntry(bytes, entry, range, data) : verbatimEntry(bytes, entry, range);
+    });
+    const assembled = assembleArchive(planned, usableModel.comment, budget);
+    return editPlanOutput(
+      input,
+      assembled,
+      usableModel,
+      `zip-edit-content:${path}`,
+      `replace ${path} (${data.byteLength} bytes, stored)`
+    );
+  };
+}
+function namespaceSource(entries, source) {
+  const byId = new Map(entries.map((entry) => [entry.id, entry]));
+  return Object.freeze({
+    async list(prefix, page, signal) {
+      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+      const matching = entries.filter((entry) => entry.name.startsWith(prefix));
+      const start = page.cursor === void 0 ? 0 : Number(page.cursor);
+      if (!Number.isSafeInteger(start) || start < 0 || !Number.isSafeInteger(page.limit) || page.limit <= 0) {
+        throw new TypeError("invalid ZIP namespace page");
+      }
+      const items = matching.slice(start, start + page.limit).map(
+        (entry) => Object.freeze({
+          id: entry.id,
+          path: entry.name,
+          name: entry.name.replace(/\/$/u, "").split("/").at(-1),
+          kind: entry.kind,
+          ...entry.kind === "file" ? {
+            size: BigInt(entry.size),
+            storedSize: BigInt(entry.compressedSize),
+            compression: compressionName(entry.method),
+            // the container's own CRC-32, not a digest this codec computed
+            checksum: {
+              algorithm: "crc-32",
+              value: entry.crc.toString(16).padStart(8, "0")
+            }
+          } : {},
+          ...dosTimestamp(entry.dosDate, entry.dosTime) === void 0 ? {} : { modifiedAt: dosTimestamp(entry.dosDate, entry.dosTime) },
+          revision: source.revision
+        })
+      );
+      return Object.freeze({
+        items: Object.freeze(items),
+        ...start + items.length < matching.length ? { nextCursor: String(start + items.length) } : {}
+      });
+    },
+    async openEntry(entryId, signal) {
+      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+      const entry = byId.get(entryId);
+      if (entry === void 0 || entry.kind !== "file")
+        throw new TypeError("ZIP entry is not a file");
+      const encoded = entry.name.split("/").map(encodeURIComponent).join("/");
+      return simpleLease(
+        Object.freeze({
+          id: `${source.ref.id}!/${entry.name}`,
+          uri: `zip-entry:${encodeURIComponent(source.ref.uri)}!/${encoded}`,
+          parentIds: Object.freeze([source.ref.id])
+        })
+      );
+    }
+  });
+}
+var definition = Object.freeze({
+  id: "modkit/archive-zip",
+  format: Object.freeze({ id: "zip", label: "ZIP archive", mediaType: "application/zip" }),
+  operations: Object.freeze([
+    Object.freeze({
+      id: "container.extract",
+      handlerId: "extract-entry",
+      mutatesSource: false,
+      requiredPermissions: Object.freeze(["read-source"]),
+      outputKinds: Object.freeze(["bytes"])
+    }),
+    EDIT_STRUCTURE_OPERATION,
+    EDIT_CONTENT_OPERATION
+  ]),
+  async detect(bytes) {
+    const signature = bytes.byteLength >= 4 ? u32(bytes, 0) : 0;
+    const match = signature === ZIP_LOCAL || signature === ZIP_EOCD;
+    return { confidence: match ? 0.95 : 0.01, note: match ? "zip-signature" : "signature-mismatch" };
+  },
+  async inspect(bytes, context) {
+    const entries = parseZipArchive(bytes, context.budget.maxNodes);
+    const files = entries.filter((entry) => entry.kind === "file");
+    const directories = entries.length - files.length;
+    const uncompressedBytes = files.reduce((total, entry) => total + BigInt(entry.size), 0n);
+    const model = archiveEditModel(bytes, entries);
+    const editable = !("code" in model);
+    const tree = createTreeDataSource({
+      kind: "archive",
+      label: "ZIP",
+      preview: `${files.length} files`,
+      children: entries.map((entry) => ({
+        kind: entry.kind,
+        label: entry.name,
+        preview: entry.kind === "file" ? `${entry.size} bytes, method ${entry.method}` : "directory"
+      }))
+    });
+    const byId = new Map(entries.map((entry) => [entry.id, entry]));
+    return {
+      summary: {
+        format: "zip",
+        entries: entries.length,
+        files: files.length,
+        directories,
+        uncompressedBytes: uncompressedBytes.toString(10),
+        editable,
+        preservesUnknownData: editable && model.canonical
+      },
+      metadata: [
+        {
+          id: "zip-directory",
+          label: "ZIP directory",
+          entries: [
+            { key: "entries", value: entries.length },
+            { key: "files", value: files.length },
+            { key: "directories", value: directories },
+            { key: "uncompressedBytes", value: uncompressedBytes.toString(10) },
+            { key: "editable", value: editable }
+          ]
+        }
+      ],
+      traits: [
+        { id: "container.entries", parameters: { count: entries.length } },
+        { id: "container.directories", parameters: { count: directories } },
+        {
+          id: "container.compression",
+          parameters: { methods: [...new Set(files.map((item) => item.method))] }
+        },
+        { id: "content.binary", parameters: { bytes: String(bytes.byteLength) } }
+      ],
+      diagnostics: editable ? [] : [
+        {
+          id: "zip-not-editable",
+          category: "fidelity",
+          severity: "warning",
+          code: model.code,
+          message: `this archive cannot be edited: ${model.message}`
+        }
+      ],
+      dataSources: {
+        "common.view/tree-data-source": tree,
+        "common.view/namespace-entry-source": namespaceSource(entries, context.source)
+      },
+      handlers: {
+        "extract-entry": async (input) => {
+          if (input === null || typeof input !== "object" || Array.isArray(input)) {
+            throw new TypeError("container.extract requires {entryId}");
+          }
+          const entry = byId.get(String(input.entryId ?? ""));
+          if (entry === void 0 || entry.kind !== "file") {
+            throw new TypeError("ZIP file entry id was not found");
+          }
+          return { kind: "bytes", value: await extractZipArchiveEntry(bytes, entry) };
+        },
+        "edit-structure": editStructureHandler(
+          bytes,
+          entries,
+          model,
+          context.budget,
+          context.input
+        ),
+        "edit-content": editContentHandler(bytes, entries, model, context.budget, context.input)
+      }
+    };
+  }
+});
+var abiVersion = 1;
+var createCodec = (context) => createInspectionCodec(definition, context);
+export {
+  abiVersion,
+  createCodec,
+  extractZipArchiveEntry,
+  parseZipArchive
+};

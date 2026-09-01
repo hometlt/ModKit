@@ -6376,7 +6376,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:77485d8227d0e5bd39284cf673c48b34324fb56d5ab7935d3e944a48acc01a74',
+        artifactDigest: 'sha256:76119b45d1ee64f11a9786d1798dccbd2a6cb6b19a472c4c98ac8f779ede61f2',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
@@ -6490,12 +6490,12 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'test/astc-void-extent.test.ts':
             'sha256:ed0f8d41d2c64a3276ae4f53276ed49846354bf28cc03fd77adecab1931a3bd1',
           'test/codec-session.ts':
-            'sha256:13a3561328994172f6e5bffaa8dc2d57697dc5b8b61ffc0a6a50af123b2656a7',
+            'sha256:fa6bcdf1bc58315268af02ca9b02076ec655a28bee8a327cf6664f1f0ea163e6',
           'test/eac-r11-decode.test.ts':
             'sha256:2a0d83d3152224ce7ea530605bb9441912aa9be68b3b4ec60d1e51cb0e5beed4',
         },
         inventoryRecordId:
-          'artifact:sha256:77485d8227d0e5bd39284cf673c48b34324fb56d5ab7935d3e944a48acc01a74',
+          'artifact:sha256:76119b45d1ee64f11a9786d1798dccbd2a6cb6b19a472c4c98ac8f779ede61f2',
       },
       artifactRoot: 'extensions/images/',
       containers: {
