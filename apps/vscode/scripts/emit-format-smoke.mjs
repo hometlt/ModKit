@@ -338,11 +338,8 @@ const cases = policy.cases.map(input => {
   }
   const corpus = validateCorpus(input.corpus, input.id)
   const pwa = validatePwa(input.pwa, input.id)
-  if (corpus.kind === 'named-exclusion' && input.id !== 'document-odt') {
-    throw new TypeError(`only document-odt may be a named corpus exclusion`)
-  }
-  if (input.id === 'document-odt' && corpus.kind !== 'named-exclusion') {
-    throw new TypeError('document-odt must remain a named real-corpus exclusion')
+  if (corpus.kind === 'named-exclusion') {
+    throw new TypeError(`Wave 1C requires a real corpus for ${input.id}`)
   }
   const route = input.formatIds.map(formatId => routeStep(formatId, contributions))
   const browserCompatible = route.every(step => step.runtimeEnvironments.includes('browser-worker'))

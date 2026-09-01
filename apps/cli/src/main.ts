@@ -30,7 +30,7 @@ import {
   type Inventory,
   type OpenSubjectResult,
 } from '@modkit/host'
-import { loadExtensionDirectory, openFileArtifactSource } from '@modkit/host/node'
+import { loadExtensionDirectory, openPathArtifactSource } from '@modkit/host/node'
 import {
   createModkitCliComposition,
   createModkitCliSubjectServices,
@@ -176,7 +176,7 @@ async function openCommand(arguments_: OpenArguments): Promise<number> {
       return 1
     }
     const file = resolve(arguments_.file)
-    const source = await openFileArtifactSource(file)
+    const source = await openPathArtifactSource(file)
     const result = await services.open({
       source,
       path: file,

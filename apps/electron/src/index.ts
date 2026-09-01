@@ -767,8 +767,8 @@ export {
   type RendererEditorPorts,
   type RendererEditorPortsOptions,
 } from './editor-ports.js'
-// S7: main.cjs opens files through the host's revision-checked adapter (no private copy here)
-export { openFileArtifactSource } from '@modkit/host/node'
+// S7/C1: main.cjs opens files or bounded loose directories through the shared host adapter.
+export { openFileArtifactSource, openPathArtifactSource } from '@modkit/host/node'
 /*
  * Block 9 step 6: main opens the byte source itself, so it cannot use `createPathSubjectOpener`
  * wholesale — but a codec that declares companions returns a composite plan, and a composite

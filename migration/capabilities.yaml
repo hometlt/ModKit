@@ -16906,14 +16906,14 @@ capabilities:
       - 'read-source'
       - 'installation-discovery'
     mk3Contributions:
-      - 'modkit.opensource/warzone2100-data'
-      - 'modkit.opensource/warzone2100-installation'
-      - 'modkit.opensource/warzone2100-map-semantic'
-      - 'modkit.opensource/warzone2100-resolved-data'
+      - 'wz2100project/warzone2100-data'
+      - 'wz2100project/warzone2100-installation'
+      - 'wz2100project/warzone2100-map-semantic'
+      - 'wz2100project/warzone2100-resolved-data'
     mk3Operations: []
     allocation:
       state: 'covered'
-      x3ContributionId: 'modkit.opensource/warzone2100-installation'
+      x3ContributionId: 'wz2100project/warzone2100-installation'
       portFamily: null
       portVerdict: null
     migrationState: 'implemented'
@@ -20791,10 +20791,10 @@ capabilities:
       - 'modkit/warzone-wz'
       - 'modkit/warzone-pie'
       - 'modkit/warzone2100-map'
-      - 'modkit.opensource/warzone2100-installation'
-      - 'modkit.opensource/warzone2100-map-semantic'
-      - 'modkit.opensource/warzone2100-data'
-      - 'modkit.opensource/warzone2100-wz-writer'
+      - 'wz2100project/warzone2100-installation'
+      - 'wz2100project/warzone2100-map-semantic'
+      - 'wz2100project/warzone2100-data'
+      - 'wz2100project/warzone2100-wz-writer'
     mk3Operations:
       - 'asset.validate'
       - 'export.raw'
@@ -20839,7 +20839,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: 'MK3 Warzone discovery/mount/inspect плюс modkit.opensource/warzone2100-wz-writer через common.edit/writer и atomic host Save As; installed source остаётся read-only'
+    replacementWorkflow: 'MK3 Warzone discovery/mount/inspect плюс wz2100project/warzone2100-wz-writer через common.edit/writer и atomic host Save As; installed source остаётся read-only'
     closedBy:
       commits:
         - 'd3580ea'
@@ -20871,7 +20871,7 @@ capabilities:
     mk3Contributions:
       - 'modkit/warzone-wz'
       - 'modkit/warzone2100-map'
-      - 'modkit.opensource/warzone2100-wz-writer'
+      - 'wz2100project/warzone2100-wz-writer'
     mk3Operations: []
     allocation:
       state: 'covered'
@@ -20912,7 +20912,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
-    replacementWorkflow: 'modkit.opensource/warzone2100-wz-writer применяет typed game.map writer, затем common ZIP preserving edit и сохраняет отдельный atomic .wz через host transaction'
+    replacementWorkflow: 'wz2100project/warzone2100-wz-writer применяет typed game.map writer, затем common ZIP preserving edit и сохраняет отдельный atomic .wz через host transaction'
     closedBy:
       commits:
         - '964099d'
@@ -20941,7 +20941,7 @@ capabilities:
       - 'read-source'
     mk3Contributions:
       - 'modkit/warzone-pie'
-      - 'modkit.opensource/warzone2100-map-semantic'
+      - 'wz2100project/warzone2100-map-semantic'
     mk3Operations: []
     allocation:
       state: 'covered'
@@ -21005,8 +21005,8 @@ capabilities:
     hostFacilities:
       - 'read-source'
     mk3Contributions:
-      - 'modkit.opensource/warzone2100-map-semantic'
-      - 'modkit.opensource/warzone2100-resolved-data'
+      - 'wz2100project/warzone2100-map-semantic'
+      - 'wz2100project/warzone2100-resolved-data'
     mk3Operations: []
     allocation:
       state: 'covered'

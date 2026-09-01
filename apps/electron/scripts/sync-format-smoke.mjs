@@ -39,15 +39,13 @@ function assertAuthorityShape(bytes, label) {
   )
   if (
     cases.length !== 14 ||
-    included.length !== 13 ||
-    exclusions.length !== 1 ||
-    exclusions[0]?.id !== 'document-odt' ||
-    namedExclusions.length !== 1 ||
-    namedExclusions[0]?.id !== 'document-odt' ||
+    included.length !== 14 ||
+    exclusions.length !== 0 ||
+    namedExclusions.length !== 0 ||
     pwaReadRandomRefusals.length !== 4
   ) {
     throw new TypeError(
-      `${label} must contain 13 included cases, one document-odt exclusion and four read-random refusals`,
+      `${label} must contain 14 included cases, no exclusions and four read-random refusals`,
     )
   }
   return { document, sha256: sha256(bytes), bytes: bytes.byteLength }

@@ -2,6 +2,11 @@ export { listFilesRecursive, loadExtensionDirectory } from './loader.js'
 export { openFileSource } from './file-source.js'
 export { openFileArtifactSource, type FileArtifactSourceOptions } from './file-artifact-source.js'
 export {
+  openDirectoryArtifactSource,
+  openPathArtifactSource,
+  type DirectoryArtifactSourceOptions,
+} from './directory-artifact-source.js'
+export {
   createFileEditingBackend,
   FILE_EDITING_BACKEND_CAPABILITY,
   type FileEditingBackend,

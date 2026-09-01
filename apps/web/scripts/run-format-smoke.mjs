@@ -71,7 +71,8 @@ const browserCases = authority.cases.filter(
   testCase =>
     testCase.runtime.pwa.kind === 'browser-subset' && testCase.corpus.kind !== 'named-exclusion',
 )
-if (browserCases.length !== 9) throw new Error('generated authority does not have 9 browser cases')
+if (browserCases.length !== 10)
+  throw new Error('generated authority does not have 10 browser cases')
 const hostOnlyCaseIds = new Set(
   authority.cases
     .filter(testCase => testCase.runtime.pwa.kind === 'host-facility-refusal')

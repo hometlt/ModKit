@@ -27,6 +27,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { parseCanonicalYaml } from './lib/canonical-yaml.mjs'
+import { normalizeIdentifier } from './lib/identity-migration.mjs'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const check = process.argv.includes('--check')
@@ -86,14 +87,18 @@ for (const name of readdirSync(rawDir).sort()) {
      * `packages/testkit/test/evidence.test.ts` exercises `proves()` with invented subjects — that is
      * its job, and those declarations reach this file like any other. Excluding it by name is the
      * honest reading: a fixture used to prove the mechanism works is not a claim about a codec.
-     */
+    */
     if (raw.test === 'packages/testkit/test/evidence.test.ts') continue
+    const contributionId =
+      raw.contributionId === undefined
+        ? undefined
+        : normalizeIdentifier(raw.contributionId, { family: 'qualified' }).value
     const targets =
       raw.capabilityId !== undefined
         ? [raw.capabilityId]
-        : (rowsByContribution.get(raw.contributionId) ?? [])
+        : (rowsByContribution.get(contributionId) ?? [])
     if (targets.length === 0) {
-      unresolved.add(raw.contributionId ?? raw.capabilityId)
+      unresolved.add(contributionId ?? raw.capabilityId)
       continue
     }
     for (const capabilityId of targets) {
@@ -104,7 +109,7 @@ for (const name of readdirSync(rawDir).sort()) {
         // the canonical Product-GA row, so the same assertion must not become a second proof just
         // because it also ran from the sibling repository checkout.
         test: canonicalTestPath(raw.test),
-        ...(raw.contributionId === undefined ? {} : { contributionId: raw.contributionId }),
+        ...(contributionId === undefined ? {} : { contributionId }),
         ...(raw.note === undefined ? {} : { note: raw.note }),
       }
       records.set(`${capabilityId} ${record.operation} ${record.test}`, record)

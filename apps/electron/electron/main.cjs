@@ -62,125 +62,6 @@ function readFormatSmokePlan() {
   return document
 }
 
-function normalizedNamespacePath(value) {
-  const text = String(value ?? '')
-    .replaceAll('\\', '/')
-    .replace(/^\/+/, '')
-  if (text.includes('\0') || text.split('/').some(part => part === '..') || path.isAbsolute(text)) {
-    throw new Error(`namespace path is outside the mounted root: ${value}`)
-  }
-  return text
-}
-
-function directorySnapshotRevision(stats) {
-  return `provider-token:${stats.dev}-${stats.ino}-${stats.size}-${BigInt(Math.trunc(Number(stats.mtimeMs) * 1_000_000))}`
-}
-
-function inventoryWithOnlyContribution(inventory, contributionId) {
-  const extensions = inventory.extensions.flatMap(extension => {
-    const contributions = extension.contributions.filter(
-      contribution => contribution.manifest?.id === contributionId,
-    )
-    return contributions.length === 0
-      ? []
-      : [Object.freeze({ ...extension, contributions: Object.freeze(contributions) })]
-  })
-  return Object.freeze({ ...inventory, extensions: Object.freeze(extensions) })
-}
-
-async function openDirectoryNamespaceSource(directory, openByteSource, ModkitError) {
-  const root = await fsp.realpath(directory)
-  const rootStats = await fsp.stat(root)
-  if (!rootStats.isDirectory()) {
-    throw new Error(`namespace source root is not a directory: ${directory}`)
-  }
-  const rootRef = Object.freeze({ id: pathToFileURL(root).href, uri: pathToFileURL(root).href })
-  const revision = directorySnapshotRevision(rootStats)
-  const resolveInside = async (logicalPath, requireExisting) => {
-    const normalized = normalizedNamespacePath(logicalPath)
-    const candidate = path.resolve(root, ...normalized.split('/').filter(Boolean))
-    let canonical
-    try {
-      canonical = await fsp.realpath(candidate)
-    } catch (error) {
-      if (!requireExisting && (error.code === 'ENOENT' || error.code === 'ENOTDIR')) {
-        return { normalized, canonical: undefined }
-      }
-      if (error.code === 'ENOENT' || error.code === 'ENOTDIR') {
-        throw new ModkitError({
-          code: 'x3.host/namespace-entry-not-found',
-          message: `namespace entry «${normalized}» does not exist`,
-          context: { path: normalized },
-        })
-      }
-      throw error
-    }
-    const relative = path.relative(root, canonical)
-    if (relative.startsWith('..') || path.isAbsolute(relative)) {
-      throw new Error(`namespace path is outside the mounted root: ${logicalPath}`)
-    }
-    return { normalized, canonical }
-  }
-  const namespaceAt = (prefix, ref, namespaceRevision) =>
-    Object.freeze({
-      kind: 'namespace',
-      ref,
-      revision: namespaceRevision,
-      async openNamespace(signal) {
-        const namespace = Object.freeze({
-          revision: namespaceRevision,
-          async *list(listPrefix, listSignal) {
-            if (listSignal?.aborted || signal?.aborted) throw new Error('operation aborted')
-            const base = prefix === '' ? listPrefix : `${prefix}/${listPrefix}`
-            const { normalized, canonical } = await resolveInside(base, true)
-            const stats = await fsp.stat(canonical)
-            if (!stats.isDirectory()) {
-              throw new Error(`namespace path is not a directory: ${listPrefix}`)
-            }
-            const entries = await fsp.readdir(canonical, { withFileTypes: true })
-            for (const entry of entries.sort((left, right) =>
-              left.name.localeCompare(right.name),
-            )) {
-              if (listSignal?.aborted || signal?.aborted) throw new Error('operation aborted')
-              const childPath = normalized === '' ? entry.name : `${normalized}/${entry.name}`
-              const child = await resolveInside(childPath, true)
-              const childStats = await fsp.stat(child.canonical)
-              yield Object.freeze({
-                path: childPath,
-                kind: childStats.isDirectory() ? 'directory' : 'file',
-                ...(childStats.isFile() ? { size: BigInt(childStats.size) } : {}),
-              })
-            }
-          },
-          async open(entryPath, openSignal) {
-            if (openSignal?.aborted || signal?.aborted) throw new Error('operation aborted')
-            const fullPath = prefix === '' ? entryPath : `${prefix}/${entryPath}`
-            const { normalized, canonical } = await resolveInside(fullPath, true)
-            const stats = await fsp.stat(canonical)
-            const childRef = Object.freeze({
-              id: `${rootRef.id}?vfs-path=${encodeURIComponent(normalized)}`,
-              uri: `${rootRef.uri}?vfs-path=${encodeURIComponent(normalized)}`,
-              parentIds: Object.freeze([rootRef.id]),
-            })
-            if (stats.isDirectory()) {
-              return Object.freeze({
-                value: namespaceAt(normalized, childRef, directorySnapshotRevision(stats)),
-                release: async () => undefined,
-              })
-            }
-            const value = await openByteSource(canonical, {
-              uri: childRef.uri,
-              ...(openSignal === undefined ? {} : { signal: openSignal }),
-            })
-            return Object.freeze({ value, release: async () => undefined })
-          },
-        })
-        return Object.freeze({ value: namespace, release: async () => undefined })
-      },
-    })
-  return namespaceAt('', rootRef, revision)
-}
-
 /*
  * R6: no method allowlists live here any more. The renderer speaks capability-RPC to a
  * per-window endpoint (see `exposeElectronSubjectRpc`); which methods exist on a session or a
@@ -190,7 +71,7 @@ async function openDirectoryNamespaceSource(directory, openByteSource, ModkitErr
 const MAXIMUM_SUBJECT_BYTES = 64 * 1024 * 1024
 const MAXIMUM_RANGE_BACKED_SUBJECT_BYTES = 256 * 1024 * 1024
 
-/* S7: the file adapter is the host's `openFileArtifactSource` (revision-checked reads). */
+/* S7/C1: the shared host adapter revision-checks files and confines bounded loose directories. */
 
 /**
  * Register this build for a set of file extensions.
@@ -296,7 +177,7 @@ async function createWindow() {
     resolveElectronPresentationPlan,
     createGrantedRoots,
     exposeElectronSubjectRpc,
-    openFileArtifactSource,
+    openPathArtifactSource,
     createFilesystemInputResolver,
     createNodeMapPreviewResourcePlanResolver,
     createFileEditingBackend,
@@ -312,7 +193,6 @@ async function createWindow() {
     readElectronManagedExtensionState,
     nestedSubjectServices,
     openNestedSubject,
-    ModkitError,
   } = await root
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
   const packagedCommonExtensions = path.join(__dirname, '..', 'dist-app', 'extensions')
@@ -526,6 +406,28 @@ async function createWindow() {
       mapPreviewResourcePlanResolver,
       configuration: effectiveConfiguration,
       localization,
+    }
+  }
+
+  /*
+   * A verification-only command-line stand-in for the Extensions page's Install action. It still
+   * uses the production signed catalog, digest verification, atomic managed store and the normal
+   * `composeFromSettings` path; no checkout root is injected into the subject services.
+   */
+  if (process.argv.includes('--selftest') && process.argv.includes('--directory-subject-only')) {
+    const packageIndex = process.argv.indexOf('--install-package')
+    const packageId = packageIndex === -1 ? undefined : process.argv[packageIndex + 1]
+    if (
+      packageId !== undefined &&
+      /^[a-z0-9]+(?:[.-][a-z0-9]+)*\/[a-z0-9]+(?:[.-][a-z0-9]+)*$/u.test(packageId)
+    ) {
+      await extensionManager.refresh()
+      const snapshot = await extensionManager.snapshot()
+      const installed = snapshot.entries.find(
+        entry => entry.id === packageId && entry.installedVersion !== undefined,
+      )
+      if (installed === undefined) await extensionManager.install(packageId)
+      console.log(`[main] selftest installed signed package ${packageId}`)
     }
   }
 
@@ -780,9 +682,11 @@ async function createWindow() {
     const mapSelection = parseElectronMapPreviewSelectionRequest(requestedPath)
     const file = roots.require(mapSelection?.path ?? requestedPath)
     const fileStats = await fsp.stat(file)
-    const source = fileStats.isDirectory()
-      ? await openDirectoryNamespaceSource(file, openFileArtifactSource, ModkitError)
-      : await openFileArtifactSource(file)
+    const source = await openPathArtifactSource(file, {
+      maxEntries: 1_000_000,
+      maxDepth: 256,
+      ...(signal === undefined ? {} : { signal }),
+    })
     /*
      * Whether this host can replace the file decides the *open grant*, not just the arm.
      *
@@ -837,10 +741,8 @@ async function createWindow() {
       id: `electron:${randomUUID()}`,
       classes: writable ? ['read-source', 'write-source'] : ['read-source'],
     }
+    if (fileStats.isDirectory()) console.log(`[main] directory subject probe started: ${file}`)
     const result = await subjectServices.open({
-      ...(fileStats.isDirectory()
-        ? { inventory: inventoryWithOnlyContribution(subjectServices.inventory, 'blizzard/casc') }
-        : {}),
       source,
       path: file,
       intent: 'full',
@@ -849,6 +751,9 @@ async function createWindow() {
       ...(resolveInput === undefined ? {} : { resolveInput }),
       ...(signal === undefined ? {} : { signal }),
     })
+    if (fileStats.isDirectory()) {
+      console.log(`[main] directory subject probe finished: ${file} -> ${result.state}`)
+    }
     if (result.state === 'unresolved') {
       /*
        * Why nothing claimed it, when the answer is "you switched that codec off".
@@ -891,16 +796,6 @@ async function createWindow() {
           diagnostics: [...switchedOff, ...result.diagnostics, ...companionDiagnostics],
         },
       }
-    }
-    if (
-      fileStats.isDirectory() &&
-      (result.selected.contributionId !== 'blizzard/casc' ||
-        result.descriptor.identity?.formatId !== 'casc')
-    ) {
-      await result.session.dispose()
-      throw new Error(
-        `directory subject support is confined to Blizzard CASC; selected ${result.selected.contributionId}`,
-      )
     }
     console.log(
       `[main] subject ${path.basename(file)} -> ${result.selected.contributionId}/` +
@@ -1355,6 +1250,7 @@ async function createWindow() {
         selfTest: process.argv.includes('--selftest'),
         selfTestPngOnly: process.argv.includes('--selftest-png'),
         selfTestFormatSmokeOnly: process.argv.includes('--format-smoke-only'),
+        selfTestDirectorySubject: process.argv.includes('--directory-subject-only'),
       }
     }
     const candidate = findInitialFileArgument(

@@ -21,7 +21,7 @@ import {
 } from '../subject-rpc.js'
 import { createCompanionInputResolver, createSignatureTraitProbe } from '../input-resolution.js'
 import { createFilesystemCompanionOrigin } from './companion-origin.js'
-import { openFileArtifactSource } from './file-artifact-source.js'
+import { openPathArtifactSource } from './directory-artifact-source.js'
 
 export interface PathSubjectOpenerOptions {
   readonly subjects: SubjectServices
@@ -109,7 +109,11 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
     if (roots.length === 0 || !inside(roots, path)) {
       throw new TypeError(`path is outside the granted roots`)
     }
-    const source = await openFileArtifactSource(path, signal === undefined ? {} : { signal })
+    const source = await openPathArtifactSource(path, {
+      maxEntries: budget.maxNodes,
+      maxDepth: budget.maxDepth,
+      ...(signal === undefined ? {} : { signal }),
+    })
     /*
      * The subject came from a real place on disk, and this opener is the last point that still
      * knows where: the directory it sits in, confined to the roots the product granted. That fact

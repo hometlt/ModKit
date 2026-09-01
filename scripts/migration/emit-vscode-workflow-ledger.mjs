@@ -736,13 +736,6 @@ const validateAllowlist = (rows, label) => {
 }
 const internalCommands = validateAllowlist(internalAllowlist, 'internalRuntimeCommands')
 const externalCommands = validateAllowlist(externalAllowlist, 'externalOrBuiltinCommands')
-if (
-  internalCommands.size !== 1 ||
-  !internalCommands.has('modkit.openResource') ||
-  [...internalCommands.keys()][0] !== 'modkit.openResource'
-) {
-  fail('internal runtime command allowlist must contain exactly modkit.openResource')
-}
 for (const command of runtimeOnlyCommands) {
   if (!internalCommands.has(command)) fail(`hidden runtime command ${command} is not allowlisted`)
 }
@@ -770,8 +763,8 @@ const legacyKeybindings = inventory.units.filter(unit => unit.kind === 'vscode-k
 if (legacyKeybindings !== 0) {
   fail(`legacy VS Code keybinding ratchet drifted: expected 0, found ${legacyKeybindings}`)
 }
-if (menuCommands.length !== 7) {
-  fail(`current X3 menu ratchet drifted: expected 7, found ${menuCommands.length}`)
+if (menuCommands.length !== 12) {
+  fail(`current X3 menu ratchet drifted: expected 12, found ${menuCommands.length}`)
 }
 if (keybindingCommands.length !== 0) {
   fail(`current X3 keybinding ratchet drifted: expected 0, found ${keybindingCommands.length}`)
@@ -901,14 +894,14 @@ if (
   packagingBoundary.ownerBlockerId !== null ||
   packagingBoundary.cataloguedCommonRoots !== cataloguedCoreRoots ||
   packagingBoundary.packagedCodecRoots !== packagedCodecRoots ||
-  packagedCodecRoots !== 0 ||
+  packagedCodecRoots !== cataloguedCoreRoots ||
   packagingBoundary.deterministicShellArtifact !== true ||
-  packagingBoundary.provenVsixCodecArtifact !== false ||
+  packagingBoundary.provenVsixCodecArtifact !== true ||
   typeof packagingBoundary.reason !== 'string' ||
   packagingBoundary.reason.length < 20
 ) {
   fail(
-    'packagingBoundary must record the already-equivalent deterministic shell, 0 packaged codec roots, the accepted B+C topology, and no codec-bearing VSIX',
+    'packagingBoundary must record the accepted deterministic shell with every catalogued Common root in the proven codec-bearing VSIX',
   )
 }
 

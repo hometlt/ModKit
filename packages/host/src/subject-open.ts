@@ -314,9 +314,15 @@ function errorDiagnostic(code: string, message: string, error?: unknown): Diagno
 }
 
 function caughtDiagnostic(stage: string, error: unknown): Diagnostic {
+  const detail = error instanceof Error ? error.message : String(error)
+  // A foreign error has already crossed an execution boundary without a domain code. At this
+  // layer the missing operation is known, so retaining only `rpc-foreign-error` would hide the
+  // actionable step from every app surface. Preserve genuinely typed Modkit errors; re-type only
+  // this transport fallback as the subject stage that failed.
+  const typed = isModkitError(error) && error.code !== 'x3.host/rpc-foreign-error'
   return errorDiagnostic(
-    isModkitError(error) ? error.code : `x3.host/subject-${stage}-failed`,
-    isModkitError(error) ? error.message : `subject ${stage} failed closed`,
+    typed ? error.code : `x3.host/subject-${stage}-failed`,
+    typed ? error.message : `subject ${stage} failed closed: ${detail}`,
     error,
   )
 }
@@ -338,8 +344,14 @@ function matchesGlob(path: string, glob: string): boolean {
     const character = glob[index]
     if (character === '*') {
       if (glob[index + 1] === '*') {
-        pattern += '.*'
-        index += 1
+        if (glob[index + 2] === '/') {
+          // `**/name` means "at any depth", including the subject root itself.
+          pattern += '(?:.*/)?'
+          index += 2
+        } else {
+          pattern += '.*'
+          index += 1
+        }
       } else {
         pattern += '[^/]*'
       }
@@ -361,7 +373,9 @@ function matchesSpec(spec: CodecContributionSpecV1Wire, path: string, mediaType?
   const mediaMatch =
     mediaType !== undefined &&
     (spec.match.mediaTypes ?? []).some(candidate => candidate === mediaType)
-  const pathMatch = (spec.match.pathGlobs ?? []).some(glob => matchesGlob(normalizedPath, glob))
+  const pathMatch = (spec.match.pathGlobs ?? []).some(glob =>
+    matchesGlob(normalizedPath, glob.toLocaleLowerCase()),
+  )
   const declaresMatch =
     (spec.match.extensions?.length ?? 0) > 0 ||
     (spec.match.mediaTypes?.length ?? 0) > 0 ||

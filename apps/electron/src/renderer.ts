@@ -112,6 +112,7 @@ interface HostBridge {
     readonly selfTest?: boolean
     readonly selfTestPngOnly?: boolean
     readonly selfTestFormatSmokeOnly?: boolean
+    readonly selfTestDirectorySubject?: boolean
   }>
   registerFileTypes(extensions: readonly string[]): Promise<{ readonly message: string }>
   confirmClose(name: string): Promise<'save' | 'discard' | 'cancel'>
@@ -1360,6 +1361,9 @@ async function boot(): Promise<void> {
           : { formatSmokePlan: profile.formatSmokePlan }),
         pngOnly: initial.selfTestPngOnly === true,
         formatSmokeOnly: initial.selfTestFormatSmokeOnly === true,
+        ...(initial.selfTestDirectorySubject === true && initial.root !== undefined
+          ? { directorySubjectPath: initial.root }
+          : {}),
       })
     }
   }
@@ -1438,8 +1442,48 @@ async function selfTest(options: {
   readonly pngOnly?: boolean
   /** Run only the exact generated format-smoke acceptance, not legacy late probes. */
   readonly formatSmokeOnly?: boolean
+  /** Open this loose directory itself through the real Electron subject RPC and stop. */
+  readonly directorySubjectPath?: string
 }): Promise<void> {
   const { access, preview, editors, settingsRoot, inspector } = options
+  if (options.directorySubjectPath !== undefined) {
+    const entry: ExplorerEntry = {
+      id: options.directorySubjectPath,
+      name: access.label,
+      directory: true,
+    }
+    const opened = await options.openProductParent(entry)
+    try {
+      const record = options.subjectRecordFor(entry.id)
+      if (record === undefined) throw new Error(`directory subject did not open: ${entry.id}`)
+      const identity = record.descriptor['identity']
+      const codecId =
+        typeof identity === 'object' &&
+        identity !== null &&
+        'codecId' in identity &&
+        typeof identity.codecId === 'string'
+          ? identity.codecId
+          : undefined
+      const origin = record.descriptor['origin']
+      const originKind =
+        typeof origin === 'object' &&
+        origin !== null &&
+        'kind' in origin &&
+        typeof origin.kind === 'string'
+          ? origin.kind
+          : undefined
+      if (codecId === undefined || originKind !== 'namespace') {
+        throw new Error(`directory subject has no namespace codec receipt: ${entry.id}`)
+      }
+      console.log(
+        `selftest: directory-subject ${JSON.stringify({ path: entry.id, codecId, originKind })}`,
+      )
+    } finally {
+      await opened.dispose()
+    }
+    console.log('selftest: done')
+    return
+  }
   const entries = await access.list(undefined)
   console.log(`selftest: ${entries.length} entries in ${access.label}`)
   console.log(`selftest: supported extensions ${preview.supported.join(', ')}`)

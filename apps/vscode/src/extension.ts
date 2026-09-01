@@ -344,12 +344,8 @@ function readPackagedFormatSmoke(extensionRoot: string): {
     throw new TypeError(`format smoke authority case order is ${JSON.stringify(ids)}`)
   }
   const exclusions = parsed.namedExclusions
-  if (
-    !Array.isArray(exclusions) ||
-    exclusions.length !== 1 ||
-    formatSmokeObject(exclusions[0], 'format smoke exclusion').id !== 'document-odt'
-  ) {
-    throw new TypeError('format smoke authority must contain only document-odt as an exclusion')
+  if (!Array.isArray(exclusions) || exclusions.length !== 0) {
+    throw new TypeError('format smoke authority must contain no exclusions')
   }
   return Object.freeze({
     authority: parsed as unknown as FormatSmokeAuthority,
@@ -1943,12 +1939,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       (entry): entry is FormatSmokeExcludedCase => entry.kind === 'excluded',
     )
     const openCases = cases.filter((entry): entry is FormatSmokeOpenCase => entry.kind === 'open')
-    if (
-      openCases.length !== 13 ||
-      exclusions.length !== 1 ||
-      exclusions[0]?.id !== 'document-odt'
-    ) {
-      throw new TypeError('format smoke must contain 13 opens and the sole document-odt exclusion')
+    if (openCases.length !== 14 || exclusions.length !== 0) {
+      throw new TypeError('format smoke must contain 14 opens and no exclusions')
     }
     const startPath = formatSmokeControlPath(FORMAT_SMOKE_START_ENV)
     const ackPath = formatSmokeControlPath(FORMAT_SMOKE_ACK_ENV)

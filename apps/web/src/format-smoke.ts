@@ -338,24 +338,13 @@ export function validatePwaFormatSmokeAuthority(value: unknown): FormatSmokeAuth
   )
   const refusedCases = cases.filter(entry => entry.runtime.pwa.kind === 'host-facility-refusal')
   const excludedCases = cases.filter(entry => entry.corpus.kind === 'named-exclusion')
-  if (browserCases.length !== 9 || refusedCases.length !== 4 || excludedCases.length !== 1) {
+  if (browserCases.length !== 10 || refusedCases.length !== 4 || excludedCases.length !== 0) {
     throw new TypeError(
-      'format smoke authority must contain 9 browser cases, 4 refusals and 1 exclusion',
+      'format smoke authority must contain 10 browser cases, 4 refusals and no exclusions',
     )
   }
-  if (
-    excludedCases[0]?.id !== 'document-odt' ||
-    !Array.isArray(input['namedExclusions']) ||
-    input['namedExclusions'].length !== 1
-  ) {
-    throw new TypeError('document-odt must be the one named exclusion')
-  }
-  const namedExclusion = object(input['namedExclusions'][0], 'namedExclusions[0]')
-  if (
-    namedExclusion['id'] !== 'document-odt' ||
-    namedExclusion['reason'] !== excludedCases[0].corpus.reason
-  ) {
-    throw new TypeError('document-odt exclusion does not match namedExclusions')
+  if (!Array.isArray(input['namedExclusions']) || input['namedExclusions'].length !== 0) {
+    throw new TypeError('format smoke authority must contain no named exclusions')
   }
   const generatedFrom = object(input['generatedFrom'], 'generatedFrom')
   const bundledCatalog = object(generatedFrom['bundledCatalog'], 'generatedFrom.bundledCatalog')
@@ -411,12 +400,7 @@ export function validatePwaFormatSmokeAuthority(value: unknown): FormatSmokeAuth
       codecContributionCount: Number(contributionCount),
     }),
     cases: Object.freeze(cases),
-    namedExclusions: Object.freeze([
-      Object.freeze({
-        id: 'document-odt',
-        reason: nonBlank(namedExclusion['reason'], 'exclusion reason'),
-      }),
-    ]),
+    namedExclusions: Object.freeze([]),
   })
 }
 

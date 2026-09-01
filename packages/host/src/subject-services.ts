@@ -15,7 +15,7 @@
 
 import { compareUtf8, ModkitError, type Diagnostic } from '@modkit/core'
 import type {
-  ArtifactByteSource,
+  ArtifactSource,
   DefinitionInventoryResult,
   HostPolicy,
   OpenIntent,
@@ -61,7 +61,7 @@ import { openSubject, type OpenSubjectResult, type SubjectInputResolver } from '
 
 /** One open request as the products issue it; `probe` is the host's own two-phase step. */
 export interface SubjectOpenRequest {
-  readonly source: ArtifactByteSource
+  readonly source: ArtifactSource
   readonly path: string
   readonly mediaType?: string
   readonly intent: Exclude<OpenIntent, 'probe'>

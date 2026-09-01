@@ -2,7 +2,6 @@ const AUTHORITY_KIND = 'x3.ga-recovery/format-family-smoke'
 const RECEIPT_KIND = 'x3.electron/format-smoke-acceptance'
 const FACILITY_REFUSAL_CODE = 'x3.host/facility-unavailable'
 const READ_RANDOM_FACILITY = 'filesystem.read-random'
-const ODT_EXCLUSION = 'document-odt'
 
 type JsonRecord = Readonly<Record<string, unknown>>
 
@@ -229,13 +228,11 @@ export function summarizeElectronFormatSmokeAuthority(authority: unknown) {
   const commonRoots = document.generatedFrom.bundledCatalog?.roots ?? []
   if (
     document.cases.length !== 14 ||
-    included.length !== 13 ||
-    excluded.length !== 1 ||
-    excluded[0]?.id !== ODT_EXCLUSION ||
-    document.namedExclusions.length !== 1 ||
-    document.namedExclusions[0]?.id !== ODT_EXCLUSION
+    included.length !== 14 ||
+    excluded.length !== 0 ||
+    document.namedExclusions.length !== 0
   ) {
-    throw new TypeError('format-smoke authority must have 13 included cases and one ODT exclusion')
+    throw new TypeError('format-smoke authority must have 14 included cases and no exclusions')
   }
   if (
     packageIds.length !== 2 ||
@@ -348,7 +345,7 @@ export function buildElectronFormatSmokeReceipt(
     const timedOutEdit = observed?.editFallback?.code === 'x3.electron/edit-arm-timeout'
     const caseFailures: string[] = []
     if (item.corpus.kind === 'named-exclusion') {
-      if (item.id !== ODT_EXCLUSION) caseFailures.push('unexpected-named-exclusion')
+      caseFailures.push('unexpected-named-exclusion')
     } else {
       if (plannedCase === undefined) caseFailures.push('case-not-planned')
       if (observed === undefined) caseFailures.push('case-not-opened')

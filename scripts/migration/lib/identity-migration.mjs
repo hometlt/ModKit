@@ -47,6 +47,20 @@ export const IDENTITY_MIGRATION_RULES = Object.freeze([
     to: 'wz2100project/warzone-2100',
   }),
   Object.freeze({
+    id: 'vendor-contribution:legacy-warzone-2100',
+    family: 'qualified',
+    kind: 'prefix',
+    from: 'org.modkitx.opensource/warzone2100-',
+    to: 'wz2100project/warzone2100-',
+  }),
+  Object.freeze({
+    id: 'vendor-contribution:intermediate-warzone-2100',
+    family: 'qualified',
+    kind: 'prefix',
+    from: 'modkit.opensource/warzone2100-',
+    to: 'wz2100project/warzone2100-',
+  }),
+  Object.freeze({
     id: 'vendor-publisher:blizzard',
     family: 'qualified',
     kind: 'prefix',

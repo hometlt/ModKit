@@ -348,10 +348,17 @@ async function mount(
         }
       }
       if (result.state === 'unresolved') {
+        const failure =
+          result.snapshot.diagnostics.find(item => item.severity === 'error') ??
+          result.snapshot.diagnostics[0]
+        const reason =
+          failure === undefined
+            ? result.snapshot.reason
+            : `${result.snapshot.reason}; ${failure.code}: ${failure.message}`
         say(
           localizer.text('vscode.webview.noCodecClaimed', {
             name: entry.name,
-            reason: result.snapshot.reason,
+            reason,
           }),
         )
         subjects.delete(entry.id)

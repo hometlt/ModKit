@@ -32,6 +32,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { format, resolveConfig } from 'prettier'
+import { normalizeIdentifier } from './lib/identity-migration.mjs'
 
 const repoRoot = path.resolve(fileURLToPath(new URL('../..', import.meta.url)))
 const lockPath = path.join(repoRoot, 'migration/oracle/legacy-oracle.lock.json')
@@ -131,7 +132,21 @@ function legacyFile(relative) {
 }
 
 function readLegacyJson(relative) {
-  return JSON.parse(readFileSync(legacyFile(relative), 'utf8'))
+  const normalizeLegacyValue = value => {
+    if (Array.isArray(value)) return value.map(normalizeLegacyValue)
+    if (value !== null && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, item]) => [key, normalizeLegacyValue(item)]),
+      )
+    }
+    if (typeof value !== 'string') return value
+    let normalized = value
+    for (const family of ['package', 'qualified', 'source']) {
+      normalized = normalizeIdentifier(normalized, { family }).value
+    }
+    return normalized
+  }
+  return normalizeLegacyValue(JSON.parse(readFileSync(legacyFile(relative), 'utf8')))
 }
 
 // ---------------------------------------------------------------------------------------------

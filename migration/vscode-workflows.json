@@ -341,6 +341,13 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.extensions.completeGameSupport",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.completeGameSupport",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.extensions.disable",
       "kind": "vscode-command",
       "key": "modkit.extensions.disable",
@@ -397,6 +404,13 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.extensions.installGameSupport",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.installGameSupport",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.extensions.openContribution",
       "kind": "vscode-command",
       "key": "modkit.extensions.openContribution",
@@ -421,6 +435,20 @@
       "factId": "x3:vscode-command:modkit.extensions.remove",
       "kind": "vscode-command",
       "key": "modkit.extensions.remove",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.extensions.removeGameSupport",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.removeGameSupport",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-command:modkit.extensions.removeVendorSupport",
+      "kind": "vscode-command",
+      "key": "modkit.extensions.removeVendorSupport",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
@@ -572,6 +600,13 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.completeGameSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionComponent.game.partial/inline%401",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.completeGameSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionComponent.game.partial/inline%401",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.disableAllCodecs//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C..*%5C.codecs%5C.enabled%24%2F/inline%401",
       "kind": "vscode-menu-item",
       "key": "view%2Fitem%2Fcontext/modkit.extensions.disableAllCodecs//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C..*%5C.codecs%5C.enabled%24%2F/inline%401",
@@ -600,9 +635,23 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.install//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtension.available/inline%401",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.install//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtension.available/inline%401",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.installAll//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionGroup.available/inline%401",
       "kind": "vscode-menu-item",
       "key": "view%2Fitem%2Fcontext/modkit.extensions.installAll//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionGroup.available/inline%401",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.installGameSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionComponent.game.available/inline%401",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.installGameSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionComponent.game.available/inline%401",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
@@ -614,9 +663,37 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.removeGameSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionComponent.game.installed.mutable/inline%401",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.removeGameSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionComponent.game.installed.mutable/inline%401",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.removeVendorSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionVendor.installed.mutable/inline%401",
+      "kind": "vscode-menu-item",
+      "key": "view%2Fitem%2Fcontext/modkit.extensions.removeVendorSupport//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D%3D%20modkitExtensionVendor.installed.mutable/inline%401",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-menu-item:view%2Fitem%2Fcontext/modkit.extensions.update//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C.mutable%5C.update(%3F%3A%5C.%7C%24)%2F/inline%401",
       "kind": "vscode-menu-item",
       "key": "view%2Fitem%2Fcontext/modkit.extensions.update//view%20%3D%3D%20modkit.extensions%20%26%26%20viewItem%20%3D~%20%2F%5EmodkitExtension%5C.installed%5C.mutable%5C.update(%3F%3A%5C.%7C%24)%2F/inline%401",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-runtime-only-command:modkit.extensions.openGame",
+      "kind": "vscode-runtime-only-command",
+      "key": "modkit.extensions.openGame",
+      "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-runtime-only-command:modkit.extensions.openVendor",
+      "kind": "vscode-runtime-only-command",
+      "key": "modkit.extensions.openVendor",
       "workflowId": "vscode/source-workspace-lifecycle",
       "state": "observed-only"
     },
@@ -652,6 +729,14 @@
   "commandAllowlists": {
     "internalRuntimeCommands": [
       {
+        "commandId": "modkit.extensions.openGame",
+        "reason": "Internal tree action for opening a discovered game source; it is intentionally absent from the public command palette."
+      },
+      {
+        "commandId": "modkit.extensions.openVendor",
+        "reason": "Internal tree action for opening a publisher subject card; it is intentionally absent from the public command palette."
+      },
+      {
         "commandId": "modkit.openResource",
         "reason": "Internal URI bridge invoked by the container and resource-opening paths; it is intentionally absent from the public command palette."
       }
@@ -663,10 +748,10 @@
     "state": "already-equivalent",
     "ownerBlockerId": null,
     "cataloguedCommonRoots": 8,
-    "packagedCodecRoots": 0,
+    "packagedCodecRoots": 8,
     "deterministicShellArtifact": true,
-    "provenVsixCodecArtifact": false,
-    "reason": "The accepted B plus C topology keeps the deterministic VSIX as an 8-root common shell; code, scene and UV are built-in product modules, while publisher codecs install separately through extension management."
+    "provenVsixCodecArtifact": true,
+    "reason": "The accepted Wave 1A package route keeps the deterministic VSIX shell and embeds all eight catalogued Common codec roots; publisher codecs remain separately managed signed packages."
   },
   "workflows": [
     {
