@@ -149,7 +149,7 @@ function materialized(entry: ExtensionCatalogCandidate): InstalledExtensionRecor
   })
 }
 
-function fixture() {
+function fixture(options: { readonly staticPackages?: readonly StaticExtensionPackage[] } = {}) {
   let packages: InstalledExtensionRecord[] = [alphaV2, beta]
   let enablement = [
     { id: alphaV2.id, enabled: false },
@@ -232,6 +232,7 @@ function fixture() {
         },
       },
     },
+    ...(options.staticPackages ?? []),
   ])
   const client = createVsCodeExtensionManagerClient({
     client: shared,
@@ -478,6 +479,36 @@ describe('VS Code extension manager state', () => {
     await expect(state.client.setEnabled('example/workspace-codec', false)).rejects.toThrow(
       'cannot be changed here',
     )
+    expect(state.writes).toEqual([])
+  })
+
+  it('allows reinstall when a stale static row came from runtime managed package composition', async () => {
+    const state = fixture({
+      staticPackages: [
+        {
+          entry: {
+            id: alphaV2.id,
+            displayName: alphaV2.displayName,
+            publisher: alphaV2.publisher,
+            availableVersion: 'local',
+            installedVersion: 'local',
+            enabled: false,
+            updateAvailable: false,
+            source: `managed:${alphaV2.id}`,
+            trusted: true,
+          },
+        },
+      ],
+    })
+
+    await state.client.remove(alphaV2.id)
+    expect(state.packages().some(item => item.id === alphaV2.id)).toBe(false)
+
+    await state.client.install(alphaV2.id)
+    expect(state.packages().find(item => item.id === alphaV2.id)).toMatchObject({
+      id: alphaV2.id,
+      version: '3.0.0',
+    })
     expect(state.writes).toEqual([])
   })
 

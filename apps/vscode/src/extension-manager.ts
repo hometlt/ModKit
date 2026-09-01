@@ -104,8 +104,10 @@ export function createVsCodeExtensionManagerClient(
   options: CreateVsCodeExtensionManagerClientOptions,
 ): GameSupportExtensionManagerClient {
   const staticPackages = (): readonly StaticExtensionPackage[] => options.staticPackages?.() ?? []
+  const immutableStaticPackage = (entry: StaticExtensionPackage): boolean =>
+    !entry.entry.source.startsWith('managed:')
   const staticPackage = (id: string): StaticExtensionPackage | undefined =>
-    staticPackages().find(entry => entry.entry.id === id)
+    staticPackages().find(entry => entry.entry.id === id && immutableStaticPackage(entry))
 
   /**
    * A build/workspace/settings row can declare support for a game even though it does not exist
@@ -133,6 +135,7 @@ export function createVsCodeExtensionManagerClient(
     )
     return new Set(
       staticPackages()
+        .filter(immutableStaticPackage)
         .map(item => item.entry.id)
         .filter(id => !managed.has(id)),
     )
