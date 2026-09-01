@@ -1365,6 +1365,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
    * announcement — otherwise the second archive is reported as a workspace that refused it.
    */
   let workspaceFolderMutation: Promise<unknown> = Promise.resolve()
+  let workspaceFolderAnnouncements = 0
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      workspaceFolderAnnouncements += 1
+    }),
+  )
   const addContainerWorkspaceFolder = (
     folder: vscode.Uri,
     name: string,
@@ -2585,6 +2591,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
               workspaceEffect: browseResult.workspaceEffect,
               folder:
                 browseResult.folder instanceof vscode.Uri ? 'uri' : typeof browseResult.folder,
+              workspaceFolderAnnouncements,
+              workspaceFolders: (vscode.workspace.workspaceFolders ?? []).map(item =>
+                item.uri.scheme === CONTAINER_SCHEME
+                  ? `${CONTAINER_SCHEME}:${item.name}`
+                  : item.uri.scheme,
+              ),
             }),
         )
       }
