@@ -249,7 +249,10 @@ describe('the Explorer can be answered from inside a container', () => {
         },
         dispose: async () => undefined,
       }),
-      events: () => (async function* () {})(),
+      events: () =>
+        (async function* () {
+          /* this stand-in session publishes no events */
+        })(),
       dispose: vi.fn(async () => {
         disposed = true
       }),
@@ -427,7 +430,10 @@ describe('the Explorer can be answered from inside a container', () => {
       descriptor: async () => descriptor,
       dataSource: async () => ({ value: namespace, release: async () => undefined }),
       operations: () => ({ dispose: async () => undefined }),
-      events: () => (async function* () {})(),
+      events: () =>
+        (async function* () {
+          /* this stand-in session publishes no events */
+        })(),
       dispose: vi.fn(async () => {
         disposed = true
       }),

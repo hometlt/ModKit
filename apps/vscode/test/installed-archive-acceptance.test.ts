@@ -347,9 +347,11 @@ describe('installed Wave 2A archive acceptance receipt', () => {
     const nested = passingReceipt()
     const nestedCase = nested.cases.find(item => item.caseId === 'wz-pie-nested-open')
     if (nestedCase === undefined) throw new TypeError('fixture omitted WZ nested open')
-    ;(
+    const nestedChildStep = (
       nestedCase.evidence as { selectedRoute: { formatId: string; contributionId: string }[] }
-    ).selectedRoute[1]!.contributionId = 'fixture/not-the-pie-codec'
+    ).selectedRoute[1]
+    if (nestedChildStep === undefined) throw new TypeError('fixture omitted the nested WZ step')
+    nestedChildStep.contributionId = 'fixture/not-the-pie-codec'
     expect(() => assertInstalledArchiveAcceptanceReceipt(nested)).toThrow(/nested product route/u)
   })
 
@@ -397,7 +399,7 @@ describe('installed Wave 2A archive acceptance receipt', () => {
         externalProcessTreeMemory: {
           stopAcknowledgement: {
             sampleCount: number
-            samples: Array<{ timestampMs: number }>
+            samples: { timestampMs: number }[]
             observedCadence: {
               intervalCount: number
               minIntervalMs: number
@@ -441,7 +443,7 @@ describe('installed Wave 2A archive acceptance receipt', () => {
       slowTarget.evidence as {
         externalProcessTreeMemory: {
           stopAcknowledgement: {
-            samples: Array<{ timestampMs: number }>
+            samples: { timestampMs: number }[]
             observedCadence: {
               intervalCount: number
               minIntervalMs: number
@@ -452,9 +454,17 @@ describe('installed Wave 2A archive acceptance receipt', () => {
         }
       }
     ).externalProcessTreeMemory.stopAcknowledgement
-    slowStop.samples[0]!.timestampMs = 1_000
-    slowStop.samples[1]!.timestampMs = 17_000
-    slowStop.samples[2]!.timestampMs = 33_000
+    const [firstSlowSample, secondSlowSample, thirdSlowSample] = slowStop.samples
+    if (
+      firstSlowSample === undefined ||
+      secondSlowSample === undefined ||
+      thirdSlowSample === undefined
+    ) {
+      throw new TypeError('fixture omitted the three slow ARmod samples')
+    }
+    firstSlowSample.timestampMs = 1_000
+    secondSlowSample.timestampMs = 17_000
+    thirdSlowSample.timestampMs = 33_000
     slowStop.observedCadence = {
       intervalCount: 2,
       minIntervalMs: 16_000,
