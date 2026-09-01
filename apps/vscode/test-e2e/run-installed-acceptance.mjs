@@ -169,15 +169,27 @@ const archiveCorruptAuthorities = Object.freeze({
     formatId: 'warzone-wz',
   }),
 })
+/*
+ * The harness keeps its own copy of the ARmod authority on purpose: it is the independent observer,
+ * and reading the product's constant would make it agree with the product by construction. Keep it
+ * in step with `apps/vscode/src/installed-archive-acceptance.ts` by hand.
+ */
 const armodInstalledAuthority = Object.freeze({
   extensionId: 'wz2100project/warzone-2100',
   contributionId: 'modkit/warzone-wz',
-  variantId: 'trusted-node',
+  // The installed editor runs codecs worker-brokered, so it selects `portable`, not `trusted-node`.
+  variantId: 'portable',
   entrypoint: './src/warzone-wz/range-codec.js',
   manifestDigest: 'sha256:9f09effbbae1ee1e9755619cc250085dd5581cee395154d4f44d21055d733d20',
-  artifactDigest: 'sha256:f68011827cbc50bff184910c78776c6ffae39d4607f2827c77d6af7782556db9',
+  artifactDigest: 'sha256:0cdc351d13ee42fc6487a6d85226d93ea15aa4006148aa4edd40cfee5f61805c',
   installedManifestSha256:
-    'sha256:777d236663780b6f327e60bd014be9eab09a3efb7921c2a1353c0bf84255f306',
+    'sha256:231e2d27c9168bb5f8b7254a5ee04b8c2696591eae2bef4e6e3ecef7c2091286',
+  metadataIo: Object.freeze({
+    readCount: 5,
+    bytes: 65_849,
+    maxReadBytes: 65_557,
+    streamCount: 0,
+  }),
 })
 // ARmod's installed route is metadata-first (65,557 bytes from a 102 MB archive). This permits
 // normal VS Code tree scheduling without permitting an unbounded full-archive materialization.
@@ -1083,10 +1095,10 @@ function assertExactArchiveEvidence(archiveCases) {
     armod?.inspection?.inspectionMode !== 'metadata-first-range' ||
     armod?.inspection?.sourceBytes !== '102362635' ||
     armod?.inspection?.metadataBytesRead !== 65_557 ||
-    armod?.metadataIo?.readCount !== 8 ||
-    armod?.metadataIo?.bytes !== 70_978 ||
-    armod?.metadataIo?.maxReadBytes !== 65_557 ||
-    armod?.metadataIo?.streamCount !== 0 ||
+    armod?.metadataIo?.readCount !== armodInstalledAuthority.metadataIo.readCount ||
+    armod?.metadataIo?.bytes !== armodInstalledAuthority.metadataIo.bytes ||
+    armod?.metadataIo?.maxReadBytes !== armodInstalledAuthority.metadataIo.maxReadBytes ||
+    armod?.metadataIo?.streamCount !== armodInstalledAuthority.metadataIo.streamCount ||
     externalMemoryStart?.kind !== 'x3.vscode-installed-archive-acceptance-ack' ||
     externalMemoryStart?.schemaVersion !== 1 ||
     externalMemoryStart?.artifactSha256 !== receipt.artifact.sha256 ||
@@ -1125,7 +1137,18 @@ function assertExactArchiveEvidence(archiveCases) {
     armod.extensionHostRss.deltaBytes > armod.extensionHostRss.deltaCeilingBytes
   ) {
     throw new Error(
-      'Wave 2A ARmod route/metadata/I/O/external-process-tree memory evidence differs from its exact authority',
+      'Wave 2A ARmod route/metadata/I/O/external-process-tree memory evidence differs from its ' +
+        `exact authority: ${JSON.stringify({
+          selected: armod?.selected,
+          selectedDetection: armod?.selectedDetection,
+          installedManifestSha256: armod?.installedManifestSha256,
+          entrypoint: armod?.entrypoint,
+          inspection: armod?.inspection,
+          metadataIo: armod?.metadataIo,
+          externalMemoryStopVerdict: externalMemoryStop?.verdict,
+          externalMemorySampleCount: externalMemoryStop?.sampleCount,
+          extensionHostRss: armod?.extensionHostRss,
+        })}`,
     )
   }
 }
