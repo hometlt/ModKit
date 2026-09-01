@@ -21,7 +21,9 @@
   "scripts": {
     "contributes:emit": "node scripts/generate-contributes.mjs",
     "contributes:check": "node scripts/generate-contributes.mjs --check",
-    "ext:build": "node scripts/build-extension.mjs",
+    "format-smoke:emit": "node scripts/emit-format-smoke.mjs",
+    "format-smoke:check": "node scripts/emit-format-smoke.mjs --check",
+    "ext:build": "pnpm format-smoke:check && node scripts/build-extension.mjs",
     "prepack": "pnpm ext:build",
     "vscode:prepublish": "pnpm ext:build",
     "package:vsix": "node scripts/package-vsix.mjs",

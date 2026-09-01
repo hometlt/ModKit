@@ -14,3 +14,9 @@ packages/testkit/test/fixtures/mk2-synthetic/minimal.vsd binary
 packages/testkit/test/fixtures/mk2-synthetic/minimal.vsdx binary
 packages/testkit/test/fixtures/mk2-synthetic/minimal.psd binary
 packages/testkit/test/fixtures/mk2-synthetic/minimal.blend binary
+# Immutable offline extension artifacts are hashed byte-for-byte by the signed release catalog.
+# Never apply checkout newline translation to their JSON payloads on Windows.
+packages/extension-manager/generated/offline-release/*.bundle.json binary
+packages/extension-manager/generated/offline-release/catalog.v1.json -text
+packages/extension-manager/generated/offline-release/release.v1.json -text
+/packages/extension-manager/generated/offline-release/blizzard-starcraft2-suite-0.1.0.bundle.json filter=lfs diff=lfs merge=lfs -text

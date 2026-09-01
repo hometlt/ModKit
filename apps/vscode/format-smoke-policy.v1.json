@@ -1,0 +1,203 @@
+{
+  "$comment": "Source policy for the Wave 1B generated format-family smoke. This file names the owner-ratified format ids and reproducible external-corpus locators, never contribution ids. scripts/emit-format-smoke.mjs resolves the contribution route from the exact Common and signed managed-package inventories.",
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "image-dds",
+      "family": "images",
+      "formatIds": ["dds"],
+      "stage": "raster",
+      "corpus": {
+        "kind": "workspace-reference",
+        "path": "references/OpenSAGE.BlenderPlugin/tests/testfiles/texture.dds",
+        "bytes": 8320,
+        "sha256": "96755da26e3c5e03e1f9cd3defed6de6eeb267be467643ff2ee8295b579e7ae0"
+      },
+      "pwa": { "kind": "browser-subset" }
+    },
+    {
+      "id": "image-png",
+      "family": "images",
+      "formatIds": ["png"],
+      "stage": "raster",
+      "corpus": {
+        "kind": "workspace-reference",
+        "path": "references/vscode-sc2-galaxy-master/icon.png",
+        "bytes": 19938,
+        "sha256": "c3bb4668636d3d83fa9dc8f9ef68d4f1a51c4eb714bf7f6b47377b27a0da4c07"
+      },
+      "pwa": { "kind": "browser-subset" }
+    },
+    {
+      "id": "image-tga",
+      "family": "images",
+      "formatIds": ["tga"],
+      "stage": "raster",
+      "corpus": {
+        "kind": "workspace-reference",
+        "path": "references/plaxtony/tests/fixtures/sc2-map.SC2Map/Minimap.tga",
+        "bytes": 12332,
+        "sha256": "58b3751eabd0b61146411cdb169447e771e4f1aaa854c79ed52a02339510601e"
+      },
+      "pwa": { "kind": "browser-subset" }
+    },
+    {
+      "id": "image-jpeg",
+      "family": "images",
+      "formatIds": ["jpeg"],
+      "stage": "raster",
+      "corpus": {
+        "kind": "workspace-reference",
+        "path": "references/OpenSAGE.BlenderPlugin/art/AotR_Umbar_Buildings.jpg",
+        "bytes": 4338408,
+        "sha256": "d2505eb8dc21d9d465ead9818d0ceef25c500f4eec711cbdb1e8edfaabf914b3"
+      },
+      "pwa": { "kind": "browser-subset" }
+    },
+    {
+      "id": "document-odt",
+      "family": "document-data",
+      "formatIds": ["odt"],
+      "stage": "tree-text",
+      "corpus": {
+        "kind": "named-exclusion",
+        "reason": "No real ODT exists in the owner-declared local corpora on 2026-09-01; synthetic ZIP fixtures are not substituted for A8."
+      },
+      "pwa": { "kind": "browser-subset" }
+    },
+    {
+      "id": "data-xml",
+      "family": "document-data",
+      "formatIds": ["xml"],
+      "stage": "tree-text",
+      "corpus": {
+        "kind": "workspace-reference",
+        "path": "references/sc2layout-schema/sc2layout/type.xml",
+        "bytes": 16368,
+        "sha256": "440f6b200f0719d62d2f1e90dca2baadc2991d155a941ea33be08e63d687d696"
+      },
+      "pwa": { "kind": "browser-subset" }
+    },
+    {
+      "id": "archive-zip",
+      "family": "archives",
+      "formatIds": ["zip"],
+      "stage": "tree",
+      "corpus": {
+        "kind": "workspace-reference",
+        "path": "references/CascLib/listfile/listfile-archive.zip",
+        "bytes": 17972012,
+        "sha256": "fad77619d2923ed7d4743b658f4ebb00945667c75a91b12b4555f289db2c9cbe"
+      },
+      "pwa": { "kind": "browser-subset" }
+    },
+    {
+      "id": "archive-warzone-wz",
+      "family": "archives",
+      "formatIds": ["warzone-wz"],
+      "stage": "tree",
+      "corpus": {
+        "kind": "warzone-install-file",
+        "path": "data/base.wz",
+        "bytes": 122957601,
+        "sha256": "f3f131e7cdfb9e550221ca3ad074debf5c946417240799da1a53238804cdd71d"
+      },
+      "pwa": { "kind": "browser-subset" }
+    },
+    {
+      "id": "archive-mpq",
+      "family": "archives",
+      "formatIds": ["mpq"],
+      "stage": "tree",
+      "corpus": {
+        "kind": "sc2-install-file",
+        "path": "Maps/ex/WTE70_Madlibrarian.SC2Map",
+        "bytes": 22703,
+        "sha256": "f654e212dcff3ffe3e1090e383b7b25fac4def2a723b4eda408c1b5cdfb2a305"
+      },
+      "pwa": { "kind": "browser-subset" }
+    },
+    {
+      "id": "casc-dds",
+      "family": "archives-images",
+      "formatIds": ["casc", "dds"],
+      "stage": "raster",
+      "corpus": {
+        "kind": "sc2-casc-entry",
+        "path": "campaigns/liberty.sc2campaign/base.sc2assets/assets/textures/alpha2.dds",
+        "bytes": 824,
+        "sha256": "b0a41b1a08611e2e6f6070c6c0f9122646389974e059793f37ac018874733b79"
+      },
+      "pwa": {
+        "kind": "host-facility-refusal",
+        "code": "x3.host/facility-unavailable",
+        "facility": "filesystem.read-random"
+      }
+    },
+    {
+      "id": "audio-wav",
+      "family": "audio",
+      "formatIds": ["casc", "wav"],
+      "stage": "metadata-tree",
+      "corpus": {
+        "kind": "sc2-casc-entry",
+        "path": "mods/core.sc2mod/base.sc2assets/assets/sounds/ui_ac_allyfound.wav",
+        "bytes": 178236,
+        "sha256": "304fb9259325128c627d40a419086edb9f5492d435a8ce280e3c28fec7647cf9"
+      },
+      "pwa": {
+        "kind": "host-facility-refusal",
+        "code": "x3.host/facility-unavailable",
+        "facility": "filesystem.read-random"
+      }
+    },
+    {
+      "id": "audio-ogg",
+      "family": "audio",
+      "formatIds": ["casc", "ogg"],
+      "stage": "metadata-tree",
+      "corpus": {
+        "kind": "sc2-casc-entry",
+        "path": "mods/core.sc2mod/base.sc2assets/assets/sounds/ui_ac_musicstinger01.ogg",
+        "bytes": 112704,
+        "sha256": "a334fe262048b28f4a1e0e631b1a3ecf1a44aedc4526aa4f27207d7e98daf64a"
+      },
+      "pwa": {
+        "kind": "host-facility-refusal",
+        "code": "x3.host/facility-unavailable",
+        "facility": "filesystem.read-random"
+      }
+    },
+    {
+      "id": "model-m3",
+      "family": "models",
+      "formatIds": ["casc", "m3"],
+      "stage": "model-or-wireframe",
+      "corpus": {
+        "kind": "sc2-casc-entry",
+        "path": "campaigns/liberty.sc2campaign/base.sc2assets/assets/campaign/terran/artifact1/artifact1.m3",
+        "bytes": 60128,
+        "sha256": "fb7680019ca7ec88aeb37591a7477c2555dd674d57f0c7486736ccb11919a436"
+      },
+      "pwa": {
+        "kind": "host-facility-refusal",
+        "code": "x3.host/facility-unavailable",
+        "facility": "filesystem.read-random"
+      }
+    },
+    {
+      "id": "model-warzone-pie",
+      "family": "models",
+      "formatIds": ["warzone-wz", "warzone-pie"],
+      "stage": "model-or-wireframe",
+      "corpus": {
+        "kind": "warzone-wz-entry",
+        "container": "data/base.wz",
+        "path": "components/bodies/cybd_run.pie",
+        "bytes": 22053,
+        "sha256": "0674a8044d71f12c8f9362eae9efea946f5b0ba04b065d9d8b861eae669fef23"
+      },
+      "pwa": { "kind": "browser-subset" }
+    }
+  ]
+}
