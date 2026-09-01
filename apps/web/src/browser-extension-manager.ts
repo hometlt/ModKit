@@ -42,9 +42,48 @@ export const BROWSER_EXTENSION_MUTATION_LOCK = 'modkit.app.web/extension-manager
 export const BROWSER_EXTENSION_LOCK_UNAVAILABLE =
   'extension-manager/browser-mutation-lock-unavailable'
 export const DEFAULT_BROWSER_CATALOG_MAX_BYTES = 2 * 1024 * 1024
-export const DEFAULT_BROWSER_ARTIFACT_MAX_BYTES = 64 * 1024 * 1024
+/** Wave 1B signed Blizzard bundle is 152,838,525 bytes; keep a bounded production ceiling. */
+export const DEFAULT_BROWSER_ARTIFACT_MAX_BYTES = 256 * 1024 * 1024
+export const BROWSER_HOST_FACILITY_UNAVAILABLE = 'x3.host/facility-unavailable'
+export const BROWSER_SC2_FACILITY = 'filesystem.read-random'
 
 export type BrowserTrustedEd25519Key = CryptoKey | JsonWebKey | Uint8Array
+
+export interface BrowserRuntimeAvailability {
+  readonly available: boolean
+  readonly code?: typeof BROWSER_HOST_FACILITY_UNAVAILABLE
+  readonly facility?: typeof BROWSER_SC2_FACILITY
+}
+
+/** The generated A8 route declares a filesystem-backed SC2/CASC corpus as a typed refusal in PWA. */
+export function browserRuntimeAvailability(pwa: unknown): BrowserRuntimeAvailability {
+  if (
+    typeof pwa === 'object' &&
+    pwa !== null &&
+    (pwa as { kind?: unknown }).kind === 'host-facility-refusal' &&
+    (pwa as { code?: unknown }).code === BROWSER_HOST_FACILITY_UNAVAILABLE &&
+    (pwa as { facility?: unknown }).facility === BROWSER_SC2_FACILITY
+  ) {
+    return Object.freeze({
+      available: false,
+      code: BROWSER_HOST_FACILITY_UNAVAILABLE,
+      facility: BROWSER_SC2_FACILITY,
+    })
+  }
+  return Object.freeze({ available: true })
+}
+
+export function assertBrowserArtifactBound(bytes: number, maximum: number): void {
+  if (
+    !Number.isSafeInteger(maximum) ||
+    maximum <= 0 ||
+    !Number.isSafeInteger(bytes) ||
+    bytes < 0 ||
+    bytes > maximum
+  ) {
+    throw new RangeError(`extension source exceeds the ${String(maximum)} byte browser limit`)
+  }
+}
 
 /** Structural Web Locks surface, kept injectable for deterministic cross-tab tests. */
 export interface BrowserExtensionLockManager {
@@ -363,11 +402,8 @@ export function createBrowserExtensionManager(
 
   const artifactAcquirer: ArtifactAcquirer = {
     async acquire(entry): Promise<AcquiredExtensionArtifact> {
-      if (entry.source.bytes !== undefined && entry.source.bytes > maxArtifactBytes) {
-        throw new Error(
-          `extension ${entry.id} declares ${String(entry.source.bytes)} bytes above the ${String(maxArtifactBytes)} byte browser limit`,
-        )
-      }
+      if (entry.source.bytes !== undefined)
+        assertBrowserArtifactBound(entry.source.bytes, maxArtifactBytes)
       const bytes = await readUri(entry.source.uri, maxArtifactBytes)
       const integrity = await sha256(subtle, bytes)
       const artifact: BrowserAcquiredArtifact = Object.freeze({ bytes, integrity })

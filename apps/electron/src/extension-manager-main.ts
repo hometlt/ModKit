@@ -23,6 +23,7 @@ export interface ElectronExtensionManagerBackendOptions {
   readonly storeRoot: string
   readonly baseDirectory?: string
   readonly trustedPublicKeys?: NodeTrustedPublicKeys
+  readonly requireSignature?: boolean
   readonly fetch?: typeof globalThis.fetch
   readonly vfs?: CreateNodeExtensionManagerOptions['vfs']
   readonly vfsOptions?: NodeExtensionVfsOptions
@@ -40,6 +41,9 @@ export function createElectronExtensionManagerBackend(
     catalog: options.registry,
     ...(options.baseDirectory === undefined ? {} : { baseDirectory: options.baseDirectory }),
     trustedPublicKeys: options.trustedPublicKeys ?? Object.freeze({}),
+    ...(options.requireSignature === undefined
+      ? {}
+      : { requireSignature: options.requireSignature }),
     ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
     ...(options.vfs === undefined ? {} : { vfs: options.vfs }),
     ...(options.vfsOptions === undefined ? {} : { vfsOptions: options.vfsOptions }),

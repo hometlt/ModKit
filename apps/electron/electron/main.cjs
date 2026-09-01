@@ -156,14 +156,31 @@ async function createWindow() {
   const BUNDLED_ROOTS = BUNDLED_EXTENSION_DIRECTORIES.map(directory =>
     path.join(repositoryRoot, 'extensions', directory),
   )
-  const extensionRegistry =
-    process.env.MODKIT_EXTENSION_REGISTRY ||
-    path.join(repositoryRoot, '..', 'modkit-extension-registry', 'catalog', 'development.json')
+  const packagedRelease = path.join(__dirname, '..', 'dist-app', 'managed-packages')
+  const developmentRegistry = process.env.MODKIT_EXTENSION_REGISTRY
+  const extensionRegistry = developmentRegistry || path.join(packagedRelease, 'catalog.v1.json')
   const extensionAllowedOrigins = (process.env.MODKIT_EXTENSION_ALLOWED_ORIGINS || '')
     .split(',')
     .map(value => value.trim())
     .filter(Boolean)
   const extensionTrustedPublicKeys = (() => {
+    if (developmentRegistry === undefined) {
+      const descriptor = JSON.parse(
+        fs.readFileSync(path.join(packagedRelease, 'release.v1.json'), 'utf8'),
+      )
+      if (
+        !descriptor ||
+        !descriptor.signing ||
+        typeof descriptor.signing.keyId !== 'string' ||
+        descriptor.signing.keyId.trim() === '' ||
+        typeof descriptor.signing.publicKeyPem !== 'string' ||
+        !descriptor.signing.publicKeyPem.includes('BEGIN PUBLIC KEY')
+      ) {
+        throw new TypeError('packaged offline release has no valid Ed25519 public-key identity')
+      }
+      return Object.freeze({ [descriptor.signing.keyId]: descriptor.signing.publicKeyPem })
+    }
+    console.warn('[main] MODKIT_EXTENSION_REGISTRY is a development-only registry override')
     const text = process.env.MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS
     if (text === undefined || text.trim() === '') return Object.freeze({})
     if (text.length > 1_000_000) {
@@ -195,8 +212,10 @@ async function createWindow() {
   const extensionManager = createElectronExtensionManagerBackend({
     registry: extensionRegistry,
     baseDirectory: repositoryRoot,
-    // Empty by default for local development; release builds inject reviewed Ed25519 public keys.
+    // Production uses the key carried by the copied offline release; development overrides are
+    // explicit and still require a matching trusted key.
     trustedPublicKeys: extensionTrustedPublicKeys,
+    requireSignature: true,
     fetch: globalThis.fetch,
     vfsOptions: extensionVfsOptions,
     storeRoot: path.join(app.getPath('userData'), 'managed-extensions'),

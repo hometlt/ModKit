@@ -17,6 +17,10 @@ import {
   renderAppThemeDomData,
   resolveAppThemes,
 } from '../../../scripts/lib/app-themes.mjs'
+import {
+  offlineReleaseSource,
+  verifyOfflineReleaseDirectory,
+} from '../../vscode/scripts/offline-release.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
@@ -99,6 +103,9 @@ for (const theme of themeStylesheets) {
   cpSync(theme.sourcePath, join(dist, theme.stylesheet.slice('./'.length)))
 }
 cpSync(join(repoRoot, 'assets', 'fonts'), join(dist, 'fonts'), { recursive: true })
+verifyOfflineReleaseDirectory(offlineReleaseSource)
+cpSync(offlineReleaseSource, join(dist, 'managed-packages'), { recursive: true })
+verifyOfflineReleaseDirectory(join(dist, 'managed-packages'))
 const themeLinks = themeStylesheets
   .map(theme => `    <link rel="stylesheet" href="${theme.stylesheet}" />`)
   .join('\n')

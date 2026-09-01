@@ -74,6 +74,7 @@ import { mountExtensionsUi } from './extensions-ui.js'
 import { createManagedExtensionsController } from './managed-extensions-controller.js'
 import { createWebExtensionSubjectCatalog } from './extension-subjects.js'
 import { createBrowserExtensionManager } from './browser-extension-manager.js'
+import { WEB_OFFLINE_RELEASE } from '../generated/offline-release.js'
 import type {
   BrowserCacheStorageLike,
   ManagedExtensionIdbFactoryLike,
@@ -272,8 +273,13 @@ async function boot(): Promise<void> {
     ...(typeof caches === 'undefined'
       ? {}
       : { cacheStorage: caches as unknown as BrowserCacheStorageLike }),
-    // No registry is configured in the generic PWA build. Product builds inject registry config
-    // through the exported factory; this offline default performs no network at boot or refresh.
+    registry: {
+      catalogUri: new URL(WEB_OFFLINE_RELEASE.catalogPath, document.baseURI).href,
+      trustedPublicKeys: { [WEB_OFFLINE_RELEASE.keyId]: WEB_OFFLINE_RELEASE.publicJwk },
+      cacheKey: `modkit.app.web/offline-release/${WEB_OFFLINE_RELEASE.catalogSha256}`,
+    },
+    allowedOrigins: [window.location.origin],
+    maxArtifactBytes: WEB_OFFLINE_RELEASE.maxArtifactBytes,
   })
   const managedStorage = managedRuntime.storage
   const managedExtensions = createManagedExtensionsController({

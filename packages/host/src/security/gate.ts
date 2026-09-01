@@ -467,7 +467,7 @@ export async function activateContribution(request: ActivationRequest): Promise<
       diagnostic(
         'warning',
         'x3.host/full-process-authority',
-        `«${manifest.id}» runs as trusted-in-process: the host checks grants at dispatch and brokers what it owns, but it cannot technically prevent this code from reaching node:fs/node:net or the process itself. This is an audit/policy boundary, not a sandbox (24 §5.1).`,
+        `«${manifest.id}» runs as trusted-in-process: the host checks grants at dispatch and brokers what it owns, but it cannot technically prevent this code from reaching Node.js filesystem/network built-ins or the process itself. This is an audit/policy boundary, not a sandbox (24 §5.1).`,
         [manifest.id],
         { grant: child.id, classes: child.classes },
       ),

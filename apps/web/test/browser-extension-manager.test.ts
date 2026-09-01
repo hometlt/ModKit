@@ -1,4 +1,6 @@
 import { createHash, webcrypto } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   extensionCatalogSigningBytes,
@@ -8,6 +10,10 @@ import {
 import {
   BROWSER_EXTENSION_LOCK_UNAVAILABLE,
   BROWSER_EXTENSION_MUTATION_LOCK,
+  BROWSER_SC2_FACILITY,
+  BROWSER_HOST_FACILITY_UNAVAILABLE,
+  assertBrowserArtifactBound,
+  browserRuntimeAvailability,
   createBrowserExtensionManager,
   type BrowserExtensionLockManager,
 } from '../src/browser-extension-manager.js'
@@ -28,6 +34,37 @@ const subtle = webcrypto.subtle as unknown as SubtleCrypto
 const immediateLocks: BrowserExtensionLockManager = {
   request: async (_name, _options, callback) => callback(),
 }
+
+describe('Wave 1B browser production boundary', () => {
+  it('accepts the signed Blizzard byte size but refuses an over-bound source before read', () => {
+    expect(() => assertBrowserArtifactBound(152_838_525, 256 * 1024 * 1024)).not.toThrow()
+    expect(() => assertBrowserArtifactBound(256 * 1024 * 1024, 256 * 1024 * 1024)).not.toThrow()
+    expect(() => assertBrowserArtifactBound(256 * 1024 * 1024 + 1, 256 * 1024 * 1024)).toThrow(
+      /browser limit/u,
+    )
+    expect(() => assertBrowserArtifactBound(1, Number.NaN)).toThrow(/browser limit/u)
+  })
+
+  it('turns the generated A8 host-only route into a typed PWA refusal', () => {
+    const a8 = JSON.parse(
+      readFileSync(
+        join(
+          resolve(import.meta.dirname, '..', '..'),
+          'vscode',
+          'generated',
+          'format-smoke.v1.json',
+        ),
+        'utf8',
+      ),
+    )
+    const cascDds = a8.cases.find((entry: { id: string }) => entry.id === 'casc-dds')
+    expect(browserRuntimeAvailability(cascDds.runtime.pwa)).toEqual({
+      available: false,
+      code: 'x3.host/facility-unavailable',
+      facility: 'filesystem.read-random',
+    })
+  })
+})
 
 class SerialBrowserLocks implements BrowserExtensionLockManager {
   private tail: Promise<void> = Promise.resolve()
