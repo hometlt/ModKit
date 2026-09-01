@@ -159,7 +159,7 @@ const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/u
 const RECEIPT_SHA256_PATTERN = /^sha256:[a-f0-9]{64}$/u
 const GENERIC_BROWSE_REFUSAL = 'x3.app/vscode-not-a-container'
 
-type ArchiveCaseRecord = {
+interface ArchiveCaseRecord {
   readonly caseId?: unknown
   readonly evidence?: unknown
   readonly verdict?: unknown
@@ -387,24 +387,27 @@ export function assertInstalledArchiveAcceptanceReceipt(value: unknown): asserts
     cadence: Readonly<Record<string, unknown>>,
   ): boolean => {
     if (samples.length < 2) return false
-    const timestamps = samples.map(sample => sample.timestampMs)
-    const safeTimestamps = timestamps as readonly number[]
-    if (
-      samples.some(
-        sample =>
-          !Number.isSafeInteger(sample.timestampMs) ||
-          !Number.isSafeInteger(sample.workingSetBytes) ||
-          !Number.isSafeInteger(sample.privateBytes),
-      ) ||
-      safeTimestamps.some(
-        (timestamp, index) => index > 0 && timestamp <= safeTimestamps[index - 1]!,
-      )
-    ) {
-      return false
+    const safeTimestamps: number[] = []
+    for (const sample of samples) {
+      const timestampMs = sample.timestampMs
+      if (
+        typeof timestampMs !== 'number' ||
+        !Number.isSafeInteger(timestampMs) ||
+        !Number.isSafeInteger(sample.workingSetBytes) ||
+        !Number.isSafeInteger(sample.privateBytes)
+      ) {
+        return false
+      }
+      safeTimestamps.push(timestampMs)
     }
-    const intervals = safeTimestamps
-      .slice(1)
-      .map((timestamp, index) => timestamp - safeTimestamps[index]!)
+    const intervals: number[] = []
+    for (let index = 1; index < safeTimestamps.length; index += 1) {
+      const previous = safeTimestamps[index - 1]
+      const current = safeTimestamps[index]
+      // Strictly increasing timestamps are what makes the sampled cadence readable at all.
+      if (previous === undefined || current === undefined || current <= previous) return false
+      intervals.push(current - previous)
+    }
     const averageIntervalMs =
       intervals.reduce((total, interval) => total + interval, 0) / intervals.length
     return (

@@ -14,7 +14,7 @@
  * topology.
  */
 import { createHash } from 'node:crypto'
-import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
+import { copyFileSync, createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
@@ -310,7 +310,7 @@ const formatSmokeObject = (value: unknown, label: string): Record<string, unknow
   return value as Record<string, unknown>
 }
 
-type AttemptedContainerCandidate = {
+interface AttemptedContainerCandidate {
   readonly contributionId: string
   readonly formatIds: readonly string[]
   readonly state: 'rejected' | 'detected' | 'selected'
@@ -1184,8 +1184,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const liveArchiveAcceptanceDocuments = new Map<string, ModkitCustomDocument>()
   const liveArchiveAcceptanceServed = new Map<string, VsCodeServed>()
   let nativeWriterReceiptForAcceptance: unknown
-  let saveLiveArchiveAcceptanceDocument:
-    ((document: ModkitCustomDocument, destination: vscode.Uri) => Promise<void>) | undefined
+  /*
+   * The custom editor provider is constructed far below this point, so the acceptance route holds
+   * a late-bound slot rather than a `let` the provider would have to hoist itself into.
+   */
+  const liveArchiveAcceptanceSaver: {
+    save?: (document: ModkitCustomDocument, destination: vscode.Uri) => Promise<void>
+  } = {}
   const webviewAcceptance = (): ModkitAcceptanceReceipt => {
     if (
       packageGateDisabledProbeAcceptance === undefined &&
@@ -2510,23 +2515,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       }
       // This is the registered `modkit-container:` FileSystemProvider, not an internal index.
       const rootEntries = await vscode.workspace.fs.readDirectory(browseResult.folder)
-      const memberUri = vscode.Uri.joinPath(browseResult.folder, ...requiredEntry.split('/'))
+      const memberUri = vscode.Uri.from({
+        scheme: CONTAINER_SCHEME,
+        path: containerUriPath(container, requiredEntry),
+      })
       const member = await vscode.workspace.fs.stat(memberUri)
       if ((member.type & vscode.FileType.File) === 0) {
         throw new TypeError(
           `${caseId} Explorer filesystem did not expose its exact authority entry`,
         )
       }
-      const expectedUri = vscode.Uri.from({
-        scheme: CONTAINER_SCHEME,
-        path: containerUriPath(container, requiredEntry),
-      })
       const expectedSelection = Object.freeze({
         caseId,
         container: basename(container),
         query,
         requiredEntry,
-        selectedUri: expectedUri.toString(),
+        selectedUri: memberUri.toString(),
       })
       await persist(
         await packageGateCumulative(
@@ -2650,10 +2654,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       const attemptedCandidates = Array.isArray(refusalResult.attemptedCandidates)
         ? refusalResult.attemptedCandidates.filter(isAttemptedContainerCandidate).map(value =>
             Object.freeze({
-              contributionId: (value as Record<string, unknown>).contributionId as string,
-              formatIds: Object.freeze([
-                ...((value as Record<string, unknown>).formatIds as readonly string[]),
-              ]),
+              contributionId: value.contributionId,
+              formatIds: Object.freeze([...value.formatIds]),
               state: value.state,
               diagnostics: Object.freeze(
                 value.diagnostics.map(diagnostic => Object.freeze({ ...diagnostic })),
@@ -2725,13 +2727,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     await digestFile(wte70Path, INSTALLED_ARCHIVE_AUTHORITIES.wte70)
     await digestFile(rustBucketPath, INSTALLED_ARCHIVE_AUTHORITIES.rustBucketM3)
     await digestFile(armodPath, INSTALLED_ARCHIVE_AUTHORITIES.armod)
+    const rustBucketMpqPath = join(scratchWorkspace, 'wave2a-rustbucket.mpq')
+    copyFileSync(rustBucketPath, rustBucketMpqPath)
+    await digestFile(rustBucketMpqPath, INSTALLED_ARCHIVE_AUTHORITIES.rustBucketM3)
     granted.add(dirname(sc2Root))
+    granted.add(dirname(rustBucketMpqPath))
     granted.add(dirname(baseWzPath))
     granted.add(dirname(armodPath))
 
     await treeSearchLazy(
       'mpq-tree-search-lazy',
-      rustBucketPath,
+      rustBucketMpqPath,
       'LandingLights_NoLensFlare.m3',
       INSTALLED_ARCHIVE_AUTHORITIES.rustBucketM3.entry,
     )
@@ -2763,14 +2769,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     )
     record(
       'mpq-m3-nested-open',
-      await requireNested(rustBucketPath, INSTALLED_ARCHIVE_AUTHORITIES.rustBucketM3.entry, {
+      await requireNested(rustBucketMpqPath, INSTALLED_ARCHIVE_AUTHORITIES.rustBucketM3.entry, {
         formatId: 'm3',
         contributionId: 'blizzard/m3',
       }),
     )
     await materialize(
       'mpq-m3-materialize',
-      rustBucketPath,
+      rustBucketMpqPath,
       INSTALLED_ARCHIVE_AUTHORITIES.rustBucketM3.entry,
       'wave2a-rustbucket.m3',
       {
@@ -2834,13 +2840,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         target: wte70Target,
       })
       const document = liveArchiveAcceptanceDocuments.get(wte70Uri.toString())
-      if (document === undefined || saveLiveArchiveAcceptanceDocument === undefined) {
+      const saveLiveDocumentAs = liveArchiveAcceptanceSaver.save
+      if (document === undefined || saveLiveDocumentAs === undefined) {
         throw new TypeError('WTE70 source is not a live installed custom document')
       }
       const beforeSaveAs = await digestFile(wte70Path, INSTALLED_ARCHIVE_AUTHORITIES.wte70)
       nativeWriterReceiptForAcceptance = undefined
       const started = Date.now()
-      await saveLiveArchiveAcceptanceDocument(document, wte70SaveAsUri)
+      await saveLiveDocumentAs(document, wte70SaveAsUri)
       const saveOperationElapsedMs = Date.now() - started
       const afterSaveAs = await digestFile(wte70Path, INSTALLED_ARCHIVE_AUTHORITIES.wte70)
       const saved = await digestFile(wte70SaveAsUri.fsPath, {
@@ -3579,7 +3586,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         'generation 3 host/card model did not expose any contributions or cards',
       )
       if (failures.length === 0) {
-        let index: Awaited<ReturnType<typeof containers.index>>
         try {
           formatSmoke = await runInstalledFormatSmoke(artifactSha256, persist)
         } catch (error) {
@@ -5655,7 +5661,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
     vscode.commands.registerCommand('modkit.openWith', () => {
       void (async () => {
-        const active = vscode.window.activeTextEditor?.document.uri
+        /*
+         * A binary tab has no `activeTextEditor`, so fall back to whatever the active tab names.
+         * Every URI-bearing tab input (text, custom editor, notebook) exposes `uri`; diff, webview
+         * and terminal inputs do not, and are correctly left unresolved here.
+         */
+        const activeInput: unknown = vscode.window.tabGroups.activeTabGroup.activeTab?.input
+        const activeTabUri =
+          typeof activeInput === 'object' && activeInput !== null && 'uri' in activeInput
+            ? (activeInput as { readonly uri?: unknown }).uri
+            : undefined
+        const active =
+          vscode.window.activeTextEditor?.document.uri ??
+          (activeTabUri instanceof vscode.Uri ? activeTabUri : undefined)
         if (active !== undefined) {
           openResource(active)
           return
@@ -6505,7 +6523,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       }
     },
   }
-  saveLiveArchiveAcceptanceDocument = async (document, destination) => {
+  liveArchiveAcceptanceSaver.save = async (document, destination) => {
     const cancellation = new vscode.CancellationTokenSource()
     try {
       await customEditor.saveCustomDocumentAs(document, destination, cancellation.token)
