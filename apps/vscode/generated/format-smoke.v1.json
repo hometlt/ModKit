@@ -47,8 +47,8 @@
       ]
     },
     "offlineRelease": {
-      "descriptorSha256": "sha256:00764d13bd19205d4a6595ae1bb6099e8a96bda4f6d0af9d59315fd283c1dfaa",
-      "catalogSha256": "sha256:ee6eb1fc29c09ebc30049b03840c46c68088a78ac218a1f97a6fe3e7d75de368",
+      "descriptorSha256": "sha256:3efd99773c884c80718215d43fe52f44dbfa305e7a3d1ca6cb1ec21f6cf8bb80",
+      "catalogSha256": "sha256:b339333e695f7405193752fd1a1901c4a95a14a618bdcb7c8adbffc871ebe089",
       "catalogSignature": {
         "algorithm": "Ed25519",
         "keyId": "modkit.ga-wave1b-2026-09-01",
