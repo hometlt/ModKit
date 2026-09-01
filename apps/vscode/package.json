@@ -39,7 +39,8 @@
     "@modkit/scene": "workspace:*",
     "@modkit/sdk": "workspace:*",
     "@modkit/ui": "workspace:*",
-    "@modkit/uv": "workspace:*"
+    "@modkit/uv": "workspace:*",
+    "@modkit/vfs": "workspace:*"
   },
   "devDependencies": {
     "@vscode/vsce": "3.9.2",

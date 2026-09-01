@@ -40,8 +40,12 @@ export const VSCODE_DESKTOP_WORKER_REALM = 'modkit.app.vscode/desktop-worker'
  */
 export const VSCODE_WORKER_POLICY: WorkerBackendPolicy = workerBackendPolicy({
   resourceLimits: {
-    maxOldGenerationSizeMb: 768,
-    maxYoungGenerationSizeMb: 96,
+    // The installed SC2 MNDX root currently publishes more than 660,000 names. Keeping the
+    // worker below this measured ceiling terminates an otherwise bounded CASC open while its
+    // immutable name index is being built. This remains below Electron's 1 GiB worker policy and
+    // inside the desktop realm's aggregate resident-memory budget.
+    maxOldGenerationSizeMb: 896,
+    maxYoungGenerationSizeMb: 112,
     codeRangeSizeMb: 128,
     stackSizeMb: 8,
   },

@@ -14,7 +14,11 @@
  * and a renderer able to run that would need the Node access `nodeIntegration: false` denies. The
  * bundle failing to resolve `node:fs` is the guard doing its job.
  */
-import { connectElectronSubjectClient, type ElectronSubjectSession } from './subject-client.js'
+import {
+  connectElectronSubjectClient,
+  type ElectronSubjectOpenResult,
+  type ElectronSubjectSession,
+} from './subject-client.js'
 import {
   createCodecPreview,
   createEditorArea,
@@ -38,7 +42,12 @@ import type { UiCatalogDocument, UiLocalizer } from '@modkit/ui/localization'
 import type { OperationSession } from '@modkit/sdk'
 
 import { createPreviewFallback } from '../generated/viewer-catalog.js'
-import { editOffer, editSelfTestLine } from './edit-operations.js'
+import {
+  awaitSelfTestProbe,
+  editOffer,
+  editSelfTestLine,
+  isSelfTestEditOutcome,
+} from './edit-operations.js'
 import { createEditPanel } from './edit-panel.js'
 import {
   createExtensionsSettingsGroups,
@@ -54,6 +63,16 @@ import { createElectronReadOnlyStages, createElectronStages } from './stages.js'
 import { preferredStage, selfTestCodecLine, selfTestLine } from './view-policy.js'
 import { continueElectronMapPreviewSelection } from './map-preview-selection.js'
 import { createElectronLocalizer } from './localization.js'
+import {
+  buildElectronFormatSmokeReceipt,
+  electronFormatSmokeStageAlternates,
+  readElectronFormatSmokePlan,
+  summarizeElectronFormatSmokeAuthority,
+  type ElectronFormatSmokeObservation,
+  type ElectronFormatSmokePlan,
+  type ElectronFormatSmokeRouteStep,
+} from './format-smoke-acceptance.js'
+import { findExactNamespaceFile, indexNamespace } from './namespace-index.js'
 
 /**
  * Hand Monaco its language workers. Monaco reads this the first time an editor asks for one, which
@@ -67,6 +86,9 @@ import { createElectronLocalizer } from './localization.js'
 }
 
 const MAXIMUM_BYTES = 64 * 1024 * 1024
+const EDIT_ARM_TIMEOUT_MS = 15_000
+const EDIT_ARM_TIMEOUT_CODE = 'x3.electron/edit-arm-timeout'
+const FORMAT_SMOKE_MOUNT_TIMEOUT_MS = 120_000
 
 interface Broker {
   readonly channels: readonly string[]
@@ -77,6 +99,9 @@ interface HostBridge {
   profile(): Promise<{
     readonly renderer: { readonly realmId: string; readonly facilities: readonly string[] }
     readonly supportedExtensions: readonly string[]
+    readonly formatSmokeAuthority?: unknown
+    readonly formatSmokeAuthoritySha256?: string
+    readonly formatSmokePlan?: unknown
     /** Validated in main through Extension Manager VFS; contains no functions or host authority. */
     readonly localizationCatalogs: readonly UiCatalogDocument[]
   }>
@@ -86,6 +111,7 @@ interface HostBridge {
     readonly entry?: ExplorerEntry
     readonly selfTest?: boolean
     readonly selfTestPngOnly?: boolean
+    readonly selfTestFormatSmokeOnly?: boolean
   }>
   registerFileTypes(extensions: readonly string[]): Promise<{ readonly message: string }>
   confirmClose(name: string): Promise<'save' | 'discard' | 'cancel'>
@@ -98,6 +124,31 @@ interface HostBridge {
  */
 interface SubjectBridge {
   requestPort(): Promise<{ readonly session: string }>
+}
+
+const withTimeout = async <T>(work: Promise<T>, ms: number, code: string): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      work,
+      new Promise<T>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          const error = new Error(`timed out after ${ms}ms`)
+          ;(error as Error & { code: string }).code = code
+          reject(error)
+        }, ms)
+      }),
+    ])
+  } finally {
+    if (timer !== undefined) clearTimeout(timer)
+  }
+}
+
+const sha256Hex = async (bytes: Uint8Array): Promise<string> => {
+  const copy = new ArrayBuffer(bytes.byteLength)
+  new Uint8Array(copy).set(bytes)
+  const digest = await crypto.subtle.digest('SHA-256', copy)
+  return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('')
 }
 
 interface MenuBridge {
@@ -346,15 +397,20 @@ async function boot(): Promise<void> {
    * inspector's toolbar, the transport bar and the archive stage's entry preview.
    */
   interface SubjectRecord {
+    readonly sessionId: string
     readonly path: string
     readonly descriptor: Record<string, unknown>
     readonly session: ElectronSubjectSession
+    readonly selectedRoute?: readonly ElectronFormatSmokeRouteStep[]
     readonly planActive: string | undefined
     operations?: Promise<OperationSession | undefined>
   }
   const subjectsByPath = new Map<string, SubjectRecord>()
   /** Descriptor identity, so a viewer holding only a descriptor can find its own session. */
   const subjectsByDescriptor = new Map<string, SubjectRecord>()
+  const virtualBytes = new Map<string, Uint8Array>()
+  const openedByteEvidence = new Map<string, { readonly bytes: number; readonly sha256: string }>()
+  const editFallbacks = new Map<string, { readonly code: string; readonly reason: string }>()
   const descriptorKey = (descriptor: Record<string, unknown>): string =>
     `${String(descriptor['subjectUri'] ?? '')}@${String(descriptor['revision'] ?? '')}`
 
@@ -408,6 +464,15 @@ async function boot(): Promise<void> {
 
   /** Consumed by `openSession` during the one `createCodecPreview.open` call that follows. */
   const pendingOpens = new Map<string, PreparedOpen>()
+  /**
+   * Nested product entries are opened by the host before their tab asks for scalar bytes.
+   *
+   * CASC extraction is a leased endpoint: extracting in the renderer and then asking main to open
+   * the same member a second time can consume the first endpoint before the nested route attaches.
+   * Preopening once keeps `openNestedSubject` authoritative while the tab still receives the exact
+   * extracted bytes for its evidence and raw fallback.
+   */
+  const preopenedSubjects = new Map<string, ElectronSubjectOpenResult>()
   /** Live editor ports per open subject: a stage switch and the close prompt reach the same arm. */
   const portsByPath = new Map<string, RendererEditorPorts>()
   /** Why a tab has no editors, kept so the footer keeps saying it after the open report. */
@@ -457,23 +522,36 @@ async function boot(): Promise<void> {
    */
   async function prepareOpen(entry: ExplorerEntry): Promise<PreparedOpen> {
     openedEntries.set(entry.id, entry)
-    let result = await subjectClient.open(entry.id)
+    let result = preopenedSubjects.get(entry.id)
+    if (result === undefined) result = await subjectClient.open(entry.id)
+    else preopenedSubjects.delete(entry.id)
     if (result.state === 'opened') {
       const candidates = mapPreviewCandidates(result.snapshot.candidates)
       if (candidates.length > 0) {
-        const choice = window.prompt(
-          localizer.text('electron.map.choose', {
-            choices: candidates
-              .map(
-                candidate =>
-                  `${candidate.candidateId} — ${candidate.displayName}${
-                    candidate.sourcePath === undefined ? '' : ` (${candidate.sourcePath})`
-                  }`,
-              )
-              .join('\n'),
-          }),
-          '',
-        )
+        let choice: string | null = null
+        try {
+          choice = window.prompt(
+            localizer.text('electron.map.choose', {
+              choices: candidates
+                .map(
+                  candidate =>
+                    `${candidate.candidateId} — ${candidate.displayName}${
+                      candidate.sourcePath === undefined ? '' : ` (${candidate.sourcePath})`
+                    }`,
+                )
+                .join('\n'),
+            }),
+            '',
+          )
+        } catch (error) {
+          /*
+           * Chromium exposes `window.prompt`, but Electron intentionally throws when it is used.
+           * A selection-required result still owns a perfectly valid original archive session;
+           * treating an unavailable dialog like Cancel preserves that session instead of turning
+           * an ordinary WZ/CASC open into a blank tab.
+           */
+          console.warn(`[map-preview] selection dialog unavailable: ${String(error)}`)
+        }
         if (choice !== null && choice.trim().length > 0) {
           const selected = candidates.find(candidate => candidate.candidateId === choice.trim())
           if (selected === undefined) {
@@ -526,9 +604,11 @@ async function boot(): Promise<void> {
       )}%${boundary}`,
     )
     const record: SubjectRecord = {
+      sessionId: snapshot.sessionId,
       path: entry.id,
       descriptor: snapshot.descriptor,
       session: result.session,
+      ...(snapshot.selectedRoute === undefined ? {} : { selectedRoute: snapshot.selectedRoute }),
       planActive: result.session.presentation?.activeStage,
     }
     subjectsByPath.set(entry.id, record)
@@ -536,21 +616,33 @@ async function boot(): Promise<void> {
 
     let ports: RendererEditorPorts | undefined
     try {
-      const arm = await subjectClient.edit(snapshot.sessionId)
-      ports = await createRendererEditorPorts({
-        arm,
-        localizer,
-        onStatus: status => setFooter(entry.id, status.message, status.failed),
-        onDirty: dirty => editors.markDirty(entry.id, dirty),
-      })
+      ports = await withTimeout(
+        (async () => {
+          const arm = await subjectClient.edit(snapshot.sessionId)
+          return createRendererEditorPorts({
+            arm,
+            localizer,
+            onStatus: status => setFooter(entry.id, status.message, status.failed),
+            onDirty: dirty => editors.markDirty(entry.id, dirty),
+          })
+        })(),
+        EDIT_ARM_TIMEOUT_MS,
+        EDIT_ARM_TIMEOUT_CODE,
+      )
       portsByPath.set(entry.id, ports)
       readOnlyNotes.delete(entry.id)
     } catch (error) {
       // main says why in a snapshot diagnostic; the wire error is the generic refusal.
       const stated = snapshot.diagnostics.find(item => item.code === 'x3.app/subject-not-editable')
-      const because = stated?.message ?? (error instanceof Error ? error.message : String(error))
+      const code =
+        typeof (error as { readonly code?: unknown }).code === 'string'
+          ? String((error as { readonly code: string }).code)
+          : 'x3.electron/edit-arm-unavailable'
+      const because =
+        stated?.message ?? `${code}: ${error instanceof Error ? error.message : String(error)}`
       readOnlyNotes.set(entry.id, localizer.text('electron.status.readOnly', { reason: because }))
-      console.log(`[editing] ${entry.id} is read-only here: ${because}`)
+      editFallbacks.set(entry.id, { code, reason: because })
+      console.log(`[editing] ${entry.id} read-only fallback code=${code} reason=${because}`)
     }
 
     const release = async (): Promise<void> => {
@@ -629,6 +721,7 @@ async function boot(): Promise<void> {
   const preview: PreviewResolver = {
     supported: editablePreview.supported,
     async open(container, entry, bytes, signal) {
+      openedByteEvidence.set(entry.id, { bytes: bytes.byteLength, sha256: await sha256Hex(bytes) })
       const prepared = await prepareOpen(entry)
       pendingOpens.set(entry.id, prepared)
       let handle
@@ -683,39 +776,25 @@ async function boot(): Promise<void> {
       node instanceof HTMLElement && node.title !== '' ? [node.title] : [],
     )
 
-  /** Ask every tab on this path to close, through the control a user would click. */
-  const closeTabsOn = (path: string): void => {
-    for (const tab of tabsOn(path)) {
-      const close = tab.querySelector('[data-mk-part="explorer.filetab-close"]')
-      if (close instanceof HTMLElement) close.click()
-    }
-  }
-
   /**
-   * Wait until none of these paths has a tab any more.
+   * Close every tab on this path through the editor area's awaited API.
    *
-   * Closing unmounts the stage and disposes the session and the editing arm asynchronously, and
-   * the whole point of closing before a recomposition is that those sessions are gone before the
-   * old composition is dropped. Recomposing while they are still in flight would leave the worker
-   * leases of a host nothing points at any more.
+   * A click only starts the asynchronous unmount. Waiting for the DOM node to disappear is not a
+   * substitute for waiting for the preview session and editing arm to be disposed: reopening a
+   * mutated archive in that gap can leave the new worker waiting on the old lease. The component's
+   * public close operation resolves only after that disposal has finished.
    */
-  const settleClosed = async (paths: readonly string[]): Promise<void> => {
-    for (let attempt = 0; attempt < 60; attempt += 1) {
-      if (!paths.some(path => tabsOn(path).length > 0)) return
-      await new Promise(resolve => setTimeout(resolve, 50))
+  const closeTabsOn = async (path: string): Promise<boolean> => {
+    while (tabsOn(path).length > 0) {
+      if (!(await editors.close(path))) return false
     }
+    return true
   }
 
   const reopenSubject = async (path: string): Promise<boolean> => {
     const entry = openedEntries.get(path)
     if (entry === undefined) return false
-    closeTabsOn(path)
-    // `closeTab` unmounts the stage and disposes the arm asynchronously; opening before it has
-    // finished would find the old tab and only focus it.
-    for (let attempt = 0; attempt < 60 && tabsOn(path).length > 0; attempt += 1) {
-      await new Promise(resolve => setTimeout(resolve, 50))
-    }
-    if (tabsOn(path).length > 0) return false
+    if (!(await closeTabsOn(path))) return false
     await editors.open(entry)
     return true
   }
@@ -765,6 +844,8 @@ async function boot(): Promise<void> {
     localizer,
     preview,
     async read(entry, signal) {
+      const virtual = virtualBytes.get(entry.id)
+      if (virtual !== undefined) return virtual
       if (access === undefined) throw new Error('no folder is open')
       return access.read(entry.id, MAXIMUM_BYTES, signal)
     },
@@ -898,8 +979,11 @@ async function boot(): Promise<void> {
    */
   async function reloadExtensions(): Promise<ExtensionsReport> {
     const reopening = [...new Set(tabPaths())]
-    for (const path of reopening) closeTabsOn(path)
-    await settleClosed(reopening)
+    for (const path of reopening) {
+      if (!(await closeTabsOn(path))) {
+        throw new Error(`could not close ${path} before reloading extensions`)
+      }
+    }
     const report = await extensions.reload()
     for (const path of reopening) {
       const entry = openedEntries.get(path)
@@ -1200,7 +1284,7 @@ async function boot(): Promise<void> {
     access = accessFor(initial.root)
     await explorer.setAccess(access)
     if (initial.entry !== undefined) await editors.open(initial.entry)
-    if (initial.selfTest === true)
+    if (initial.selfTest === true) {
       await selfTest({
         access,
         preview,
@@ -1209,6 +1293,31 @@ async function boot(): Promise<void> {
         inspector,
         subjectFor: inspectorSubject,
         portsFor: path => portsByPath.get(path),
+        subjectRecordFor: path => subjectsByPath.get(path),
+        openProductParent: async entry => {
+          const prepared = await prepareOpen(entry)
+          if (subjectsByPath.get(entry.id) === undefined) {
+            await prepared.dispose()
+            throw new Error(`product parent did not resolve: ${entry.id}`)
+          }
+          return { dispose: prepared.dispose }
+        },
+        preopenProductChild: async path => {
+          const result = await subjectClient.open(path)
+          preopenedSubjects.set(path, result)
+          return {
+            async disposeIfPending() {
+              const abandoned = preopenedSubjects.get(path)
+              preopenedSubjects.delete(path)
+              if (abandoned?.state === 'opened') await abandoned.session.dispose()
+            },
+          }
+        },
+        setVirtualBytes: (id, bytes) => {
+          virtualBytes.set(id, bytes)
+        },
+        byteEvidenceFor: path => openedByteEvidence.get(path),
+        editFallbackFor: path => editFallbacks.get(path),
         footerText: () => `${footerPath.textContent ?? ''} · ${footerDetail.textContent ?? ''}`,
         extensionsRoot: settingsUi.root,
         showExtensions: () => {
@@ -1217,15 +1326,61 @@ async function boot(): Promise<void> {
         showWorkspace: () => {
           showSurface('workspace')
         },
+        prepareFormatSmokePackages: async packageIds => {
+          await extensions.managerRefresh()
+          let snapshot = await extensions.managerSnapshot()
+          for (const id of packageIds) {
+            const installed = snapshot.entries.find(
+              item => item.id === id && item.installedVersion !== undefined,
+            )
+            if (installed === undefined) {
+              await extensions.managerInstall(id)
+              snapshot = await extensions.managerSnapshot()
+            }
+            const enabled = snapshot.entries.find(
+              item => item.id === id && item.installedVersion !== undefined,
+            )
+            if (enabled?.enabled === false) {
+              await extensions.managerSetEnabled(id, true)
+              snapshot = await extensions.managerSnapshot()
+            }
+          }
+          await reloadExtensions()
+        },
         unresolvedCodes: path => unresolvedCodes.get(path) ?? [],
+        rendererProfile: profile.renderer,
+        ...(profile.formatSmokeAuthority === undefined
+          ? {}
+          : { formatSmokeAuthority: profile.formatSmokeAuthority }),
+        ...(profile.formatSmokeAuthoritySha256 === undefined
+          ? {}
+          : { formatSmokeAuthoritySha256: profile.formatSmokeAuthoritySha256 }),
+        ...(profile.formatSmokePlan === undefined
+          ? {}
+          : { formatSmokePlan: profile.formatSmokePlan }),
         pngOnly: initial.selfTestPngOnly === true,
+        formatSmokeOnly: initial.selfTestFormatSmokeOnly === true,
       })
+    }
   }
 }
 
 /** Let the microtask queue and one animation frame settle after a mount. */
 const settle = async (): Promise<void> => {
   await new Promise(resolve => setTimeout(resolve, 60))
+}
+
+const waitForValue = async <T>(
+  read: () => T | undefined | null,
+  timeoutMs: number,
+): Promise<T | undefined> => {
+  const deadline = Date.now() + timeoutMs
+  for (;;) {
+    const value = read()
+    if (value !== undefined && value !== null) return value
+    if (Date.now() >= deadline) return undefined
+    await settle()
+  }
 }
 
 /** The separator inside a PNG `tEXt` chunk, written as an escape so no source carries a NUL. */
@@ -1244,16 +1399,45 @@ async function selfTest(options: {
   subjectFor(path: string | undefined): InspectorSubject | undefined
   /** The editing arm a tab holds, or nothing when main refused one for that subject. */
   portsFor(path: string): RendererEditorPorts | undefined
+  /** The live subject record produced by the real Electron subject RPC opener. */
+  subjectRecordFor(path: string):
+    | {
+        readonly sessionId: string
+        readonly descriptor: Record<string, unknown>
+        readonly session: ElectronSubjectSession
+        readonly selectedRoute?: readonly ElectronFormatSmokeRouteStep[]
+      }
+    | undefined
+  /** Register exact bytes for a virtual product-container entry tab. */
+  setVirtualBytes(path: string, bytes: Uint8Array): void
+  /** Open a physical product parent through subject RPC without scalar UI materialization. */
+  openProductParent(entry: ExplorerEntry): Promise<{ dispose(): Promise<void> }>
+  /** Open one nested child once, then hand that exact RPC result to the tab that follows. */
+  preopenProductChild(path: string): Promise<{ disposeIfPending(): Promise<void> }>
+  /** Exact bytes the product preview opened for this entry. */
+  byteEvidenceFor(path: string): { readonly bytes: number; readonly sha256: string } | undefined
+  /** Explicit read-only fallback produced while opening this entry. */
+  editFallbackFor(path: string): { readonly code: string; readonly reason: string } | undefined
   /** Whatever the status line currently says, so a refusal can be read back. */
   footerText(): string
   /** The Extensions & Contributions page, driven through its own switches like a user would. */
   readonly extensionsRoot: HTMLElement
   showExtensions(): void
   showWorkspace(): void
+  /** Install and enable signed packaged release packages before exact external-format opens. */
+  prepareFormatSmokePackages?(packageIds: readonly string[]): Promise<void>
   /** Diagnostic codes of the last open on this path that no codec claimed. */
   unresolvedCodes(path: string): readonly string[]
+  /** Generated exact-format authority consumed by this Electron build. */
+  readonly formatSmokeAuthority?: unknown
+  readonly formatSmokeAuthoritySha256?: string
+  readonly formatSmokePlan?: unknown
+  /** Actual renderer realm profile returned by Electron main. */
+  readonly rendererProfile: { readonly realmId: string; readonly facilities: readonly string[] }
   /** A focused live proof of the PNG writer lifecycle and on-disk round trip. */
   readonly pngOnly?: boolean
+  /** Run only the exact generated format-smoke acceptance, not legacy late probes. */
+  readonly formatSmokeOnly?: boolean
 }): Promise<void> {
   const { access, preview, editors, settingsRoot, inspector } = options
   const entries = await access.list(undefined)
@@ -1313,13 +1497,45 @@ async function selfTest(options: {
     return
   }
 
-  for (const entry of entries) {
-    if (entry.directory) continue
+  const formatSmokeObservations: ElectronFormatSmokeObservation[] = []
+
+  const bytesOfOperationOutput = (output: unknown): Uint8Array | undefined => {
+    const value = (output as { kind?: unknown; value?: unknown } | undefined)?.value
+    if (value instanceof Uint8Array) return value
+    if (ArrayBuffer.isView(value))
+      return new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
+    return undefined
+  }
+
+  const descriptorCodecId = (
+    descriptor: Record<string, unknown> | undefined,
+  ): string | undefined => {
+    const identity = descriptor?.['identity']
+    return typeof identity === 'object' &&
+      identity !== null &&
+      'codecId' in identity &&
+      typeof identity.codecId === 'string'
+      ? identity.codecId
+      : undefined
+  }
+
+  const openAndObserve = async (
+    entry: ExplorerEntry,
+    container?: ElectronFormatSmokeObservation['container'],
+    requestedStages?: readonly string[],
+  ): Promise<ElectronFormatSmokeObservation | undefined> => {
+    if (entry.directory) return undefined
     try {
       await editors.open(entry)
       await settle()
+      const openedSubject = options.subjectFor(entry.id)
       const picker = focusedPicker()
       const views = picker === undefined ? [] : [...picker.options].map(item => item.value)
+      if (openedSubject === undefined && requestedStages !== undefined) {
+        console.log(
+          `selftest: ${entry.name} has no opened subject; footer=${JSON.stringify(options.footerText())}`,
+        )
+      }
 
       /*
        * Every offered stage has to mount, not just the one that opens. The picker is the public
@@ -1327,42 +1543,231 @@ async function selfTest(options: {
        * `ok(degraded)` is a stage that mounted and then said honestly that it could not render —
        * a platform decoder refusing a fixture is not the same failure as nothing mounting.
        */
+      const exercisedViews =
+        openedSubject === undefined && requestedStages !== undefined
+          ? []
+          : requestedStages === undefined
+            ? views
+            : requestedStages.flatMap(stage => (views.includes(stage) ? [stage] : [])).slice(0, 1)
       const results: string[] = []
-      let all = mountedSurface() !== null
-      for (const view of views) {
+      let all = true
+      for (const view of exercisedViews) {
         if (picker !== undefined) {
           picker.value = view
           picker.dispatchEvent(new Event('change'))
           await settle()
         }
-        const surface = mountedSurface()
-        if (surface === null) all = false
+        const surface = await waitForValue(mountedSurface, FORMAT_SMOKE_MOUNT_TIMEOUT_MS)
+        if (surface === undefined) all = false
         const degraded = surface?.querySelector('[data-mk-state~="error"]') != null
-        results.push(`${view}=${surface === null ? 'EMPTY' : degraded ? 'ok(degraded)' : 'ok'}`)
+        results.push(
+          `${view}=${surface === undefined ? 'EMPTY' : degraded ? 'ok(degraded)' : 'ok'}`,
+        )
       }
       console.log(selfTestLine(entry.name, views, views.length > 0 && all))
       if (views.length > 1) console.log(`selftest: ${entry.name} stages ${results.join(' ')}`)
 
-      const subject = options.subjectFor(entry.id)
+      const subject = openedSubject ?? options.subjectFor(entry.id)
+      const panels: { id: string; state: 'ok' | 'EMPTY' }[] = []
       if (subject !== undefined) {
         console.log(selfTestCodecLine(entry.name, subject.descriptor))
         // Every panel the policy offers has to mount too — cycle them the way the dock's own
         // control does, and report which produced a viewer surface.
-        const panelResults: string[] = []
-        await inspector.show(subject)
-        for (const panel of inspector.panels) {
-          await inspector.select(panel)
-          await settle()
-          const ok = inspector.root.querySelector('[data-mk-part="viewer"]') !== null
-          panelResults.push(`${panel}=${ok ? 'ok' : 'EMPTY'}`)
+        if (requestedStages === undefined) {
+          await inspector.show(subject)
+          for (const panel of inspector.panels) {
+            await inspector.select(panel)
+            const ok =
+              (await waitForValue(
+                () => inspector.root.querySelector('[data-mk-part="viewer"]'),
+                FORMAT_SMOKE_MOUNT_TIMEOUT_MS,
+              )) !== undefined
+            panels.push({ id: panel, state: ok ? 'ok' : 'EMPTY' })
+          }
+          console.log(
+            `selftest: ${entry.name} panels [${inspector.panels.join(', ')}] ${panels
+              .map(panel => `${panel.id}=${panel.state}`)
+              .join(' ')}`,
+          )
         }
+      }
+      const byteEvidence = options.byteEvidenceFor(entry.id)
+      const editFallback = options.editFallbackFor(entry.id)
+      const codecId = descriptorCodecId(subject?.descriptor)
+      const selectedRoute = options.subjectRecordFor(entry.id)?.selectedRoute
+      const observation: ElectronFormatSmokeObservation = {
+        entryName: entry.name,
+        ...(codecId === undefined ? {} : { codecId }),
+        ...(selectedRoute === undefined ? {} : { selectedRoute }),
+        bytes: byteEvidence?.bytes ?? -1,
+        sha256: byteEvidence?.sha256 ?? '',
+        views,
+        stages: results.map(result => {
+          const [id = '', state = 'EMPTY'] = result.split('=')
+          return { id, state: state as 'ok' | 'ok(degraded)' | 'EMPTY' }
+        }),
+        panels,
+        ...(container === undefined ? {} : { container }),
+        ...(editFallback === undefined ? {} : { editFallback }),
+      }
+      return observation
+    } catch (error) {
+      console.log(`selftest: ${entry.name} -> FAILED ${String(error)}`)
+      return undefined
+    }
+  }
+
+  const formatSmokePlan =
+    options.formatSmokePlan === undefined
+      ? undefined
+      : readElectronFormatSmokePlan(options.formatSmokePlan)
+  if (
+    formatSmokePlan !== undefined &&
+    options.formatSmokeAuthority !== undefined &&
+    options.prepareFormatSmokePackages !== undefined
+  ) {
+    const packageIds = summarizeElectronFormatSmokeAuthority(
+      options.formatSmokeAuthority,
+    ).packageIds
+    await options.prepareFormatSmokePackages(packageIds)
+  }
+
+  const openProductContainerEntry = async (
+    planned: ElectronFormatSmokePlan['cases'][number],
+  ): Promise<ElectronFormatSmokeObservation | undefined> => {
+    if (
+      planned.parentPath === undefined ||
+      planned.entryPath === undefined ||
+      planned.boundary !== 'product-container-entry'
+    ) {
+      throw new Error(`${planned.caseId}: product-container-entry plan is incomplete`)
+    }
+    const parentEntry: ExplorerEntry = {
+      id: planned.parentPath,
+      name: basename(planned.parentPath),
+      directory: false,
+    }
+    const parentLease = await options.openProductParent(parentEntry)
+    try {
+      const parentRecord = options.subjectRecordFor(parentEntry.id)
+      if (parentRecord === undefined) throw new Error(`${planned.caseId}: parent did not open`)
+      const namespaceLease = await parentRecord.session.dataSource(
+        'common.view/namespace-entry-source',
+        1,
+      )
+      try {
+        const nested = await findExactNamespaceFile(
+          namespaceLease.value as never,
+          planned.entryPath,
+        )
+        if (nested === undefined) {
+          throw new Error(
+            `${planned.caseId}: parent namespace does not contain ${planned.entryPath}`,
+          )
+        }
+        const operations = await parentRecord.session.operations()
+        const handler = (
+          parentRecord.descriptor['operations'] as
+            | readonly {
+                readonly id?: unknown
+                readonly handlerId?: unknown
+                readonly state?: unknown
+              }[]
+            | undefined
+        )
+          ?.filter(item => item.id === 'container.extract' && item.state === 'available')
+          .map(item => (typeof item.handlerId === 'string' ? item.handlerId : ''))[0]
+        if (handler === undefined || handler === '') {
+          throw new Error(`${planned.caseId}: parent has no available container.extract`)
+        }
+        const childUri = `modkit-container:${encodeURIComponent(
+          parentRecord.sessionId,
+        )}?entryId=${encodeURIComponent(nested.id)}`
+        const parentCodecId = descriptorCodecId(parentRecord.descriptor)
+        const child = await options.preopenProductChild(childUri)
+        try {
+          const extracted = await operations.invoke(handler, { entryId: nested.id } as never)
+          const bytes = bytesOfOperationOutput((extracted as { readonly output?: unknown }).output)
+          if ((extracted as { readonly state?: unknown }).state !== 'ok' || bytes === undefined) {
+            throw new Error(`${planned.caseId}: parent container.extract did not return bytes`)
+          }
+          options.setVirtualBytes(childUri, bytes)
+          return await openAndObserve(
+            { id: childUri, name: planned.fileName, directory: false, size: bytes.byteLength },
+            {
+              parentEntryName: parentEntry.name,
+              ...(parentCodecId === undefined ? {} : { parentCodecId }),
+              ...(parentRecord.selectedRoute === undefined
+                ? {}
+                : { parentRoute: parentRecord.selectedRoute }),
+              entryPath: nested.path,
+            },
+            electronFormatSmokeStageAlternates(planned.stage),
+          )
+        } finally {
+          await child.disposeIfPending()
+        }
+      } finally {
+        await (namespaceLease as { readonly release?: () => Promise<void> }).release?.()
+      }
+    } finally {
+      await parentLease.dispose()
+    }
+  }
+
+  if (formatSmokePlan === undefined) {
+    for (const entry of entries) {
+      const observation = await openAndObserve(entry)
+      if (observation !== undefined) formatSmokeObservations.push(observation)
+    }
+  } else {
+    const byName = new Map(entries.map(entry => [entry.name.toLowerCase(), entry]))
+    for (const planned of formatSmokePlan.cases) {
+      try {
+        const observation =
+          planned.boundary === 'product-container-entry'
+            ? await openProductContainerEntry(planned)
+            : await openAndObserve(
+                byName.get(planned.fileName.toLowerCase()) ?? {
+                  id: planned.fileName,
+                  name: planned.fileName,
+                  directory: false,
+                },
+                undefined,
+                electronFormatSmokeStageAlternates(planned.stage),
+              )
+        if (observation !== undefined) formatSmokeObservations.push(observation)
+      } catch (error) {
+        console.log(`selftest: ${planned.caseId} -> FAILED ${String(error)}`)
+      }
+    }
+  }
+
+  if (options.formatSmokePlan !== undefined)
+    try {
+      const receipt = buildElectronFormatSmokeReceipt(options.formatSmokeAuthority, {
+        authoritySha256: options.formatSmokeAuthoritySha256 ?? '',
+        plan: options.formatSmokePlan as never,
+        renderer: options.rendererProfile,
+        observations: formatSmokeObservations,
+      })
+      console.log(`selftest: format-smoke ${JSON.stringify(receipt)}`)
+      if (receipt.verdict !== 'pass') {
         console.log(
-          `selftest: ${entry.name} panels [${inspector.panels.join(', ')}] ${panelResults.join(' ')}`,
+          `selftest: format-smoke FAILED ${receipt.failures
+            .map(item => `${item.caseId ?? 'authority'}:${item.code}`)
+            .join(', ')}`,
         )
       }
     } catch (error) {
-      console.log(`selftest: ${entry.name} -> FAILED ${String(error)}`)
+      console.log(`selftest: format-smoke FAILED ${String(error)}`)
     }
+  else if (options.formatSmokeOnly === true) {
+    console.log('selftest: format-smoke FAILED missing explicit format-smoke plan')
+  }
+  if (options.formatSmokeOnly === true) {
+    console.log('selftest: done')
+    return
   }
 
   const tabs = editors.root.querySelectorAll('[data-mk-part="explorer.filetab"]').length
@@ -1395,6 +1800,10 @@ async function selfTest(options: {
   } catch (error) {
     console.log(`selftest: extension probes FAILED ${String(error)}`)
   }
+
+  // Main uses this as a fail-closed watchdog boundary: the complete connected-folder lifecycle
+  // has a receipt before the optional late editor/archive probes begin.
+  console.log('selftest: extension lifecycle done')
 
   /*
    * A probe that throws must not take the run with it. `boot()` catches, replaces the page with a
@@ -1505,28 +1914,34 @@ async function selfTest(options: {
   // Archive: open the namespace stage, activate the first entry, and read the inline preview.
   const archive = entries.find(item => item.name.toLowerCase().endsWith('.zip'))
   if (archive !== undefined) {
-    await editors.open(archive)
-    await settle()
-    const picker = focusedPicker()
-    if (picker !== undefined && [...picker.options].some(option => option.value === 'archive')) {
-      picker.value = 'archive'
-      picker.dispatchEvent(new Event('change'))
+    try {
+      await awaitSelfTestProbe(editors.open(archive), 'archive stage open')
       await settle()
-      const label = editors.root.querySelector(
-        `${FOCUSED} [data-mk-part="explorer.tabcontent"]:not([hidden]) [data-mk-part="namespace.label"]`,
-      )
-      ;(label as HTMLElement | null)?.click()
-      await new Promise(resolve => setTimeout(resolve, 800))
-      const pane = editors.root.querySelector(
-        `${FOCUSED} [data-mk-part="explorer.tabcontent"]:not([hidden]) [data-mk-part="archive.preview"]`,
-      )
-      const status = pane?.querySelector('[data-mk-part="viewer.status"]')?.textContent ?? ''
-      const rendered = pane?.querySelector('[data-mk-part="text"], [data-mk-part="hex"]') != null
-      console.log(
-        `selftest: archive entry clicked=${label !== null} preview=${rendered} status=${JSON.stringify(status)}`,
-      )
-    } else {
-      console.log('selftest: archive stage was not offered for the zip sample')
+      const picker = focusedPicker()
+      if (picker !== undefined && [...picker.options].some(option => option.value === 'archive')) {
+        picker.value = 'archive'
+        picker.dispatchEvent(new Event('change'))
+        await settle()
+        const label = editors.root.querySelector(
+          `${FOCUSED} [data-mk-part="explorer.tabcontent"]:not([hidden]) [data-mk-part="namespace.label"]`,
+        )
+        ;(label as HTMLElement | null)?.click()
+        await new Promise(resolve => setTimeout(resolve, 800))
+        const pane = editors.root.querySelector(
+          `${FOCUSED} [data-mk-part="explorer.tabcontent"]:not([hidden]) [data-mk-part="archive.preview"]`,
+        )
+        const status = pane?.querySelector('[data-mk-part="viewer.status"]')?.textContent ?? ''
+        const rendered = pane?.querySelector('[data-mk-part="text"], [data-mk-part="hex"]') != null
+        console.log(
+          `selftest: archive entry clicked=${label !== null} preview=${rendered} status=${JSON.stringify(status)}`,
+        )
+      } else {
+        console.log('selftest: archive stage was not offered for the zip sample')
+      }
+    } catch (error) {
+      // This late check is independent from the lifecycle receipt above. Preserve its failure
+      // rather than letting it suppress the terminal self-test marker.
+      console.log(`selftest: archive probe FAILED ${String(error)}`)
     }
   }
 
@@ -1720,44 +2135,6 @@ async function extensionProbes(options: {
     return
   }
 
-  /**
-   * Read the contribution inventory and one optional owner-state in a single visit to the group.
-   * Keeping this atomic avoids repeatedly rebuilding the complete cards just to inspect the same
-   * machine state twice.
-   */
-  const contributionSnapshot = async (
-    selected?: string,
-  ): Promise<{ readonly ids: readonly string[]; readonly selectedState: string }> => {
-    await showGroup('codecs')
-    const ids = [...extensionsRoot.querySelectorAll('[data-mk-part="settings.toggle"]')].flatMap(
-      node => {
-        const id = node instanceof HTMLInputElement ? node.dataset['contribution'] : undefined
-        return id === undefined ? [] : [id]
-      },
-    )
-    const toggle =
-      selected === undefined
-        ? undefined
-        : extensionsRoot.querySelector(
-            `[data-mk-part="settings.toggle"][data-contribution="${selected}"]`,
-          )
-    const state = toggle
-      ?.closest('[data-mk-part="settings.extension"]')
-      ?.querySelector<HTMLElement>('[data-enablement]')?.dataset['enablement']
-    await showGroup('extensions')
-    return { ids, selectedState: state ?? 'missing' }
-  }
-
-  const before = (await contributionSnapshot()).ids
-  const addRevision = operationRevision()
-  addButton.click()
-  console.log(`selftest: extensions add folder #1 -> ${await settleOperation(addRevision)}`)
-  const after = (await contributionSnapshot()).ids
-  const gained = after.filter(id => !before.includes(id))
-  console.log(
-    `selftest: extensions codecs ${before.length} -> ${after.length}, new [${gained.join(', ')}]`,
-  )
-
   /*
    * Switching the whole extension off is a different seam from switching one contribution off:
    * its manifests and cards remain inventoried while every owned contribution becomes inactive.
@@ -1773,43 +2150,34 @@ async function extensionProbes(options: {
     )
     return node instanceof HTMLInputElement ? node : undefined
   }
-  const connected = gained[0]
-  if (connected === undefined) {
+  const connected = 'org.example/fixture-thirdparty'
+  const addRevision = operationRevision()
+  addButton.click()
+  console.log(`selftest: extensions add folder #1 -> ${await settleOperation(addRevision)}`)
+  const added = extensionToggle(connected, 'disable-extension')
+  console.log(`selftest: extensions ${connected} listed=${added !== undefined} state=enabled`)
+  if (added === undefined) {
     console.log('selftest: extensions the connected folder contributed nothing to switch off')
   } else {
-    const owner = extensionToggle('org.example/fixture-thirdparty', 'disable-extension')
-    if (owner === undefined) {
-      console.log('selftest: extensions no switch for the connected extension')
-    } else {
-      owner.checked = false
-      const revision = operationRevision()
-      owner.dispatchEvent(new Event('change'))
+    added.checked = false
+    const revision = operationRevision()
+    added.dispatchEvent(new Event('change'))
+    console.log(
+      `selftest: extensions disable the connected folder -> ${await settleOperation(revision)}`,
+    )
+    const again = extensionToggle(connected, 'enable-extension')
+    console.log(`selftest: extensions ${connected} listed=${again !== undefined} state=disabled`)
+    if (again !== undefined) {
+      again.checked = true
+      const enableRevision = operationRevision()
+      again.dispatchEvent(new Event('change'))
       console.log(
-        `selftest: extensions disable the connected folder -> ${await settleOperation(revision)}`,
+        `selftest: extensions enable the connected folder -> ${await settleOperation(enableRevision)}`,
       )
-      const offSnapshot = await contributionSnapshot(connected)
-      const off = offSnapshot.ids
+      const reenabled = extensionToggle(connected, 'disable-extension')
       console.log(
-        `selftest: extensions codecs ${after.length} -> ${off.length}, ` +
-          `${connected} listed=${off.includes(connected)} ` +
-          `state=${offSnapshot.selectedState}`,
+        `selftest: extensions ${connected} listed=${reenabled !== undefined} state=enabled`,
       )
-      const again = extensionToggle('org.example/fixture-thirdparty', 'enable-extension')
-      if (again !== undefined) {
-        again.checked = true
-        const revision = operationRevision()
-        again.dispatchEvent(new Event('change'))
-        console.log(
-          `selftest: extensions enable the connected folder -> ${await settleOperation(revision)}`,
-        )
-        const backSnapshot = await contributionSnapshot(connected)
-        const back = backSnapshot.ids
-        console.log(
-          `selftest: extensions codecs ${off.length} -> ${back.length}, ` +
-            `${connected} listed=${back.includes(connected)} ` +
-            `state=${backSnapshot.selectedState}`,
-        )
-      }
     }
   }
 
@@ -1879,28 +2247,23 @@ async function editingProbes(options: {
     return true
   }
   const find = (name: string): ExplorerEntry | undefined => entries.find(item => item.name === name)
-  /**
-   * Close a tab the way a user does — its own close control — and report whether the arm went
-   * with it. A closed tab that left an arm alive would keep main holding prepared commits for a
-   * file nobody has open.
-   */
+  /** Close every tab on this path and wait for each preview/edit arm to be disposed. */
   const closeTab = async (entry: ExplorerEntry): Promise<boolean> => {
     /*
      * Every tab on this file, not just the focused one. A split group can hold a second tab on the
      * same path, and each holds its own arm — so "closing released the arm" is only a claim worth
      * printing once no tab has the file open at all.
      */
-    const controls = [
-      ...editors.root.querySelectorAll(
+    let closed = false
+    while (
+      editors.root.querySelector(
         `[data-mk-part="explorer.filetab-close"][aria-label="Close ${entry.name}"]`,
-      ),
-    ]
-    if (controls.length === 0) return false
-    for (const control of controls) {
-      if (control instanceof HTMLElement) control.click()
-      await new Promise(resolve => setTimeout(resolve, 200))
+      ) !== null
+    ) {
+      if (!(await editors.close(entry.id))) return false
+      closed = true
     }
-    return portsFor(entry.id) === undefined
+    return closed && portsFor(entry.id) === undefined
   }
 
   // ------------------------------------------------------------------ text: save, then conflict
@@ -1963,12 +2326,20 @@ async function editingProbes(options: {
           provenance: { actor: 'user' },
         }
         const validation = await probe.edit.propose(refused)
-        const prepared = await probe.commit.prepare(await probe.edit.plan(refused))
-        console.log(
-          `selftest: edit writer refusal valid=${validation.valid} ` +
-            `codes=[${validation.diagnostics.map(item => item.code).join(', ')}] ` +
-            `prepare=${prepared.state}/${prepared.reason ?? '-'} footer=${JSON.stringify(footerText())}`,
-        )
+        if (!validation.valid) {
+          console.log(
+            `selftest: edit writer refusal valid=false ` +
+              `codes=[${validation.diagnostics.map(item => item.code).join(', ')}] ` +
+              `prepare=skipped/invalid-proposal footer=${JSON.stringify(footerText())}`,
+          )
+        } else {
+          const prepared = await probe.commit.prepare(await probe.edit.plan(refused))
+          console.log(
+            `selftest: edit writer refusal valid=${validation.valid} ` +
+              `codes=[${validation.diagnostics.map(item => item.code).join(', ')}] ` +
+              `prepare=${prepared.state}/${prepared.reason ?? '-'} footer=${JSON.stringify(footerText())}`,
+          )
+        }
       } catch (error) {
         console.log(`selftest: edit writer refusal FAILED ${String(error)}`)
       }
@@ -2310,7 +2681,7 @@ async function editOperationProbes(options: {
      * reopen focuses others on the way, so "a note appeared" is not the same claim as "this file's
      * change landed" — without the label a probe happily prints the previous file's outcome.
      */
-    const expected = `Last change: ${picker.selectedOptions[0]?.textContent ?? ''}`
+    const selectedFormLabel = picker.selectedOptions[0]?.textContent ?? ''
     for (const [name, value] of Object.entries(values)) {
       const input = inspector.root.querySelector(`[data-mk-part="form.input"][name="${name}"]`)
       if (!(input instanceof HTMLInputElement)) return `field ${name} is not on the form`
@@ -2340,8 +2711,7 @@ async function editOperationProbes(options: {
        */
       const note = panelNotes()
       if (
-        note !== noteBefore &&
-        note.includes(expected) &&
+        isSelfTestEditOutcome(noteBefore, note, selectedFormLabel) &&
         options.subjectFor(path) !== undefined
       ) {
         return note

@@ -13,7 +13,8 @@
  * webview is not an extension host) stays true in the running product and not only in the
  * topology.
  */
-import { existsSync, readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
@@ -185,6 +186,15 @@ const GAME_DISCOVERY_BUDGET = Object.freeze({
 
 const PACKAGE_INSTALL_GATE_COMMAND = '_modkit.acceptance.packageInstallGate'
 const PACKAGE_INSTALL_GATE_ENV = 'MODKIT_VSCODE_ACCEPTANCE_PACKAGE_GATE'
+const PACKAGE_INSTALL_GATE_GENERATION_ENV = 'MODKIT_VSCODE_ACCEPTANCE_GENERATION'
+const PACKAGE_INSTALL_GATE_ARTIFACT_ENV = 'MODKIT_VSCODE_ACCEPTANCE_ARTIFACT_SHA256'
+const PACKAGE_INSTALL_GATE_CONTINUE_ENV = 'MODKIT_VSCODE_ACCEPTANCE_CONTINUE'
+const PACKAGE_INSTALL_GATE_DISABLED_URI_ENV = 'MODKIT_VSCODE_ACCEPTANCE_DISABLED_URI'
+const FORMAT_SMOKE_WORKSPACE_ROOT_ENV = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_WORKSPACE_ROOT'
+const FORMAT_SMOKE_SC2_ROOT_ENV = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_SC2_ROOT'
+const FORMAT_SMOKE_WARZONE_ROOT_ENV = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_WARZONE_ROOT'
+const FORMAT_SMOKE_START_ENV = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_START'
+const FORMAT_SMOKE_ACK_ENV = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_ACK'
 const MANAGED_PACKAGES_DIRECTORY = 'managed-packages'
 const MANAGED_RELEASE_DESCRIPTOR = 'release.v1.json'
 const MANAGED_RELEASE_CATALOG = 'catalog.v1.json'
@@ -193,6 +203,265 @@ const SELECTED_SOURCES_KEY = 'modkit.selectedContentSources'
 interface PackagedManagedRegistry {
   readonly catalogPath: string
   readonly trustedPublicKeys: Readonly<Record<string, string>>
+}
+
+const FORMAT_SMOKE_CASE_IDS = Object.freeze([
+  'image-dds',
+  'image-png',
+  'image-tga',
+  'image-jpeg',
+  'document-odt',
+  'data-xml',
+  'archive-zip',
+  'archive-warzone-wz',
+  'archive-mpq',
+  'casc-dds',
+  'audio-wav',
+  'audio-ogg',
+  'model-m3',
+  'model-warzone-pie',
+])
+
+interface FormatSmokeRouteStep {
+  readonly formatId: string
+  readonly extensionId: string
+  readonly contributionId: string
+}
+
+interface FormatSmokeAuthorityCase {
+  readonly id: string
+  readonly family: string
+  readonly formats: readonly string[]
+  readonly route: readonly FormatSmokeRouteStep[]
+  readonly stage: 'raster' | 'tree-text' | 'tree' | 'metadata-tree' | 'model-or-wireframe'
+  readonly corpus:
+    | { readonly kind: 'named-exclusion'; readonly reason: string }
+    | {
+        readonly kind:
+          'workspace-reference' | 'warzone-install-file' | 'sc2-install-file' | 'sc2-casc-entry'
+        readonly path: string
+        readonly bytes: number
+        readonly sha256: string
+      }
+    | {
+        readonly kind: 'warzone-wz-entry'
+        readonly container: string
+        readonly path: string
+        readonly bytes: number
+        readonly sha256: string
+      }
+}
+
+interface FormatSmokeAuthority {
+  readonly kind: 'x3.ga-recovery/format-family-smoke'
+  readonly schemaVersion: 1
+  readonly cases: readonly FormatSmokeAuthorityCase[]
+  readonly namedExclusions: readonly { readonly id: string; readonly reason: string }[]
+}
+
+interface FormatSmokeOpenCase {
+  readonly kind: 'open'
+  readonly id: string
+  readonly family: string
+  readonly stage: FormatSmokeAuthorityCase['stage']
+  readonly route: readonly FormatSmokeRouteStep[]
+  readonly source:
+    | {
+        readonly kind: 'file'
+        readonly path: string
+        readonly uri: vscode.Uri
+        readonly bytes: number
+        readonly sha256: string
+      }
+    | {
+        readonly kind: 'container-entry'
+        readonly container: string
+        readonly entry: string
+        readonly uri: vscode.Uri
+        readonly bytes: number
+        readonly sha256: string
+      }
+}
+
+interface FormatSmokeExcludedCase {
+  readonly kind: 'excluded'
+  readonly id: string
+  readonly family: string
+  readonly stage: FormatSmokeAuthorityCase['stage']
+  readonly route: readonly FormatSmokeRouteStep[]
+  readonly reason: string
+}
+
+type FormatSmokeCase = FormatSmokeOpenCase | FormatSmokeExcludedCase
+
+const formatSmokeObject = (value: unknown, label: string): Record<string, unknown> => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new TypeError(`${label} must be an object`)
+  }
+  return value as Record<string, unknown>
+}
+
+const formatSmokeConfinedPath = (root: string, portable: string, label: string): string => {
+  if (portable.includes('\0')) throw new TypeError(`${label} contains NUL`)
+  const normalized = portable.replaceAll('\\', '/')
+  if (normalized.startsWith('/') || /^[a-z]:\//iu.test(normalized)) {
+    throw new TypeError(`${label} escapes its explicit root`)
+  }
+  const target = resolve(root, ...normalized.split('/'))
+  const fromRoot = relative(root, target)
+  if (fromRoot === '..' || fromRoot.startsWith(`..${process.platform === 'win32' ? '\\' : '/'}`)) {
+    throw new TypeError(`${label} escapes its explicit root`)
+  }
+  return target
+}
+
+const formatSmokeEntryPath = (value: string, label: string): string => {
+  const normalized = value.replaceAll('\\', '/')
+  if (
+    normalized.split('/').some(segment => segment === '' || segment === '.' || segment === '..')
+  ) {
+    throw new TypeError(`${label} is not a confined container entry`)
+  }
+  return normalized
+}
+
+function readPackagedFormatSmoke(extensionRoot: string): {
+  readonly authority: FormatSmokeAuthority
+  readonly sha256: string
+} {
+  const path = join(extensionRoot, 'dist-app', 'format-smoke.v1.json')
+  const bytes = readFileSync(path)
+  const parsed = formatSmokeObject(JSON.parse(bytes.toString('utf8')), 'format smoke authority')
+  if (parsed.kind !== 'x3.ga-recovery/format-family-smoke' || parsed.schemaVersion !== 1) {
+    throw new TypeError('format smoke authority has the wrong kind or schemaVersion')
+  }
+  const cases = parsed.cases
+  if (!Array.isArray(cases) || cases.length !== FORMAT_SMOKE_CASE_IDS.length) {
+    throw new TypeError('format smoke authority must contain exactly 14 cases')
+  }
+  const ids = cases.map(item => formatSmokeObject(item, 'format smoke case').id)
+  if (JSON.stringify(ids) !== JSON.stringify(FORMAT_SMOKE_CASE_IDS)) {
+    throw new TypeError(`format smoke authority case order is ${JSON.stringify(ids)}`)
+  }
+  const exclusions = parsed.namedExclusions
+  if (
+    !Array.isArray(exclusions) ||
+    exclusions.length !== 1 ||
+    formatSmokeObject(exclusions[0], 'format smoke exclusion').id !== 'document-odt'
+  ) {
+    throw new TypeError('format smoke authority must contain only document-odt as an exclusion')
+  }
+  return Object.freeze({
+    authority: parsed as unknown as FormatSmokeAuthority,
+    sha256: `sha256:${createHash('sha256').update(bytes).digest('hex')}`,
+  })
+}
+
+const requiredFormatSmokeRoot = (environment: string): string => {
+  const value = process.env[environment]
+  if (value === undefined || value.trim() === '' || !isAbsolute(value)) {
+    throw new TypeError(`${environment} must name an absolute root`)
+  }
+  return resolve(value)
+}
+
+function resolvePackagedFormatSmokeCases(
+  authority: FormatSmokeAuthority,
+): readonly FormatSmokeCase[] {
+  const workspaceRoot = requiredFormatSmokeRoot(FORMAT_SMOKE_WORKSPACE_ROOT_ENV)
+  const sc2Root = requiredFormatSmokeRoot(FORMAT_SMOKE_SC2_ROOT_ENV)
+  const warzoneRoot = requiredFormatSmokeRoot(FORMAT_SMOKE_WARZONE_ROOT_ENV)
+  return Object.freeze(
+    authority.cases.map(entry => {
+      const common = {
+        id: entry.id,
+        family: entry.family,
+        stage: entry.stage,
+        route: Object.freeze(
+          entry.route.map(step =>
+            Object.freeze({
+              formatId: step.formatId,
+              extensionId: step.extensionId,
+              contributionId: step.contributionId,
+            }),
+          ),
+        ),
+      }
+      if (entry.corpus.kind === 'named-exclusion') {
+        return Object.freeze({
+          ...common,
+          kind: 'excluded' as const,
+          reason: entry.corpus.reason,
+        })
+      }
+      const corpus = entry.corpus
+      if (corpus.kind === 'sc2-casc-entry') {
+        const member = formatSmokeEntryPath(corpus.path, `${entry.id}.corpus.path`)
+        return Object.freeze({
+          ...common,
+          kind: 'open' as const,
+          source: Object.freeze({
+            kind: 'container-entry' as const,
+            container: sc2Root,
+            entry: member,
+            uri: vscode.Uri.from({
+              scheme: CONTAINER_SCHEME,
+              path: containerUriPath(sc2Root, member),
+            }),
+            bytes: corpus.bytes,
+            sha256: corpus.sha256,
+          }),
+        })
+      }
+      if (corpus.kind === 'warzone-wz-entry') {
+        const container = formatSmokeConfinedPath(
+          warzoneRoot,
+          corpus.container,
+          `${entry.id}.corpus.container`,
+        )
+        const member = formatSmokeEntryPath(corpus.path, `${entry.id}.corpus.path`)
+        return Object.freeze({
+          ...common,
+          kind: 'open' as const,
+          source: Object.freeze({
+            kind: 'container-entry' as const,
+            container,
+            entry: member,
+            uri: vscode.Uri.from({
+              scheme: CONTAINER_SCHEME,
+              path: containerUriPath(container, member),
+            }),
+            bytes: corpus.bytes,
+            sha256: corpus.sha256,
+          }),
+        })
+      }
+      const root =
+        corpus.kind === 'workspace-reference'
+          ? workspaceRoot
+          : corpus.kind === 'sc2-install-file'
+            ? sc2Root
+            : warzoneRoot
+      const path = formatSmokeConfinedPath(root, corpus.path, `${entry.id}.corpus.path`)
+      return Object.freeze({
+        ...common,
+        kind: 'open' as const,
+        source: Object.freeze({
+          kind: 'file' as const,
+          path,
+          uri: vscode.Uri.file(path),
+          bytes: corpus.bytes,
+          sha256: corpus.sha256,
+        }),
+      })
+    }),
+  )
+}
+
+async function formatSmokeFileDigest(path: string): Promise<string> {
+  const hash = createHash('sha256')
+  for await (const chunk of createReadStream(path)) hash.update(chunk)
+  return hash.digest('hex')
 }
 
 function readPackagedManagedRegistry(extensionRoot: string): PackagedManagedRegistry | undefined {
@@ -241,9 +510,12 @@ class ModkitCustomDocument implements vscode.CustomDocument {
   /** A container member is served by a read-only provider; there is nothing to save it back into. */
   readonly readOnly: boolean
 
-  constructor(readonly uri: vscode.Uri) {
+  constructor(
+    readonly uri: vscode.Uri,
+    forceReadOnly = false,
+  ) {
     this.state = new CustomDocumentState(subjectPathOf(uri))
-    this.readOnly = uri.scheme === CONTAINER_SCHEME
+    this.readOnly = forceReadOnly || uri.scheme === CONTAINER_SCHEME
   }
 
   dispose(): void {
@@ -864,6 +1136,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       loadErrors: host.bundledLoadErrors,
     }),
   )
+  let packageGateDisabledProbeAcceptance: unknown
+  let packageGateFormatSmokeAcceptance: unknown
+  const formatSmokeReadOnlySubjects = new Set<string>()
+  const webviewAcceptance = (): ModkitAcceptanceReceipt => {
+    if (
+      packageGateDisabledProbeAcceptance === undefined &&
+      packageGateFormatSmokeAcceptance === undefined
+    ) {
+      return acceptance
+    }
+    return {
+      ...acceptance,
+      ...(packageGateDisabledProbeAcceptance === undefined
+        ? {}
+        : {
+            packageInstallGate: Object.freeze({
+              disabledProbe: packageGateDisabledProbeAcceptance,
+            }),
+          }),
+      ...(packageGateFormatSmokeAcceptance === undefined
+        ? {}
+        : { formatSmoke: packageGateFormatSmokeAcceptance }),
+    } as ModkitAcceptanceReceipt
+  }
   let localizationCatalogs: readonly UiCatalogDocument[] = Object.freeze([])
   const localizationVfs = createNodeExtensionVfs(managerSecurity.vfsOptions).vfs
   try {
@@ -1229,92 +1525,203 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     staticPackages: staticManagerPackages,
   })
   const extensionManager = new ExtensionManagerController(managerClient)
-  const packageInstallGateReceipt = async () => {
-    const snapshot = await extensionManager.snapshot()
-    const expectedGames = Object.freeze([
-      { id: 'blizzard/starcraft-2', displayName: 'StarCraft II' },
-      { id: 'wz2100project/warzone-2100', displayName: 'Warzone 2100' },
-    ])
-    const entrySummary = (entry: ExtensionManagerEntry) =>
-      Object.freeze({
-        id: entry.id,
-        displayName: entry.displayName,
-        publisher: entry.publisher,
-        availableVersion: entry.availableVersion,
-        installedVersion: entry.installedVersion,
-        enabled: entry.enabled,
-        updateAvailable: entry.updateAvailable,
-        source: entry.source,
-        trusted: entry.trusted,
-        games: Object.freeze(entry.presentation?.games?.map(game => game.id).sort() ?? []),
-      })
-    const entries = Object.freeze(snapshot.entries.map(entrySummary))
-    const checkoutEntries = entries.filter(
-      entry => entry.source === 'workspace' || entry.source.startsWith('local:'),
-    )
-    const gameAvailability = Object.freeze(
-      expectedGames.map(game => {
-        const matchingEntries = entries.filter(entry => entry.games.includes(game.id))
-        const availableEntries = matchingEntries.filter(
-          entry => entry.installedVersion === undefined,
-        )
-        return Object.freeze({
-          game,
-          state: availableEntries.length > 0 ? ('available' as const) : ('missing' as const),
-          entries: Object.freeze(matchingEntries.map(entry => entry.id)),
-        })
-      }),
-    )
-    const failures: { code: string; message: string }[] = []
-    const extensionDevelopmentMode = context.extensionMode === vscode.ExtensionMode.Development
-    if (extensionDevelopmentMode) {
-      failures.push({
-        code: 'x3.acceptance/extension-development-host-refused',
-        message: 'the package/install gate must run from an ordinarily installed VSIX',
-      })
-    }
-    if (!entries.some(entry => entry.trusted && entry.installedVersion === undefined)) {
-      failures.push({
-        code: 'x3.acceptance/offline-signed-catalog-missing',
-        message: 'no trusted available extension from the bundled/offline catalog is visible',
-      })
-    }
-    for (const availability of gameAvailability) {
-      if (availability.state !== 'available') {
-        failures.push({
-          code: 'x3.acceptance/game-extension-not-available',
-          message: `${availability.game.displayName} (${availability.game.id}) is not Available in the installed offline catalog snapshot`,
-        })
-      }
-    }
-    if (checkoutEntries.length > 0) {
-      failures.push({
-        code: 'x3.acceptance/checkout-source-visible',
-        message: `package/install gate saw checkout-local entries: ${checkoutEntries
-          .map(entry => entry.id)
-          .join(', ')}`,
-      })
-    }
-    failures.push({
-      code: 'x3.acceptance/package-lifecycle-not-implemented',
-      message:
-        'A3/A5 requires Available -> install -> disable -> enable -> uninstall -> reinstall with persisted restart state; this test-command contract records the red gate but does not implement product package delivery.',
+  let packageGateChangeEvents = 0
+  context.subscriptions.push(extensionManager.onDidChange(() => (packageGateChangeEvents += 1)))
+  const packageGatePackageIds = Object.freeze([
+    'blizzard/starcraft2-suite',
+    'wz2100project/warzone-2100',
+  ])
+  const packageGateBlizzardPackage = 'blizzard/starcraft2-suite'
+  const packageGateWarzonePackage = 'wz2100project/warzone-2100'
+  const packageGateExpectedGames = Object.freeze([
+    { id: 'blizzard/starcraft-2', displayName: 'StarCraft II' },
+    { id: 'wz2100project/warzone-2100', displayName: 'Warzone 2100' },
+  ])
+  const packageGateExpectedCommonRoots = Object.freeze(
+    BUNDLED_CATALOG.roots.map(root => root.coordinate).sort(),
+  )
+  const packageGateExpectedExternalRoots = Object.freeze(
+    [
+      'blizzard/casc',
+      'blizzard/common-formats',
+      'blizzard/diablo',
+      'blizzard/galaxy-language',
+      'blizzard/models',
+      'blizzard/mpq',
+      'blizzard/starcraft2',
+      'blizzard/warcraft-3',
+      'wz2100project/warzone-2100',
+    ].sort(),
+  )
+  const packageGateSameList = (left: readonly unknown[], right: readonly unknown[]) =>
+    JSON.stringify(left) === JSON.stringify(right)
+  const packageGateEntrySummary = (entry: ExtensionManagerEntry) =>
+    Object.freeze({
+      id: entry.id,
+      displayName: entry.displayName,
+      publisher: entry.publisher,
+      availableVersion: entry.availableVersion,
+      installedVersion: entry.installedVersion,
+      enabled: entry.enabled,
+      updateAvailable: entry.updateAvailable,
+      source: entry.source,
+      trusted: entry.trusted,
+      games: Object.freeze(entry.presentation?.games?.map(game => game.id).sort() ?? []),
     })
+  const packageGateSnapshotSummary = async () => {
+    const snapshot = await extensionManager.snapshot()
+    const entries = Object.freeze(snapshot.entries.map(packageGateEntrySummary))
+    const managed = Object.freeze(
+      entries
+        .filter(entry => packageGatePackageIds.includes(entry.id))
+        .sort((left, right) => left.id.localeCompare(right.id)),
+    )
+    return Object.freeze({
+      entries,
+      managed,
+      trustedAvailableEntries: Object.freeze(
+        managed
+          .filter(entry => entry.trusted && entry.installedVersion === undefined)
+          .map(entry => entry.id),
+      ),
+      checkoutEntries: Object.freeze(
+        entries
+          .filter(entry => entry.source === 'workspace' || entry.source.startsWith('local:'))
+          .map(entry => entry.id),
+      ),
+      gameAvailability: Object.freeze(
+        packageGateExpectedGames.map(game => {
+          const matchingEntries = entries.filter(entry => entry.games.includes(game.id))
+          const availableEntries = matchingEntries.filter(
+            entry => entry.installedVersion === undefined,
+          )
+          return Object.freeze({
+            game,
+            state: availableEntries.length > 0 ? ('available' as const) : ('missing' as const),
+            entries: Object.freeze(matchingEntries.map(entry => entry.id)),
+          })
+        }),
+      ),
+    })
+  }
+  const packageGateCardModel = () => {
+    const cards = [...extensionCards().values()]
+    return Object.freeze({
+      count: cards.length,
+      managed: Object.freeze(
+        cards
+          .filter(card => card.managedPackageId !== undefined)
+          .map(card =>
+            Object.freeze({
+              id: card.id,
+              installed: card.installed,
+              managedPackageId: card.managedPackageId,
+              managedPackageEnabled: card.managedPackageEnabled,
+              records: card.projection.records.length,
+            }),
+          )
+          .sort((left, right) => left.id.localeCompare(right.id)),
+      ),
+    })
+  }
+  const packageGateHostModel = () =>
+    Object.freeze({
+      bundledRoots: host.extensions.bundled.length,
+      bundledRootIds: Object.freeze([...host.extensions.bundled].sort()),
+      installedRoots: host.extensions.installed.length,
+      installedRootIds: Object.freeze([...host.extensions.installed].sort()),
+      managedRootIds: Object.freeze([...host.extensions.managed].sort()),
+      extensionLoadFailures: Object.freeze(
+        host.extensions.failures.map(failure =>
+          Object.freeze({
+            root: failure.root,
+            code: failure.code,
+            message: failure.message,
+          }),
+        ),
+      ),
+      bundledLoadFailures: Object.freeze(
+        host.bundledLoadErrors.map(failure =>
+          Object.freeze({
+            root: failure.root,
+            code: failure.code,
+            message: failure.message,
+          }),
+        ),
+      ),
+      contributionCount: host.contributions.length,
+      disabledManagedRoots: managedExtensionState.disabledExtensions.filter(id =>
+        id.startsWith('blizzard/'),
+      ).length,
+      disabledHostContributions: host.contributions.filter(row => row.disabled).length,
+      blizzardRootsInInventory: host.extensions.installed.filter(id => id.startsWith('blizzard/')),
+    })
+  const packageGateStores = async () =>
+    Object.freeze({
+      materialized: Object.freeze(
+        (await nodeExtensionManager.artifactStore.list()).map(item => item.id).sort(),
+      ),
+      enablement: Object.freeze(
+        (await nodeExtensionManager.enablementStore.list())
+          .map(item => Object.freeze({ id: item.id, enabled: item.enabled }))
+          .sort((left, right) => left.id.localeCompare(right.id)),
+      ),
+    })
+  const packageGateReceiptTarget = vscode.Uri.joinPath(
+    context.globalStorageUri,
+    'package-install-gate.json',
+  )
+  const readPackageGateReceipt = async () => {
+    try {
+      const bytes = await vscode.workspace.fs.readFile(packageGateReceiptTarget)
+      return JSON.parse(new TextDecoder().decode(bytes))
+    } catch {
+      return undefined
+    }
+  }
+  const packageGateCumulative = async (phase: unknown) => {
+    const existing = await readPackageGateReceipt()
+    const phases = [
+      ...((existing as { phases?: readonly unknown[] } | undefined)?.phases ?? []).filter(
+        item =>
+          (item as { generation?: unknown }).generation !==
+          (phase as { generation?: unknown }).generation,
+      ),
+      phase,
+    ].sort(
+      (left, right) =>
+        Number((left as { generation?: unknown }).generation) -
+        Number((right as { generation?: unknown }).generation),
+    )
+    const failures = phases.flatMap(item =>
+      Array.isArray((item as { failures?: unknown }).failures)
+        ? ((item as { failures: readonly unknown[] }).failures as readonly {
+            readonly code?: unknown
+            readonly message?: unknown
+          }[])
+        : [],
+    )
+    const completedGenerations = phases
+      .filter(item => (item as { verdict?: unknown }).verdict === 'pass')
+      .map(item => (item as { generation?: unknown }).generation)
+    const artifactSha256 = process.env[PACKAGE_INSTALL_GATE_ARTIFACT_ENV]
     return Object.freeze({
       kind: 'x3.modkit/vscode-package-install-gate',
       schemaVersion: 1,
       command: PACKAGE_INSTALL_GATE_COMMAND,
+      artifactSha256,
       execution: Object.freeze({
         host: 'vscode-extension-host',
-        extensionDevelopmentMode,
-        catalogRefreshRequested: false,
+        extensionDevelopmentMode: context.extensionMode === vscode.ExtensionMode.Development,
+        registryEnvironmentCleared: (process.env.MODKIT_EXTENSION_REGISTRY ?? '') === '',
         networkAccessRequested: false,
-        checkoutDependencyDetected: checkoutEntries.length > 0,
+        generationEnvironment: process.env[PACKAGE_INSTALL_GATE_GENERATION_ENV] ?? null,
       }),
       expected: Object.freeze({
         offlineCatalogSigned: true,
         offlineCatalogVisible: true,
-        games: expectedGames,
+        games: packageGateExpectedGames,
+        packages: packageGatePackageIds,
         lifecycle: Object.freeze([
           'available',
           'install',
@@ -1323,31 +1730,723 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           'uninstall',
           'reinstall',
         ]),
+        generations: Object.freeze([1, 2, 3]),
         persistedAcrossFullProcessRestart: true,
       }),
-      catalog: Object.freeze({
-        entries,
-        trustedAvailableEntries: Object.freeze(
-          entries
-            .filter(entry => entry.trusted && entry.installedVersion === undefined)
-            .map(entry => entry.id),
+      phases: Object.freeze(phases),
+      failures: Object.freeze(failures),
+      verdict:
+        failures.length === 0 && JSON.stringify(completedGenerations) === JSON.stringify([1, 2, 3])
+          ? ('pass' as const)
+          : ('fail' as const),
+    })
+  }
+  const writePackageGateReceipt = async (value: unknown) => {
+    await vscode.workspace.fs.createDirectory(context.globalStorageUri)
+    const temporary = vscode.Uri.joinPath(
+      context.globalStorageUri,
+      `package-install-gate.${Date.now()}.${nonce()}.tmp.json`,
+    )
+    const bytes = new TextEncoder().encode(`${JSON.stringify(value, null, 2)}\n`)
+    await vscode.workspace.fs.writeFile(temporary, bytes)
+    await vscode.workspace.fs.rename(temporary, packageGateReceiptTarget, { overwrite: true })
+  }
+  const packageGateFailure = (code: string, message: string) => Object.freeze({ code, message })
+  const packageGateAssert = (
+    condition: boolean,
+    failures: { code: string; message: string }[],
+    code: string,
+    message: string,
+  ) => {
+    if (!condition) failures.push(packageGateFailure(code, message))
+  }
+  const packageGateAssertActionsRefreshed = (
+    actions: readonly unknown[],
+    failures: { code: string; message: string }[],
+  ) => {
+    for (const action of actions) {
+      const summary = action as {
+        readonly kind?: unknown
+        readonly changedEventsDelta?: unknown
+        readonly snapshotReturned?: unknown
+      }
+      packageGateAssert(
+        summary.snapshotReturned === true,
+        failures,
+        'x3.acceptance/package-action-snapshot-missing',
+        `${String(summary.kind ?? 'unknown package action')} did not return a refreshed package tree snapshot`,
+      )
+      packageGateAssert(
+        typeof summary.changedEventsDelta === 'number' && summary.changedEventsDelta >= 1,
+        failures,
+        'x3.acceptance/package-action-change-event-missing',
+        `${String(summary.kind ?? 'unknown package action')} did not publish an onDidChange refresh event`,
+      )
+    }
+  }
+  const packageGateAction = async (
+    kind: string,
+    command: Parameters<ExtensionManagerController['execute']>[0],
+  ) => {
+    const before = await packageGateSnapshotSummary()
+    const beforeCards = packageGateCardModel()
+    const beforeEvents = packageGateChangeEvents
+    let after
+    let error: string | undefined
+    try {
+      after = await extensionManager.execute(command)
+    } catch (caught) {
+      error = caught instanceof Error ? caught.message : String(caught)
+      throw caught
+    } finally {
+      // Captures the tree/card projection after every attempted action, including typed failures.
+    }
+    const afterSummary = await packageGateSnapshotSummary()
+    return Object.freeze({
+      kind,
+      command,
+      before,
+      beforeCards,
+      after: afterSummary,
+      afterCards: packageGateCardModel(),
+      changedEventsDelta: packageGateChangeEvents - beforeEvents,
+      snapshotReturned: after !== undefined,
+      ...(error === undefined ? {} : { error }),
+    })
+  }
+  const waitForPackageGateContinuation = async (path: string) => {
+    const deadline = Date.now() + 120_000
+    while (Date.now() < deadline) {
+      if (existsSync(path)) return true
+      await new Promise(resolvePromise => setTimeout(resolvePromise, 250))
+    }
+    return false
+  }
+
+  const formatSmokeControlPath = (environment: string): string => {
+    const value = process.env[environment]
+    if (value === undefined || value.trim() === '' || !isAbsolute(value)) {
+      throw new TypeError(`${environment} must name an absolute control path`)
+    }
+    return resolve(value)
+  }
+
+  const verifyFormatSmokeCase = async (testCase: FormatSmokeOpenCase) => {
+    let bytes: number
+    let sha256: string
+    if (testCase.source.kind === 'file') {
+      const details = statSync(testCase.source.path)
+      if (!details.isFile()) throw new TypeError(`${testCase.id} corpus is not a file`)
+      bytes = details.size
+      if (bytes !== testCase.source.bytes) {
+        throw new TypeError(
+          `${testCase.id} corpus size mismatch: expected ${testCase.source.bytes}, got ${bytes}`,
+        )
+      }
+      sha256 = await formatSmokeFileDigest(testCase.source.path)
+    } else {
+      const value = await containers.read(testCase.source.container, testCase.source.entry)
+      bytes = value.byteLength
+      if (bytes !== testCase.source.bytes) {
+        throw new TypeError(
+          `${testCase.id} corpus size mismatch: expected ${testCase.source.bytes}, got ${bytes}`,
+        )
+      }
+      sha256 = createHash('sha256').update(value).digest('hex')
+    }
+    if (sha256 !== testCase.source.sha256) {
+      throw new TypeError(
+        `${testCase.id} corpus SHA-256 mismatch: expected ${testCase.source.sha256}, got ${sha256}`,
+      )
+    }
+    return Object.freeze({
+      kind: testCase.source.kind,
+      bytes,
+      sha256,
+      verifiedBeforeOpen: true,
+      readOnly: true,
+    })
+  }
+
+  const waitForFormatSmokeAck = async (expected: {
+    readonly path: string
+    readonly artifactSha256: string
+    readonly operationRevision: number
+    readonly caseId: string
+    readonly observationToken: string
+    readonly route: readonly FormatSmokeRouteStep[]
+  }) => {
+    const deadline = Date.now() + 180_000
+    while (Date.now() < deadline) {
+      try {
+        const ack = formatSmokeObject(
+          JSON.parse(readFileSync(expected.path, 'utf8')),
+          'format smoke acknowledgement',
+        )
+        if (
+          ack.kind !== 'x3.vscode-installed-format-smoke-ack' ||
+          ack.schemaVersion !== 1 ||
+          ack.artifactSha256 !== expected.artifactSha256 ||
+          ack.generation !== 3 ||
+          ack.operationRevision !== expected.operationRevision ||
+          ack.caseId !== expected.caseId ||
+          ack.observationToken !== expected.observationToken
+        ) {
+          await new Promise(resolvePromise => setTimeout(resolvePromise, 250))
+          continue
+        }
+        const observation = formatSmokeObject(ack.observation, 'format smoke observation')
+        const digest = `sha256:${createHash('sha256')
+          .update(JSON.stringify(observation))
+          .digest('hex')}`
+        if (ack.observationSha256 !== digest) {
+          throw new TypeError(`${expected.caseId} observation digest mismatch`)
+        }
+        if (ack.verdict !== 'pass') {
+          throw new TypeError(`${expected.caseId} external observation did not pass`)
+        }
+        const actualRoute = Array.isArray(observation.selectedRoute)
+          ? observation.selectedRoute.map(step => {
+              const route = formatSmokeObject(step, `${expected.caseId} selected route`)
+              return {
+                formatId: route.formatId,
+                extensionId: route.extensionId,
+                contributionId: route.contributionId,
+              }
+            })
+          : undefined
+        if (JSON.stringify(actualRoute) !== JSON.stringify(expected.route)) {
+          throw new TypeError(`${expected.caseId} actual selected route does not match authority`)
+        }
+        return Object.freeze({
+          observationSha256: digest,
+          observation: Object.freeze(observation),
+        })
+      } catch (error) {
+        if (error instanceof SyntaxError || (error as NodeJS.ErrnoException).code === 'ENOENT') {
+          await new Promise(resolvePromise => setTimeout(resolvePromise, 250))
+          continue
+        }
+        throw error
+      }
+    }
+    throw new TypeError(`${expected.caseId} external observation timed out`)
+  }
+
+  const runInstalledFormatSmoke = async (
+    artifactSha256: string,
+    persist: (value: unknown) => Promise<void>,
+  ) => {
+    const packaged = readPackagedFormatSmoke(extensionRoot)
+    const cases = resolvePackagedFormatSmokeCases(packaged.authority)
+    const exclusions = cases.filter(
+      (entry): entry is FormatSmokeExcludedCase => entry.kind === 'excluded',
+    )
+    const openCases = cases.filter((entry): entry is FormatSmokeOpenCase => entry.kind === 'open')
+    if (
+      openCases.length !== 13 ||
+      exclusions.length !== 1 ||
+      exclusions[0]?.id !== 'document-odt'
+    ) {
+      throw new TypeError('format smoke must contain 13 opens and the sole document-odt exclusion')
+    }
+    const startPath = formatSmokeControlPath(FORMAT_SMOKE_START_ENV)
+    const ackPath = formatSmokeControlPath(FORMAT_SMOKE_ACK_ENV)
+    await persist(
+      await packageGateCumulative(
+        Object.freeze({
+          generation: 3,
+          state: 'awaiting-format-smoke-start',
+          formatSmoke: Object.freeze({
+            authoritySha256: packaged.sha256,
+            expectedCases: cases.length,
+            expectedOpens: openCases.length,
+            exclusions: Object.freeze(
+              exclusions.map(entry => Object.freeze({ caseId: entry.id, reason: entry.reason })),
+            ),
+          }),
+          failures: Object.freeze([]),
+          verdict: 'pending',
+        }),
+      ),
+    )
+    if (!(await waitForPackageGateContinuation(startPath))) {
+      throw new TypeError('format smoke start sentinel was not observed')
+    }
+
+    const results: unknown[] = []
+    let operationRevision = 0
+    for (const testCase of openCases) {
+      operationRevision += 1
+      if (testCase.source.kind === 'container-entry') {
+        // The acceptance authority names the owner-supplied installation root, but resolving that
+        // name does not itself widen the product grant. Give the shared container registry the
+        // container's directory before the integrity read; the later custom-editor open uses the
+        // same grant and therefore exercises the normal confined product path.
+        grantFor({ path: testCase.source.uri.toString(), kind: 'container-entry' })
+      }
+      const verification = await verifyFormatSmokeCase(testCase)
+      const observationToken = nonce()
+      const subject = subjectKey(subjectPathOf(testCase.source.uri))
+      formatSmokeReadOnlySubjects.add(subject)
+      packageGateFormatSmokeAcceptance = Object.freeze({
+        caseId: testCase.id,
+        operationRevision,
+        observationToken,
+        readOnly: true,
+      })
+      try {
+        openResource(testCase.source.uri)
+        await persist(
+          await packageGateCumulative(
+            Object.freeze({
+              generation: 3,
+              state: 'awaiting-format-smoke-observation',
+              formatSmoke: Object.freeze({
+                authoritySha256: packaged.sha256,
+                completedCases: results.length,
+                current: Object.freeze({
+                  caseId: testCase.id,
+                  family: testCase.family,
+                  stage: testCase.stage,
+                  operationRevision,
+                  observationToken,
+                  corpus: verification,
+                }),
+              }),
+              failures: Object.freeze([]),
+              verdict: 'pending',
+            }),
+          ),
+        )
+        const acknowledged = await waitForFormatSmokeAck({
+          path: ackPath,
+          artifactSha256,
+          operationRevision,
+          caseId: testCase.id,
+          observationToken,
+          route: testCase.route,
+        })
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        let unchangedAfterClose: boolean | undefined
+        if (testCase.id === 'archive-mpq' && testCase.source.kind === 'file') {
+          const afterBytes = statSync(testCase.source.path).size
+          const afterSha256 = await formatSmokeFileDigest(testCase.source.path)
+          unchangedAfterClose =
+            afterBytes === verification.bytes && afterSha256 === verification.sha256
+          if (!unchangedAfterClose) {
+            throw new TypeError('archive-mpq corpus changed during read-only installed open')
+          }
+        }
+        results.push(
+          Object.freeze({
+            caseId: testCase.id,
+            family: testCase.family,
+            stage: testCase.stage,
+            operationRevision,
+            corpus: Object.freeze({
+              ...verification,
+              ...(unchangedAfterClose === undefined ? {} : { unchangedAfterClose }),
+            }),
+            observationSha256: acknowledged.observationSha256,
+            observation: acknowledged.observation,
+            verdict: 'pass',
+          }),
+        )
+      } finally {
+        packageGateFormatSmokeAcceptance = undefined
+        formatSmokeReadOnlySubjects.delete(subject)
+      }
+    }
+    return Object.freeze({
+      kind: 'x3.vscode-installed-format-smoke',
+      schemaVersion: 1,
+      artifactSha256,
+      authoritySha256: packaged.sha256,
+      expectedCases: cases.length,
+      openedCases: results.length,
+      exclusions: Object.freeze(
+        exclusions.map(entry =>
+          Object.freeze({ caseId: entry.id, reason: entry.reason, authorityMatched: true }),
         ),
-      }),
-      gameAvailability,
-      lifecycle: Object.freeze({
-        attempted: false,
-        reason:
-          'production package delivery is intentionally not implemented by this acceptance-contract patch',
-      }),
+      ),
+      cases: Object.freeze(results),
+      failures: Object.freeze([]),
+      verdict: 'pass',
+    })
+  }
+  const packageInstallGateReceipt = async (
+    persist: (value: unknown) => Promise<void> = async () => undefined,
+  ) => {
+    const generation = Number(process.env[PACKAGE_INSTALL_GATE_GENERATION_ENV])
+    const artifactSha256 = process.env[PACKAGE_INSTALL_GATE_ARTIFACT_ENV] ?? ''
+    const failures: { code: string; message: string }[] = []
+    packageGateAssert(
+      Number.isInteger(generation) && generation >= 1 && generation <= 3,
+      failures,
+      'x3.acceptance/package-gate-generation-invalid',
+      `${PACKAGE_INSTALL_GATE_GENERATION_ENV} must be 1, 2 or 3`,
+    )
+    packageGateAssert(
+      /^sha256:[a-f0-9]{64}$/u.test(artifactSha256),
+      failures,
+      'x3.acceptance/package-gate-artifact-sha-invalid',
+      `${PACKAGE_INSTALL_GATE_ARTIFACT_ENV} must be sha256: followed by exactly 64 lowercase hex characters`,
+    )
+    packageGateAssert(
+      context.extensionMode !== vscode.ExtensionMode.Development,
+      failures,
+      'x3.acceptance/extension-development-host-refused',
+      'the package/install gate must run from an ordinarily installed VSIX',
+    )
+    packageGateAssert(
+      (process.env.MODKIT_EXTENSION_REGISTRY ?? '') === '',
+      failures,
+      'x3.acceptance/registry-env-not-cleared',
+      'MODKIT_EXTENSION_REGISTRY must be cleared for installed offline acceptance',
+    )
+
+    const actions: unknown[] = []
+    let catalog: unknown
+    let formatSmoke: unknown
+    if (failures.length === 0 && generation === 1) {
+      const envelope = (await nodeExtensionManager.catalogSource.refresh()) as
+        | {
+            readonly catalog?: {
+              readonly packages?: readonly { readonly id: string }[]
+            }
+            readonly source?: string
+            readonly signatureVerified?: boolean
+          }
+        | undefined
+      if (envelope?.catalog?.packages === undefined) {
+        failures.push(
+          packageGateFailure(
+            'x3.acceptance/offline-catalog-refresh-empty',
+            'offline catalog refresh returned no catalog envelope',
+          ),
+        )
+      }
+      catalog = Object.freeze({
+        source: envelope?.source,
+        signatureVerified: envelope?.signatureVerified === true,
+        packages: Object.freeze((envelope?.catalog?.packages ?? []).map(item => item.id).sort()),
+      })
+      extensionManager.invalidate()
+      const snapshot = await packageGateSnapshotSummary()
+      packageGateAssert(
+        envelope?.signatureVerified === true,
+        failures,
+        'x3.acceptance/offline-catalog-signature-unverified',
+        'offline catalog refresh did not verify the packaged Ed25519 signature',
+      )
+      packageGateAssert(
+        JSON.stringify(snapshot.trustedAvailableEntries) === JSON.stringify(packageGatePackageIds),
+        failures,
+        'x3.acceptance/offline-available-packages-mismatch',
+        `expected trusted Available packages ${packageGatePackageIds.join(', ')}, found ${snapshot.trustedAvailableEntries.join(', ')}`,
+      )
+      packageGateAssert(
+        snapshot.checkoutEntries.length === 0,
+        failures,
+        'x3.acceptance/checkout-source-visible',
+        `package/install gate saw checkout-local entries: ${snapshot.checkoutEntries.join(', ')}`,
+      )
+      for (const availability of snapshot.gameAvailability) {
+        packageGateAssert(
+          availability.state === 'available',
+          failures,
+          'x3.acceptance/game-extension-not-available',
+          `${availability.game.displayName} (${availability.game.id}) is not Available in the installed offline catalog snapshot`,
+        )
+      }
+      if (failures.length === 0) {
+        actions.push(
+          await packageGateAction('install-blizzard', {
+            kind: 'install',
+            id: packageGateBlizzardPackage,
+          }),
+        )
+        actions.push(
+          await packageGateAction('install-warzone', {
+            kind: 'install',
+            id: packageGateWarzonePackage,
+          }),
+        )
+        actions.push(
+          await packageGateAction('enable-blizzard', {
+            kind: 'set-enabled',
+            id: packageGateBlizzardPackage,
+            enabled: true,
+          }),
+        )
+        actions.push(
+          await packageGateAction('enable-warzone', {
+            kind: 'set-enabled',
+            id: packageGateWarzonePackage,
+            enabled: true,
+          }),
+        )
+        actions.push(
+          await packageGateAction('disable-blizzard', {
+            kind: 'set-enabled',
+            id: packageGateBlizzardPackage,
+            enabled: false,
+          }),
+        )
+        actions.push(
+          await packageGateAction('keep-warzone-enabled', {
+            kind: 'set-enabled',
+            id: packageGateWarzonePackage,
+            enabled: true,
+          }),
+        )
+        packageGateAssertActionsRefreshed(actions, failures)
+      }
+    }
+
+    if (failures.length === 0 && generation === 2) {
+      const before = await packageGateSnapshotSummary()
+      const hostModel = packageGateHostModel()
+      packageGateAssert(
+        before.managed.find(entry => entry.id === packageGateBlizzardPackage)?.enabled === false,
+        failures,
+        'x3.acceptance/blizzard-disabled-state-not-persisted',
+        'generation 2 did not start with Blizzard disabled',
+      )
+      packageGateAssert(
+        before.managed.find(entry => entry.id === packageGateWarzonePackage)?.enabled === true,
+        failures,
+        'x3.acceptance/warzone-enabled-state-not-persisted',
+        'generation 2 did not start with Warzone enabled',
+      )
+      packageGateAssert(
+        hostModel.disabledManagedRoots > 0 && hostModel.blizzardRootsInInventory.length > 0,
+        failures,
+        'x3.acceptance/disabled-blizzard-inventory-missing',
+        'host did not keep disabled Blizzard roots in inventory on restart',
+      )
+      const disabledUri = process.env[PACKAGE_INSTALL_GATE_DISABLED_URI_ENV]
+      const disabledProbe = {
+        uriSupplied: disabledUri !== undefined && disabledUri.trim() !== '',
+        opened: false,
+        awaitingContinuation: false,
+        continuation: process.env[PACKAGE_INSTALL_GATE_CONTINUE_ENV] ?? null,
+        observedDiagnostics: [] as { code: string; message: string }[],
+        diagnostics: [] as { code: string; message: string }[],
+      }
+      if (disabledUri === undefined || disabledUri.trim() === '') {
+        failures.push(
+          packageGateFailure(
+            'x3.acceptance/disabled-route-uri-missing',
+            `${PACKAGE_INSTALL_GATE_DISABLED_URI_ENV} must supply a real disabled Blizzard route`,
+          ),
+        )
+      } else {
+        const beforeDiagnostics = publishedSubjectDiagnostics.length
+        openResource(vscode.Uri.parse(disabledUri))
+        disabledProbe.opened = true
+        const deadline = Date.now() + 60_000
+        while (Date.now() < deadline) {
+          const observed = publishedSubjectDiagnostics.slice(beforeDiagnostics).map(item => ({
+            code: item.code,
+            message: item.message,
+          }))
+          disabledProbe.observedDiagnostics = observed
+          const diagnostics = observed.filter(
+            item =>
+              item.code === 'x3.host/candidate-suppressed' &&
+              item.message.includes('x3.host/extension-disabled'),
+          )
+          if (diagnostics.length > 0) {
+            disabledProbe.diagnostics = diagnostics.map(item => ({
+              code: item.code,
+              message: item.message,
+            }))
+            break
+          }
+          await new Promise(resolvePromise => setTimeout(resolvePromise, 250))
+        }
+        if (disabledProbe.diagnostics.length === 0) {
+          failures.push(
+            packageGateFailure(
+              'x3.acceptance/disabled-route-suppression-missing',
+              `disabled route did not publish x3.host/candidate-suppressed containing x3.host/extension-disabled; observed ${JSON.stringify(disabledProbe.observedDiagnostics)}`,
+            ),
+          )
+        } else {
+          packageGateDisabledProbeAcceptance = Object.freeze({
+            diagnostics: disabledProbe.diagnostics,
+          })
+          await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+          openResource(vscode.Uri.parse(disabledUri))
+        }
+      }
+      if (failures.length === 0) {
+        disabledProbe.awaitingContinuation = true
+        const awaitingPhase = await packageGateCumulative(
+          Object.freeze({
+            generation,
+            state: 'awaiting-continuation',
+            catalog,
+            before,
+            host: hostModel,
+            disabledProbe,
+            actions,
+            failures,
+            verdict: 'pending',
+          }),
+        )
+        await persist(awaitingPhase)
+        const continuationPath = process.env[PACKAGE_INSTALL_GATE_CONTINUE_ENV]
+        if (
+          continuationPath === undefined ||
+          continuationPath.trim() === '' ||
+          !(await waitForPackageGateContinuation(continuationPath))
+        ) {
+          failures.push(
+            packageGateFailure(
+              'x3.acceptance/package-gate-continuation-missing',
+              'external continuation sentinel was not observed after disabled-route proof',
+            ),
+          )
+        }
+        if (failures.length === 0) {
+          await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        }
+      }
+      if (failures.length === 0) {
+        actions.push(
+          await packageGateAction('enable-blizzard-after-disabled-probe', {
+            kind: 'set-enabled',
+            id: packageGateBlizzardPackage,
+            enabled: true,
+          }),
+        )
+        actions.push(
+          await packageGateAction('remove-blizzard', {
+            kind: 'remove',
+            id: packageGateBlizzardPackage,
+          }),
+        )
+        actions.push(
+          await packageGateAction('remove-warzone', {
+            kind: 'remove',
+            id: packageGateWarzonePackage,
+          }),
+        )
+        const emptyState = await packageGateSnapshotSummary()
+        const emptyStores = await packageGateStores()
+        packageGateAssert(
+          JSON.stringify(emptyState.trustedAvailableEntries) ===
+            JSON.stringify(packageGatePackageIds),
+          failures,
+          'x3.acceptance/available-state-not-restored',
+          'removing both packages did not restore exact trusted Available state',
+        )
+        packageGateAssert(
+          emptyStores.materialized.length === 0 && emptyStores.enablement.length === 0,
+          failures,
+          'x3.acceptance/manager-state-not-empty-after-remove',
+          `expected empty materialized/enablement stores, found ${JSON.stringify(emptyStores)}`,
+        )
+        actions.push(
+          await packageGateAction('reinstall-blizzard', {
+            kind: 'install',
+            id: packageGateBlizzardPackage,
+          }),
+        )
+        actions.push(
+          await packageGateAction('reinstall-warzone', {
+            kind: 'install',
+            id: packageGateWarzonePackage,
+          }),
+        )
+        actions.push(
+          await packageGateAction('enable-blizzard-final', {
+            kind: 'set-enabled',
+            id: packageGateBlizzardPackage,
+            enabled: true,
+          }),
+        )
+        actions.push(
+          await packageGateAction('enable-warzone-final', {
+            kind: 'set-enabled',
+            id: packageGateWarzonePackage,
+            enabled: true,
+          }),
+        )
+        packageGateAssertActionsRefreshed(actions, failures)
+      }
+    }
+
+    if (failures.length === 0 && generation === 3) {
+      const before = await packageGateSnapshotSummary()
+      const hostModel = packageGateHostModel()
+      packageGateAssert(
+        before.managed.length === 2 && before.managed.every(entry => entry.enabled === true),
+        failures,
+        'x3.acceptance/final-enabled-state-not-persisted',
+        'generation 3 did not start with both managed packages enabled',
+      )
+      packageGateAssert(
+        hostModel.bundledRoots === 8 &&
+          hostModel.installedRoots === 9 &&
+          packageGateSameList(hostModel.bundledRootIds, packageGateExpectedCommonRoots) &&
+          packageGateSameList(hostModel.installedRootIds, packageGateExpectedExternalRoots),
+        failures,
+        'x3.acceptance/final-host-root-count-mismatch',
+        `expected exact Common 8 + external 9 roots, found Common ${JSON.stringify(hostModel.bundledRootIds)} + external ${JSON.stringify(hostModel.installedRootIds)}`,
+      )
+      packageGateAssert(
+        hostModel.extensionLoadFailures.length === 0 && hostModel.bundledLoadFailures.length === 0,
+        failures,
+        'x3.acceptance/final-host-load-failures',
+        `expected zero host load failures, found ${JSON.stringify({
+          bundled: hostModel.bundledLoadFailures,
+          extensions: hostModel.extensionLoadFailures,
+        })}`,
+      )
+      packageGateAssert(
+        hostModel.contributionCount > 0 && packageGateCardModel().count > 0,
+        failures,
+        'x3.acceptance/final-host-card-model-empty',
+        'generation 3 host/card model did not expose any contributions or cards',
+      )
+      if (failures.length === 0) {
+        try {
+          formatSmoke = await runInstalledFormatSmoke(artifactSha256, persist)
+        } catch (error) {
+          failures.push(
+            packageGateFailure(
+              'x3.acceptance/installed-format-smoke-failed',
+              error instanceof Error ? error.message : String(error),
+            ),
+          )
+        }
+      }
+    }
+
+    const phase = Object.freeze({
+      generation,
+      state: 'complete',
+      catalog,
+      snapshot: await packageGateSnapshotSummary(),
+      cards: packageGateCardModel(),
+      host: packageGateHostModel(),
+      stores: await packageGateStores(),
+      ...(formatSmoke === undefined ? {} : { formatSmoke }),
+      actions: Object.freeze(actions),
+      changeEventCount: packageGateChangeEvents,
       failures: Object.freeze(failures),
       verdict: failures.length === 0 ? ('pass' as const) : ('fail' as const),
     })
+    return packageGateCumulative(phase)
   }
   const writePackageInstallGateReceipt = async () => {
-    const target = vscode.Uri.joinPath(context.globalStorageUri, 'package-install-gate.json')
     let gateReceipt: unknown
     try {
-      gateReceipt = await packageInstallGateReceipt()
+      gateReceipt = await packageInstallGateReceipt(writePackageGateReceipt)
     } catch (error) {
       gateReceipt = Object.freeze({
         kind: 'x3.modkit/vscode-package-install-gate',
@@ -1362,24 +2461,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         verdict: 'fail' as const,
       })
     }
-    await vscode.workspace.fs.createDirectory(context.globalStorageUri)
-    await vscode.workspace.fs.writeFile(
-      target,
-      new TextEncoder().encode(`${JSON.stringify(gateReceipt, null, 2)}\n`),
-    )
+    await writePackageGateReceipt(gateReceipt)
   }
   context.subscriptions.push(
     vscode.commands.registerCommand(PACKAGE_INSTALL_GATE_COMMAND, packageInstallGateReceipt),
   )
-  if (process.env[PACKAGE_INSTALL_GATE_ENV] === '1') {
-    void writePackageInstallGateReceipt().catch(error => {
-      log(
-        `[acceptance] package install gate failed to write: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      )
-    })
-  }
   // Reproject on open so a settings write is reflected even when the user postpones the reload.
   // Inventory stays the activation snapshot; direct enablement is the live preference layered on
   // top of it, and the card names both instead of showing a stale button.
@@ -1578,6 +2664,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
   /** What has already been said about each subject, so a repeat does not stack up. */
   const problemsFor = new Map<string, vscode.Diagnostic[]>()
+  const publishedSubjectDiagnostics: {
+    readonly code: string
+    readonly message: string
+    readonly severity: 'error' | 'warning' | 'information' | 'hint'
+    readonly path?: string
+  }[] = []
 
   const publishDiagnostic = (item: {
     readonly code: string
@@ -1585,6 +2677,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     readonly severity: 'error' | 'warning' | 'information' | 'hint'
     readonly path?: string
   }): void => {
+    publishedSubjectDiagnostics.push(item)
     if (item.path === undefined) return
     // Either kind of subject, on the same panel: a finding about a member of an archive is shown
     // against the member, addressed by the URI the Explorer already shows it under.
@@ -2258,7 +3351,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       session,
       locale: localizer.locale,
       localizationCatalogs,
-      acceptance,
+      acceptance: webviewAcceptance(),
       ...(openPath === undefined ? {} : { openPath }),
       ...(displayedExtensionCard === undefined ? {} : { extensionCard: displayedExtensionCard }),
     })
@@ -4050,7 +5143,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         })
         checkCancellation(token)
       }
-      return new ModkitCustomDocument(uri)
+      return new ModkitCustomDocument(
+        uri,
+        formatSmokeReadOnlySubjects.has(subjectKey(subjectPathOf(uri))),
+      )
     },
 
     resolveCustomEditor(document, panel) {
@@ -4284,6 +5380,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       live.clear()
     },
   })
+
+  if (process.env[PACKAGE_INSTALL_GATE_ENV] === '1') {
+    void writePackageInstallGateReceipt().catch(error => {
+      log(
+        `[acceptance] package install gate failed to write: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      )
+    })
+  }
 
   const activationMs = Date.now() - activationStarted
   log(`Modkit MK3 activated in ${activationMs} ms`)

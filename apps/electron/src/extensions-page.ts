@@ -238,6 +238,15 @@ export function groupManagedExtensions(
   })
 }
 
+/**
+ * A whole-extension switch leaves its contributions inventoried but makes each one inactive.
+ * Count that state in the UI summary too: otherwise a receipt can say "applied" and "off: 0"
+ * for a disabled one-contribution extension.
+ */
+export function disabledContributionCount(contributions: readonly ContributionReport[]): number {
+  return contributions.filter(item => item.disabled || item.extensionDisabled).length
+}
+
 /** What the native folder dialog plus main's probe answered. */
 export type BrowseResult =
   | { readonly canceled: true }
@@ -514,7 +523,7 @@ export function createExtensionsSettingsGroups(
 
   const summarise = (value: ExtensionsReport): string => {
     const loaded = value.bundled.length + value.installed.length
-    const off = value.contributions.filter(item => item.disabled).length
+    const off = disabledContributionCount(value.contributions)
     return copy.summary(loaded, value.contributions.length, off, value.supportedExtensions.length)
   }
 

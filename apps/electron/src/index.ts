@@ -1,4 +1,5 @@
 import { compareUtf8, ModkitError, uint64, type Diagnostic } from '@modkit/core'
+export { ModkitError }
 import { codeModule } from '@modkit/code/module'
 import { sceneModule } from '@modkit/scene/module'
 import { uvModule } from '@modkit/uv/module'
@@ -19,6 +20,8 @@ import {
   createSubjectServices,
   EXTENSION_DISABLED_CODE,
   linkedExtensionInputs,
+  nestedSubjectServices,
+  openNestedSubject,
   registerServiceDefinitionsOrThrow,
   resolveCommonPresentationPlan,
   serviceDefinitionSurfaces,
@@ -757,6 +760,7 @@ export { createFileEditingBackend } from '@modkit/host/node'
 // Installed-game map resources are resolved in main, beside the ordinary subject services that
 // open their archives. The renderer receives only the resulting world session over capability RPC.
 export { createNodeMapPreviewResourcePlanResolver } from '@modkit/host/node'
+export { nestedSubjectServices, openNestedSubject }
 // S14: the renderer's editor ports over the subject RPC (it holds no grant of its own)
 export {
   createRendererEditorPorts,
@@ -777,7 +781,7 @@ export { createFilesystemInputResolver } from '@modkit/host/node'
  * previews an entry by extracting its bytes; this is what a stage will call when block 13–14
  * gives it somewhere to put the opened subject.
  */
-export { openNestedSubject, type NestedSubjectResult } from '@modkit/host'
+export { type NestedSubjectResult } from '@modkit/host'
 /*
  * Block 13 works 4–6: the same command runtime the CLI and VS Code run. `main.cjs` supplies the
  * one thing it cannot have — `openSubjectForRpc`, which already confines a path to the granted

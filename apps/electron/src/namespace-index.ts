@@ -9,10 +9,45 @@
  *
  * Pure and DOM-free so the bounds are testable in Node.
  */
-import type { NamespaceEntrySource } from '@modkit/sdk'
+import type { NamespaceEntry, NamespaceEntrySource } from '@modkit/sdk'
 
 export const NAMESPACE_MAXIMUM_ENTRIES = 5000
 export const NAMESPACE_MAXIMUM_DEPTH = 12
+export const NAMESPACE_EXACT_LOOKUP_MAXIMUM_ENTRIES = 256
+
+/**
+ * Resolve a generated exact path without walking an installed product's whole namespace.
+ *
+ * First-party container sources treat `prefix` as an ordered lower-bound query.  The bounded
+ * fallback across prefix pages keeps the helper valid for any conforming source without turning
+ * one acceptance case into an unbounded Explorer crawl.
+ */
+export async function findExactNamespaceFile(
+  source: Pick<NamespaceEntrySource, 'list'>,
+  path: string,
+  signal?: AbortSignal,
+): Promise<NamespaceEntry | undefined> {
+  let cursor: string | undefined
+  let examined = 0
+  do {
+    const remaining = NAMESPACE_EXACT_LOOKUP_MAXIMUM_ENTRIES - examined
+    if (remaining <= 0) {
+      throw new Error(
+        `exact namespace lookup exceeded ${NAMESPACE_EXACT_LOOKUP_MAXIMUM_ENTRIES} prefix entries`,
+      )
+    }
+    const page = await source.list(
+      path,
+      { limit: Math.min(64, remaining), ...(cursor === undefined ? {} : { cursor }) },
+      signal,
+    )
+    examined += page.items.length
+    const exact = page.items.find(entry => entry.kind === 'file' && entry.path === path)
+    if (exact !== undefined) return exact
+    cursor = page.nextCursor
+  } while (cursor !== undefined)
+  return undefined
+}
 
 export interface ArchiveEntryFact {
   readonly path: string

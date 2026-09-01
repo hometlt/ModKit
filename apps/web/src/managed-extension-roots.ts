@@ -87,11 +87,31 @@ function isNormalizedRepositoryManifest(value: unknown): value is NormalizedRepo
   return candidate.schemaVersion === 1 && Array.isArray(candidate.extensions)
 }
 
+/** Stack-safe canonical alphabet/padding check for distribution files hundreds of MiB long. */
+export function isCanonicalBase64(encoded: string): boolean {
+  if (encoded.length % 4 !== 0) return false
+  const padding = encoded.endsWith('==') ? 2 : encoded.endsWith('=') ? 1 : 0
+  const contentLength = encoded.length - padding
+  for (let index = 0; index < contentLength; index += 1) {
+    const code = encoded.charCodeAt(index)
+    if (!(
+      (code >= 0x41 && code <= 0x5a) ||
+      (code >= 0x61 && code <= 0x7a) ||
+      (code >= 0x30 && code <= 0x39) ||
+      code === 0x2b ||
+      code === 0x2f
+    )) {
+      return false
+    }
+  }
+  for (let index = contentLength; index < encoded.length; index += 1) {
+    if (encoded.charCodeAt(index) !== 0x3d) return false
+  }
+  return true
+}
+
 function decodeBase64(encoded: string, path: string): Uint8Array {
-  if (
-    encoded.length % 4 !== 0 ||
-    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(encoded)
-  ) {
+  if (!isCanonicalBase64(encoded)) {
     throw new Error(`${path} is not canonical base64`)
   }
   let binary: string

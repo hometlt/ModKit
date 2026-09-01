@@ -66,6 +66,7 @@ import {
   type WebRuntimeIdentity,
 } from './index.js'
 import { createWebCommandProtocol, type WebCommandProtocol } from './commands.js'
+import { createWebSourceOpenAdapter, type WebSourceOpenAdapter } from './source-open.js'
 
 const WEB_BUILTIN_MODULES = /* @__PURE__ */ linkedExtensionInputs([
   codeModule,
@@ -164,8 +165,12 @@ export const WEB_WORKER_MODULE_MAP: Readonly<Record<string, string>> = Object.fr
   '@modkit/codec-kit': 'vendor/codec-kit/index.js',
   '@modkit/codec-kit/text': 'vendor/codec-kit/text/index.js',
   '@modkit/core': 'vendor/core/index.js',
+  '@modkit/host': 'vendor/host/index.js',
   '@modkit/sdk': 'vendor/sdk/index.js',
+  '@modkit/sdk/templates': 'vendor/sdk/templates/index.js',
   '@rgrove/parse-xml': 'vendor/parse-xml/index.js',
+  'modkit-extension-archives/formats/zip/codec':
+    'vendor/modkit-extension-archives/formats/zip/codec.js',
   'smol-toml': 'vendor/smol-toml/index.js',
   yaml: 'vendor/yaml/index.js',
 })
@@ -256,6 +261,8 @@ export interface WebSubjectServices extends SubjectServices {
   readonly userExtensionConflicts: readonly UserExtensionRootFailure[]
   /** Versioned shared commands bound to opaque handles authorized in this browser realm. */
   readonly commands: WebCommandProtocol
+  /** Product boundary for host-backed sources that cannot be represented as browser byte blobs. */
+  readonly sourceOpen: WebSourceOpenAdapter
   /** Terminal page lifecycle: revoke command handles and abort every in-flight command. */
   dispose(): Promise<void>
 }
@@ -429,6 +436,7 @@ export async function createWebSubjectServices(
   return Object.freeze({
     ...services,
     commands,
+    sourceOpen: createWebSourceOpenAdapter(main.profile),
     dispose: () => commands.dispose(),
     main,
     worker,

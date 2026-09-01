@@ -191,6 +191,9 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
     drawBreadcrumb(group, tab.entry)
 
     if (tab.handle === undefined) {
+      // The picker belongs to the active tab. Clear the previous tab's options before the async
+      // load starts so a failed open cannot masquerade as a mounted stage from another file.
+      syncPicker(group)
       await load(group, tab)
       return
     }

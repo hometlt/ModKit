@@ -503,6 +503,42 @@ export function editSelfTestLine(
   return `selftest: edit-op ${name} ${formId} status=${JSON.stringify(status)} changed=${String(changed)}`
 }
 
+/**
+ * The edit-panel outcome is localized, but its selected form label remains the stable identity of
+ * the operation a self-test just requested. Do not couple the live Electron gate to an English
+ * presentation prefix such as "Last change:" — the same successful Russian panel says
+ * "Последнее изменение:".
+ */
+export function isSelfTestEditOutcome(
+  previous: string,
+  current: string,
+  selectedFormLabel: string,
+): boolean {
+  return selectedFormLabel !== '' && current !== previous && current.includes(selectedFormLabel)
+}
+
+/**
+ * A late optional self-test probe must neither hold the Electron process open forever nor erase
+ * the fact that it failed. The caller logs the resulting error before its terminal marker.
+ */
+export async function awaitSelfTestProbe<T>(
+  probe: Promise<T>,
+  name: string,
+  timeoutMs = 15_000,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      probe,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(`self-test probe timed out: ${name}`)), timeoutMs)
+      }),
+    ])
+  } finally {
+    if (timer !== undefined) clearTimeout(timer)
+  }
+}
+
 /** Narrowing helper shared by the panel and its tests. */
 export const isRejected = (
   result: OperationResult,

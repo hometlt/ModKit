@@ -15,7 +15,7 @@
  */
 import { build } from 'esbuild'
 import { createServer } from 'node:http'
-import { createPublicKey } from 'node:crypto'
+import { createHash, createPublicKey } from 'node:crypto'
 import { createRequire } from 'node:module'
 import {
   cpSync,
@@ -60,6 +60,28 @@ const verifiedOfflineRelease = verifyOfflineReleaseDirectory(offlineReleaseSourc
 const offlineDescriptor = JSON.parse(
   readFileSync(join(offlineReleaseSource, 'release.v1.json'), 'utf8'),
 )
+const formatSmokeAuthoritySource = join(
+  repoRoot,
+  'apps',
+  'vscode',
+  'generated',
+  'format-smoke.v1.json',
+)
+const formatSmokeAuthorityBytes = readFileSync(formatSmokeAuthoritySource)
+const formatSmokeAuthority = JSON.parse(formatSmokeAuthorityBytes.toString('utf8'))
+const formatSmokeAuthoritySha256 = `sha256:${createHash('sha256')
+  .update(formatSmokeAuthorityBytes)
+  .digest('hex')}`
+const offlineDescriptorSha256 = `sha256:${createHash('sha256')
+  .update(readFileSync(join(offlineReleaseSource, 'release.v1.json')))
+  .digest('hex')}`
+if (
+  formatSmokeAuthority.generatedFrom?.offlineRelease?.catalogSha256 !==
+    verifiedOfflineRelease.catalog.sha256 ||
+  formatSmokeAuthority.generatedFrom?.offlineRelease?.descriptorSha256 !== offlineDescriptorSha256
+) {
+  throw new Error('format smoke authority does not identify the verified offline release')
+}
 const offlinePublicJwk = createPublicKey(offlineDescriptor.signing.publicKeyPem).export({
   format: 'jwk',
 })
@@ -152,6 +174,7 @@ const shellBuild = await build({
   absWorkingDir: repoRoot,
   define: {
     __MODKIT_EMBED_EXTENSION_ORIGINS__: JSON.stringify(embedExtensionOrigins),
+    __MODKIT_FORMAT_SMOKE_AUTHORITY_SHA256__: JSON.stringify(formatSmokeAuthoritySha256),
   },
   logLevel: 'warning',
   metafile: true,
@@ -179,8 +202,25 @@ const workerBuild = await build({
       'index.js',
     ),
     'vendor/core/index': join(repoRoot, 'packages', 'core', 'dist', 'index.js'),
+    'vendor/host/index': join(repoRoot, 'packages', 'host', 'dist', 'index.js'),
     'vendor/sdk/index': join(repoRoot, 'packages', 'sdk', 'dist', 'index.js'),
-    'vendor/parse-xml/index': join(dependencyRoot('@rgrove/parse-xml'), 'dist', 'browser.js'),
+    'vendor/sdk/templates/index': join(
+      repoRoot,
+      'packages',
+      'sdk',
+      'dist',
+      'templates',
+      'index.js',
+    ),
+    'vendor/parse-xml/index': join(appRoot, 'src', 'parse-xml-vendor.mjs'),
+    'vendor/modkit-extension-archives/formats/zip/codec': join(
+      repoRoot,
+      'extensions',
+      'archives',
+      'src',
+      'zip',
+      'codec.js',
+    ),
     'vendor/smol-toml/index': join(dependencyRoot('smol-toml'), 'dist', 'index.js'),
     'vendor/yaml/index': join(dependencyRoot('yaml'), 'browser', 'index.js'),
   },
@@ -189,6 +229,9 @@ const workerBuild = await build({
   splitting: true,
   format: 'esm',
   platform: 'browser',
+  alias: {
+    '@rgrove/parse-xml': join(dependencyRoot('@rgrove/parse-xml'), 'dist', 'browser.js'),
+  },
   target: ['chrome120', 'firefox121', 'safari17'],
   chunkNames: 'chunks/[name]-[hash]',
   absWorkingDir: repoRoot,
@@ -237,6 +280,8 @@ for (const entry of WEB_EXTENSION_CATALOG.extensions) {
 }
 cpSync(offlineReleaseSource, join(dist, 'managed-packages'), { recursive: true })
 verifyOfflineReleaseDirectory(join(dist, 'managed-packages'))
+// The installed PWA acceptance reads the same generated authority as VS Code, byte for byte.
+cpSync(formatSmokeAuthoritySource, join(dist, 'format-smoke.v1.json'))
 // Run after every copied Common and managed artifact too: an inert `node:` property name is fine,
 // but an actual ESM import or dynamic import is never allowed in deployed browser bytes.
 assertNoNodeProtocolOutput(dist)

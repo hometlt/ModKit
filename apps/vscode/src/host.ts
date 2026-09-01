@@ -125,6 +125,15 @@ export const VSCODE_SUBJECT_CONTRIBUTION_ID = 'modkit.app.vscode/subject-service
  */
 export const VSCODE_MAXIMUM_SUBJECT_BYTES = 64 * 1024 * 1024
 
+/**
+ * Largest range-backed subject the installed editor will address.
+ *
+ * This is deliberately separate from `VSCODE_MAXIMUM_SUBJECT_BYTES`: a WZ/ZIP/MPQ codec can
+ * inspect a large archive through bounded random reads without materializing it. Commands and
+ * container-member reads that return one `Uint8Array` remain capped at 64 MiB.
+ */
+export const VSCODE_MAXIMUM_RANGE_BACKED_SUBJECT_BYTES = 256 * 1024 * 1024
+
 /** Entries a single directory listing will return before it stops. */
 export const VSCODE_MAXIMUM_LISTING = 5_000
 
@@ -632,7 +641,7 @@ const DEFAULT_OPEN_GRANT: PermissionGrant = Object.freeze({
 })
 
 const DEFAULT_OPEN_BUDGET: ResourceBudget = Object.freeze({
-  maxInputBytes: BigInt(VSCODE_MAXIMUM_SUBJECT_BYTES),
+  maxInputBytes: BigInt(VSCODE_MAXIMUM_RANGE_BACKED_SUBJECT_BYTES),
   maxDepth: 256,
   maxNodes: 1_000_000,
   maxScalarBytes: VSCODE_MAXIMUM_SUBJECT_BYTES,
@@ -1427,13 +1436,21 @@ export function catalogCandidates(
    * Bases, not catalogs: the generated catalog stores `images`, so each candidate is the
    * directory that `extensions/` prefix is joined onto.
    *
-   * A checkout's own tree stays before the packaged location for development fidelity. A production
-   * VSIX instead carries the same generated roots under `dist-app/extensions` together with their
-   * physical `node_modules` closure, so it can run with no checkout or workspace links. `existsSync`
-   * keeps the ordering safe for a real package, where only the packaged candidate normally survives.
+   * A production VSIX is always authoritative: it carries the generated roots under
+   * `dist-app/extensions` together with their physical `node_modules` closure. The caller's
+   * computed grandparent is not itself evidence of a checkout — for a normal installed extension it
+   * is VS Code's shared extensions directory — so a repository candidate is admitted only for a
+   * marked workspace checkout and is deliberately behind the packaged tree.
    */
-  const candidates = [join(extensionRoot, 'extensions')]
-  if (repositoryRoot !== undefined) candidates.push(join(repositoryRoot, 'extensions'))
-  candidates.push(join(extensionRoot, 'dist-app', 'extensions'))
+  const candidates = [join(extensionRoot, 'dist-app', 'extensions')]
+  if (
+    repositoryRoot !== undefined &&
+    resolve(extensionRoot) === resolve(repositoryRoot, 'apps', 'vscode') &&
+    existsSync(join(repositoryRoot, '.git')) &&
+    existsSync(join(repositoryRoot, 'pnpm-workspace.yaml')) &&
+    existsSync(join(repositoryRoot, 'apps', 'vscode', 'package.json'))
+  ) {
+    candidates.push(join(repositoryRoot, 'extensions'))
+  }
   return Object.freeze(candidates.filter(path => existsSync(path)))
 }

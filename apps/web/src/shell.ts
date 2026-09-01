@@ -31,8 +31,10 @@ import {
   type AnyDescriptor,
   type AssetSession,
   type ArtifactByteSource,
+  type NamespaceEntrySource,
   type OperationSession,
   type PermissionGrant,
+  type PresentationPlan,
 } from '@modkit/sdk'
 import {
   nestedSubjectServices,
@@ -113,6 +115,17 @@ import {
 import { applyAppearance, createWebSettingsStore, EXTENSIONS_READ_ONLY_REASON } from './settings.js'
 import { createWebPreviewFallback, createWebPreviewStages, stageIdOf } from './views.js'
 import { createWebLocalizer, loadWebLocalizationCatalogs } from './localization.js'
+import {
+  createPwaFormatSmokeAcceptance,
+  loadPwaFormatSmokeAuthority,
+  type FormatSmokeAuthorityCase,
+  type FormatSmokeCaseId,
+  type FormatSmokeRouteStep,
+  type PwaFormatSmokeOpenedResult,
+  type PwaFormatSmokeStageEvidence,
+} from './format-smoke.js'
+
+declare const __MODKIT_FORMAT_SMOKE_AUTHORITY_SHA256__: string
 
 /** Served resources the app offers as a starting point when no folder can be granted. */
 const SAMPLES: readonly { readonly path: string; readonly labelKey: UiMessageKey }[] =
@@ -505,8 +518,44 @@ async function boot(): Promise<void> {
    */
   const pendingNested = new Map<
     string,
-    { readonly result: OpenSubjectResult; readonly bytes: Uint8Array; readonly label: string }
+    {
+      readonly result: OpenSubjectResult
+      readonly bytes: Uint8Array
+      readonly label: string
+      readonly selectedRoute: readonly FormatSmokeRouteStep[]
+    }
   >()
+  /** Actual product-selected route for a live descriptor, never a subject URI or explorer id. */
+  const selectedRoutes = new Map<string, readonly FormatSmokeRouteStep[]>()
+  let activeFormatSmokeCase: FormatSmokeCaseId | undefined
+  let activeFormatSmokeStage: FormatSmokeAuthorityCase['stage'] | undefined
+  let lastFormatSmokeOpen:
+    | {
+        readonly caseId: FormatSmokeCaseId
+        readonly descriptor: AnyDescriptor
+        readonly selectedRoute: readonly FormatSmokeRouteStep[]
+      }
+    | undefined
+  let lastFormatSmokeHostFailure: string | undefined
+  let lastFormatSmokeCandidates: string | undefined
+  const summarizeFormatSmokeCandidates = (result: OpenSubjectResult): string =>
+    JSON.stringify({
+      candidates: result.candidates.map(candidate => ({
+        extensionId: candidate.extensionId,
+        contributionId: candidate.contributionId,
+        variantId: candidate.variantId,
+        state: candidate.state,
+        ...(candidate.confidence === undefined ? {} : { confidence: candidate.confidence }),
+        diagnostics: candidate.diagnostics.map(diagnostic => ({
+          code: diagnostic.code,
+          message: diagnostic.message,
+        })),
+      })),
+      diagnostics: result.diagnostics.map(diagnostic => ({
+        code: diagnostic.code,
+        message: diagnostic.message,
+      })),
+    })
   /** What the panel should show for each open tab, so switching tabs re-targets it. */
   const inspected = new Map<string, InspectorTarget>()
   /** The entry id behind a mounted descriptor, so a panel holding only one finds its tab. */
@@ -649,6 +698,71 @@ async function boot(): Promise<void> {
   const nestedEntryId = (containerKey: string, entryPath: string): string =>
     `x3-nested:${containerKey}#${entryPath}`
 
+  const selectedStep = (result: Extract<OpenSubjectResult, { readonly state: 'opened' }>) => {
+    if (!('identity' in result.descriptor)) {
+      throw new TypeError('an opened subject has no resolved descriptor identity')
+    }
+    return Object.freeze({
+      formatId: result.descriptor.identity.formatId,
+      extensionId: result.selected.extensionId,
+      contributionId: result.selected.contributionId,
+    })
+  }
+
+  /** Shared UI and acceptance route; acceptance may hand in bytes it verified before the open. */
+  const openNestedEntry = async (
+    descriptor: AnyDescriptor,
+    entryId: string,
+    entryPath: string,
+    verifiedBytes?: Uint8Array,
+  ): Promise<string | undefined> => {
+    const key = descriptorKey(descriptor)
+    const parent = assetSessions.get(key)
+    if (parent === undefined) return t('web.archive.sessionGone')
+    const nested = await openNestedSubject({
+      parent,
+      entryId,
+      ...nestedSubjectServices(services),
+      grant: { id: `pwa-nested-${openCount}`, classes: ['read-source'] },
+      budget: {
+        maxInputBytes: BigInt(
+          activeFormatSmokeCase === undefined
+            ? EXPLORER_MAXIMUM_BYTES
+            : WEB_OFFLINE_RELEASE.maxArtifactBytes,
+        ),
+        maxDepth: 256,
+        maxNodes: 1_000_000,
+        maxScalarBytes: 64 * 1024 * 1024,
+        maxDiagnostics: 10_000,
+        deadlineMs: 30_000,
+      },
+    })
+    if (nested.result.state !== 'opened') {
+      return t('web.status.noNestedCodec', { name: entryPath, reason: nested.result.reason })
+    }
+    const operations = operationSessions.get(key)
+    const extract = descriptor.operations.find(
+      operation =>
+        operation.state === 'available' &&
+        !operation.mutatesSource &&
+        operation.id === CONTAINER_EXTRACT_OPERATION_ID,
+    )
+    let bytes = verifiedBytes?.slice() ?? new Uint8Array()
+    if (verifiedBytes === undefined && operations !== undefined && extract !== undefined) {
+      const read = await operations.invoke(extract.handlerId, { entryId }, {})
+      if (read.state === 'ok' && read.output.kind === 'bytes') bytes = read.output.value.slice()
+    }
+    const id = nestedEntryId(key, entryPath)
+    const label = entryPath.slice(entryPath.lastIndexOf('/') + 1)
+    const selectedRoute = Object.freeze([
+      ...(selectedRoutes.get(key) ?? []),
+      selectedStep(nested.result),
+    ])
+    pendingNested.set(id, { result: nested.result, bytes, label, selectedRoute })
+    await editors.open({ id, name: label, directory: false })
+    return undefined
+  }
+
   const stages = createWebPreviewStages({
     localizer,
     operationsFor: descriptor => operationSessions.get(descriptorKey(descriptor)),
@@ -661,50 +775,7 @@ async function boot(): Promise<void> {
      * lives, so a model inside an archive finds its texture inside that same archive rather than
      * through a file this browser could not open anyway.
      */
-    async openNestedEntry(descriptor, entryId, entryPath) {
-      const key = descriptorKey(descriptor)
-      const parent = assetSessions.get(key)
-      if (parent === undefined) return t('web.archive.sessionGone')
-      const nested = await openNestedSubject({
-        parent,
-        entryId,
-        ...nestedSubjectServices(services),
-        grant: { id: `pwa-nested-${openCount}`, classes: ['read-source'] },
-        budget: {
-          maxInputBytes: BigInt(EXPLORER_MAXIMUM_BYTES),
-          maxDepth: 256,
-          maxNodes: 1_000_000,
-          maxScalarBytes: 64 * 1024 * 1024,
-          maxDiagnostics: 10_000,
-          deadlineMs: 30_000,
-        },
-      })
-      if (nested.result.state !== 'opened') {
-        return t('web.status.noNestedCodec', { name: entryPath, reason: nested.result.reason })
-      }
-      /*
-       * The bytes the tab's hex and text stages read. Taken from the same extraction the preview
-       * pane used, so the tab shows the member the subject was opened from and not a second read
-       * that could disagree with it.
-       */
-      const operations = operationSessions.get(key)
-      const extract = descriptor.operations.find(
-        operation =>
-          operation.state === 'available' &&
-          !operation.mutatesSource &&
-          operation.id === CONTAINER_EXTRACT_OPERATION_ID,
-      )
-      let bytes = new Uint8Array()
-      if (operations !== undefined && extract !== undefined) {
-        const read = await operations.invoke(extract.handlerId, { entryId }, {})
-        if (read.state === 'ok' && read.output.kind === 'bytes') bytes = read.output.value.slice()
-      }
-      const id = nestedEntryId(key, entryPath)
-      const label = entryPath.slice(entryPath.lastIndexOf('/') + 1)
-      pendingNested.set(id, { result: nested.result, bytes, label })
-      await editors.open({ id, name: label, directory: false })
-      return undefined
-    },
+    openNestedEntry,
   })
 
   const previewBase = {
@@ -726,7 +797,11 @@ async function boot(): Promise<void> {
         classes: writable ? ['read-source', 'write-source'] : ['read-source'],
       }
       const budget = {
-        maxInputBytes: BigInt(EXPLORER_MAXIMUM_BYTES),
+        maxInputBytes: BigInt(
+          activeFormatSmokeCase === undefined
+            ? EXPLORER_MAXIMUM_BYTES
+            : WEB_OFFLINE_RELEASE.maxArtifactBytes,
+        ),
         maxDepth: 256,
         maxNodes: 1_000_000,
         maxScalarBytes: 64 * 1024 * 1024,
@@ -749,7 +824,13 @@ async function boot(): Promise<void> {
           budget,
           ...(signal === undefined ? {} : { signal }),
         }))
+      if (activeFormatSmokeCase !== undefined) {
+        lastFormatSmokeCandidates = summarizeFormatSmokeCandidates(ordinary)
+      }
       if (ordinary.state === 'unresolved') {
+        if (activeFormatSmokeCase !== undefined) {
+          lastFormatSmokeHostFailure = `${ordinary.reason}; candidates=${lastFormatSmokeCandidates}`
+        }
         say(t('web.status.noCodec', { name: entry.name, reason: ordinary.reason }))
         return undefined
       }
@@ -822,6 +903,15 @@ async function boot(): Promise<void> {
         dispose(): Promise<void>
       }
       const key = descriptorKey(result.descriptor)
+      const actualSelectedRoute = nested?.selectedRoute ?? Object.freeze([selectedStep(result)])
+      selectedRoutes.set(key, actualSelectedRoute)
+      if (activeFormatSmokeCase !== undefined) {
+        lastFormatSmokeOpen = Object.freeze({
+          caseId: activeFormatSmokeCase,
+          descriptor: result.descriptor,
+          selectedRoute: actualSelectedRoute,
+        })
+      }
       const presentation = await resolveCommonPresentationPlan(
         result.descriptor,
         {
@@ -831,6 +921,46 @@ async function boot(): Promise<void> {
         },
         { availableStageIds: stages.map(stageIdOf) },
       )
+      /*
+       * Format smoke must inspect a real namespace DOM even when the selected codec's product
+       * presentation prefers a semantic card. Add that stage only to this opt-in acceptance
+       * session; the shipped stage's default/app-local policy remains untouched.
+       */
+      const previewPresentation = (() => {
+        const plan = presentation?.plan
+        if (
+          activeFormatSmokeStage !== 'tree' ||
+          !result.descriptor.dataSources.some(
+            source => source.contract === 'common.view/namespace-entry-source',
+          ) ||
+          plan === undefined ||
+          plan.activeStage === undefined ||
+          plan.slots.some(slot => slot.slotId === 'archive')
+        ) {
+          return plan
+        }
+        return Object.freeze({
+          ...plan,
+          slots: Object.freeze([
+            ...plan.slots,
+            Object.freeze({
+              slotId: 'archive',
+              kind: 'stage',
+              contributionId: result.selected.contributionId,
+              extensionId: result.selected.extensionId,
+              priority: 0,
+              bindings: Object.freeze([
+                Object.freeze({
+                  bindingId: 'content',
+                  contract: 'common.view/namespace-entry-source',
+                  major: 1,
+                }),
+              ]),
+            }),
+          ]),
+          alternateStages: Object.freeze([...plan.alternateStages, 'archive']),
+        }) as PresentationPlan
+      })()
       const operations = session.operations()
       let commandAuthority: WebCommandSubjectLease | undefined
       /*
@@ -899,12 +1029,13 @@ async function boot(): Promise<void> {
       inspecting = undefined
       inspect(entry.id)
       return {
-        ...(presentation === undefined ? {} : { presentation: presentation.plan }),
+        ...(previewPresentation === undefined ? {} : { presentation: previewPresentation }),
         descriptor: () => session.descriptor(),
         dataSource: (contract: string, major: number) => session.dataSource(contract, major),
         async dispose() {
           operationSessions.delete(key)
           assetSessions.delete(key)
+          selectedRoutes.delete(key)
           entryOfDescriptor.delete(key)
           inspected.delete(entry.id)
           openedEntries.delete(entry.id)
@@ -990,13 +1121,17 @@ async function boot(): Promise<void> {
        * comes from the access: the tree rebuilds its `ExplorerEntry` without one.
        */
       const size = access.sizeOf(entry.id) ?? entry.size
-      if (size !== undefined && size > EXPLORER_MAXIMUM_BYTES) {
+      const maximumBytes =
+        activeFormatSmokeCase === undefined
+          ? EXPLORER_MAXIMUM_BYTES
+          : WEB_OFFLINE_RELEASE.maxArtifactBytes
+      if (size !== undefined && size > maximumBytes) {
         throw new Error(
           `${entry.name} is ${(size / (1024 * 1024)).toFixed(1)} MiB, over the ` +
-            `${EXPLORER_MAXIMUM_BYTES / (1024 * 1024)} MiB this host will read into memory`,
+            `${maximumBytes / (1024 * 1024)} MiB this host will read into memory`,
         )
       }
-      return access.read(entry.id, EXPLORER_MAXIMUM_BYTES, signal)
+      return access.read(entry.id, maximumBytes, signal)
     },
     onStatus(status) {
       say([status.path, status.view, status.detail].filter(Boolean).join(' · '))
@@ -1299,6 +1434,442 @@ async function boot(): Promise<void> {
     }
     if (activeView !== 'explorer') showView('explorer')
     await openFile(file)
+  }
+
+  // ----------------------------------------------------- installed format-family acceptance
+  const digestBytes = async (bytes: Uint8Array): Promise<string> => {
+    const digest = await crypto.subtle.digest('SHA-256', bytes as Uint8Array<ArrayBuffer>)
+    return [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('')
+  }
+
+  const verifiedCorpus = async (
+    testCase: FormatSmokeAuthorityCase,
+    bytes: Uint8Array,
+  ): Promise<{
+    readonly bytes: number
+    readonly sha256: string
+    readonly verifiedBeforeOpen: true
+  }> => {
+    const expectedBytes = testCase.corpus.bytes
+    const expectedSha256 = testCase.corpus.sha256
+    if (
+      !Number.isSafeInteger(expectedBytes) ||
+      expectedBytes === undefined ||
+      expectedBytes < 0 ||
+      typeof expectedSha256 !== 'string'
+    ) {
+      throw new TypeError(`${testCase.id} has no generated corpus identity`)
+    }
+    const sha256 = await digestBytes(bytes)
+    if (bytes.byteLength !== expectedBytes || sha256 !== expectedSha256) {
+      throw new TypeError(`${testCase.id} corpus does not match the generated identity`)
+    }
+    return Object.freeze({ bytes: bytes.byteLength, sha256, verifiedBeforeOpen: true })
+  }
+
+  const namespaceEntry = async (
+    descriptor: AnyDescriptor,
+    entryPath: string,
+  ): Promise<{ readonly id: string; readonly bytes: Uint8Array }> => {
+    const key = descriptorKey(descriptor)
+    const parent = assetSessions.get(key)
+    const operations = operationSessions.get(key)
+    if (parent === undefined || operations === undefined) {
+      throw new TypeError('the opened container session is unavailable')
+    }
+    const extract = descriptor.operations.find(
+      operation =>
+        operation.state === 'available' &&
+        !operation.mutatesSource &&
+        operation.id === CONTAINER_EXTRACT_OPERATION_ID,
+    )
+    if (extract === undefined) throw new TypeError('the opened container has no extract operation')
+    const lease = await parent.dataSource('common.view/namespace-entry-source', 1)
+    const source = lease.value as NamespaceEntrySource
+    const target = entryPath.replaceAll('\\', '/').replace(/^\/+|\/+$/gu, '')
+    try {
+      let found: { readonly id: string; readonly path: string } | undefined
+      const basename = target.slice(target.lastIndexOf('/') + 1)
+      if (source.search !== undefined) {
+        let cursor: string | undefined
+        for (let page = 0; page < 100 && found === undefined; page += 1) {
+          const answer = await source.search(
+            { kind: 'basename-any', basenames: [basename], caseSensitive: true },
+            { limit: 200, ...(cursor === undefined ? {} : { cursor }) },
+          )
+          found = answer.items.find(item => item.path.replaceAll('\\', '/') === target)
+          cursor = answer.nextCursor
+          if (cursor === undefined) break
+        }
+      }
+      if (found === undefined) {
+        let cursor: string | undefined
+        for (let page = 0; page < 1_000 && found === undefined; page += 1) {
+          const answer = await source.list('', {
+            limit: 200,
+            ...(cursor === undefined ? {} : { cursor }),
+          })
+          found = answer.items.find(item => item.path.replaceAll('\\', '/') === target)
+          cursor = answer.nextCursor
+          if (cursor === undefined) break
+        }
+      }
+      if (found === undefined) {
+        let prefix = ''
+        for (const segment of target.split('/')) {
+          let cursor: string | undefined
+          let next: { readonly id: string; readonly path: string } | undefined
+          const wanted = prefix === '' ? segment : `${prefix}/${segment}`
+          for (let page = 0; page < 100 && next === undefined; page += 1) {
+            const answer = await source.list(prefix, {
+              limit: 200,
+              ...(cursor === undefined ? {} : { cursor }),
+            })
+            next = answer.items.find(item => item.path.replaceAll('\\', '/') === wanted)
+            cursor = answer.nextCursor
+            if (cursor === undefined) break
+          }
+          if (next === undefined) break
+          prefix = wanted
+          if (wanted === target) found = next
+        }
+      }
+      if (found === undefined) throw new TypeError('the generated container member is absent')
+      const read = await operations.invoke(extract.handlerId, { entryId: found.id }, {})
+      if (read.state !== 'ok' || read.output.kind !== 'bytes') {
+        throw new TypeError('the container refused to extract the generated member')
+      }
+      return Object.freeze({ id: found.id, bytes: read.output.value.slice() })
+    } finally {
+      await lease.release()
+    }
+  }
+
+  const activeEditorGroup = (): HTMLElement => {
+    const active = editors.root.querySelector(
+      '[data-mk-part="explorer.group"][data-mk-state~="active"]',
+    )
+    return active instanceof HTMLElement ? active : editors.root
+  }
+  const visibleInGroup = (group: HTMLElement, selector: string): Element | undefined =>
+    [...group.querySelectorAll(selector)].find(
+      node => node.closest('[data-mk-part="explorer.tabcontent"]')?.hasAttribute('hidden') !== true,
+    )
+  const visibleCount = (group: HTMLElement, selector: string): number =>
+    [...group.querySelectorAll(selector)].filter(
+      node => node.closest('[data-mk-part="explorer.tabcontent"]')?.hasAttribute('hidden') !== true,
+    ).length
+  const waitForStage = async (test: () => boolean): Promise<void> => {
+    for (let attempt = 0; attempt < 600; attempt += 1) {
+      if (test()) return
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+    if (!test())
+      throw new TypeError('the selected preview stage did not reach a terminal DOM state')
+  }
+  const selectFormatSmokeStage = async (id: string, ready: () => boolean): Promise<HTMLElement> => {
+    const group = activeEditorGroup()
+    const picker = group.querySelector('[data-mk-part="explorer.viewpicker"]')
+    if (!(picker instanceof HTMLSelectElement))
+      throw new TypeError('the active tab has no stage picker')
+    if (![...picker.options].some(option => option.value === id)) {
+      throw new TypeError(
+        `the actual descriptor did not offer stage ${id}; available=${[...picker.options]
+          .map(option => option.value)
+          .join(',')}`,
+      )
+    }
+    picker.value = id
+    picker.dispatchEvent(new Event('change'))
+    await waitForStage(() => picker.value === id && ready())
+    return group
+  }
+  const hasFormatSmokeStage = (id: string): boolean => {
+    const picker = activeEditorGroup().querySelector('[data-mk-part="explorer.viewpicker"]')
+    return (
+      picker instanceof HTMLSelectElement && [...picker.options].some(option => option.value === id)
+    )
+  }
+  const metadataEntryCount = async (): Promise<number> => {
+    const group = await selectFormatSmokeStage(
+      'metadata',
+      () => visibleInGroup(activeEditorGroup(), '[data-mk-part="metadata.row"]') !== undefined,
+    )
+    return visibleCount(group, '[data-mk-part="metadata.row"]')
+  }
+  const observeFormatSmokeStage = async (
+    expected: FormatSmokeAuthorityCase['stage'],
+  ): Promise<PwaFormatSmokeStageEvidence> => {
+    if (expected === 'raster') {
+      const group = await selectFormatSmokeStage('image', () => {
+        const node = visibleInGroup(activeEditorGroup(), '[data-mk-part="image.canvas"]')
+        return node instanceof HTMLCanvasElement && node.width > 0 && node.height > 0
+      })
+      const canvas = visibleInGroup(group, '[data-mk-part="image.canvas"]') as HTMLCanvasElement
+      const readout = visibleInGroup(group, '[data-mk-part="image.readout"]')
+      const metadataEntries = (readout?.textContent ?? '').trim() === '' ? 0 : 1
+      const sample = document.createElement('canvas')
+      sample.width = Math.min(canvas.width, 64)
+      sample.height = Math.min(canvas.height, 64)
+      const context = sample.getContext('2d', { willReadFrequently: true })
+      if (context === null) throw new TypeError('the browser has no readable raster canvas')
+      context.drawImage(canvas, 0, 0, sample.width, sample.height)
+      const pixels = context.getImageData(0, 0, sample.width, sample.height).data
+      let opaquePixels = 0
+      for (let index = 3; index < pixels.length; index += 4) {
+        if ((pixels[index] ?? 0) > 0) opaquePixels += 1
+      }
+      return Object.freeze({
+        kind: 'raster',
+        width: canvas.width,
+        height: canvas.height,
+        opaquePixels,
+        // The image stage's actual codec-backed dimension/byte readout is raster metadata. Some
+        // image descriptors intentionally publish no separate descriptor metadata groups.
+        metadataEntries,
+      })
+    }
+    if (expected === 'tree-text') {
+      const treeGroup = await selectFormatSmokeStage(
+        'tree',
+        () => visibleInGroup(activeEditorGroup(), '[data-mk-part="tree.item"]') !== undefined,
+      )
+      const treeNodes = visibleCount(treeGroup, '[data-mk-part="tree.item"]')
+      // A resolved presentation plan may intentionally expose the XML tree slot but not a second
+      // redundant text slot. The tree viewer's codec-backed labels are still real rendered text,
+      // so prove both halves from that selected product stage rather than bypassing its plan.
+      const textCharacters = (
+        visibleInGroup(treeGroup, '[data-mk-part="tree.list"]')?.textContent ?? ''
+      ).trim().length
+      return Object.freeze({ kind: 'tree-text', treeNodes, textCharacters })
+    }
+    if (expected === 'tree') {
+      if (!hasFormatSmokeStage('archive')) {
+        const group = await selectFormatSmokeStage(
+          'tree',
+          () => visibleInGroup(activeEditorGroup(), '[data-mk-part="tree.item"]') !== undefined,
+        )
+        return Object.freeze({
+          kind: 'tree',
+          treeNodes: visibleCount(group, '[data-mk-part="tree.item"]'),
+        })
+      }
+      const group = await selectFormatSmokeStage(
+        'archive',
+        () => visibleInGroup(activeEditorGroup(), '[data-mk-part="namespace.item"]') !== undefined,
+      )
+      return Object.freeze({
+        kind: 'tree',
+        treeNodes: visibleCount(group, '[data-mk-part="namespace.item"]'),
+      })
+    }
+    if (expected === 'metadata-tree') {
+      const metadataEntries = await metadataEntryCount()
+      const group = await selectFormatSmokeStage(
+        'tree',
+        () => visibleInGroup(activeEditorGroup(), '[data-mk-part="tree.item"]') !== undefined,
+      )
+      return Object.freeze({
+        kind: 'metadata-tree',
+        metadataEntries,
+        treeNodes: visibleCount(group, '[data-mk-part="tree.item"]'),
+      })
+    }
+    const group = await selectFormatSmokeStage('model', () => {
+      const node = visibleInGroup(
+        activeEditorGroup(),
+        '[data-mk-part="model.canvas"][data-model-renderer="wireframe"]',
+      )
+      return node instanceof HTMLCanvasElement && node.width > 0 && node.height > 0
+    })
+    const canvas = visibleInGroup(
+      group,
+      '[data-mk-part="model.canvas"][data-model-renderer="wireframe"]',
+    ) as HTMLCanvasElement
+    return Object.freeze({
+      kind: 'model-or-wireframe',
+      renderer: 'wireframe',
+      width: canvas.width,
+      height: canvas.height,
+    })
+  }
+
+  const openFormatSmokeCase = async (
+    testCase: FormatSmokeAuthorityCase,
+    corpusUrl: string,
+  ): Promise<PwaFormatSmokeOpenedResult> => {
+    const url = new URL(corpusUrl, window.location.href)
+    if (url.origin !== window.location.origin) {
+      throw new TypeError('format smoke corpus must be served from this PWA origin')
+    }
+    const response = await fetch(url, { cache: 'no-store' })
+    if (!response.ok) throw new TypeError('format smoke corpus request failed')
+    const bytes = new Uint8Array(await response.arrayBuffer())
+    const name = decodeURIComponent(url.pathname.slice(url.pathname.lastIndexOf('/') + 1))
+    if (name === '') throw new TypeError('format smoke corpus URL has no filename')
+    const currentFormatSmokeOpen = () => lastFormatSmokeOpen
+    activeFormatSmokeCase = testCase.id
+    activeFormatSmokeStage = testCase.stage
+    lastFormatSmokeOpen = undefined
+    lastFormatSmokeHostFailure = undefined
+    lastFormatSmokeCandidates = undefined
+    try {
+      if (testCase.corpus.kind === 'warzone-wz-entry') {
+        await openFile(
+          new File([bytes], name, { type: response.headers.get('content-type') ?? '' }),
+        )
+        const parent = currentFormatSmokeOpen()
+        if (parent === undefined || parent.caseId !== testCase.id) {
+          throw new TypeError('the generated container did not open')
+        }
+        if (JSON.stringify(parent.selectedRoute) !== JSON.stringify(testCase.route.slice(0, 1))) {
+          console.warn(
+            `[format-smoke] ${testCase.id} parent route candidates=${lastFormatSmokeCandidates ?? 'unavailable'}`,
+          )
+        }
+        const entryPath = testCase.corpus.path
+        if (typeof entryPath !== 'string') throw new TypeError('the generated entry path is absent')
+        const entry = await namespaceEntry(parent.descriptor, entryPath)
+        const corpus = await verifiedCorpus(testCase, entry.bytes)
+        const problem = await openNestedEntry(parent.descriptor, entry.id, entryPath, entry.bytes)
+        if (problem !== undefined) throw new TypeError('the nested subject did not open')
+        const child = currentFormatSmokeOpen()
+        if (child === undefined || child.caseId !== testCase.id) {
+          throw new TypeError('the generated nested subject did not become active')
+        }
+        return Object.freeze({
+          selectedRoute: child.selectedRoute,
+          corpus,
+          stage: await observeFormatSmokeStage(testCase.stage),
+        })
+      }
+      const corpus = await verifiedCorpus(testCase, bytes)
+      await openFile(new File([bytes], name, { type: response.headers.get('content-type') ?? '' }))
+      const opened = currentFormatSmokeOpen()
+      if (opened === undefined || opened.caseId !== testCase.id) {
+        throw new TypeError(
+          `the real browser host did not open the generated corpus: ${lastFormatSmokeHostFailure ?? 'no opened result'}`,
+        )
+      }
+      if (JSON.stringify(opened.selectedRoute) !== JSON.stringify(testCase.route)) {
+        console.warn(
+          `[format-smoke] ${testCase.id} route candidates=${lastFormatSmokeCandidates ?? 'unavailable'}`,
+        )
+      }
+      return Object.freeze({
+        selectedRoute: opened.selectedRoute,
+        corpus,
+        stage: await observeFormatSmokeStage(testCase.stage),
+      })
+    } finally {
+      activeFormatSmokeCase = undefined
+      activeFormatSmokeStage = undefined
+    }
+  }
+
+  const openFormatSmokeHostOnlySource = async (
+    testCase: FormatSmokeAuthorityCase,
+  ): Promise<never> => {
+    const terminal = testCase.route.at(-1)
+    if (
+      testCase.runtime.pwa.kind !== 'host-facility-refusal' ||
+      testCase.corpus.kind !== 'sc2-casc-entry' ||
+      typeof testCase.corpus.path !== 'string' ||
+      typeof testCase.corpus.sha256 !== 'string' ||
+      typeof testCase.corpus.bytes !== 'number' ||
+      testCase.route[0]?.formatId !== 'casc' ||
+      terminal === undefined
+    ) {
+      throw new TypeError('the generated case is not an SC2/CASC source-open request')
+    }
+    return services.sourceOpen.openSc2CascEntry({
+      requestId: testCase.id,
+      source: {
+        kind: testCase.corpus.kind,
+        entryPath: testCase.corpus.path,
+        contentSha256: testCase.corpus.sha256,
+        bytes: testCase.corpus.bytes,
+      },
+      requestedFormatId: terminal.formatId,
+    })
+  }
+
+  if (pageUrl.searchParams.has('format-smoke')) {
+    const loaded = await loadPwaFormatSmokeAuthority(
+      new URL('./format-smoke.v1.json', document.baseURI).href,
+      __MODKIT_FORMAT_SMOKE_AUTHORITY_SHA256__,
+    )
+    const control = createPwaFormatSmokeAcceptance({
+      authority: loaded.authority,
+      authoritySha256: loaded.sha256,
+      bridge: {
+        async preparePackages(ids) {
+          let changed = false
+          let model = await managedExtensions.refreshCatalog()
+          for (const id of ids) {
+            const row = model.rows.find(candidate => candidate.id === id)
+            if (row === undefined)
+              throw new TypeError('the signed catalog lacks an expected package')
+            if (!row.installed) {
+              model = await managedExtensions.install(id)
+              changed = true
+            } else if (row.updateAvailable) {
+              model = await managedExtensions.update(id)
+              changed = true
+            } else if (!row.enabled) {
+              model = await managedExtensions.enable(id, true)
+              changed = true
+            }
+          }
+          return Object.freeze({ reloadRequired: changed })
+        },
+        async runtimeIdentity() {
+          const packages = await managedStorage.list()
+          const countedCoordinates = new Set([
+            ...catalogCoordinates(WEB_EXTENSION_CATALOG),
+            ...managedRoots.coordinates,
+          ])
+          return Object.freeze({
+            offlineCatalogSha256: WEB_OFFLINE_RELEASE.catalogSha256,
+            loadedManagedRoots: Object.freeze([...managedRoots.coordinates]),
+            codecContributionCount: services.main.inventory.extensions.reduce(
+              (count, extension) =>
+                count +
+                (countedCoordinates.has(`${extension.manifest.publisher}/${extension.manifest.id}`)
+                  ? extension.contributions.filter(
+                      contribution =>
+                        contribution.manifest?.contract.id === 'modkit/codec-contribution',
+                    ).length
+                  : 0),
+              0,
+            ),
+            packages: Object.freeze(
+              packages.map(item =>
+                Object.freeze({
+                  id: item.id,
+                  version: item.version,
+                  digest: item.digest,
+                  enabled: item.enabled,
+                }),
+              ),
+            ),
+          })
+        },
+        open: openFormatSmokeCase,
+        openHostOnlySource: openFormatSmokeHostOnlySource,
+        reportFailure: (caseId, error) => console.warn(`[format-smoke] ${caseId}`, error),
+      },
+    })
+    Object.defineProperty(globalThis, '__MODKIT_FORMAT_SMOKE__', {
+      configurable: true,
+      enumerable: false,
+      value: control,
+    })
+    Object.defineProperty(globalThis, '__MODKIT_ACCEPTANCE__', {
+      configurable: true,
+      enumerable: false,
+      get: () => control.receipt(),
+    })
   }
 
   // `?open=<same-origin path>` — launch the app on a served resource (also the manual smoke path).

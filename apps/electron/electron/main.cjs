@@ -11,7 +11,7 @@
 const { app, BrowserWindow, Menu, MessageChannelMain, dialog, ipcMain, shell } = require('electron')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
-const { randomUUID } = require('node:crypto')
+const { createHash, randomUUID } = require('node:crypto')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
 const { readSettings, writeSettings } = require('./settings-store.cjs')
@@ -19,9 +19,167 @@ const { findInitialFileArgument } = require('./file-arguments.cjs')
 const BUNDLED_EXTENSION_DIRECTORIES = require('../generated/bundled-catalog.cjs')
 
 const RENDERER = path.join(__dirname, '..', 'dist-app', 'index.html')
+const FORMAT_SMOKE_AUTHORITY = path.join(__dirname, '..', 'dist-app', 'format-smoke.v1.json')
+const PACKAGED_RUNTIME = path.join(__dirname, '..', 'dist-app', 'main-runtime', 'dist', 'index.js')
+const ACCEPTANCE_USER_DATA = process.env.MODKIT_ELECTRON_USER_DATA_DIR
+
+if (ACCEPTANCE_USER_DATA !== undefined && ACCEPTANCE_USER_DATA.trim() !== '') {
+  const acceptanceUserData = path.resolve(ACCEPTANCE_USER_DATA)
+  fs.mkdirSync(acceptanceUserData, { recursive: true })
+  app.setPath('userData', acceptanceUserData)
+}
 
 /** The composition root is ESM; main is CJS, so it is loaded through a dynamic import. */
-const root = import(pathToFileURL(path.join(__dirname, '..', 'dist', 'index.js')).href)
+const root = import(
+  pathToFileURL(
+    fs.existsSync(PACKAGED_RUNTIME)
+      ? PACKAGED_RUNTIME
+      : path.join(__dirname, '..', 'dist', 'index.js'),
+  ).href
+)
+
+function readFormatSmokeAuthority() {
+  const bytes = fs.readFileSync(FORMAT_SMOKE_AUTHORITY)
+  return {
+    document: JSON.parse(bytes.toString('utf8')),
+    sha256: createHash('sha256').update(bytes).digest('hex'),
+  }
+}
+
+function readFormatSmokePlan() {
+  const planArg = process.argv.indexOf('--format-smoke-plan')
+  const planPath =
+    planArg === -1 ? process.env.MODKIT_ELECTRON_FORMAT_SMOKE_PLAN : process.argv[planArg + 1]
+  if (planPath === undefined || planPath.trim() === '') return undefined
+  const document = JSON.parse(fs.readFileSync(planPath, 'utf8'))
+  if (
+    document?.kind !== 'x3.electron/format-smoke-plan' ||
+    document.schemaVersion !== 1 ||
+    !Array.isArray(document.cases)
+  ) {
+    throw new TypeError('MODKIT_ELECTRON_FORMAT_SMOKE_PLAN did not point at a format-smoke plan')
+  }
+  return document
+}
+
+function normalizedNamespacePath(value) {
+  const text = String(value ?? '')
+    .replaceAll('\\', '/')
+    .replace(/^\/+/, '')
+  if (text.includes('\0') || text.split('/').some(part => part === '..') || path.isAbsolute(text)) {
+    throw new Error(`namespace path is outside the mounted root: ${value}`)
+  }
+  return text
+}
+
+function directorySnapshotRevision(stats) {
+  return `provider-token:${stats.dev}-${stats.ino}-${stats.size}-${BigInt(Math.trunc(Number(stats.mtimeMs) * 1_000_000))}`
+}
+
+function inventoryWithOnlyContribution(inventory, contributionId) {
+  const extensions = inventory.extensions.flatMap(extension => {
+    const contributions = extension.contributions.filter(
+      contribution => contribution.manifest?.id === contributionId,
+    )
+    return contributions.length === 0
+      ? []
+      : [Object.freeze({ ...extension, contributions: Object.freeze(contributions) })]
+  })
+  return Object.freeze({ ...inventory, extensions: Object.freeze(extensions) })
+}
+
+async function openDirectoryNamespaceSource(directory, openByteSource, ModkitError) {
+  const root = await fsp.realpath(directory)
+  const rootStats = await fsp.stat(root)
+  if (!rootStats.isDirectory()) {
+    throw new Error(`namespace source root is not a directory: ${directory}`)
+  }
+  const rootRef = Object.freeze({ id: pathToFileURL(root).href, uri: pathToFileURL(root).href })
+  const revision = directorySnapshotRevision(rootStats)
+  const resolveInside = async (logicalPath, requireExisting) => {
+    const normalized = normalizedNamespacePath(logicalPath)
+    const candidate = path.resolve(root, ...normalized.split('/').filter(Boolean))
+    let canonical
+    try {
+      canonical = await fsp.realpath(candidate)
+    } catch (error) {
+      if (!requireExisting && (error.code === 'ENOENT' || error.code === 'ENOTDIR')) {
+        return { normalized, canonical: undefined }
+      }
+      if (error.code === 'ENOENT' || error.code === 'ENOTDIR') {
+        throw new ModkitError({
+          code: 'x3.host/namespace-entry-not-found',
+          message: `namespace entry «${normalized}» does not exist`,
+          context: { path: normalized },
+        })
+      }
+      throw error
+    }
+    const relative = path.relative(root, canonical)
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      throw new Error(`namespace path is outside the mounted root: ${logicalPath}`)
+    }
+    return { normalized, canonical }
+  }
+  const namespaceAt = (prefix, ref, namespaceRevision) =>
+    Object.freeze({
+      kind: 'namespace',
+      ref,
+      revision: namespaceRevision,
+      async openNamespace(signal) {
+        const namespace = Object.freeze({
+          revision: namespaceRevision,
+          async *list(listPrefix, listSignal) {
+            if (listSignal?.aborted || signal?.aborted) throw new Error('operation aborted')
+            const base = prefix === '' ? listPrefix : `${prefix}/${listPrefix}`
+            const { normalized, canonical } = await resolveInside(base, true)
+            const stats = await fsp.stat(canonical)
+            if (!stats.isDirectory()) {
+              throw new Error(`namespace path is not a directory: ${listPrefix}`)
+            }
+            const entries = await fsp.readdir(canonical, { withFileTypes: true })
+            for (const entry of entries.sort((left, right) =>
+              left.name.localeCompare(right.name),
+            )) {
+              if (listSignal?.aborted || signal?.aborted) throw new Error('operation aborted')
+              const childPath = normalized === '' ? entry.name : `${normalized}/${entry.name}`
+              const child = await resolveInside(childPath, true)
+              const childStats = await fsp.stat(child.canonical)
+              yield Object.freeze({
+                path: childPath,
+                kind: childStats.isDirectory() ? 'directory' : 'file',
+                ...(childStats.isFile() ? { size: BigInt(childStats.size) } : {}),
+              })
+            }
+          },
+          async open(entryPath, openSignal) {
+            if (openSignal?.aborted || signal?.aborted) throw new Error('operation aborted')
+            const fullPath = prefix === '' ? entryPath : `${prefix}/${entryPath}`
+            const { normalized, canonical } = await resolveInside(fullPath, true)
+            const stats = await fsp.stat(canonical)
+            const childRef = Object.freeze({
+              id: `${rootRef.id}?vfs-path=${encodeURIComponent(normalized)}`,
+              uri: `${rootRef.uri}?vfs-path=${encodeURIComponent(normalized)}`,
+              parentIds: Object.freeze([rootRef.id]),
+            })
+            if (stats.isDirectory()) {
+              return Object.freeze({
+                value: namespaceAt(normalized, childRef, directorySnapshotRevision(stats)),
+                release: async () => undefined,
+              })
+            }
+            const value = await openByteSource(canonical, {
+              uri: childRef.uri,
+              ...(openSignal === undefined ? {} : { signal: openSignal }),
+            })
+            return Object.freeze({ value, release: async () => undefined })
+          },
+        })
+        return Object.freeze({ value: namespace, release: async () => undefined })
+      },
+    })
+  return namespaceAt('', rootRef, revision)
+}
 
 /*
  * R6: no method allowlists live here any more. The renderer speaks capability-RPC to a
@@ -30,6 +188,7 @@ const root = import(pathToFileURL(path.join(__dirname, '..', 'dist', 'index.js')
  * execution boundary uses.
  */
 const MAXIMUM_SUBJECT_BYTES = 64 * 1024 * 1024
+const MAXIMUM_RANGE_BACKED_SUBJECT_BYTES = 256 * 1024 * 1024
 
 /* S7: the file adapter is the host's `openFileArtifactSource` (revision-checked reads). */
 
@@ -151,10 +310,14 @@ async function createWindow() {
     createSubjectCommandEndpoint,
     createElectronExtensionManagerBackend,
     readElectronManagedExtensionState,
+    nestedSubjectServices,
+    openNestedSubject,
+    ModkitError,
   } = await root
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
+  const packagedCommonExtensions = path.join(__dirname, '..', 'dist-app', 'extensions')
   const BUNDLED_ROOTS = BUNDLED_EXTENSION_DIRECTORIES.map(directory =>
-    path.join(repositoryRoot, 'extensions', directory),
+    path.join(packagedCommonExtensions, directory),
   )
   const packagedRelease = path.join(__dirname, '..', 'dist-app', 'managed-packages')
   const developmentRegistry = process.env.MODKIT_EXTENSION_REGISTRY
@@ -428,6 +591,13 @@ async function createWindow() {
   // snapshot pinned to the one built at start would keep describing codecs that are gone.
   ipcMain.handle('modkit.profile', () => {
     const composed = subjectServices.application
+    const formatSmoke = readFormatSmokeAuthority()
+    const formatSmokePlan = readFormatSmokePlan()
+    if (process.argv.includes('--format-smoke-only')) {
+      console.log(
+        `[main] format-smoke profile plan=${formatSmokePlan === undefined ? 'absent' : `cases:${formatSmokePlan.cases.length}`}`,
+      )
+    }
     return {
       topologyId: composed.topology.topologyId,
       renderer: {
@@ -441,6 +611,9 @@ async function createWindow() {
       // Validated, function-free JSON only; renderer never receives VFS or inventory authority.
       localizationCatalogs,
       supportedExtensions: subjectServices.supportedExtensions,
+      formatSmokeAuthority: formatSmoke.document,
+      formatSmokeAuthoritySha256: formatSmoke.sha256,
+      ...(formatSmokePlan === undefined ? {} : { formatSmokePlan }),
       // OPUS-UX-01 vocabulary: which boundary codecs get — worker threads of main (SB-1), never the renderer
       execution: {
         codecRealm: composed.workers.profile.realmId,
@@ -473,14 +646,143 @@ async function createWindow() {
     }
   }
 
+  const parseContainerEntryRequest = value => {
+    if (typeof value !== 'string' || !value.startsWith('modkit-container:')) return undefined
+    const body = value.slice('modkit-container:'.length)
+    const queryIndex = body.indexOf('?')
+    const parentSessionId = decodeURIComponent(queryIndex === -1 ? body : body.slice(0, queryIndex))
+    const params = new URLSearchParams(queryIndex === -1 ? '' : body.slice(queryIndex + 1))
+    const entryId = params.get('entryId')
+    if (parentSessionId === '' || entryId === null || entryId === '') {
+      throw new TypeError('modkit-container URI requires parent session id and entryId')
+    }
+    return { parentSessionId, entryId }
+  }
+
+  const selectedRouteStep = (descriptor, selected) =>
+    Object.freeze({
+      formatId: String(descriptor.identity?.formatId ?? ''),
+      extensionId: String(selected.extensionId ?? ''),
+      contributionId: selected.contributionId,
+    })
+
+  const openedSessions = new Map()
+  const trackSession = (sessionId, session, selectedRoute) => {
+    let disposed = false
+    const tracked = Object.freeze({
+      revision: session.revision,
+      selectedRoute,
+      state: () => session.state(),
+      descriptor: () => session.descriptor(),
+      dataSource: session.dataSource.bind(session),
+      operations: () => session.operations(),
+      events: signal => session.events(signal),
+      async dispose() {
+        if (disposed) return
+        disposed = true
+        openedSessions.delete(sessionId)
+        await session.dispose()
+      },
+    })
+    openedSessions.set(sessionId, tracked)
+    return tracked
+  }
+
   /**
    * R6: open a subject the way the old IPC branch did, but return the session as an object for
    * the RPC endpoint to lease — no session table, no method dispatch, no allowlists here.
    */
   const openSubjectForRpc = async (requestedPath, signal) => {
+    const nestedRequest = parseContainerEntryRequest(requestedPath)
+    if (nestedRequest !== undefined) {
+      const parent = openedSessions.get(nestedRequest.parentSessionId)
+      if (parent === undefined) {
+        throw new Error('modkit-container parent session is unavailable')
+      }
+      const budget = {
+        maxInputBytes: BigInt(MAXIMUM_SUBJECT_BYTES),
+        maxDepth: 256,
+        maxNodes: 1_000_000,
+        maxScalarBytes: MAXIMUM_SUBJECT_BYTES,
+        maxDiagnostics: 10_000,
+        deadlineMs: 30_000,
+      }
+      const grant = {
+        id: `electron:${randomUUID()}`,
+        classes: ['read-source'],
+      }
+      const diagnostics = []
+      let nested
+      try {
+        nested = await openNestedSubject({
+          parent,
+          entryId: nestedRequest.entryId,
+          ...nestedSubjectServices(subjectServices),
+          grant,
+          budget,
+          onDiagnostic: item => diagnostics.push(item),
+          ...(signal === undefined ? {} : { signal }),
+        })
+      } catch (error) {
+        console.log(
+          `[main] nested subject ${nestedRequest.entryId} failed: ${error?.stack ?? String(error)}`,
+        )
+        throw error
+      }
+      if (nested.result.state === 'unresolved') {
+        console.log(
+          `[main] nested subject ${nested.entry.path} unresolved (${nested.result.reason}): ` +
+            nested.result.diagnostics.map(item => item.code).join(', '),
+        )
+        return {
+          snapshot: {
+            state: nested.result.state,
+            reason: nested.result.reason,
+            candidates: nested.result.candidates,
+            diagnostics: [...nested.result.diagnostics, ...diagnostics],
+          },
+        }
+      }
+      const sessionId = randomUUID()
+      const childRoute = selectedRouteStep(nested.result.descriptor, nested.result.selected)
+      const selectedRoute = Object.freeze([...(parent.selectedRoute ?? []), childRoute])
+      const sourceBytes =
+        typeof nested.entry.size === 'number' && Number.isFinite(nested.entry.size)
+          ? nested.entry.size
+          : 0
+      const presentation = await resolveElectronPresentationPlan(
+        nested.result.descriptor,
+        {
+          sessionId,
+          contributionId: nested.result.selected.contributionId,
+          variantId: nested.result.selected.variantId,
+        },
+        { sourceBytes },
+      )
+      console.log(
+        `[main] nested subject ${nested.entry.path} -> ${nested.result.selected.contributionId}/` +
+          `${nested.result.selected.variantId} (${Math.round(nested.result.selected.confidence * 100)}%)`,
+      )
+      return {
+        snapshot: {
+          state: nested.result.state,
+          sessionId,
+          descriptor: nested.result.descriptor,
+          presentation,
+          selected: nested.result.selected,
+          selectedRoute,
+          candidates: nested.result.candidates,
+          diagnostics: [...nested.result.diagnostics, ...diagnostics],
+        },
+        session: trackSession(sessionId, nested.result.session, selectedRoute),
+      }
+    }
     const mapSelection = parseElectronMapPreviewSelectionRequest(requestedPath)
     const file = roots.require(mapSelection?.path ?? requestedPath)
-    const source = await openFileArtifactSource(file)
+    const fileStats = await fsp.stat(file)
+    const source = fileStats.isDirectory()
+      ? await openDirectoryNamespaceSource(file, openFileArtifactSource, ModkitError)
+      : await openFileArtifactSource(file)
     /*
      * Whether this host can replace the file decides the *open grant*, not just the arm.
      *
@@ -494,6 +796,9 @@ async function createWindow() {
      * `access(W_OK)` is the right check on Windows too, where it reports the read-only attribute.
      */
     const notEditable = []
+    if (fileStats.isDirectory()) {
+      notEditable.push(localizer.text('electron.main.subject.notWritable', { code: 'EISDIR' }))
+    }
     try {
       await fsp.access(file, fs.constants.W_OK)
     } catch (error) {
@@ -503,7 +808,7 @@ async function createWindow() {
     }
     const writable = notEditable.length === 0
     const budget = {
-      maxInputBytes: BigInt(MAXIMUM_SUBJECT_BYTES),
+      maxInputBytes: BigInt(MAXIMUM_RANGE_BACKED_SUBJECT_BYTES),
       maxDepth: 256,
       maxNodes: 1_000_000,
       maxScalarBytes: MAXIMUM_SUBJECT_BYTES,
@@ -519,24 +824,29 @@ async function createWindow() {
      * confined to the roots the user actually granted.
      */
     const companionDiagnostics = []
-    const resolveInput = createFilesystemInputResolver({
-      primaryPath: file,
-      roots: roots.list(),
-      inventory: subjectServices.application.main.inventory,
-      deadlineMs: budget.deadlineMs,
-      onDiagnostic: item => companionDiagnostics.push(item),
-    })
+    const resolveInput = fileStats.isDirectory()
+      ? undefined
+      : createFilesystemInputResolver({
+          primaryPath: file,
+          roots: roots.list(),
+          inventory: subjectServices.application.main.inventory,
+          deadlineMs: budget.deadlineMs,
+          onDiagnostic: item => companionDiagnostics.push(item),
+        })
     const openGrant = {
       id: `electron:${randomUUID()}`,
       classes: writable ? ['read-source', 'write-source'] : ['read-source'],
     }
     const result = await subjectServices.open({
+      ...(fileStats.isDirectory()
+        ? { inventory: inventoryWithOnlyContribution(subjectServices.inventory, 'blizzard/casc') }
+        : {}),
       source,
       path: file,
       intent: 'full',
       grant: openGrant,
       budget,
-      resolveInput,
+      ...(resolveInput === undefined ? {} : { resolveInput }),
       ...(signal === undefined ? {} : { signal }),
     })
     if (result.state === 'unresolved') {
@@ -556,7 +866,9 @@ async function createWindow() {
       }
       console.log(
         `[main] subject ${path.basename(file)} unresolved (${result.reason}): ` +
-          result.diagnostics.map(item => item.code).join(', ') +
+          result.diagnostics
+            .map(item => `${item.code}(${item.message};${JSON.stringify(item.data ?? {})})`)
+            .join(', ') +
           `; candidates=${result.candidates
             .map(
               item =>
@@ -580,6 +892,16 @@ async function createWindow() {
         },
       }
     }
+    if (
+      fileStats.isDirectory() &&
+      (result.selected.contributionId !== 'blizzard/casc' ||
+        result.descriptor.identity?.formatId !== 'casc')
+    ) {
+      await result.session.dispose()
+      throw new Error(
+        `directory subject support is confined to Blizzard CASC; selected ${result.selected.contributionId}`,
+      )
+    }
     console.log(
       `[main] subject ${path.basename(file)} -> ${result.selected.contributionId}/` +
         `${result.selected.variantId} (${Math.round(result.selected.confidence * 100)}%)`,
@@ -596,6 +918,7 @@ async function createWindow() {
     })
     const opened = mapPreview.opened
     const sessionId = randomUUID()
+    const selectedRoute = Object.freeze([selectedRouteStep(opened.descriptor, opened.selected)])
     let presentation
     try {
       presentation = await resolveElectronPresentationPlan(
@@ -605,7 +928,7 @@ async function createWindow() {
           contributionId: result.selected.contributionId,
           variantId: result.selected.variantId,
         },
-        { sourceBytes: source.size },
+        { sourceBytes: typeof source.size === 'bigint' ? source.size : BigInt(0) },
       )
     } catch (error) {
       await opened.session.dispose()
@@ -731,10 +1054,11 @@ async function createWindow() {
         descriptor: opened.descriptor,
         presentation,
         selected: opened.selected,
+        selectedRoute,
         candidates: [...opened.candidates, ...mapPreview.candidates],
         diagnostics: [...opened.diagnostics, ...editingDiagnostics],
       },
-      session: opened.session,
+      session: trackSession(sessionId, opened.session, selectedRoute),
     }
   }
 
@@ -1010,6 +1334,13 @@ async function createWindow() {
     const granted = roots.grant(process.argv[openIndex + 1])
     console.log(`[main] granted ${granted}`)
   }
+  if (process.argv.includes('--selftest')) {
+    for (const [index, value] of process.argv.entries()) {
+      if (value !== '--grant' || process.argv[index + 1] === undefined) continue
+      const granted = roots.grant(process.argv[index + 1])
+      console.log(`[main] granted ${granted}`)
+    }
+  }
 
   /*
    * A file passed on the command line — which is how a double-click reaches us once this app is
@@ -1023,6 +1354,7 @@ async function createWindow() {
         root: target,
         selfTest: process.argv.includes('--selftest'),
         selfTestPngOnly: process.argv.includes('--selftest-png'),
+        selfTestFormatSmokeOnly: process.argv.includes('--format-smoke-only'),
       }
     }
     const candidate = findInitialFileArgument(
@@ -1439,6 +1771,19 @@ async function createWindow() {
   // Renderer findings belong in the same log as the main process ones, otherwise verifying the
   // isolation checks would need a human looking at the window.
   const selfTest = process.argv.includes('--selftest')
+  const selfTestLateProbeIdleTimeoutMs = 180_000
+  let selfTestLateProbeWatchdog
+  let selfTestLateProbes = false
+  const armSelfTestLateProbeWatchdog = () => {
+    clearTimeout(selfTestLateProbeWatchdog)
+    selfTestLateProbeWatchdog = setTimeout(() => {
+      console.error(
+        '[main] selftest: late probes FAILED after the extension lifecycle receipt; terminating',
+      )
+      console.log('[main] selftest: done')
+      app.exit(1)
+    }, selfTestLateProbeIdleTimeoutMs)
+  }
   window.webContents.on('console-message', details => {
     const { message } = details
     console.log(`[renderer] ${message}`)
@@ -1447,7 +1792,23 @@ async function createWindow() {
      * to kill the process on a timeout — which is indistinguishable from the run hanging. Exiting
      * on the renderer's own final line makes the exit code mean something.
      */
-    if (selfTest && String(message).trim() === 'selftest: done') {
+    const selfTestMarker = String(message).trim()
+    if (selfTest && selfTestMarker === 'selftest: extension lifecycle done') {
+      selfTestLateProbes = true
+      armSelfTestLateProbeWatchdog()
+    } else if (
+      selfTest &&
+      selfTestLateProbes &&
+      selfTestMarker.startsWith('selftest:') &&
+      selfTestMarker !== 'selftest: done'
+    ) {
+      // This is an idle watchdog, not an absolute wall-clock ceiling. Each completed late probe
+      // proves forward progress; one edit/reopen is itself allowed up to 120 seconds.
+      armSelfTestLateProbeWatchdog()
+    }
+    if (selfTest && selfTestMarker === 'selftest: done') {
+      clearTimeout(selfTestLateProbeWatchdog)
+      selfTestLateProbes = false
       setTimeout(() => app.exit(0), 250)
     }
   })
