@@ -42,6 +42,7 @@ import {
   openNestedSubject,
   subjectOpenSnapshot,
   type SubjectOpener,
+  type SubjectOpenedSnapshot,
   type SubjectServices,
 } from '@modkit/host'
 import { createPathSubjectOpener } from '@modkit/host/node'
@@ -110,6 +111,8 @@ export interface ContainerRegistry {
 interface HeldContainer {
   readonly session: AssetSession
   readonly index: ContainerIndex
+  /** Actual parent selection, with no container path or entry locator. */
+  readonly selectedRoute: NonNullable<SubjectOpenedSnapshot['selectedRoute']>
   /** True when the listing stopped at `MAXIMUM_PAGES` rather than at the container's last page. */
   readonly capped: boolean
 }
@@ -183,7 +186,12 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
               'members beyond that are not shown',
           })
         }
-        return { session, index: buildContainerIndex(entries), capped }
+        return {
+          session,
+          index: buildContainerIndex(entries),
+          selectedRoute: Object.freeze([...(answer.snapshot.selectedRoute ?? [])]),
+          capped,
+        }
       } finally {
         await lease.release()
       }
@@ -358,7 +366,14 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
         sessionId: () => `container:${randomUUID()}`,
         diagnostics: carried,
       })
-      return { snapshot, session: nested.result.session }
+      const selectedRoute = Object.freeze([
+        ...holder.selectedRoute,
+        ...(snapshot.selectedRoute ?? []),
+      ])
+      return {
+        snapshot: selectedRoute.length === 0 ? snapshot : { ...snapshot, selectedRoute },
+        session: nested.result.session,
+      }
     },
 
     held: () => [...held.keys()],

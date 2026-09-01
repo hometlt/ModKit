@@ -158,7 +158,24 @@ describe('VS Code installed-product acceptance receipt', () => {
       createA7AcceptanceReceipt([], { roots: [], contributions: [], loadErrors: [] }),
     )
     const opened = withSubjectAcceptance(initial, {
-      selected: { contributionId: 'modkit/dds', variantId: 'default', confidence: 1 },
+      selected: {
+        extensionId: 'modkit/images',
+        contributionId: 'modkit/dds',
+        variantId: 'default',
+        confidence: 1,
+      },
+      selectedRoute: [
+        {
+          formatId: 'zip',
+          extensionId: 'modkit/archives',
+          contributionId: 'modkit/archive-zip',
+        },
+        {
+          formatId: 'dds',
+          extensionId: 'modkit/images',
+          contributionId: 'modkit/dds',
+        },
+      ],
       descriptor: {
         subjectUri: 'file:///C:/private/fixture.dds',
         identity: {
@@ -181,8 +198,22 @@ describe('VS Code installed-product acceptance receipt', () => {
     })
     expect(Object.isFrozen(opened)).toBe(true)
     expect(Object.isFrozen(opened.subject?.selected)).toBe(true)
+    expect(Object.isFrozen(opened.subject?.selectedRoute)).toBe(true)
+    expect(Object.isFrozen(opened.subject?.selectedRoute?.[0])).toBe(true)
     expect(opened.subject).toMatchObject({
       selected: { contributionId: 'modkit/dds', variantId: 'default', confidence: 1 },
+      selectedRoute: [
+        {
+          formatId: 'zip',
+          extensionId: 'modkit/archives',
+          contributionId: 'modkit/archive-zip',
+        },
+        {
+          formatId: 'dds',
+          extensionId: 'modkit/images',
+          contributionId: 'modkit/dds',
+        },
+      ],
       descriptor: {
         identity: {
           codecId: 'modkit/dds',
@@ -195,6 +226,32 @@ describe('VS Code installed-product acceptance receipt', () => {
     const serialized = JSON.stringify(opened)
     expect(serialized).not.toContain('fixture.dds')
     expect(serialized).not.toContain('subjectUri')
+  })
+
+  it('redacts absolute-looking values even when a hostile route reaches the receipt boundary', () => {
+    const initial = createModkitAcceptanceReceipt(
+      createA7AcceptanceReceipt([], { roots: [], contributions: [], loadErrors: [] }),
+    )
+    const opened = withSubjectAcceptance(initial, {
+      selected: { contributionId: 'modkit/dds', variantId: 'default', confidence: 1 },
+      selectedRoute: [
+        {
+          formatId: 'C:\\private\\format',
+          extensionId: 'file:///C:/private/extension',
+          contributionId: '/private/contribution',
+        },
+      ],
+      descriptor: { identity: { formatId: 'dds' } },
+    })
+
+    expect(opened.subject?.selectedRoute).toEqual([
+      {
+        formatId: '<redacted:absolute-location>',
+        extensionId: '<redacted:absolute-location>',
+        contributionId: '<redacted:absolute-location>',
+      },
+    ])
+    expect(JSON.stringify(opened)).not.toContain('private')
   })
 
   it('turns a generated catalog missing root into an A7 load error source', async () => {

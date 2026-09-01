@@ -3038,6 +3038,9 @@ describe('13C real-browser viewer host', () => {
       }
     })
 
+    expect(
+      await page.locator('[data-mk-part="model.canvas"]').getAttribute('data-model-renderer'),
+    ).toBe('wireframe')
     expect(await page.getByRole('combobox', { name: 'Model primitive' }).inputValue()).toBe('hull')
     expect(await page.getByText('bones (2)', { exact: true }).isVisible()).toBe(true)
     expect(await page.getByText('materials (1)', { exact: true }).isVisible()).toBe(true)

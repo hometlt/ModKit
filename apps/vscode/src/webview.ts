@@ -373,6 +373,7 @@ async function mount(
         globalThis,
         withSubjectAcceptance(snapshot.acceptance, {
           selected: opened.selected,
+          ...(opened.selectedRoute === undefined ? {} : { selectedRoute: opened.selectedRoute }),
           descriptor: opened.descriptor,
         }),
       )

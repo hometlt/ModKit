@@ -380,6 +380,9 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
 
       const canvas = element(stage, 'canvas', { part: 'model.canvas' }) as HTMLCanvasElement
       canvas.setAttribute('role', 'img')
+      // Stable machine evidence for installed-product probes. This viewer is the bounded 2D
+      // wireframe renderer; localized readout text must not be used to infer that fact.
+      canvas.setAttribute('data-model-renderer', 'wireframe')
       // Focusable so the orbit keyboard bindings are reachable without a pointer (C-15).
       canvas.tabIndex = 0
 

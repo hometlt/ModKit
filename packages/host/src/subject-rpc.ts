@@ -132,10 +132,23 @@ export interface SubjectOpenedSnapshot {
   /** A host that resolves presentation ships the immutable plan; fallback-only hosts omit it. */
   readonly presentation?: PresentationPlan
   readonly selected: {
+    /** Additive owner identity; older producers and consumers may omit or ignore it. */
+    readonly extensionId?: string
     readonly contributionId: string
     readonly variantId: string
     readonly confidence: number
   }
+  /**
+   * Product-observed codec route, never a source locator.
+   *
+   * A direct subject has one step. A container-aware host may prepend the actual parent selection
+   * before returning a nested subject. Optional keeps the wire compatible with older producers.
+   */
+  readonly selectedRoute?: readonly {
+    readonly formatId: string
+    readonly extensionId: string
+    readonly contributionId: string
+  }[]
   readonly candidates: readonly unknown[]
   readonly diagnostics: readonly SnapshotDiagnostic[]
 }
@@ -174,6 +187,8 @@ export interface OpenedSubjectLike {
   readonly state: 'opened'
   readonly descriptor: unknown
   readonly selected: {
+    /** Present on `OpenedSubject`; optional here for backwards-compatible structural callers. */
+    readonly extensionId?: string
     readonly contributionId: string
     readonly variantId: string
     readonly confidence: number
@@ -209,15 +224,39 @@ export function subjectOpenSnapshot(
       diagnostics,
     }
   }
+  const descriptor = result.descriptor as Record<string, unknown>
+  const identity = descriptor['identity']
+  const formatId =
+    typeof identity === 'object' &&
+    identity !== null &&
+    typeof (identity as Record<string, unknown>)['formatId'] === 'string'
+      ? ((identity as Record<string, unknown>)['formatId'] as string)
+      : undefined
+  const extensionId = result.selected.extensionId
+  const selectedRoute =
+    extensionId === undefined ||
+    extensionId.length === 0 ||
+    formatId === undefined ||
+    formatId.length === 0
+      ? undefined
+      : [
+          {
+            formatId,
+            extensionId,
+            contributionId: result.selected.contributionId,
+          },
+        ]
   return {
     state: 'opened',
     sessionId: options.sessionId(),
-    descriptor: result.descriptor as Record<string, unknown>,
+    descriptor,
     selected: {
+      ...(extensionId === undefined ? {} : { extensionId }),
       contributionId: result.selected.contributionId,
       variantId: result.selected.variantId,
       confidence: result.selected.confidence,
     },
+    ...(selectedRoute === undefined ? {} : { selectedRoute }),
     candidates: result.candidates,
     diagnostics,
   }

@@ -58,6 +58,12 @@ export interface ModkitSubjectAcceptanceReceipt {
     readonly variantId: string
     readonly confidence: number
   }
+  /** Actual runtime selections from outermost container to the opened subject, never locations. */
+  readonly selectedRoute?: readonly {
+    readonly formatId: string
+    readonly extensionId: string
+    readonly contributionId: string
+  }[]
   readonly descriptor: {
     readonly identity: Readonly<Record<string, unknown>>
   }
@@ -229,10 +235,16 @@ export function withSubjectAcceptance(
   receipt: ModkitAcceptanceReceipt,
   opened: {
     readonly selected: {
+      readonly extensionId?: string
       readonly contributionId: string
       readonly variantId: string
       readonly confidence: number
     }
+    readonly selectedRoute?: readonly {
+      readonly formatId: string
+      readonly extensionId: string
+      readonly contributionId: string
+    }[]
     readonly descriptor: Record<string, unknown>
   },
 ): ModkitAcceptanceReceipt {
@@ -243,6 +255,31 @@ export function withSubjectAcceptance(
     !Array.isArray(descriptorIdentity)
       ? (descriptorIdentity as Readonly<Record<string, unknown>>)
       : Object.freeze({})
+  const directFormatId =
+    typeof (opened.descriptor.identity as { readonly formatId?: unknown } | undefined)?.formatId ===
+    'string'
+      ? (opened.descriptor.identity as { readonly formatId: string }).formatId
+      : undefined
+  const route =
+    opened.selectedRoute ??
+    (opened.selected.extensionId === undefined || directFormatId === undefined
+      ? []
+      : [
+          {
+            formatId: directFormatId,
+            extensionId: opened.selected.extensionId,
+            contributionId: opened.selected.contributionId,
+          },
+        ])
+  const selectedRoute = Object.freeze(
+    route.map(step =>
+      Object.freeze({
+        formatId: String(safeIdentityValue(step.formatId, 0)),
+        extensionId: String(safeIdentityValue(step.extensionId, 0)),
+        contributionId: String(safeIdentityValue(step.contributionId, 0)),
+      }),
+    ),
+  )
   return Object.freeze({
     ...receipt,
     subject: Object.freeze({
@@ -251,6 +288,7 @@ export function withSubjectAcceptance(
         variantId: opened.selected.variantId,
         confidence: opened.selected.confidence,
       }),
+      ...(selectedRoute.length === 0 ? {} : { selectedRoute }),
       descriptor: Object.freeze({ identity }),
     }),
   })

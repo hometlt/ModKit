@@ -233,6 +233,21 @@ describe('a member is a subject in its own right', () => {
       )
     }
     expect(answer.snapshot.selected.contributionId).toBe('modkit/txt')
+    expect(answer.snapshot.selected.extensionId).toBeTruthy()
+    expect(answer.snapshot.selectedRoute).toHaveLength(2)
+    expect(answer.snapshot.selectedRoute?.[0]).toMatchObject({
+      formatId: 'zip',
+      contributionId: 'modkit/archive-zip',
+    })
+    expect(answer.snapshot.selectedRoute?.[1]).toEqual({
+      formatId: 'txt',
+      extensionId: answer.snapshot.selected.extensionId,
+      contributionId: 'modkit/txt',
+    })
+    expect(answer.snapshot.selectedRoute?.[0]?.extensionId).not.toBe(
+      answer.snapshot.selectedRoute?.[1]?.extensionId,
+    )
+    expect(JSON.stringify(answer.snapshot.selectedRoute)).not.toContain(archive)
     const session = answer.session
     expect(session).toBeDefined()
 
@@ -281,6 +296,11 @@ describe('a member is a subject in its own right', () => {
       )
     }
     expect(answer.snapshot.selected.contributionId).toBe('modkit/txt')
+    expect(answer.snapshot.selectedRoute).toHaveLength(2)
+    expect(answer.snapshot.selectedRoute?.map(step => step.contributionId)).toEqual([
+      'modkit/archive-zip',
+      'modkit/txt',
+    ])
     // the page is told what it opened by the same callback a file goes through
     expect(opened).toEqual([{ path: uri, contributionId: 'modkit/txt' }])
     // and the status surface names it without the container's absolute path

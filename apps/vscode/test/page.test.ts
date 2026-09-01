@@ -135,7 +135,12 @@ describe('webview page', () => {
 
   it('serializes the acceptance snapshot without an absolute subject path or URI', () => {
     const acceptance = withSubjectAcceptance(bootstrap.acceptance, {
-      selected: { contributionId: 'modkit/dds', variantId: 'default', confidence: 1 },
+      selected: {
+        extensionId: 'modkit/images',
+        contributionId: 'modkit/dds',
+        variantId: 'default',
+        confidence: 1,
+      },
       descriptor: {
         subjectUri: 'file:///C:/private/fixture.dds',
         identity: {
@@ -151,6 +156,13 @@ describe('webview page', () => {
     expect(publicReceipt).not.toContain('fixture.dds')
     expect(publicReceipt).not.toContain('subjectUri')
     expect(publicReceipt).toContain('<redacted:absolute-location>')
+    expect(parsed.acceptance.subject?.selectedRoute).toEqual([
+      {
+        formatId: 'dds',
+        extensionId: 'modkit/images',
+        contributionId: 'modkit/dds',
+      },
+    ])
   })
 
   it('hands the page no path when the panel was not raised from a file', () => {
